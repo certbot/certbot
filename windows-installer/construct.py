@@ -10,7 +10,6 @@ import time
 
 PYTHON_VERSION = (3, 7, 4)
 PYTHON_BITNESS = 32
-PYNSIST_VERSION = 2.3
 
 
 def main():
@@ -20,7 +19,7 @@ def main():
 
     installer_cfg_path = _generate_pynsist_config(repo_path, build_path)
 
-    _prepare_build_tools(venv_path, venv_python)
+    _prepare_build_tools(venv_path, venv_python, repo_path)
     _compile_wheels(repo_path, build_path, venv_python)
     _build_installer(installer_cfg_path, venv_path)
 
@@ -48,12 +47,12 @@ def _compile_wheels(repo_path, build_path, venv_python):
     subprocess.check_call(command)
 
 
-def _prepare_build_tools(venv_path, venv_python):
+def _prepare_build_tools(venv_path, venv_python, repo_path):
     print('Prepare build tools')
     subprocess.check_call([sys.executable, '-m', 'venv', venv_path])
     subprocess.check_call(['choco', 'upgrade', '-y', 'nsis'])
     subprocess.check_call([venv_python, '-m', 'pip', 'install', '--upgrade', 'pip'])
-    subprocess.check_call([venv_python, '-m', 'pip', 'install', 'wheel', 'pynsist=={0}'.format(PYNSIST_VERSION)])
+    subprocess.check_call([venv_python, os.path.join(repo_path, 'tools', 'pip_install.py'), 'wheel', 'pynsist'])
 
 
 def _copy_assets(build_path, repo_path):

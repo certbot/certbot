@@ -1,8 +1,10 @@
 ; This NSIS template is based on the built-in one in pynsist 2.3.
 ; Added lines are enclosed within "CERTBOT CUSTOM BEGIN/END" comments.
 ; If pynsist is upgraded, this template must be updated if necessary using the new built-in one.
+; Original file can be found here: https://github.com/takluyver/pynsist/blob/2.4/nsist/pyapp.nsi
 
 ; CERTBOT CUSTOM BEGIN
+; Administrator privileges are required to insert a new task in Windows Scheduler.
 RequestExecutionLevel admin
 ; CERTBOT CUSTOM END
 

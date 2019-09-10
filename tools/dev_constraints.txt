@@ -53,6 +53,9 @@ pyasn1==0.1.9
 pyasn1-modules==0.0.10
 Pygments==2.2.0
 pylint==1.9.4
+# If pynsist version is upgraded, our NSIS template windows-installer/template.nsi
+# must be upgraded if necessary using the new built-in one from pynsist.
+pynsist==2.4
 pytest==3.2.5
 pytest-cov==2.5.1
 pytest-forked==0.2
