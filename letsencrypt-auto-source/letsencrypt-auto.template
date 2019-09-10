@@ -371,7 +371,7 @@ elif [ -f /etc/redhat-release ]; then
     # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
     # RHEL 8 also uses python3 by default.
     if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 ]; then
-      RPM_USE_PYTHON_
+      RPM_USE_PYTHON_3=1
     elif [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
       RPM_USE_PYTHON_3=1
     else
