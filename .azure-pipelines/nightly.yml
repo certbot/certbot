@@ -19,7 +19,5 @@ jobs:
         addToPath: true
     - script: python windows-installer/construct.py
       displayName: Build Certbot installer
-    - script: python windows-installer/install.py && refreshenv
+    - script: python windows-installer/install.py && certbot --version
       displayName: Run Certbot installer
-    - script: certbot --version
-      displayName: Check certbot availability
