@@ -529,11 +529,11 @@ BootstrapRpmPython3Legacy() {
     exit 1
   fi
 
+  BootstrapRpmCommonBase "${python_pkgs}"
+
   # Try now to enable SCL rh-python36 for systems that are not yet bootstrapped
   # NB: function EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
   EnablePython36SCL
-
-  BootstrapRpmCommonBase "${python_pkgs}"
 }
 
 # If new packages are installed by BootstrapRpmPython3 below, this version
@@ -821,7 +821,9 @@ elif [ -f /etc/redhat-release ]; then
       if ! python3.6 --version > /dev/null 2> /dev/null; then
         # Do nothing if SCL Python 3.6 is not installed
         if [ -f /opt/rh/rh-python36/enable ]; then
-          source /opt/rh/rh-python36/enable
+          set +e
+          . scl_source enable rh-python36
+          set -e
         fi
       fi
     }

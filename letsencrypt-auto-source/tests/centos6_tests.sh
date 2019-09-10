@@ -9,7 +9,7 @@ LE_AUTO="certbot/letsencrypt-auto-source/letsencrypt-auto"
 
 # we're going to modify env variables, so do this in a subshell
 (
-source /opt/rh/python27/enable
+. scl_source enable python27
 
 # ensure python 3 isn't installed
 python3 --version > /dev/null 2> /dev/null
@@ -55,9 +55,6 @@ if ! "$LE_AUTO" 2>&1 | grep -q "WARNING: couldn't find Python"; then
   exit 1
 fi
 
-# Enable SCL rh-python36
-source /opt/rh/rh-python36/enable
-
 # bootstrap from the old letsencrypt-auto, this time installing python3.4
 "$LE_AUTO_PY_34" --no-self-upgrade -n > /dev/null 2> /dev/null
 
@@ -73,6 +70,9 @@ echo "PASSED: Successfully upgraded to Python3.4 using letsencrypt-auto < 0.37.0
 
 # now bootstrap from current letsencrypt-auto, that will install python3.6 from SCL
 "$LE_AUTO" --no-self-upgrade -n > /dev/null 2> /dev/null
+
+# enable SCL rh-python36
+. scl_source enable rh-python36
 
 # ensure python 3.6 is installed
 python3.6 --version > /dev/null 2> /dev/null
