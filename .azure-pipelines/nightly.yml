@@ -19,5 +19,9 @@ jobs:
         addToPath: true
     - script: python windows-installer/construct.py
       displayName: Build Certbot installer
-    - script: python windows-installer/install.py && certbot --version
+    - script: python windows-installer/install.py
       displayName: Run Certbot installer
+    - script: echo "##vso[task.prependpath]%LOCALAPPDATA%\Certbot\bin"
+      displayName: Update PATH
+    - script: certbot --version
+      displayName: Check Certbot availability
