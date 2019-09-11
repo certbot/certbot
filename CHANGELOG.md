@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Run tests on Python3.8.
 
 ### Changed
 
