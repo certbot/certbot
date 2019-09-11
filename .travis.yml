@@ -38,7 +38,7 @@ matrix:
   include:
     # Main test suite
     - python: "2.7"
-      env: ACME_SERVER=pebble TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=pebble TOXENV=integration
       <<: *not-on-master
 
     # This job is always executed, including on master
@@ -122,12 +122,12 @@ matrix:
       env: TOXENV=py37 CERTBOT_NO_PIN=1
       <<: *extended-test-suite
     - python: "2.7"
-      env: ACME_SERVER=boulder-v1 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
-      env: ACME_SERVER=boulder-v2 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
@@ -169,54 +169,54 @@ matrix:
       env: TOXENV=py38
       <<: *extended-test-suite
     - python: "3.4"
-      env: ACME_SERVER=boulder-v1 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.4"
-      env: ACME_SERVER=boulder-v2 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.5"
-      env: ACME_SERVER=boulder-v1 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.5"
-      env: ACME_SERVER=boulder-v2 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.6"
-      env: ACME_SERVER=boulder-v1 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.6"
-      env: ACME_SERVER=boulder-v2 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.7"
       dist: xenial
-      env: ACME_SERVER=boulder-v1 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.7"
       dist: xenial
-      env: ACME_SERVER=boulder-v2 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.8-dev"
       dist: xenial
-      env: ACME_SERVER=boulder-v1 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       <<: *extended-test-suite
     - python: "3.8-dev"
       dist: xenial
-      env: ACME_SERVER=boulder-v2 TOXENV=clean,integration,integration-report
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
       <<: *extended-test-suite
     - sudo: required
       env: TOXENV=le_auto_jessie
