@@ -58,10 +58,7 @@ class IntegrationTestsContext(object):
 
     def cleanup(self):
         """Cleanup the integration test context."""
-        try:
-            shutil.rmtree(self.workspace)
-        except OSError as e:
-            LOGGER.warning(str(e))
+        shutil.rmtree(self.workspace)
 
     def certbot(self, args, force_renew=True):
         """
