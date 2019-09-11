@@ -38,7 +38,7 @@ matrix:
   include:
     - python: "3.8-dev"
       dist: xenial
-      env: ACME_SERVER=boulder-v1 TOXENV=integration,integration-report
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       <<: *not-on-master
     - python: "3.8-dev"
       dist: xenial
