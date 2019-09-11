@@ -26,6 +26,6 @@ jobs:
         venv\Scripts\python tools\pip_install.py -e certbot-ci
       displayName: Install Certbot CI
     - script: |
-        set CERTBOT_EXECUTABLE_PATH="%LOCALAPPDATA%\Certbot\bin\certbot.exe"
+        set CERTBOT_EXECUTABLE_PATH=%LOCALAPPDATA%\Certbot\bin\certbot.exe
         venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
       displayName: Run integration tests
