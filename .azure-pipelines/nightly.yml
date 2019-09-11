@@ -22,10 +22,7 @@ jobs:
     - script: python windows-installer/install.py
       displayName: Run Certbot installer
     - script: |
-        python -m venv venv
-        venv\Scripts\python tools\pip_install.py -e certbot-ci
-      displayName: Install Certbot CI
-    - script: |
-        set CERTBOT_EXECUTABLE_PATH=%LOCALAPPDATA%\Certbot\bin\certbot.exe
-        venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
-      displayName: Run integration tests
+        set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
+        echo %PATH%
+        certbot --version
+      displayName: Check Certbot availability
