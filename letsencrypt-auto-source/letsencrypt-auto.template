@@ -353,7 +353,7 @@ elif [ -f /etc/redhat-release ]; then
     }
     EnablePython36SCL() {
       # Do nothing if Python 3.6 is already available
-      if ! python3.6 --version > /dev/null 2> /dev/null; then
+      if ! "$EXISTS" python3.6 > /dev/null 2> /dev/null; then
         # Do nothing if SCL Python 3.6 is not installed
         if [ -f /opt/rh/rh-python36/enable ]; then
           set +e
