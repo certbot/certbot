@@ -22,7 +22,6 @@ jobs:
     - script: python windows-installer/install.py
       displayName: Run Certbot installer
     - script: |
-        echo "##vso[task.prependpath]%LOCALAPPDATA%\Certbot\bin"
-      displayName: Update PATH
-    - script: certbot --version
+        set PATH="%ProgramFiles(x86)%\Certbot\bin;%PATH%"
+        certbot --version
       displayName: Check Certbot availability
