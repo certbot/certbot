@@ -8,6 +8,9 @@ import tempfile
 from certbot_integration_tests.utils import certbot_call
 
 
+LOGGER = logging.getLogger()
+
+
 class IntegrationTestsContext(object):
     """General fixture describing a certbot integration tests context"""
     def __init__(self, request):
@@ -55,7 +58,10 @@ class IntegrationTestsContext(object):
 
     def cleanup(self):
         """Cleanup the integration test context."""
-        shutil.rmtree(self.workspace)
+        try:
+            shutil.rmtree(self.workspace)
+        except OSError as e:
+            LOGGER.warning(str(e))
 
     def certbot(self, args, force_renew=True):
         """
