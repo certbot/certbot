@@ -17,7 +17,7 @@ def main():
 
     print(installer_path)
 
-    return_code = subprocess.check_call([installer_path, '/S', '/AllUsers'])
+    return_code = subprocess.check_call([installer_path, '/S'])
 
     if return_code:
         raise RuntimeError('An error occured during certbot installation.')
