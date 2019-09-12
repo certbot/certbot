@@ -25,4 +25,6 @@ jobs:
       displayName: Run tox
     - script: codecov -F windows
       condition: eq(variables['TOXENV'], 'py37-cover')
+      env:
+        CODECOV_TOKEN: $(codecov_token)
       displayName: Publish coverage
