@@ -1,0 +1,18 @@
+# Advanced pipeline for isolated checks and release purpose
+trigger:
+  - /^test-.*$/
+  - /^\d+\.\d+\.x$/
+pr:
+  - /^test-.*$/
+  - /^\d+\.\d+\.x$/
+# This pipeline is also nightly run on master
+schedules:
+  - cron: "0 0 * * *"
+    displayName: Nightly build
+    branches:
+      include:
+      - master
+
+jobs:
+  - template: templates/tests-suite.yml
+  - template: templates/installer-tests.yml
