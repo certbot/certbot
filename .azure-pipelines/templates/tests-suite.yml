@@ -23,7 +23,7 @@ jobs:
       displayName: Install dependencies
     - script: python -m tox
       displayName: Run tox
-    - script: codecov -F windows
+    - script: bash <(curl https://codecov.io/bash) -F windows
       condition: eq(variables['TOXENV'], 'py37-cover')
       env:
         CODECOV_TOKEN: $(codecov_token)
