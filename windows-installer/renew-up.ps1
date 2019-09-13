@@ -8,5 +8,5 @@ $action = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument '-NoProfil
 $delay = New-TimeSpan -Hours 12
 $triggerAM = New-ScheduledTaskTrigger -Daily -At 12am -RandomDelay $delay
 $triggerPM = New-ScheduledTaskTrigger -Daily -At 12pm -RandomDelay $delay
-$principal = New-ScheduledTaskPrincipal -UserId 'System' -LogonType S4U -RunLevel Highest
+$principal = New-ScheduledTaskPrincipal -UserId SYSTEM -LogonType ServiceAccount -RunLevel Highest
 Register-ScheduledTask -Action $action -Trigger $triggerAM,$triggerPM -TaskName $taskName -Description "Execute twice a day the 'certbot renew' command, to renew managed certificates if needed." -Principal $principal
