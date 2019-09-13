@@ -69,6 +69,10 @@ def _generate_pynsist_config(repo_path, build_path):
 
     pywin32_paths_file = os.path.join(build_path, 'pywin32_paths.py')
 
+    # Pywin32 uses non-standard folders to hold its packages. We need to instruct pynsist bootstrap
+    # explicitly to add them into sys.path. This is done with a custom "pywin32_paths.py" that is
+    # referred in the pynsist configuration as an "extra_preamble".
+    # Reference example: https://github.com/takluyver/pynsist/tree/master/examples/pywebview
     with open(pywin32_paths_file, 'w') as file_h:
         file_h.write('''\
 pkgdir = os.path.join(os.path.dirname(installdir), 'pkgs')
