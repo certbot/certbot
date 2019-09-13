@@ -165,7 +165,7 @@ class DualBlockNode(DualNodeBase):
         new_comment = DualCommentNode(primary=primary_new, secondary=secondary_new)
         return new_comment
 
-    def _create_matching_list(self, primary_list, secondary_list):  # pragma: no cover
+    def _create_matching_list(self, primary_list, secondary_list):
         """ Matches the list of primary_list to a list of secondary_list and
         returns a list of tuples. This is used to create results for find_
         methods. """
@@ -185,7 +185,7 @@ class DualBlockNode(DualNodeBase):
                 raise AssertionError("Could not find a matching node.")
         return matched
 
-    def find_blocks(self, name, exclude=True):  # pragma: no cover
+    def find_blocks(self, name, exclude=True):
         """
         Performs a search for BlockNodes using both implementations and does simple
         checks for results. This is built upon the assumption that unimplemented
@@ -193,9 +193,38 @@ class DualBlockNode(DualNodeBase):
         After the assertion, it creates a list of newly created DualBlockNode
         instances that encapsulate the pairs of returned BlockNode objects.
         """
-        pass
 
-    def find_directives(self, name, exclude=True):  # pragma: no cover
+        primary_blocks = self.primary.find_blocks(name, exclude)
+        secondary_blocks = self.secondary.find_blocks(name, exclude)
+
+        # The order of search results for Augeas implementation cannot be
+        # assured.
+
+        pass_primary = assertions.isPassNodeList(primary_blocks)
+        pass_secondary = assertions.isPassNodeList(secondary_blocks)
+        new_blocks = list()
+
+        if pass_primary and pass_secondary:
+            # Both unimplemented
+            new_blocks.append(DualBlockNode(primary=primary_blocks[0],
+                                            secondary=secondary_blocks[0]))
+        elif pass_primary:
+            for c in secondary_blocks:
+                new_blocks.append(DualBlockNode(primary=primary_blocks[0],
+                                                secondary=c))
+        elif pass_secondary:
+            for c in primary_blocks:
+                new_blocks.append(DualBlockNode(primary=c,
+                                                secondary=secondary_blocks[0]))
+        else:
+            assert len(primary_blocks) == len(secondary_blocks)
+            matches = self._create_matching_list(primary_blocks, secondary_blocks)
+            for p, s in matches:
+                new_blocks.append(DualBlockNode(primary=p, secondary=s))
+
+        return new_blocks
+
+    def find_directives(self, name, exclude=True):
         """
         Performs a search for DirectiveNodes using both implementations and
         checks the results. This is built upon the assumption that unimplemented
@@ -203,9 +232,38 @@ class DualBlockNode(DualNodeBase):
         After the assertion, it creates a list of newly created DualDirectiveNode
         instances that encapsulate the pairs of returned DirectiveNode objects.
         """
-        pass
 
-    def find_comments(self, comment, exact=False):  # pragma: no cover
+        primary_dirs = self.primary.find_directives(name, exclude)
+        secondary_dirs = self.secondary.find_directives(name, exclude)
+
+        # The order of search results for Augeas implementation cannot be
+        # assured.
+
+        pass_primary = assertions.isPassNodeList(primary_dirs)
+        pass_secondary = assertions.isPassNodeList(secondary_dirs)
+        new_dirs = list()
+
+        if pass_primary and pass_secondary:
+            # Both unimplemented
+            new_dirs.append(DualDirectiveNode(primary=primary_dirs[0],
+                                              secondary=secondary_dirs[0]))
+        elif pass_primary:
+            for c in secondary_dirs:
+                new_dirs.append(DualDirectiveNode(primary=primary_dirs[0],
+                                                  secondary=c))
+        elif pass_secondary:
+            for c in primary_dirs:
+                new_dirs.append(DualDirectiveNode(primary=c,
+                                                  secondary=secondary_dirs[0]))
+        else:
+            assert len(primary_dirs) == len(secondary_dirs)
+            matches = self._create_matching_list(primary_dirs, secondary_dirs)
+            for p, s in matches:
+                new_dirs.append(DualDirectiveNode(primary=p, secondary=s))
+
+        return new_dirs
+
+    def find_comments(self, comment, exact=False):
         """
         Performs a search for CommentNodes using both implementations and
         checks the results. This is built upon the assumption that unimplemented
@@ -213,9 +271,38 @@ class DualBlockNode(DualNodeBase):
         After the assertion, it creates a list of newly created DualCommentNode
         instances that encapsulate the pairs of returned CommentNode objects.
         """
-        pass
 
-    def delete_child(self, child):  # pragma: no cover
+        primary_com = self.primary.find_comments(comment, exact)
+        secondary_com = self.secondary.find_comments(comment, exact)
+
+        # The order of search results for Augeas implementation cannot be
+        # assured.
+
+        pass_primary = assertions.isPassNodeList(primary_com)
+        pass_secondary = assertions.isPassNodeList(secondary_com)
+        new_com = list()
+
+        if pass_primary and pass_secondary:
+            # Both unimplemented
+            new_com.append(DualCommentNode(primary=primary_com[0],
+                                           secondary=secondary_com[0]))
+        elif pass_primary:
+            for c in secondary_com:
+                new_com.append(DualCommentNode(primary=primary_com[0],
+                                               secondary=c))
+        elif pass_secondary:
+            for c in primary_com:
+                new_com.append(DualCommentNode(primary=c,
+                                               secondary=secondary_com[0]))
+        else:
+            assert len(primary_com) == len(secondary_com)
+            matches = self._create_matching_list(primary_com, secondary_com)
+            for p, s in matches:
+                new_com.append(DualCommentNode(primary=p, secondary=s))
+
+        return new_com
+
+    def delete_child(self, child):
         """Deletes a child from the ParserNode implementations. The actual
         ParserNode implementations are used here directly in order to be able
         to match a child to the list of children."""

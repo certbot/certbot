@@ -4,11 +4,12 @@ import unittest
 import mock
 
 from certbot_apache import assertions
+from certbot_apache import augeasparser
 from certbot_apache import dualparser
 from certbot_apache import interfaces
 
 
-class DualParserNodeTest(unittest.TestCase):
+class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """DualParserNode tests"""
 
     def setUp(self):  # pylint: disable=arguments-differ
@@ -163,3 +164,248 @@ class DualParserNodeTest(unittest.TestCase):
                                    interfaces.CommentNode))
         self.assertEqual(self.block.primary.children[0].ancestor,
                          self.block.primary)
+
+    def test_find_blocks(self):
+        dblks = self.block.find_blocks("block")
+        p_dblks = [d.primary for d in dblks]
+        s_dblks = [d.secondary for d in dblks]
+        p_blks = self.block.primary.find_blocks("block")
+        s_blks = self.block.secondary.find_blocks("block")
+        # Check that every block response is represented in the list of
+        # DualParserNode instances.
+        for p in p_dblks:
+            self.assertTrue(p in p_blks)
+        for s in s_dblks:
+            self.assertTrue(s in s_blks)
+
+    def test_find_directives(self):
+        ddirs = self.block.find_directives("directive")
+        p_ddirs = [d.primary for d in ddirs]
+        s_ddirs = [d.secondary for d in ddirs]
+        p_dirs = self.block.primary.find_directives("directive")
+        s_dirs = self.block.secondary.find_directives("directive")
+        # Check that every directive response is represented in the list of
+        # DualParserNode instances.
+        for p in p_ddirs:
+            self.assertTrue(p in p_dirs)
+        for s in s_ddirs:
+            self.assertTrue(s in s_dirs)
+
+    def test_find_comments(self):
+        dcoms = self.block.find_comments("comment")
+        p_dcoms = [d.primary for d in dcoms]
+        s_dcoms = [d.secondary for d in dcoms]
+        p_coms = self.block.primary.find_comments("comment")
+        s_coms = self.block.secondary.find_comments("comment")
+        # Check that every comment response is represented in the list of
+        # DualParserNode instances.
+        for p in p_dcoms:
+            self.assertTrue(p in p_coms)
+        for s in s_dcoms:
+            self.assertTrue(s in s_coms)
+
+    def test_find_blocks_first_passing(self):
+        youshallnotpass = [augeasparser.AugeasBlockNode(name="notpassing",
+                                                        ancestor=self.block,
+                                                        filepath="/path/to/whatever")]
+        youshallpass = [augeasparser.AugeasBlockNode(name=assertions.PASS,
+                                                     ancestor=self.block,
+                                                     filepath=assertions.PASS)]
+        find_blocks_primary = mock.MagicMock(return_value=youshallpass)
+        find_blocks_secondary = mock.MagicMock(return_value=youshallnotpass)
+        self.block.primary.find_blocks = find_blocks_primary
+        self.block.secondary.find_blocks = find_blocks_secondary
+
+        blocks = self.block.find_blocks("something")
+        for block in blocks:
+            try:
+                assertions.assertEqual(block.primary, block.secondary)
+            except AssertionError: # pragma: no cover
+                self.fail("Assertion should have passed")
+            self.assertTrue(assertions.isPassDirective(block.primary))
+            self.assertFalse(assertions.isPassDirective(block.secondary))
+
+    def test_find_blocks_second_passing(self):
+        youshallnotpass = [augeasparser.AugeasBlockNode(name="notpassing",
+                                                        ancestor=self.block,
+                                                        filepath="/path/to/whatever")]
+        youshallpass = [augeasparser.AugeasBlockNode(name=assertions.PASS,
+                                                     ancestor=self.block,
+                                                     filepath=assertions.PASS)]
+        find_blocks_primary = mock.MagicMock(return_value=youshallnotpass)
+        find_blocks_secondary = mock.MagicMock(return_value=youshallpass)
+        self.block.primary.find_blocks = find_blocks_primary
+        self.block.secondary.find_blocks = find_blocks_secondary
+
+        blocks = self.block.find_blocks("something")
+        for block in blocks:
+            try:
+                assertions.assertEqual(block.primary, block.secondary)
+            except AssertionError: # pragma: no cover
+                self.fail("Assertion should have passed")
+            self.assertFalse(assertions.isPassDirective(block.primary))
+            self.assertTrue(assertions.isPassDirective(block.secondary))
+
+    def test_find_dirs_first_passing(self):
+        notpassing = [augeasparser.AugeasDirectiveNode(name="notpassing",
+                                                       ancestor=self.block,
+                                                       filepath="/path/to/whatever")]
+        passing = [augeasparser.AugeasDirectiveNode(name=assertions.PASS,
+                                                    ancestor=self.block,
+                                                    filepath=assertions.PASS)]
+        find_dirs_primary = mock.MagicMock(return_value=passing)
+        find_dirs_secondary = mock.MagicMock(return_value=notpassing)
+        self.block.primary.find_directives = find_dirs_primary
+        self.block.secondary.find_directives = find_dirs_secondary
+
+        directives = self.block.find_directives("something")
+        for directive in directives:
+            try:
+                assertions.assertEqual(directive.primary, directive.secondary)
+            except AssertionError: # pragma: no cover
+                self.fail("Assertion should have passed")
+            self.assertTrue(assertions.isPassDirective(directive.primary))
+            self.assertFalse(assertions.isPassDirective(directive.secondary))
+
+    def test_find_dirs_second_passing(self):
+        notpassing = [augeasparser.AugeasDirectiveNode(name="notpassing",
+                                                       ancestor=self.block,
+                                                       filepath="/path/to/whatever")]
+        passing = [augeasparser.AugeasDirectiveNode(name=assertions.PASS,
+                                                    ancestor=self.block,
+                                                    filepath=assertions.PASS)]
+        find_dirs_primary = mock.MagicMock(return_value=notpassing)
+        find_dirs_secondary = mock.MagicMock(return_value=passing)
+        self.block.primary.find_directives = find_dirs_primary
+        self.block.secondary.find_directives = find_dirs_secondary
+
+        directives = self.block.find_directives("something")
+        for directive in directives:
+            try:
+                assertions.assertEqual(directive.primary, directive.secondary)
+            except AssertionError: # pragma: no cover
+                self.fail("Assertion should have passed")
+            self.assertFalse(assertions.isPassDirective(directive.primary))
+            self.assertTrue(assertions.isPassDirective(directive.secondary))
+
+    def test_find_coms_first_passing(self):
+        notpassing = [augeasparser.AugeasCommentNode(comment="notpassing",
+                                                     ancestor=self.block,
+                                                     filepath="/path/to/whatever")]
+        passing = [augeasparser.AugeasCommentNode(comment=assertions.PASS,
+                                                  ancestor=self.block,
+                                                  filepath=assertions.PASS)]
+        find_coms_primary = mock.MagicMock(return_value=passing)
+        find_coms_secondary = mock.MagicMock(return_value=notpassing)
+        self.block.primary.find_comments = find_coms_primary
+        self.block.secondary.find_comments = find_coms_secondary
+
+        comments = self.block.find_comments("something")
+        for comment in comments:
+            try:
+                assertions.assertEqual(comment.primary, comment.secondary)
+            except AssertionError: # pragma: no cover
+                self.fail("Assertion should have passed")
+            self.assertTrue(assertions.isPassComment(comment.primary))
+            self.assertFalse(assertions.isPassComment(comment.secondary))
+
+    def test_find_coms_second_passing(self):
+        notpassing = [augeasparser.AugeasCommentNode(comment="notpassing",
+                                                     ancestor=self.block,
+                                                     filepath="/path/to/whatever")]
+        passing = [augeasparser.AugeasCommentNode(comment=assertions.PASS,
+                                                  ancestor=self.block,
+                                                  filepath=assertions.PASS)]
+        find_coms_primary = mock.MagicMock(return_value=notpassing)
+        find_coms_secondary = mock.MagicMock(return_value=passing)
+        self.block.primary.find_comments = find_coms_primary
+        self.block.secondary.find_comments = find_coms_secondary
+
+        comments = self.block.find_comments("something")
+        for comment in comments:
+            try:
+                assertions.assertEqual(comment.primary, comment.secondary)
+            except AssertionError: # pragma: no cover
+                self.fail("Assertion should have passed")
+            self.assertFalse(assertions.isPassComment(comment.primary))
+            self.assertTrue(assertions.isPassComment(comment.secondary))
+
+    def test_find_blocks_no_pass_equal(self):
+        notpassing1 = [augeasparser.AugeasBlockNode(name="notpassing",
+                                                    ancestor=self.block,
+                                                    filepath="/path/to/whatever")]
+        notpassing2 = [augeasparser.AugeasBlockNode(name="notpassing",
+                                                    ancestor=self.block,
+                                                    filepath="/path/to/whatever")]
+        find_blocks_primary = mock.MagicMock(return_value=notpassing1)
+        find_blocks_secondary = mock.MagicMock(return_value=notpassing2)
+        self.block.primary.find_blocks = find_blocks_primary
+        self.block.secondary.find_blocks = find_blocks_secondary
+
+        blocks = self.block.find_blocks("anything")
+        for block in blocks:
+            self.assertEqual(block.primary, block.secondary)
+            self.assertTrue(block.primary is not block.secondary)
+
+    def test_find_dirs_no_pass_equal(self):
+        notpassing1 = [augeasparser.AugeasDirectiveNode(name="notpassing",
+                                                        ancestor=self.block,
+                                                        filepath="/path/to/whatever")]
+        notpassing2 = [augeasparser.AugeasDirectiveNode(name="notpassing",
+                                                        ancestor=self.block,
+                                                        filepath="/path/to/whatever")]
+        find_dirs_primary = mock.MagicMock(return_value=notpassing1)
+        find_dirs_secondary = mock.MagicMock(return_value=notpassing2)
+        self.block.primary.find_directives = find_dirs_primary
+        self.block.secondary.find_directives = find_dirs_secondary
+
+        directives = self.block.find_directives("anything")
+        for directive in directives:
+            self.assertEqual(directive.primary, directive.secondary)
+            self.assertTrue(directive.primary is not directive.secondary)
+
+    def test_find_comments_no_pass_equal(self):
+        notpassing1 = [augeasparser.AugeasCommentNode(comment="notpassing",
+                                                      ancestor=self.block,
+                                                      filepath="/path/to/whatever")]
+        notpassing2 = [augeasparser.AugeasCommentNode(comment="notpassing",
+                                                      ancestor=self.block,
+                                                      filepath="/path/to/whatever")]
+        find_coms_primary = mock.MagicMock(return_value=notpassing1)
+        find_coms_secondary = mock.MagicMock(return_value=notpassing2)
+        self.block.primary.find_comments = find_coms_primary
+        self.block.secondary.find_comments = find_coms_secondary
+
+        comments = self.block.find_comments("anything")
+        for comment in comments:
+            self.assertEqual(comment.primary, comment.secondary)
+            self.assertTrue(comment.primary is not comment.secondary)
+
+    def test_find_blocks_no_pass_notequal(self):
+        notpassing1 = [augeasparser.AugeasBlockNode(name="notpassing",
+                                                    ancestor=self.block,
+                                                    filepath="/path/to/whatever")]
+        notpassing2 = [augeasparser.AugeasBlockNode(name="different",
+                                                    ancestor=self.block,
+                                                    filepath="/path/to/whatever")]
+        find_blocks_primary = mock.MagicMock(return_value=notpassing1)
+        find_blocks_secondary = mock.MagicMock(return_value=notpassing2)
+        self.block.primary.find_blocks = find_blocks_primary
+        self.block.secondary.find_blocks = find_blocks_secondary
+
+        with self.assertRaises(AssertionError):
+            _ = self.block.find_blocks("anything")
+
+    def test_parsernode_notequal(self):
+        ne_block = augeasparser.AugeasBlockNode(name="different",
+                                                ancestor=self.block,
+                                                filepath="/path/to/whatever")
+        ne_directive = augeasparser.AugeasDirectiveNode(name="different",
+                                                        ancestor=self.block,
+                                                        filepath="/path/to/whatever")
+        ne_comment = augeasparser.AugeasCommentNode(comment="different",
+                                                    ancestor=self.block,
+                                                    filepath="/path/to/whatever")
+        self.assertFalse(self.block == ne_block)
+        self.assertFalse(self.directive == ne_directive)
+        self.assertFalse(self.comment == ne_comment)

@@ -11,8 +11,7 @@ class AugeasParserNode(interfaces.ParserNode):
         ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
         super(AugeasParserNode, self).__init__(**kwargs)
         self.ancestor = ancestor
-        # self.filepath = filepath
-        self.filepath = assertions.PASS
+        self.filepath = filepath
         self.dirty = dirty
         self.metadata = metadata
 
@@ -27,9 +26,9 @@ class AugeasCommentNode(AugeasParserNode):
         comment, kwargs = util.commentnode_kwargs(kwargs)  # pylint: disable=unused-variable
         super(AugeasCommentNode, self).__init__(**kwargs)
         # self.comment = comment
-        self.comment = assertions.PASS
+        self.comment = comment
 
-    def __eq__(self, other): # pragma: no cover
+    def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.comment == other.comment and
                     self.filepath == other.filepath and
@@ -49,7 +48,7 @@ class AugeasDirectiveNode(AugeasParserNode):
         self.parameters = parameters
         self.enabled = enabled
 
-    def __eq__(self, other): # pragma: no cover
+    def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.name == other.name and
                     self.filepath == other.filepath and
@@ -72,7 +71,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         super(AugeasBlockNode, self).__init__(**kwargs)
         self.children = ()
 
-    def __eq__(self, other): # pragma: no cover
+    def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.name == other.name and
                     self.filepath == other.filepath and
@@ -108,17 +107,23 @@ class AugeasBlockNode(AugeasDirectiveNode):
         self.children += (new_comment,)
         return new_comment
 
-    def find_blocks(self, name, exclude=True): # pragma: no cover
+    def find_blocks(self, name, exclude=True): # pylint: disable=unused-argument
         """Recursive search of BlockNodes from the sequence of children"""
-        pass
+        return [AugeasBlockNode(name=assertions.PASS,
+                                ancestor=self,
+                                filepath=assertions.PASS)]
 
-    def find_directives(self, name, exclude=True): # pragma: no cover
+    def find_directives(self, name, exclude=True): # pylint: disable=unused-argument
         """Recursive search of DirectiveNodes from the sequence of children"""
-        pass
+        return [AugeasDirectiveNode(name=assertions.PASS,
+                                    ancestor=self,
+                                    filepath=assertions.PASS)]
 
-    def find_comments(self, comment, exact=False): # pragma: no cover
+    def find_comments(self, comment, exact=False): # pylint: disable=unused-argument
         """Recursive search of DirectiveNodes from the sequence of children"""
-        pass
+        return [AugeasCommentNode(comment=assertions.PASS,
+                                  ancestor=self,
+                                  filepath=assertions.PASS)]
 
     def delete_child(self, child):  # pragma: no cover
         """Deletes a ParserNode from the sequence of children"""

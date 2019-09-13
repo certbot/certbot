@@ -10,6 +10,10 @@ def assertEqual(first, second):
 
     if isinstance(first, interfaces.CommentNode):
         assertEqualComment(first, second)
+    elif isinstance(first, interfaces.BlockNode):
+        # this check needs to be first, as BlockNodes are also instances of
+        # DirectiveNode
+        assertEqualBlock(first, second)
     elif isinstance(first, interfaces.DirectiveNode):
         assertEqualDirective(first, second)
 
@@ -51,6 +55,17 @@ def assertEqualDirective(first, second):
     assert isinstance(second, interfaces.DirectiveNode)
     _assertEqualDirectiveComponents(first, second)
 
+def assertEqualBlock(first, second):
+    """ Equality assertion for BlockNode """
+
+    # first was checked in the assertEqual method
+    assert isinstance(first, interfaces.BlockNode)
+    assert isinstance(second, interfaces.BlockNode)
+    _assertEqualDirectiveComponents(first, second)
+    # Children cannot be asserted, because Augeas implementation will not
+    # prepopulate the sequence of children.
+    # assert len(first.children) == len(second.children)
+
 def isPass(first, second): # pragma: no cover
     """ Checks if either first or second holds the assertion pass value """
 
@@ -63,6 +78,46 @@ def isPass(first, second): # pragma: no cover
     if PASS in [first, second]:
         return True
     return False
+
+def isPassDirective(block):
+    """ Checks if BlockNode or DirectiveNode should pass the assertion """
+
+    if block.name == PASS:
+        return True
+    if PASS in block.parameters: # pragma: no cover
+        return True
+    if block.filepath == PASS: # pragma: no cover
+        return True
+    return False
+
+def isPassComment(comment):
+    """ Checks if CommentNode should pass the assertion """
+
+    if comment.comment == PASS:
+        return True
+    if comment.filepath == PASS: # pragma: no cover
+        return True
+    return False
+
+def isPassNodeList(nodelist): # pragma: no cover
+    """ Checks if a ParserNode in the nodelist should pass the assertion,
+    this function is used for results of find_* methods. Unimplemented find_*
+    methods should return a sequence containing a single ParserNode instance
+    with assertion pass string."""
+
+    try:
+        node = nodelist[0]
+    except IndexError:
+        node = None
+
+    if not node: # pragma: no cover
+        return False
+
+    if isinstance(node, interfaces.BlockNode):
+        return isPassDirective(node)
+    if isinstance(node, interfaces.DirectiveNode):
+        return isPassDirective(node)
+    return isPassComment(node)
 
 def assertSimple(first, second):
     """ Simple assertion """
