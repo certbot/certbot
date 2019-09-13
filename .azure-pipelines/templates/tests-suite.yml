@@ -19,7 +19,7 @@ jobs:
       inputs:
         versionSpec: $(PYTHON_VERSION)
         addToPath: true
-    - script: python tools/pip_install.py -U tox
+    - script: python tools/pip_install.py -U tox coverage
       displayName: Install dependencies
     - script: python -m tox
       displayName: Run tox
