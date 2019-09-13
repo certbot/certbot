@@ -10,6 +10,8 @@ jobs:
           addToPath: true
       - script: python windows-installer/construct.py
         displayName: Build Certbot installer
+      - publish: $(System.DefaultWorkingDirectory)/windows-installer
+        artifact: WindowsInstaller
       - script: python windows-installer/install.py
         displayName: Install Certbot
       - script: |
