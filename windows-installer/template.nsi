@@ -19,7 +19,7 @@ RequestExecutionLevel admin
 
 ; Marker file to tell the uninstaller that it's a user installation
 !define USER_INSTALL_MARKER _user_install_marker
-
+ 
 SetCompressor lzma
 
 !define MULTIUSER_EXECUTIONLEVEL Highest
@@ -33,7 +33,7 @@ SetCompressor lzma
 !include MultiUser.nsh
 
 [% block modernui %]
-; Modern UI installer stuff
+; Modern UI installer stuff 
 !include "MUI2.nsh"
 !define MUI_ABORTWARNING
 !define MUI_ICON "[[icon]]"
@@ -86,14 +86,14 @@ Section "!${PRODUCT_NAME}" sec_app
       File "[[ file ]]"
     [% endfor %]
   [% endfor %]
-
+  
   ; Install directories
   [% for dir, destination in ib.install_dirs %]
     SetOutPath "[[ pjoin(destination, dir) ]]"
     File /r "[[dir]]\*.*"
   [% endfor %]
   [% endblock install_files %]
-
+  
   [% block install_shortcuts %]
   ; Install shortcuts
   ; The output path becomes the working directory for shortcuts
@@ -129,7 +129,7 @@ Section "!${PRODUCT_NAME}" sec_app
     AddedSysPath:
   [% endif %]
   [% endblock install_commands %]
-
+  
   ; Byte-compile Python files.
   DetailPrint "Byte-compiling Python modules..."
   nsExec::ExecToLog '[[ python ]] -m compileall -q "$INSTDIR\pkgs"'
@@ -185,7 +185,7 @@ Section "Uninstall"
   ; Remove ourselves from %PATH%
   [% block uninstall_commands %]
   [% if has_commands %]
-    nsExec::ExecToLog '[[ python ]] -Es ".$INSTDIR\_system_path.py" remove "$INSTDIR\bin"'
+    nsExec::ExecToLog '[[ python ]] -Es "$INSTDIR\_system_path.py" remove "$INSTDIR\bin"'
   [% endif %]
   [% endblock uninstall_commands %]
 
@@ -226,7 +226,7 @@ Function .onMouseOverSection
     [% block mouseover_messages %]
     StrCmp $0 ${sec_app} "" +2
       SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
-
+    
     [% endblock mouseover_messages %]
 FunctionEnd
 
