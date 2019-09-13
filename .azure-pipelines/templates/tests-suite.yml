@@ -19,11 +19,11 @@ jobs:
       inputs:
         versionSpec: $(PYTHON_VERSION)
         addToPath: true
-    - script: python tools/pip_install.py -U tox codecov
+    - script: python tools/pip_install.py -U tox
       displayName: Install dependencies
     - script: python -m tox
       displayName: Run tox
-    - script: bash <(curl https://codecov.io/bash) -F windows
+    - bash: curl -s https://codecov.io/bash | bash /dev/stdin -F windows
       condition: eq(variables['TOXENV'], 'py37-cover')
       env:
         CODECOV_TOKEN: $(codecov_token)
