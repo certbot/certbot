@@ -119,7 +119,7 @@ def isPassNodeList(nodelist): # pragma: no cover
         return isPassDirective(node)
     return isPassComment(node)
 
-def assertSimple(first, second):
+def assertEqualSimple(first, second):
     """ Simple assertion """
     if not isPass(first, second):
         assert first == second
