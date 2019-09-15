@@ -64,7 +64,7 @@ def isPass(first, second): # pragma: no cover
         return True
     return False
 
-def assertSimple(first, second):
+def assertEqualSimple(first, second):
     """ Simple assertion """
     if not isPass(first, second):
         assert first == second

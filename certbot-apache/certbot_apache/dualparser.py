@@ -1,4 +1,4 @@
-""" Tests for ParserNode interface """
+""" Dual ParserNode implementation """
 from certbot_apache import assertions
 from certbot_apache import augeasparser
 
@@ -17,8 +17,7 @@ class DualNodeBase(object):
         """ Attribute value assertion """
         firstval = getattr(self.primary, aname)
         secondval = getattr(self.secondary, aname)
-        if not assertions.isPass(firstval, secondval):
-            assertions.assertSimple(firstval, secondval)
+        assertions.assertEqualSimple(firstval, secondval)
         return firstval
 
 
