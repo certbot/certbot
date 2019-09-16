@@ -30,9 +30,6 @@ class Authenticator(dns_common.DNSAuthenticator):
     credentials = None
     _client = None
 
-    def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
-
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
         super(Authenticator, cls).add_parser_arguments(
