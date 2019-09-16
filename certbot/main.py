@@ -5,6 +5,7 @@ from __future__ import print_function
 import functools
 import logging.handlers
 import sys
+import warnings
 
 import configobj
 import josepy as jose
@@ -1367,6 +1368,10 @@ def main(cli_args=None):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:
             raise
+
+    if sys.version_info[:2] = (3, 4):
+        logger.warning("Python 3.4 support will be dropped in the next release "
+                    "of Certbot - please upgrade your Python version.")
 
     set_displayer(config)
 
