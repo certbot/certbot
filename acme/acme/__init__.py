@@ -8,13 +8,6 @@ This module is an implementation of the `ACME protocol`_.
 import sys
 import warnings
 
-if sys.version_info[:2] == (3, 4):
-    warnings.warn(
-            "Python 3.4 support will be dropped in the next release of "
-            "acme. Please upgrade your Python version.",
-            PendingDeprecationWarning,
-    ) # pragm: no cover
-
 # This code exists to keep backwards compatibility with people using acme.jose
 # before it became the standalone josepy package.
 #
@@ -55,3 +48,10 @@ class _TLSSNI01DeprecationModule(object):
 
     def __dir__(self):  # pragma: no cover
         return ['_module'] + dir(self._module)
+
+if sys.version_info[:2] == (3, 4):
+    warnings.warn(
+            "Python 3.4 support will be dropped in the next release of "
+            "acme. Please upgrade your Python version.",
+            PendingDeprecationWarning,
+    ) # pragma: no cover
