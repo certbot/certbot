@@ -224,6 +224,6 @@ class DualBlockNode(DualNodeBase):
         match """
         primary_files = self.primary.unsaved_files()
         secondary_files = self.secondary.unsaved_files()
-        assertions.assertSimple(primary_files, secondary_files)
+        assertions.assertEqualSimple(primary_files, secondary_files)
 
         return primary_files
