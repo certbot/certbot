@@ -256,8 +256,10 @@ DeprecationBootstrap() {
   fi
 }
 
-MIN_PYTHON_VERSION="2.7"
-MIN_PYVER=$(echo "$MIN_PYTHON_VERSION" | sed 's/\.//')
+MIN_PYTHON_2_VERSION="2.7"
+MIN_PYVER2=$(echo "$MIN_PYTHON_2_VERSION" | sed 's/\.//')
+MIN_PYTHON_3_VERSION="3.5"
+MIN_PYVER3=$(echo "$MIN_PYTHON_3_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
 DeterminePythonVersion() {
@@ -285,7 +287,15 @@ DeterminePythonVersion() {
     fi
   fi
 
-  PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+  if [ "$USE_PYTHON_3" = 1 ]; then
+    MIN_PYVER=$MIN_PYVER3
+    MIN_PYTHON_VERSION=$MIN_PYTHON_3_VERSION
+  else
+    MIN_PYVER=$MIN_PYVER2
+    MIN_PYTHON_VERSION=$MIN_PYTHON_2_VERSION
+  fi
+
+  PYVER=$("$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//')
   if [ "$PYVER" -lt "$MIN_PYVER" ]; then
     if [ "$1" != "NOCRASH" ]; then
       error "You have an ancient version of Python entombed in your operating system..."
@@ -350,17 +360,6 @@ elif [ -f /etc/redhat-release ]; then
     Bootstrap() {
       BootstrapMessage "Legacy Red Hat-based OSes that will use Python3"
       BootstrapRpmPython3Legacy
-    }
-    EnablePython36SCL() {
-      # Do nothing if Python 3.6 is already available
-      if ! "$EXISTS" python3.6 > /dev/null 2> /dev/null; then
-        # Do nothing if SCL Python 3.6 is not installed
-        if [ -f /opt/rh/rh-python36/enable ]; then
-          set +e
-          . scl_source enable rh-python36
-          set -e
-        fi
-      fi
     }
     USE_PYTHON_3=1
     BOOTSTRAP_VERSION="BootstrapRpmPython3Legacy $BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION"
