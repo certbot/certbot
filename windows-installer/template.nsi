@@ -3,11 +3,6 @@
 ; If pynsist is upgraded, this template must be updated if necessary using the new built-in one.
 ; Original file can be found here: https://github.com/takluyver/pynsist/blob/2.4/nsist/pyapp.nsi
 
-; CERTBOT CUSTOM BEGIN
-; Administrator privileges are required to insert a new task in Windows Scheduler.
-RequestExecutionLevel admin
-; CERTBOT CUSTOM END
-
 !define PRODUCT_NAME "[[ib.appname]]"
 !define PRODUCT_VERSION "[[ib.version]]"
 !define PY_VERSION "[[ib.py_version]]"
@@ -22,8 +17,12 @@ RequestExecutionLevel admin
  
 SetCompressor lzma
 
-!define MULTIUSER_EXECUTIONLEVEL Highest
-!define MULTIUSER_INSTALLMODE_DEFAULT_CURRENTUSER
+; CERTBOT CUSTOM BEGIN
+; Administrator privileges are required to insert a new task in Windows Scheduler.
+!define MULTIUSER_EXECUTIONLEVEL Admin
+;!define MULTIUSER_EXECUTIONLEVEL Highest
+;!define MULTIUSER_INSTALLMODE_DEFAULT_CURRENTUSER
+; CERTBOT CUSTOM END
 !define MULTIUSER_MUI
 !define MULTIUSER_INSTALLMODE_COMMANDLINE
 !define MULTIUSER_INSTALLMODE_INSTDIR "[[ib.appname]]"
@@ -156,7 +155,7 @@ Section "!${PRODUCT_NAME}" sec_app
 
   ; CERTBOT CUSTOM BEGIN
   DetailPrint "Setting up certbot renew scheduled task"
-  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\renew-up.ps1"'
+  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\renew-up.ps1" $MultiUser.InstallMode'
   ; CERTBOT CUSTOM END
 
   ; Check if we need to reboot
