@@ -42,14 +42,13 @@ class DualCommentNode(DualNodeBase):
         primary = kwargs.pop("primary")
         secondary = kwargs.pop("secondary")
 
-        if not primary:
-            self.primary = augeasparser.AugeasCommentNode(**kwargs)
-        else:
+        if primary or secondary:
+            assert primary and secondary
             self.primary = primary
-        if not secondary:
-            self.secondary = augeasparser.AugeasCommentNode(**kwargs)
-        else:
             self.secondary = secondary
+        else:
+            self.primary = augeasparser.AugeasCommentNode(**kwargs)
+            self.secondary = augeasparser.AugeasCommentNode(**kwargs)
 
         assertions.assertEqual(self.primary, self.secondary)
 
@@ -77,15 +76,13 @@ class DualDirectiveNode(DualNodeBase):
         primary = kwargs.pop("primary")
         secondary = kwargs.pop("secondary")
 
-        if not primary:
-            self.primary = augeasparser.AugeasDirectiveNode(**kwargs)
-        else:
+        if primary or secondary:
+            assert primary and secondary
             self.primary = primary
-
-        if not secondary:
-            self.secondary = augeasparser.AugeasDirectiveNode(**kwargs)
-        else:
             self.secondary = secondary
+        else:
+            self.primary = augeasparser.AugeasDirectiveNode(**kwargs)
+            self.secondary = augeasparser.AugeasDirectiveNode(**kwargs)
 
         assertions.assertEqual(self.primary, self.secondary)
 

@@ -25,38 +25,28 @@ class DualParserNodeTest(unittest.TestCase):
                                                   ancestor=self.block,
                                                   filepath="/tmp/something")
 
-    def test_create_with_primary(self):
+    def test_create_with_precreated(self):
         cnode = dualparser.DualCommentNode(comment="comment",
                                            ancestor=self.block,
                                            filepath="/tmp/something",
-                                           primary=self.comment.secondary)
-        dnode = dualparser.DualDirectiveNode(name="directive",
-                                             ancestor=self.block,
-                                             filepath="/tmp/something",
-                                             primary=self.directive.secondary)
-        bnode = dualparser.DualBlockNode(name="block",
-                                         ancestor=self.block,
-                                         filepath="/tmp/something",
-                                         primary=self.block.secondary)
-        self.assertTrue(cnode.primary is self.comment.secondary)
-        self.assertTrue(dnode.primary is self.directive.secondary)
-        self.assertTrue(bnode.primary is self.block.secondary)
-
-    def test_create_with_secondary(self):
-        cnode = dualparser.DualCommentNode(comment="comment",
-                                           ancestor=self.block,
-                                           filepath="/tmp/something",
+                                           primary=self.comment.secondary,
                                            secondary=self.comment.primary)
         dnode = dualparser.DualDirectiveNode(name="directive",
                                              ancestor=self.block,
                                              filepath="/tmp/something",
+                                             primary=self.directive.secondary,
                                              secondary=self.directive.primary)
         bnode = dualparser.DualBlockNode(name="block",
                                          ancestor=self.block,
                                          filepath="/tmp/something",
+                                         primary=self.block.secondary,
                                          secondary=self.block.primary)
+        # Switched around
+        self.assertTrue(cnode.primary is self.comment.secondary)
         self.assertTrue(cnode.secondary is self.comment.primary)
+        self.assertTrue(dnode.primary is self.directive.secondary)
         self.assertTrue(dnode.secondary is self.directive.primary)
+        self.assertTrue(bnode.primary is self.block.secondary)
         self.assertTrue(bnode.secondary is self.block.primary)
 
     def test_set_params(self):
