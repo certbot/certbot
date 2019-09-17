@@ -198,11 +198,13 @@ matrix:
       env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
       services: docker
+      dist: xenial
       <<: *extended-test-suite
     - python: "3.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
       services: docker
+      dist: xenial
       <<: *extended-test-suite
     - python: "3.8-dev"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
