@@ -1,4 +1,5 @@
 language: python
+dist: xenial
 
 cache:
     directories:
@@ -131,21 +132,37 @@ matrix:
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-certbot-oldest
+      # Ubuntu Trusty or older must be used because the oldest version of
+      # cryptography we support cannot be compiled against the version of
+      # OpenSSL in Xenial or newer.
+      dist: trusty
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration-certbot-oldest
+      # Ubuntu Trusty or older must be used because the oldest version of
+      # cryptography we support cannot be compiled against the version of
+      # OpenSSL in Xenial or newer.
+      dist: trusty
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-nginx-oldest
+      # Ubuntu Trusty or older must be used because the oldest version of
+      # cryptography we support cannot be compiled against the version of
+      # OpenSSL in Xenial or newer.
+      dist: trusty
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration-nginx-oldest
+      # Ubuntu Trusty or older must be used because the oldest version of
+      # cryptography we support cannot be compiled against the version of
+      # OpenSSL in Xenial or newer.
+      dist: trusty
       sudo: required
       services: docker
       <<: *extended-test-suite
