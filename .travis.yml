@@ -70,14 +70,12 @@ matrix:
     - python: "3.8-dev"
       env: TOXENV=py38
       <<: *not-on-master
-    - sudo: required
-      env: TOXENV=apache_compat
+    - env: TOXENV=apache_compat
       services: docker
       before_install:
       addons:
       <<: *not-on-master
-    - sudo: required
-      env: TOXENV=le_auto_xenial
+    - env: TOXENV=le_auto_xenial
       services: docker
       <<: *not-on-master
     - python: "2.7"
@@ -88,8 +86,7 @@ matrix:
       <<: *not-on-master
 
     # Extended test suite on cron jobs and pushes to tested branches other than master
-    - sudo: required
-      env: TOXENV=nginx_compat
+    - env: TOXENV=nginx_compat
       services: docker
       before_install:
       addons:
@@ -121,32 +118,26 @@ matrix:
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-certbot-oldest
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration-certbot-oldest
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-nginx-oldest
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration-nginx-oldest
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.4"
@@ -166,42 +157,34 @@ matrix:
       <<: *extended-test-suite
     - python: "3.4"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.4"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.5"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.5"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.6"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.6"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.8-dev"
@@ -210,16 +193,13 @@ matrix:
     - python: "3.8-dev"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
       <<: *extended-test-suite
-    - sudo: required
-      env: TOXENV=le_auto_jessie
+    - env: TOXENV=le_auto_jessie
       services: docker
       <<: *extended-test-suite
-    - sudo: required
-      env: TOXENV=le_auto_centos6
+    - env: TOXENV=le_auto_centos6
       services: docker
       <<: *extended-test-suite
-    - sudo: required
-      env: TOXENV=docker_dev
+    - env: TOXENV=docker_dev
       services: docker
       addons:
         apt:
@@ -250,9 +230,6 @@ matrix:
             - augeas
             - python3
       <<: *extended-test-suite
-
-# container-based infrastructure
-sudo: false
 
 addons:
   apt:
