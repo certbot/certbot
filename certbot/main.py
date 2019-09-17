@@ -5,7 +5,6 @@ from __future__ import print_function
 import functools
 import logging.handlers
 import sys
-import warnings
 
 import configobj
 import josepy as jose
