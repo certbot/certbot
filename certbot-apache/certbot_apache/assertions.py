@@ -21,7 +21,7 @@ def assertEqual(first, second):
     # because filepath is variable of the base ParserNode interface, and
     # unless the implementation is actually done, we cannot assume getting
     # correct results from boolean assertion for dirty
-    if not isPass(first.filepath, second.filepath):
+    if not isPass(first.filepath) and not isPass(second.filepath):
         assert first.dirty == second.dirty
         # We might want to disable this later if testing with two separate
         # (but identical) directory structures.
@@ -33,7 +33,7 @@ def assertEqualComment(first, second): # pragma: no cover
     assert isinstance(first, interfaces.CommentNode)
     assert isinstance(second, interfaces.CommentNode)
 
-    if not isPass(first.comment, second.comment):
+    if not isPass(first.comment) and not isPass(second.comment):
         assert first.comment == second.comment
 
 def _assertEqualDirectiveComponents(first, second): # pragma: no cover
@@ -42,10 +42,10 @@ def _assertEqualDirectiveComponents(first, second): # pragma: no cover
     # Enabled value cannot be asserted, because Augeas implementation
     # is unable to figure that out.
     # assert first.enabled == second.enabled
-    if not isPass(first.name, second.name):
+    if not isPass(first.name) and not isPass(second.name):
         assert first.name == second.name
 
-    if not isPass(first.parameters, second.parameters):
+    if not isPass(first.parameters) and not isPass(second.parameters):
         assert first.parameters == second.parameters
 
 def assertEqualDirective(first, second):
@@ -66,16 +66,12 @@ def assertEqualBlock(first, second):
     # prepopulate the sequence of children.
     # assert len(first.children) == len(second.children)
 
-def isPass(first, second): # pragma: no cover
-    """ Checks if either first or second holds the assertion pass value """
-
-    if isinstance(first, (tuple, list)):
-        if PASS in first:
+def isPass(value): # pragma: no cover
+    """Checks if the value is set to PASS"""
+    if isinstance(value, (tuple, list)):
+        if PASS in value:
             return True
-    if isinstance(second, (tuple, list)):
-        if PASS in second:
-            return True
-    if PASS in [first, second]:
+    if PASS in value:
         return True
     return False
 
@@ -121,5 +117,5 @@ def isPassNodeList(nodelist): # pragma: no cover
 
 def assertEqualSimple(first, second):
     """ Simple assertion """
-    if not isPass(first, second):
+    if not isPass(first) and not isPass(second):
         assert first == second
