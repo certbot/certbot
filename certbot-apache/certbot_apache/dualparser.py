@@ -94,7 +94,6 @@ class DualDirectiveNode(DualNodeBase):
         self.secondary.set_parameters(parameters)
         assertions.assertEqual(self.primary, self.secondary)
 
-
 class DualBlockNode(DualNodeBase):
     """ Dual parser implementation of BlockNode interface """
 
