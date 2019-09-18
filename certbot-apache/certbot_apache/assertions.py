@@ -53,12 +53,7 @@ def assertEqualDirective(first, second):
 
 def isPass(value): # pragma: no cover
     """Checks if the value is set to PASS"""
-    if isinstance(value, (tuple, list)):
-        if PASS in value:
-            return True
-    if PASS in value:
-        return True
-    return False
+    return PASS in value
 
 def assertEqualSimple(first, second):
     """ Simple assertion """
