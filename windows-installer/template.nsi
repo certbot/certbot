@@ -19,12 +19,13 @@ SetCompressor lzma
 
 ; CERTBOT CUSTOM BEGIN
 ; Administrator privileges are required to insert a new task in Windows Scheduler.
+; Also comment out some options to disable ability to choose AllUsers/CurrentUser install mode.
 !define MULTIUSER_EXECUTIONLEVEL Admin
 ;!define MULTIUSER_EXECUTIONLEVEL Highest
 ;!define MULTIUSER_INSTALLMODE_DEFAULT_CURRENTUSER
+;!define MULTIUSER_MUI
+;!define MULTIUSER_INSTALLMODE_COMMANDLINE
 ; CERTBOT CUSTOM END
-!define MULTIUSER_MUI
-!define MULTIUSER_INSTALLMODE_COMMANDLINE
 !define MULTIUSER_INSTALLMODE_INSTDIR "[[ib.appname]]"
 [% if ib.py_bitness == 64 %]
 !define MULTIUSER_INSTALLMODE_FUNCTION correct_prog_files
@@ -44,7 +45,10 @@ SetCompressor lzma
 [% if license_file %]
 !insertmacro MUI_PAGE_LICENSE [[license_file]]
 [% endif %]
-!insertmacro MULTIUSER_PAGE_INSTALLMODE
+; CERTBOT CUSTOM BEGIN
+; Disable the installation mode page (AllUsers/CurrentUser)
+;!insertmacro MULTIUSER_PAGE_INSTALLMODE
+; CERTBOT CUSTOM END
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -154,6 +158,7 @@ Section "!${PRODUCT_NAME}" sec_app
                    "NoRepair" 1
 
   ; CERTBOT CUSTOM BEGIN
+  ; Execute ps script to create the certbot renew task
   DetailPrint "Setting up certbot renew scheduled task"
   nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\renew-up.ps1" $MultiUser.InstallMode'
   ; CERTBOT CUSTOM END
@@ -168,6 +173,7 @@ SectionEnd
 
 Section "Uninstall"
   ; CERTBOT CUSTOM BEGIN
+  ; Execute ps script to remove the certbot renew task
   nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\renew-down.ps1"'
   ; CERTBOT CUSTOM END
 
