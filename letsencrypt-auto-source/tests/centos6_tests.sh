@@ -75,6 +75,9 @@ echo "PASSED: Successfully upgraded to Python3.4 using letsencrypt-auto < 0.37.0
 # refuses to install SCL Python 3.6 when run in a non interactive shell (simulated here
 # using | tee /dev/null) if --non-interactive flag is not provided.
 cp "$LE_AUTO" /tmp/certbot-auto
+# NB: Readline has an issue on all Python versions for CentOS 6, making `certbot --version`
+# output an unprintable ASCII character on a new line at the end.
+# So we take the second last line of the output.
 version=$(/tmp/certbot-auto --version 2>/dev/null | tee /dev/null | tail -2 | head -1)
 
 if ! echo "$version" | grep -q certbot; then
