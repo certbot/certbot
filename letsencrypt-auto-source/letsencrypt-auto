@@ -261,17 +261,23 @@ MIN_PYVER2=$(echo "$MIN_PYTHON_2_VERSION" | sed 's/\.//')
 MIN_PYTHON_3_VERSION="3.5"
 MIN_PYVER3=$(echo "$MIN_PYTHON_3_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
-# digits of the python version
+# digits of the python version.
+# MIN_PYVER and MIN_PYTHON_VERSION are also sets by this function, and their
+# values depend on if we try to use Python 3 or Python 2.
 DeterminePythonVersion() {
   # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
   #
   # If no Python is found, PYVER is set to 0.
   if [ "$USE_PYTHON_3" = 1 ]; then
+    MIN_PYVER=$MIN_PYVER3
+    MIN_PYTHON_VERSION=$MIN_PYTHON_3_VERSION
     for LE_PYTHON in "$LE_PYTHON" python3; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
     done
   else
+    MIN_PYVER=$MIN_PYVER2
+    MIN_PYTHON_VERSION=$MIN_PYTHON_2_VERSION
     for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
@@ -285,14 +291,6 @@ DeterminePythonVersion() {
       PYVER=0
       return 0
     fi
-  fi
-
-  if [ "$USE_PYTHON_3" = 1 ]; then
-    MIN_PYVER=$MIN_PYVER3
-    MIN_PYTHON_VERSION=$MIN_PYTHON_3_VERSION
-  else
-    MIN_PYVER=$MIN_PYVER2
-    MIN_PYTHON_VERSION=$MIN_PYTHON_2_VERSION
   fi
 
   PYVER=$("$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//')
@@ -484,12 +482,11 @@ BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION=1
 EnablePython36SCL() {
   set +e
   # Do nothing if Python 3.6 is already available
-  ! "$EXISTS" python3.6 > /dev/null 2> /dev/null || return
+  "$EXISTS" python3.6 > /dev/null 2> /dev/null && set -e && return
   # Do nothing if SCL Python 3.6 is not installed
-  scl --list 2>/dev/null | grep -q rh-python36 || return
-  # Install SCL rh-python36
-  . scl_source enable rh-python36
-  set -e
+  ! scl --list 2>/dev/null | grep -q rh-python36 && set -e && return
+  # Enable SCL rh-python36
+  . scl_source enable rh-python36 && set -e
 }
 
 BootstrapRpmPython3Legacy() {
@@ -532,7 +529,6 @@ BootstrapRpmPython3Legacy() {
   BootstrapRpmCommonBase "${python_pkgs}"
 
   # Enable SCL rh-python36 after bootstrapping.
-  # NB: EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
   EnablePython36SCL
 }
 
@@ -820,6 +816,7 @@ elif [ -f /etc/redhat-release ]; then
     BOOTSTRAP_VERSION="BootstrapRpmPython3Legacy $BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION"
 
     # Try now to enable SCL rh-python36 for systems already bootstrapped
+    # NB: EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
     EnablePython36SCL
   else
     # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.

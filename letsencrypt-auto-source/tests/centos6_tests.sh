@@ -7,6 +7,9 @@ yum install -y python27 >/dev/null 2>/dev/null
 LE_AUTO_PY_34="certbot/letsencrypt-auto-source/letsencrypt-auto_py_34"
 LE_AUTO="certbot/letsencrypt-auto-source/letsencrypt-auto"
 
+# Last version of certbot-auto that was bootstraping Python 3.4 for CentOS 6 users
+INITIAL_CERTBOT_VERSION_PY34="certbot 0.38.0"
+
 # we're going to modify env variables, so do this in a subshell
 (
   . scl_source enable python27
@@ -56,7 +59,7 @@ if ! "$LE_AUTO" 2>&1 | grep -q "WARNING: couldn't find Python"; then
 fi
 
 # bootstrap from the old letsencrypt-auto, this time installing python3.4
-prev_version=$("$LE_AUTO_PY_34" --no-self-upgrade -n --version 2>/dev/null | tail -2 | head -1)
+"$LE_AUTO_PY_34" --no-self-upgrade -n >/dev/null 2>/dev/null
 
 # ensure python 3.4 is installed
 python3.4 --version >/dev/null 2>/dev/null
@@ -79,7 +82,7 @@ if ! echo "$version" | grep -q certbot; then
   exit 1
 fi
 
-if [ "$version" != "$prev_version" ]; then
+if [ "$version" != "$INITIAL_CERTBOT_VERSION_PY34" ]; then
   echo "ERROR: certbot-auto upgraded certbot in a non-interactive shell with --non-interactive flag not set."
   exit 1
 fi
@@ -96,7 +99,7 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
 # now bootstrap from current letsencrypt-auto, that will install python3.6 from SCL
 "$LE_AUTO" --no-self-upgrade -n >/dev/null 2>/dev/null
 
-# Following tests are exectued in a subshell, to not leak any environment variable
+# Following test is exectued in a subshell, to not leak any environment variable
 (
   # enable SCL rh-python36
   . scl_source enable rh-python36
@@ -110,7 +113,10 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
   fi
 
   echo "PASSED: Successfully upgraded to Python3.6 using current letsencrypt-auto when only Python2.6/Python3.4 are present."
+)
 
+# Following test is exectued in a subshell, to not leak any environment variable
+(
   export VENV_PATH=$(mktemp -d)
   "$LE_AUTO" -n --no-bootstrap --no-self-upgrade --version >/dev/null 2>&1
   if [ "$($VENV_PATH/bin/python -V 2>&1 | cut -d" " -f2 | cut -d. -f1-2)" != "3.6" ]; then

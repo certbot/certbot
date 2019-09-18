@@ -5,12 +5,11 @@ BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION=1
 EnablePython36SCL() {
   set +e
   # Do nothing if Python 3.6 is already available
-  ! "$EXISTS" python3.6 > /dev/null 2> /dev/null || return
+  "$EXISTS" python3.6 > /dev/null 2> /dev/null && set -e && return
   # Do nothing if SCL Python 3.6 is not installed
-  scl --list 2>/dev/null | grep -q rh-python36 || return
-  # Install SCL rh-python36
-  . scl_source enable rh-python36
-  set -e
+  ! scl --list 2>/dev/null | grep -q rh-python36 && set -e && return
+  # Enable SCL rh-python36
+  . scl_source enable rh-python36 && set -e
 }
 
 BootstrapRpmPython3Legacy() {
@@ -53,6 +52,5 @@ BootstrapRpmPython3Legacy() {
   BootstrapRpmCommonBase "${python_pkgs}"
 
   # Enable SCL rh-python36 after bootstrapping.
-  # NB: EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
   EnablePython36SCL
 }
