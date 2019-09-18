@@ -116,15 +116,13 @@ class DualBlockNode(DualNodeBase):
         primary = kwargs.pop("primary")
         secondary = kwargs.pop("secondary")
 
-        if not primary:
-            self.primary = augeasparser.AugeasBlockNode(**kwargs)
-        else:
+        if primary or secondary:
+            assert primary and secondary
             self.primary = primary
-
-        if not secondary:
-            self.secondary = augeasparser.AugeasBlockNode(**kwargs)
-        else:
             self.secondary = secondary
+        else:
+            self.primary = augeasparser.AugeasBlockNode(**kwargs)
+            self.secondary = augeasparser.AugeasBlockNode(**kwargs)
 
         assertions.assertEqual(self.primary, self.secondary)
 
@@ -164,7 +162,13 @@ class DualBlockNode(DualNodeBase):
     def _create_matching_list(self, primary_list, secondary_list):
         """ Matches the list of primary_list to a list of secondary_list and
         returns a list of tuples. This is used to create results for find_
-        methods. """
+        methods.
+
+        This helper function exists, because we cannot ensure that the list of
+        search results returned by primary.find_* and secondary.find_* are ordered
+        in a same way. The function pairs the same search results from both
+        implementations to a list of tuples.
+        """
 
         matched = list()
         for p in primary_list:
