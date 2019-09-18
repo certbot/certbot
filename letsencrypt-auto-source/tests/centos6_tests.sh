@@ -128,5 +128,18 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
   fi
 )
 
+# Following test is exectued in a subshell, to not leak any environment variable
+(
+  # enable SCL rh-python36
+  . scl_source enable rh-python36
+
+  # ensure everything works fine with certbot-auto bootstrap when python 3.6 is already enabled
+  export VENV_PATH=$(mktemp -d)
+  if ! "$LE_AUTO" --no-self-upgrade -n >/dev/null 2>/dev/null; then
+    echo "ERROR: Certbot-auto broke when Python 3.6 SCL is already enabled."
+    exit 1
+  fi
+)
+
 # test using python3
 pytest -v -s certbot/letsencrypt-auto-source/tests
