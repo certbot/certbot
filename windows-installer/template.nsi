@@ -20,6 +20,10 @@ SetCompressor lzma
 ; CERTBOT CUSTOM BEGIN
 ; Administrator privileges are required to insert a new task in Windows Scheduler.
 ; Also comment out some options to disable ability to choose AllUsers/CurrentUser install mode.
+; As a result, installer run always with admin privileges (because of MULTIUSER_EXECUTIONLEVEL),
+; using the AllUsers installation mode by default (because of MULTIUSER_INSTALLMODE_DEFAULT_CURRENTUSER
+; not set), and this default behavior cannot be overridden (because of MULTIUSER_MUI not set).
+; See https://nsis.sourceforge.io/Docs/MultiUser/Readme.html
 !define MULTIUSER_EXECUTIONLEVEL Admin
 ;!define MULTIUSER_EXECUTIONLEVEL Highest
 ;!define MULTIUSER_INSTALLMODE_DEFAULT_CURRENTUSER
