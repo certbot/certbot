@@ -135,7 +135,7 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
 
   # ensure everything works fine with certbot-auto bootstrap when python 3.6 is already enabled
   export VENV_PATH=$(mktemp -d)
-  if ! "$LE_AUTO" --no-self-upgrade -n >/dev/null 2>/dev/null; then
+  if ! "$LE_AUTO" --no-self-upgrade -n --version >/dev/null 2>/dev/null; then
     echo "ERROR: Certbot-auto broke when Python 3.6 SCL is already enabled."
     exit 1
   fi
