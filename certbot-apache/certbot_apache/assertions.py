@@ -104,8 +104,6 @@ def isPassNodeList(nodelist): # pragma: no cover
     if not node: # pragma: no cover
         return False
 
-    if isinstance(node, interfaces.BlockNode):
-        return isPassDirective(node)
     if isinstance(node, interfaces.DirectiveNode):
         return isPassDirective(node)
     return isPassComment(node)
