@@ -93,3 +93,141 @@ class DualDirectiveNode(DualNodeBase):
         self.primary.set_parameters(parameters)
         self.secondary.set_parameters(parameters)
         assertions.assertEqual(self.primary, self.secondary)
+
+class DualBlockNode(DualNodeBase):
+    """ Dual parser implementation of BlockNode interface """
+
+    def __init__(self, **kwargs):
+        """ This initialization implementation allows ordinary initialization
+        of BlockNode objects as well as creating a DualBlockNode object
+        using precreated or fetched BlockNode objects if provided as optional
+        arguments primary and secondary.
+
+        Parameters other than the following are from interfaces.BlockNode:
+
+        :param BlockNode primary: Primary pre-created BlockNode, mainly
+            used when creating new DualParser nodes using add_* methods.
+        :param BlockNode secondary: Secondary pre-created BlockNode
+        """
+
+        kwargs.setdefault("primary", None)
+        kwargs.setdefault("secondary", None)
+        primary = kwargs.pop("primary")
+        secondary = kwargs.pop("secondary")
+
+        if primary or secondary:
+            assert primary and secondary
+            self.primary = primary
+            self.secondary = secondary
+        else:
+            self.primary = augeasparser.AugeasBlockNode(**kwargs)
+            self.secondary = augeasparser.AugeasBlockNode(**kwargs)
+
+        assertions.assertEqual(self.primary, self.secondary)
+
+    def add_child_block(self, name, parameters=None, position=None):
+        """ Creates a new child BlockNode, asserts that both implementations
+        did it in a similar way, and returns a newly created DualBlockNode object
+        encapsulating both of the newly created objects """
+
+        primary_new = self.primary.add_child_block(name, parameters, position)
+        secondary_new = self.secondary.add_child_block(name, parameters, position)
+        assertions.assertEqual(primary_new, secondary_new)
+        new_block = DualBlockNode(primary=primary_new, secondary=secondary_new)
+        return new_block
+
+    def add_child_directive(self, name, parameters=None, position=None):
+        """ Creates a new child DirectiveNode, asserts that both implementations
+        did it in a similar way, and returns a newly created DualDirectiveNode
+        object encapsulating both of the newly created objects """
+
+        primary_new = self.primary.add_child_directive(name, parameters, position)
+        secondary_new = self.secondary.add_child_directive(name, parameters, position)
+        assertions.assertEqual(primary_new, secondary_new)
+        new_dir = DualDirectiveNode(primary=primary_new, secondary=secondary_new)
+        return new_dir
+
+    def add_child_comment(self, comment="", position=None):
+        """ Creates a new child CommentNode, asserts that both implementations
+        did it in a similar way, and returns a newly created DualCommentNode
+        object encapsulating both of the newly created objects """
+
+        primary_new = self.primary.add_child_comment(comment, position)
+        secondary_new = self.secondary.add_child_comment(comment, position)
+        assertions.assertEqual(primary_new, secondary_new)
+        new_comment = DualCommentNode(primary=primary_new, secondary=secondary_new)
+        return new_comment
+
+    def _create_matching_list(self, primary_list, secondary_list):  # pragma: no cover
+        """ Matches the list of primary_list to a list of secondary_list and
+        returns a list of tuples. This is used to create results for find_
+        methods.
+
+        This helper function exists, because we cannot ensure that the list of
+        search results returned by primary.find_* and secondary.find_* are ordered
+        in a same way. The function pairs the same search results from both
+        implementations to a list of tuples.
+        """
+
+        matched = list()
+        for p in primary_list:
+            match = None
+            for s in secondary_list:
+                try:
+                    assertions.assertEqual(p, s)
+                    match = s
+                    break
+                except AssertionError:
+                    continue
+            if match:
+                matched.append((p, match))
+            else:
+                raise AssertionError("Could not find a matching node.")
+        return matched
+
+    def find_blocks(self, name, exclude=True):  # pragma: no cover
+        """
+        Performs a search for BlockNodes using both implementations and does simple
+        checks for results. This is built upon the assumption that unimplemented
+        find_* methods return a list with a single assertion passing object.
+        After the assertion, it creates a list of newly created DualBlockNode
+        instances that encapsulate the pairs of returned BlockNode objects.
+        """
+        pass
+
+    def find_directives(self, name, exclude=True):  # pragma: no cover
+        """
+        Performs a search for DirectiveNodes using both implementations and
+        checks the results. This is built upon the assumption that unimplemented
+        find_* methods return a list with a single assertion passing object.
+        After the assertion, it creates a list of newly created DualDirectiveNode
+        instances that encapsulate the pairs of returned DirectiveNode objects.
+        """
+        pass
+
+    def find_comments(self, comment, exact=False):  # pragma: no cover
+        """
+        Performs a search for CommentNodes using both implementations and
+        checks the results. This is built upon the assumption that unimplemented
+        find_* methods return a list with a single assertion passing object.
+        After the assertion, it creates a list of newly created DualCommentNode
+        instances that encapsulate the pairs of returned CommentNode objects.
+        """
+        pass
+
+    def delete_child(self, child):  # pragma: no cover
+        """Deletes a child from the ParserNode implementations. The actual
+        ParserNode implementations are used here directly in order to be able
+        to match a child to the list of children."""
+
+        self.primary.delete_child(child.primary)
+        self.secondary.delete_child(child.secondary)
+
+    def unsaved_files(self):
+        """ Fetches the list of unsaved file paths and asserts that the lists
+        match """
+        primary_files = self.primary.unsaved_files()
+        secondary_files = self.secondary.unsaved_files()
+        assertions.assertEqualSimple(primary_files, secondary_files)
+
+        return primary_files
