@@ -176,6 +176,7 @@ class DualBlockNode(DualNodeBase):
                 try:
                     assertions.assertEqual(p, s)
                     match = s
+                    break
                 except AssertionError:
                     continue
             if match:
