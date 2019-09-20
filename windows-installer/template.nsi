@@ -164,7 +164,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; CERTBOT CUSTOM BEGIN
   ; Execute ps script to create the certbot renew task
   DetailPrint "Setting up certbot renew scheduled task"
-  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\renew-up.ps1" $MultiUser.InstallMode'
+  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\renew-up.ps1"'
   ; CERTBOT CUSTOM END
 
   ; Check if we need to reboot
