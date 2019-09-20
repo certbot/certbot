@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Don't send OCSP requests for expired certificates
 
 ### Fixed
 
