@@ -80,11 +80,6 @@ cp "$LE_AUTO" /tmp/certbot-auto
 # So we take the second last line of the output.
 version=$(/tmp/certbot-auto --version 2>/dev/null | tee /dev/null | tail -2 | head -1)
 
-if ! echo "$version" | grep -q certbot; then
-  echo "Invalid certbot version: ${version}"
-  exit 1
-fi
-
 if [ "$version" != "$INITIAL_CERTBOT_VERSION_PY34" ]; then
   echo "ERROR: certbot-auto upgraded certbot in a non-interactive shell with --non-interactive flag not set."
   exit 1
