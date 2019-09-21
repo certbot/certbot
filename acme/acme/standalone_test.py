@@ -118,6 +118,24 @@ class HTTP01ServerTest(unittest.TestCase):
     def test_http01_not_found(self):
         self.assertFalse(self._test_http01(add=False))
 
+    def test_timely_shutdown(self):
+        from acme.standalone import HTTP01Server
+        server = HTTP01Server(('', 0), resources=set(), timeout=0.05)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.start()
+
+        client = socket.socket()
+        client.connect(('localhost', server.socket.getsockname()[1]))
+
+        stop_thread = threading.Thread(target=server.shutdown)
+        stop_thread.start()
+        server_thread.join(5.)
+
+        is_hung = server_thread.is_alive()
+        client.shutdown(socket.SHUT_RDWR)
+
+        self.assertFalse(is_hung, msg='Server shutdown should not be hung')
+
 
 class BaseDualNetworkedServersTest(unittest.TestCase):
     """Test for acme.standalone.BaseDualNetworkedServers."""

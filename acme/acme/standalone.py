@@ -16,7 +16,7 @@ import OpenSSL
 
 from acme import challenges
 from acme import crypto_util
-from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List, Set, Any, Tuple # pylint: disable=unused-import, no-name-in-module
 from acme import _TLSSNI01DeprecationModule
 
 
@@ -176,10 +176,11 @@ class HTTPServer(BaseHTTPServer.HTTPServer):
 class HTTP01Server(HTTPServer, ACMEServerMixin):
     """HTTP01 Server."""
 
-    def __init__(self, server_address, resources, ipv6=False):
+    def __init__(self, server_address, resources, ipv6=False, timeout=30):
+        # type: (Tuple[str, int], Set[Any], bool, float) -> None
         HTTPServer.__init__(
             self, server_address, HTTP01RequestHandler.partial_init(
-                simple_http_resources=resources), ipv6=ipv6)
+                simple_http_resources=resources, timeout=timeout), ipv6=ipv6)
 
 
 class HTTP01DualNetworkedServers(BaseDualNetworkedServers):
@@ -204,6 +205,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
+        self.timeout = kwargs.pop('timeout') if 'timeout' in kwargs else 30
         BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
     def log_message(self, format, *args):  # pylint: disable=redefined-builtin
@@ -253,7 +255,8 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                          self.path)
 
     @classmethod
-    def partial_init(cls, simple_http_resources):
+    def partial_init(cls, simple_http_resources, timeout):
+        # type: (Set[HTTP01RequestHandler.HTTP01Resource], float) -> Any
         """Partially initialize this handler.
 
         This is useful because `socketserver.BaseServer` takes
@@ -262,7 +265,8 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
         """
         return functools.partial(
-            cls, simple_http_resources=simple_http_resources)
+            cls, simple_http_resources=simple_http_resources,
+            timeout=timeout)
 
 
 def simple_tls_sni_01_server(cli_args, forever=True):

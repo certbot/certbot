@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Standalone servers now have a default socket timeout of 30 seconds, fixing
+  cases where an idle connection can cause the standalone plugin to hang.
 
 More details about these changes can be found on our GitHub repo.
 
