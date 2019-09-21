@@ -205,7 +205,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
-        self.timeout = kwargs.pop('timeout') if 'timeout' in kwargs else 30
+        self.timeout = kwargs.pop('timeout', 30)
         BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
     def log_message(self, format, *args):  # pylint: disable=redefined-builtin
