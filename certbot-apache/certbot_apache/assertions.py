@@ -10,12 +10,13 @@ def assertEqual(first, second):
 
     if isinstance(first, interfaces.CommentNode):
         assertEqualComment(first, second)
-    elif isinstance(first, interfaces.BlockNode):
-        # this check needs to be first, as BlockNodes are also instances of
-        # DirectiveNode
-        assertEqualBlock(first, second)
     elif isinstance(first, interfaces.DirectiveNode):
         assertEqualDirective(first, second)
+
+    # Do an extra interface implementation assertion, as the contents were
+    # already checked for BlockNode in the assertEqualDirective
+    if isinstance(first, interfaces.BlockNode):
+        assert isinstance(second, interfaces.BlockNode)
 
     # Skip tests if filepath includes the pass value. This is done
     # because filepath is variable of the base ParserNode interface, and
@@ -55,17 +56,6 @@ def assertEqualDirective(first, second):
     assert isinstance(second, interfaces.DirectiveNode)
     _assertEqualDirectiveComponents(first, second)
 
-def assertEqualBlock(first, second):
-    """ Equality assertion for BlockNode """
-
-    # first was checked in the assertEqual method
-    assert isinstance(first, interfaces.BlockNode)
-    assert isinstance(second, interfaces.BlockNode)
-    _assertEqualDirectiveComponents(first, second)
-    # Children cannot be asserted, because Augeas implementation will not
-    # prepopulate the sequence of children.
-    # assert len(first.children) == len(second.children)
-
 def isPass(value): # pragma: no cover
     """Checks if the value is set to PASS"""
     return PASS in value
@@ -73,20 +63,20 @@ def isPass(value): # pragma: no cover
 def isPassDirective(block):
     """ Checks if BlockNode or DirectiveNode should pass the assertion """
 
-    if block.name == PASS:
+    if isPass(block.name):
         return True
-    if PASS in block.parameters: # pragma: no cover
+    if isPass(block.parameters): # pragma: no cover
         return True
-    if block.filepath == PASS: # pragma: no cover
+    if isPass(block.filepath): # pragma: no cover
         return True
     return False
 
 def isPassComment(comment):
     """ Checks if CommentNode should pass the assertion """
 
-    if comment.comment == PASS:
+    if isPass(comment.comment):
         return True
-    if comment.filepath == PASS: # pragma: no cover
+    if isPass(comment.filepath): # pragma: no cover
         return True
     return False
 
