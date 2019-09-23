@@ -94,6 +94,7 @@ class DualDirectiveNode(DualNodeBase):
         self.secondary.set_parameters(parameters)
         assertions.assertEqual(self.primary, self.secondary)
 
+
 class DualBlockNode(DualNodeBase):
     """ Dual parser implementation of BlockNode interface """
 
@@ -158,7 +159,7 @@ class DualBlockNode(DualNodeBase):
         new_comment = DualCommentNode(primary=primary_new, secondary=secondary_new)
         return new_comment
 
-    def _create_matching_list(self, primary_list, secondary_list):  # pragma: no cover
+    def _create_matching_list(self, primary_list, secondary_list):
         """ Matches the list of primary_list to a list of secondary_list and
         returns a list of tuples. This is used to create results for find_
         methods.
@@ -185,7 +186,7 @@ class DualBlockNode(DualNodeBase):
                 raise AssertionError("Could not find a matching node.")
         return matched
 
-    def find_blocks(self, name, exclude=True):  # pragma: no cover
+    def find_blocks(self, name, exclude=True):
         """
         Performs a search for BlockNodes using both implementations and does simple
         checks for results. This is built upon the assumption that unimplemented
@@ -193,9 +194,11 @@ class DualBlockNode(DualNodeBase):
         After the assertion, it creates a list of newly created DualBlockNode
         instances that encapsulate the pairs of returned BlockNode objects.
         """
-        pass
 
-    def find_directives(self, name, exclude=True):  # pragma: no cover
+        return self._find_helper(DualBlockNode, "find_blocks", name,
+                                 exclude=exclude)
+
+    def find_directives(self, name, exclude=True):
         """
         Performs a search for DirectiveNodes using both implementations and
         checks the results. This is built upon the assumption that unimplemented
@@ -203,9 +206,11 @@ class DualBlockNode(DualNodeBase):
         After the assertion, it creates a list of newly created DualDirectiveNode
         instances that encapsulate the pairs of returned DirectiveNode objects.
         """
-        pass
 
-    def find_comments(self, comment, exact=False):  # pragma: no cover
+        return self._find_helper(DualDirectiveNode, "find_directives", name,
+                                 exclude=exclude)
+
+    def find_comments(self, comment, exact=False):
         """
         Performs a search for CommentNodes using both implementations and
         checks the results. This is built upon the assumption that unimplemented
@@ -213,9 +218,50 @@ class DualBlockNode(DualNodeBase):
         After the assertion, it creates a list of newly created DualCommentNode
         instances that encapsulate the pairs of returned CommentNode objects.
         """
-        pass
 
-    def delete_child(self, child):  # pragma: no cover
+        return self._find_helper(DualCommentNode, "find_comments", comment,
+                                 exact=exact)
+
+    def _find_helper(self, nodeclass, findfunc, search, **kwargs):
+        """A helper for find_* functions. The function specific attributes should
+        be passed as keyword arguments.
+
+        :param interfaces.ParserNode nodeclass: The node class for results.
+        :param str findfunc: Name of the find function to call
+        :param str search: The search term
+        """
+
+        primary_res = getattr(self.primary, findfunc)(search, **kwargs)
+        secondary_res = getattr(self.secondary, findfunc)(search, **kwargs)
+
+        # The order of search results for Augeas implementation cannot be
+        # assured.
+
+        pass_primary = assertions.isPassNodeList(primary_res)
+        pass_secondary = assertions.isPassNodeList(secondary_res)
+        new_nodes = list()
+
+        if pass_primary and pass_secondary:
+            # Both unimplemented
+            new_nodes.append(nodeclass(primary=primary_res[0],
+                                       secondary=secondary_res[0]))
+        elif pass_primary:
+            for c in secondary_res:
+                new_nodes.append(nodeclass(primary=primary_res[0],
+                                           secondary=c))
+        elif pass_secondary:
+            for c in primary_res:
+                new_nodes.append(nodeclass(primary=c,
+                                           secondary=secondary_res[0]))
+        else:
+            assert len(primary_res) == len(secondary_res)
+            matches = self._create_matching_list(primary_res, secondary_res)
+            for p, s in matches:
+                new_nodes.append(nodeclass(primary=p, secondary=s))
+
+        return new_nodes
+
+    def delete_child(self, child):
         """Deletes a child from the ParserNode implementations. The actual
         ParserNode implementations are used here directly in order to be able
         to match a child to the list of children."""

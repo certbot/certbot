@@ -13,6 +13,11 @@ def assertEqual(first, second):
     elif isinstance(first, interfaces.DirectiveNode):
         assertEqualDirective(first, second)
 
+    # Do an extra interface implementation assertion, as the contents were
+    # already checked for BlockNode in the assertEqualDirective
+    if isinstance(first, interfaces.BlockNode):
+        assert isinstance(second, interfaces.BlockNode)
+
     # Skip tests if filepath includes the pass value. This is done
     # because filepath is variable of the base ParserNode interface, and
     # unless the implementation is actually done, we cannot assume getting
@@ -54,6 +59,44 @@ def assertEqualDirective(first, second):
 def isPass(value): # pragma: no cover
     """Checks if the value is set to PASS"""
     return PASS in value
+
+def isPassDirective(block):
+    """ Checks if BlockNode or DirectiveNode should pass the assertion """
+
+    if isPass(block.name):
+        return True
+    if isPass(block.parameters): # pragma: no cover
+        return True
+    if isPass(block.filepath): # pragma: no cover
+        return True
+    return False
+
+def isPassComment(comment):
+    """ Checks if CommentNode should pass the assertion """
+
+    if isPass(comment.comment):
+        return True
+    if isPass(comment.filepath): # pragma: no cover
+        return True
+    return False
+
+def isPassNodeList(nodelist): # pragma: no cover
+    """ Checks if a ParserNode in the nodelist should pass the assertion,
+    this function is used for results of find_* methods. Unimplemented find_*
+    methods should return a sequence containing a single ParserNode instance
+    with assertion pass string."""
+
+    try:
+        node = nodelist[0]
+    except IndexError:
+        node = None
+
+    if not node: # pragma: no cover
+        return False
+
+    if isinstance(node, interfaces.DirectiveNode):
+        return isPassDirective(node)
+    return isPassComment(node)
 
 def assertEqualSimple(first, second):
     """ Simple assertion """
