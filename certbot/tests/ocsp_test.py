@@ -16,6 +16,7 @@ try:
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp_lib = None  # type: ignore
 import mock
+import pytz
 
 from certbot import errors
 from certbot.tests import util as test_util
@@ -72,7 +73,6 @@ class OCSPTestOpenSSL(unittest.TestCase):
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.util.run_script')
     def test_ocsp_revoked(self, mock_run, mock_determine):
-        import pytz
         now = pytz.UTC.fromutc(datetime.utcnow())
         cert_obj = mock.MagicMock()
         cert_obj.cert = "x"
@@ -141,7 +141,6 @@ class OSCPTestCryptography(unittest.TestCase):
     """
 
     def setUp(self):
-        import pytz
         from certbot import ocsp
         self.checker = ocsp.RevocationChecker()
         self.cert_path = test_util.vector_path('ocsp_certificate.pem')
