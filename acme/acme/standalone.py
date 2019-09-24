@@ -173,16 +173,6 @@ class HTTPServer(BaseHTTPServer.HTTPServer):
         BaseHTTPServer.HTTPServer.__init__(self, *args, **kwargs)
 
 
-class HTTP01Server(HTTPServer, ACMEServerMixin):
-    """HTTP01 Server."""
-
-    def __init__(self, server_address, resources, ipv6=False, timeout=30):
-        # type: (Tuple[str, int], Set[Any], bool, float) -> None
-        HTTPServer.__init__(
-            self, server_address, HTTP01RequestHandler.partial_init(
-                simple_http_resources=resources, timeout=timeout), ipv6=ipv6)
-
-
 class HTTP01DualNetworkedServers(BaseDualNetworkedServers):
     """HTTP01Server Wrapper. Tries everything for both. Failures for one don't
        affect the other."""
@@ -267,6 +257,16 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         return functools.partial(
             cls, simple_http_resources=simple_http_resources,
             timeout=timeout)
+
+
+class HTTP01Server(HTTPServer, ACMEServerMixin):
+    """HTTP01 Server."""
+
+    def __init__(self, server_address, resources, ipv6=False, timeout=30):
+        # type: (Tuple[str, int], Set[HTTP01RequestHandler.HTTP01Resource], bool, float) -> None
+        HTTPServer.__init__(
+            self, server_address, HTTP01RequestHandler.partial_init(
+                simple_http_resources=resources, timeout=timeout), ipv6=ipv6)
 
 
 def simple_tls_sni_01_server(cli_args, forever=True):
