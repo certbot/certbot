@@ -30,8 +30,10 @@ from certbot.plugins.util import path_surgery
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 
 from certbot_apache import apache_util
+from certbot_apache import assertions
 from certbot_apache import constants
 from certbot_apache import display_ops
+from certbot_apache import dualparser
 from certbot_apache import http_01
 from certbot_apache import obj
 from certbot_apache import parser
@@ -204,8 +206,10 @@ class ApacheConfigurator(common.Installer):
         # These will be set in the prepare function
         self._prepared = False
         self.parser = None
+        self.parser_root = None
         self.version = version
         self.vhosts = None
+        self.parsernode_vhosts = None
         self.options = copy.deepcopy(self.OS_DEFAULTS)
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
@@ -253,11 +257,16 @@ class ApacheConfigurator(common.Installer):
         # Perform the actual Augeas initialization to be able to react
         self.parser = self.get_parser()
 
+        # parserv2
+        # initialize ParserNode root
+        self.parser_root = self.get_parsernode_root()
+
         # Check for errors in parsing files with Augeas
         self.parser.check_parsing_errors("httpd.aug")
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
+        self.parsernode_vhosts = self.get_virtual_hosts_v2()
 
         self.install_ssl_options_conf(self.mod_ssl_conf,
                                       self.updated_mod_ssl_conf_digest)
@@ -347,6 +356,14 @@ class ApacheConfigurator(common.Installer):
         return parser.ApacheParser(
             self.option("server_root"), self.conf("vhost-root"),
             self.version, configurator=self)
+
+    def get_parsernode_root(self):
+        """Initializes the ParserNode parser root instance."""
+        return dualparser.DualBlockNode(
+            name=assertions.PASS,
+            ancestor=None,
+            filepath=assertions.PASS
+        )
 
     def _wildcard_domain(self, domain):
         """
@@ -923,6 +940,89 @@ class ApacheConfigurator(common.Installer):
                     internal_paths[realpath].add(internal_path)
                     vhs.append(new_vhost)
         return vhs
+
+    def get_virtual_hosts_v2(self):
+        """Returns list of virtual hosts found in the Apache configuration using
+        ParserNode interface.
+
+        :returns: List of :class:`~certbot_apache.obj.VirtualHost`
+            objects found in configuration
+        :rtype: list
+
+        """
+        vhs = []
+        vhosts = self.parser_root.find_blocks("VirtualHost")
+        for vhblock in vhosts:
+            vhs.append(self._create_vhost_v2(vhblock))
+        return vhs
+
+    def _create_vhost_v2(self, node):
+        """Used by get_virtual_hosts_v2 to create vhost objects using ParserNode
+        interfaces.
+
+        :param interfaces.BlockNode node: The BlockNode object of VirtualHost block
+        :returns: newly created vhost
+        :rtype: :class:`~certbot_apache.obj.VirtualHost`
+        """
+        addrs = set()
+        for param in node.parameters:
+            addrs.add(obj.Addr.fromstring(param))
+
+        is_ssl = False
+        sslengine = node.find_directives("SSLEngine")
+        if sslengine:
+            for directive in sslengine:
+                # TODO: apache-parser-v2
+                # This search should be made wiser. (using other identificators)
+                try:
+                    if directive.parameters[0].lower() == "on":
+                        is_ssl = True
+                except IndexError:
+                    pass
+
+        # "SSLEngine on" might be set outside of <VirtualHost>
+        # Treat vhosts with port 443 as ssl vhosts
+        for addr in addrs:
+            if addr.get_port() == "443":
+                is_ssl = True
+
+        macro = False
+        if node.find_directives("Macro"):
+            macro = True
+
+        vhost_enabled = self.parser.parsed_in_original(node.filepath)
+
+        vhost = obj.VirtualHost(node.filepath, None,
+                                addrs, is_ssl, vhost_enabled, modmacro=macro,
+                                node=node)
+
+        self._populate_vhost_names_v2(vhost)
+        return vhost
+
+    def _populate_vhost_names_v2(self, vhost):
+        """Helper function that populates the VirtualHost names.
+        :param host: In progress vhost whose names will be added
+        :type host: :class:`~certbot_apache.obj.VirtualHost`
+        """
+
+        servername_match = vhost.node.find_directives("ServerName",
+                                                      exclude=False)
+        serveralias_match = vhost.node.find_directives("ServerAlias",
+                                                       exclude=False)
+
+        if servername_match:
+            try:
+                servername = servername_match[-1].parameters[-1]
+            except IndexError:
+                # ServerName directive was found, but didn't contain parameters
+                pass
+
+        if not vhost.modmacro:
+            for alias in serveralias_match:
+                for serveralias in alias.parameters:
+                    vhost.aliases.add(serveralias)
+            vhost.name = servername
+
 
     def is_name_vhost(self, target_addr):
         """Returns if vhost is a name based vhost
