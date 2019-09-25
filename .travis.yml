@@ -49,9 +49,6 @@ matrix:
     - python: "2.7"
       env: TOXENV=lint
       <<: *not-on-master
-    - python: "3.4"
-      env: TOXENV=mypy
-      <<: *not-on-master
     - python: "3.5"
       env: TOXENV=mypy
       <<: *not-on-master
@@ -61,9 +58,6 @@ matrix:
       # OpenSSL in Xenial or newer.
       dist: trusty
       env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
-      <<: *not-on-master
-    - python: "3.4"
-      env: TOXENV=py34
       <<: *not-on-master
     - python: "3.7"
       env: TOXENV=py37
@@ -166,9 +160,6 @@ matrix:
       sudo: required
       services: docker
       <<: *extended-test-suite
-    - python: "3.4"
-      env: TOXENV=py34
-      <<: *extended-test-suite
     - python: "3.5"
       env: TOXENV=py35
       <<: *extended-test-suite
@@ -180,16 +171,6 @@ matrix:
       <<: *extended-test-suite
     - python: "3.8-dev"
       env: TOXENV=py38
-      <<: *extended-test-suite
-    - python: "3.4"
-      env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
-      services: docker
-      <<: *extended-test-suite
-    - python: "3.4"
-      env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
-      services: docker
       <<: *extended-test-suite
     - python: "3.5"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
