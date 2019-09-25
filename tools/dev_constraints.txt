@@ -15,7 +15,7 @@ botocore==1.12.36
 cloudflare==1.5.1
 codecov==2.0.15
 configparser==3.7.4
-coverage==4.4.2
+coverage==4.5.4
 decorator==4.1.2
 dns-lexicon==3.2.1
 dnspython==1.15.0
@@ -53,6 +53,9 @@ pyasn1==0.1.9
 pyasn1-modules==0.0.10
 Pygments==2.2.0
 pylint==1.9.4
+# If pynsist version is upgraded, our NSIS template windows-installer/template.nsi
+# must be upgraded if necessary using the new built-in one from pynsist.
+pynsist==2.4
 pytest==3.2.5
 pytest-cov==2.5.1
 pytest-forked==0.2
@@ -76,7 +79,7 @@ Sphinx==1.7.5
 sphinx-rtd-theme==0.2.4
 sphinxcontrib-websupport==1.0.1
 tldextract==2.2.0
-tox==2.9.1
+tox==3.14.0
 tqdm==4.19.4
 traitlets==4.3.2
 twine==1.11.0
