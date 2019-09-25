@@ -281,6 +281,7 @@ pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN
 proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
 heroku_            Y    Y    Integration with Heroku SSL
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
+dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -294,6 +295,7 @@ dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 .. _external: https://github.com/marcan/letsencrypt-external
 .. _heroku: https://github.com/gboudreau/certbot-heroku
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
+.. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
