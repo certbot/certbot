@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed OS detection in the Apache plugin on RHEL 6.
 
 More details about these changes can be found on our GitHub repo.
 
