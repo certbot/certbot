@@ -16,11 +16,13 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes  # type: ignore
 from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
+import pytz
 import requests
 
 from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
 from certbot import crypto_util
 from certbot import errors
+from certbot.storage import RenewableCert # pylint: disable=unused-import
 from certbot import util
 
 logger = logging.getLogger(__name__)
@@ -48,19 +50,27 @@ class RevocationChecker(object):
             else:
                 self.host_args = lambda host: ["Host", host]
 
-    def ocsp_revoked(self, cert_path, chain_path):
-        # type: (str, str) -> bool
+    def ocsp_revoked(self, cert):
+        # type: (RenewableCert) -> bool
         """Get revoked status for a particular cert version.
 
         .. todo:: Make this a non-blocking call
 
-        :param str cert_path: Path to certificate
-        :param str chain_path: Path to intermediate cert
-        :returns: True if revoked; False if valid or the check failed
+        :param `.storage.RenewableCert` cert: Certificate object
+        :returns: True if revoked; False if valid or the check failed or cert is expired.
         :rtype: bool
 
         """
+        cert_path, chain_path = cert.cert, cert.chain
+
         if self.broken:
+            return False
+
+        # Let's Encrypt doesn't update OCSP for expired certificates,
+        # so don't check OCSP if the cert is expired.
+        # https://github.com/certbot/certbot/issues/7152
+        now = pytz.UTC.fromutc(datetime.utcnow())
+        if cert.target_expiry <= now:
             return False
 
         url, host = _determine_ocsp_server(cert_path)

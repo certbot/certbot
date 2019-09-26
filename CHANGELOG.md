@@ -2,21 +2,46 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.38.0 - master
+## 0.39.0 - master
 
 ### Added
 
+* Support for Python 3.8 was added to Certbot and all of its components.
+
+### Changed
+
+* Don't send OCSP requests for expired certificates
+
+### Fixed
+
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.38.0 - 2019-09-03
+
+### Added
+
+* Disable session tickets for Nginx users when appropriate.
 
 ### Changed
 
 * If Certbot fails to rollback your server configuration, the error message
   links to the Let's Encrypt forum. Change the link to the Help category now
   that the Server category has been closed.
+* Replace platform.linux_distribution with distro.linux_distribution as a step
+  towards Python 3.8 support in Certbot.
 
 ### Fixed
 
-*
+* Fixed OS detection in the Apache plugin on Scientific Linux.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.2 - 2019-08-21
+
+* Stop disabling TLS session tickets in Nginx as it caused TLS failures on
+  some systems.
 
 More details about these changes can be found on our GitHub repo.
 

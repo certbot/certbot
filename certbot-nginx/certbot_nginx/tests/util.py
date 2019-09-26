@@ -3,7 +3,6 @@ import copy
 import shutil
 import tempfile
 import unittest
-import warnings
 
 import josepy as jose
 import mock
@@ -11,6 +10,7 @@ import pkg_resources
 import zope.component
 
 from certbot import configuration
+from certbot import util
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
@@ -34,20 +34,16 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             "rsa512_key.pem"))
 
     def tearDown(self):
-        # On Windows we have various files which are not correctly closed at the time of tearDown.
-        # For know, we log them until a proper file close handling is written.
-        # Useful for development only, so no warning when we are on a CI process.
-        def onerror_handler(_, path, excinfo):
-            """On error handler"""
-            if not os.environ.get('APPVEYOR'):  # pragma: no cover
-                message = ('Following error occurred when deleting path {0}'
-                           'during tearDown process: {1}'.format(path, str(excinfo)))
-                warnings.warn(message)
+        # Cleanup opened resources after a test. This is usually done through atexit handlers in
+        # Certbot, but during tests, atexit will not run registered functions before tearDown is
+        # called and instead will run them right before the entire test process exits.
+        # It is a problem on Windows, that does not accept to clean resources before closing them.
+        util._release_locks()  # pylint: disable=protected-access
 
-        shutil.rmtree(self.temp_dir, onerror=onerror_handler)
-        shutil.rmtree(self.config_dir, onerror=onerror_handler)
-        shutil.rmtree(self.work_dir, onerror=onerror_handler)
-        shutil.rmtree(self.logs_dir, onerror=onerror_handler)
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
+        shutil.rmtree(self.logs_dir)
 
 
 def get_data_filename(filename):
@@ -58,7 +54,7 @@ def get_data_filename(filename):
 
 
 def get_nginx_configurator(
-        config_path, config_dir, work_dir, logs_dir, version=(1, 6, 2)):
+        config_path, config_dir, work_dir, logs_dir, version=(1, 6, 2), openssl_version="1.0.2g"):
     """Create an Nginx Configurator with the specified options."""
 
     backups = os.path.join(work_dir, "backups")
@@ -83,7 +79,8 @@ def get_nginx_configurator(
                     https_port=5001,
                 ),
                 name="nginx",
-                version=version)
+                version=version,
+                openssl_version=openssl_version)
             config.prepare()
 
     # Provide general config utility.
