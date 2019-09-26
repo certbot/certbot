@@ -316,7 +316,7 @@ class Client(object):
         # they aren't permanently saved to disk.  For a lineage with
         # --reuse-key, the key path and PEM data are derived from an
         # existing file.
-
+        #pylint: disable-msg=too-many-locals
         if old_keypath is not None:
             # We've been asked to reuse a specific existing private key.
             # Therefore, we'll read it now and not generate a new one in
@@ -335,6 +335,7 @@ class Client(object):
 
         # lets consolidate what we are trying to do with the key size here
         # depending on what --key-type is being used
+
         key_size = self.config.rsa_key_size
 
         if self.config.ecdsa_key_size and self.config.key_type.lower() == 'ecdsa':
