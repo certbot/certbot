@@ -369,8 +369,6 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         key_type_option = 'key_type'
         key_type_value = cli.flag_default(key_type_option)
         self.parse('--key-type {0}'.format(key_type_value).split())
-        print("key type: {}".format(key_type_option))
-        print("key type value: {}".format(key_type_value))
         self.assertTrue(cli.option_was_set(key_type_option, key_type_value))
 
         self.assertRaises(SystemExit, self.parse, "--key-type foo")
