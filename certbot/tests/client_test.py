@@ -359,8 +359,7 @@ class ClientTest(ClientTestCommon):
         self._test_obtain_certificate_common(key, csr)
 
         mock_crypto.make_key.assert_called_once_with(
-            self.config.rsa_key_size,
-            self.config.ecdsa_key_size,
+            self.config.key_size,
             self.config.key_type
         )
         mock_acme_crypto.make_csr.assert_called_once_with(
