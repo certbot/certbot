@@ -18,6 +18,13 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 More details about these changes can be found on our GitHub repo.
 
+
+## 0.39.0 - 2019-09-05
+
+### Added
+* CLI flag `--key-type` has been added to specify 'rsa' or 'ecdsa' (default 'rsa').  Only accepts a single value at this time.
+* CLI flag `--ecdsa-key-size` has been added to specify bits for ECDSA type keys (default 384)
+
 ## 0.38.0 - 2019-09-03
 
 ### Added
