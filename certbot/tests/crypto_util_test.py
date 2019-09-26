@@ -178,13 +178,22 @@ class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
         from certbot.crypto_util import make_key
         # Do not test larger keys as it takes too long.
 
-        # Try a good key size
+        # Try a good key size for RSA and ECDSA
         OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, make_key(1024, 256, key_type='ecdsa'))
+            OpenSSL.crypto.FILETYPE_PEM, make_key(1024, key_type='rsa'))
+        OpenSSL.crypto.load_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, make_key(256, key_type='ecdsa'))
 
-        # Try a bad key size
+        # Try a bad key size for RSA and ECDSA
         with self.assertRaises(errors.Error) as e:
-            make_key(1024, 100, key_type='ecdsa')
+            make_key(512, key_type='rsa')
+        self.assertEqual(
+            "Unsupported RSA key length: 512",
+            str(e.exception),
+            "Unsupported RSA key length: 512"
+        )
+        with self.assertRaises(errors.Error) as e:
+            make_key(100, key_type='ecdsa')
         self.assertEqual(
             "Unsupported ECDSA key length: 100",
             str(e.exception),
@@ -194,7 +203,7 @@ class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
         # Try a bad --key-type
         with self.assertRaises(errors.Error) as e:
             OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM, make_key(1024, 256, key_type='unf'))
+                OpenSSL.crypto.FILETYPE_PEM, make_key(1024, key_type='unf'))
         self.assertEqual(
             "Invalid key_type specified: unf.  Use [rsa|ecdsa]",
             str(e.exception),

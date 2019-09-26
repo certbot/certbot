@@ -319,9 +319,10 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.init_save_key.assert_called_once_with(
             self.config.rsa_key_size,
             self.config.key_dir,
-            self.config.ecdsa_key_size,
+            #self.config.ecdsa_key_size,
             self.config.key_type
         )
+
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, self.eg_domains, self.config.csr_dir)
         mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(

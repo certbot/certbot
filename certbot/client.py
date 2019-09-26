@@ -345,9 +345,23 @@ class Client(object):
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
+            """
             key = key or crypto_util.init_save_key(self.config.rsa_key_size,
                                                    self.config.key_dir,
                                                    self.config.ecdsa_key_size,
+                                                   self.config.key_type)
+            """
+            # lets consolidate what we are trying to do with the key size here
+            # depending on what --key-type is being used
+            key_size = self.config.key_size
+
+            if self.config.ecdsa_key_size and self.config.key_type.lower() == 'ecdsa':
+                key_size = self.config.ecdsa_key_size
+            elif self.config.rsa_key_size and self.config.key_type.lower() == 'rsa':
+                key_size = self.config.rsa_key_size
+
+            key = key or crypto_util.init_save_key(key_size,
+                                                   self.config.key_dir,
                                                    self.config.key_type)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 

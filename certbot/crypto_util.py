@@ -38,7 +38,8 @@ logger = logging.getLogger(__name__)
 # High level functions
 def init_save_key(
     key_size, key_dir,
-    ecdsa_key_size=384, key_type='rsa',
+    #ecdsa_key_size=384, key_type='rsa',
+    key_type='rsa',
     keyname="key-certbot.pem"):
     """Initializes and saves a privkey.
 
@@ -47,9 +48,11 @@ def init_save_key(
     .. note:: keyname is the attempted filename, it may be different if a file
         already exists at the path.
 
-    :param int rsa_key_size: RSA key size in bits
-    :param int ecdsa_key_size: EC key size in bits
+    #:param int rsa_key_size: RSA key size in bits
+    #:param int ecdsa_key_size: EC key size in bits
+    :param int key_size: key size in bits
     :param str key_dir: Key save directory.
+    :param str key_type: Key Type [rsa, ecdsa]
     :param str keyname: Filename of key
 
     :returns: Key
@@ -59,7 +62,8 @@ def init_save_key(
 
     """
     try:
-        key_pem = make_key(rsa_bits=key_size, ecdsa_bits=ecdsa_key_size, key_type=key_type)
+        #key_pem = make_key(rsa_bits=key_size, ecdsa_bits=ecdsa_key_size, key_type=key_type)
+        key_pem = make_key(key_bits=key_size, key_type=key_type)
     except ValueError as err:
         logger.error("", exc_info=True)
         raise err
@@ -74,7 +78,7 @@ def init_save_key(
     if key_type.lower() == 'rsa':
         logger.debug("Generating RSA key (%d bits): %s", key_size, key_path)
     else:
-        logger.debug("Generating EC key (%d bits): %s", ecdsa_key_size, key_path)
+        logger.debug("Generating ECDSA key (%d bits): %s", key_size, key_path)
 
     return util.Key(key_path, key_pem)
 
@@ -183,32 +187,36 @@ def import_csr_file(csrfile, data):
     return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
-def make_key(rsa_bits, ecdsa_bits=384, key_type='rsa'):
+#def make_key(rsa_bits, ecdsa_bits=384, key_type='rsa'):
+def make_key(key_bits, key_type='rsa'):
     """Generate PEM encoded RSA|EC key.
 
-    :param int rsa_bits: Number of bits, at least 1024 for RSA.
-    :param int ecdsa_bits: Number of bits, at least 256 for EC.
-    :param str key_type: Key type to create (rsa|ec).
+    #:param int rsa_bits: Number of bits, at least 1024 for RSA.
+    #:param int ecdsa_bits: Number of bits, at least 256 for ECDSA.
+    :param int key_bits: Number of bits, at least 1024 for RSA and 384 for ECDSA.
+    :param str key_type: Key type to create (rsa|ecdsa).
 
-    :returns: new RSA|EC key in PEM form with specified number of bits
+    :returns: new RSA|ECDSA key in PEM form with specified number of bits
     :rtype: str
 
     """
 
     if key_type.lower() == 'rsa':
-        assert rsa_bits >= 1024  # XXX
+        if key_bits < 1024 or key_bits % 1024 != 0:
+            raise errors.Error("Unsupported RSA key length: {}".format(key_bits))
+
         key = crypto.PKey()
-        key.generate_key(crypto.TYPE_RSA, rsa_bits)
+        key.generate_key(crypto.TYPE_RSA, key_bits)
     elif key_type.lower() == 'ecdsa':
         _ECDSACurves = {
             256: ec.SECP256R1(),
             384: ec.SECP384R1(),
         }
-        if _ECDSACurves.get(ecdsa_bits) is None:
-            raise errors.Error("Unsupported ECDSA key length: {}".format(ecdsa_bits))
+        if _ECDSACurves.get(key_bits) is None:
+            raise errors.Error("Unsupported ECDSA key length: {}".format(key_bits))
 
         _key = ec.generate_private_key(
-            _ECDSACurves.get(ecdsa_bits),
+            _ECDSACurves.get(key_bits),
             backend=default_backend()
         )
         _key_pem = _key.private_bytes(
