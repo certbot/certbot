@@ -521,7 +521,8 @@ class OsInfoTest(unittest.TestCase):
             with mock.patch('platform.system_alias',
                             return_value=('linux', '', '')):
                 with mock.patch('platform.linux_distribution',
-                                side_effect=AttributeError):
+                                side_effect=AttributeError,
+                                create=True):
                     with mock.patch('distro.linux_distribution',
                                     return_value=('', '', '')):
                         self.assertEqual(get_python_os_info(), ("linux", ""))
