@@ -38,7 +38,6 @@ logger = logging.getLogger(__name__)
 # High level functions
 def init_save_key(
     key_size, key_dir,
-    #ecdsa_key_size=384, key_type='rsa',
     key_type='rsa',
     keyname="key-certbot.pem"):
     """Initializes and saves a privkey.
@@ -48,8 +47,6 @@ def init_save_key(
     .. note:: keyname is the attempted filename, it may be different if a file
         already exists at the path.
 
-    #:param int rsa_key_size: RSA key size in bits
-    #:param int ecdsa_key_size: EC key size in bits
     :param int key_size: key size in bits
     :param str key_dir: Key save directory.
     :param str key_type: Key Type [rsa, ecdsa]
@@ -62,7 +59,6 @@ def init_save_key(
 
     """
     try:
-        #key_pem = make_key(rsa_bits=key_size, ecdsa_bits=ecdsa_key_size, key_type=key_type)
         key_pem = make_key(key_bits=key_size, key_type=key_type)
     except ValueError as err:
         logger.error("", exc_info=True)
@@ -187,12 +183,9 @@ def import_csr_file(csrfile, data):
     return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
-#def make_key(rsa_bits, ecdsa_bits=384, key_type='rsa'):
 def make_key(key_bits, key_type='rsa'):
     """Generate PEM encoded RSA|EC key.
 
-    #:param int rsa_bits: Number of bits, at least 1024 for RSA.
-    #:param int ecdsa_bits: Number of bits, at least 256 for ECDSA.
     :param int key_bits: Number of bits, at least 1024 for RSA and 384 for ECDSA.
     :param str key_type: Key type to create (rsa|ecdsa).
 
