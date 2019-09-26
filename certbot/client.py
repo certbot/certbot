@@ -335,7 +335,7 @@ class Client(object):
 
         # lets consolidate what we are trying to do with the key size here
         # depending on what --key-type is being used
-        key_size = self.config.key_size
+        key_size = self.config.rsa_key_size
 
         if self.config.ecdsa_key_size and self.config.key_type.lower() == 'ecdsa':
             key_size = self.config.ecdsa_key_size
@@ -346,7 +346,7 @@ class Client(object):
         if self.config.dry_run:
             key = key or util.Key(file=None,
                                   pem=crypto_util.make_key(
-                                      self.config.key_size,
+                                      key_size,
                                       self.config.key_type,
                                       ))
             csr = util.CSR(file=None, form="pem",
