@@ -1,4 +1,6 @@
 """Nginx Configuration"""
+# https://github.com/PyCQA/pylint/issues/73
+from distutils.version import LooseVersion # pylint: disable=no-name-in-module,import-error
 import logging
 import re
 import socket
@@ -91,8 +93,12 @@ class NginxConfigurator(common.Installer):
         :param tup version: version of Nginx as a tuple (1, 4, 7)
             (used mostly for unittesting)
 
+        :param tup openssl_version: version of OpenSSL linked to Nginx as a tuple (1, 4, 7)
+            (used mostly for unittesting)
+
         """
         version = kwargs.pop("version", None)
+        openssl_version = kwargs.pop("openssl_version", None)
         super(NginxConfigurator, self).__init__(*args, **kwargs)
 
         # Verify that all directories and files exist with proper permissions
@@ -115,6 +121,7 @@ class NginxConfigurator(common.Installer):
         # These will be set in the prepare function
         self.parser = None
         self.version = version
+        self.openssl_version = openssl_version
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
@@ -124,11 +131,33 @@ class NginxConfigurator(common.Installer):
     @property
     def mod_ssl_conf_src(self):
         """Full absolute path to SSL configuration file source."""
-        config_filename = "options-ssl-nginx.conf"
-        if self.version < (1, 5, 9):
-            config_filename = "options-ssl-nginx-old.conf"
-        elif self.version < (1, 13, 0):
-            config_filename = "options-ssl-nginx-tls12-only.conf"
+
+        # Why all this complexity? Well, we want to support Mozilla's intermediate
+        # recommendations. But TLS1.3 is only supported by newer versions of Nginx.
+        # And as for session tickets, our ideal is to turn them off across the board.
+        # But! Turning them off at all is only supported with new enough versions of
+        # Nginx. And older versions of OpenSSL have a bug that leads to browser errors
+        # given certain configurations. While we'd prefer to have forward secrecy, we'd
+        # rather fail open than error out. Unfortunately, Nginx can be compiled against
+        # many versions of OpenSSL. So we have to check both for the two different features,
+        # leading to four different combinations of options.
+        # For a complete history, check out https://github.com/certbot/certbot/issues/7322
+
+        use_tls13 = self.version >= (1, 13, 0)
+        session_tix_off = self.version >= (1, 5, 9) and self.openssl_version and\
+            LooseVersion(self.openssl_version) >= LooseVersion('1.0.2l')
+
+        if use_tls13:
+            if session_tix_off:
+                config_filename = "options-ssl-nginx.conf"
+            else:
+                config_filename = "options-ssl-nginx-tls13-session-tix-on.conf"
+        else:
+            if session_tix_off:
+                config_filename = "options-ssl-nginx-tls12-only.conf"
+            else:
+                config_filename = "options-ssl-nginx-old.conf"
+
         return pkg_resources.resource_filename(
             "certbot_nginx", os.path.join("tls_configs", config_filename))
 
@@ -168,6 +197,9 @@ class NginxConfigurator(common.Installer):
         # Set Version
         if self.version is None:
             self.version = self.get_version()
+
+        if self.openssl_version is None:
+            self.openssl_version = self._get_openssl_version()
 
         self.install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
 
@@ -909,17 +941,14 @@ class NginxConfigurator(common.Installer):
         util.make_or_verify_dir(self.config.backup_dir, core_constants.CONFIG_DIRS_MODE)
         util.make_or_verify_dir(self.config.config_dir, core_constants.CONFIG_DIRS_MODE)
 
-    def get_version(self):
-        """Return version of Nginx Server.
+    def _nginx_version(self):
+        """Return results of nginx -V
 
-        Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
-
-        :returns: version
-        :rtype: tuple
+        :returns: version text
+        :rtype: str
 
         :raises .PluginError:
-            Unable to find Nginx version or version is unsupported
-
+            Unable to run Nginx version command
         """
         try:
             proc = subprocess.Popen(
@@ -932,6 +961,21 @@ class NginxConfigurator(common.Installer):
             logger.debug(str(error), exc_info=True)
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
+        return text
+
+    def get_version(self):
+        """Return version of Nginx Server.
+
+        Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
+
+        :returns: version
+        :rtype: tuple
+
+        :raises .PluginError:
+            Unable to find Nginx version or version is unsupported
+
+        """
+        text = self._nginx_version()
 
         version_regex = re.compile(r"nginx version: ([^/]+)/([0-9\.]*)", re.IGNORECASE)
         version_matches = version_regex.findall(text)
@@ -963,6 +1007,28 @@ class NginxConfigurator(common.Installer):
             raise errors.NotSupportedError("Nginx version must be 0.8.48+")
 
         return nginx_version
+
+    def _get_openssl_version(self):
+        """Return version of OpenSSL linked to Nginx.
+
+        Version is returned as string. If no version can be found, empty string is returned.
+
+        :returns: openssl_version
+        :rtype: str
+
+        :raises .PluginError:
+            Unable to run Nginx version command
+        """
+        text = self._nginx_version()
+
+        matches = re.findall(r"running with OpenSSL ([^ ]+) ", text)
+        if not matches:
+            matches = re.findall(r"built with OpenSSL ([^ ]+) ", text)
+            if not matches:
+                logger.warning("NGINX configured with OpenSSL alternatives is not officially"
+                    "supported by Certbot.")
+                return ""
+        return matches[0]
 
     def more_info(self):
         """Human-readable string to help understand the module"""

@@ -34,7 +34,13 @@ class AuthenticatorTest(unittest.TestCase):
 
     def setUp(self):
         from certbot.plugins.webroot import Authenticator
-        self.path = tempfile.mkdtemp()
+        # On Linux directories created by tempfile.mkdtemp inherit their permissions from their
+        # parent directory. So the actual permissions are inconsistent over various tests env.
+        # To circumvent this, a dedicated sub-workspace is created under the workspace, using
+        # filesystem.mkdir to get consistent permissions.
+        self.workspace = tempfile.mkdtemp()
+        self.path = os.path.join(self.workspace, 'webroot')
+        filesystem.mkdir(self.path)
         self.partial_root_challenge_path = os.path.join(
             self.path, ".well-known")
         self.root_challenge_path = os.path.join(
@@ -170,17 +176,12 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertTrue(filesystem.check_mode(self.validation_path, 0o644))
 
         # Check permissions of the directories
-
         for dirpath, dirnames, _ in os.walk(self.path):
             for directory in dirnames:
                 full_path = os.path.join(dirpath, directory)
                 self.assertTrue(filesystem.check_mode(full_path, 0o755))
 
-        parent_gid = os.stat(self.path).st_gid
-        parent_uid = os.stat(self.path).st_uid
-
-        self.assertEqual(os.stat(self.validation_path).st_gid, parent_gid)
-        self.assertEqual(os.stat(self.validation_path).st_uid, parent_uid)
+        self.assertTrue(filesystem.has_same_ownership(self.validation_path, self.path))
 
     def test_perform_cleanup(self):
         self.auth.prepare()

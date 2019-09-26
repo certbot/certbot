@@ -22,19 +22,6 @@ MOD_SSL_CONF_DEST = "options-ssl-nginx.conf"
 UPDATED_MOD_SSL_CONF_DIGEST = ".updated-options-ssl-nginx-conf-digest.txt"
 """Name of the hash of the updated or informed mod_ssl_conf as saved in `IConfig.config_dir`."""
 
-SSL_OPTIONS_HASHES_NEW = [
-    '108c4555058a087496a3893aea5d9e1cee0f20a3085d44a52dc1a66522299ac3',
-]
-"""SHA256 hashes of the contents of versions of MOD_SSL_CONF_SRC for nginx >= 1.13.0"""
-
-SSL_OPTIONS_HASHES_MEDIUM = [
-    '63e2bddebb174a05c9d8a7cf2adf72f7af04349ba59a1a925fe447f73b2f1abf',
-    '2901debc7ecbc10917edd9084c05464c9c5930b463677571eaf8c94bffd11ae2',
-    '30baca73ed9a5b0e9a69ea40e30482241d8b1a7343aa79b49dc5d7db0bf53b6c',
-]
-"""SHA256 hashes of the contents of versions of MOD_SSL_CONF_SRC for nginx >= 1.5.9
-   and nginx < 1.13.0"""
-
 ALL_SSL_OPTIONS_HASHES = [
     '0f81093a1465e3d4eaa8b0c14e77b2a2e93568b0fc1351c2b87893a95f0de87c',
     '9a7b32c49001fed4cff8ad24353329472a50e86ade1ef9b2b9e43566a619612e',
@@ -44,7 +31,13 @@ ALL_SSL_OPTIONS_HASHES = [
     '4b16fec2bcbcd8a2f3296d886f17f9953ffdcc0af54582452ca1e52f5f776f16',
     'c052ffff0ad683f43bffe105f7c606b339536163490930e2632a335c8d191cc4',
     '02329eb19930af73c54b3632b3165d84571383b8c8c73361df940cb3894dd426',
-] + SSL_OPTIONS_HASHES_MEDIUM + SSL_OPTIONS_HASHES_NEW
+    '63e2bddebb174a05c9d8a7cf2adf72f7af04349ba59a1a925fe447f73b2f1abf',
+    '2901debc7ecbc10917edd9084c05464c9c5930b463677571eaf8c94bffd11ae2',
+    '30baca73ed9a5b0e9a69ea40e30482241d8b1a7343aa79b49dc5d7db0bf53b6c',
+    '02329eb19930af73c54b3632b3165d84571383b8c8c73361df940cb3894dd426',
+    '108c4555058a087496a3893aea5d9e1cee0f20a3085d44a52dc1a66522299ac3',
+    'd5e021706ecdccc7090111b0ae9a29ef61523e927f020e410caf0a1fd7063981',
+]
 """SHA256 hashes of the contents of all versions of MOD_SSL_CONF_SRC"""
 
 def os_constant(key):
