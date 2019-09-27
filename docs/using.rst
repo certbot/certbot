@@ -279,7 +279,6 @@ external_          Y    N    A plugin for convenient scripting (See also ticket 
 icecast_           N    Y    Deploy certificates to Icecast 2 streaming media servers
 pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN servers
 proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
-heroku_            Y    Y    Integration with Heroku SSL
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 ================== ==== ==== ===============================================================
@@ -293,7 +292,6 @@ dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 .. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
 .. _external: https://github.com/marcan/letsencrypt-external
-.. _heroku: https://github.com/gboudreau/certbot-heroku
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
 
