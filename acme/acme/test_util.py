@@ -4,7 +4,6 @@
 
 """
 import os
-import unittest
 import pkg_resources
 
 from cryptography.hazmat.backends import default_backend
