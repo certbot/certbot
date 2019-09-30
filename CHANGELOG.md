@@ -7,6 +7,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 * Support for Python 3.8 was added to Certbot and all of its components.
+* Support for CentOS 8 was added to certbot-auto.
 
 ### Changed
 
