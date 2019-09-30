@@ -6,15 +6,17 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-* Run tests on Python3.8.
+* Support for Python 3.8 was added to Certbot and all of its components.
+* Support for CentOS 8 was added to certbot-auto.
 
 ### Changed
 
-*
+* Don't send OCSP requests for expired certificates
+* Return to using platform.linux_distribution instead of distro.linux_distribution in OS fingerprinting for Python < 3.8 
 
 ### Fixed
 
-*
+* Fixed OS detection in the Apache plugin on RHEL 6.
 
 More details about these changes can be found on our GitHub repo.
 

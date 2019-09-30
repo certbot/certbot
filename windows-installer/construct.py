@@ -19,7 +19,7 @@ def main():
 
     installer_cfg_path = _generate_pynsist_config(repo_path, build_path)
 
-    _prepare_build_tools(venv_path, venv_python)
+    _prepare_build_tools(venv_path, venv_python, repo_path)
     _compile_wheels(repo_path, build_path, venv_python)
     _build_installer(installer_cfg_path, venv_path)
 
@@ -47,12 +47,12 @@ def _compile_wheels(repo_path, build_path, venv_python):
     subprocess.check_call(command)
 
 
-def _prepare_build_tools(venv_path, venv_python):
+def _prepare_build_tools(venv_path, venv_python, repo_path):
     print('Prepare build tools')
     subprocess.check_call([sys.executable, '-m', 'venv', venv_path])
     subprocess.check_call(['choco', 'upgrade', '-y', 'nsis'])
     subprocess.check_call([venv_python, '-m', 'pip', 'install', '--upgrade', 'pip'])
-    subprocess.check_call([venv_python, '-m', 'pip', 'install', 'wheel', 'pynsist'])
+    subprocess.check_call([venv_python, os.path.join(repo_path, 'tools', 'pip_install.py'), 'wheel', 'pynsist'])
 
 
 def _copy_assets(build_path, repo_path):
@@ -62,6 +62,9 @@ def _copy_assets(build_path, repo_path):
     os.makedirs(build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'certbot.ico'), build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'run.bat'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'template.nsi'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'renew-up.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'renew-down.ps1'), build_path)
 
 
 def _generate_pynsist_config(repo_path, build_path):
@@ -83,6 +86,7 @@ target=$INSTDIR\\run.bat
 
 [Build]
 directory=nsis
+nsi_template=template.nsi
 installer_name=certbot-{certbot_version}-installer-{installer_suffix}.exe
 
 [Python]
@@ -92,6 +96,8 @@ bitness={python_bitness}
 [Include]
 local_wheels=wheels\\*.whl
 files=run.bat
+      renew-up.ps1
+      renew-down.ps1
 
 [Command certbot]
 entry_point=certbot.main:main

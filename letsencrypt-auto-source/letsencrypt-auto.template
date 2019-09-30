@@ -356,7 +356,7 @@ elif [ -f /etc/redhat-release ]; then
   # Handle legacy RPM distributions
   if [ "$PYVER" -eq 26 ]; then
     Bootstrap() {
-      BootstrapMessage "Legacy Red Hat-based OSes that will use Python3"
+      BootstrapMessage "Legacy RedHat-based OSes that will use Python3"
       BootstrapRpmPython3Legacy
     }
     USE_PYTHON_3=1
@@ -368,9 +368,11 @@ elif [ -f /etc/redhat-release ]; then
   else
     # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
     # RHEL 8 also uses python3 by default.
-    if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 ]; then
+    if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
       RPM_USE_PYTHON_3=1
     elif [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
+      RPM_USE_PYTHON_3=1
+    elif [ "$RPM_DIST_NAME" = "centos" -a "$RPM_DIST_VERSION" -ge 8 ]; then
       RPM_USE_PYTHON_3=1
     else
       RPM_USE_PYTHON_3=0
@@ -378,14 +380,14 @@ elif [ -f /etc/redhat-release ]; then
 
     if [ "$RPM_USE_PYTHON_3" = 1 ]; then
       Bootstrap() {
-        BootstrapMessage "Red Hat-based OSes that will use Python3"
+        BootstrapMessage "RedHat-based OSes that will use Python3"
         BootstrapRpmPython3
       }
       USE_PYTHON_3=1
       BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
     else
       Bootstrap() {
-        BootstrapMessage "Red Hat-based OSes"
+        BootstrapMessage "RedHat-based OSes"
         BootstrapRpmCommon
       }
       BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"

@@ -392,7 +392,7 @@ def get_python_os_info():
     os_type, os_ver, _ = info
     os_type = os_type.lower()
     if os_type.startswith('linux'):
-        info = distro.linux_distribution()
+        info = _get_linux_distribution()
         # On arch, distro.linux_distribution() is reportedly ('','',''),
         # so handle it defensively
         if info[0]:
@@ -423,6 +423,14 @@ def get_python_os_info():
         # Cases known to fall here: Cygwin python
         os_ver = ''
     return os_type, os_ver
+
+def _get_linux_distribution():
+    """Gets the linux distribution name from the underlying OS"""
+
+    try:
+        return platform.linux_distribution()
+    except AttributeError:
+        return distro.linux_distribution()
 
 # Just make sure we don't get pwned... Make sure that it also doesn't
 # start with a period or have two consecutive periods <- this needs to
