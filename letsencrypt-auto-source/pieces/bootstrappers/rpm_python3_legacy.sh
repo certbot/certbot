@@ -4,6 +4,8 @@ BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION=1
 
 # This function checks if rh-python36 can be installed.
 CheckPython36SCLAvailability() {
+  InitializeRPMCommonBase >/dev/null 2>&1;
+
   if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
     return 0
   fi

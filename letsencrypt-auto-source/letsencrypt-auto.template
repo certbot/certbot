@@ -355,14 +355,10 @@ elif [ -f /etc/redhat-release ]; then
 
   # Handle legacy RPM distributions
   if [ "$PYVER" -eq 26 ]; then
-    # Check if the automated bootstrap can be achieved on this system.
+    # Check if the automated rebootstrap can be achieved on this system.
     if ! CheckPython36SCLAvailability; then
-      INTERACTIVE_BOOTSTRAP=1
-      INTERACTIVE_BOOTSTRAP_MESSAGE="
-To use Certbot on this operating system, packages from the SCL repository need to be installed.
-Certbot-auto cannot do that automatically: please refer to the official documentation for your
-system and see how to enable SCL manually.
-"
+      INTERACTIVE_REBOOTSTRAP=1
+      INTERACTIVE_REBOOTSTRAP_MESSAGE="Enable the SCL repository and try running Certbot again."
     fi
 
     Bootstrap() {
@@ -581,12 +577,12 @@ if [ "$1" = "--le-auto-phase2" ]; then
       # Check if we can rebootstrap without manual user intervention: this require that
       # certbot-auto is in non-interactive mode AND selected bootstrap does not claim to
       # require a manual user intervention.
-      if [ "${NONINTERACTIVE}" = 1 -a "${INTERACTIVE_BOOTSTRAP}" != 1 ]; then
+      if [ "${NONINTERACTIVE}" = 1 -a "${INTERACTIVE_REBOOTSTRAP}" != 1 ]; then
         CAN_REBOOTSTRAP=1
       fi
       # Check if rebootstrap can be done non-interactively and current shell is non-interactive
       # (true if stdin and stdout are not attached to a terminal).
-      if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
+      if [ \( "${CAN_REBOOTSTRAP}" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
         if [ -d "$VENV_PATH" ]; then
           rm -rf "$VENV_PATH"
         fi
@@ -601,11 +597,11 @@ if [ "$1" = "--le-auto-phase2" ]; then
       else
         # If it is because of the bootstrap, --non-interactive will be of no use.
         # Display the OS-specific interactive bootstrap message.
-        if [ "${INTERACTIVE_BOOTSTRAP}" != 1 ]; then
-          error "Skipping upgrade because new OS dependencies need to be installed, and"
-          error "certbot-auto cannot do that without a manual user intervention."
+        if [ "${INTERACTIVE_REBOOTSTRAP}" = 1 ]; then
+          error "Skipping upgrade because new OS dependencies need to be installed."
+          error "This requires a manual user intervention."
+          error "${INTERACTIVE_REBOOTSTRAP_MESSAGE}"
           error
-          error "${INTERACTIVE_BOOTSTRAP_MESSAGE}"
         # If this is because of the environment (eg. non interactive shell without
         # --non-interactive flag set, help the user in that direction.
         else
