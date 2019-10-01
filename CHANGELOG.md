@@ -2,7 +2,23 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.39.0 - master
+## 0.40.0 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.39.0 - 2019-10-01
 
 ### Added
 
@@ -13,6 +29,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Don't send OCSP requests for expired certificates
 * Return to using platform.linux_distribution instead of distro.linux_distribution in OS fingerprinting for Python < 3.8 
+* Updated the Nginx plugin's TLS configuration to keep support for some versions of IE11.
 
 ### Fixed
 
