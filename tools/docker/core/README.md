@@ -1,5 +1,5 @@
 # ![](https://certbot.eff.org/images/certbot-logo-1A.svg)
-[![](https://img.shields.io/badge/current-v0.38.0-blue.svg)](https://github.com/certbot/certbot.git) &nbsp; [![](https://travis-ci.com/certbot/certbot.svg?branch=0.38.x)](https://travis-ci.com/certbot/certbot)
+[![](https://img.shields.io/badge/current-v0.39.0-blue.svg)](https://github.com/certbot/certbot.git) &nbsp; [![](https://travis-ci.com/certbot/certbot.svg?branch=0.39.x)](https://travis-ci.com/certbot/certbot)
 
 This is the Docker repository for Certbot Core.
 
