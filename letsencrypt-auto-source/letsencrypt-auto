@@ -479,6 +479,19 @@ BootstrapRpmCommon() {
 # number must be increased.
 BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION=1
 
+# This function checks if rh-python36 can be installed.
+CheckPython36SCLAvailability() {
+  if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
+    return 0
+  fi
+  if "${TOOL}" list centos-release-scl >/dev/null 2>&1; then
+    return 0
+  fi
+  return 1
+}
+
+# This function tries to enable rh-python36 from SCL
+# if it is necessary and possible.
 EnablePython36SCL() {
   if "$EXISTS" python3.6 > /dev/null 2> /dev/null; then
       return 0
@@ -810,6 +823,16 @@ elif [ -f /etc/redhat-release ]; then
 
   # Handle legacy RPM distributions
   if [ "$PYVER" -eq 26 ]; then
+    # Check if the automated bootstrap can be achieved on this system.
+    if ! CheckPython36SCLAvailability; then
+      INTERACTIVE_BOOTSTRAP=1
+      INTERACTIVE_BOOTSTRAP_MESSAGE="
+To use Certbot on this operating system, packages from the SCL repository need to be installed.
+Certbot-auto cannot do that automatically: please refer to the official documentation for your
+system and see how to enable SCL manually.
+"
+    fi
+
     Bootstrap() {
       BootstrapMessage "Legacy RedHat-based OSes that will use Python3"
       BootstrapRpmPython3Legacy
@@ -1131,7 +1154,14 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # If the selected Bootstrap function isn't a noop and it differs from the
     # previously used version
     if [ -n "$BOOTSTRAP_VERSION" -a "$BOOTSTRAP_VERSION" != "$PREV_BOOTSTRAP_VERSION" ]; then
-      # if non-interactive mode or stdin and stdout are connected to a terminal
+      # Check if we can rebootstrap without manual user intervention: this require that
+      # certbot-auto is in non-interactive mode AND selected bootstrap does not claim to
+      # require a manual user intervention.
+      if [ "${NONINTERACTIVE}" = 1 -a "${INTERACTIVE_BOOTSTRAP}" != 1 ]; then
+        CAN_REBOOTSTRAP=1
+      fi
+      # Check if rebootstrap can be done non-interactively and current shell is non-interactive
+      # (true if stdin and stdout are not attached to a terminal).
       if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
         if [ -d "$VENV_PATH" ]; then
           rm -rf "$VENV_PATH"
@@ -1143,12 +1173,24 @@ if [ "$1" = "--le-auto-phase2" ]; then
           ln -s "$VENV_PATH" "$OLD_VENV_PATH"
         fi
         RerunWithArgs "$@"
+      # Otherwise bootstrap needs to be done manually by the user.
       else
-        error "Skipping upgrade because new OS dependencies may need to be installed."
-        error
-        error "To upgrade to a newer version, please run this script again manually so you can"
-        error "approve changes or with --non-interactive on the command line to automatically"
-        error "install any required packages."
+        # If it is because of the bootstrap, --non-interactive will be of no use.
+        # Display the OS-specific interactive bootstrap message.
+        if [ "${INTERACTIVE_BOOTSTRAP}" != 1 ]; then
+          error "Skipping upgrade because new OS dependencies need to be installed, and"
+          error "certbot-auto cannot do that without a manual user intervention."
+          error
+          error "${INTERACTIVE_BOOTSTRAP_MESSAGE}"
+        # If this is because of the environment (eg. non interactive shell without
+        # --non-interactive flag set, help the user in that direction.
+        else
+          error "Skipping upgrade because new OS dependencies may need to be installed."
+          error
+          error "To upgrade to a newer version, please run this script again manually so you can"
+          error "approve changes or with --non-interactive on the command line to automatically"
+          error "install any required packages."
+        fi
         # Set INSTALLED_VERSION to be the same so we don't update the venv
         INSTALLED_VERSION="$LE_AUTO_VERSION"
         # Continue to use OLD_VENV_PATH if the new venv doesn't exist

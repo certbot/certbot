@@ -2,6 +2,19 @@
 # number must be increased.
 BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION=1
 
+# This function checks if rh-python36 can be installed.
+CheckPython36SCLAvailability() {
+  if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
+    return 0
+  fi
+  if "${TOOL}" list centos-release-scl >/dev/null 2>&1; then
+    return 0
+  fi
+  return 1
+}
+
+# This function tries to enable rh-python36 from SCL
+# if it is necessary and possible.
 EnablePython36SCL() {
   if "$EXISTS" python3.6 > /dev/null 2> /dev/null; then
       return 0
