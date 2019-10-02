@@ -2,8 +2,8 @@
 # number must be increased.
 BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION=1
 
-# This function checks if rh-python36 can be installed.
-CheckPython36SCLAvailability() {
+# Checks if rh-python36 can be installed.
+CheckPython36SclIsAvailable() {
   InitializeRPMCommonBase >/dev/null 2>&1;
 
   if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
@@ -15,8 +15,7 @@ CheckPython36SCLAvailability() {
   return 1
 }
 
-# This function tries to enable rh-python36 from SCL
-# if it is necessary and possible.
+# Try to enable rh-python36 from SCL if it is necessary and possible.
 EnablePython36SCL() {
   if "$EXISTS" python3.6 > /dev/null 2> /dev/null; then
       return 0
@@ -29,6 +28,9 @@ EnablePython36SCL() {
   set -e
 }
 
+# This bootstrap concerns old RedHat-based distributions that do not ship by default
+# with Python 2.7, but only Python 2.6. We bootstrap them by enabling SCL and installing
+# Python 3.6. Some of these distributions are: CentOS/RHEL/OL/SL 6.
 BootstrapRpmPython3Legacy() {
   # Tested with:
   #   - CentOS 6
