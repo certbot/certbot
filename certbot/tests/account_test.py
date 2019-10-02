@@ -1,7 +1,6 @@
 """Tests for certbot.account."""
 import datetime
 import json
-import shutil
 import unittest
 
 import josepy as jose
