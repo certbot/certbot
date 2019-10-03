@@ -6,7 +6,10 @@ Let's begin. All pipelines are defined in `.azure-pipelines`. Currently there ar
 
 Several templates are defined in `.azure-pipelines/templates`. These YAML files aggregate common jobs configuration that can be reused in several pipelines.
 
-Note that `CODECOV_TOKEN` secured environment variable needs to be set to allow the main pipeline to publish coverage reports to CodeCov.
+Unlike Travis, where CodeCov is working without any action required, CodeCov supports Azure Pipelines
+using the coverage-bash utility (not python-coverage for now) only if you provide the Codecov repo token
+using the `CODECOV_TOKEN` environment variable. So `CODECOV_TOKEN` needs to be set as a secured
+environment variable to allow the main pipeline to publish coverage reports to CodeCov.
 
 This INSTALL.md file explains how to configure Azure Pipelines with Certbot in order to execute the CI/CD logic defined in `.azure-pipelines` folder with it.
 During this installation step, warnings describing user access and legal comitments will be displayed like this:
