@@ -101,13 +101,17 @@ _Done. Pipeline is operational. Repeat to add more pipelines from existing YAML 
 
 ## Add a secret variable to a pipeline (like `CODECOV_TOKEN`)
 
-- On Azure DevOps, go to you organization, project, pipeline tab
-- Select the pipeline, click "Edit" button, then click "Variables" button
-- Set name (eg `codecov_token`), value, tick "Kep this value secret"
-- In YAML, use something like to consume the secret as an enviroment variable
+__NB: Following steps suppose that you already setup the YAML pipeline file to
+consume the secret variable that these steps will create as an environment variable.
+For a variable named `CODECOV_TOKEN` consuming the variable `codecov_token`,
+in the YAML file this setup would take the form of the following:
 ```
 steps:
     - script: ./do_something_that_consumes_CODECOV_TOKEN  # Eg. `codecov -F windows`
       env:
         CODECOV_TOKEN: $(codecov_token)
 ```
+
+- On Azure DevOps, go to you organization, project, pipeline tab
+- Select the pipeline, click "Edit" button, then click "Variables" button
+- Set name (eg `codecov_token`), value, tick "Keep this value secret"
