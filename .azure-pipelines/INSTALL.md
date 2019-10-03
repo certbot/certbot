@@ -60,7 +60,11 @@ _Logged to Azure DevOps, account is ready._
 
 ```
 !!! ACCESS !!!
-Azure Pipeline needs RW on code, RO on metadata, RW on checks, commit statuses, deployements, issues, pull requests.
+Azure Pipeline needs RW on code, RO on metadata, RW on checks, commit statuses, deployments, issues, pull requests.
+RW access here is required to allow update of the pipelines YAML files from Azure DevOps interface, and to
+update the status of builds and PRs on GitHub side when Azure Pipelines are triggered.
+Note however that no admin access is defined here: this means that Azure Pipelines cannot do anything with
+protected branches, like master, and cannot modify the security context around this on GitHub.
 Access can be defined for all or only selected repositories, which is nice.
 ```
 
