@@ -1,7 +1,7 @@
 jobs:
   - job: test
     pool:
-      vmImage: windows-latest
+      vmImage: vs2017-win2016
     strategy:
       matrix:
         py35:
@@ -23,7 +23,10 @@ jobs:
       displayName: Install dependencies
     - script: python -m tox
       displayName: Run tox
-    - bash: curl -s https://codecov.io/bash | bash /dev/stdin -F windows
+    - bash: |
+        curl -s https://codecov.io/bash -o codecov-bash
+        chmod +x codecov-bash
+        ./codecov-bash -F windows
       condition: eq(variables['TOXENV'], 'py37-cover')
       env:
         CODECOV_TOKEN: $(codecov_token)

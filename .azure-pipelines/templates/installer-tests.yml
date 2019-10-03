@@ -1,7 +1,7 @@
 jobs:
   - job: installer
     pool:
-      vmImage: windows-latest
+      vmImage: vs2017-win2016
     steps:
       - task: UsePythonVersion@0
         inputs:
@@ -10,8 +10,15 @@ jobs:
           addToPath: true
       - script: python windows-installer/construct.py
         displayName: Build Certbot installer
-      - publish: $(System.DefaultWorkingDirectory)/windows-installer
-        artifact: WindowsInstaller
+      - task: CopyFiles@2
+        inputs:
+          sourceFolder: $(System.DefaultWorkingDirectory)/windows-installer/build/nsis
+          contents: '*.exe'
+          targetFolder: $(Build.ArtifactStagingDirectory)
+      - task: PublishPipelineArtifact@1
+        inputs:
+          path: $(Build.ArtifactStagingDirectory)
+          artifact: WindowsInstaller
       - script: python windows-installer/install.py
         displayName: Install Certbot
       - script: |
