@@ -84,26 +84,20 @@ _Done. We can move to pipelines configuration._
 - On Azure DevOps, go to your organization (eg. _certbot_) then your project (eg. _certbot_)
 - Click "Pipelines" tab
 - Click "New pipeline"
-- Where is your code? Select "GitHub"
+- Where is your code?: select "__Use the classic editor__"
 
-```
-!!! ACCESS !!!
-Here comes the big requests:
-- Admin access to webhooks and services (not the code)
-- RO access on personal data (email + profile)
-- RO + RW access to repositories (code, issue, PR, wiki, settings, webhooks, services, deploy keys, collaboration invites)
-NB: Admin is not RW. Access concerns all repositories in the GitHub organization/user
-```
+__Warning: Do not choose the GitHub option in Where is your code? section. Indeed, this option will trigger an OAuth
+grant permissions from Azure Pipelines to GitHub in order to setup a GitHub OAuth Application. The permissions asked
+then are way too large (admin level on almost everything), while the classic approach does not add any more
+permissions, and works perfectly well.__
 
-- Select the repository (eg. certbot/certbot)
-- Choose "Existing Azure Pipelines YAML file"
-- Choose branch (`master` in the dropdown menu), and path (eg. /.azure-pipelines/pr.yml in the dropdown menu), click Continue
-- Review the YAML, click Run
+- Select GitHub in "Select your repository section", choose certbot/certbot in Repository, master in default branch.
+- Click on YAML option for "Select a template"
+- Choose a name for the pipeline (eg. test-pipeline), and browse to the actual pipeline YAML definition in the
+  "YAML file path" input (eg. `.azure-pipelines/test-pipeline.yml`)
+- Click "Safe & queue", choose the master branch to build the first pipeline, and click "Save and run" button.
 
 _Done. Pipeline is operational. Repeat to add more pipelines from existing YAML files in `.azure-pipelines`._
-
-- (Bonus) Go again to Pipeline, select your pipline, button "..." and choose "Rename/Move": give to the pipeline a nice name!
-
 
 ## Add a secret variable to a pipeline (like `CODECOV_TOKEN`)
 
