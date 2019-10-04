@@ -20,6 +20,19 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
+    def test_parameters_from_string(self):
+        from certbot_apache.apacheparser import _parameters_from_string
+        cases = [
+            ("  a  b\t c d", ("a", "b", "c", "d")),
+            ("a \"b\" c", ("a", "b", "c")),
+            ("a \"  b c \"", ("a", "  b c ")),
+            ("a \"b \\\"c\\\"\"", ("a", "b \\\"c\\\"")),
+            ("a \'b \"c\"\'", ("a", "b \"c\"")),
+        ]
+        for case, expected in cases:
+            result = _parameters_from_string(case)
+            self.assertEqual(result, expected)
+
     def test_save(self):
         with mock.patch('certbot_apache.parser.ApacheParser.save') as mock_save:
             self.config.parser_root.save("A save message")
@@ -61,7 +74,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
 
     def test_find_directive_found(self):
         directives = self.config.parser_root.find_directives("Listen")
-        self.assertEqual(len(directives), 1)
+        self.assertEqual(len(directives), 3)
         self.assertTrue(directives[0].filepath.endswith("/apache2/ports.conf"))
         self.assertEqual(directives[0].parameters, (u'80',))
 
@@ -103,7 +116,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
 
     def test_set_parameters_atinit(self):
         from certbot_apache.augeasparser import AugeasDirectiveNode
-        servernames = self.config.parser_root.find_directives("servername")
+        servernames = self.config.parser_root.find_directives("servername", exclude=False)
         setparam = "certbot_apache.augeasparser.AugeasDirectiveNode.set_parameters"
         with mock.patch(setparam) as mock_set:
             AugeasDirectiveNode(
@@ -146,11 +159,11 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
 
     def test_add_child_comment(self):
         newc = self.config.parser_root.primary.add_child_comment("The content")
-        comments = self.config.parser_root.find_comments("The content")
+        comments = self.config.parser_root.primary.find_comments("The content")
         self.assertEqual(len(comments), 1)
         self.assertEqual(
             newc.metadata["augeaspath"],
-            comments[0].primary.metadata["augeaspath"]
+            comments[0].metadata["augeaspath"]
         )
         self.assertEqual(newc.comment, comments[0].comment)
 

@@ -64,6 +64,8 @@ class DualNodeBase(object):
                 new_nodes.append(nodeclass(primary=c,
                                            secondary=secondary_res[0]))
         else:
+            print len(primary_res)
+            print len(secondary_res)
             assert len(primary_res) == len(secondary_res)
             matches = self._create_matching_list(primary_res, secondary_res)
             for p, s in matches:
@@ -237,7 +239,8 @@ class DualBlockNode(DualNodeBase):
                 raise AssertionError("Could not find a matching node.")
         return matched
 
-    def find_blocks(self, name, exclude=True):
+    # TODO: Re-set default "exclude" to True when apacheconfig version is implemented.
+    def find_blocks(self, name, exclude=False):
         """
         Performs a search for BlockNodes using both implementations and does simple
         checks for results. This is built upon the assumption that unimplemented
@@ -249,7 +252,7 @@ class DualBlockNode(DualNodeBase):
         return self._find_helper(DualBlockNode, "find_blocks", name,
                                  exclude=exclude)
 
-    def find_directives(self, name, exclude=True):
+    def find_directives(self, name, exclude=False):
         """
         Performs a search for DirectiveNodes using both implementations and
         checks the results. This is built upon the assumption that unimplemented

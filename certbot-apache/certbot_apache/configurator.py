@@ -18,6 +18,9 @@ import zope.interface
 from acme import challenges
 from acme.magic_typing import DefaultDict, Dict, List, Set, Union  # pylint: disable=unused-import, no-name-in-module
 
+from apacheconfig import make_writable_loader
+from apacheconfig import flavors
+
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -255,12 +258,7 @@ class ApacheConfigurator(common.Installer):
         self.recovery_routine()
         # Perform the actual Augeas initialization to be able to react
         self.parser = self.get_parser()
-
-        # Set up ParserNode root
-        pn_meta = {"augeasparser": self.parser,
-                   "augeaspath": self.parser.get_root_augpath(),
-                   "ac_ast": None}
-        self.parser_root = self.get_parsernode_root(pn_meta)
+        self.parser_root = self.get_parsernode_root()
 
         # Check for errors in parsing files with Augeas
         self.parser.check_parsing_errors("httpd.aug")
@@ -357,20 +355,31 @@ class ApacheConfigurator(common.Installer):
             self.option("server_root"), self.conf("vhost-root"),
             self.version, configurator=self)
 
-    def get_parsernode_root(self, metadata):
+    def get_parsernode_root(self):
         """Initializes the ParserNode parser root instance."""
 
         apache_vars = dict()
         apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
         apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
         apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
-        metadata["apache_vars"] = apache_vars
+        with make_writable_loader(**flavors.NATIVE_APACHE) as loader:
+            with open(self.parser.loc["root"]) as f:
+                ac_ast = loader.loads(f.read())
+
+            # Set up ParserNode root
+            pn_meta = {"augeasparser": self.parser,
+                       "augeaspath": self.parser.get_root_augpath(),
+                       "serverroot": self.parser.loc["root"],
+                       "ac_ast": ac_ast,
+                       "parsed_files": {},
+                       "loader": loader}
+            pn_meta["apache_vars"] = apache_vars
 
         return dualparser.DualBlockNode(
             name=assertions.PASS,
             ancestor=None,
             filepath=self.parser.loc["root"],
-            metadata=metadata
+            metadata=pn_meta
         )
 
     def _wildcard_domain(self, domain):

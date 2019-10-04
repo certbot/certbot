@@ -39,7 +39,6 @@ def assertEqualComment(first, second): # pragma: no cover
 
 def _assertEqualDirectiveComponents(first, second): # pragma: no cover
     """ Handles assertion for instance variables for DirectiveNode and BlockNode"""
-
     # Enabled value cannot be asserted, because Augeas implementation
     # is unable to figure that out.
     # assert first.enabled == second.enabled

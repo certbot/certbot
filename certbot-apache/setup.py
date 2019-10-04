@@ -11,6 +11,7 @@ version = '0.40.0.dev0'
 install_requires = [
     'acme>=0.29.0',
     'certbot>=0.39.0',
+    'apacheconfig',
     'mock',
     'python-augeas',
     'setuptools',
