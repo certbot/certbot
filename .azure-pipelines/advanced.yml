@@ -7,7 +7,7 @@ pr:
   - '*.x'
 # This pipeline is also nightly run on master
 schedules:
-  - cron: "0 0 * * *"
+  - cron: "4 0 * * *"
     displayName: Nightly build
     branches:
       include:
