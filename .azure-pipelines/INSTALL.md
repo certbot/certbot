@@ -95,7 +95,7 @@ permissions, and works perfectly well.__
 - Click on YAML option for "Select a template"
 - Choose a name for the pipeline (eg. test-pipeline), and browse to the actual pipeline YAML definition in the
   "YAML file path" input (eg. `.azure-pipelines/test-pipeline.yml`)
-- Click "Safe & queue", choose the master branch to build the first pipeline, and click "Save and run" button.
+- Click "Save & queue", choose the master branch to build the first pipeline, and click "Save and run" button.
 
 _Done. Pipeline is operational. Repeat to add more pipelines from existing YAML files in `.azure-pipelines`._
 
