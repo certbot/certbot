@@ -262,7 +262,7 @@ MIN_PYTHON_3_VERSION="3.5"
 MIN_PYVER3=$(echo "$MIN_PYTHON_3_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version.
-# MIN_PYVER and MIN_PYTHON_VERSION are also sets by this function, and their
+# MIN_PYVER and MIN_PYTHON_VERSION are also set by this function, and their
 # values depend on if we try to use Python 3 or Python 2.
 DeterminePythonVersion() {
   # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
@@ -479,8 +479,8 @@ BootstrapRpmCommon() {
 # number must be increased.
 BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION=1
 
-# This function checks if rh-python36 can be installed.
-CheckPython36SCLAvailability() {
+# Checks if rh-python36 can be installed.
+CheckPython36SclIsAvailable() {
   InitializeRPMCommonBase >/dev/null 2>&1;
 
   if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
@@ -492,8 +492,7 @@ CheckPython36SCLAvailability() {
   return 1
 }
 
-# This function tries to enable rh-python36 from SCL
-# if it is necessary and possible.
+# Try to enable rh-python36 from SCL if it is necessary and possible.
 EnablePython36SCL() {
   if "$EXISTS" python3.6 > /dev/null 2> /dev/null; then
       return 0
@@ -506,6 +505,9 @@ EnablePython36SCL() {
   set -e
 }
 
+# This bootstrap concerns old RedHat-based distributions that do not ship by default
+# with Python 2.7, but only Python 2.6. We bootstrap them by enabling SCL and installing
+# Python 3.6. Some of these distributions are: CentOS/RHEL/OL/SL 6.
 BootstrapRpmPython3Legacy() {
   # Tested with:
   #   - CentOS 6
@@ -826,7 +828,7 @@ elif [ -f /etc/redhat-release ]; then
   # Handle legacy RPM distributions
   if [ "$PYVER" -eq 26 ]; then
     # Check if the automated rebootstrap can be achieved on this system.
-    if ! CheckPython36SCLAvailability; then
+    if ! CheckPython36SclIsAvailable; then
       INTERACTIVE_REBOOTSTRAP=1
       INTERACTIVE_REBOOTSTRAP_MESSAGE="Enable the SCL repository and try running Certbot again."
     fi
@@ -844,7 +846,7 @@ elif [ -f /etc/redhat-release ]; then
   else
     # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
     # RHEL 8 also uses python3 by default.
-    if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
+    if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 ]; then
       RPM_USE_PYTHON_3=1
     elif [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
       RPM_USE_PYTHON_3=1
@@ -1155,12 +1157,12 @@ if [ "$1" = "--le-auto-phase2" ]; then
       # Check if we can rebootstrap without manual user intervention: this require that
       # certbot-auto is in non-interactive mode AND selected bootstrap does not claim to
       # require a manual user intervention.
-      if [ "${NONINTERACTIVE}" = 1 -a "${INTERACTIVE_REBOOTSTRAP}" != 1 ]; then
+      if [ "$NONINTERACTIVE" = 1 -a "$INTERACTIVE_REBOOTSTRAP" != 1 ]; then
         CAN_REBOOTSTRAP=1
       fi
       # Check if rebootstrap can be done non-interactively and current shell is non-interactive
       # (true if stdin and stdout are not attached to a terminal).
-      if [ \( "${CAN_REBOOTSTRAP}" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
+      if [ \( "$CAN_REBOOTSTRAP" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
         if [ -d "$VENV_PATH" ]; then
           rm -rf "$VENV_PATH"
         fi
@@ -1175,10 +1177,10 @@ if [ "$1" = "--le-auto-phase2" ]; then
       else
         # If it is because of the bootstrap, --non-interactive will be of no use.
         # Display the OS-specific interactive bootstrap message.
-        if [ "${INTERACTIVE_REBOOTSTRAP}" = 1 ]; then
+        if [ "$INTERACTIVE_REBOOTSTRAP" = 1 ]; then
           error "Skipping upgrade because new OS dependencies need to be installed."
           error "This requires a manual user intervention."
-          error "${INTERACTIVE_REBOOTSTRAP_MESSAGE}"
+          error "$INTERACTIVE_REBOOTSTRAP_MESSAGE"
           error
         # If this is because of the environment (eg. non interactive shell without
         # --non-interactive flag set, help the user in that direction.
