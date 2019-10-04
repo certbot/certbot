@@ -15,7 +15,7 @@ def main():
     installer_path = os.path.join(script_dir_path, 'build', 'nsis', 'certbot-{0}-installer-{1}.exe'
                                   .format(certbot_version, 'win_amd64' if PYTHON_BITNESS == 64 else 'win32'))
 
-    return_code = subprocess.check_call([installer_path, '/S', '/AllUsers'])
+    return_code = subprocess.check_call([installer_path, '/S'])
 
     if return_code:
         raise RuntimeError('An error occured during certbot installation.')
