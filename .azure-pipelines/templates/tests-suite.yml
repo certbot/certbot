@@ -14,6 +14,8 @@ jobs:
           PYTHON_VERSION: 3.7
           TOXENV: integration-certbot
           PYTEST_ADDOPTS: --numprocesses 4
+    variables:
+    - group: certbot-common
     steps:
     - task: UsePythonVersion@0
       inputs:

@@ -112,6 +112,8 @@ steps:
         CODECOV_TOKEN: $(codecov_token)
 ```
 
-- On Azure DevOps, go to you organization, project, pipeline tab
-- Select the pipeline, click "Edit" button, then click "Variables" button
-- Set name (eg `codecov_token`), value, tick "Keep this value secret"
+To set up a variable that is shared between pipelines, follow the instructions
+at
+https://docs.microsoft.com/en-us/azure/devops/pipelines/library/variable-groups.
+When adding variables to a group, don't forget to tick "Keep this value secret"
+if it shouldn't be shared publcily.
