@@ -18,6 +18,11 @@ targets:
     user: ubuntu
   #-----------------------------------------------------------------------------
   # Debian
+  - ami: ami-01db78123b2b99496
+    name: debian10
+    type: ubuntu
+    virt: hvm
+    user: admin
   - ami: ami-003f19e0e687de1cd
     name: debian9
     type: ubuntu
