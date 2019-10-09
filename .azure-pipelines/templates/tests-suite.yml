@@ -29,9 +29,7 @@ jobs:
     # something goes wrong, each command is suffixed with a command that hides any non zero exit
     # codes and echoes an informative message instead.
     - bash: |
-        curl -s https://codecov.io/bash -o codecov-bash || echo "Failed to download codecov-bash"
-        chmod +x codecov-bash || echo "Failed to apply execute permissions on codecov-bash"
-        ./codecov-bash -F windows  || echo "Codecov did not collect coverage reports"
+        ./codecov-bash -F windows
       condition: eq(variables['TOXENV'], 'py37-cover')
       env:
         CODECOV_TOKEN: $(codecov_token)
