@@ -32,7 +32,7 @@ jobs:
         curl -s https://codecov.io/bash -o codecov-bash || echo "Failed to download codecov-bash"
         chmod +x codecov-bash || echo "Failed to apply execute permissions on codecov-bash"
         ./codecov-bash -F windows  || echo "Codecov did not collect coverage reports"
-      condition: eq(variables['TOXENV'], 'py37-cover')
+      condition: in(variables['TOXENV'], 'py37-cover', 'integration-certbot')
       env:
         CODECOV_TOKEN: $(codecov_token)
       displayName: Publish coverage
