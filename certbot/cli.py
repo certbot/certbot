@@ -649,13 +649,20 @@ class HelpfulArgumentParser(object):
     def set_test_server(self, parsed_args):
         """We have --staging/--dry-run; perform sanity check and set config.server"""
 
-        if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
-            conflicts = ["--staging"] if parsed_args.staging else []
-            conflicts += ["--dry-run"] if parsed_args.dry_run else []
-            raise errors.Error("--server value conflicts with {0}".format(
-                " and ".join(conflicts)))
+        # Flag combinations should produce these results:
+        #                             | --staging      | --dry-run   |
+        # ------------------------------------------------------------
+        # | --server acme-v02         | Use staging    | Use staging |
+        # | --server acme-staging-v02 | Use staging    | Use staging |
+        # | --server <other>          | Conflict error | Use <other> |
 
-        parsed_args.server = constants.STAGING_URI
+        default_servers = (flag_default("server"), constants.STAGING_URI)
+
+        if parsed_args.staging and parsed_args.server not in default_servers:
+            raise errors.Error("--server value conflicts with --staging")
+
+        if parsed_args.server in default_servers:
+            parsed_args.server = constants.STAGING_URI
 
         if parsed_args.dry_run:
             if self.verb not in ["certonly", "renew"]:
