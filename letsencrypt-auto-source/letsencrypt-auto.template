@@ -350,6 +350,8 @@ elif [ -f /etc/redhat-release ]; then
     RPM_USE_PYTHON_3=1
   elif [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
     RPM_USE_PYTHON_3=1
+  elif [ "$RPM_DIST_NAME" = "centos" -a "$RPM_DIST_VERSION" -ge 8 ]; then
+    RPM_USE_PYTHON_3=1
   else
     RPM_USE_PYTHON_3=0
   fi

@@ -231,12 +231,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         except IOError as error:
             raise errors.AccountStorageError(error)
 
-        acc = Account(regr, key, meta)
-        if acc.id != account_id:
-            raise errors.AccountStorageError(
-                "Account ids mismatch (expected: {0}, found: {1}".format(
-                    account_id, acc.id))
-        return acc
+        return Account(regr, key, meta)
 
     def load(self, account_id):
         return self._load_for_server_path(account_id, self.config.server_path)
