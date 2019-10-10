@@ -15,7 +15,7 @@ from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import Optional  # pylint: disable=unused-import,no-name-in-module
+from acme.magic_typing import Optional, List  # pylint: disable=unused-import,no-name-in-module
 
 import certbot
 from certbot import account
@@ -366,6 +366,7 @@ class Client(object):
             return cert, chain, key, csr
 
     def _get_order_and_authorizations(self, csr_pem, best_effort):
+        # type: (str, bool) -> List[messages.OrderResource]
         """Request a new order and complete its authorizations.
 
         :param str csr_pem: A CSR in PEM format.
@@ -381,8 +382,43 @@ class Client(object):
         except acme_errors.WildcardUnsupportedError:
             raise errors.Error("The currently selected ACME CA endpoint does"
                                " not support issuing wildcard certificates.")
+
+        # For a dry run, deactivate any valid authorizations in this order
+        if orderr and self.config.dry_run:
+            try:
+                deactivated = self.auth_handler.deactivate_valid_authorizations(orderr,
+                                                                                refresh=False)
+            except acme_errors.Error as e:
+                logger.warning("Deactivation of previous authorizations failed. "
+                               "Certbot will continue with this dry run, but some authorizations "
+                               "will not be rechecked: %s", e)
+
+            if deactivated:
+                logger.debug("Recreating order after authz deactivations")
+                orderr = self.acme.new_order(csr_pem)
+
         authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
         return orderr.update(authorizations=authzr)
+
+    def _deactivate_authorizations(self, orderr, refresh=True):
+        # type (acme.messages.OrderResource, bool) -> List[acme.messages.AuthorizationResource]
+        """
+        If Certbot is running with --dry-run, deactivate any valid authorizations in the order,
+        so that future orders will need to authorize each identifier again.
+
+        :param acme.messages.OrderResource orderr: must have authorizations filled in
+        :param bool refresh: whether to refresh the status of the authorization
+        :returns: list of deactivated authorization resources
+        :rtype: List
+        """
+        if not orderr or not self.config.dry_run:
+            return []
+
+        authzrs = self.auth_handler.deactivate_valid_authorizations(orderr, refresh)
+        if authzrs:
+            logger.debug("Deactivated authorizations: %s",
+                        ", ".join([authzr.uri for authzr in authzrs]))
+        return authzrs
 
     # pylint: disable=no-member
     def obtain_and_enroll_certificate(self, domains, certname):

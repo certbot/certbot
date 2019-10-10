@@ -361,6 +361,37 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         mock_order = mock.MagicMock(authorizations=[authzr])
         self.handler.handle_authorizations(mock_order)
 
+    def test_valid_authzrs_deactivated(self):
+        # When we deactivate valid authzrs in an orderr, we expect them to become deactivated
+        # and to receive a list of deactivated authzrs in return.
+        def _mock_deactivate(authzr):
+            if authzr.body.status == messages.STATUS_VALID:
+                authzb = authzr.body.update(status=messages.STATUS_DEACTIVATED)
+                authzr = messages.AuthorizationResource(body=authzb)
+            else:
+                raise errors.Error("Can't deactivate non-valid authz")
+            return authzr
+
+        def _mock_poll(authzr):
+            return (authzr, mock.MagicMock())
+
+        authzr = acme_util.gen_authzr(
+                messages.STATUS_VALID, "is-valid",
+                [acme_util.HTTP01],
+                [messages.STATUS_VALID], False)
+        authzr2 = gen_dom_authzr(domain="is-pending", challs=acme_util.CHALLENGES)
+        orderr = mock.MagicMock(authorizations=[authzr, authzr2])
+
+        self.mock_net.poll.side_effect = _mock_poll
+        self.mock_net.deactivate_authorization.side_effect = _mock_deactivate
+
+        authzrs = self.handler.deactivate_valid_authorizations(orderr)
+
+        self.assertEqual(self.mock_net.deactivate_authorization.call_count, 1)
+        self.assertTrue(len(authzrs) == 1)
+        self.assertEqual(authzrs[0].body.identifier.value, "is-valid")
+        self.assertEqual(authzrs[0].body.status, messages.STATUS_DEACTIVATED)
+
     @mock.patch("certbot.auth_handler.logger")
     def test_tls_sni_logs(self, logger):
         self._test_name1_tls_sni_01_1_common(combos=True)
