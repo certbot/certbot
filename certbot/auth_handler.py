@@ -97,19 +97,17 @@ class AuthHandler(object):
 
             return authzrs_validated
 
-    def deactivate_valid_authorizations(self, orderr, refresh=True):
-        # type: (messages.OrderResource, bool) -> List[messages.AuthorizationResource]
+    def deactivate_valid_authorizations(self, orderr):
+        # type: (messages.OrderResource) -> List[messages.AuthorizationResource]
         """
         Deactivate all `valid` authorizations in the order, so that they cannot be re-used
         in subsequent orders.
         :param messages.OrderResource orderr: must have authorizations filled in
-        :param bool refresh: whether to refresh the status of the authorization
         :returns: list of all deactivated authorizations
         :rtype: List
         """
         authzrs = []
         for authzr in orderr.authorizations:
-            (authzr, _) = self.acme.poll(authzr) if refresh else (authzr, None)
             if authzr.body.status != messages.STATUS_VALID:
                 continue
             authzr = self.acme.deactivate_authorization(authzr)
