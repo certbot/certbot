@@ -598,8 +598,6 @@ def test_ocsp_status_live(context):
 
 def test_dry_run_deactivate_authzs(context):
     """Test that Certbot deactivates authorizations when performing a dry run"""
-    if context.acme_server == 'pebble':
-        pytest.skip('Pebble authz reuse is probabilistic')
 
     name = context.get_domain('dry-run-authz-deactivation')
     args = ['certonly', '--cert-name', name, '-d', name, '--dry-run']
