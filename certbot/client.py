@@ -383,18 +383,15 @@ class Client(object):
             raise errors.Error("The currently selected ACME CA endpoint does"
                                " not support issuing wildcard certificates.")
 
-        # For a dry run, deactivate any valid authorizations in this order
+        # For a dry run, ensure we have an order with fresh authorizations
         if orderr and self.config.dry_run:
-            try:
-                deactivated = self.auth_handler.deactivate_valid_authorizations(orderr)
-            except acme_errors.Error as e:
-                logger.warning("Deactivation of previous authorizations failed. "
-                               "Certbot will continue with this dry run, but some authorizations "
-                               "will not be rechecked: %s", e)
-
+            deactivated, failed = self.auth_handler.deactivate_valid_authorizations(orderr)
             if deactivated:
                 logger.debug("Recreating order after authz deactivations")
                 orderr = self.acme.new_order(csr_pem)
+            if failed:
+                logger.warning("Certbot was unable to obtain fresh authorizations for every domain"
+                               ". The dry run will continue, but results may not be accurate.")
 
         authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
         return orderr.update(authorizations=authzr)

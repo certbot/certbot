@@ -7,8 +7,9 @@ import zope.component
 
 from acme import challenges
 from acme import messages
+from acme import errors as acme_errors
 # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict, List
+from acme.magic_typing import Dict, List, Tuple
 # pylint: enable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
@@ -98,23 +99,29 @@ class AuthHandler(object):
             return authzrs_validated
 
     def deactivate_valid_authorizations(self, orderr):
-        # type: (messages.OrderResource) -> List[messages.AuthorizationResource]
+        # type: (messages.OrderResource) -> Tuple[List, List]
         """
         Deactivate all `valid` authorizations in the order, so that they cannot be re-used
         in subsequent orders.
         :param messages.OrderResource orderr: must have authorizations filled in
-        :returns: list of all deactivated authorizations
-        :rtype: List
+        :returns: tuple of list of successfully deactivated authorizations, and
+                  list of unsuccessfully deactivated authorizations.
+        :rtype: tuple
         """
-        authzrs = []
-        for authzr in orderr.authorizations:
-            if authzr.body.status != messages.STATUS_VALID:
-                continue
-            authzr = self.acme.deactivate_authorization(authzr)
-            authzrs.append(authzr)
+        to_deactivate = [authzr for authzr in orderr.authorizations
+                         if authzr.body.status == messages.STATUS_VALID]
+        deactivated = []
+        failed = []
 
-        return [authzr for authzr in authzrs
-                if authzr.body.status == messages.STATUS_DEACTIVATED]
+        for authzr in to_deactivate:
+            try:
+                authzr = self.acme.deactivate_authorization(authzr)
+                deactivated.append(authzr)
+            except acme_errors.Error as e:
+                failed.append(authzr)
+                logger.debug('Failed to deactivate authorization %s: %s', authzr.uri, e)
+
+        return (deactivated, failed)
 
     def _poll_authorizations(self, authzrs, max_retries, best_effort):
         """

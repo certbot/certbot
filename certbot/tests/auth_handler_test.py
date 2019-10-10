@@ -362,8 +362,8 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         self.handler.handle_authorizations(mock_order)
 
     def test_valid_authzrs_deactivated(self):
-        # When we deactivate valid authzrs in an orderr, we expect them to become deactivated
-        # and to receive a list of deactivated authzrs in return.
+        """When we deactivate valid authzrs in an orderr, we expect them to become deactivated
+        and to receive a list of deactivated authzrs in return."""
         def _mock_deactivate(authzr):
             if authzr.body.status == messages.STATUS_VALID:
                 authzb = authzr.body.update(status=messages.STATUS_DEACTIVATED)
@@ -385,10 +385,11 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         self.mock_net.poll.side_effect = _mock_poll
         self.mock_net.deactivate_authorization.side_effect = _mock_deactivate
 
-        authzrs = self.handler.deactivate_valid_authorizations(orderr)
+        authzrs, failed = self.handler.deactivate_valid_authorizations(orderr)
 
         self.assertEqual(self.mock_net.deactivate_authorization.call_count, 1)
-        self.assertTrue(len(authzrs) == 1)
+        self.assertEqual(len(authzrs), 1)
+        self.assertEqual(len(failed), 0)
         self.assertEqual(authzrs[0].body.identifier.value, "is-valid")
         self.assertEqual(authzrs[0].body.status, messages.STATUS_DEACTIVATED)
 

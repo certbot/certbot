@@ -256,6 +256,7 @@ class ClientTest(ClientTestCommon):
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
         self.client.auth_handler.handle_authorizations.return_value = [None]
+        self.client.auth_handler.deactivate_valid_authorizations.return_value = ([], [])
         self.acme.finalize_order.return_value = self.eg_order
         self.acme.new_order.return_value = self.eg_order
         self.eg_order.update.return_value = self.eg_order
