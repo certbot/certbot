@@ -30,8 +30,10 @@ from certbot.plugins.util import path_surgery
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 
 from certbot_apache import apache_util
+from certbot_apache import assertions
 from certbot_apache import constants
 from certbot_apache import display_ops
+from certbot_apache import dualparser
 from certbot_apache import http_01
 from certbot_apache import obj
 from certbot_apache import parser
@@ -204,6 +206,7 @@ class ApacheConfigurator(common.Installer):
         # These will be set in the prepare function
         self._prepared = False
         self.parser = None
+        self.parser_root = None
         self.version = version
         self.vhosts = None
         self.options = copy.deepcopy(self.OS_DEFAULTS)
@@ -252,6 +255,10 @@ class ApacheConfigurator(common.Installer):
         self.recovery_routine()
         # Perform the actual Augeas initialization to be able to react
         self.parser = self.get_parser()
+
+        # Set up ParserNode root
+        pn_meta = {"augeasparser": self.parser}
+        self.parser_root = self.get_parsernode_root(pn_meta)
 
         # Check for errors in parsing files with Augeas
         self.parser.check_parsing_errors("httpd.aug")
@@ -347,6 +354,15 @@ class ApacheConfigurator(common.Installer):
         return parser.ApacheParser(
             self.option("server_root"), self.conf("vhost-root"),
             self.version, configurator=self)
+
+    def get_parsernode_root(self, metadata):
+        """Initializes the ParserNode parser root instance."""
+        return dualparser.DualBlockNode(
+            name=assertions.PASS,
+            ancestor=None,
+            filepath=assertions.PASS,
+            metadata=metadata
+        )
 
     def _wildcard_domain(self, domain):
         """

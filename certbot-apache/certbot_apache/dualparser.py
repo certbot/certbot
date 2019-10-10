@@ -17,7 +17,8 @@ class DualNodeBase(object):
         """ Attribute value assertion """
         firstval = getattr(self.primary, aname)
         secondval = getattr(self.secondary, aname)
-        assertions.assertEqualSimple(firstval, secondval)
+        if not callable(firstval):
+            assertions.assertEqualSimple(firstval, secondval)
         return firstval
 
 

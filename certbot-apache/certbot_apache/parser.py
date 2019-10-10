@@ -613,7 +613,7 @@ class ApacheParser(object):
             "%s//*[self::directive=~regexp('%s')]" % (start, regex))
 
         if exclude:
-            matches = self._exclude_dirs(matches)
+            matches = self.exclude_dirs(matches)
 
         if arg is None:
             arg_suffix = "/arg"
@@ -680,7 +680,7 @@ class ApacheParser(object):
 
         return value
 
-    def _exclude_dirs(self, matches):
+    def exclude_dirs(self, matches):
         """Exclude directives that are not loaded into the configuration."""
         filters = [("ifmodule", self.modules), ("ifdefine", self.variables)]
 
