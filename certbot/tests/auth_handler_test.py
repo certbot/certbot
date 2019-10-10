@@ -9,6 +9,7 @@ import zope.component
 from acme import challenges
 from acme import client as acme_client
 from acme import messages
+from acme import errors as acme_errors
 
 from certbot import achallenges
 from certbot import errors
@@ -366,32 +367,33 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         and to receive a list of deactivated authzrs in return."""
         def _mock_deactivate(authzr):
             if authzr.body.status == messages.STATUS_VALID:
+                if authzr.body.identifier.value == "is_valid_but_will_fail":
+                    raise acme_errors.Error("Mock deactivation ACME error")
                 authzb = authzr.body.update(status=messages.STATUS_DEACTIVATED)
                 authzr = messages.AuthorizationResource(body=authzb)
-            else:
+            else: # pragma: no cover
                 raise errors.Error("Can't deactivate non-valid authz")
             return authzr
 
-        def _mock_poll(authzr):
-            return (authzr, mock.MagicMock())
+        to_deactivate = [("is_valid", messages.STATUS_VALID),
+                         ("is_pending", messages.STATUS_PENDING),
+                         ("is_valid_but_will_fail", messages.STATUS_VALID)]
 
-        authzr = acme_util.gen_authzr(
-                messages.STATUS_VALID, "is-valid",
-                [acme_util.HTTP01],
-                [messages.STATUS_VALID], False)
-        authzr2 = gen_dom_authzr(domain="is-pending", challs=acme_util.CHALLENGES)
-        orderr = mock.MagicMock(authorizations=[authzr, authzr2])
+        to_deactivate = [acme_util.gen_authzr(a[1], a[0], [acme_util.HTTP01],
+                         [a[1], False]) for a in to_deactivate]
+        orderr = mock.MagicMock(authorizations=to_deactivate)
 
-        self.mock_net.poll.side_effect = _mock_poll
         self.mock_net.deactivate_authorization.side_effect = _mock_deactivate
 
         authzrs, failed = self.handler.deactivate_valid_authorizations(orderr)
 
-        self.assertEqual(self.mock_net.deactivate_authorization.call_count, 1)
+        self.assertEqual(self.mock_net.deactivate_authorization.call_count, 2)
         self.assertEqual(len(authzrs), 1)
-        self.assertEqual(len(failed), 0)
-        self.assertEqual(authzrs[0].body.identifier.value, "is-valid")
+        self.assertEqual(len(failed), 1)
+        self.assertEqual(authzrs[0].body.identifier.value, "is_valid")
         self.assertEqual(authzrs[0].body.status, messages.STATUS_DEACTIVATED)
+        self.assertEqual(failed[0].body.identifier.value, "is_valid_but_will_fail")
+        self.assertEqual(failed[0].body.status, messages.STATUS_VALID)
 
     @mock.patch("certbot.auth_handler.logger")
     def test_tls_sni_logs(self, logger):
