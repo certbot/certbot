@@ -12,10 +12,11 @@ import dns.tsigkeyring
 import dns.update
 import zope.interface
 
+from acme.magic_typing import Dict, Tuple, List
+
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -189,11 +190,11 @@ class _RFC2136Client(object):
         domain = dns.name.from_text(record_name)
         prefix = domain
         suffix = dns.name.empty
-        found  = None
+        found = None
         domstr = str(domain)    # For messages, may have a DNAME/CNAME added
 
         # The domains already queried and the corresponding results
-        domain_names_searched = dict()
+        domain_names_searched = dict()  # type: Dict[str, Tuple[bool, dns.rdata.Rdata]]
 
         while prefix:
             (prefix, next_label) = prefix.split(1)
@@ -220,24 +221,23 @@ class _RFC2136Client(object):
                 target = rr.target
                 if target in domain_names_searched:
                     # DNAME/CNAME loop!
-                    errors.PluginError('%s %s loops seeking SOA for %s',
-                                       suffix, repr(rr), domstr)
+                    errors.PluginError('{0} {1} loops seeking SOA for {2}'
+                                       .format(suffix, repr(rr), domstr))
 
                 # Restart from the root, replacing the current suffix
                 prefix = prefix + target
                 suffix = dns.name.empty
-                found  = None
-                domstr = str(domain)+' ('+str(prefix)+')' # For messages
+                found = None
+                domstr = str(domain)+' ('+str(prefix)+')'  # For messages
 
         if not found:
-            raise errors.PluginError('No SOA of any kind found for %s',
-                                     domstr)
+            raise errors.PluginError('No SOA of any kind found for {0}'.format(domstr))
 
         (auth, prefix, suffix) = found
         if not auth:
             raise errors.PluginError('SOA %s for %s not authoritative',
                                      suffix, domstr)
-        return (prefix, suffix)
+        return prefix, suffix
 
     def _query_soa(self, domain):
         """
@@ -292,10 +292,12 @@ class _RFC2136Client(object):
             else:
                 logmsg += ', non-authoritative'
 
-            found = dict()
+            found = dict()  # type: Dict[int, List[dns.rdataset.Rdata]]
             for rrset in response.answer:
-                if rrset.name != domain: continue
-                if rrset.rdclass != dns.rdataclass.IN: continue
+                if rrset.name != domain:
+                    continue
+                if rrset.rdclass != dns.rdataclass.IN:
+                    continue
                 for rr in rrset:
                     if not rr.rdtype in found:
                         found[rr.rdtype] = [rr]
@@ -314,8 +316,7 @@ class _RFC2136Client(object):
 
             logmsg += ', returning '+repr(retrr)
             logger.debug(logmsg)
-            return (auth, retrr)
+            return auth, retrr
 
         except Exception as e:
-           raise errors.PluginError('Encountered error when making query: {0}'
-                                     .format(e))
+            raise errors.PluginError('Encountered error when making query: {0}'.format(e))

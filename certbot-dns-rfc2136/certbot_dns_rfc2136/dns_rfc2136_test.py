@@ -1,5 +1,4 @@
 """Tests for certbot_dns_rfc2136.dns_rfc2136."""
-
 import unittest
 
 import dns.flags
@@ -17,19 +16,20 @@ import dns.rdtypes.ANY.SOA
 import dns.tsig
 import mock
 
+from acme.magic_typing import Dict
+
 from certbot import errors
 from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
-from collections import defaultdict
-
 SERVER = '192.0.2.1'
 PORT = 53
 NAME = 'a-tsig-key.'
 SECRET = 'SSB3b25kZXIgd2hvIHdpbGwgYm90aGVyIHRvIGRlY29kZSB0aGlzIHRleHQK'
 VALID_CONFIG = {"rfc2136_server": SERVER, "rfc2136_name": NAME, "rfc2136_secret": SECRET}
+
 
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
 
@@ -84,22 +84,21 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 class RFC2136ClientTest(unittest.TestCase):
 
     def _stub_query_soa(self, domain):
-        (rrname, retval) = self._query_soa_return.get_deepest_match(domain)
+        rrname, retval = self._query_soa_return.get_deepest_match(domain)
         if domain != rrname:
-            return (retval[0], None) # Just the authoritative flag
-        else:
-            return retval
+            return retval[0], None  # Just the authoritative flag
+        return retval
 
     def setUp(self):
         from certbot_dns_rfc2136.dns_rfc2136 import _RFC2136Client
 
         self.rfc2136_client = _RFC2136Client(SERVER, PORT, NAME, SECRET, dns.tsig.HMAC_MD5)
         self.domain = dns.name.from_text(DOMAIN)
-        self.prefix = dict()
-        self.subdom = dict()
+        self.prefix = dict()  # type: Dict[str, dns.name.Name]
+        self.subdom = dict()  # type: Dict[str, dns.name.Name]
         for pfx in 'foo', 'bar', 'foo.bar', 'baz', 'quux', 'cname', 'dname', 'subzone', 'bad':
-                self.prefix[pfx] = dns.name.from_text(pfx, dns.name.empty)
-                self.subdom[pfx] = self.prefix[pfx] + self.domain
+            self.prefix[pfx] = dns.name.from_text(pfx, dns.name.empty)
+            self.subdom[pfx] = self.prefix[pfx] + self.domain
 
         # _find_domain stub -> (bar, DOMAIN.)
         self._mock_find_domain = mock.MagicMock(return_value=(self.prefix['bar'], self.domain))
@@ -112,12 +111,12 @@ class RFC2136ClientTest(unittest.TestCase):
         dname_rr = dns.rdtypes.ANY.DNAME.DNAME(dns.rdataclass.IN, dns.rdatatype.DNAME,
                                                self.subdom['subzone'])
         self._query_soa_return = \
-            dns.namedict.NameDict({dns.name.root : (False, soa_rr),
-                                   self.domain : (True, soa_rr),
-                                   self.subdom['subzone'] : (True, soa_rr),
-                                   self.subdom['cname'] : (True, cname_rr),
-                                   self.subdom['dname'] : (False, dname_rr),
-                                   self.subdom['bad'] : (False, soa_rr)})
+            dns.namedict.NameDict({dns.name.root: (False, soa_rr),
+                                   self.domain: (True, soa_rr),
+                                   self.subdom['subzone']: (True, soa_rr),
+                                   self.subdom['cname']: (True, cname_rr),
+                                   self.subdom['dname']: (False, dname_rr),
+                                   self.subdom['bad']: (False, soa_rr)})
         self._mock_query_soa = mock.MagicMock(side_effect=self._stub_query_soa)
 
     @mock.patch("dns.query.tcp")
@@ -199,7 +198,7 @@ class RFC2136ClientTest(unittest.TestCase):
 
     def test_find_domain_cname(self):
         # _query_soa | pylint: disable=protected-access
-        self.rfc2136_client._query_soa =  self._mock_query_soa
+        self.rfc2136_client._query_soa = self._mock_query_soa
 
         # _find_domain | pylint: disable=protected-access
         (prefix, domain) = self.rfc2136_client._find_domain('foo.bar.cname.'+DOMAIN)
@@ -208,10 +207,8 @@ class RFC2136ClientTest(unittest.TestCase):
         self.assertTrue(prefix == self.prefix['foo.bar'])
 
     def test_find_domain_dname(self):
-        query = self.prefix['foo.bar'] + self.subdom['dname']
-
         # _query_soa | pylint: disable=protected-access
-        self.rfc2136_client._query_soa =  self._mock_query_soa
+        self.rfc2136_client._query_soa = self._mock_query_soa
 
         # _find_domain | pylint: disable=protected-access
         (prefix, domain) = self.rfc2136_client._find_domain('foo.bar.dname.'+DOMAIN)
@@ -221,17 +218,17 @@ class RFC2136ClientTest(unittest.TestCase):
 
     def test_find_domain_wraps_errors(self):
         # _query_soa | pylint: disable=protected-access
-        self.rfc2136_client._query_soa =  self._mock_query_soa
+        self.rfc2136_client._query_soa = self._mock_query_soa
 
         self.assertRaises(
             errors.PluginError,
             # _find_domain | pylint: disable=protected-access
             self.rfc2136_client._find_domain, 'error.bad.domain')
 
-    def _stub_dns_noerror(self, dns_query, server, port=PORT):
+    def _stub_dns_noerror(self, dns_query, server, port=PORT):  # pylint: disable=unused-argument
         response = dns.message.make_response(dns_query)
         response.rcode = dns.rcode.NOERROR
-        repoose.flags = dns.flags.AA
+        response.flags = dns.flags.AA
         return response
 
     @mock.patch("dns.query.udp")
@@ -244,10 +241,10 @@ class RFC2136ClientTest(unittest.TestCase):
         query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
         self.assertTrue(result == (True, None))
 
-    def _stub_dns_nxdomain(self, dns_query, server, port=PORT):
+    def _stub_dns_nxdomain(self, dns_query, server, port=PORT):  # pylint: disable=unused-argument
         response = dns.message.make_response(dns_query)
         response.rcode = dns.rcode.NXDOMAIN
-        repoose.flags = dns.flags.AA
+        response.flags = dns.flags.AA
         return response
 
     @mock.patch("dns.query.udp")
