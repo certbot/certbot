@@ -7,6 +7,7 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 
 from certbot import achallenges
 from certbot import errors
+from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import acme_util
 
@@ -180,7 +181,7 @@ class ApacheHttp01Test(util.ApacheTest):
         self.assertEqual(self.http.perform(), expected_response)
 
         self.assertTrue(os.path.isdir(self.http.challenge_dir))
-        self._has_min_permissions(self.http.challenge_dir, 0o755)
+        self.assertTrue(filesystem.has_min_permissions(self.http.challenge_dir, 0o755))
         self._test_challenge_conf()
 
         for achall in achalls:
@@ -218,14 +219,9 @@ class ApacheHttp01Test(util.ApacheTest):
         name = os.path.join(self.http.challenge_dir, achall.chall.encode("token"))
         validation = achall.validation(self.account_key)
 
-        self._has_min_permissions(name, 0o644)
+        self.assertTrue(filesystem.has_min_permissions(name, 0o644))
         with open(name, 'rb') as f:
             self.assertEqual(f.read(), validation.encode())
-
-    def _has_min_permissions(self, path, min_mode):
-        """Tests the given file has at least the permissions in mode."""
-        st_mode = os.stat(path).st_mode
-        self.assertEqual(st_mode, st_mode | min_mode)
 
 
 if __name__ == "__main__":

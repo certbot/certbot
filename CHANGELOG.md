@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.37.0 - master
+## 0.40.0 - master
 
 ### Added
 
@@ -10,11 +10,86 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Removed `--fast` flag from the test farm tests
+* `--server` may now be combined with `--dry-run`. Certbot will, as before, use the
+  staging server instead of the live server when `--dry-run` is used.
 
 ### Fixed
 
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.39.0 - 2019-10-01
+
+### Added
+
+* Support for Python 3.8 was added to Certbot and all of its components.
+* Support for CentOS 8 was added to certbot-auto.
+
+### Changed
+
+* Don't send OCSP requests for expired certificates
+* Return to using platform.linux_distribution instead of distro.linux_distribution in OS fingerprinting for Python < 3.8 
+* Updated the Nginx plugin's TLS configuration to keep support for some versions of IE11.
+
+### Fixed
+
+* Fixed OS detection in the Apache plugin on RHEL 6.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.38.0 - 2019-09-03
+
+### Added
+
+* Disable session tickets for Nginx users when appropriate.
+
+### Changed
+
+* If Certbot fails to rollback your server configuration, the error message
+  links to the Let's Encrypt forum. Change the link to the Help category now
+  that the Server category has been closed.
+* Replace platform.linux_distribution with distro.linux_distribution as a step
+  towards Python 3.8 support in Certbot.
+
+### Fixed
+
+* Fixed OS detection in the Apache plugin on Scientific Linux.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.2 - 2019-08-21
+
+* Stop disabling TLS session tickets in Nginx as it caused TLS failures on
+  some systems.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.1 - 2019-08-08
+
+### Fixed
+
+* Stop disabling TLS session tickets in Apache as it caused TLS failures on
+  some systems.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.0 - 2019-08-07
+
+### Added
+
+* Turn off session tickets for apache plugin by default
+* acme: Authz deactivation added to `acme` module.
+
+### Changed
+
+* Follow updated Mozilla recommendations for Nginx ssl_protocols, ssl_ciphers,
+  and ssl_prefer_server_ciphers
+
+### Fixed
+
+* Fix certbot-auto failures on RHEL 8.
 
 More details about these changes can be found on our GitHub repo.
 

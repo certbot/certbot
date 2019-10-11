@@ -1,0 +1,38 @@
+jobs:
+  - job: test
+    pool:
+      vmImage: vs2017-win2016
+    strategy:
+      matrix:
+        py35:
+          PYTHON_VERSION: 3.5
+          TOXENV: py35
+        py37-cover:
+          PYTHON_VERSION: 3.7
+          TOXENV: py37-cover
+        integration-certbot:
+          PYTHON_VERSION: 3.7
+          TOXENV: integration-certbot
+          PYTEST_ADDOPTS: --numprocesses 4
+    variables:
+    - group: certbot-common
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: $(PYTHON_VERSION)
+        addToPath: true
+    - script: python tools/pip_install.py -U tox coverage
+      displayName: Install dependencies
+    - script: python -m tox
+      displayName: Run tox
+    # We do not require codecov report upload to succeed. So to avoid to break the pipeline if
+    # something goes wrong, each command is suffixed with a command that hides any non zero exit
+    # codes and echoes an informative message instead.
+    - bash: |
+        curl -s https://codecov.io/bash -o codecov-bash || echo "Failed to download codecov-bash"
+        chmod +x codecov-bash || echo "Failed to apply execute permissions on codecov-bash"
+        ./codecov-bash -F windows  || echo "Codecov did not collect coverage reports"
+      condition: in(variables['TOXENV'], 'py37-cover', 'integration-certbot')
+      env:
+        CODECOV_TOKEN: $(codecov_token)
+      displayName: Publish coverage

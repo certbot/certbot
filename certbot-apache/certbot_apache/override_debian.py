@@ -7,6 +7,7 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import filesystem
 from certbot.compat import os
 
 from certbot_apache import apache_util
@@ -65,7 +66,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         try:
             os.symlink(vhost.filep, enabled_path)
         except OSError as err:
-            if os.path.islink(enabled_path) and os.path.realpath(
+            if os.path.islink(enabled_path) and filesystem.realpath(
                enabled_path) == vhost.filep:
                 # Already in shape
                 vhost.enabled = True

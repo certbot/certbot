@@ -84,9 +84,6 @@ parser.add_argument('--killboulder',
 parser.add_argument('--boulderonly',
                     action='store_true',
                     help="only make a boulder server")
-parser.add_argument('--fast',
-                    action='store_true',
-                    help="use larger instance types to run faster (saves about a minute, probably not worth it)")
 cl_args = parser.parse_args()
 
 # Credential Variables
@@ -310,10 +307,10 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id):
     if 'machine_type' in target:
         machine_type = target['machine_type']
     elif target['virt'] == 'hvm':
-        machine_type = 't2.medium' if cl_args.fast else 't2.micro'
+        machine_type = 't2.medium'
     else:
         # 32 bit systems
-        machine_type = 'c1.medium' if cl_args.fast else 't1.micro'
+        machine_type = 'c1.medium'
     if 'userdata' in target.keys():
         userdata = target['userdata']
     else:
@@ -375,7 +372,7 @@ def cleanup(cl_args, instances, targetlist):
     # If lengths of instances and targetlist aren't equal, instances failed to
     # start before running tests so leaving instances running for debugging
     # isn't very useful. Let's cleanup after ourselves instead.
-    if len(instances) == len(targetlist) or not cl_args.saveinstances:
+    if len(instances) != len(targetlist) or not cl_args.saveinstances:
         print('Terminating EC2 Instances')
         if cl_args.killboulder:
             boulder_server.terminate()

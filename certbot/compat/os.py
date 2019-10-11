@@ -26,7 +26,9 @@ for attribute in dir(std_os):
     if not hasattr(ourselves, attribute):
         setattr(ourselves, attribute, getattr(std_os, attribute))
 
-# Similar to os.path, allow certbot.compat.os.path to behave as a module
+# Import our internal path module, then allow certbot.compat.os.path
+# to behave as a module (similarly to os.path).
+from certbot.compat import _path as path  # type: ignore  # pylint: disable=wrong-import-position
 std_sys.modules[__name__ + '.path'] = path
 
 # Clean all remaining importables that are not from the core os module.
@@ -105,3 +107,30 @@ def replace(*unused_args, **unused_kwargs):
     """Method os.replace() is forbidden"""
     raise RuntimeError('Usage of os.replace() is forbidden. '
                        'Use certbot.compat.filesystem.replace() instead.')
+
+
+# Results given by os.access are inconsistent or partial on Windows, because this platform is not
+# following the POSIX approach.
+def access(*unused_args, **unused_kwargs):
+    """Method os.access() is forbidden"""
+    raise RuntimeError('Usage of os.access() is forbidden. '
+                       'Use certbot.compat.filesystem.check_mode() or '
+                       'certbot.compat.filesystem.is_executable() instead.')
+
+
+# On Windows os.stat call result is inconsistent, with a lot of flags that are not set or
+# meaningless. We need to use specialized functions from the certbot.compat.filesystem module.
+def stat(*unused_args, **unused_kwargs):
+    """Method os.stat() is forbidden"""
+    raise RuntimeError('Usage of os.stat() is forbidden. '
+                       'Use certbot.compat.filesystem functions instead '
+                       '(eg. has_min_permissions, has_same_ownership).')
+
+
+# Method os.fstat has the same problem than os.stat, since it is the same function,
+# but accepting a file descriptor instead of a path.
+def fstat(*unused_args, **unused_kwargs):
+    """Method os.stat() is forbidden"""
+    raise RuntimeError('Usage of os.fstat() is forbidden. '
+                       'Use certbot.compat.filesystem functions instead '
+                       '(eg. has_min_permissions, has_same_ownership).')

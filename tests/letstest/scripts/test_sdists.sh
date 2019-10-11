@@ -1,7 +1,7 @@
 #!/bin/sh -xe
 
 cd letsencrypt
-./certbot-auto --install-only -n --debug
+letsencrypt-auto-source/letsencrypt-auto --install-only -n --debug
 
 PLUGINS="certbot-apache certbot-nginx"
 PYTHON_MAJOR_VERSION=$(/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1)

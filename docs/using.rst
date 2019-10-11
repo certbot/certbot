@@ -276,24 +276,22 @@ s3front_           Y    Y    Integration with Amazon CloudFront distribution of 
 gandi_             Y    N    Obtain certificates via the Gandi LiveDNS API
 varnish_           Y    N    Obtain certificates via a Varnish server
 external_          Y    N    A plugin for convenient scripting (See also ticket 2782_)
-icecast_           N    Y    Deploy certificates to Icecast 2 streaming media servers
 pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN servers
 proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
-heroku_            Y    Y    Integration with Heroku SSL
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
+dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
 .. _gandi: https://github.com/obynio/certbot-plugin-gandi
-.. _icecast: https://github.com/e00E/lets-encrypt-icecast
 .. _varnish: http://git.sesse.net/?p=letsencrypt-varnish-plugin
 .. _2782: https://github.com/certbot/certbot/issues/2782
 .. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
 .. _external: https://github.com/marcan/letsencrypt-external
-.. _heroku: https://github.com/gboudreau/certbot-heroku
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
+.. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 

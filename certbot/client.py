@@ -30,7 +30,6 @@ from certbot import interfaces
 from certbot import reverter
 from certbot import storage
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import enhancements
 from certbot.display import ops as display_ops
@@ -459,9 +458,7 @@ class Client(object):
 
         """
         for path in cert_path, chain_path, fullchain_path:
-            util.make_or_verify_dir(
-                os.path.dirname(path), 0o755, misc.os_geteuid(),
-                self.config.strict_permissions)
+            util.make_or_verify_dir(os.path.dirname(path), 0o755, self.config.strict_permissions)
 
 
         cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
@@ -627,7 +624,7 @@ class Client(object):
             reporter.add_message(
                 "An error occurred and we failed to restore your config and "
                 "restart your server. Please post to "
-                "https://community.letsencrypt.org/c/server-config "
+                "https://community.letsencrypt.org/c/help "
                 "with details about your configuration and this error you received.",
                 reporter.HIGH_PRIORITY)
             raise

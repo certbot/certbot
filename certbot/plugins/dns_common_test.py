@@ -7,14 +7,15 @@ import unittest
 import mock
 
 from certbot import errors
+from certbot import util
 from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.plugins import dns_common
 from certbot.plugins import dns_test_common
-from certbot.tests import util
+from certbot.tests import util as test_util
 
 
-class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
+class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
     # pylint: disable=protected-access
 
     class _FakeDNSAuthenticator(dns_common.DNSAuthenticator):
@@ -50,7 +51,7 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
 
         self.auth._cleanup.assert_called_once_with(dns_test_common.DOMAIN, mock.ANY, mock.ANY)
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     def test_prompt(self, mock_get_utility):
         mock_display = mock_get_utility()
         mock_display.input.side_effect = ((display_util.OK, "",),
@@ -59,14 +60,14 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
         self.auth._configure("other_key", "")
         self.assertEqual(self.auth.config.fake_other_key, "value")
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     def test_prompt_canceled(self, mock_get_utility):
         mock_display = mock_get_utility()
         mock_display.input.side_effect = ((display_util.CANCEL, "c",),)
 
         self.assertRaises(errors.PluginError, self.auth._configure, "other_key", "")
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     def test_prompt_file(self, mock_get_utility):
         path = os.path.join(self.tempdir, 'file.ini')
         open(path, "wb").close()
@@ -80,7 +81,7 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
         self.auth._configure_file("file_path", "")
         self.assertEqual(self.auth.config.fake_file_path, path)
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     def test_prompt_file_canceled(self, mock_get_utility):
         mock_display = mock_get_utility()
         mock_display.directory_select.side_effect = ((display_util.CANCEL, "c",),)
@@ -96,7 +97,7 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
 
         self.assertEqual(credentials.conf("test"), "value")
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     def test_prompt_credentials(self, mock_get_utility):
         bad_path = os.path.join(self.tempdir, 'bad-file.ini')
         dns_test_common.write({"fake_other": "other_value"}, bad_path)
@@ -116,7 +117,7 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
         self.assertEqual(credentials.conf("test"), "value")
 
 
-class CredentialsConfigurationTest(util.TempDirTestCase):
+class CredentialsConfigurationTest(test_util.TempDirTestCase):
     class _MockLoggingHandler(logging.Handler):
         messages = None
 
@@ -150,14 +151,14 @@ class CredentialsConfigurationTest(util.TempDirTestCase):
         dns_common.logger.addHandler(log)
 
         path = os.path.join(self.tempdir, 'too-permissive-file.ini')
-        open(path, "wb").close()
+        util.safe_open(path, "wb", 0o744).close()
 
         dns_common.CredentialsConfiguration(path)
 
         self.assertEqual(1, len([_ for _ in log.messages['warning'] if _.startswith("Unsafe")]))
 
 
-class CredentialsConfigurationRequireTest(util.TempDirTestCase):
+class CredentialsConfigurationRequireTest(test_util.TempDirTestCase):
 
     def setUp(self):
         super(CredentialsConfigurationRequireTest, self).setUp()

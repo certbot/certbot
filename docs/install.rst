@@ -42,7 +42,7 @@ client as root, either `letsencrypt-nosudo
 The Apache plugin currently requires an OS with augeas version 1.0; currently `it
 supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
-modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
+modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin.
 
 
 Additional integrity verification of certbot-auto script can be done by verifying its digital signature.
@@ -200,23 +200,64 @@ Operating System Packages
 
 **Debian**
 
-If you run Debian Stretch or Debian Sid, you can install certbot packages.
+If you run Debian Buster or Debian testing/Sid, you can easily install certbot
+packages through commands like:
 
 .. code-block:: shell
 
    sudo apt-get update
-   sudo apt-get install certbot python-certbot-apache
+   sudo apt-get install certbot
 
-If you don't want to use the Apache plugin, you can omit the
-``python-certbot-apache`` package. Or you can install ``python-certbot-nginx`` instead.
-
-Packages exist for Debian Jessie via backports. First you'll have to follow the
-instructions at http://backports.debian.org/Instructions/ to enable the Jessie backports
-repo, if you have not already done so. Then run:
+If you run Debian Stretch, we recommend you use the packages in Debian
+backports repository. First you'll have to follow the instructions at
+https://backports.debian.org/Instructions/ to enable the Stretch backports repo,
+if you have not already done so. Then run:
 
 .. code-block:: shell
 
-   sudo apt-get install certbot python-certbot-apache -t jessie-backports
+   sudo apt-get install certbot -t stretch-backports
+
+In all of these cases, there also packages available to help Certbot integrate
+with Apache, nginx, or various DNS services. If you are using Apache or nginx,
+we strongly recommend that you install the ``python-certbot-apache`` or
+``python-certbot-nginx`` package so that Certbot can fully automate HTTPS
+configuration for your server. A full list of these packages can be found
+through a command like:
+
+.. code-block:: shell
+
+    apt search 'python-certbot*'
+
+They can be installed by running the same installation command above but
+replacing ``certbot`` with the name of the desired package.
+
+There are no Certbot packages available for Debian Jessie and Jessie users
+should instead use certbot-auto_.
+
+**Ubuntu**
+
+If you run Ubuntu Trusty, Xenial, or Bionic, certbot is available through the official PPA,
+that can be installed as followed:
+
+.. code-block:: shell
+
+   sudo apt-get update
+   sudo apt-get install software-properties-common
+   sudo add-apt-repository universe
+   sudo add-apt-repository ppa:certbot/certbot
+   sudo apt-get update
+
+Then, certbot can be installed using:
+
+.. code-block:: shell
+
+   sudo apt-get install certbot
+
+Optionally to install the Certbot Apache plugin, you can use:
+
+.. code-block:: shell
+
+   sudo apt-get install python-certbot-apache
 
 **Fedora**
 

@@ -3,9 +3,11 @@ Misc module contains stateless functions that could be used during pytest execut
 or outside during setup/teardown of the integration tests environment.
 """
 import contextlib
+import logging
 import errno
 import multiprocessing
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -23,17 +25,17 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
 from six.moves import socketserver, SimpleHTTPServer
 
-
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
 
 
-def check_until_timeout(url):
+def check_until_timeout(url, attempts=30):
     """
     Wait and block until given url responds with status 200, or raise an exception
-    after 150 attempts.
+    after the specified number of attempts.
     :param str url: the URL to test
-    :raise ValueError: exception raised after 150 unsuccessful attempts to reach the URL
+    :param int attempts: the number of times to try to connect to the URL
+    :raise ValueError: exception raised if unable to reach the URL
     """
     try:
         import urllib3
@@ -43,7 +45,7 @@ def check_until_timeout(url):
         from requests.packages.urllib3.exceptions import InsecureRequestWarning
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-    for _ in range(0, 150):
+    for _ in range(attempts):
         time.sleep(1)
         try:
             if requests.get(url, verify=False).status_code == 200:
@@ -51,7 +53,7 @@ def check_until_timeout(url):
         except requests.exceptions.ConnectionError:
             pass
 
-    raise ValueError('Error, url did not respond after 150 attempts: {0}'.format(url))
+    raise ValueError('Error, url did not respond after {0} attempts: {1}'.format(attempts, url))
 
 
 class GracefulTCPServer(socketserver.TCPServer):
@@ -60,6 +62,10 @@ class GracefulTCPServer(socketserver.TCPServer):
     just been released by another instance of TCPServer.
     """
     allow_reuse_address = True
+
+
+def _run_server(port):
+    GracefulTCPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
 
 
 @contextlib.contextmanager
@@ -74,10 +80,7 @@ def create_http_server(port):
     current_cwd = os.getcwd()
     webroot = tempfile.mkdtemp()
 
-    def run():
-        GracefulTCPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
-
-    process = multiprocessing.Process(target=run)
+    process = multiprocessing.Process(target=_run_server, args=(port,))
 
     try:
         # SimpleHTTPServer is designed to serve files from the current working directory at the
@@ -119,15 +122,9 @@ def generate_test_file_hooks(config_dir, hook_probe):
     :param str config_dir: current certbot config directory
     :param hook_probe: path to the hook probe to test hook scripts execution
     """
-    if sys.platform == 'win32':
-        extension = 'bat'
-    else:
-        extension = 'sh'
+    hook_path = pkg_resources.resource_filename('certbot_integration_tests', 'assets/hook.py')
 
-    renewal_hooks_dirs = list_renewal_hooks_dirs(config_dir)
-    renewal_deploy_hook_path = os.path.join(renewal_hooks_dirs[1], 'hook.sh')
-
-    for hook_dir in renewal_hooks_dirs:
+    for hook_dir in list_renewal_hooks_dirs(config_dir):
         # We want an equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
         # the hierarchy already exists. It is not the case of os.makedirs. Python 3 has an
         # optional parameter `exists_ok` to not fail on existing dir, but Python 2.7 does not.
@@ -137,26 +134,25 @@ def generate_test_file_hooks(config_dir, hook_probe):
         except OSError as error:
             if error.errno != errno.EEXIST:
                 raise
-        hook_path = os.path.join(hook_dir, 'hook.{0}'.format(extension))
-        if extension == 'sh':
-            data = '''\
-#!/bin/bash -xe
-if [ "$0" = "{0}" ]; then
-    if [ -z "$RENEWED_DOMAINS" -o -z "$RENEWED_LINEAGE" ]; then
-        echo "Environment variables not properly set!" >&2
-        exit 1
-    fi
-fi
-echo $(basename $(dirname "$0")) >> "{1}"\
-'''.format(renewal_deploy_hook_path, hook_probe)
-        else:
-            # TODO: Write the equivalent bat file for Windows
-            data = '''\
 
-'''
-        with open(hook_path, 'w') as file:
-            file.write(data)
-        os.chmod(hook_path, os.stat(hook_path).st_mode | stat.S_IEXEC)
+        if os.name != 'nt':
+            entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.sh')
+            entrypoint_script = '''\
+#!/usr/bin/env bash
+set -e
+"{0}" "{1}" "{2}" "{3}"
+'''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
+        else:
+            entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.bat')
+            entrypoint_script = '''\
+@echo off
+"{0}" "{1}" "{2}" "{3}"
+            '''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
+
+        with open(entrypoint_script_path, 'w') as file_h:
+            file_h.write(entrypoint_script)
+
+        os.chmod(entrypoint_script_path, os.stat(entrypoint_script_path).st_mode | stat.S_IEXEC)
 
 
 @contextlib.contextmanager
@@ -193,7 +189,7 @@ for _ in range(0, 10):
     except requests.exceptions.ConnectionError:
         pass
 raise ValueError('Error, url did not respond after 10 attempts: {{0}}'.format(url))
-'''.format(http_server_root, http_port))
+'''.format(http_server_root.replace('\\', '\\\\'), http_port))
         os.chmod(auth_script_path, 0o755)
 
         cleanup_script_path = os.path.join(tempdir, 'cleanup.py')
@@ -204,25 +200,13 @@ import os
 import shutil
 well_known = os.path.join('{0}', '.well-known')
 shutil.rmtree(well_known)
-'''.format(http_server_root))
+'''.format(http_server_root.replace('\\', '\\\\')))
         os.chmod(cleanup_script_path, 0o755)
 
         yield ('{0} {1}'.format(sys.executable, auth_script_path),
                '{0} {1}'.format(sys.executable, cleanup_script_path))
     finally:
         shutil.rmtree(tempdir)
-
-
-def get_certbot_version():
-    """
-    Find the version of the certbot available in PATH.
-    :return str: the certbot version
-    """
-    output = subprocess.check_output(['certbot', '--version'],
-                                     universal_newlines=True, stderr=subprocess.STDOUT)
-    # Typical response is: output = 'certbot 0.31.0.dev0'
-    version_str = output.split(' ')[1].strip()
-    return LooseVersion(version_str)
 
 
 def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
@@ -287,4 +271,32 @@ def load_sample_data_path(workspace):
     original = pkg_resources.resource_filename('certbot_integration_tests', 'assets/sample-config')
     copied = os.path.join(workspace, 'sample-config')
     shutil.copytree(original, copied, symlinks=True)
+
+    if os.name == 'nt':
+        # Fix the symlinks on Windows since GIT is not creating them upon checkout
+        for lineage in ['a.encryption-example.com', 'b.encryption-example.com']:
+            current_live = os.path.join(copied, 'live', lineage)
+            for name in os.listdir(current_live):
+                if name != 'README':
+                    current_file = os.path.join(current_live, name)
+                    with open(current_file) as file_h:
+                        src = file_h.read()
+                    os.unlink(current_file)
+                    os.symlink(os.path.join(current_live, src), current_file)
+
     return copied
+
+
+def echo(keyword, path=None):
+    """
+    Generate a platform independent executable command
+    that echoes the given keyword into the given file.
+    :param keyword: the keyword to echo (must be a single keyword)
+    :param path: path to the file were keyword is echoed
+    :return: the executable command
+    """
+    if not re.match(r'^\w+$', keyword):
+        raise ValueError('Error, keyword `{0}` is not a single keyword.'
+                         .format(keyword))
+    return '{0} -c "from __future__ import print_function; print(\'{1}\')"{2}'.format(
+        os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
