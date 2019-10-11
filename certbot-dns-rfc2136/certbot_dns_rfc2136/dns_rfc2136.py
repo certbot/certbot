@@ -12,7 +12,7 @@ import dns.tsigkeyring
 import dns.update
 import zope.interface
 
-from acme.magic_typing import Dict, Tuple, List
+from acme.magic_typing import Dict, Tuple, List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import interfaces
@@ -235,8 +235,7 @@ class _RFC2136Client(object):
 
         (auth, prefix, suffix) = found
         if not auth:
-            raise errors.PluginError('SOA %s for %s not authoritative',
-                                     suffix, domstr)
+            raise errors.PluginError('SOA {0} for {1} not authoritative'.format(suffix, domstr))
         return prefix, suffix
 
     def _query_soa(self, domain):
