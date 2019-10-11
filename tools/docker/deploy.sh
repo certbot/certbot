@@ -18,14 +18,14 @@ Cleanup() {
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 CERTBOT_DOCKER_VERSION="$1"  # Eg. v0.35.0 or v0.35.0-1
-CERTBOT_VERSION=$(sed -E -e 's|(v[0-9+]\.[0-9]+\.[0-9]+).*|\1|g' <<< $CERTBOT_DOCKER_VERSION)  # Eg. v0.35.0
-BRANCH_NAME=$(sed -E -e 's|v(.*)\.[0-9]+|\1.x|g' <<< $CERTBOT_VERSION)  # Eg. 0.35.x
+CERTBOT_VERSION=$(sed -E -e 's|(v[0-9+]\.[0-9]+\.[0-9]+).*|\1|g' <<< "$CERTBOT_DOCKER_VERSION")  # Eg. v0.35.0
+BRANCH_NAME=$(sed -E -e 's|v(.*)\.[0-9]+|\1.x|g' <<< "$CERTBOT_VERSION")  # Eg. 0.35.x
 
-sed -i -e "s|current-.*-blue\.svg|current-$CERTBOT_VERSION-blue.svg|g" core/README.md
-sed -i -e "s|branch=.*)\]|branch=$BRANCH_NAME)]|g" core/README.md
+sed -i -e "s|current-.*-blue\\.svg|current-$CERTBOT_VERSION-blue.svg|g" core/README.md
+sed -i -e "s|branch=.*)\\]|branch=$BRANCH_NAME)]|g" core/README.md
 
-sed -i -e "s|current-.*-blue\.svg|current-$CERTBOT_VERSION-blue.svg|g" plugin/README.md
-sed -i -e "s|branch=.*)\]|branch=$BRANCH_NAME)]|g" plugin/README.md
+sed -i -e "s|current-.*-blue\\.svg|current-$CERTBOT_VERSION-blue.svg|g" plugin/README.md
+sed -i -e "s|branch=.*)\\]|branch=$BRANCH_NAME)]|g" plugin/README.md
 
 pushd "$WORK_DIR"
     git commit -a -m "Release version $CERTBOT_DOCKER_VERSION" --allow-empty

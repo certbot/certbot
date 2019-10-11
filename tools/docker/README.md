@@ -12,7 +12,7 @@ High-level behavior
 
 When a new version tag (eg. v0.35.0) is pushed to this repository, it triggers a new build in each DockerHub project, to construct and publish the new version of the Docker,
 containing the Certbot version corresponding to the pushed tag. With the example of the v0.35.0, the DockerHub projects will contain after few minutes a new tag v0.35.0,
-whose the Docker contains Certbot v0.35.0. 
+whose the Docker contains Certbot v0.35.0.
 
 Configuration
 -------------
@@ -58,3 +58,14 @@ This script will trigger the publication on DockerHub of all Dockers for the giv
 - commit locally the modifications,
 - tag this commit with the given version,
 - push this tag and the updated `master` branch.
+
+Assuming the version to publish is `v0.35.0`, the following docker images will be created at DockerHub.
+
+- certbot/certbot:v0.35.0 *(amd64 architecture)*
+- certbot/certbot:amd64-v0.35.0
+- certbot/certbot:arm32v6-v0.35.0
+- certbot/certbot:arm64v8-v0.35.0
+- certbot/certbot:latest *(amd64 architecture)*
+- certbot/certbot:amd64-latest
+- certbot/certbot:arm32v6-latest
+- certbot/certbot:arm64v8-latest

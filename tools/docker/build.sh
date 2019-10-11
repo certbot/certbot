@@ -13,34 +13,32 @@ trap Cleanup 1 2 3 6
 
 Cleanup() {
     if [ ! -z "$WORK_DIR" ]; then
-        rm -rf "$WORK_DIR/plugin/certbot" || true
-        rm -rf "$WORK_DIR/core/certbot" || true
+        rm -rf "$WORK_DIR"/core/qemu-*-static || true
+        rm -rf "$WORK_DIR"/plugin/qemu-*-static || true
     fi
     popd 2> /dev/null || true
 }
 
+Build() {
+    DOCKER_REPO="$1"
+    CERTBOT_VERSION="$2"
+    CONTEXT_PATH="$3"
+    DOCKERFILE_PATH="$CONTEXT_PATH/Dockerfile"
+    DOCKER_TAG="$CERTBOT_VERSION"
+    pushd "$CONTEXT_PATH"
+        DOCKER_TAG="$DOCKER_TAG" DOCKER_REPO="$DOCKER_REPO" DOCKERFILE_PATH="$DOCKERFILE_PATH" bash hooks/pre_build
+        DOCKER_TAG="$DOCKER_TAG" DOCKER_REPO="$DOCKER_REPO" DOCKERFILE_PATH="$DOCKERFILE_PATH" bash hooks/build
+    popd
+}
+
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
-DOCKER_TAG="$1"
-SOURCE_BRANCH="$DOCKER_TAG"
-
-Cleanup
+CERTBOT_VERSION="$1"
 
 # Step 1: Certbot core Docker
-
-DOCKER_REPO="certbot/certbot"
-CONTEXT_PATH="$WORK_DIR/core"
-DOCKERFILE_PATH="$CONTEXT_PATH/Dockerfile"
-IMAGE_NAME="$DOCKER_REPO:$DOCKER_TAG"
-
-pushd "$CONTEXT_PATH"
-    DOCKER_TAG="$DOCKER_TAG" DOCKER_REPO="$DOCKER_REPO" DOCKERFILE_PATH="$DOCKERFILE_PATH" IMAGE_NAME="$IMAGE_NAME" bash hooks/build
-popd
-
-Cleanup
+Build "certbot/certbot" "$CERTBOT_VERSION" "$WORK_DIR/core"
 
 # Step 2: Certbot dns plugins Dockers
-
 CERTBOT_PLUGINS_DOCKER_REPOS=(
     "certbot/dns-dnsmadeeasy"
     "certbot/dns-dnsimple"
@@ -58,15 +56,8 @@ CERTBOT_PLUGINS_DOCKER_REPOS=(
     "certbot/dns-sakuracloud"
 )
 
-for DOCKER_REPO in ${CERTBOT_PLUGINS_DOCKER_REPOS[@]}; do
-    CONTEXT_PATH="$WORK_DIR/plugin"
-    DOCKERFILE_PATH="$CONTEXT_PATH/Dockerfile"
-    IMAGE_NAME="$DOCKER_REPO:$DOCKER_TAG"
-
-    pushd "$CONTEXT_PATH"
-        DOCKER_TAG="$DOCKER_TAG" DOCKER_REPO="$DOCKER_REPO" DOCKERFILE_PATH="$DOCKERFILE_PATH" IMAGE_NAME="$IMAGE_NAME" bash hooks/pre_build
-        DOCKER_TAG="$DOCKER_TAG" DOCKER_REPO="$DOCKER_REPO" DOCKERFILE_PATH="$DOCKERFILE_PATH" IMAGE_NAME="$IMAGE_NAME" bash hooks/build
-    popd
-
-    Cleanup
+for DOCKER_REPO in "${CERTBOT_PLUGINS_DOCKER_REPOS[@]}"; do
+    Build "${DOCKER_REPO}" "$CERTBOT_VERSION" "$WORK_DIR/plugin"
 done
+
+Cleanup
