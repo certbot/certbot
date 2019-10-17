@@ -15,3 +15,5 @@ steps:
 images:
   - gcr.io/$PROJECT_ID/certbot
   - gcr.io/$PROJECT_ID/certbot-dns-google
+
+logsBucket: fathom-containers-cloud-build-logs-36tugmiz
