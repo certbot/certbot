@@ -1175,7 +1175,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
         RerunWithArgs "$@"
       # Otherwise bootstrap needs to be done manually by the user.
       else
-        # If it is because of the bootstrap, --non-interactive will be of no use.
+        # If it is because bootstrapping is interactive, --non-interactive will be of no use.
         # Display the OS-specific interactive bootstrap message.
         if [ "$INTERACTIVE_REBOOTSTRAP" = 1 ]; then
           error "Skipping upgrade because new OS dependencies need to be installed."
