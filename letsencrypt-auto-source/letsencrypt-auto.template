@@ -355,7 +355,7 @@ elif [ -f /etc/redhat-release ]; then
 
   # Handle legacy RPM distributions
   if [ "$PYVER" -eq 26 ]; then
-    # Check if the automated rebootstrap can be achieved on this system.
+    # Check if an automated bootstrap can be achieved on this system.
     if ! CheckPython36SclIsAvailable; then
       INTERACTIVE_REBOOTSTRAP=1
       INTERACTIVE_REBOOTSTRAP_MESSAGE="Enable the SCL repository and try running Certbot again."
