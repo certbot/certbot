@@ -89,8 +89,8 @@ class WindowsChmodTests(TempDirTestCase):
         self.assertEqual(len(system_aces), 1)
         self.assertEqual(len(admin_aces), 1)
 
-        self.assertEqual(system_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS ^ 512)
-        self.assertEqual(admin_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS ^ 512)
+        self.assertEqual(system_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS)
+        self.assertEqual(admin_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS)
 
     def test_read_flag(self):
         self._test_flag(4, ntsecuritycon.FILE_GENERIC_READ)
@@ -101,12 +101,10 @@ class WindowsChmodTests(TempDirTestCase):
     def test_write_flag(self):
         self._test_flag(2, (ntsecuritycon.FILE_ALL_ACCESS
                             ^ ntsecuritycon.FILE_GENERIC_READ
-                            ^ ntsecuritycon.FILE_GENERIC_EXECUTE
-                            ^ 512))
+                            ^ ntsecuritycon.FILE_GENERIC_EXECUTE))
 
     def test_full_flag(self):
-        self._test_flag(7, (ntsecuritycon.FILE_ALL_ACCESS
-                            ^ 512))
+        self._test_flag(7, ntsecuritycon.FILE_ALL_ACCESS)
 
     def _test_flag(self, everyone_mode, windows_flag):
         # Note that flag is tested against `everyone`, not `user`, because practically these unit
