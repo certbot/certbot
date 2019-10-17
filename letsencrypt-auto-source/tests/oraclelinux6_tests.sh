@@ -55,7 +55,7 @@ if [ "$version" != "$INITIAL_CERTBOT_VERSION_PY34" ]; then
   exit 1
 fi
 
-echo "PASSED: Script letsencrypt-auto did not upgraded certbot but started it successfully while SCL was not enabled."
+echo "PASSED: Script letsencrypt-auto did not upgrade certbot but started it successfully while SCL was not enabled."
 
 # Enable SCL
 yum install -y oracle-softwarecollection-release-el6 >/dev/null
