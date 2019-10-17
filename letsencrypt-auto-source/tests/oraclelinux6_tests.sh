@@ -40,7 +40,7 @@ echo "PASSED: Script letsencrypt-auto did not rebootstrap and did not star Certb
 
 # Expect letsencrypt-auto to not update certbot, but start it anyway in non-interactive
 # shell since SCL is not installed.
-# NB: Readline has an issue on all Python versions for CentOS 6, making `certbot --version`
+# NB: Readline has an issue on all Python versions for OL 6, making `certbot --version`
 # output an unprintable ASCII character on a new line at the end.
 # So we take the second last line of the output.
 version=$($LE_AUTO --version 2>/dev/null | tail -2 | head -1)
