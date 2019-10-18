@@ -12,6 +12,7 @@ schedules:
     branches:
       include:
       - master
+    always: true
 
 jobs:
   - template: templates/tests-suite.yml
