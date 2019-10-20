@@ -36,7 +36,7 @@ if ! "$LE_AUTO" --version 2>&1 | grep -q "Enable the SCL repository and try runn
   exit 1
 fi
 
-echo "PASSED: Script letsencrypt-auto did not rebootstrap and did not star Certbot."
+echo "PASSED: Script letsencrypt-auto did not rebootstrap."
 
 # Expect letsencrypt-auto to not update certbot, but start it anyway in non-interactive
 # shell since SCL is not installed.
