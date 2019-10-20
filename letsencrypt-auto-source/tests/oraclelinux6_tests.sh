@@ -7,11 +7,11 @@ LE_AUTO="certbot/letsencrypt-auto-source/letsencrypt-auto"
 
 # Check bootstrap from current letsencrypt-auto will fail, because SCL is not enabled.
 if ! "$LE_AUTO" 2>&1 | grep -q "Enable the SCL repository and try running Certbot again."; then
-  echo "ERROR: bootstrap was not aborted although SCL was not installed!"
+  echo "ERROR: Bootstrap was not aborted although SCL was not installed!"
   exit 1
 fi
 
-echo "PASSED: bootstrap was aborted since SCL was not installed."
+echo "PASSED: Bootstrap was aborted since SCL was not installed."
 
 # Bootstrap from the old letsencrypt-auto, Python 3.4 will be installed from EPEL.
 "$LE_AUTO_PY_34" --no-self-upgrade -n >/dev/null 2>/dev/null
@@ -24,7 +24,7 @@ if [ $RESULT -ne 0 ]; then
   exit 1
 fi
 
-echo "PASSED: bootstrap from old letsencrypt-auto succeeded and installed Python 3.4"
+echo "PASSED: Bootstrap from old letsencrypt-auto succeeded and installed Python 3.4"
 
 # Expect letsencrypt-auto to skip rebootstrapping with a warning since SCL is not installed.
 if ! "$LE_AUTO" --non-interactive --version 2>&1 | grep -q "Enable the SCL repository and try running Certbot again."; then
@@ -38,20 +38,15 @@ echo "PASSED: Script letsencrypt-auto did not rebootstrap."
 yum install -y oracle-softwarecollection-release-el6 >/dev/null
 
 
-# Expect letsencrypt-auto to bootstrap successfully since SCL is available,
-# assert that there is no output since --quiet flag is set.
-OUTPUT_LEN=$("$LE_AUTO" -n --quiet 2>&1 | wc -c)
-if [ "$OUTPUT_LEN" != 0 ]; then
-    echo letsencrypt-auto produced unexpected output!
-    exit 1
-fi
+# Expect letsencrypt-auto to bootstrap successfully since SCL is available.
+"$LE_AUTO" -n --version >/dev/null 2>/dev/null
 
-if [ "$(/opt/eff.org/bin/python -V 2>&1 | cut -d" " -f2 | cut -d. -f1-2)" != "3.6" ]; then
+if [ "$(/opt/eff.org/certbot/venv/bin/python -V 2>&1 | cut -d" " -f2 | cut -d. -f1-2)" != "3.6" ]; then
   echo "ERROR: Script letsencrypt-auto failed to bootstrap and install Python 3.6 while SCL is available."
   exit 1
 fi
 
-if ! /opt/eff.org/bin/certbot --version > /dev/null 2> /dev/null; then
+if ! /opt/eff.org/certbot/venv/bin/certbot --version > /dev/null 2> /dev/null; then
   echo "ERROR: Script letsencrypt-auto did not install certbot correctly while SCL is enabled."
   exit 1
 fi
