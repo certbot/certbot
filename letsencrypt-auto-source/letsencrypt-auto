@@ -1181,7 +1181,6 @@ if [ "$1" = "--le-auto-phase2" ]; then
           error "Skipping upgrade because new OS dependencies may need to be installed."
           error "This requires a manual user intervention."
           error "$INTERACTIVE_BOOTSTRAP_MESSAGE"
-          error
         # If this is because of the environment (eg. non interactive shell without
         # --non-interactive flag set), help the user in that direction.
         else
