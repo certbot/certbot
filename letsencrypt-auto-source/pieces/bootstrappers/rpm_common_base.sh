@@ -3,6 +3,9 @@
 
 # Sets TOOL to the name of the package manager
 # Sets appropriate values for YES_FLAG and QUIET_FLAG based on $ASSUME_YES and $QUIET_FLAG.
+# Note: this function is called both while selecting the bootstrap scripts and
+# during the actual bootstrap. Some things like prompting to user can be done in the latter
+# case, but not in the former one.
 InitializeRPMCommonBase() {
   if type dnf 2>/dev/null
   then
