@@ -480,7 +480,7 @@ BootstrapRpmCommon() {
 BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION=1
 
 # Checks if rh-python36 can be installed.
-CheckPython36SclIsAvailable() {
+Python36SclIsAvailable() {
   InitializeRPMCommonBase >/dev/null 2>&1;
 
   if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
@@ -827,10 +827,10 @@ elif [ -f /etc/redhat-release ]; then
 
   # Handle legacy RPM distributions
   if [ "$PYVER" -eq 26 ]; then
-    # Check if the automated rebootstrap can be achieved on this system.
-    if ! CheckPython36SclIsAvailable; then
-      INTERACTIVE_REBOOTSTRAP=1
-      INTERACTIVE_REBOOTSTRAP_MESSAGE="Enable the SCL repository and try running Certbot again."
+    # Check if an automated bootstrap can be achieved on this system.
+    if ! Python36SclIsAvailable; then
+      INTERACTIVE_BOOTSTRAP=1
+      INTERACTIVE_BOOTSTRAP_MESSAGE="Enable the SCL repository and try running Certbot again."
     fi
 
     Bootstrap() {
@@ -1154,10 +1154,10 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # If the selected Bootstrap function isn't a noop and it differs from the
     # previously used version
     if [ -n "$BOOTSTRAP_VERSION" -a "$BOOTSTRAP_VERSION" != "$PREV_BOOTSTRAP_VERSION" ]; then
-      # Check if we can rebootstrap without manual user intervention: this requires that
+      # Check if we can rebootstrap without manual user intervention: this require that
       # certbot-auto is in non-interactive mode AND selected bootstrap does not claim to
       # require a manual user intervention.
-      if [ "$NONINTERACTIVE" = 1 -a "$INTERACTIVE_REBOOTSTRAP" != 1 ]; then
+      if [ "$NONINTERACTIVE" = 1 -a "$INTERACTIVE_BOOTSTRAP" != 1 ]; then
         CAN_REBOOTSTRAP=1
       fi
       # Check if rebootstrap can be done non-interactively and current shell is non-interactive
@@ -1175,15 +1175,15 @@ if [ "$1" = "--le-auto-phase2" ]; then
         RerunWithArgs "$@"
       # Otherwise bootstrap needs to be done manually by the user.
       else
-        # If it is because bootstrapping is interactive, --non-interactive will be of no use.
+        # If it is because of the bootstrap, --non-interactive will be of no use.
         # Display the OS-specific interactive bootstrap message.
-        if [ "$INTERACTIVE_REBOOTSTRAP" = 1 ]; then
-          error "Skipping upgrade because new OS dependencies need to be installed."
-          error "This requires manual user intervention."
-          error "$INTERACTIVE_REBOOTSTRAP_MESSAGE"
+        if [ "$INTERACTIVE_BOOTSTRAP" = 1 ]; then
+          error "Skipping upgrade because new OS dependencies may need to be installed."
+          error "This requires a manual user intervention."
+          error "$INTERACTIVE_BOOTSTRAP_MESSAGE"
           error
         # If this is because of the environment (eg. non interactive shell without
-        # --non-interactive flag set, help the user in that direction.
+        # --non-interactive flag set), help the user in that direction.
         else
           error "Skipping upgrade because new OS dependencies may need to be installed."
           error

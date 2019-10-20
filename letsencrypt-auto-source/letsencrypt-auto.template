@@ -356,9 +356,9 @@ elif [ -f /etc/redhat-release ]; then
   # Handle legacy RPM distributions
   if [ "$PYVER" -eq 26 ]; then
     # Check if an automated bootstrap can be achieved on this system.
-    if ! CheckPython36SclIsAvailable; then
-      INTERACTIVE_REBOOTSTRAP=1
-      INTERACTIVE_REBOOTSTRAP_MESSAGE="Enable the SCL repository and try running Certbot again."
+    if ! Python36SclIsAvailable; then
+      INTERACTIVE_BOOTSTRAP=1
+      INTERACTIVE_BOOTSTRAP_MESSAGE="Enable the SCL repository and try running Certbot again."
     fi
 
     Bootstrap() {
@@ -577,7 +577,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
       # Check if we can rebootstrap without manual user intervention: this require that
       # certbot-auto is in non-interactive mode AND selected bootstrap does not claim to
       # require a manual user intervention.
-      if [ "$NONINTERACTIVE" = 1 -a "$INTERACTIVE_REBOOTSTRAP" != 1 ]; then
+      if [ "$NONINTERACTIVE" = 1 -a "$INTERACTIVE_BOOTSTRAP" != 1 ]; then
         CAN_REBOOTSTRAP=1
       fi
       # Check if rebootstrap can be done non-interactively and current shell is non-interactive
@@ -597,10 +597,10 @@ if [ "$1" = "--le-auto-phase2" ]; then
       else
         # If it is because of the bootstrap, --non-interactive will be of no use.
         # Display the OS-specific interactive bootstrap message.
-        if [ "$INTERACTIVE_REBOOTSTRAP" = 1 ]; then
-          error "Skipping upgrade because new OS dependencies need to be installed."
+        if [ "$INTERACTIVE_BOOTSTRAP" = 1 ]; then
+          error "Skipping upgrade because new OS dependencies may need to be installed."
           error "This requires a manual user intervention."
-          error "$INTERACTIVE_REBOOTSTRAP_MESSAGE"
+          error "$INTERACTIVE_BOOTSTRAP_MESSAGE"
           error
         # If this is because of the environment (eg. non interactive shell without
         # --non-interactive flag set), help the user in that direction.
