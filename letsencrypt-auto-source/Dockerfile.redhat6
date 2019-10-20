@@ -39,7 +39,7 @@ RUN curl https://raw.githubusercontent.com/certbot/certbot/v0.38.0/letsencrypt-a
     -o /home/lea/certbot/letsencrypt-auto-source/letsencrypt-auto_py_34 \
  && chmod +x /home/lea/certbot/letsencrypt-auto-source/letsencrypt-auto_py_34
 
-RUN cp /home/lea/certbot/letsencrypt-auto-source/tests/${REDHAT_DIST_FLAVOR/\/sl/}6_tests.sh /home/lea/certbot/letsencrypt-auto-source/tests/redhat6_tests.sh \
+RUN cp /home/lea/certbot/letsencrypt-auto-source/tests/${REDHAT_DIST_FLAVOR}6_tests.sh /home/lea/certbot/letsencrypt-auto-source/tests/redhat6_tests.sh \
  && chmod +x /home/lea/certbot/letsencrypt-auto-source/tests/redhat6_tests.sh
 
 USER lea
