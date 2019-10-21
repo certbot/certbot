@@ -15,6 +15,7 @@ botocore==1.12.36
 cloudflare==1.5.1
 codecov==2.0.15
 configparser==3.7.4
+contextlib2==0.6.0.post1
 coverage==4.5.4
 decorator==4.1.2
 dns-lexicon==3.2.1
@@ -26,6 +27,7 @@ futures==3.1.1
 google-api-python-client==1.5
 httplib2==0.10.3
 imagesize==0.7.1
+importlib-metadata==0.23
 ipdb==0.10.2
 ipython==5.5.0
 ipython-genutils==0.2.0
@@ -38,6 +40,7 @@ logger==1.4
 logilab-common==1.4.1
 MarkupSafe==1.0
 mccabe==0.6.1
+more-itertools==5.0.0
 mypy==0.600
 ndg-httpsclient==0.3.2
 oauth2client==2.0.0
@@ -45,7 +48,7 @@ pathlib2==2.3.0
 pexpect==4.7.0
 pickleshare==0.7.4
 pkginfo==1.4.2
-pluggy==0.5.2
+pluggy==0.13.0
 prompt-toolkit==1.0.15
 ptyprocess==0.6.0
 py==1.8.0
@@ -89,3 +92,4 @@ uritemplate==0.6
 virtualenv==16.6.2
 wcwidth==0.1.7
 wrapt==1.11.1
+zipp==0.6.0
