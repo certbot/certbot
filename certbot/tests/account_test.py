@@ -1,7 +1,6 @@
 """Tests for certbot.account."""
 import datetime
 import json
-import shutil
 import unittest
 
 import josepy as jose
@@ -169,13 +168,6 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
 
     def test_load_non_existent_raises_error(self):
         self.assertRaises(errors.AccountNotFound, self.storage.load, "missing")
-
-    def test_load_id_mismatch_raises_error(self):
-        self.storage.save(self.acc, self.mock_client)
-        shutil.move(os.path.join(self.config.accounts_dir, self.acc.id),
-                    os.path.join(self.config.accounts_dir, "x" + self.acc.id))
-        self.assertRaises(errors.AccountStorageError, self.storage.load,
-                          "x" + self.acc.id)
 
     def _set_server(self, server):
         self.config.server = server
