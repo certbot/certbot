@@ -1,4 +1,7 @@
 """Tests for AugeasParserNode classes"""
+import mock
+
+from certbot_apache import assertions
 
 from certbot_apache.tests import util
 
@@ -13,6 +16,24 @@ class AugeasParserNodeTest(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
+
+    def test_get_block_node_name(self):
+        from certbot_apache.augeasparser import AugeasBlockNode
+        block = AugeasBlockNode(
+            name=assertions.PASS,
+            ancestor=None,
+            filepath=assertions.PASS,
+            metadata={"augeasparser": mock.Mock()}
+        )
+        testcases = {
+            "/some/path/FirstNode/SecondNode": "SecondNode",
+            "/some/path/FirstNode/SecondNode/": "SecondNode",
+            "OnlyPathItem": "OnlyPathItem",
+            "/files/etc/apache2/apache2.conf/VirtualHost": "VirtualHost",
+            "/Anything": "Anything",
+        }
+        for test in testcases:
+            self.assertEqual(block._aug_get_block_name(test), testcases[test])  # pylint: disable=protected-access
 
     def test_find_blocks(self):
         blocks = self.config.parser_root.find_blocks("VirtualHost", exclude=False)
