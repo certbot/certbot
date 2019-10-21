@@ -4,6 +4,7 @@
 # files during tests (eg. letsencrypt-auto-source/pieces/dependency-requirements.txt).
 alabaster==0.7.10
 apipkg==1.4
+appnope==0.1.0
 asn1crypto==0.22.0
 astroid==1.6.5
 attrs==17.3.0
@@ -24,7 +25,8 @@ docutils==0.12
 execnet==1.5.0
 future==0.16.0
 futures==3.1.1
-google-api-python-client==1.5
+filelock==3.0.12
+google-api-python-client==1.5.5
 httplib2==0.10.3
 imagesize==0.7.1
 importlib-metadata==0.23
@@ -43,7 +45,8 @@ mccabe==0.6.1
 more-itertools==5.0.0
 mypy==0.600
 ndg-httpsclient==0.3.2
-oauth2client==2.0.0
+oauth2client==4.0.0
+packaging==19.2
 pathlib2==2.3.0
 pexpect==4.7.0
 pickleshare==0.7.4
@@ -82,13 +85,14 @@ Sphinx==1.7.5
 sphinx-rtd-theme==0.2.4
 sphinxcontrib-websupport==1.0.1
 tldextract==2.2.0
+toml==0.10.0
 tox==3.14.0
 tqdm==4.19.4
 traitlets==4.3.2
 twine==1.11.0
 typed-ast==1.1.0
 typing==3.6.4
-uritemplate==0.6
+uritemplate==3.0.0
 virtualenv==16.6.2
 wcwidth==0.1.7
 wrapt==1.11.1
