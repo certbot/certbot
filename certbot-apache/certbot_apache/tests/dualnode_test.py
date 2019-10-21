@@ -13,18 +13,23 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
     """DualParserNode tests"""
 
     def setUp(self):  # pylint: disable=arguments-differ
+        metadata = {"augeasparser": mock.Mock()}
         self.block = dualparser.DualBlockNode(name="block",
                                               ancestor=None,
-                                              filepath="/tmp/something")
+                                              filepath="/tmp/something",
+                                              metadata=metadata)
         self.block_two = dualparser.DualBlockNode(name="block",
                                                   ancestor=self.block,
-                                                  filepath="/tmp/something")
+                                                  filepath="/tmp/something",
+                                                  metadata=metadata)
         self.directive = dualparser.DualDirectiveNode(name="directive",
                                                       ancestor=self.block,
-                                                      filepath="/tmp/something")
+                                                      filepath="/tmp/something",
+                                                      metadata=metadata)
         self.comment = dualparser.DualCommentNode(comment="comment",
                                                   ancestor=self.block,
-                                                  filepath="/tmp/something")
+                                                  filepath="/tmp/something",
+                                                  metadata=metadata)
 
     def test_create_with_precreated(self):
         cnode = dualparser.DualCommentNode(comment="comment",
@@ -154,32 +159,6 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
                                    interfaces.CommentNode))
         self.assertEqual(self.block.primary.children[0].ancestor,
                          self.block.primary)
-
-    def test_find_blocks(self):
-        dblks = self.block.find_blocks("block")
-        p_dblks = [d.primary for d in dblks]
-        s_dblks = [d.secondary for d in dblks]
-        p_blks = self.block.primary.find_blocks("block")
-        s_blks = self.block.secondary.find_blocks("block")
-        # Check that every block response is represented in the list of
-        # DualParserNode instances.
-        for p in p_dblks:
-            self.assertTrue(p in p_blks)
-        for s in s_dblks:
-            self.assertTrue(s in s_blks)
-
-    def test_find_directives(self):
-        ddirs = self.block.find_directives("directive")
-        p_ddirs = [d.primary for d in ddirs]
-        s_ddirs = [d.secondary for d in ddirs]
-        p_dirs = self.block.primary.find_directives("directive")
-        s_dirs = self.block.secondary.find_directives("directive")
-        # Check that every directive response is represented in the list of
-        # DualParserNode instances.
-        for p in p_ddirs:
-            self.assertTrue(p in p_dirs)
-        for s in s_ddirs:
-            self.assertTrue(s in s_dirs)
 
     def test_find_comments(self):
         dcoms = self.block.find_comments("comment")
