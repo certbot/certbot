@@ -63,3 +63,12 @@ class AugeasParserNodeTest(util.ApacheTest):
                 self.assertEqual(servername[0].parameters[0], "certbot.demo")
                 found = True
         self.assertTrue(found)
+
+    def test_find_comments(self):
+        rootcomment = self.config.parser_root.find_comments(
+            "This is the main Apache server configuration file. "
+        )
+        self.assertEqual(len(rootcomment), 1)
+        self.assertTrue(rootcomment[0].filepath.endswith(
+            "debian_apache_2_4/multiple_vhosts/apache2/apache2.conf"
+        ))

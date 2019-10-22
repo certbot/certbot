@@ -152,12 +152,21 @@ class AugeasBlockNode(AugeasDirectiveNode):
         return nodes
 
     def find_comments(self, comment, exact=False): # pylint: disable=unused-argument
-        """Recursive search of DirectiveNodes from the sequence of children"""
-        new_metadata = {"augeasparser": self.parser}
-        return [AugeasCommentNode(comment=assertions.PASS,
-                                  ancestor=self,
-                                  filepath=assertions.PASS,
-                                  metadata=new_metadata)]
+        """
+        Recursive search of DirectiveNodes from the sequence of children.
+
+        Note that the argument exact is not implemented here, as it's not
+        currently in use in ApacheConfigurator.
+        """
+
+        nodes = list()
+        ownpath = self.metadata.get("augeaspath")
+
+        comments = self.parser.find_comments(comment, start=ownpath)
+        for com in comments:
+            nodes.append(self._create_commentnode(com))
+
+        return nodes
 
     def delete_child(self, child):  # pragma: no cover
         """Deletes a ParserNode from the sequence of children"""
@@ -166,6 +175,19 @@ class AugeasBlockNode(AugeasDirectiveNode):
     def unsaved_files(self):  # pragma: no cover
         """Returns a list of unsaved filepaths"""
         return [assertions.PASS]
+
+    def _create_commentnode(self, path):
+        """Helper function to create a CommentNode from Augeas path"""
+
+        comment = self.parser.aug.get(path)
+        metadata = {"augeasparser": self.parser, "augeaspath": path}
+
+        # Because of the dynamic nature, and the fact that we're not populating
+        # the complete ParserNode tree, we use the search parent as ancestor
+        return AugeasCommentNode(comment=comment,
+                                 ancestor=self,
+                                 filepath=apache_util.get_file_path(path),
+                                 metadata=metadata)
 
     def _create_directivenode(self, path):
         """Helper function to create a DirectiveNode from Augeas path"""

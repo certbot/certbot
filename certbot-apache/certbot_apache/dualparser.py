@@ -245,7 +245,7 @@ class DualBlockNode(DualNodeBase):
         if pass_primary and pass_secondary:
             # Both unimplemented
             new_nodes.append(nodeclass(primary=primary_res[0],
-                                       secondary=secondary_res[0]))
+                                       secondary=secondary_res[0])) # pragma: no cover
         elif pass_primary:
             for c in secondary_res:
                 new_nodes.append(nodeclass(primary=primary_res[0],
