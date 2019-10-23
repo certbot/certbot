@@ -6,7 +6,7 @@ LE_AUTO_PY_34="certbot/letsencrypt-auto-source/letsencrypt-auto_py_34"
 LE_AUTO="certbot/letsencrypt-auto-source/letsencrypt-auto"
 
 # Check bootstrap from current letsencrypt-auto will fail, because SCL is not enabled.
-if ! "$LE_AUTO" 2>&1 | grep -q "Enable the SCL repository and try running Certbot again."; then
+if ! "$LE_AUTO" -n 2>&1 | grep -q "Enable the SCL repository and try running Certbot again."; then
   echo "ERROR: Bootstrap was not aborted although SCL was not installed!"
   exit 1
 fi
