@@ -2,7 +2,7 @@
 trigger:
   tags:
     include:
-      - v0.*
+      - v*
 pr: none
 
 stages:
