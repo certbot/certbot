@@ -35,3 +35,4 @@ stages:
               assets: $(Build.ArtifactStagingDirectory)/*.exe
               assetUploadMode: 'replace'
               addChangeLog: false
+              isDraft: true
