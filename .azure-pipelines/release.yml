@@ -16,23 +16,12 @@ stages:
         pool:
           vmImage: vs2017-win2016
         steps:
-          - task: DownloadPipelineArtifact@0
-            inputs:
-              artifactName: WindowsInstaller
-              targetPath: $(Build.ArtifactStagingDirectory)
           - bash: |
               CERTBOT_VERSION="${BUILD_SOURCEBRANCH/refs\/tags\/v/}"
-              echo "##vso[task.setvariable variable=ReleaseTitle;]Certbot ${CERTBOT_VERSION}"
               "${BUILD_REPOSITORY_LOCALPATH}\tools\extract_changelog.py" "${CERTBOT_VERSION}" >> "${BUILD_ARTIFACTSTAGINGDIRECTORY}/release_notes.md"
-            displayName: Configure GitHub release
-          - task: GitHubRelease@0
+            displayName: Prepare changelog
+          - task: PublishPipelineArtifact@1
             inputs:
-              gitHubConnection: certbot-release
-              action: create
-              target: $(Build.SourceVersion)
-              title: $(ReleaseTitle)
-              releaseNotesFile: $(Build.ArtifactStagingDirectory)/release_notes.md"
-              assets: $(Build.ArtifactStagingDirectory)/*.exe
-              assetUploadMode: 'replace'
-              addChangeLog: false
-              isDraft: true
+              path: $(Build.ArtifactStagingDirectory)
+              artifact: changelog
+            displayName: Publish changelog
