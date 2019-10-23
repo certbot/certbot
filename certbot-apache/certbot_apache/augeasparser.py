@@ -185,7 +185,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # Because of the dynamic nature, and the fact that we're not populating
         # the complete ParserNode tree, we use the search parent as ancestor
         return AugeasCommentNode(comment=comment,
-                                 ancestor=self,
+                                 ancestor=assertions.PASS,
                                  filepath=apache_util.get_file_path(path),
                                  metadata=metadata)
 
