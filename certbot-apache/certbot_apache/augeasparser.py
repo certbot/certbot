@@ -67,8 +67,30 @@ class AugeasDirectiveNode(AugeasParserNode):
         return False
 
     def set_parameters(self, parameters):
-        """Sets the parameters for DirectiveNode"""
-        self.parameters = parameters
+        """
+        Sets parameters of a DirectiveNode or BlockNode object.
+
+        :param list parameters: List of all parameters for the node to set.
+        """
+        orig_params = self._aug_get_params(self.metadata["augeaspath"])
+
+        # Clear out old parameters
+        for _ in orig_params:
+            # When the first parameter is removed, the indices get updated
+            param_path = "{}/arg[1]".format(self.metadata["augeaspath"])
+            self.parser.aug.remove(param_path)
+        # Insert new ones
+        for pi, _ in enumerate(parameters):
+            param_path = "{}/arg[{}]".format(self.metadata["augeaspath"], pi+1)
+            self.parser.aug.set(param_path, parameters[pi])
+
+        self.parameters = tuple(parameters)
+
+    def _aug_get_params(self, path):
+        """Helper function to get parameters for DirectiveNodes and BlockNodes"""
+
+        arg_paths = self.parser.aug.match(path + "/arg")
+        return [self.parser.get_arg(apath) for apath in arg_paths]
 
 
 class AugeasBlockNode(AugeasDirectiveNode):
@@ -232,12 +254,6 @@ class AugeasBlockNode(AugeasDirectiveNode):
             blk_paths.update([path for path in paths if
                               name.lower() in os.path.basename(path).lower()])
         return blk_paths
-
-    def _aug_get_params(self, path):
-        """Helper function to get parameters for BlockNodes"""
-
-        arg_paths = self.parser.aug.match(path + "/arg")
-        return [self.parser.get_arg(apath) for apath in arg_paths]
 
     def _aug_get_block_name(self, path):
         """Helper function to get name of a configuration block from path."""

@@ -257,7 +257,8 @@ class ApacheConfigurator(common.Installer):
         self.parser = self.get_parser()
 
         # Set up ParserNode root
-        pn_meta = {"augeasparser": self.parser}
+        pn_meta = {"augeasparser": self.parser,
+                   "augeaspath": self.parser.get_root_augpath()}
         self.parser_root = self.get_parsernode_root(pn_meta)
 
         # Check for errors in parsing files with Augeas
@@ -360,7 +361,7 @@ class ApacheConfigurator(common.Installer):
         return dualparser.DualBlockNode(
             name=assertions.PASS,
             ancestor=None,
-            filepath=assertions.PASS,
+            filepath=self.parser.loc["root"],
             metadata=metadata
         )
 

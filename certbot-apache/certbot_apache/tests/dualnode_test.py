@@ -57,9 +57,11 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
 
     def test_set_params(self):
         params = ("first", "second")
+        self.directive.primary.set_parameters = mock.Mock()
+        self.directive.secondary.set_parameters = mock.Mock()
         self.directive.set_parameters(params)
-        self.assertEqual(self.directive.primary.parameters, params)
-        self.assertEqual(self.directive.secondary.parameters, params)
+        self.assertTrue(self.directive.primary.set_parameters.called)
+        self.assertTrue(self.directive.secondary.set_parameters.called)
 
     def test_set_parameters(self):
         pparams = mock.MagicMock()
