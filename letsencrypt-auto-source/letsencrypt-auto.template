@@ -573,7 +573,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # If the selected Bootstrap function isn't a noop and it differs from the
     # previously used version
     if [ -n "$BOOTSTRAP_VERSION" -a "$BOOTSTRAP_VERSION" != "$PREV_BOOTSTRAP_VERSION" ]; then
-      # Check if we can rebootstrap without manual user intervention: this require that
+      # Check if we can rebootstrap without manual user intervention: this requires that
       # certbot-auto is in non-interactive mode AND selected bootstrap does not claim to
       # require a manual user intervention.
       if [ "$NONINTERACTIVE" = 1 -a "$INTERACTIVE_BOOTSTRAP" != 1 ]; then
