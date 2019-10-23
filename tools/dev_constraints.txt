@@ -51,7 +51,7 @@ pathlib2==2.3.0
 pexpect==4.7.0
 pickleshare==0.7.4
 pkginfo==1.4.2
-pluggy==0.5.2
+pluggy==0.13.0
 prompt-toolkit==1.0.15
 ptyprocess==0.6.0
 py==1.8.0
