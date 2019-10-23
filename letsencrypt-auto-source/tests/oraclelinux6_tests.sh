@@ -27,7 +27,7 @@ fi
 echo "PASSED: Bootstrap from old letsencrypt-auto succeeded and installed Python 3.4"
 
 # Expect letsencrypt-auto to skip rebootstrapping with a warning since SCL is not installed.
-if ! "$LE_AUTO" --non-interactive --version 2>&1 | grep -q "Skipping upgrade because new OS dependencies may need to be installed."; then
+if ! "$LE_AUTO" --non-interactive --version 2>&1 | grep -q "This requires manual user intervention"; then
   echo "FAILED: Script letsencrypt-auto managed to start Certbot in interactive shell while SCL is not enabled!"
   exit 1
 fi
