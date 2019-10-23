@@ -5,6 +5,9 @@ yum update -y >/dev/null
 LE_AUTO_PY_34="certbot/letsencrypt-auto-source/letsencrypt-auto_py_34"
 LE_AUTO="certbot/letsencrypt-auto-source/letsencrypt-auto"
 
+# Last version of certbot-auto that was bootstraping Python 3.4 for CentOS 6 users
+INITIAL_CERTBOT_VERSION_PY34="certbot 0.38.0"
+
 # Check bootstrap from current letsencrypt-auto will fail, because SCL is not enabled.
 if ! "$LE_AUTO" -n 2>&1 | grep -q "Enable the SCL repository and try running Certbot again."; then
   echo "ERROR: Bootstrap was not aborted although SCL was not installed!"
@@ -34,9 +37,20 @@ fi
 
 echo "PASSED: Script letsencrypt-auto did not rebootstrap."
 
+# NB: Readline has an issue on all Python versions for OL 6, making `certbot --version`
+# output an unprintable ASCII character on a new line at the end.
+# So we take the second last line of the output.
+version=$($LE_AUTO --version 2>/dev/null | tail -2 | head -1)
+
+if [ "$version" != "$INITIAL_CERTBOT_VERSION_PY34" ]; then
+  echo "ERROR: Script letsencrypt-auto upgraded certbot in a non-interactive shell while SCL was not enabled."
+  exit 1
+fi
+
+echo "PASSED: Script letsencrypt-auto did not upgrade certbot but started it successfully while SCL was not enabled."
+
 # Enable SCL
 yum install -y oracle-softwarecollection-release-el6 >/dev/null
-
 
 # Expect letsencrypt-auto to bootstrap successfully since SCL is available.
 "$LE_AUTO" -n --version >/dev/null 2>/dev/null
