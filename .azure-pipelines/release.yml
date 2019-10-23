@@ -12,7 +12,7 @@ stages:
       - template: templates/installer-tests.yml
   - stage: release
     jobs:
-      - job: github
+      - job: changelog
         pool:
           vmImage: vs2017-win2016
         steps:
