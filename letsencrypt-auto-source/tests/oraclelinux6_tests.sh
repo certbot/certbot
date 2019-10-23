@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eo pipefail
 # Start by making sure your system is up-to-date:
 yum update -y >/dev/null
 
@@ -9,20 +10,20 @@ LE_AUTO="certbot/letsencrypt-auto-source/letsencrypt-auto"
 INITIAL_CERTBOT_VERSION_PY34="certbot 0.38.0"
 
 # Check bootstrap from current letsencrypt-auto will fail, because SCL is not enabled.
+set +o pipefail
 if ! "$LE_AUTO" -n 2>&1 | grep -q "Enable the SCL repository and try running Certbot again."; then
   echo "ERROR: Bootstrap was not aborted although SCL was not installed!"
   exit 1
 fi
+set -o pipefail
 
 echo "PASSED: Bootstrap was aborted since SCL was not installed."
 
 # Bootstrap from the old letsencrypt-auto, Python 3.4 will be installed from EPEL.
-"$LE_AUTO_PY_34" --no-self-upgrade -n >/dev/null 2>/dev/null
+"$LE_AUTO_PY_34" --no-self-upgrade -n --install-only >/dev/null 2>/dev/null
 
 # Ensure Python 3.4 is installed
-python3.4 --version >/dev/null 2>/dev/null
-RESULT=$?
-if [ $RESULT -ne 0 ]; then
+if ! command -v python3.4 &>/dev/null; then
   echo "ERROR: old letsencrypt-auto failed to install Python3.4 using letsencrypt-auto < 0.37.0 when only Python2.6 is present."
   exit 1
 fi
@@ -53,7 +54,7 @@ echo "PASSED: Script letsencrypt-auto did not upgrade certbot but started it suc
 yum install -y oracle-softwarecollection-release-el6 >/dev/null
 
 # Expect letsencrypt-auto to bootstrap successfully since SCL is available.
-"$LE_AUTO" -n --version >/dev/null 2>/dev/null
+"$LE_AUTO" -n --version &>/dev/null
 
 if [ "$(/opt/eff.org/certbot/venv/bin/python -V 2>&1 | cut -d" " -f2 | cut -d. -f1-2)" != "3.6" ]; then
   echo "ERROR: Script letsencrypt-auto failed to bootstrap and install Python 3.6 while SCL is available."
