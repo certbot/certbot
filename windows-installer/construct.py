@@ -19,7 +19,7 @@ def main():
 
     installer_cfg_path = _generate_pynsist_config(repo_path, build_path)
 
-    _prepare_build_tools(venv_path, venv_python)
+    _prepare_build_tools(venv_path, venv_python, repo_path)
     _compile_wheels(repo_path, build_path, venv_python)
     _build_installer(installer_cfg_path, venv_path)
 
@@ -47,12 +47,12 @@ def _compile_wheels(repo_path, build_path, venv_python):
     subprocess.check_call(command)
 
 
-def _prepare_build_tools(venv_path, venv_python):
+def _prepare_build_tools(venv_path, venv_python, repo_path):
     print('Prepare build tools')
     subprocess.check_call([sys.executable, '-m', 'venv', venv_path])
     subprocess.check_call(['choco', 'upgrade', '-y', 'nsis'])
     subprocess.check_call([venv_python, '-m', 'pip', 'install', '--upgrade', 'pip'])
-    subprocess.check_call([venv_python, '-m', 'pip', 'install', 'wheel', 'pynsist'])
+    subprocess.check_call([venv_python, os.path.join(repo_path, 'tools', 'pip_install.py'), 'wheel', 'pynsist'])
 
 
 def _copy_assets(build_path, repo_path):
@@ -62,18 +62,47 @@ def _copy_assets(build_path, repo_path):
     os.makedirs(build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'certbot.ico'), build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'run.bat'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'template.nsi'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'renew-up.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'renew-down.ps1'), build_path)
 
 
 def _generate_pynsist_config(repo_path, build_path):
     print('Generate pynsist configuration')
+
+    pywin32_paths_file = os.path.join(build_path, 'pywin32_paths.py')
+
+    # Pywin32 uses non-standard folders to hold its packages. We need to instruct pynsist bootstrap
+    # explicitly to add them into sys.path. This is done with a custom "pywin32_paths.py" that is
+    # referred in the pynsist configuration as an "extra_preamble".
+    # Reference example: https://github.com/takluyver/pynsist/tree/master/examples/pywebview
+    with open(pywin32_paths_file, 'w') as file_h:
+        file_h.write('''\
+pkgdir = os.path.join(os.path.dirname(installdir), 'pkgs')
+
+sys.path.extend([
+    os.path.join(pkgdir, 'win32'),
+    os.path.join(pkgdir, 'win32', 'lib'),
+])
+
+# Preload pywintypes and pythoncom
+pwt = os.path.join(pkgdir, 'pywin32_system32', 'pywintypes{0}{1}.dll')
+pcom = os.path.join(pkgdir, 'pywin32_system32', 'pythoncom{0}{1}.dll')
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    import imp
+imp.load_dynamic('pywintypes', pwt)
+imp.load_dynamic('pythoncom', pcom)
+'''.format(PYTHON_VERSION[0], PYTHON_VERSION[1]))
 
     installer_cfg_path = os.path.join(build_path, 'installer.cfg')
 
     certbot_version = subprocess.check_output([sys.executable, '-c', 'import certbot; print(certbot.__version__)'],
                                               universal_newlines=True, cwd=repo_path).strip()
 
-    with open(os.path.join(installer_cfg_path), 'w') as file_h:
-        file_h.write("""\
+    with open(installer_cfg_path, 'w') as file_h:
+        file_h.write('''\
 [Application]
 name=Certbot
 version={certbot_version}
@@ -83,7 +112,8 @@ target=$INSTDIR\\run.bat
 
 [Build]
 directory=nsis
-installer_name=certbot-{certbot_version}-installer-{installer_suffix}.exe
+nsi_template=template.nsi
+installer_name=certbot-installer-{installer_suffix}.exe
 
 [Python]
 version={python_version}
@@ -92,10 +122,13 @@ bitness={python_bitness}
 [Include]
 local_wheels=wheels\\*.whl
 files=run.bat
+      renew-up.ps1
+      renew-down.ps1
 
 [Command certbot]
 entry_point=certbot.main:main
-""".format(certbot_version=certbot_version,
+extra_preamble=pywin32_paths.py
+'''.format(certbot_version=certbot_version,
            installer_suffix='win_amd64' if PYTHON_BITNESS == 64 else 'win32',
            python_bitness=PYTHON_BITNESS,
            python_version='.'.join([str(item) for item in PYTHON_VERSION])))

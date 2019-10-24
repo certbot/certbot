@@ -1,0 +1,19 @@
+# Advanced pipeline for isolated checks and release purpose
+trigger:
+  - test-*
+  - '*.x'
+pr:
+  - test-*
+  - '*.x'
+# This pipeline is also nightly run on master
+schedules:
+  - cron: "0 4 * * *"
+    displayName: Nightly build
+    branches:
+      include:
+      - master
+    always: true
+
+jobs:
+  - template: templates/tests-suite.yml
+  - template: templates/installer-tests.yml

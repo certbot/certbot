@@ -276,10 +276,8 @@ s3front_           Y    Y    Integration with Amazon CloudFront distribution of 
 gandi_             Y    N    Obtain certificates via the Gandi LiveDNS API
 varnish_           Y    N    Obtain certificates via a Varnish server
 external_          Y    N    A plugin for convenient scripting (See also ticket 2782_)
-icecast_           N    Y    Deploy certificates to Icecast 2 streaming media servers
 pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN servers
 proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
-heroku_            Y    Y    Integration with Heroku SSL
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 ================== ==== ==== ===============================================================
@@ -287,13 +285,11 @@ dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
 .. _gandi: https://github.com/obynio/certbot-plugin-gandi
-.. _icecast: https://github.com/e00E/lets-encrypt-icecast
 .. _varnish: http://git.sesse.net/?p=letsencrypt-varnish-plugin
 .. _2782: https://github.com/certbot/certbot/issues/2782
 .. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
 .. _external: https://github.com/marcan/letsencrypt-external
-.. _heroku: https://github.com/gboudreau/certbot-heroku
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
 
@@ -921,8 +917,9 @@ Certbot accepts a global configuration file that applies its options to all invo
 of Certbot. Certificate specific configuration choices should be set in the ``.conf``
 files that can be found in ``/etc/letsencrypt/renewal``.
 
-By default no cli.ini file is created, after creating one
-it is possible to specify the location of this configuration file with
+By default no cli.ini file is created (though it may exist already if you installed Certbot
+via a package manager, for instance).
+After creating one it is possible to specify the location of this configuration file with
 ``certbot --config cli.ini`` (or shorter ``-c cli.ini``). An
 example configuration file is shown below:
 

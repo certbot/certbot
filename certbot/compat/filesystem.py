@@ -546,13 +546,7 @@ def _generate_windows_flags(rights_desc):
     if rights_desc['write']:
         flag = flag | (ntsecuritycon.FILE_ALL_ACCESS
                        ^ ntsecuritycon.FILE_GENERIC_READ
-                       ^ ntsecuritycon.FILE_GENERIC_EXECUTE
-                       # Despite bit `512` being present in ntsecuritycon.FILE_ALL_ACCESS, it is
-                       # not effectively applied to the file or the directory.
-                       # As _generate_windows_flags is also used to compare two dacls, we remove
-                       # it right now to have flags that contain only the bits effectively applied
-                       # by Windows.
-                       ^ 512)
+                       ^ ntsecuritycon.FILE_GENERIC_EXECUTE)
     if rights_desc['execute']:
         flag = flag | ntsecuritycon.FILE_GENERIC_EXECUTE
 
