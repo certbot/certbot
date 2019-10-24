@@ -9,11 +9,9 @@ version = '0.40.0.dev0'
 install_requires = [
     'acme>=0.29.0',
     'certbot>=0.39.0',
-    # 1.5 is the first version that supports oauth2client>=2.0
-    'google-api-python-client>=1.5',
+    'google-api-python-client>=1.5.5',
     'mock',
-    # for oauth2client.service_account.ServiceAccountCredentials
-    'oauth2client>=2.0',
+    'oauth2client>=4.0',
     'setuptools',
     'zope.interface',
     # already a dependency of google-api-python-client, but added for consistency
