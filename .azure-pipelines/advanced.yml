@@ -7,11 +7,12 @@ pr:
   - '*.x'
 # This pipeline is also nightly run on master
 schedules:
-  - cron: "4 0 * * *"
+  - cron: "0 4 * * *"
     displayName: Nightly build
     branches:
       include:
       - master
+    always: true
 
 jobs:
   - template: templates/tests-suite.yml
