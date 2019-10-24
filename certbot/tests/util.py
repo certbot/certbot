@@ -94,26 +94,6 @@ def load_pyopenssl_private_key(*names):
     return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
 
 
-def skip_unless(condition, reason):  # pragma: no cover
-    """Skip tests unless a condition holds.
-
-    This implements the basic functionality of unittest.skipUnless
-    which is only available on Python 2.7+.
-
-    :param bool condition: If ``False``, the test will be skipped
-    :param str reason: the reason for skipping the test
-
-    :rtype: callable
-    :returns: decorator that hides tests unless condition is ``True``
-
-    """
-    if hasattr(unittest, "skipUnless"):
-        return unittest.skipUnless(condition, reason)
-    elif condition:
-        return lambda cls: cls
-    return lambda cls: None
-
-
 def make_lineage(config_dir, testfile):
     """Creates a lineage defined by testfile.
 
