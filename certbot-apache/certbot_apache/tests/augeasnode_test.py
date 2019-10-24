@@ -64,6 +64,12 @@ class AugeasParserNodeTest(util.ApacheTest):
                 found = True
         self.assertTrue(found)
 
+    def test_find_comments_exact(self):
+        self.assertRaises(NotImplementedError,
+                          self.config.parser_root.find_comments,
+                          "A comment",
+                          True)
+
     def test_find_comments(self):
         rootcomment = self.config.parser_root.find_comments(
             "This is the main Apache server configuration file. "
