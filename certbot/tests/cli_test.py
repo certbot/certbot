@@ -333,16 +333,26 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         self._assert_dry_run_flag_worked(self.parse(short_args + ['auth']), True)
         self._assert_dry_run_flag_worked(self.parse(short_args + ['renew']), True)
+        self._assert_dry_run_flag_worked(self.parse(short_args + ['certonly']), True)
+
         short_args += ['certonly']
-        self._assert_dry_run_flag_worked(self.parse(short_args), True)
 
-        short_args += '--server example.com'.split()
-        conflicts = ['--dry-run']
-        self._check_server_conflict_message(short_args, '--dry-run')
+        # `--dry-run --server example.com` should emit example.com
+        self.assertEqual(self.parse(short_args + ['--server', 'example.com']).server,
+                         'example.com')
 
-        short_args += ['--staging']
-        conflicts += ['--staging']
-        self._check_server_conflict_message(short_args, conflicts)
+        # `--dry-run --server STAGING_URI` should emit STAGING_URI
+        self.assertEqual(self.parse(short_args + ['--server', constants.STAGING_URI]).server,
+                         constants.STAGING_URI)
+
+        # `--dry-run --server LIVE` should emit STAGING_URI
+        self.assertEqual(self.parse(short_args + ['--server', cli.flag_default("server")]).server,
+                         constants.STAGING_URI)
+
+        # `--dry-run --server example.com --staging` should emit an error
+        conflicts = ['--staging']
+        self._check_server_conflict_message(short_args + ['--server', 'example.com', '--staging'],
+                                            conflicts)
 
     def test_option_was_set(self):
         key_size_option = 'rsa_key_size'
