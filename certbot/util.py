@@ -8,7 +8,6 @@ from collections import OrderedDict
 import distutils.version  # pylint: disable=import-error,no-name-in-module
 import errno
 import logging
-import platform
 import re
 import socket
 import subprocess
@@ -278,76 +277,52 @@ def get_filtered_names(all_names):
     return filtered_names
 
 
-def get_os_info(filepath="/etc/os-release"):
+def get_os_info():
     """
     Get OS name and version
 
-    :param str filepath: File path of os-release file
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
     """
 
-    if os.path.isfile(filepath):
-        # Systemd os-release parsing might be viable
-        os_name, os_version = get_systemd_os_info(filepath=filepath)
-        if os_name:
-            return os_name, os_version
-
-    # Fallback to platform module
-    return get_python_os_info()
+    return (distro.id(), distro.version(pretty=False))
 
 
-def get_os_info_ua(filepath="/etc/os-release"):
+def get_os_info_ua():
     """
     Get OS name and version string for User Agent
 
-    :param str filepath: File path of os-release file
     :returns: os_ua
     :rtype: `str`
     """
 
-    if os.path.isfile(filepath):
-        os_ua = get_var_from_file("PRETTY_NAME", filepath=filepath)
-        if not os_ua:
-            os_ua = get_var_from_file("NAME", filepath=filepath)
-        if os_ua:
-            return os_ua
+    return distro.version(pretty=True)
 
-    # Fallback
-    return " ".join(get_python_os_info())
-
-
-def get_systemd_os_info(filepath="/etc/os-release"):
+def get_systemd_os_info():
     """
     Parse systemd /etc/os-release for distribution information
 
-    :param str filepath: File path of os-release file
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
     """
 
-    os_name = get_var_from_file("ID", filepath=filepath)
-    os_version = get_var_from_file("VERSION_ID", filepath=filepath)
-
-    return (os_name, os_version)
+    return (distro.id(), distro.version(pretty=False))
 
 
-def get_systemd_os_like(filepath="/etc/os-release"):
+def get_systemd_os_like():
     """
     Get a list of strings that indicate the distribution likeness to
     other distributions.
 
-    :param str filepath: File path of os-release file
     :returns: List of distribution acronyms
     :rtype: `list` of `str`
     """
 
-    return get_var_from_file("ID_LIKE", filepath).split(" ")
-
+    return distro.like().split(" ")
 
 def get_var_from_file(varname, filepath="/etc/os-release"):
     """
-    Get single value from systemd /etc/os-release
+    Get single value from a file formatted like systemd /etc/os-release
 
     :param str varname: Name of variable to fetch
     :param str filepath: File path of os-release file
@@ -367,62 +342,12 @@ def get_var_from_file(varname, filepath="/etc/os-release"):
             return _normalize_string(line.strip()[len(var_string):])
     return ""
 
-
 def _normalize_string(orig):
     """
     Helper function for get_var_from_file() to remove quotes
     and whitespaces
     """
     return orig.replace('"', '').replace("'", "").strip()
-
-
-def get_python_os_info():
-    """
-    Get Operating System type/distribution and major version
-    using python platform module
-
-    :returns: (os_name, os_version)
-    :rtype: `tuple` of `str`
-    """
-    info = platform.system_alias(
-        platform.system(),
-        platform.release(),
-        platform.version()
-    )
-    os_type, os_ver, _ = info
-    os_type = os_type.lower()
-    if os_type.startswith('linux'):
-        info = distro.linux_distribution()
-        # On arch, distro.linux_distribution() is reportedly ('','',''),
-        # so handle it defensively
-        if info[0]:
-            os_type = info[0]
-        if info[1]:
-            os_ver = info[1]
-    elif os_type.startswith('darwin'):
-        try:
-            proc = subprocess.Popen(
-                ["/usr/bin/sw_vers", "-productVersion"],
-                stdout=subprocess.PIPE,
-                universal_newlines=True,
-            )
-        except OSError:
-            proc = subprocess.Popen(
-                ["sw_vers", "-productVersion"],
-                stdout=subprocess.PIPE,
-                universal_newlines=True,
-            )
-        os_ver = proc.communicate()[0].rstrip('\n')
-    elif os_type.startswith('freebsd'):
-        # eg "9.3-RC3-p1"
-        os_ver = os_ver.partition("-")[0]
-        os_ver = os_ver.partition(".")[0]
-    elif platform.win32_ver()[1]:
-        os_ver = platform.win32_ver()[1]
-    else:
-        # Cases known to fall here: Cygwin python
-        os_ver = ''
-    return os_type, os_ver
 
 # Just make sure we don't get pwned... Make sure that it also doesn't
 # start with a period or have two consecutive periods <- this needs to

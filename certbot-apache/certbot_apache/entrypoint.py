@@ -16,6 +16,7 @@ from certbot_apache import override_suse
 
 OVERRIDE_CLASSES = {
     "arch": override_arch.ArchConfigurator,
+    "cloudlinux": override_centos.CentOSConfigurator,
     "darwin": override_darwin.DarwinConfigurator,
     "debian": override_debian.DebianConfigurator,
     "ubuntu": override_debian.DebianConfigurator,
@@ -23,6 +24,7 @@ OVERRIDE_CLASSES = {
     "centos linux": override_centos.CentOSConfigurator,
     "fedora_old": override_centos.CentOSConfigurator,
     "fedora": override_fedora.FedoraConfigurator,
+    "linuxmint": override_debian.DebianConfigurator,
     "ol": override_centos.CentOSConfigurator,
     "redhatenterpriseserver": override_centos.CentOSConfigurator,
     "red hat enterprise linux server": override_centos.CentOSConfigurator,
@@ -32,6 +34,7 @@ OVERRIDE_CLASSES = {
     "gentoo base system": override_gentoo.GentooConfigurator,
     "opensuse": override_suse.OpenSUSEConfigurator,
     "suse": override_suse.OpenSUSEConfigurator,
+    "sles": override_suse.OpenSUSEConfigurator,
     "scientific": override_centos.CentOSConfigurator,
     "scientific linux": override_centos.CentOSConfigurator,
 }
