@@ -11,6 +11,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Removed `--fast` flag from the test farm tests
+* `--server` may now be combined with `--dry-run`. Certbot will, as before, use the
+  staging server instead of the live server when `--dry-run` is used.
+* Updated certbot-dns-google to depend on newer versions of
+  google-api-python-client and oauth2client.
 
 ### Fixed
 
