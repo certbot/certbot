@@ -178,7 +178,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # the complete ParserNode tree, we use the search parent as ancestor
         return AugeasDirectiveNode(name=name,
                                    parameters=params,
-                                   ancestor=self,
+                                   ancestor=assertions.PASS,
                                    filepath=apache_util.get_file_path(path),
                                    metadata=metadata)
 
@@ -193,7 +193,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # the complete ParserNode tree, we use the search parent as ancestor
         return AugeasBlockNode(name=name,
                                parameters=params,
-                               ancestor=self,
+                               ancestor=assertions.PASS,
                                filepath=apache_util.get_file_path(path),
                                metadata=metadata)
 
