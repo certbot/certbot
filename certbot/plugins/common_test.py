@@ -140,22 +140,6 @@ class InstallerTest(test_util.ConfigTestCase):
     def test_rollback_checkpoints(self):
         self._test_wrapped_method("rollback_checkpoints", 42)
 
-    def test_view_config_changes(self):
-        self._test_wrapped_method("view_config_changes")
-
-    def test_view_config_changes_warning_supression(self):
-        with warnings.catch_warnings():
-            # Without the catch_warnings() code in
-            # common.Installer.view_config_changes, this would raise an
-            # exception. The module parameter here is ".*common$" because the
-            # stacklevel=2 parameter of warnings.warn causes the warning to
-            # refer to the code in the caller rather than the call to
-            # warnings.warn. This means the warning in common.Installer refers
-            # to this module and the warning in the reverter refers to the
-            # plugins.common module.
-            warnings.filterwarnings("error", ".*view_config_changes", module=".*common$")
-            self.installer.view_config_changes()
-
     def _test_wrapped_method(self, name, *args, **kwargs):
         """Test a wrapped reverter method.
 

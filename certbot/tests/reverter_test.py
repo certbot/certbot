@@ -377,30 +377,6 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         self.assertEqual(read_in(self.config2), "directive-dir2")
         self.assertFalse(os.path.isfile(config3))
 
-    @test_util.patch_get_utility()
-    def test_view_config_changes(self, mock_output):
-        """This is not strict as this is subject to change."""
-        self._setup_three_checkpoints()
-
-        # Make sure it doesn't throw any errors
-        self.reverter.view_config_changes()
-
-        # Make sure notification is output
-        self.assertEqual(mock_output().notification.call_count, 1)
-
-    @mock.patch("certbot.reverter.logger")
-    def test_view_config_changes_no_backups(self, mock_logger):
-        self.reverter.view_config_changes()
-        self.assertTrue(mock_logger.info.call_count > 0)
-
-    def test_view_config_changes_bad_backups_dir(self):
-        # There shouldn't be any "in progress directories when this is called
-        # It must just be clean checkpoints
-        filesystem.makedirs(os.path.join(self.config.backup_dir, "in_progress"))
-
-        self.assertRaises(
-            errors.ReverterError, self.reverter.view_config_changes)
-
     def _setup_three_checkpoints(self):
         """Generate some finalized checkpoints."""
         # Checkpoint1 - config1

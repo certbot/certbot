@@ -698,20 +698,6 @@ def rollback(default_installer, checkpoints, config, plugins):
         installer.rollback_checkpoints(checkpoints)
         installer.restart()
 
-
-def view_config_changes(config):
-    """View checkpoints and associated configuration changes.
-
-    .. note:: This assumes that the installation is using a Reverter object.
-
-    :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
-
-    """
-    rev = reverter.Reverter(config)
-    rev.recovery_routine()
-    rev.view_config_changes()
-
 def _open_pem_file(cli_arg_path, pem_path):
     """Open a pem file.
 

@@ -115,7 +115,7 @@ More detailed help:
    all, automation, commands, paths, security, testing, or any of the
    subcommands or plugins (certonly, renew, install, register, nginx,
    apache, standalone, webroot, etc.)
-  -h all                print a detailed help page including all topics 
+  -h all                print a detailed help page including all topics
   --version             print the version number
 """
 
@@ -397,11 +397,6 @@ VERB_HELP = [
         "opts": "Options for modifying how a certificate is deployed",
         "usage": "\n\n  certbot install --cert-path /path/to/fullchain.pem "
         " --key-path /path/to/private-key [options]\n\n"
-    }),
-    ("config_changes", {
-        "short": "Show changes that Certbot has made to server configurations",
-        "opts": "Options for viewing configuration changes",
-        "usage": "\n\n  certbot config_changes [options]\n\n"
     }),
     ("rollback", {
         "short": "Roll back server conf changes made during certificate installation",
