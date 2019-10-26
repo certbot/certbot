@@ -977,7 +977,7 @@ def config_changes(config, unused_plugins):
     :rtype: None
 
     """
-    logger.warning("The config_changes subcommand has been deprecated.")
+    logger.error("The config_changes subcommand has been deprecated.")
 
 def update_symlinks(config, unused_plugins):
     """Update the certificate file family symlinks
