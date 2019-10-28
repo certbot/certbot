@@ -492,8 +492,8 @@ class OsInfoTest(unittest.TestCase):
         self.assertEqual(get_os_info_ua(), "whatever")
 
     @mock.patch("distro.linux_distribution")
-    def test_get_os_info_ua(self, mock_distro):
-        from certbot.util import get_os_info, get_python_os_info
+    def test_get_os_info_ua_simple(self, mock_distro):
+        from certbot.util import get_os_info
         mock_distro.side_effect = [None, ("name", "version")]
         self.assertEqual(get_os_info(), ("name", "version"))
 
