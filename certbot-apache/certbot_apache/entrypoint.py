@@ -26,6 +26,7 @@ OVERRIDE_CLASSES = {
     "fedora": override_fedora.FedoraConfigurator,
     "linuxmint": override_debian.DebianConfigurator,
     "ol": override_centos.CentOSConfigurator,
+    "oracle": override_centos.CentOSConfigurator,
     "redhatenterpriseserver": override_centos.CentOSConfigurator,
     "red hat enterprise linux server": override_centos.CentOSConfigurator,
     "rhel": override_centos.CentOSConfigurator,

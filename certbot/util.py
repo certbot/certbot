@@ -8,9 +8,11 @@ from collections import OrderedDict
 import distutils.version  # pylint: disable=import-error,no-name-in-module
 import errno
 import logging
+import platform
 import re
 import socket
 import subprocess
+import warnings
 
 import configargparse
 import distro
@@ -276,7 +278,6 @@ def get_filtered_names(all_names):
             logger.debug('Not suggesting name "%s"', name, exc_info=True)
     return filtered_names
 
-
 def get_os_info():
     """
     Get OS name and version
@@ -284,9 +285,12 @@ def get_os_info():
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
     """
-
-    return (distro.id(), distro.version(pretty=False))
-
+    os_info = distro.linux_distribution(full_distribution_name=False)
+    if not os_info:
+        # For linux this essentially returns the value from linux_distribution,
+        # but the fallback is needed by non-linux OSes
+        return get_python_os_info(pretty=False)
+    return os_info[:2]
 
 def get_os_info_ua():
     """
@@ -295,8 +299,10 @@ def get_os_info_ua():
     :returns: os_ua
     :rtype: `str`
     """
-
-    return distro.version(pretty=True)
+    os_info = distro.name(pretty=True)
+    if not os_info:
+        return " ".join(get_python_os_info(pretty=True))
+    return os_info
 
 def get_systemd_os_info():
     """
@@ -306,10 +312,13 @@ def get_systemd_os_info():
     :rtype: `tuple` of `str`
     """
 
-    return (distro.id(), distro.version(pretty=False))
+    warnings.warn(
+        "The get_sytemd_os_like() function is deprecated and will be removed in "
+        "a future release.", DeprecationWarning, stacklevel=2)
+    return get_os_info()
 
 
-def get_systemd_os_like():
+def get_systemd_os_like(filepath="/etc/os-release"):  # pylint: disable=unused-argument
     """
     Get a list of strings that indicate the distribution likeness to
     other distributions.
@@ -348,6 +357,56 @@ def _normalize_string(orig):
     and whitespaces
     """
     return orig.replace('"', '').replace("'", "").strip()
+
+def get_python_os_info(pretty=False):
+    """
+    Get Operating System type/distribution and major version
+    using python platform module
+
+    :param bool pretty: If the returned OS name should be in longer (pretty) form
+
+    :returns: (os_name, os_version)
+    :rtype: `tuple` of `str`
+    """
+    info = platform.system_alias(
+        platform.system(),
+        platform.release(),
+        platform.version()
+    )
+    os_type, os_ver, _ = info
+    os_type = os_type.lower()
+    if os_type.startswith('linux'):
+        info = distro.linux_distribution(pretty)
+        # On arch, distro.linux_distribution() is reportedly ('','',''),
+        # so handle it defensively
+        if info[0]:
+            os_type = info[0]
+        if info[1]:
+            os_ver = info[1]
+    elif os_type.startswith('darwin'):
+        try:
+            proc = subprocess.Popen(
+                ["/usr/bin/sw_vers", "-productVersion"],
+                stdout=subprocess.PIPE,
+                universal_newlines=True,
+            )
+        except OSError:
+            proc = subprocess.Popen(
+                ["sw_vers", "-productVersion"],
+                stdout=subprocess.PIPE,
+                universal_newlines=True,
+            )
+        os_ver = proc.communicate()[0].rstrip('\n')
+    elif os_type.startswith('freebsd'):
+        # eg "9.3-RC3-p1"
+        os_ver = os_ver.partition("-")[0]
+        os_ver = os_ver.partition(".")[0]
+    elif platform.win32_ver()[1]:
+        os_ver = platform.win32_ver()[1]
+    else:
+        # Cases known to fall here: Cygwin python
+        os_ver = ''
+    return os_type, os_ver
 
 # Just make sure we don't get pwned... Make sure that it also doesn't
 # start with a period or have two consecutive periods <- this needs to

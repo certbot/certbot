@@ -470,6 +470,60 @@ class IsWildcardDomainTest(unittest.TestCase):
         self.assertTrue(self._call(self.wildcard.encode()))
 
 
+class OsInfoTest(unittest.TestCase):
+    """Test OS / distribution detection"""
+
+    def test_systemd_os_release_like(self):
+        from certbot.util import get_systemd_os_like
+
+        with mock.patch('distro.like', return_value="first debian third"):
+            id_likes = get_systemd_os_like()
+            self.assertEqual(len(id_likes), 3)
+            self.assertTrue("debian" in id_likes)
+
+    @mock.patch("certbot.util.subprocess.Popen")
+    def test_non_systemd_os_info(self, popen_mock):
+        from certbot.util import get_python_os_info
+        with mock.patch('certbot.compat.os.path.isfile', return_value=False):
+            with mock.patch('platform.system_alias',
+                            return_value=('NonSystemD', '42', '42')):
+                self.assertEqual(get_python_os_info()[0], 'nonsystemd')
+
+            with mock.patch('platform.system_alias',
+                            return_value=('darwin', '', '')):
+                comm_mock = mock.Mock()
+                comm_attrs = {'communicate.return_value':
+                              ('42.42.42', 'error')}
+                comm_mock.configure_mock(**comm_attrs)
+                popen_mock.return_value = comm_mock
+                self.assertEqual(get_python_os_info()[0], 'darwin')
+                self.assertEqual(get_python_os_info()[1], '42.42.42')
+
+            with mock.patch('platform.system_alias',
+                            return_value=('linux', '', '')):
+                with mock.patch('platform.linux_distribution',
+                                side_effect=AttributeError,
+                                create=True):
+                    with mock.patch('distro.linux_distribution',
+                                    return_value=('', '', '')):
+                        self.assertEqual(get_python_os_info(), ("linux", ""))
+
+                    with mock.patch('distro.linux_distribution',
+                                    return_value=('testdist', '42', '')):
+                        self.assertEqual(get_python_os_info(), ("testdist", "42"))
+
+            with mock.patch('platform.system_alias',
+                            return_value=('freebsd', '9.3-RC3-p1', '')):
+                self.assertEqual(get_python_os_info(), ("freebsd", "9"))
+
+            with mock.patch('platform.system_alias',
+                            return_value=('windows', '', '')):
+                with mock.patch('platform.win32_ver',
+                                return_value=('4242', '95', '2', '')):
+                    self.assertEqual(get_python_os_info(),
+                                     ("windows", "95"))
+
+
 class AtexitRegisterTest(unittest.TestCase):
     """Tests for certbot.util.atexit_register."""
     def setUp(self):
