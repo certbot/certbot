@@ -481,6 +481,32 @@ class OsInfoTest(unittest.TestCase):
             self.assertEqual(len(id_likes), 3)
             self.assertTrue("debian" in id_likes)
 
+    @mock.patch("distro.name")
+    def test_get_os_info_ua(self, mock_name):
+        from certbot.util import get_os_info_ua, get_python_os_info
+        mock_name.return_value = ""
+        self.assertEqual(get_os_info_ua(),
+                         " ".join(get_python_os_info(pretty=True)))
+
+        mock_name.return_value = "whatever"
+        self.assertEqual(get_os_info_ua(), "whatever")
+
+    @mock.patch("distro.linux_distribution")
+    def test_get_os_info_ua(self, mock_distro):
+        from certbot.util import get_os_info, get_python_os_info
+        mock_distro.side_effect = [None, ("name", "version")]
+        self.assertEqual(get_os_info(), ("name", "version"))
+
+        mock_distro.side_effect = None
+        mock_distro.return_value = ("something", "else")
+        self.assertEqual(get_os_info(), ("something", "else"))
+
+    @mock.patch("warnings.warn")
+    def test_get_systemd_os_info_deprecation(self, mock_warn):
+        from certbot.util import get_systemd_os_info
+        get_systemd_os_info()
+        self.assertTrue(mock_warn.called)
+
     @mock.patch("certbot.util.subprocess.Popen")
     def test_non_systemd_os_info(self, popen_mock):
         from certbot.util import get_python_os_info
