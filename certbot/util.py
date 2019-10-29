@@ -15,7 +15,6 @@ import subprocess
 import warnings
 
 import configargparse
-import distro
 import six
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
@@ -25,6 +24,12 @@ from certbot import errors
 from certbot import lock
 from certbot.compat import os
 from certbot.compat import filesystem
+
+try:
+    import distro  # pylint: disable=import-error
+    USE_DISTRO = True
+except ImportError:
+    USE_DISTRO = False
 
 logger = logging.getLogger(__name__)
 
@@ -285,12 +290,8 @@ def get_os_info():
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
     """
-    os_info = distro.linux_distribution(full_distribution_name=False)
-    if not os_info:
-        # For linux this essentially returns the value from linux_distribution,
-        # but the fallback is needed by non-linux OSes
-        return get_python_os_info(pretty=False)
-    return os_info[:2]
+
+    return get_python_os_info(pretty=False)
 
 def get_os_info_ua():
     """
@@ -299,8 +300,10 @@ def get_os_info_ua():
     :returns: os_ua
     :rtype: `str`
     """
-    os_info = distro.name(pretty=True)
-    if not os_info:
+    if USE_DISTRO:
+        os_info = distro.name(pretty=True)
+
+    if not USE_DISTRO or not os_info:
         return " ".join(get_python_os_info(pretty=True))
     return os_info
 

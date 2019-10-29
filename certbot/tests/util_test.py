@@ -473,49 +473,59 @@ class IsWildcardDomainTest(unittest.TestCase):
 class OsInfoTest(unittest.TestCase):
     """Test OS / distribution detection"""
 
-    def test_systemd_os_release_like(self):
-        from certbot.util import get_systemd_os_like
+    @mock.patch("certbot.util.distro")
+    def test_systemd_os_release_like(self, m_distro):
+        import certbot.util as cbutil
+        cbutil.USE_DISTRO = True
+        m_distro.like.return_value = "first debian third"
+        id_likes = cbutil.get_systemd_os_like()
+        self.assertEqual(len(id_likes), 3)
+        self.assertTrue("debian" in id_likes)
 
-        with mock.patch('distro.like', return_value="first debian third"):
-            id_likes = get_systemd_os_like()
-            self.assertEqual(len(id_likes), 3)
-            self.assertTrue("debian" in id_likes)
+    @mock.patch("certbot.util.distro")
+    def test_get_os_info_ua(self, m_distro):
+        import certbot.util as cbutil
+        cbutil.USE_DISTRO = True
+        with mock.patch('platform.system_alias',
+                        return_value=('linux', '42', '42')):
+            m_distro.name.return_value = ""
+            m_distro.linux_distribution.return_value = ("something", "1.0", "codename")
+            cbutil.get_python_os_info(pretty=True)
+            self.assertEqual(cbutil.get_os_info_ua(),
+                            " ".join(cbutil.get_python_os_info(pretty=True)))
 
-    @mock.patch("distro.name")
-    def test_get_os_info_ua(self, mock_name):
-        from certbot.util import get_os_info_ua, get_python_os_info
-        mock_name.return_value = ""
-        self.assertEqual(get_os_info_ua(),
-                         " ".join(get_python_os_info(pretty=True)))
+        m_distro.name.return_value = "whatever"
+        self.assertEqual(cbutil.get_os_info_ua(), "whatever")
 
-        mock_name.return_value = "whatever"
-        self.assertEqual(get_os_info_ua(), "whatever")
-
-    @mock.patch("distro.linux_distribution")
-    def test_get_os_info(self, mock_distro):
-        from certbot.util import get_os_info
+    @mock.patch("certbot.util.distro")
+    def test_get_os_info(self, m_distro):
+        import certbot.util as cbutil
+        cbutil.USE_DISTRO = True
         with mock.patch("platform.system") as mock_platform:
-            mock_distro.side_effect = [None, ("name", "version")]
+            m_distro.linux_distribution.return_value = ("name", "version", 'x')
             mock_platform.return_value = "linux"
-            self.assertEqual(get_os_info(), ("name", "version"))
+            self.assertEqual(cbutil.get_os_info(), ("name", "version"))
 
-            mock_distro.side_effect = None
-            mock_distro.return_value = ("something", "else")
-            self.assertEqual(get_os_info(), ("something", "else"))
+            m_distro.linux_distribution.return_value = ("something", "else")
+            self.assertEqual(cbutil.get_os_info(), ("something", "else"))
 
     @mock.patch("warnings.warn")
-    def test_get_systemd_os_info_deprecation(self, mock_warn):
-        from certbot.util import get_systemd_os_info
-        get_systemd_os_info()
+    @mock.patch("certbot.util.distro")
+    def test_get_systemd_os_info_deprecation(self, _, mock_warn):
+        import certbot.util as cbutil
+        cbutil.USE_DISTRO = True
+        cbutil.get_systemd_os_info()
         self.assertTrue(mock_warn.called)
 
     @mock.patch("certbot.util.subprocess.Popen")
-    def test_non_systemd_os_info(self, popen_mock):
-        from certbot.util import get_python_os_info
+    @mock.patch("certbot.util.distro")
+    def test_non_systemd_os_info(self, m_distro, popen_mock):
+        import certbot.util as cbutil
+        cbutil.USE_DISTRO = False
         with mock.patch('certbot.compat.os.path.isfile', return_value=False):
             with mock.patch('platform.system_alias',
                             return_value=('NonSystemD', '42', '42')):
-                self.assertEqual(get_python_os_info()[0], 'nonsystemd')
+                self.assertEqual(cbutil.get_python_os_info()[0], 'nonsystemd')
 
             with mock.patch('platform.system_alias',
                             return_value=('darwin', '', '')):
@@ -524,32 +534,30 @@ class OsInfoTest(unittest.TestCase):
                               ('42.42.42', 'error')}
                 comm_mock.configure_mock(**comm_attrs)
                 popen_mock.return_value = comm_mock
-                self.assertEqual(get_python_os_info()[0], 'darwin')
-                self.assertEqual(get_python_os_info()[1], '42.42.42')
-
-            with mock.patch('platform.system_alias',
-                            return_value=('linux', '', '')):
-                with mock.patch('platform.linux_distribution',
-                                side_effect=AttributeError,
-                                create=True):
-                    with mock.patch('distro.linux_distribution',
-                                    return_value=('', '', '')):
-                        self.assertEqual(get_python_os_info(), ("linux", ""))
-
-                    with mock.patch('distro.linux_distribution',
-                                    return_value=('testdist', '42', '')):
-                        self.assertEqual(get_python_os_info(), ("testdist", "42"))
+                self.assertEqual(cbutil.get_python_os_info()[0], 'darwin')
+                self.assertEqual(cbutil.get_python_os_info()[1], '42.42.42')
 
             with mock.patch('platform.system_alias',
                             return_value=('freebsd', '9.3-RC3-p1', '')):
-                self.assertEqual(get_python_os_info(), ("freebsd", "9"))
+                self.assertEqual(cbutil.get_python_os_info(), ("freebsd", "9"))
 
             with mock.patch('platform.system_alias',
                             return_value=('windows', '', '')):
                 with mock.patch('platform.win32_ver',
                                 return_value=('4242', '95', '2', '')):
-                    self.assertEqual(get_python_os_info(),
+                    self.assertEqual(cbutil.get_python_os_info(),
                                      ("windows", "95"))
+            with mock.patch('platform.system_alias',
+                            return_value=('linux', '', '')):
+                cbutil.USE_DISTRO = True
+                with mock.patch('platform.linux_distribution',
+                                side_effect=AttributeError,
+                                create=True):
+                    m_distro.linux_distribution.return_value = ('', '', '')
+                    self.assertEqual(cbutil.get_python_os_info(), ("linux", ""))
+
+                    m_distro.linux_distribution.return_value = ('testdist', '42', '')
+                    self.assertEqual(cbutil.get_python_os_info(), ("testdist", "42"))
 
 
 class AtexitRegisterTest(unittest.TestCase):
