@@ -492,14 +492,16 @@ class OsInfoTest(unittest.TestCase):
         self.assertEqual(get_os_info_ua(), "whatever")
 
     @mock.patch("distro.linux_distribution")
-    def test_get_os_info_ua_simple(self, mock_distro):
+    def test_get_os_info(self, mock_distro):
         from certbot.util import get_os_info
-        mock_distro.side_effect = [None, ("name", "version")]
-        self.assertEqual(get_os_info(), ("name", "version"))
+        with mock.patch("platform.system") as mock_platform:
+            mock_distro.side_effect = [None, ("name", "version")]
+            mock_platform.return_value = "linux"
+            self.assertEqual(get_os_info(), ("name", "version"))
 
-        mock_distro.side_effect = None
-        mock_distro.return_value = ("something", "else")
-        self.assertEqual(get_os_info(), ("something", "else"))
+            mock_distro.side_effect = None
+            mock_distro.return_value = ("something", "else")
+            self.assertEqual(get_os_info(), ("something", "else"))
 
     @mock.patch("warnings.warn")
     def test_get_systemd_os_info_deprecation(self, mock_warn):
