@@ -39,7 +39,7 @@ echo "PASSED: Bootstrap from old letsencrypt-auto succeeded and installed Python
 
 # Expect certbot-auto to skip rebootstrapping with a warning since SCL is not installed.
 if ! "$LE_AUTO" --non-interactive --version 2>&1 | grep -q "This requires manual user intervention"; then
-  echo "FAILED: Script certbot-auto managed to start Certbot in interactive shell while SCL is not enabled!"
+  echo "FAILED: Script certbot-auto did not print a warning about needing manual intervention!"
   exit 1
 fi
 
