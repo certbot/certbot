@@ -211,7 +211,7 @@ class DualBlockNode(DualNodeBase):
         return self._find_helper(DualDirectiveNode, "find_directives", name,
                                  exclude=exclude)
 
-    def find_comments(self, comment, exact=False):
+    def find_comments(self, comment):
         """
         Performs a search for CommentNodes using both implementations and
         checks the results. This is built upon the assumption that unimplemented
@@ -220,8 +220,7 @@ class DualBlockNode(DualNodeBase):
         instances that encapsulate the pairs of returned CommentNode objects.
         """
 
-        return self._find_helper(DualCommentNode, "find_comments", comment,
-                                 exact=exact)
+        return self._find_helper(DualCommentNode, "find_comments", comment)
 
     def _find_helper(self, nodeclass, findfunc, search, **kwargs):
         """A helper for find_* functions. The function specific attributes should

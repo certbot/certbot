@@ -151,21 +151,12 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
         return nodes
 
-    def find_comments(self, comment, exact=False): # pylint: disable=unused-argument
+    def find_comments(self, comment):
         """
         Recursive search of DirectiveNodes from the sequence of children.
 
-        Note that the argument exact is not implemented here, as it's not
-        currently in use in ApacheConfigurator.
-
         :param str comment: Comment content to search for.
-        :param bool exact: If the search should be case sensitive and for complete
-            comment content. This is not implemented in the AugeasBlockNode.
         """
-
-        if exact:
-            raise NotImplementedError("Parameter 'exact' is not implemented by " +
-                                      "AugeasBlockNode")
 
         nodes = list()
         ownpath = self.metadata.get("augeaspath")
