@@ -476,7 +476,7 @@ class OsInfoTest(unittest.TestCase):
     @mock.patch("certbot.util.distro")
     def test_systemd_os_release_like(self, m_distro):
         import certbot.util as cbutil
-        cbutil.USE_DISTRO = True
+        cbutil._USE_DISTRO = True
         m_distro.like.return_value = "first debian third"
         id_likes = cbutil.get_systemd_os_like()
         self.assertEqual(len(id_likes), 3)
@@ -485,7 +485,7 @@ class OsInfoTest(unittest.TestCase):
     @mock.patch("certbot.util.distro")
     def test_get_os_info_ua(self, m_distro):
         import certbot.util as cbutil
-        cbutil.USE_DISTRO = True
+        cbutil._USE_DISTRO = True
         with mock.patch('platform.system_alias',
                         return_value=('linux', '42', '42')):
             m_distro.name.return_value = ""
@@ -500,7 +500,7 @@ class OsInfoTest(unittest.TestCase):
     @mock.patch("certbot.util.distro")
     def test_get_os_info(self, m_distro):
         import certbot.util as cbutil
-        cbutil.USE_DISTRO = True
+        cbutil._USE_DISTRO = True
         with mock.patch("platform.system") as mock_platform:
             m_distro.linux_distribution.return_value = ("name", "version", 'x')
             mock_platform.return_value = "linux"
@@ -513,7 +513,7 @@ class OsInfoTest(unittest.TestCase):
     @mock.patch("certbot.util.distro")
     def test_get_systemd_os_info_deprecation(self, _, mock_warn):
         import certbot.util as cbutil
-        cbutil.USE_DISTRO = True
+        cbutil._USE_DISTRO = True
         cbutil.get_systemd_os_info()
         self.assertTrue(mock_warn.called)
 
@@ -521,7 +521,7 @@ class OsInfoTest(unittest.TestCase):
     @mock.patch("certbot.util.distro")
     def test_non_systemd_os_info(self, m_distro, popen_mock):
         import certbot.util as cbutil
-        cbutil.USE_DISTRO = False
+        cbutil._USE_DISTRO = False
         with mock.patch('certbot.compat.os.path.isfile', return_value=False):
             with mock.patch('platform.system_alias',
                             return_value=('NonSystemD', '42', '42')):
@@ -549,7 +549,7 @@ class OsInfoTest(unittest.TestCase):
                                      ("windows", "95"))
             with mock.patch('platform.system_alias',
                             return_value=('linux', '', '')):
-                cbutil.USE_DISTRO = True
+                cbutil._USE_DISTRO = True
                 with mock.patch('platform.linux_distribution',
                                 side_effect=AttributeError,
                                 create=True):

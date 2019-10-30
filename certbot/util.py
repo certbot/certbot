@@ -12,6 +12,7 @@ import platform
 import re
 import socket
 import subprocess
+import sys
 import warnings
 
 import configargparse
@@ -25,11 +26,11 @@ from certbot import lock
 from certbot.compat import os
 from certbot.compat import filesystem
 
-try:
-    import distro  # pylint: disable=import-error
-    USE_DISTRO = True
-except ImportError:
-    USE_DISTRO = False
+if sys.platform.startswith('linux'):
+    import distro
+    _USE_DISTRO = True
+else:
+    _USE_DISTRO = False
 
 logger = logging.getLogger(__name__)
 
@@ -300,10 +301,10 @@ def get_os_info_ua():
     :returns: os_ua
     :rtype: `str`
     """
-    if USE_DISTRO:
+    if _USE_DISTRO:
         os_info = distro.name(pretty=True)
 
-    if not USE_DISTRO or not os_info:
+    if not _USE_DISTRO or not os_info:
         return " ".join(get_python_os_info(pretty=True))
     return os_info
 
@@ -320,7 +321,6 @@ def get_systemd_os_info():
         "a future release.", DeprecationWarning, stacklevel=2)
     return get_os_info()
 
-
 def get_systemd_os_like(filepath="/etc/os-release"):  # pylint: disable=unused-argument
     """
     Get a list of strings that indicate the distribution likeness to
@@ -330,7 +330,9 @@ def get_systemd_os_like(filepath="/etc/os-release"):  # pylint: disable=unused-a
     :rtype: `list` of `str`
     """
 
-    return distro.like().split(" ")
+    if _USE_DISTRO:
+        return distro.like().split(" ")
+    return []
 
 def get_var_from_file(varname, filepath="/etc/os-release"):
     """
@@ -378,7 +380,7 @@ def get_python_os_info(pretty=False):
     )
     os_type, os_ver, _ = info
     os_type = os_type.lower()
-    if os_type.startswith('linux'):
+    if os_type.startswith('linux') and _USE_DISTRO:
         info = distro.linux_distribution(pretty)
         # On arch, distro.linux_distribution() is reportedly ('','',''),
         # so handle it defensively
