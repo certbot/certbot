@@ -434,7 +434,7 @@ def handle_renewal_request(config):  # pylint: disable=too-many-locals,too-many-
                 if should_renew(lineage_config, renewal_candidate):
                     # Apply random sleep upon first renewal if needed
                     if apply_random_sleep:
-                        sleep_time = random.randint(1, 60 * 8)
+                        sleep_time = random.uniform(1, 60 * 8)
                         logger.info("Non-interactive renewal: random delay of %s seconds",
                                     sleep_time)
                         time.sleep(sleep_time)
