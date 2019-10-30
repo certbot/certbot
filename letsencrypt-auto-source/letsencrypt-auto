@@ -256,20 +256,28 @@ DeprecationBootstrap() {
   fi
 }
 
-MIN_PYTHON_VERSION="2.7"
-MIN_PYVER=$(echo "$MIN_PYTHON_VERSION" | sed 's/\.//')
+MIN_PYTHON_2_VERSION="2.7"
+MIN_PYVER2=$(echo "$MIN_PYTHON_2_VERSION" | sed 's/\.//')
+MIN_PYTHON_3_VERSION="3.5"
+MIN_PYVER3=$(echo "$MIN_PYTHON_3_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
-# digits of the python version
+# digits of the python version.
+# MIN_PYVER and MIN_PYTHON_VERSION are also set by this function, and their
+# values depend on if we try to use Python 3 or Python 2.
 DeterminePythonVersion() {
   # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
   #
   # If no Python is found, PYVER is set to 0.
   if [ "$USE_PYTHON_3" = 1 ]; then
+    MIN_PYVER=$MIN_PYVER3
+    MIN_PYTHON_VERSION=$MIN_PYTHON_3_VERSION
     for LE_PYTHON in "$LE_PYTHON" python3; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
     done
   else
+    MIN_PYVER=$MIN_PYVER2
+    MIN_PYTHON_VERSION=$MIN_PYTHON_2_VERSION
     for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
@@ -285,7 +293,7 @@ DeterminePythonVersion() {
     fi
   fi
 
-  PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+  PYVER=$("$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//')
   if [ "$PYVER" -lt "$MIN_PYVER" ]; then
     if [ "$1" != "NOCRASH" ]; then
       error "You have an ancient version of Python entombed in your operating system..."
@@ -368,7 +376,9 @@ BootstrapDebCommon() {
 
 # Sets TOOL to the name of the package manager
 # Sets appropriate values for YES_FLAG and QUIET_FLAG based on $ASSUME_YES and $QUIET_FLAG.
-# Enables EPEL if applicable and possible.
+# Note: this function is called both while selecting the bootstrap scripts and
+# during the actual bootstrap. Some things like prompting to user can be done in the latter
+# case, but not in the former one.
 InitializeRPMCommonBase() {
   if type dnf 2>/dev/null
   then
@@ -387,26 +397,6 @@ InitializeRPMCommonBase() {
   fi
   if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='--quiet'
-  fi
-
-  if ! $TOOL list *virtualenv >/dev/null 2>&1; then
-    echo "To use Certbot, packages from the EPEL repository need to be installed."
-    if ! $TOOL list epel-release >/dev/null 2>&1; then
-      error "Enable the EPEL repository and try running Certbot again."
-      exit 1
-    fi
-    if [ "$ASSUME_YES" = 1 ]; then
-      /bin/echo -n "Enabling the EPEL repository in 3 seconds..."
-      sleep 1s
-      /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
-      sleep 1s
-      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 second..."
-      sleep 1s
-    fi
-    if ! $TOOL install $YES_FLAG $QUIET_FLAG epel-release; then
-      error "Could not enable EPEL. Aborting bootstrap!"
-      exit 1
-    fi
   fi
 }
 
@@ -490,11 +480,86 @@ BootstrapRpmCommon() {
 
 # If new packages are installed by BootstrapRpmPython3 below, this version
 # number must be increased.
+BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION=1
+
+# Checks if rh-python36 can be installed.
+Python36SclIsAvailable() {
+  InitializeRPMCommonBase >/dev/null 2>&1;
+
+  if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
+    return 0
+  fi
+  if "${TOOL}" list centos-release-scl >/dev/null 2>&1; then
+    return 0
+  fi
+  return 1
+}
+
+# Try to enable rh-python36 from SCL if it is necessary and possible.
+EnablePython36SCL() {
+  if "$EXISTS" python3.6 > /dev/null 2> /dev/null; then
+      return 0
+  fi
+  if ! scl --list 2>/dev/null | grep -q rh-python36; then
+      return 0
+  fi
+  set +e
+  . scl_source enable rh-python36
+  set -e
+}
+
+# This bootstrap concerns old RedHat-based distributions that do not ship by default
+# with Python 2.7, but only Python 2.6. We bootstrap them by enabling SCL and installing
+# Python 3.6. Some of these distributions are: CentOS/RHEL/OL/SL 6.
+BootstrapRpmPython3Legacy() {
+  # Tested with:
+  #   - CentOS 6
+
+  InitializeRPMCommonBase
+
+  if ! "${TOOL}" list rh-python36 >/dev/null 2>&1; then
+    echo "To use Certbot on this operating system, packages from the SCL repository need to be installed."
+    if ! "${TOOL}" list centos-release-scl >/dev/null 2>&1; then
+      error "Enable the SCL repository and try running Certbot again."
+      exit 1
+    fi
+    if [ "${ASSUME_YES}" = 1 ]; then
+      /bin/echo -n "Enabling the SCL repository in 3 seconds... (Press Ctrl-C to cancel)"
+      sleep 1s
+      /bin/echo -ne "\e[0K\rEnabling the SCL repository in 2 seconds... (Press Ctrl-C to cancel)"
+      sleep 1s
+      /bin/echo -e "\e[0K\rEnabling the SCL repository in 1 second... (Press Ctrl-C to cancel)"
+      sleep 1s
+    fi
+    if ! "${TOOL}" install "${YES_FLAG}" "${QUIET_FLAG}" centos-release-scl; then
+      error "Could not enable SCL. Aborting bootstrap!"
+      exit 1
+    fi
+  fi
+
+  # CentOS 6 must use rh-python36 from SCL
+  if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
+    python_pkgs="rh-python36-python
+      rh-python36-python-virtualenv
+      rh-python36-python-devel
+    "
+  else
+    error "No supported Python package available to install. Aborting bootstrap!"
+    exit 1
+  fi
+
+  BootstrapRpmCommonBase "${python_pkgs}"
+
+  # Enable SCL rh-python36 after bootstrapping.
+  EnablePython36SCL
+}
+
+# If new packages are installed by BootstrapRpmPython3 below, this version
+# number must be increased.
 BOOTSTRAP_RPM_PYTHON3_VERSION=1
 
 BootstrapRpmPython3() {
   # Tested with:
-  #   - CentOS 6
   #   - Fedora 29
 
   InitializeRPMCommonBase
@@ -504,12 +569,6 @@ BootstrapRpmPython3() {
     python_pkgs="python3
       python3-virtualenv
       python3-devel
-    "
-  # EPEL uses python34
-  elif $TOOL list python34 >/dev/null 2>&1; then
-    python_pkgs="python34
-      python34-devel
-      python34-tools
     "
   else
     error "No supported Python package available to install. Aborting bootstrap!"
@@ -769,31 +828,50 @@ elif [ -f /etc/redhat-release ]; then
      RPM_DIST_VERSION=0
   fi
 
-  # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
-  # RHEL 8 also uses python3 by default.
-  if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
-    RPM_USE_PYTHON_3=1
-  elif [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
-    RPM_USE_PYTHON_3=1
-  elif [ "$RPM_DIST_NAME" = "centos" -a "$RPM_DIST_VERSION" -ge 8 ]; then
-    RPM_USE_PYTHON_3=1
-  else
-    RPM_USE_PYTHON_3=0
-  fi
+  # Handle legacy RPM distributions
+  if [ "$PYVER" -eq 26 ]; then
+    # Check if an automated bootstrap can be achieved on this system.
+    if ! Python36SclIsAvailable; then
+      INTERACTIVE_BOOTSTRAP=1
+    fi
 
-  if [ "$RPM_USE_PYTHON_3" = 1 ]; then
     Bootstrap() {
-      BootstrapMessage "RedHat-based OSes that will use Python3"
-      BootstrapRpmPython3
+      BootstrapMessage "Legacy RedHat-based OSes that will use Python3"
+      BootstrapRpmPython3Legacy
     }
     USE_PYTHON_3=1
-    BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
+    BOOTSTRAP_VERSION="BootstrapRpmPython3Legacy $BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION"
+
+    # Try now to enable SCL rh-python36 for systems already bootstrapped
+    # NB: EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
+    EnablePython36SCL
   else
-    Bootstrap() {
-      BootstrapMessage "RedHat-based OSes"
-      BootstrapRpmCommon
-    }
-    BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+    # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
+    # RHEL 8 also uses python3 by default.
+    if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 ]; then
+      RPM_USE_PYTHON_3=1
+    elif [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
+      RPM_USE_PYTHON_3=1
+    elif [ "$RPM_DIST_NAME" = "centos" -a "$RPM_DIST_VERSION" -ge 8 ]; then
+      RPM_USE_PYTHON_3=1
+    else
+      RPM_USE_PYTHON_3=0
+    fi
+
+    if [ "$RPM_USE_PYTHON_3" = 1 ]; then
+      Bootstrap() {
+        BootstrapMessage "RedHat-based OSes that will use Python3"
+        BootstrapRpmPython3
+      }
+      USE_PYTHON_3=1
+      BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
+    else
+      Bootstrap() {
+        BootstrapMessage "RedHat-based OSes"
+        BootstrapRpmCommon
+      }
+      BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+    fi
   fi
 
   LE_PYTHON="$prev_le_python"
@@ -1078,8 +1156,15 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # If the selected Bootstrap function isn't a noop and it differs from the
     # previously used version
     if [ -n "$BOOTSTRAP_VERSION" -a "$BOOTSTRAP_VERSION" != "$PREV_BOOTSTRAP_VERSION" ]; then
-      # if non-interactive mode or stdin and stdout are connected to a terminal
-      if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
+      # Check if we can rebootstrap without manual user intervention: this requires that
+      # certbot-auto is in non-interactive mode AND selected bootstrap does not claim to
+      # require a manual user intervention.
+      if [ "$NONINTERACTIVE" = 1 -a "$INTERACTIVE_BOOTSTRAP" != 1 ]; then
+        CAN_REBOOTSTRAP=1
+      fi
+      # Check if rebootstrap can be done non-interactively and current shell is non-interactive
+      # (true if stdin and stdout are not attached to a terminal).
+      if [ \( "$CAN_REBOOTSTRAP" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
         if [ -d "$VENV_PATH" ]; then
           rm -rf "$VENV_PATH"
         fi
@@ -1090,12 +1175,21 @@ if [ "$1" = "--le-auto-phase2" ]; then
           ln -s "$VENV_PATH" "$OLD_VENV_PATH"
         fi
         RerunWithArgs "$@"
+      # Otherwise bootstrap needs to be done manually by the user.
       else
-        error "Skipping upgrade because new OS dependencies may need to be installed."
-        error
-        error "To upgrade to a newer version, please run this script again manually so you can"
-        error "approve changes or with --non-interactive on the command line to automatically"
-        error "install any required packages."
+        # If it is because bootstrapping is interactive, --non-interactive will be of no use.
+        if [ "$INTERACTIVE_BOOTSTRAP" = 1 ]; then
+          error "Skipping upgrade because new OS dependencies may need to be installed."
+          error "This requires manual user intervention: please run this script again manually."
+        # If this is because of the environment (eg. non interactive shell without
+        # --non-interactive flag set), help the user in that direction.
+        else
+          error "Skipping upgrade because new OS dependencies may need to be installed."
+          error
+          error "To upgrade to a newer version, please run this script again manually so you can"
+          error "approve changes or with --non-interactive on the command line to automatically"
+          error "install any required packages."
+        fi
         # Set INSTALLED_VERSION to be the same so we don't update the venv
         INSTALLED_VERSION="$LE_AUTO_VERSION"
         # Continue to use OLD_VENV_PATH if the new venv doesn't exist

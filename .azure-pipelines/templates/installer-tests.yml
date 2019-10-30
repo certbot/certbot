@@ -18,8 +18,9 @@ jobs:
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
-          artifact: WindowsInstaller
-      - script: $(Build.ArtifactStagingDirectory)\certbot-installer-win32.exe /S
+          artifact: windows-installer
+        displayName: Publish Windows installer
+      - script: $(Build.ArtifactStagingDirectory)\certbot-beta-installer-win32.exe /S
         displayName: Install Certbot
       - script: |
           python -m venv venv
