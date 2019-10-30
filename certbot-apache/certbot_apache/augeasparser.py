@@ -151,13 +151,21 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
         return nodes
 
-    def find_comments(self, comment, exact=False): # pylint: disable=unused-argument
-        """Recursive search of DirectiveNodes from the sequence of children"""
-        new_metadata = {"augeasparser": self.parser}
-        return [AugeasCommentNode(comment=assertions.PASS,
-                                  ancestor=self,
-                                  filepath=assertions.PASS,
-                                  metadata=new_metadata)]
+    def find_comments(self, comment):
+        """
+        Recursive search of DirectiveNodes from the sequence of children.
+
+        :param str comment: Comment content to search for.
+        """
+
+        nodes = list()
+        ownpath = self.metadata.get("augeaspath")
+
+        comments = self.parser.find_comments(comment, start=ownpath)
+        for com in comments:
+            nodes.append(self._create_commentnode(com))
+
+        return nodes
 
     def delete_child(self, child):  # pragma: no cover
         """Deletes a ParserNode from the sequence of children"""
@@ -166,6 +174,19 @@ class AugeasBlockNode(AugeasDirectiveNode):
     def unsaved_files(self):  # pragma: no cover
         """Returns a list of unsaved filepaths"""
         return [assertions.PASS]
+
+    def _create_commentnode(self, path):
+        """Helper function to create a CommentNode from Augeas path"""
+
+        comment = self.parser.aug.get(path)
+        metadata = {"augeasparser": self.parser, "augeaspath": path}
+
+        # Because of the dynamic nature of AugeasParser and the fact that we're
+        # not populating the complete node tree, the ancestor has a dummy value
+        return AugeasCommentNode(comment=comment,
+                                 ancestor=assertions.PASS,
+                                 filepath=apache_util.get_file_path(path),
+                                 metadata=metadata)
 
     def _create_directivenode(self, path):
         """Helper function to create a DirectiveNode from Augeas path"""

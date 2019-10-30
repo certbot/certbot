@@ -453,9 +453,9 @@ class BlockNode(DirectiveNode):
         """
 
     @abc.abstractmethod
-    def find_comments(self, comment, exact=False):
+    def find_comments(self, comment):
         """
-        Find comments with value containing or being exactly the same as search term.
+        Find comments with value containing the search term.
 
         This method walks the child tree of ParserNodes under the instance it was
         called from. This way it is possible to search for the whole configuration
@@ -463,7 +463,6 @@ class BlockNode(DirectiveNode):
         from a specified branch. The lookup should be case sensitive.
 
         :param str comment: The content of comment to search for
-        :param bool exact: If the comment needs to exactly match the search term
 
         :returns: A list of found CommentNode objects.
 
