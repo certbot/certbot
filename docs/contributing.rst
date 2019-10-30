@@ -234,7 +234,7 @@ Authenticators
 
 Authenticators are plugins that prove control of a domain name by solving a
 challenge provided by the ACME server. ACME currently defines several types of
-challenges: HTTP, TLS-SNI (deprecated), TLS-ALPR, and DNS, represented by classes in `acme.challenges`.
+challenges: HTTP, TLS-ALPN, and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing
