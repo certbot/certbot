@@ -319,7 +319,7 @@ def get_systemd_os_info():
     warnings.warn(
         "The get_sytemd_os_like() function is deprecated and will be removed in "
         "a future release.", DeprecationWarning, stacklevel=2)
-    return get_os_info()
+    return get_os_info()[:2]
 
 def get_systemd_os_like(filepath="/etc/os-release"):  # pylint: disable=unused-argument
     """
