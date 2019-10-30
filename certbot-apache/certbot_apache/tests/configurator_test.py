@@ -1296,13 +1296,13 @@ class MultipleVhostsTest(util.ApacheTest):
         account_key = self.rsa512jwk
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.TLSSNI01(
+                challenges.HTTP01(
                     token=b"jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q"),
                 "pending"),
             domain="encryption-example.demo", account_key=account_key)
         achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.TLSSNI01(
+                challenges.HTTP01(
                     token=b"uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
                 "pending"),
             domain="certbot.demo", account_key=account_key)
