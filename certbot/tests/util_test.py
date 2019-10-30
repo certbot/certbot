@@ -1,6 +1,7 @@
 """Tests for certbot.util."""
 import argparse
 import errno
+import sys
 import unittest
 
 import mock
@@ -474,6 +475,7 @@ class OsInfoTest(unittest.TestCase):
     """Test OS / distribution detection"""
 
     @mock.patch("certbot.util.distro")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
     def test_systemd_os_release_like(self, m_distro):
         with mock.patch("certbot.util.sys.platform") as mock_platform:
             mock_platform.return_value = "linux"
@@ -485,6 +487,7 @@ class OsInfoTest(unittest.TestCase):
         self.assertTrue("debian" in id_likes)
 
     @mock.patch("certbot.util.distro")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
     def test_get_os_info_ua(self, m_distro):
         with mock.patch("certbot.util.sys.platform") as mock_platform:
             mock_platform.return_value = "linux"
@@ -502,6 +505,7 @@ class OsInfoTest(unittest.TestCase):
         self.assertEqual(cbutil.get_os_info_ua(), "whatever")
 
     @mock.patch("certbot.util.distro")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
     def test_get_os_info(self, m_distro):
         with mock.patch("certbot.util.sys.platform") as mock_platform:
             mock_platform.return_value = "linux"
@@ -517,6 +521,7 @@ class OsInfoTest(unittest.TestCase):
 
     @mock.patch("warnings.warn")
     @mock.patch("certbot.util.distro")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
     def test_get_systemd_os_info_deprecation(self, _, mock_warn):
         with mock.patch("certbot.util.sys.platform") as mock_platform:
             mock_platform.return_value = "linux"
@@ -527,6 +532,7 @@ class OsInfoTest(unittest.TestCase):
 
     @mock.patch("certbot.util.subprocess.Popen")
     @mock.patch("certbot.util.distro")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
     def test_non_systemd_os_info(self, m_distro, popen_mock):
         with mock.patch("certbot.util.sys.platform") as mock_platform:
             mock_platform.return_value = "linux"
