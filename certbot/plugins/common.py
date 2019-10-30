@@ -2,6 +2,7 @@
 import logging
 import re
 import shutil
+import sys
 import tempfile
 import warnings
 
@@ -503,3 +504,34 @@ def dir_setup(test_dir, pkg):  # pragma: no cover
         test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
 
     return temp_dir, config_dir, work_dir
+
+
+# This class takes a similar approach to the cryptography project to deprecate attributes
+# in public modules. See the _ModuleWithDeprecation class here:
+# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
+class _TLSSNI01DeprecationModule(object):
+    """
+    Internal class delegating to a module, and displaying warnings when
+    attributes related to TLS-SNI-01 are accessed.
+    """
+    def __init__(self, module):
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr):
+        if attr == 'TLSSNI01':
+            warnings.warn('TLSSNI01 is deprecated and will be removed soon.',
+                          DeprecationWarning, stacklevel=2)
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr, value):  # pragma: no cover
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr):  # pragma: no cover
+        delattr(self._module, attr)
+
+    def __dir__(self):  # pragma: no cover
+        return ['_module'] + dir(self._module)
+
+
+# Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
+sys.modules[__name__] = _TLSSNI01DeprecationModule(sys.modules[__name__])
