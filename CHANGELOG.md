@@ -12,12 +12,14 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * We deprecated support for Python 3.4 in Certbot and its ACME library. Support
   for Python 3.4 will be removed in the next major release of Certbot.
-* Removed `--fast` flag from the test farm tests
+  certbot-auto users on RHEL 6 based systems will be asked to enable Software
+  Collections (SCL) repository so Python 3.6 can be installed. certbot-auto can
+  enable the SCL repo for you on CentOS 6 while other RHEL 6 based systems will
+  be asked to do this manually.
 * `--server` may now be combined with `--dry-run`. Certbot will, as before, use the
   staging server instead of the live server when `--dry-run` is used.
 * Updated certbot-dns-google to depend on newer versions of
   google-api-python-client and oauth2client.
-* Migrated CentOS 6 certbot-auto users from Python 3.4 to Python 3.6.
 
 ### Fixed
 
