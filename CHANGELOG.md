@@ -18,6 +18,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Updated certbot-dns-google to depend on newer versions of
   google-api-python-client and oauth2client.
 * Migrated CentOS 6 certbot-auto users from Python 3.4 to Python 3.6.
+* CLI flags --tls-sni-01-port and --tls-sni-01-address have been removed.
+* The values tls-sni and tls-sni-01 for the --preferred-challenges flag are no
+  longer accepted.
 
 ### Fixed
 
