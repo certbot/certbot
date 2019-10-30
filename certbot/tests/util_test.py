@@ -475,7 +475,9 @@ class OsInfoTest(unittest.TestCase):
 
     @mock.patch("certbot.util.distro")
     def test_systemd_os_release_like(self, m_distro):
-        import certbot.util as cbutil
+        with mock.patch("certbot.util.sys.platform") as mock_platform:
+            mock_platform.return_value = "linux"
+            import certbot.util as cbutil
         cbutil._USE_DISTRO = True  # pylint: disable=protected-access
         m_distro.like.return_value = "first debian third"
         id_likes = cbutil.get_systemd_os_like()
@@ -484,7 +486,9 @@ class OsInfoTest(unittest.TestCase):
 
     @mock.patch("certbot.util.distro")
     def test_get_os_info_ua(self, m_distro):
-        import certbot.util as cbutil
+        with mock.patch("certbot.util.sys.platform") as mock_platform:
+            mock_platform.return_value = "linux"
+            import certbot.util as cbutil
         cbutil._USE_DISTRO = True  # pylint: disable=protected-access
         with mock.patch('platform.system_alias',
                         return_value=('linux', '42', '42')):
@@ -499,7 +503,9 @@ class OsInfoTest(unittest.TestCase):
 
     @mock.patch("certbot.util.distro")
     def test_get_os_info(self, m_distro):
-        import certbot.util as cbutil
+        with mock.patch("certbot.util.sys.platform") as mock_platform:
+            mock_platform.return_value = "linux"
+            import certbot.util as cbutil
         cbutil._USE_DISTRO = True  # pylint: disable=protected-access
         with mock.patch("platform.system") as mock_platform:
             m_distro.linux_distribution.return_value = ("name", "version", 'x')
@@ -512,7 +518,9 @@ class OsInfoTest(unittest.TestCase):
     @mock.patch("warnings.warn")
     @mock.patch("certbot.util.distro")
     def test_get_systemd_os_info_deprecation(self, _, mock_warn):
-        import certbot.util as cbutil
+        with mock.patch("certbot.util.sys.platform") as mock_platform:
+            mock_platform.return_value = "linux"
+            import certbot.util as cbutil
         cbutil._USE_DISTRO = True  # pylint: disable=protected-access
         cbutil.get_systemd_os_info()
         self.assertTrue(mock_warn.called)
@@ -520,7 +528,9 @@ class OsInfoTest(unittest.TestCase):
     @mock.patch("certbot.util.subprocess.Popen")
     @mock.patch("certbot.util.distro")
     def test_non_systemd_os_info(self, m_distro, popen_mock):
-        import certbot.util as cbutil
+        with mock.patch("certbot.util.sys.platform") as mock_platform:
+            mock_platform.return_value = "linux"
+            import certbot.util as cbutil
         cbutil._USE_DISTRO = False  # pylint: disable=protected-access
         with mock.patch('certbot.compat.os.path.isfile', return_value=False):
             with mock.patch('platform.system_alias',
