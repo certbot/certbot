@@ -10,6 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* We deprecated support for Python 3.4 in Certbot and its ACME library. Support
+  for Python 3.4 will be removed in the next major release of Certbot.
 * Removed `--fast` flag from the test farm tests
 * `--server` may now be combined with `--dry-run`. Certbot will, as before, use the
   staging server instead of the live server when `--dry-run` is used.
