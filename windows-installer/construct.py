@@ -113,7 +113,7 @@ target=$INSTDIR\\run.bat
 [Build]
 directory=nsis
 nsi_template=template.nsi
-installer_name=certbot-installer-{installer_suffix}.exe
+installer_name=certbot-beta-installer-{installer_suffix}.exe
 
 [Python]
 version={python_version}
