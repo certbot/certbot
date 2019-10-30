@@ -14,7 +14,7 @@ from certbot_apache.parser import get_aug_path
 logger = logging.getLogger(__name__)
 
 
-class ApacheHttp01(common.TLSSNI01):
+class ApacheHttp01(common.ChallengePerformer):
     """Class that performs HTTP-01 challenges within the Apache configurator."""
 
     CONFIG_TEMPLATE22_PRE = """\

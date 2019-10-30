@@ -18,6 +18,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Updated certbot-dns-google to depend on newer versions of
   google-api-python-client and oauth2client.
 * Migrated CentOS 6 certbot-auto users from Python 3.4 to Python 3.6.
+* certbot.plugins.common.TLSSNI01 has been deprecated and will be removed in a
+  future release.
 
 ### Fixed
 
