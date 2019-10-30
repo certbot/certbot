@@ -10,12 +10,15 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* We deprecated support for Python 3.4 in Certbot and its ACME library. Support
+  for Python 3.4 will be removed in the next major release of Certbot.
 * Removed `--fast` flag from the test farm tests
 * `--server` may now be combined with `--dry-run`. Certbot will, as before, use the
   staging server instead of the live server when `--dry-run` is used.
 * Updated certbot-dns-google to depend on newer versions of
   google-api-python-client and oauth2client.
 * The OS detection logic again uses distro library for Linux OSes
+* Migrated CentOS 6 certbot-auto users from Python 3.4 to Python 3.6.
 
 ### Fixed
 

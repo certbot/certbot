@@ -230,6 +230,7 @@ Authors
 * [Stavros Korokithakis](https://github.com/skorokithakis)
 * [Stefan Weil](https://github.com/stweil)
 * [Steve Desmond](https://github.com/stevedesmond-ca)
+* [sydneyli](https://github.com/sydneyli)
 * [Tan Jay Jun](https://github.com/jayjun)
 * [Tapple Gao](https://github.com/tapple)
 * [Telepenin Nikolay](https://github.com/telepenin)
