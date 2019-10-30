@@ -181,8 +181,8 @@ class AugeasBlockNode(AugeasDirectiveNode):
         comment = self.parser.aug.get(path)
         metadata = {"augeasparser": self.parser, "augeaspath": path}
 
-        # Because of the dynamic nature, and the fact that we're not populating
-        # the complete ParserNode tree, we use the search parent as ancestor
+        # Because of the dynamic nature of AugeasParser and the fact that we're
+        # not populating the complete node tree, the ancestor has a dummy value
         return AugeasCommentNode(comment=comment,
                                  ancestor=assertions.PASS,
                                  filepath=apache_util.get_file_path(path),
