@@ -3,7 +3,7 @@ from setuptools import find_packages
 from setuptools.command.test import test as TestCommand
 import sys
 
-version = '0.39.0.dev0'
+version = '0.40.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -73,6 +73,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
     ],

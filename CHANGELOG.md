@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.39.0 - master
+## 0.40.0 - master
 
 ### Added
 
@@ -12,10 +12,35 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * We deprecated support for Python 3.4 in Certbot and its ACME library. Support
   for Python 3.4 will be removed in the next major release of Certbot.
+* Removed `--fast` flag from the test farm tests
+* `--server` may now be combined with `--dry-run`. Certbot will, as before, use the
+  staging server instead of the live server when `--dry-run` is used.
+* Updated certbot-dns-google to depend on newer versions of
+  google-api-python-client and oauth2client.
+* Migrated CentOS 6 certbot-auto users from Python 3.4 to Python 3.6.
 
 ### Fixed
 
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.39.0 - 2019-10-01
+
+### Added
+
+* Support for Python 3.8 was added to Certbot and all of its components.
+* Support for CentOS 8 was added to certbot-auto.
+
+### Changed
+
+* Don't send OCSP requests for expired certificates
+* Return to using platform.linux_distribution instead of distro.linux_distribution in OS fingerprinting for Python < 3.8 
+* Updated the Nginx plugin's TLS configuration to keep support for some versions of IE11.
+
+### Fixed
+
+* Fixed OS detection in the Apache plugin on RHEL 6.
 
 More details about these changes can be found on our GitHub repo.
 
