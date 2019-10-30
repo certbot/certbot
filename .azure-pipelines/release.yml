@@ -6,18 +6,8 @@ trigger:
 pr: none
 
 jobs:
+  # Any addition here should be reflected in the advanced pipeline.
+  # It is advised to declare all jobs here as templates to improve maintainability.
   - template: templates/tests-suite.yml
   - template: templates/installer-tests.yml
-  - job: changelog
-    pool:
-      vmImage: vs2017-win2016
-    steps:
-      - bash: |
-          CERTBOT_VERSION="${BUILD_SOURCEBRANCH/refs\/tags\/v/}"
-          "${BUILD_REPOSITORY_LOCALPATH}\tools\extract_changelog.py" "${CERTBOT_VERSION}" >> "${BUILD_ARTIFACTSTAGINGDIRECTORY}/release_notes.md"
-        displayName: Prepare changelog
-      - task: PublishPipelineArtifact@1
-        inputs:
-          path: $(Build.ArtifactStagingDirectory)
-          artifact: changelog
-        displayName: Publish changelog
+  - template: templates/changelog.yml
