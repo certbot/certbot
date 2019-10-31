@@ -18,8 +18,8 @@ from certbot import crypto_util
 from certbot import error_handler
 from certbot import errors
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.plugins import common as plugins_common
 from certbot.plugins import disco as plugins_disco
 
@@ -143,7 +143,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     # Copy permissions from the old version of the file, if it exists.
     if os.path.exists(o_filename):
         current_permissions = stat.S_IMODE(os.lstat(o_filename).st_mode)
-        os.chmod(n_filename, current_permissions)
+        filesystem.chmod(n_filename, current_permissions)
 
     with open(n_filename, "wb") as f:
         config.write(outfile=f)
@@ -162,7 +162,7 @@ def rename_renewal_config(prev_name, new_name, cli_config):
         raise errors.ConfigurationError("The new certificate name "
             "is already in use.")
     try:
-        os.rename(prev_filename, new_filename)
+        filesystem.replace(prev_filename, new_filename)
     except OSError:
         raise errors.ConfigurationError("Please specify a valid filename "
             "for the new certificate name.")
@@ -191,7 +191,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
     write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    misc.os_rename(temp_filename, config_filename)
+    filesystem.replace(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
 
@@ -984,7 +984,7 @@ class RenewableCert(object):
         for i in (cli_config.renewal_configs_dir, cli_config.default_archive_dir,
                   cli_config.live_dir):
             if not os.path.exists(i):
-                os.makedirs(i, 0o700)
+                filesystem.makedirs(i, 0o700)
                 logger.debug("Creating directory %s.", i)
         config_file, config_filename = util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
@@ -1006,8 +1006,8 @@ class RenewableCert(object):
             config_file.close()
             raise errors.CertStorageError(
                 "live directory exists for " + lineagename)
-        os.mkdir(archive)
-        os.mkdir(live_dir)
+        filesystem.mkdir(archive)
+        filesystem.mkdir(live_dir)
         logger.debug("Archive directory %s and live "
                      "directory %s created.", archive, live_dir)
 
@@ -1104,13 +1104,11 @@ class RenewableCert(object):
             with util.safe_open(target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
-            # Preserve gid and (mode & 074) from previous privkey in this lineage.
-            old_mode = stat.S_IMODE(os.stat(old_privkey).st_mode) & \
-                (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | \
-                 stat.S_IROTH)
-            mode = BASE_PRIVKEY_MODE | old_mode
-            os.chown(target["privkey"], -1, os.stat(old_privkey).st_gid)
-            os.chmod(target["privkey"], mode)
+            # Preserve gid and (mode & MASK_FOR_PRIVATE_KEY_PERMISSIONS)
+            # from previous privkey in this lineage.
+            mode = filesystem.compute_private_key_mode(old_privkey, BASE_PRIVKEY_MODE)
+            filesystem.copy_ownership_and_apply_mode(
+                old_privkey, target["privkey"], mode, copy_user=False, copy_group=True)
 
         # Save everything else
         with open(target["cert"], "wb") as f:

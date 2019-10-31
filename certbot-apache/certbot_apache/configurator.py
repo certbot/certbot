@@ -1,4 +1,4 @@
-"""Apache Configuration based off of Augeas Configurator."""
+"""Apache Configurator."""
 # pylint: disable=too-many-lines
 import copy
 import fnmatch
@@ -23,13 +23,13 @@ from certbot import interfaces
 from certbot import util
 
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
+from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 
 from certbot_apache import apache_util
-from certbot_apache import augeas_configurator
 from certbot_apache import constants
 from certbot_apache import display_ops
 from certbot_apache import http_01
@@ -70,12 +70,9 @@ logger = logging.getLogger(__name__)
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
-class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
+class ApacheConfigurator(common.Installer):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Apache configurator.
-
-    State of Configurator: This code has been been tested and built for Ubuntu
-    14.04 Apache 2.4 and it works for Ubuntu 12.04 Apache 2.2
 
     :ivar config: Configuration.
     :type config: :class:`~certbot.interfaces.IConfig`
@@ -201,6 +198,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
         # Temporary state for AutoHSTS enhancement
         self._autohsts = {}  # type: Dict[str, Dict[str, Union[int, float]]]
+        # Reverter save notes
+        self.save_notes = ""
 
         # These will be set in the prepare function
         self._prepared = False
@@ -231,12 +230,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises .errors.PluginError: If there is any other error
 
         """
-        # Perform the actual Augeas initialization to be able to react
-        try:
-            self.init_augeas()
-        except ImportError:
-            raise errors.NoInstallationError("Problem in Augeas installation")
-
         self._prepare_options()
 
         # Verify Apache is installed
@@ -254,16 +247,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.NotSupportedError(
                 "Apache Version {0} not supported.".format(str(self.version)))
 
-        if not self._check_aug_version():
-            raise errors.NotSupportedError(
-                "Apache plugin support requires libaugeas0 and augeas-lenses "
-                "version 1.2.0 or higher, please make sure you have you have "
-                "those installed.")
-
+        # Recover from previous crash before Augeas initialization to have the
+        # correct parse tree from the get go.
+        self.recovery_routine()
+        # Perform the actual Augeas initialization to be able to react
         self.parser = self.get_parser()
 
         # Check for errors in parsing files with Augeas
-        self.check_parsing_errors("httpd.aug")
+        self.parser.check_parsing_errors("httpd.aug")
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
@@ -276,8 +267,72 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             util.lock_dir_until_exit(self.option("server_root"))
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
-            raise errors.PluginError("Unable to lock {0}".format(self.option("server_root")))
+            raise errors.PluginError(
+                "Unable to create a lock file in {0}. Are you running"
+                " Certbot with sufficient privileges to modify your"
+                " Apache configuration?".format(self.option("server_root")))
         self._prepared = True
+
+    def save(self, title=None, temporary=False):
+        """Saves all changes to the configuration files.
+
+        This function first checks for save errors, if none are found,
+        all configuration changes made will be saved. According to the
+        function parameters. If an exception is raised, a new checkpoint
+        was not created.
+
+        :param str title: The title of the save. If a title is given, the
+            configuration will be saved as a new checkpoint and put in a
+            timestamped directory.
+
+        :param bool temporary: Indicates whether the changes made will
+            be quickly reversed in the future (ie. challenges)
+
+        """
+        save_files = self.parser.unsaved_files()
+        if save_files:
+            self.add_to_checkpoint(save_files,
+                                   self.save_notes, temporary=temporary)
+        # Handle the parser specific tasks
+        self.parser.save(save_files)
+        if title and not temporary:
+            self.finalize_checkpoint(title)
+
+    def recovery_routine(self):
+        """Revert all previously modified files.
+
+        Reverts all modified files that have not been saved as a checkpoint
+
+        :raises .errors.PluginError: If unable to recover the configuration
+
+        """
+        super(ApacheConfigurator, self).recovery_routine()
+        # Reload configuration after these changes take effect if needed
+        # ie. ApacheParser has been initialized.
+        if self.parser:
+            # TODO: wrap into non-implementation specific  parser interface
+            self.parser.aug.load()
+
+    def revert_challenge_config(self):
+        """Used to cleanup challenge configurations.
+
+        :raises .errors.PluginError: If unable to revert the challenge config.
+
+        """
+        self.revert_temporary_config()
+        self.parser.aug.load()
+
+    def rollback_checkpoints(self, rollback=1):
+        """Rollback saved checkpoints.
+
+        :param int rollback: Number of checkpoints to revert
+
+        :raises .errors.PluginError: If there is a problem with the input or
+            the function is unable to correctly revert the configuration
+
+        """
+        super(ApacheConfigurator, self).rollback_checkpoints(rollback)
+        self.parser.aug.load()
 
     def _verify_exe_availability(self, exe):
         """Checks availability of Apache executable"""
@@ -286,26 +341,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 raise errors.NoInstallationError(
                     'Cannot find Apache executable {0}'.format(exe))
 
-    def _check_aug_version(self):
-        """ Checks that we have recent enough version of libaugeas.
-        If augeas version is recent enough, it will support case insensitive
-        regexp matching"""
-
-        self.aug.set("/test/path/testing/arg", "aRgUMeNT")
-        try:
-            matches = self.aug.match(
-                "/test//*[self::arg=~regexp('argument', 'i')]")
-        except RuntimeError:
-            self.aug.remove("/test/path")
-            return False
-        self.aug.remove("/test/path")
-        return matches
-
     def get_parser(self):
         """Initializes the ApacheParser"""
         # If user provided vhost_root value in command line, use it
         return parser.ApacheParser(
-            self.aug, self.option("server_root"), self.conf("vhost-root"),
+            self.option("server_root"), self.conf("vhost-root"),
             self.version, configurator=self)
 
     def _wildcard_domain(self, domain):
@@ -484,8 +524,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # install SSLCertificateFile, SSLCertificateKeyFile,
             # and SSLCertificateChainFile directives
             set_cert_path = cert_path
-            self.aug.set(path["cert_path"][-1], cert_path)
-            self.aug.set(path["cert_key"][-1], key_path)
+            self.parser.aug.set(path["cert_path"][-1], cert_path)
+            self.parser.aug.set(path["cert_key"][-1], key_path)
             if chain_path is not None:
                 self.parser.add_dir(vhost.path,
                                     "SSLCertificateChainFile", chain_path)
@@ -497,8 +537,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 raise errors.PluginError("Please provide the --fullchain-path "
                                          "option pointing to your full chain file")
             set_cert_path = fullchain_path
-            self.aug.set(path["cert_path"][-1], fullchain_path)
-            self.aug.set(path["cert_key"][-1], key_path)
+            self.parser.aug.set(path["cert_path"][-1], fullchain_path)
+            self.parser.aug.set(path["cert_key"][-1], key_path)
 
         # Enable the new vhost if needed
         if not vhost.enabled:
@@ -798,7 +838,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         addrs = set()
         try:
-            args = self.aug.match(path + "/arg")
+            args = self.parser.aug.match(path + "/arg")
         except RuntimeError:
             logger.warning("Encountered a problem while parsing file: %s, skipping", path)
             return None
@@ -816,7 +856,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 is_ssl = True
 
         filename = apache_util.get_file_path(
-            self.aug.get("/augeas/files%s/path" % apache_util.get_file_path(path)))
+            self.parser.aug.get("/augeas/files%s/path" % apache_util.get_file_path(path)))
         if filename is None:
             return None
 
@@ -846,7 +886,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Make a list of parser paths because the parser_paths
         # dictionary may be modified during the loop.
         for vhost_path in list(self.parser.parser_paths):
-            paths = self.aug.match(
+            paths = self.parser.aug.match(
                 ("/files%s//*[label()=~regexp('%s')]" %
                     (vhost_path, parser.case_i("VirtualHost"))))
             paths = [path for path in paths if
@@ -856,7 +896,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if not new_vhost:
                     continue
                 internal_path = apache_util.get_internal_aug_path(new_vhost.path)
-                realpath = os.path.realpath(new_vhost.filep)
+                realpath = filesystem.realpath(new_vhost.filep)
                 if realpath not in file_paths:
                     file_paths[realpath] = new_vhost.filep
                     internal_paths[realpath].add(internal_path)
@@ -1100,16 +1140,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         avail_fp = nonssl_vhost.filep
         ssl_fp = self._get_ssl_vhost_path(avail_fp)
 
-        orig_matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+        orig_matches = self.parser.aug.match("/files%s//* [label()=~regexp('%s')]" %
                                       (self._escape(ssl_fp),
                                        parser.case_i("VirtualHost")))
 
         self._copy_create_ssl_vhost_skeleton(nonssl_vhost, ssl_fp)
 
         # Reload augeas to take into account the new vhost
-        self.aug.load()
+        self.parser.aug.load()
         # Get Vhost augeas path for new vhost
-        new_matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+        new_matches = self.parser.aug.match("/files%s//* [label()=~regexp('%s')]" %
                                      (self._escape(ssl_fp),
                                       parser.case_i("VirtualHost")))
 
@@ -1120,7 +1160,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Make Augeas aware of the new vhost
             self.parser.parse_file(ssl_fp)
             # Try to search again
-            new_matches = self.aug.match(
+            new_matches = self.parser.aug.match(
                 "/files%s//* [label()=~regexp('%s')]" %
                 (self._escape(ssl_fp),
                  parser.case_i("VirtualHost")))
@@ -1182,11 +1222,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
 
         if self.conf("vhost-root") and os.path.exists(self.conf("vhost-root")):
-            fp = os.path.join(os.path.realpath(self.option("vhost_root")),
+            fp = os.path.join(filesystem.realpath(self.option("vhost_root")),
                               os.path.basename(non_ssl_vh_fp))
         else:
             # Use non-ssl filepath
-            fp = os.path.realpath(non_ssl_vh_fp)
+            fp = filesystem.realpath(non_ssl_vh_fp)
 
         if fp.endswith(".conf"):
             return fp[:-(len(".conf"))] + self.option("le_vhost_ext")
@@ -1270,8 +1310,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "vhost for your HTTPS site located at {1} because they have "
                 "the potential to create redirection loops.".format(
                     vhost.filep, ssl_fp), reporter.MEDIUM_PRIORITY)
-        self.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
-        self.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")
+        self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
+        self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")
 
     def _sift_rewrite_rules(self, contents):
         """ Helper function for _copy_create_ssl_vhost_skeleton to prepare the
@@ -1346,7 +1386,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
 
         try:
-            span_val = self.aug.span(vhost.path)
+            span_val = self.parser.aug.span(vhost.path)
         except ValueError:
             logger.critical("Error while reading the VirtualHost %s from "
                          "file %s", vhost.name, vhost.filep, exc_info=True)
@@ -1381,13 +1421,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _update_ssl_vhosts_addrs(self, vh_path):
         ssl_addrs = set()
-        ssl_addr_p = self.aug.match(vh_path + "/arg")
+        ssl_addr_p = self.parser.aug.match(vh_path + "/arg")
 
         for addr in ssl_addr_p:
             old_addr = obj.Addr.fromstring(
                 str(self.parser.get_arg(addr)))
             ssl_addr = old_addr.get_addr_obj("443")
-            self.aug.set(addr, str(ssl_addr))
+            self.parser.aug.set(addr, str(ssl_addr))
             ssl_addrs.add(ssl_addr)
 
         return ssl_addrs
@@ -1406,14 +1446,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                            vh_path, False)) > 1:
                 directive_path = self.parser.find_dir(directive, None,
                                                       vh_path, False)
-                self.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
+                self.parser.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
 
     def _remove_directives(self, vh_path, directives):
         for directive in directives:
             while self.parser.find_dir(directive, None, vh_path, False):
                 directive_path = self.parser.find_dir(directive, None,
                                                       vh_path, False)
-                self.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
+                self.parser.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
 
     def _add_dummy_ssl_directives(self, vh_path):
         self.parser.add_dir(vh_path, "SSLCertificateFile",
@@ -1452,7 +1492,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         matches = self.parser.find_dir(
             "ServerAlias", start=vh_path, exclude=False)
-        aliases = (self.aug.get(match) for match in matches)
+        aliases = (self.parser.aug.get(match) for match in matches)
         return self.domain_in_names(aliases, target_name)
 
     def _add_name_vhost_if_necessary(self, vhost):
@@ -1635,7 +1675,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if header_path:
             pat = '(?:[ "]|^)(strict-transport-security)(?:[ "]|$)'
             for match in header_path:
-                if re.search(pat, self.aug.get(match).lower()):
+                if re.search(pat, self.parser.aug.get(match).lower()):
                     hsts_dirpath = match
         if not hsts_dirpath:
             err_msg = ("Certbot was unable to find the existing HSTS header "
@@ -1649,7 +1689,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Our match statement was for string strict-transport-security, but
         # we need to update the value instead. The next index is for the value
         hsts_dirpath = hsts_dirpath.replace("arg[3]", "arg[4]")
-        self.aug.set(hsts_dirpath, hsts_maxage)
+        self.parser.aug.set(hsts_dirpath, hsts_maxage)
         note_msg = ("Increasing HSTS max-age value to {0} for VirtualHost "
                     "in {1}\n".format(nextstep_value, vhost.filep))
         logger.debug(note_msg)
@@ -1731,7 +1771,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # We'll simply delete the directive, so that we'll have a
         # consistent OCSP cache path.
         if stapling_cache_aug_path:
-            self.aug.remove(
+            self.parser.aug.remove(
                     re.sub(r"/\w*$", "", stapling_cache_aug_path[0]))
 
         self.parser.add_dir_to_ifmodssl(ssl_vhost_aug_path,
@@ -1808,7 +1848,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # "Existing Header directive for virtualhost"
             pat = '(?:[ "]|^)(%s)(?:[ "]|$)' % (header_substring.lower())
             for match in header_path:
-                if re.search(pat, self.aug.get(match).lower()):
+                if re.search(pat, self.parser.aug.get(match).lower()):
                     raise errors.PluginEnhancementAlreadyPresent(
                         "Existing %s header" % (header_substring))
 
@@ -1935,11 +1975,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                              constants.REWRITE_HTTPS_ARGS_WITH_END]
 
             for dir_path, args_paths in rewrite_args_dict.items():
-                arg_vals = [self.aug.get(x) for x in args_paths]
+                arg_vals = [self.parser.aug.get(x) for x in args_paths]
 
                 # Search for past redirection rule, delete it, set the new one
                 if arg_vals in constants.OLD_REWRITE_HTTPS_ARGS:
-                    self.aug.remove(dir_path)
+                    self.parser.aug.remove(dir_path)
                     self._set_https_redirection_rewrite_rule(vhost)
                     self.save()
                     raise errors.PluginEnhancementAlreadyPresent(
@@ -1995,7 +2035,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         redirect_filepath = self._write_out_redirect(ssl_vhost, text)
 
-        self.aug.load()
+        self.parser.aug.load()
         # Make a new vhost data structure and add it to the lists
         new_vhost = self._create_vhost(parser.get_aug_path(self._escape(redirect_filepath)))
         self.vhosts.append(new_vhost)

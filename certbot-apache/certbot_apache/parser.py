@@ -13,6 +13,8 @@ from acme.magic_typing import Dict, List, Set  # pylint: disable=unused-import, 
 from certbot import errors
 from certbot.compat import os
 
+from certbot_apache import constants
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +34,7 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, vhostroot=None, version=(2, 4),
+    def __init__(self, root, vhostroot=None, version=(2, 4),
                  configurator=None):
         # Note: Order is important here.
 
@@ -41,11 +43,20 @@ class ApacheParser(object):
         # issues with aug.load() after adding new files / defines to parse tree
         self.configurator = configurator
 
+        # Initialize augeas
+        self.aug = None
+        self.init_augeas()
+
+        if not self.check_aug_version():
+            raise errors.NotSupportedError(
+                "Apache plugin support requires libaugeas0 and augeas-lenses "
+                "version 1.2.0 or higher, please make sure you have you have "
+                "those installed.")
+
         self.modules = set()  # type: Set[str]
         self.parser_paths = {}  # type: Dict[str, List[str]]
         self.variables = {}  # type: Dict[str, str]
 
-        self.aug = aug
         # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
         self.loc = {"root": self._find_config_root()}
@@ -76,6 +87,146 @@ class ApacheParser(object):
         if version < (2, 4):
             if self.find_dir("Define", exclude=False):
                 raise errors.PluginError("Error parsing runtime variables")
+
+    def init_augeas(self):
+        """ Initialize the actual Augeas instance """
+
+        try:
+            import augeas
+        except ImportError:  # pragma: no cover
+            raise errors.NoInstallationError("Problem in Augeas installation")
+
+        self.aug = augeas.Augeas(
+            # specify a directory to load our preferred lens from
+            loadpath=constants.AUGEAS_LENS_DIR,
+            # Do not save backup (we do it ourselves), do not load
+            # anything by default
+            flags=(augeas.Augeas.NONE |
+                   augeas.Augeas.NO_MODL_AUTOLOAD |
+                   augeas.Augeas.ENABLE_SPAN))
+
+    def check_parsing_errors(self, lens):
+        """Verify Augeas can parse all of the lens files.
+
+        :param str lens: lens to check for errors
+
+        :raises .errors.PluginError: If there has been an error in parsing with
+            the specified lens.
+
+        """
+        error_files = self.aug.match("/augeas//error")
+
+        for path in error_files:
+            # Check to see if it was an error resulting from the use of
+            # the httpd lens
+            lens_path = self.aug.get(path + "/lens")
+            # As aug.get may return null
+            if lens_path and lens in lens_path:
+                msg = (
+                    "There has been an error in parsing the file {0} on line {1}: "
+                    "{2}".format(
+                    # Strip off /augeas/files and /error
+                    path[13:len(path) - 6],
+                    self.aug.get(path + "/line"),
+                    self.aug.get(path + "/message")))
+                raise errors.PluginError(msg)
+
+    def check_aug_version(self):
+        """ Checks that we have recent enough version of libaugeas.
+        If augeas version is recent enough, it will support case insensitive
+        regexp matching"""
+
+        self.aug.set("/test/path/testing/arg", "aRgUMeNT")
+        try:
+            matches = self.aug.match(
+                "/test//*[self::arg=~regexp('argument', 'i')]")
+        except RuntimeError:
+            self.aug.remove("/test/path")
+            return False
+        self.aug.remove("/test/path")
+        return matches
+
+    def unsaved_files(self):
+        """Lists files that have modified Augeas DOM but the changes have not
+        been written to the filesystem yet, used by `self.save()` and
+        ApacheConfigurator to check the file state.
+
+        :raises .errors.PluginError: If there was an error in Augeas, in
+            an attempt to save the configuration, or an error creating a
+            checkpoint
+
+        :returns: `set` of unsaved files
+        """
+        save_state = self.aug.get("/augeas/save")
+        self.aug.set("/augeas/save", "noop")
+        # Existing Errors
+        ex_errs = self.aug.match("/augeas//error")
+        try:
+            # This is a noop save
+            self.aug.save()
+        except (RuntimeError, IOError):
+            self._log_save_errors(ex_errs)
+            # Erase Save Notes
+            self.configurator.save_notes = ""
+            raise errors.PluginError(
+                "Error saving files, check logs for more info.")
+
+        # Return the original save method
+        self.aug.set("/augeas/save", save_state)
+
+        # Retrieve list of modified files
+        # Note: Noop saves can cause the file to be listed twice, I used a
+        # set to remove this possibility. This is a known augeas 0.10 error.
+        save_paths = self.aug.match("/augeas/events/saved")
+
+        save_files = set()
+        if save_paths:
+            for path in save_paths:
+                save_files.add(self.aug.get(path)[6:])
+        return save_files
+
+    def ensure_augeas_state(self):
+        """Makes sure that all Augeas dom changes are written to files to avoid
+        loss of configuration directives when doing additional augeas parsing,
+        causing a possible augeas.load() resulting dom reset
+        """
+
+        if self.unsaved_files():
+            self.configurator.save_notes += "(autosave)"
+            self.configurator.save()
+
+    def save(self, save_files):
+        """Saves all changes to the configuration files.
+
+        save() is called from ApacheConfigurator to handle the parser specific
+        tasks of saving.
+
+        :param list save_files: list of strings of file paths that we need to save.
+
+        """
+        self.configurator.save_notes = ""
+        self.aug.save()
+
+        # Force reload if files were modified
+        # This is needed to recalculate augeas directive span
+        if save_files:
+            for sf in save_files:
+                self.aug.remove("/files/"+sf)
+            self.aug.load()
+
+    def _log_save_errors(self, ex_errs):
+        """Log errors due to bad Augeas save.
+
+        :param list ex_errs: Existing errors before save
+
+        """
+        # Check for the root of save problems
+        new_errs = self.aug.match("/augeas//error")
+        # logger.error("During Save - %s", mod_conf)
+        logger.error("Unable to save files: %s. Attempted Save Notes: %s",
+                     ", ".join(err[13:len(err) - 6] for err in new_errs
+                               # Only new errors caused by recent save
+                               if err not in ex_errs), self.configurator.save_notes)
 
     def add_include(self, main_config, inc_path):
         """Add Include for a new configuration file if one does not exist
@@ -658,8 +809,7 @@ class ApacheParser(object):
         use_new, remove_old = self._check_path_actions(filepath)
         # Ensure that we have the latest Augeas DOM state on disk before
         # calling aug.load() which reloads the state from disk
-        if self.configurator:
-            self.configurator.ensure_augeas_state()
+        self.ensure_augeas_state()
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
         if use_new:

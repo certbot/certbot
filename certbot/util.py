@@ -14,6 +14,7 @@ import socket
 import subprocess
 
 import configargparse
+import distro
 import six
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
@@ -21,8 +22,8 @@ from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-
 from certbot import constants
 from certbot import errors
 from certbot import lock
-from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import filesystem
 
 logger = logging.getLogger(__name__)
 
@@ -86,18 +87,6 @@ def run_script(params, log=logger.error):
     return stdout, stderr
 
 
-def is_exe(path):
-    """Is path an executable file?
-
-    :param str path: path to test
-
-    :returns: True iff path is an executable file
-    :rtype: bool
-
-    """
-    return os.path.isfile(path) and os.access(path, os.X_OK)
-
-
 def exe_exists(exe):
     """Determine whether path/name refers to an executable.
 
@@ -109,10 +98,10 @@ def exe_exists(exe):
     """
     path, _ = os.path.split(exe)
     if path:
-        return is_exe(exe)
+        return filesystem.is_executable(exe)
     else:
         for path in os.environ["PATH"].split(os.pathsep):
-            if is_exe(os.path.join(path, exe)):
+            if filesystem.is_executable(os.path.join(path, exe)):
                 return True
 
     return False
@@ -143,12 +132,11 @@ def _release_locks():
     _LOCKS.clear()
 
 
-def set_up_core_dir(directory, mode, uid, strict):
+def set_up_core_dir(directory, mode, strict):
     """Ensure directory exists with proper permissions and is locked.
 
     :param str directory: Path to a directory.
     :param int mode: Directory mode.
-    :param int uid: Directory owner.
     :param bool strict: require directory to be owned by current user
 
     :raises .errors.LockError: if the directory cannot be locked
@@ -156,19 +144,18 @@ def set_up_core_dir(directory, mode, uid, strict):
 
     """
     try:
-        make_or_verify_dir(directory, mode, uid, strict)
+        make_or_verify_dir(directory, mode, strict)
         lock_dir_until_exit(directory)
     except OSError as error:
         logger.debug("Exception was:", exc_info=True)
         raise errors.Error(PERM_ERR_FMT.format(error))
 
 
-def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
+def make_or_verify_dir(directory, mode=0o755, strict=False):
     """Make sure directory exists with proper permissions.
 
     :param str directory: Path to a directory.
     :param int mode: Directory mode.
-    :param int uid: Directory owner.
     :param bool strict: require directory to be owned by current user
 
     :raises .errors.Error: if a directory already exists,
@@ -180,50 +167,31 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
 
     """
     try:
-        os.makedirs(directory, mode)
+        filesystem.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
-            if strict and not check_permissions(directory, mode, uid):
+            if strict and not filesystem.check_permissions(directory, mode):
                 raise errors.Error(
-                    "%s exists, but it should be owned by user %d with"
-                    "permissions %s" % (directory, uid, oct(mode)))
+                    "%s exists, but it should be owned by current user with"
+                    " permissions %s" % (directory, oct(mode)))
         else:
             raise
 
 
-def check_permissions(filepath, mode, uid=0):
-    """Check file or directory permissions.
-
-    :param str filepath: Path to the tested file (or directory).
-    :param int mode: Expected file mode.
-    :param int uid: Expected file owner.
-
-    :returns: True if `mode` and `uid` match, False otherwise.
-    :rtype: bool
-
-    """
-    file_stat = os.stat(filepath)
-    return misc.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
-
-
-def safe_open(path, mode="w", chmod=None, buffering=None):
+def safe_open(path, mode="w", chmod=None):
     """Safely open a file.
 
     :param str path: Path to a file.
     :param str mode: Same os `mode` for `open`.
-    :param int chmod: Same as `mode` for `os.open`, uses Python defaults
+    :param int chmod: Same as `mode` for `filesystem.open`, uses Python defaults
         if ``None``.
-    :param int buffering: Same as `bufsize` for `os.fdopen`, uses Python
-        defaults if ``None``.
 
     """
     open_args = ()  # type: Union[Tuple[()], Tuple[int]]
     if chmod is not None:
         open_args = (chmod,)
     fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
-    if buffering is not None:
-        fdopen_args = (buffering,)
-    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
+    fd = filesystem.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
     return os.fdopen(fd, mode, *fdopen_args)
 
 
@@ -424,8 +392,8 @@ def get_python_os_info():
     os_type, os_ver, _ = info
     os_type = os_type.lower()
     if os_type.startswith('linux'):
-        info = platform.linux_distribution()
-        # On arch, platform.linux_distribution() is reportedly ('','',''),
+        info = _get_linux_distribution()
+        # On arch, distro.linux_distribution() is reportedly ('','',''),
         # so handle it defensively
         if info[0]:
             os_type = info[0]
@@ -455,6 +423,14 @@ def get_python_os_info():
         # Cases known to fall here: Cygwin python
         os_ver = ''
     return os_type, os_ver
+
+def _get_linux_distribution():
+    """Gets the linux distribution name from the underlying OS"""
+
+    try:
+        return platform.linux_distribution()
+    except AttributeError:
+        return distro.linux_distribution()
 
 # Just make sure we don't get pwned... Make sure that it also doesn't
 # start with a period or have two consecutive periods <- this needs to

@@ -2,7 +2,9 @@
 import logging
 import re
 import shutil
+import sys
 import tempfile
+import warnings
 
 import OpenSSL
 import pkg_resources
@@ -20,6 +22,7 @@ from certbot import interfaces
 from certbot import reverter
 from certbot import util
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.plugins.storage import PluginStorage
 
 logger = logging.getLogger(__name__)
@@ -196,10 +199,18 @@ class Installer(Plugin):
             the checkpoints directories.
 
         """
-        try:
-            self.reverter.view_config_changes()
-        except errors.ReverterError as err:
-            raise errors.PluginError(str(err))
+        warnings.warn(
+            "The view_config_changes method is no longer part of Certbot's"
+            " plugin interface, has been deprecated, and will be removed in a"
+            " future release.", DeprecationWarning, stacklevel=2)
+        with warnings.catch_warnings():
+            # Don't let the reverter code warn about this function. Calling
+            # this function in the first place is the real problem.
+            warnings.filterwarnings("ignore", ".*view_config_changes", DeprecationWarning)
+            try:
+                self.reverter.view_config_changes()
+            except errors.ReverterError as err:
+                raise errors.PluginError(str(err))
 
     @property
     def ssl_dhparams(self):
@@ -476,15 +487,15 @@ def dir_setup(test_dir, pkg):  # pragma: no cover
         link, (ex: OS X) such plugins will be confused. This function prevents
         such a case.
         """
-        return os.path.realpath(tempfile.mkdtemp(prefix))
+        return filesystem.realpath(tempfile.mkdtemp(prefix))
 
     temp_dir = expanded_tempdir("temp")
     config_dir = expanded_tempdir("config")
     work_dir = expanded_tempdir("work")
 
-    os.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
-    os.chmod(config_dir, constants.CONFIG_DIRS_MODE)
-    os.chmod(work_dir, constants.CONFIG_DIRS_MODE)
+    filesystem.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
+    filesystem.chmod(config_dir, constants.CONFIG_DIRS_MODE)
+    filesystem.chmod(work_dir, constants.CONFIG_DIRS_MODE)
 
     test_configs = pkg_resources.resource_filename(
         pkg, os.path.join("testdata", test_dir))
@@ -493,3 +504,34 @@ def dir_setup(test_dir, pkg):  # pragma: no cover
         test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
 
     return temp_dir, config_dir, work_dir
+
+
+# This class takes a similar approach to the cryptography project to deprecate attributes
+# in public modules. See the _ModuleWithDeprecation class here:
+# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
+class _TLSSNI01DeprecationModule(object):
+    """
+    Internal class delegating to a module, and displaying warnings when
+    attributes related to TLS-SNI-01 are accessed.
+    """
+    def __init__(self, module):
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr):
+        if attr == 'TLSSNI01':
+            warnings.warn('TLSSNI01 is deprecated and will be removed soon.',
+                          DeprecationWarning, stacklevel=2)
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr, value):  # pragma: no cover
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr):  # pragma: no cover
+        delattr(self._module, attr)
+
+    def __dir__(self):  # pragma: no cover
+        return ['_module'] + dir(self._module)
+
+
+# Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
+sys.modules[__name__] = _TLSSNI01DeprecationModule(sys.modules[__name__])

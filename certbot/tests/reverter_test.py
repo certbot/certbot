@@ -10,6 +10,7 @@ import six
 
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.tests import util as test_util
 
 
@@ -347,11 +348,11 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         self.assertRaises(
             errors.ReverterError, self.reverter.finalize_checkpoint, "Title")
 
-    @mock.patch("certbot.reverter.misc.os_rename")
-    def test_finalize_checkpoint_no_rename_directory(self, mock_rename):
+    @mock.patch("certbot.reverter.filesystem.replace")
+    def test_finalize_checkpoint_no_rename_directory(self, mock_replace):
 
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")
-        mock_rename.side_effect = OSError
+        mock_replace.side_effect = OSError
 
         self.assertRaises(
             errors.ReverterError, self.reverter.finalize_checkpoint, "Title")
@@ -395,19 +396,10 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
     def test_view_config_changes_bad_backups_dir(self):
         # There shouldn't be any "in progress directories when this is called
         # It must just be clean checkpoints
-        os.makedirs(os.path.join(self.config.backup_dir, "in_progress"))
+        filesystem.makedirs(os.path.join(self.config.backup_dir, "in_progress"))
 
         self.assertRaises(
             errors.ReverterError, self.reverter.view_config_changes)
-
-    def test_view_config_changes_for_logging(self):
-        self._setup_three_checkpoints()
-
-        config_changes = self.reverter.view_config_changes(for_logging=True)
-
-        self.assertTrue("First Checkpoint" in config_changes)
-        self.assertTrue("Second Checkpoint" in config_changes)
-        self.assertTrue("Third Checkpoint" in config_changes)
 
     def _setup_three_checkpoints(self):
         """Generate some finalized checkpoints."""

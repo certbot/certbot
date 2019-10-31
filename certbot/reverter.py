@@ -6,6 +6,7 @@ import shutil
 import sys
 import time
 import traceback
+import warnings
 
 import six
 import zope.component
@@ -14,8 +15,8 @@ from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import filesystem
 
 logger = logging.getLogger(__name__)
 
@@ -66,8 +67,7 @@ class Reverter(object):
         self.config = config
 
         util.make_or_verify_dir(
-            config.backup_dir, constants.CONFIG_DIRS_MODE, misc.os_geteuid(),
-            self.config.strict_permissions)
+            config.backup_dir, constants.CONFIG_DIRS_MODE, self.config.strict_permissions)
 
     def revert_temporary_config(self):
         """Reload users original configuration files after a temporary save.
@@ -131,7 +131,7 @@ class Reverter(object):
                     "Unable to load checkpoint during rollback")
             rollback -= 1
 
-    def view_config_changes(self, for_logging=False, num=None):
+    def view_config_changes(self):
         """Displays all saved checkpoints.
 
         All checkpoints are printed by
@@ -142,10 +142,14 @@ class Reverter(object):
         :raises .errors.ReverterError: If invalid directory structure.
 
         """
+        warnings.warn(
+            "The view_config_changes method has been deprecated and will be"
+            " removed in a future release. If you were using this method to"
+            " implement the view_config_changes method of IInstaller, know that"
+            " that method has been removed from the plugin interface and is no"
+            " longer used by Certbot.", DeprecationWarning, stacklevel=2)
         backups = os.listdir(self.config.backup_dir)
         backups.sort(reverse=True)
-        if num:
-            backups = backups[:num]
         if not backups:
             logger.info("Certbot has not saved backups of your configuration")
 
@@ -179,12 +183,10 @@ class Reverter(object):
                     for path in filepaths:
                         output.append("  {0}".format(path))
 
-            output.append(os.linesep)
+            output.append('\n')
 
-        if for_logging:
-            return os.linesep.join(output)
         zope.component.getUtility(interfaces.IDisplay).notification(
-            os.linesep.join(output), force_interactive=True, pause=False)
+            '\n'.join(output), force_interactive=True, pause=False)
         return None
 
     def add_to_temp_checkpoint(self, save_files, save_notes):
@@ -221,8 +223,7 @@ class Reverter(object):
 
         """
         util.make_or_verify_dir(
-            cp_dir, constants.CONFIG_DIRS_MODE, misc.os_geteuid(),
-            self.config.strict_permissions)
+            cp_dir, constants.CONFIG_DIRS_MODE, self.config.strict_permissions)
 
         op_fd, existing_filepaths = self._read_and_append(
             os.path.join(cp_dir, "FILEPATHS"))
@@ -441,8 +442,7 @@ class Reverter(object):
             cp_dir = self.config.in_progress_dir
 
         util.make_or_verify_dir(
-            cp_dir, constants.CONFIG_DIRS_MODE, misc.os_geteuid(),
-            self.config.strict_permissions)
+            cp_dir, constants.CONFIG_DIRS_MODE, self.config.strict_permissions)
 
         return cp_dir
 
@@ -500,9 +500,9 @@ class Reverter(object):
                         os.remove(path)
                     else:
                         logger.warning(
-                            "File: %s - Could not be found to be deleted %s - "
-                            "Certbot probably shut down unexpectedly",
-                            os.linesep, path)
+                            "File: %s - Could not be found to be deleted\n"
+                            " - Certbot probably shut down unexpectedly",
+                            path)
         except (IOError, OSError):
             logger.critical(
                 "Unable to remove filepaths contained within %s", file_list)
@@ -583,7 +583,7 @@ class Reverter(object):
             timestamp = self._checkpoint_timestamp()
             final_dir = os.path.join(self.config.backup_dir, timestamp)
             try:
-                misc.os_rename(self.config.in_progress_dir, final_dir)
+                filesystem.replace(self.config.in_progress_dir, final_dir)
                 return
             except OSError:
                 logger.warning("Extreme, unexpected race condition, retrying (%s)", timestamp)

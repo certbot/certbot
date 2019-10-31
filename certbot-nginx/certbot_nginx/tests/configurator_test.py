@@ -13,7 +13,6 @@ from certbot import errors
 from certbot.compat import os
 from certbot.tests import util as certbot_test_util
 
-from certbot_nginx import constants
 from certbot_nginx import obj
 from certbot_nginx import parser
 from certbot_nginx.configurator import _redirect_block_for_domain
@@ -396,6 +395,68 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertRaises(errors.PluginError, self.config.get_version)
 
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
+    def test_get_openssl_version(self, mock_popen):
+        # pylint: disable=protected-access
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2g  1 Mar 2016
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2g")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2-beta1  1 Mar 2016
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2-beta1")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2  1 Mar 2016
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2g  1 Mar 2016 (running with OpenSSL 1.0.2a  1 Mar 2016)
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2a")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with LibreSSL 2.2.2
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "")
+
+    @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_nginx_restart(self, mock_popen):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')
@@ -427,11 +488,6 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_recovery_routine_throws_error_from_reverter(self, mock_recovery_routine):
         mock_recovery_routine.side_effect = errors.ReverterError("foo")
         self.assertRaises(errors.PluginError, self.config.recovery_routine)
-
-    @mock.patch("certbot.reverter.Reverter.view_config_changes")
-    def test_view_config_changes_throws_error_from_reverter(self, mock_view_config_changes):
-        mock_view_config_changes.side_effect = errors.ReverterError("foo")
-        self.assertRaises(errors.PluginError, self.config.view_config_changes)
 
     @mock.patch("certbot.reverter.Reverter.rollback_checkpoints")
     def test_rollback_checkpoints_throws_error_from_reverter(self, mock_rollback_checkpoints):
@@ -883,12 +939,11 @@ class InstallSslOptionsConfTest(util.NginxTest):
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
     def _call(self):
-        from certbot_nginx.configurator import install_ssl_options_conf
-        install_ssl_options_conf(self.config.mod_ssl_conf, self.config.updated_mod_ssl_conf_digest)
+        self.config.install_ssl_options_conf(self.config.mod_ssl_conf,
+            self.config.updated_mod_ssl_conf_digest)
 
     def _current_ssl_options_hash(self):
-        from certbot_nginx.constants import MOD_SSL_CONF_SRC
-        return crypto_util.sha256sum(MOD_SSL_CONF_SRC)
+        return crypto_util.sha256sum(self.config.mod_ssl_conf_src)
 
     def _assert_current_file(self):
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
@@ -908,10 +963,29 @@ class InstallSslOptionsConfTest(util.NginxTest):
         self._call()
         self._assert_current_file()
 
+    def _mock_hash_except_ssl_conf_src(self, fake_hash):
+        # Write a bad file in place so that update tests fail if no update occurs.
+        # We're going to pretend this file (the currently installed conf file)
+        # actually hashes to `fake_hash` for the update tests.
+        with open(self.config.mod_ssl_conf, "w") as f:
+            f.write("bogus")
+        sha256 = crypto_util.sha256sum
+        def _hash(filename):
+            return sha256(filename) if filename == self.config.mod_ssl_conf_src else fake_hash
+        return _hash
+
     def test_prev_file_updates_to_current(self):
         from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
-        with mock.patch('certbot.crypto_util.sha256sum') as mock_sha256:
-            mock_sha256.return_value = ALL_SSL_OPTIONS_HASHES[0]
+        with mock.patch('certbot.crypto_util.sha256sum',
+                new=self._mock_hash_except_ssl_conf_src(ALL_SSL_OPTIONS_HASHES[0])):
+            self._call()
+        self._assert_current_file()
+
+    def test_prev_file_updates_to_current_old_nginx(self):
+        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
+        self.config.version = (1, 5, 8)
+        with mock.patch('certbot.crypto_util.sha256sum',
+                new=self._mock_hash_except_ssl_conf_src(ALL_SSL_OPTIONS_HASHES[0])):
             self._call()
         self._assert_current_file()
 
@@ -922,7 +996,7 @@ class InstallSslOptionsConfTest(util.NginxTest):
             self._call()
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
-        self.assertEqual(crypto_util.sha256sum(constants.MOD_SSL_CONF_SRC),
+        self.assertEqual(crypto_util.sha256sum(self.config.mod_ssl_conf_src),
             self._current_ssl_options_hash())
         self.assertNotEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
             self._current_ssl_options_hash())
@@ -937,7 +1011,7 @@ class InstallSslOptionsConfTest(util.NginxTest):
             self.assertEqual(mock_logger.warning.call_args[0][0],
                 "%s has been manually modified; updated file "
                 "saved to %s. We recommend updating %s for security purposes.")
-        self.assertEqual(crypto_util.sha256sum(constants.MOD_SSL_CONF_SRC),
+        self.assertEqual(crypto_util.sha256sum(self.config.mod_ssl_conf_src),
             self._current_ssl_options_hash())
         # only print warning once
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
@@ -949,6 +1023,51 @@ class InstallSslOptionsConfTest(util.NginxTest):
         self.assertTrue(self._current_ssl_options_hash() in ALL_SSL_OPTIONS_HASHES,
             "Constants.ALL_SSL_OPTIONS_HASHES must be appended"
             " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
+
+    def test_ssl_config_files_hash_in_all_hashes(self):
+        """
+        It is really critical that all TLS Nginx config files have their SHA256 hash registered in
+        constants.ALL_SSL_OPTIONS_HASHES. Otherwise Certbot will mistakenly assume that the config
+        file has been manually edited by the user, and will refuse to update it.
+        This test ensures that all necessary hashes are present.
+        """
+        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
+        import pkg_resources
+        all_files = [
+            pkg_resources.resource_filename("certbot_nginx", os.path.join("tls_configs", x))
+            for x in ("options-ssl-nginx.conf",
+                      "options-ssl-nginx-old.conf",
+                      "options-ssl-nginx-tls12-only.conf")
+        ]
+        self.assertTrue(all_files)
+        for one_file in all_files:
+            file_hash = crypto_util.sha256sum(one_file)
+            self.assertTrue(file_hash in ALL_SSL_OPTIONS_HASHES,
+                            "Constants.ALL_SSL_OPTIONS_HASHES must be appended with the sha256 "
+                            "hash of {0} when it is updated.".format(one_file))
+
+    def test_nginx_version_uses_correct_config(self):
+        self.config.version = (1, 5, 8)
+        self.config.openssl_version = "1.0.2g" # shouldn't matter
+        self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
+                         "options-ssl-nginx-old.conf")
+        self._call()
+        self._assert_current_file()
+        self.config.version = (1, 5, 9)
+        self.config.openssl_version = "1.0.2l"
+        self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
+                         "options-ssl-nginx-tls12-only.conf")
+        self._call()
+        self._assert_current_file()
+        self.config.version = (1, 13, 0)
+        self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
+                         "options-ssl-nginx.conf")
+        self._call()
+        self._assert_current_file()
+        self.config.version = (1, 13, 0)
+        self.config.openssl_version = "1.0.2k"
+        self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
+                         "options-ssl-nginx-tls13-session-tix-on.conf")
 
 
 class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):

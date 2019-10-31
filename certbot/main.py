@@ -31,6 +31,7 @@ from certbot import reporter
 from certbot import storage
 from certbot import updater
 from certbot import util
+from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import util as display_util, ops as display_ops
@@ -671,7 +672,7 @@ def register(config, unused_plugins):
     # delete the true case of if block
     if config.update_registration:
         msg = ("Usage 'certbot register --update-registration' is deprecated.\n"
-               "Please use 'cerbot update_account [options]' instead.\n")
+               "Please use 'certbot update_account [options]' instead.\n")
         logger.warning(msg)
         return update_account(config, unused_plugins)
 
@@ -841,12 +842,12 @@ def _populate_from_certname(config):
     return config
 
 def _check_certificate_and_key(config):
-    if not os.path.isfile(os.path.realpath(config.cert_path)):
+    if not os.path.isfile(filesystem.realpath(config.cert_path)):
         raise errors.ConfigurationError("Error while reading certificate from path "
-                                       "{0}".format(config.cert_path))
-    if not os.path.isfile(os.path.realpath(config.key_path)):
+                                        "{0}".format(config.cert_path))
+    if not os.path.isfile(filesystem.realpath(config.key_path)):
         raise errors.ConfigurationError("Error while reading private key from path "
-                                       "{0}".format(config.key_path))
+                                        "{0}".format(config.key_path))
 def plugins_cmd(config, plugins):
     """List server software plugins.
 
@@ -976,7 +977,9 @@ def config_changes(config, unused_plugins):
     :rtype: None
 
     """
-    client.view_config_changes(config, num=config.num)
+    logger.warning("The config_changes subcommand has been deprecated"
+                   " and will be removed in a future release.")
+    client.view_config_changes(config)
 
 def update_symlinks(config, unused_plugins):
     """Update the certificate file family symlinks
@@ -1296,18 +1299,14 @@ def make_or_verify_needed_dirs(config):
     :rtype: None
 
     """
-    util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                         misc.os_geteuid(), config.strict_permissions)
-    util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                         misc.os_geteuid(), config.strict_permissions)
+    util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE, config.strict_permissions)
+    util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE, config.strict_permissions)
 
     hook_dirs = (config.renewal_pre_hooks_dir,
                  config.renewal_deploy_hooks_dir,
                  config.renewal_post_hooks_dir,)
     for hook_dir in hook_dirs:
-        util.make_or_verify_dir(hook_dir,
-                                uid=misc.os_geteuid(),
-                                strict=config.strict_permissions)
+        util.make_or_verify_dir(hook_dir, strict=config.strict_permissions)
 
 
 def set_displayer(config):
@@ -1359,7 +1358,7 @@ def main(cli_args=None):
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
-    misc.raise_for_non_administrative_windows_rights(config.verb)
+    misc.raise_for_non_administrative_windows_rights()
 
     try:
         log.post_arg_parse_setup(config)
@@ -1368,6 +1367,10 @@ def main(cli_args=None):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:
             raise
+
+    if sys.version_info[:2] == (3, 4):
+        logger.warning("Python 3.4 support will be dropped in the next release "
+                    "of Certbot - please upgrade your Python version.")
 
     set_displayer(config)
 

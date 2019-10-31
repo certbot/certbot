@@ -9,6 +9,7 @@ from acme import challenges
 
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
@@ -23,7 +24,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.dns_achall_2 = acme_util.DNS01_A_2
         self.achalls = [self.http_achall, self.dns_achall, self.dns_achall_2]
         for d in ["config_dir", "work_dir", "in_progress"]:
-            os.mkdir(os.path.join(self.tempdir, d))
+            filesystem.mkdir(os.path.join(self.tempdir, d))
             # "backup_dir" and "temp_checkpoint_dir" get created in
             # certbot.util.make_or_verify_dir() during the Reverter
             # initialization.

@@ -1,0 +1,32 @@
+jobs:
+  - job: installer
+    pool:
+      vmImage: vs2017-win2016
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.7
+          architecture: x86
+          addToPath: true
+      - script: python windows-installer/construct.py
+        displayName: Build Certbot installer
+      - task: CopyFiles@2
+        inputs:
+          sourceFolder: $(System.DefaultWorkingDirectory)/windows-installer/build/nsis
+          contents: '*.exe'
+          targetFolder: $(Build.ArtifactStagingDirectory)
+      - task: PublishPipelineArtifact@1
+        inputs:
+          path: $(Build.ArtifactStagingDirectory)
+          artifact: windows-installer
+        displayName: Publish Windows installer
+      - script: $(Build.ArtifactStagingDirectory)\certbot-beta-installer-win32.exe /S
+        displayName: Install Certbot
+      - script: |
+          python -m venv venv
+          venv\Scripts\python tools\pip_install.py -e certbot-ci
+        displayName: Prepare Certbot-CI
+      - script: |
+          set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
+          venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
+        displayName: Run integration tests

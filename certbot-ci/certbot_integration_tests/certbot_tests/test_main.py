@@ -5,13 +5,17 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from os.path import join, exists
 
 import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.certbot_tests.assertions import (
-    assert_hook_execution, assert_saved_renew_hook, assert_cert_count_for_lineage,
-    assert_world_permissions, assert_equals_group_owner, assert_equals_permissions,
+    assert_hook_execution, assert_saved_renew_hook,
+    assert_cert_count_for_lineage,
+    assert_world_no_permissions, assert_world_read_permissions,
+    assert_equals_group_owner, assert_equals_group_permissions, assert_equals_world_read_permissions,
+    EVERYBODY_SID
 )
 from certbot_integration_tests.utils import misc
 
@@ -83,9 +87,9 @@ def test_http_01(context):
         context.certbot([
             '--domains', certname, '--preferred-challenges', 'http-01', 'run',
             '--cert-name', certname,
-            '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
-            '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
-            '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
+            '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
+            '--post-hook', misc.echo('wtf_post', context.hook_probe),
+            '--deploy-hook', misc.echo('deploy', context.hook_probe),
         ])
 
     assert_hook_execution(context.hook_probe, 'deploy')
@@ -103,9 +107,9 @@ def test_manual_http_auth(context):
             '--cert-name', certname,
             '--manual-auth-hook', scripts[0],
             '--manual-cleanup-hook', scripts[1],
-            '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
-            '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
-            '--renew-hook', 'echo renew >> "{0}"'.format(context.hook_probe)
+            '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
+            '--post-hook', misc.echo('wtf_post', context.hook_probe),
+            '--renew-hook', misc.echo('renew', context.hook_probe),
         ])
 
     with pytest.raises(AssertionError):
@@ -121,9 +125,9 @@ def test_manual_dns_auth(context):
         'run', '--cert-name', certname,
         '--manual-auth-hook', context.manual_dns_auth_hook,
         '--manual-cleanup-hook', context.manual_dns_cleanup_hook,
-        '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
-        '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
-        '--renew-hook', 'echo renew >> "{0}"'.format(context.hook_probe)
+        '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
+        '--post-hook', misc.echo('wtf_post', context.hook_probe),
+        '--renew-hook', misc.echo('renew', context.hook_probe),
     ])
 
     with pytest.raises(AssertionError):
@@ -172,21 +176,19 @@ def test_renew_files_permissions(context):
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
+    privkey1 = join(context.config_dir, 'archive', certname, 'privkey1.pem')
+    privkey2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
+
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
-    assert_world_permissions(
-        join(context.config_dir, 'archive', certname, 'privkey1.pem'), 0)
+    assert_world_no_permissions(privkey1)
 
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
-    assert_world_permissions(
-        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0)
-    assert_equals_group_owner(
-        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
-        join(context.config_dir, 'archive', certname, 'privkey2.pem'))
-    assert_equals_permissions(
-        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
-        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
+    assert_world_no_permissions(privkey2)
+    assert_equals_group_owner(privkey1, privkey2)
+    assert_equals_world_read_permissions(privkey1, privkey2)
+    assert_equals_group_permissions(privkey1, privkey2)
 
 
 def test_renew_with_hook_scripts(context):
@@ -210,15 +212,35 @@ def test_renew_files_propagate_permissions(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    os.chmod(join(context.config_dir, 'archive', certname, 'privkey1.pem'), 0o444)
+    privkey1 = join(context.config_dir, 'archive', certname, 'privkey1.pem')
+    privkey2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
+
+    if os.name != 'nt':
+        os.chmod(privkey1, 0o444)
+    else:
+        import win32security
+        import ntsecuritycon
+        # Get the current DACL of the private key
+        security = win32security.GetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION)
+        dacl = security.GetSecurityDescriptorDacl()
+        # Create a read permission for Everybody group
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+        dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_GENERIC_READ, everybody)
+        # Apply the updated DACL to the private key
+        security.SetSecurityDescriptorDacl(1, dacl, 0)
+        win32security.SetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION, security)
+
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
-    assert_world_permissions(
-        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 4)
-    assert_equals_permissions(
-        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
-        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
+    if os.name != 'nt':
+        # On Linux, read world permissions + all group permissions will be copied from the previous private key
+        assert_world_read_permissions(privkey2)
+        assert_equals_world_read_permissions(privkey1, privkey2)
+        assert_equals_group_permissions(privkey1, privkey2)
+    else:
+        # On Windows, world will never have any permissions, and group permission is irrelevant for this platform
+        assert_world_no_permissions(privkey2)
 
 
 def test_graceful_renew_it_is_not_time(context):
@@ -228,8 +250,8 @@ def test_graceful_renew_it_is_not_time(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    context.certbot_no_force_renew([
-        'renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)])
+    context.certbot(['renew', '--deploy-hook', misc.echo('deploy', context.hook_probe)],
+                    force_renew=False)
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
     with pytest.raises(AssertionError):
@@ -249,8 +271,8 @@ def test_graceful_renew_it_is_time(context):
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)), 'w') as file:
         file.writelines(lines)
 
-    context.certbot_no_force_renew([
-        'renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)])
+    context.certbot(['renew', '--deploy-hook', misc.echo('deploy', context.hook_probe)],
+                    force_renew=False)
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_hook_execution(context.hook_probe, 'deploy')
@@ -316,9 +338,9 @@ def test_renew_hook_override(context):
     context.certbot([
         'certonly', '-d', certname,
         '--preferred-challenges', 'http-01',
-        '--pre-hook', 'echo pre >> "{0}"'.format(context.hook_probe),
-        '--post-hook', 'echo post >> "{0}"'.format(context.hook_probe),
-        '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
+        '--pre-hook', misc.echo('pre', context.hook_probe),
+        '--post-hook', misc.echo('post', context.hook_probe),
+        '--deploy-hook', misc.echo('deploy', context.hook_probe),
     ])
 
     assert_hook_execution(context.hook_probe, 'pre')
@@ -329,14 +351,14 @@ def test_renew_hook_override(context):
     open(context.hook_probe, 'w').close()
     context.certbot([
         'renew', '--cert-name', certname,
-        '--pre-hook', 'echo pre-override >> "{0}"'.format(context.hook_probe),
-        '--post-hook', 'echo post-override >> "{0}"'.format(context.hook_probe),
-        '--deploy-hook', 'echo deploy-override >> "{0}"'.format(context.hook_probe)
+        '--pre-hook', misc.echo('pre_override', context.hook_probe),
+        '--post-hook', misc.echo('post_override', context.hook_probe),
+        '--deploy-hook', misc.echo('deploy_override', context.hook_probe),
     ])
 
-    assert_hook_execution(context.hook_probe, 'pre-override')
-    assert_hook_execution(context.hook_probe, 'post-override')
-    assert_hook_execution(context.hook_probe, 'deploy-override')
+    assert_hook_execution(context.hook_probe, 'pre_override')
+    assert_hook_execution(context.hook_probe, 'post_override')
+    assert_hook_execution(context.hook_probe, 'deploy_override')
     with pytest.raises(AssertionError):
         assert_hook_execution(context.hook_probe, 'pre')
     with pytest.raises(AssertionError):
@@ -348,11 +370,11 @@ def test_renew_hook_override(context):
     open(context.hook_probe, 'w').close()
     context.certbot(['renew', '--cert-name', certname])
 
-    assert_hook_execution(context.hook_probe, 'pre-override')
-    assert_hook_execution(context.hook_probe, 'post-override')
-    assert_hook_execution(context.hook_probe, 'deploy-override')
+    assert_hook_execution(context.hook_probe, 'pre_override')
+    assert_hook_execution(context.hook_probe, 'post_override')
+    assert_hook_execution(context.hook_probe, 'deploy_override')
 
-    
+
 def test_invalid_domain_with_dns_challenge(context):
     """Test certificate issuance failure with DNS-01 challenge."""
     # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
@@ -511,7 +533,7 @@ def test_revoke_multiple_lineages(context):
         data = file.read()
 
     data = re.sub('archive_dir = .*\n',
-                  'archive_dir = {0}\n'.format(join(context.config_dir, 'archive', cert1)),
+                  'archive_dir = {0}\n'.format(join(context.config_dir, 'archive', cert1).replace('\\', '\\\\')),
                   data)
 
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'w') as file:
@@ -554,11 +576,9 @@ def test_ocsp_status_stale(context):
 
 def test_ocsp_status_live(context):
     """Test retrieval of OCSP statuses for live config"""
-    if context.acme_server == 'pebble':
-        pytest.skip('Pebble does not support OCSP status requests.')
+    cert = context.get_domain('ocsp-check')
 
     # OSCP 1: Check live certificate OCSP status (VALID)
-    cert = context.get_domain('ocsp-check')
     context.certbot(['--domains', cert])
     output = context.certbot(['certificates'])
 
@@ -567,6 +587,9 @@ def test_ocsp_status_live(context):
 
     # OSCP 2: Check live certificate OCSP status (REVOKED)
     context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
+    # Sometimes in oldest tests (using openssl binary and not cryptography), the OCSP status is
+    # not seen immediately by Certbot as invalid. Waiting few seconds solves this transient issue.
+    time.sleep(5)
     output = context.certbot(['certificates'])
 
     assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)

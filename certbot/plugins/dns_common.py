@@ -2,7 +2,6 @@
 
 import abc
 import logging
-import stat
 from time import sleep
 
 import configobj
@@ -12,6 +11,7 @@ from acme import challenges
 
 from certbot import errors
 from certbot import interfaces
+from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import ops
 from certbot.display import util as display_util
@@ -303,8 +303,8 @@ def validate_file(filename):
     if not os.path.exists(filename):
         raise errors.PluginError('File not found: {0}'.format(filename))
 
-    if not os.path.isfile(filename):
-        raise errors.PluginError('Path is not a file: {0}'.format(filename))
+    if os.path.isdir(filename):
+        raise errors.PluginError('Path is a directory: {0}'.format(filename))
 
 
 def validate_file_permissions(filename):
@@ -312,8 +312,7 @@ def validate_file_permissions(filename):
 
     validate_file(filename)
 
-    permissions = stat.S_IMODE(os.stat(filename).st_mode)
-    if permissions & stat.S_IRWXO:
+    if filesystem.has_world_permissions(filename):
         logger.warning('Unsafe permissions on credentials configuration file: %s', filename)
 
 

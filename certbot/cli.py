@@ -96,10 +96,10 @@ manage certificates:
     revoke          Revoke a certificate (supply --cert-path or --cert-name)
     delete          Delete a certificate
 
-manage your account with Let's Encrypt:
-    register        Create a Let's Encrypt ACME account
-    unregister      Deactivate a Let's Encrypt ACME account
-    update_account  Update a Let's Encrypt ACME account
+manage your account:
+    register        Create an ACME account
+    unregister      Deactivate an ACME account
+    update_account  Update an ACME account
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 """
@@ -161,24 +161,6 @@ def report_config_interaction(modified, modifiers):
 
     for var in modified:
         VAR_MODIFIERS.setdefault(var, set()).update(modifiers)
-
-
-def possible_deprecation_warning(config):
-    "A deprecation warning for users with the old, not-self-upgrading letsencrypt-auto."
-    if cli_command != LEAUTO:
-        return
-    if config.no_self_upgrade:
-        # users setting --no-self-upgrade might be hanging on a client version like 0.3.0
-        # or 0.5.0 which is the new script, but doesn't set CERTBOT_AUTO; they don't
-        # need warnings
-        return
-    if "CERTBOT_AUTO" not in os.environ:
-        logger.warning("You are running with an old copy of letsencrypt-auto"
-            " that does not receive updates, and is less reliable than more"
-            " recent versions. The letsencrypt client has also been renamed"
-            " to Certbot. We recommend upgrading to the latest certbot-auto"
-            " script, or using native OS packages.")
-        logger.debug("Deprecation warning circumstances: %s / %s", sys.argv[0], os.environ)
 
 
 class _Default(object):
@@ -418,8 +400,8 @@ VERB_HELP = [
     }),
     ("config_changes", {
         "short": "Show changes that Certbot has made to server configurations",
-        "opts": "Options for controlling which changes are displayed",
-        "usage": "\n\n  certbot config_changes --num NUM [options]\n\n"
+        "opts": "Options for viewing configuration changes",
+        "usage": "\n\n  certbot config_changes [options]\n\n"
     }),
     ("rollback", {
         "short": "Roll back server conf changes made during certificate installation",
@@ -428,7 +410,7 @@ VERB_HELP = [
     }),
     ("plugins", {
         "short": "List plugins that are installed and available on your system",
-        "opts": 'Options for for the "plugins" subcommand',
+        "opts": 'Options for the "plugins" subcommand',
         "usage": "\n\n  certbot plugins [options]\n\n"
     }),
     ("update_symlinks", {
@@ -642,20 +624,25 @@ class HelpfulArgumentParser(object):
             raise errors.Error(
                 "Parameters --hsts and --auto-hsts cannot be used simultaneously.")
 
-        possible_deprecation_warning(parsed_args)
-
         return parsed_args
 
     def set_test_server(self, parsed_args):
         """We have --staging/--dry-run; perform sanity check and set config.server"""
 
-        if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
-            conflicts = ["--staging"] if parsed_args.staging else []
-            conflicts += ["--dry-run"] if parsed_args.dry_run else []
-            raise errors.Error("--server value conflicts with {0}".format(
-                " and ".join(conflicts)))
+        # Flag combinations should produce these results:
+        #                             | --staging      | --dry-run   |
+        # ------------------------------------------------------------
+        # | --server acme-v02         | Use staging    | Use staging |
+        # | --server acme-staging-v02 | Use staging    | Use staging |
+        # | --server <other>          | Conflict error | Use <other> |
 
-        parsed_args.server = constants.STAGING_URI
+        default_servers = (flag_default("server"), constants.STAGING_URI)
+
+        if parsed_args.staging and parsed_args.server not in default_servers:
+            raise errors.Error("--server value conflicts with --staging")
+
+        if parsed_args.server in default_servers:
+            parsed_args.server = constants.STAGING_URI
 
         if parsed_args.dry_run:
             if self.verb not in ["certonly", "renew"]:
@@ -751,9 +738,10 @@ class HelpfulArgumentParser(object):
         """Add a new command line argument.
 
         :param topics: str or [str] help topic(s) this should be listed under,
-                       or None for "always documented". The first entry
-                       determines where the flag lives in the "--help all"
-                       output (None -> "optional arguments").
+                       or None for options that don't fit under a specific
+                       topic which will only be shown in "--help all" output.
+                       The first entry determines where the flag lives in the
+                       "--help all" output (None -> "optional arguments").
         :param list *args: the names of this argument flag
         :param dict **kwargs: various argparse settings for this argument
 
@@ -1288,9 +1276,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 
 
 def _create_subparsers(helpful):
-    helpful.add("config_changes", "--num", type=int, default=flag_default("num"),
-                help="How many past revisions you want to be displayed")
-
     from certbot.client import sample_user_agent # avoid import loops
     helpful.add(
         None, "--user-agent", default=flag_default("user_agent"),
@@ -1420,10 +1405,10 @@ def _plugins_parsing(helpful, plugins):
                 help="Authenticator plugin name.")
     helpful.add("plugins", "-i", "--installer", default=flag_default("installer"),
                 help="Installer plugin name (also used to find domains).")
-    helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
+    helpful.add(["plugins", "certonly", "run", "install"],
                 "--apache", action="store_true", default=flag_default("apache"),
                 help="Obtain and install certificates using Apache")
-    helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
+    helpful.add(["plugins", "certonly", "run", "install"],
                 "--nginx", action="store_true", default=flag_default("nginx"),
                 help="Obtain and install certificates using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
@@ -1453,7 +1438,7 @@ def _plugins_parsing(helpful, plugins):
                       "using DNSimple for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-dnsmadeeasy", action="store_true",
                 default=flag_default("dns_dnsmadeeasy"),
-                help=("Obtain certificates using a DNS TXT record (if you are"
+                help=("Obtain certificates using a DNS TXT record (if you are "
                       "using DNS Made Easy for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-gehirn", action="store_true",
                 default=flag_default("dns_gehirn"),

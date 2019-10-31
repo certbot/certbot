@@ -1,4 +1,8 @@
 #!/bin/sh -xe
+#
+# This script is useful for testing that the packages we've built for a release
+# work on a variety of systems. For an example of the kinds of problems that
+# can occur, see https://github.com/certbot/certbot/issues/3455.
 
 REPO_ROOT="letsencrypt"
 LE_AUTO="$REPO_ROOT/letsencrypt-auto-source/letsencrypt-auto"

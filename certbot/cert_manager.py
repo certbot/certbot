@@ -15,7 +15,6 @@ from certbot import interfaces
 from certbot import ocsp
 from certbot import storage
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import util as display_util
 
@@ -106,7 +105,7 @@ def lineage_for_certname(cli_config, certname):
     """Find a lineage object with name certname."""
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=misc.os_geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755)
     try:
         renewal_file = storage.renewal_file_for_certname(cli_config, certname)
     except errors.CertStorageError:
@@ -263,7 +262,7 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
         reasons.append('TEST_CERT')
     if cert.target_expiry <= now:
         reasons.append('EXPIRED')
-    if checker.ocsp_revoked(cert.cert, cert.chain):
+    elif checker.ocsp_revoked(cert):
         reasons.append('REVOKED')
 
     if reasons:
@@ -375,7 +374,7 @@ def _search_lineages(cli_config, func, initial_rv, *args):
     """
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=misc.os_geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755)
 
     rv = initial_rv
     for renewal_file in storage.renewal_conf_files(cli_config):

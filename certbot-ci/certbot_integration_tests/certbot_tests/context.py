@@ -1,12 +1,11 @@
 """Module to handle the context of integration tests."""
+import logging
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
-from distutils.version import LooseVersion
 
-from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils import certbot_call
 
 
 class IntegrationTestsContext(object):
@@ -21,7 +20,7 @@ class IntegrationTestsContext(object):
             self.worker_id = 'primary'
             acme_xdist = request.config.acme_xdist
 
-        self.acme_server =acme_xdist['acme_server']
+        self.acme_server = acme_xdist['acme_server']
         self.directory_url = acme_xdist['directory_url']
         self.tls_alpn_01_port = acme_xdist['https_port'][self.worker_id]
         self.http_01_port = acme_xdist['http_port'][self.worker_id]
@@ -30,14 +29,12 @@ class IntegrationTestsContext(object):
         # is listening on challtestsrv_port.
         self.challtestsrv_port = acme_xdist['challtestsrv_port']
 
-        # Certbot version does not depend on the test context. But getting its value requires
-        # calling certbot from a subprocess. Since it will be called a lot of times through
-        # _common_test_no_force_renew, we cache its value as a member of the fixture context.
-        self.certbot_version = misc.get_certbot_version()
-
         self.workspace = tempfile.mkdtemp()
         self.config_dir = os.path.join(self.workspace, 'conf')
-        self.hook_probe = tempfile.mkstemp(dir=self.workspace)[1]
+
+        probe = tempfile.mkstemp(dir=self.workspace)
+        os.close(probe[0])
+        self.hook_probe = probe[1]
 
         self.manual_dns_auth_hook = (
             '{0} -c "import os; import requests; import json; '
@@ -60,71 +57,18 @@ class IntegrationTestsContext(object):
         """Cleanup the integration test context."""
         shutil.rmtree(self.workspace)
 
-    def _common_test_no_force_renew(self, args):
-        """
-        Base command to execute certbot in a distributed integration test context,
-        not renewing certificates by default.
-        """
-        new_environ = os.environ.copy()
-        new_environ['TMPDIR'] = self.workspace
-
-        additional_args = []
-        if self.certbot_version >= LooseVersion('0.30.0'):
-            additional_args.append('--no-random-sleep-on-renew')
-
-        command = [
-            'certbot',
-            '--server', self.directory_url,
-            '--no-verify-ssl',
-            '--http-01-port', str(self.http_01_port),
-            '--https-port', str(self.tls_alpn_01_port),
-            '--manual-public-ip-logging-ok',
-            '--config-dir', self.config_dir,
-            '--work-dir', os.path.join(self.workspace, 'work'),
-            '--logs-dir', os.path.join(self.workspace, 'logs'),
-            '--non-interactive',
-            '--no-redirect',
-            '--agree-tos',
-            '--register-unsafely-without-email',
-            '--debug',
-            '-vv'
-        ]
-
-        command.extend(args)
-        command.extend(additional_args)
-
-        print('Invoke command:\n{0}'.format(subprocess.list2cmdline(command)))
-        return subprocess.check_output(command, universal_newlines=True,
-                                       cwd=self.workspace, env=new_environ)
-
-    def _common_test(self, args):
-        """
-        Base command to execute certbot in a distributed integration test context,
-        renewing certificates by default.
-        """
-        command = ['--renew-by-default']
-        command.extend(args)
-        return self._common_test_no_force_renew(command)
-
-    def certbot_no_force_renew(self, args):
+    def certbot(self, args, force_renew=True):
         """
         Execute certbot with given args, not renewing certificates by default.
         :param args: args to pass to certbot
+        :param force_renew: set to False to not renew by default
         :return: output of certbot execution
         """
         command = ['--authenticator', 'standalone', '--installer', 'null']
         command.extend(args)
-        return self._common_test_no_force_renew(command)
-
-    def certbot(self, args):
-        """
-        Execute certbot with given args, renewing certificates by default.
-        :param args: args to pass to certbot
-        :return: output of certbot execution
-        """
-        command = ['--renew-by-default']
-        command.extend(args)
-        return self.certbot_no_force_renew(command)
+        return certbot_call.certbot_test(
+            command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
+            self.config_dir, self.workspace, force_renew=force_renew)
 
     def get_domain(self, subdomain='le'):
         """

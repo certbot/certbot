@@ -5,7 +5,6 @@
 """
 import logging
 import shutil
-import stat
 import sys
 import tempfile
 import unittest
@@ -27,6 +26,7 @@ from certbot import lock
 from certbot import storage
 from certbot import util
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.display import util as display_util
 
 
@@ -94,26 +94,6 @@ def load_pyopenssl_private_key(*names):
     return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
 
 
-def skip_unless(condition, reason):  # pragma: no cover
-    """Skip tests unless a condition holds.
-
-    This implements the basic functionality of unittest.skipUnless
-    which is only available on Python 2.7+.
-
-    :param bool condition: If ``False``, the test will be skipped
-    :param str reason: the reason for skipping the test
-
-    :rtype: callable
-    :returns: decorator that hides tests unless condition is ``True``
-
-    """
-    if hasattr(unittest, "skipUnless"):
-        return unittest.skipUnless(condition, reason)
-    elif condition:
-        return lambda cls: cls
-    return lambda cls: None
-
-
 def make_lineage(config_dir, testfile):
     """Creates a lineage defined by testfile.
 
@@ -138,7 +118,7 @@ def make_lineage(config_dir, testfile):
 
     for directory in (archive_dir, conf_dir, live_dir,):
         if not os.path.exists(directory):
-            os.makedirs(directory)
+            filesystem.makedirs(directory)
 
     sample_archive = vector_path('sample-archive')
     for kind in os.listdir(sample_archive):
@@ -338,11 +318,7 @@ class TempDirTestCase(unittest.TestCase):
         logging.getLogger().handlers = []
         util._release_locks()  # pylint: disable=protected-access
 
-        def handle_rw_files(_, path, __):
-            """Handle read-only files, that will fail to be removed on Windows."""
-            os.chmod(path, stat.S_IWRITE)
-            os.remove(path)
-        shutil.rmtree(self.tempdir, onerror=handle_rw_files)
+        shutil.rmtree(self.tempdir)
 
 
 class ConfigTestCase(TempDirTestCase):
@@ -413,15 +389,6 @@ def skip_on_windows(reason):
         """Wrapped version"""
         return unittest.skipIf(sys.platform == 'win32', reason)(function)
     return wrapper
-
-
-def broken_on_windows(function):
-    """Decorator to skip temporarily a broken test on Windows."""
-    reason = 'Test is broken and ignored on windows but should be fixed.'
-    return unittest.skipIf(
-        sys.platform == 'win32'
-        and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
-        reason)(function)
 
 
 def temp_join(path):

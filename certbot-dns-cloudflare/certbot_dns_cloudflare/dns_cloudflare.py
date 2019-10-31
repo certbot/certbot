@@ -10,7 +10,7 @@ from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 
-ACCOUNT_URL = 'https://www.cloudflare.com/a/account/my-account'
+ACCOUNT_URL = 'https://dash.cloudflare.com/profile/api-tokens'
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)

@@ -2,85 +2,39 @@
 This compat module handles various platform specific calls that do not fall into one
 particular category.
 """
-import ctypes
-import errno
+from __future__ import absolute_import
+
 import select
-import stat
 import sys
+
+try:
+    from win32com.shell import shell as shellwin32  # pylint: disable=import-error
+    POSIX_MODE = False
+except ImportError:  # pragma: no cover
+    POSIX_MODE = True
 
 from certbot import errors
 from certbot.compat import os
 
-UNPRIVILEGED_SUBCOMMANDS_ALLOWED = [
-    'certificates', 'enhance', 'revoke', 'delete',
-    'register', 'unregister', 'config_changes', 'plugins']
+
+# For Linux: define OS specific standard binary directories
+STANDARD_BINARY_DIRS = ["/usr/sbin", "/usr/local/bin", "/usr/local/sbin"] if POSIX_MODE else []
 
 
-def raise_for_non_administrative_windows_rights(subcommand):
+def raise_for_non_administrative_windows_rights():
+    # type: () -> None
     """
     On Windows, raise if current shell does not have the administrative rights.
     Do nothing on Linux.
 
-    :param str subcommand: The subcommand (like 'certonly') passed to the certbot client.
-
-    :raises .errors.Error: If the provided subcommand must be run on a shell with
-        administrative rights, and current shell does not have these rights.
-
+    :raises .errors.Error: If the current shell does not have administrative rights on Windows.
     """
-    # Why not simply try ctypes.windll.shell32.IsUserAnAdmin() and catch AttributeError ?
-    # Because windll exists only on a Windows runtime, and static code analysis engines
-    # do not like at all non existent objects when run from Linux (even if we handle properly
-    # all the cases in the code).
-    # So we access windll only by reflection to trick theses engines.
-    if hasattr(ctypes, 'windll') and subcommand not in UNPRIVILEGED_SUBCOMMANDS_ALLOWED:
-        windll = getattr(ctypes, 'windll')
-        if windll.shell32.IsUserAnAdmin() == 0:
-            raise errors.Error(
-                'Error, "{0}" subcommand must be run on a shell with administrative rights.'
-                .format(subcommand))
-
-
-def os_geteuid():
-    """
-    Get current user uid
-
-    :returns: The current user uid.
-    :rtype: int
-
-    """
-    try:
-        # Linux specific
-        return os.geteuid()
-    except AttributeError:
-        # Windows specific
-        return 0
-
-
-def os_rename(src, dst):
-    """
-    Rename a file to a destination path and handles situations where the destination exists.
-
-    :param str src: The current file path.
-    :param str dst: The new file path.
-    """
-    try:
-        os.rename(src, dst)
-    except OSError as err:
-        # Windows specific, renaming a file on an existing path is not possible.
-        # On Python 3, the best fallback with atomic capabilities we have is os.replace.
-        if err.errno != errno.EEXIST:
-            # Every other error is a legitimate exception.
-            raise
-        if not hasattr(os, 'replace'):  # pragma: no cover
-            # We should never go on this line. Either we are on Linux and os.rename has succeeded,
-            # either we are on Windows, and only Python >= 3.4 is supported where os.replace is
-            # available.
-            raise RuntimeError('Error: tried to run os_rename on Python < 3.3. '
-                               'Certbot supports only Python 3.4 >= on Windows.')
-        getattr(os, 'replace')(src, dst)
+    if not POSIX_MODE and shellwin32.IsUserAnAdmin() == 0:  # pragma: no cover
+        raise errors.Error('Error, certbot must be run on a shell with administrative rights.')
 
 
 def readline_with_timeout(timeout, prompt):
+    # type: (float, str) -> str
     """
     Read user input to return the first line entered, or raise after specified timeout.
 
@@ -109,16 +63,6 @@ def readline_with_timeout(timeout, prompt):
         return sys.stdin.readline()
 
 
-def compare_file_modes(mode1, mode2):
-    """Return true if the two modes can be considered as equals for this platform"""
-    if os.name != 'nt':
-        # Linux specific: standard compare
-        return oct(stat.S_IMODE(mode1)) == oct(stat.S_IMODE(mode2))
-    # Windows specific: most of mode bits are ignored on Windows. Only check user R/W rights.
-    return (stat.S_IMODE(mode1) & stat.S_IREAD == stat.S_IMODE(mode2) & stat.S_IREAD
-            and stat.S_IMODE(mode1) & stat.S_IWRITE == stat.S_IMODE(mode2) & stat.S_IWRITE)
-
-
 WINDOWS_DEFAULT_FOLDERS = {
     'config': 'C:\\Certbot',
     'work': 'C:\\Certbot\\lib',
@@ -132,6 +76,7 @@ LINUX_DEFAULT_FOLDERS = {
 
 
 def get_default_folder(folder_type):
+    # type: (str) -> str
     """
     Return the relevant default folder for the current OS
 

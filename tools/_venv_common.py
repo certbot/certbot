@@ -39,9 +39,9 @@ REQUIREMENTS = [
     '-e certbot-dns-route53',
     '-e certbot-dns-sakuracloud',
     '-e certbot-nginx',
-    '-e certbot-postfix',
     '-e letshelp-certbot',
     '-e certbot-compatibility-test',
+    '-e certbot-ci',
 ]
 
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
@@ -177,11 +177,8 @@ def prepare_venv_path(venv_name):
     return venv_name
 
 
-def install_packages(venv_name, pip_args=None):
+def install_packages(venv_name, pip_args):
     """Installs packages in the given venv.
-
-    If pip_args is given, they are the arguments given to pip,
-    otherwise, REQUIREMENTS is used.
 
     :param str venv_name: The name or path at where the virtual
         environment should be created.
@@ -190,9 +187,6 @@ def install_packages(venv_name, pip_args=None):
     :type pip_args: `list` of `str`
 
     """
-    if not pip_args:
-        pip_args = REQUIREMENTS
-
     # Using the python executable from venv, we ensure to execute following commands in this venv.
     py_venv = get_venv_python_path(venv_name)
     subprocess_with_print([py_venv, os.path.abspath('letsencrypt-auto-source/pieces/pipstrap.py')])

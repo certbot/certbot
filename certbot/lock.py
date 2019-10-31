@@ -13,6 +13,7 @@ from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name
 
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import filesystem
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,7 @@ class _UnixLockMechanism(_BaseLockMechanism):
         """Acquire the lock."""
         while self._fd is None:
             # Open the file
-            fd = os.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
+            fd = filesystem.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
             try:
                 self._try_lock(fd)
                 if self._lock_success(fd):
@@ -166,14 +167,18 @@ class _UnixLockMechanism(_BaseLockMechanism):
         :returns: True if the lock was successfully acquired
         :rtype: bool
         """
+        # Normally os module should not be imported in certbot codebase except in certbot.compat
+        # for the sake of compatibility over Windows and Linux.
+        # We make an exception here, since _lock_success is private and called only on Linux.
+        from os import stat, fstat  # pylint: disable=os-module-forbidden
         try:
-            stat1 = os.stat(self._path)
+            stat1 = stat(self._path)
         except OSError as err:
             if err.errno == errno.ENOENT:
                 return False
             raise
 
-        stat2 = os.fstat(fd)
+        stat2 = fstat(fd)
         # If our locked file descriptor and the file on disk refer to
         # the same device and inode, they're the same file.
         return stat1.st_dev == stat2.st_dev and stat1.st_ino == stat2.st_ino
@@ -223,11 +228,15 @@ class _WindowsLockMechanism(_BaseLockMechanism):
         """Acquire the lock"""
         open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
 
-        fd = os.open(self._path, open_mode, 0o600)
+        fd = None
         try:
+            # Under Windows, filesystem.open will raise directly an EACCES error
+            # if the lock file is already locked.
+            fd = filesystem.open(self._path, open_mode, 0o600)
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
         except (IOError, OSError) as err:
-            os.close(fd)
+            if fd:
+                os.close(fd)
             # Anything except EACCES is unexpected. Raise directly the error in that case.
             if err.errno != errno.EACCES:
                 raise
