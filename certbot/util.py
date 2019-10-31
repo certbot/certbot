@@ -321,7 +321,7 @@ def get_systemd_os_info():
         "a future release.", DeprecationWarning, stacklevel=2)
     return get_os_info()[:2]
 
-def get_systemd_os_like(filepath="/etc/os-release"):  # pylint: disable=unused-argument
+def get_systemd_os_like():
     """
     Get a list of strings that indicate the distribution likeness to
     other distributions.
