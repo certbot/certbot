@@ -185,22 +185,24 @@ def make_key(key_prop):
     :rtype: str
 
     """
+    key_str = ""
     if key_prop["key_type"] == "rsa":
         bits = key_prop["key_size"]
         assert bits >= 1024  # XXX
         key = crypto.PKey()
         key.generate_key(crypto.TYPE_RSA, bits)
-        return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+        key_str = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
     else:
         curve_type = key_prop["key_type"]
         assert curve_type in ec._CURVE_TYPES  # XXX
         cv = ec._CURVE_TYPES[curve_type]
         key = ec.generate_private_key(cv(), default_backend())
-        return key.private_bytes(
+        key_str =  key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption()
 	)
+    return key_str
 
 def valid_privkey(privkey):
     """Is valid RSA private key?
