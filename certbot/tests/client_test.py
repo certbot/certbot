@@ -316,8 +316,9 @@ class ClientTest(ClientTestCommon):
 
         self._test_obtain_certificate_common(mock.sentinel.key, csr)
 
+        key_prop = { "key_type": "rsa", "key_size": self.config.rsa_key_size }
         mock_crypto_util.init_save_key.assert_called_once_with(
-            self.config.rsa_key_size, self.config.key_dir)
+            key_prop, self.config.key_dir)
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, self.eg_domains, self.config.csr_dir)
         mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
@@ -353,7 +354,8 @@ class ClientTest(ClientTestCommon):
         self.client.config.dry_run = True
         self._test_obtain_certificate_common(key, csr)
 
-        mock_crypto.make_key.assert_called_once_with(self.config.rsa_key_size)
+        key_prop = { "key_type": "rsa", "key_size": self.config.rsa_key_size }
+        mock_crypto.make_key.assert_called_once_with(key_prop)
         mock_acme_crypto.make_csr.assert_called_once_with(
             mock.sentinel.key_pem, self.eg_domains, self.config.must_staple)
         mock_crypto.init_save_key.assert_not_called()

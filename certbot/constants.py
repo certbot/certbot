@@ -73,6 +73,7 @@ CLI_DEFAULTS = dict(
     random_sleep_on_renew=True,
     eab_hmac_key=None,
     eab_kid=None,
+    curve_type=None,
 
     # Subparsers
     num=None,

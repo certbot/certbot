@@ -1127,6 +1127,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     helpful.add(
+        ["testing", "certonly", "renew", "run"], "--curve-type", dest="curve_type",
+        default=flag_default("curve_type"),
+        help="EC curve type (prime256v1, ... etc.)")
+    helpful.add(
         "security", "--must-staple", action="store_true",
         dest="must_staple", default=flag_default("must_staple"),
         help=config_help("must_staple"))
