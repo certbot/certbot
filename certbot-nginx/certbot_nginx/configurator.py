@@ -629,8 +629,9 @@ class NginxConfigurator(common.Installer):
         """Generate invalid certs that let us create ssl directives for Nginx"""
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
+        key_prop = { "key_type": "rsa", "key_size": 1024 }
         le_key = crypto_util.init_save_key(
-            key_size=1024, key_dir=tmp_dir, keyname="key.pem")
+            key_prop, key_dir=tmp_dir, keyname="key.pem")
         key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
         cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
