@@ -22,6 +22,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   google-api-python-client and oauth2client.
 * certbot.plugins.common.TLSSNI01 has been deprecated and will be removed in a
   future release.
+* CLI flags --tls-sni-01-port and --tls-sni-01-address have been removed.
+* The values tls-sni and tls-sni-01 for the --preferred-challenges flag are no
+  longer accepted.
 
 ### Fixed
 
