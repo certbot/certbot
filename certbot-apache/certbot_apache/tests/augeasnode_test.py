@@ -88,6 +88,27 @@ class AugeasParserNodeTest(util.ApacheTest):
             names += servername.parameters
         self.assertTrue("going_to_set_this" in names)
 
+    def test_set_parameters_atinit(self):
+        from certbot_apache.augeasparser import AugeasDirectiveNode
+        servernames = self.config.parser_root.find_directives("servername")
+        setparam = "certbot_apache.augeasparser.AugeasDirectiveNode.set_parameters"
+        with mock.patch(setparam) as mock_set:
+            AugeasDirectiveNode(
+                name=servernames[0].name,
+                parameters=["test", "setting", "these"],
+                ancestor=assertions.PASS,
+                metadata=servernames[0].metadata
+            )
+            self.assertTrue(mock_set.called)
+            self.assertEqual(
+                mock_set.call_args_list[0][0][0],
+                ["test", "setting", "these"]
+            )
+
+    def test_set_parameters_error(self):
+        with self.assertRaises(TypeError):
+            self.config.parser_root.parameters = ("something",)
+
     def test_set_parameters_delete(self):
         # Set params
         servername = self.config.parser_root.find_directives("servername")[0]

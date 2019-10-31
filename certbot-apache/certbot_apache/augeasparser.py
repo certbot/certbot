@@ -52,8 +52,9 @@ class AugeasDirectiveNode(AugeasParserNode):
         name, parameters, enabled, kwargs = util.directivenode_kwargs(kwargs)
         super(AugeasDirectiveNode, self).__init__(**kwargs)
         self.name = name
-        self.parameters = parameters
         self.enabled = enabled
+        if parameters:
+            self.set_parameters(parameters)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -84,7 +85,26 @@ class AugeasDirectiveNode(AugeasParserNode):
             param_path = "{}/arg[{}]".format(self.metadata["augeaspath"], pi+1)
             self.parser.aug.set(param_path, parameters[pi])
 
-        self.parameters = tuple(parameters)
+    @property
+    def parameters(self):
+        """
+        Fetches the parameters from Augeas tree, ensuring that the sequence always
+        represents the current state
+
+        :returns: Tuple of parameters for this DirectiveNode
+        :rtype: tuple:
+        """
+        return tuple(self._aug_get_params(self.metadata["augeaspath"]))
+
+    @parameters.setter
+    def parameters(self, _):
+        """
+        Raises a TypeError in order to direct users to use the set_parameters()
+        defined in the interface instead.
+
+        :raises: TypeError
+        """
+        raise TypeError("parameters is immutable, please use set_parameters() instead")
 
     def _aug_get_params(self, path):
         """Helper function to get parameters for DirectiveNodes and BlockNodes"""
@@ -112,9 +132,10 @@ class AugeasBlockNode(AugeasDirectiveNode):
                     self.metadata == other.metadata)
         return False
 
-    def add_child_block(self, name, parameters=None, position=None):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def add_child_block(self, name, parameters=None, position=None):  # pragma: no cover
         """Adds a new BlockNode to the sequence of children"""
-        new_metadata = {"augeasparser": self.parser}
+        new_metadata = {"augeasparser": self.parser, "augeaspath": assertions.PASS}
         new_block = AugeasBlockNode(name=assertions.PASS,
                                     ancestor=self,
                                     filepath=assertions.PASS,
@@ -122,9 +143,10 @@ class AugeasBlockNode(AugeasDirectiveNode):
         self.children += (new_block,)
         return new_block
 
-    def add_child_directive(self, name, parameters=None, position=None):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def add_child_directive(self, name, parameters=None, position=None):  # pragma: no cover
         """Adds a new DirectiveNode to the sequence of children"""
-        new_metadata = {"augeasparser": self.parser}
+        new_metadata = {"augeasparser": self.parser, "augeaspath": assertions.PASS}
         new_dir = AugeasDirectiveNode(name=assertions.PASS,
                                       ancestor=self,
                                       filepath=assertions.PASS,
@@ -134,7 +156,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
     def add_child_comment(self, comment="", position=None):  # pylint: disable=unused-argument
         """Adds a new CommentNode to the sequence of children"""
-        new_metadata = {"augeasparser": self.parser}
+        new_metadata = {"augeasparser": self.parser, "augeaspath": assertions.PASS}
         new_comment = AugeasCommentNode(comment=assertions.PASS,
                                         ancestor=self,
                                         filepath=assertions.PASS,
@@ -215,13 +237,11 @@ class AugeasBlockNode(AugeasDirectiveNode):
         """Helper function to create a DirectiveNode from Augeas path"""
 
         name = self.parser.get_arg(path)
-        params = tuple(self._aug_get_params(path))
         metadata = {"augeasparser": self.parser, "augeaspath": path}
 
         # Because of the dynamic nature, and the fact that we're not populating
         # the complete ParserNode tree, we use the search parent as ancestor
         return AugeasDirectiveNode(name=name,
-                                   parameters=params,
                                    ancestor=self,
                                    filepath=apache_util.get_file_path(path),
                                    metadata=metadata)
@@ -230,13 +250,11 @@ class AugeasBlockNode(AugeasDirectiveNode):
         """Helper function to create a BlockNode from Augeas path"""
 
         name = self._aug_get_block_name(path)
-        params = tuple(self._aug_get_params(path))
         metadata = {"augeasparser": self.parser, "augeaspath": path}
 
         # Because of the dynamic nature, and the fact that we're not populating
         # the complete ParserNode tree, we use the search parent as ancestor
         return AugeasBlockNode(name=name,
-                               parameters=params,
                                ancestor=self,
                                filepath=apache_util.get_file_path(path),
                                metadata=metadata)

@@ -13,23 +13,26 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
     """DualParserNode tests"""
 
     def setUp(self):  # pylint: disable=arguments-differ
-        metadata = {"augeasparser": mock.Mock()}
+        parser_mock = mock.MagicMock()
+        parser_mock.aug.match.return_value = []
+        parser_mock.get_arg.return_value = []
+        self.metadata = {"augeasparser": parser_mock, "augeaspath": "/invalid"}
         self.block = dualparser.DualBlockNode(name="block",
                                               ancestor=None,
                                               filepath="/tmp/something",
-                                              metadata=metadata)
+                                              metadata=self.metadata)
         self.block_two = dualparser.DualBlockNode(name="block",
                                                   ancestor=self.block,
                                                   filepath="/tmp/something",
-                                                  metadata=metadata)
+                                                  metadata=self.metadata)
         self.directive = dualparser.DualDirectiveNode(name="directive",
                                                       ancestor=self.block,
                                                       filepath="/tmp/something",
-                                                      metadata=metadata)
+                                                      metadata=self.metadata)
         self.comment = dualparser.DualCommentNode(comment="comment",
                                                   ancestor=self.block,
                                                   filepath="/tmp/something",
-                                                  metadata=metadata)
+                                                  metadata=self.metadata)
 
     def test_create_with_precreated(self):
         cnode = dualparser.DualCommentNode(comment="comment",
@@ -130,26 +133,22 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
             assertions.assertEqual(self.comment.primary, self.comment.secondary)
 
     def test_add_child_block(self):
-        self.assertEqual(len(self.block.primary.children), 0)
-        self.assertEqual(len(self.block.secondary.children), 0)
+        mock_first = mock.MagicMock(return_value=self.block.primary)
+        mock_second = mock.MagicMock(return_value=self.block.secondary)
+        self.block.primary.add_child_block = mock_first
+        self.block.secondary.add_child_block = mock_second
         self.block.add_child_block("Block")
-        self.assertEqual(len(self.block.primary.children), 1)
-        self.assertEqual(len(self.block.secondary.children), 1)
-        self.assertTrue(isinstance(self.block.primary.children[0],
-                                   interfaces.BlockNode))
-        self.assertEqual(self.block.primary.children[0].ancestor,
-                         self.block.primary)
+        self.assertTrue(mock_first.called)
+        self.assertTrue(mock_second.called)
 
     def test_add_child_directive(self):
-        self.assertEqual(len(self.block.primary.children), 0)
-        self.assertEqual(len(self.block.secondary.children), 0)
+        mock_first = mock.MagicMock(return_value=self.directive.primary)
+        mock_second = mock.MagicMock(return_value=self.directive.secondary)
+        self.block.primary.add_child_directive = mock_first
+        self.block.secondary.add_child_directive = mock_second
         self.block.add_child_directive("Directive")
-        self.assertEqual(len(self.block.primary.children), 1)
-        self.assertEqual(len(self.block.secondary.children), 1)
-        self.assertTrue(isinstance(self.block.primary.children[0],
-                                   interfaces.DirectiveNode))
-        self.assertEqual(self.block.primary.children[0].ancestor,
-                         self.block.primary)
+        self.assertTrue(mock_first.called)
+        self.assertTrue(mock_second.called)
 
     def test_add_child_comment(self):
         self.assertEqual(len(self.block.primary.children), 0)
@@ -189,10 +188,12 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
     def test_find_blocks_first_passing(self):
         youshallnotpass = [augeasparser.AugeasBlockNode(name="notpassing",
                                                         ancestor=self.block,
-                                                        filepath="/path/to/whatever")]
+                                                        filepath="/path/to/whatever",
+                                                        metadata=self.metadata)]
         youshallpass = [augeasparser.AugeasBlockNode(name=assertions.PASS,
                                                      ancestor=self.block,
-                                                     filepath=assertions.PASS)]
+                                                     filepath=assertions.PASS,
+                                                     metadata=self.metadata)]
         find_blocks_primary = mock.MagicMock(return_value=youshallpass)
         find_blocks_secondary = mock.MagicMock(return_value=youshallnotpass)
         self.block.primary.find_blocks = find_blocks_primary
@@ -210,10 +211,12 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
     def test_find_blocks_second_passing(self):
         youshallnotpass = [augeasparser.AugeasBlockNode(name="notpassing",
                                                         ancestor=self.block,
-                                                        filepath="/path/to/whatever")]
+                                                        filepath="/path/to/whatever",
+                                                        metadata=self.metadata)]
         youshallpass = [augeasparser.AugeasBlockNode(name=assertions.PASS,
                                                      ancestor=self.block,
-                                                     filepath=assertions.PASS)]
+                                                     filepath=assertions.PASS,
+                                                     metadata=self.metadata)]
         find_blocks_primary = mock.MagicMock(return_value=youshallnotpass)
         find_blocks_secondary = mock.MagicMock(return_value=youshallpass)
         self.block.primary.find_blocks = find_blocks_primary
@@ -231,10 +234,12 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
     def test_find_dirs_first_passing(self):
         notpassing = [augeasparser.AugeasDirectiveNode(name="notpassing",
                                                        ancestor=self.block,
-                                                       filepath="/path/to/whatever")]
+                                                       filepath="/path/to/whatever",
+                                                       metadata=self.metadata)]
         passing = [augeasparser.AugeasDirectiveNode(name=assertions.PASS,
                                                     ancestor=self.block,
-                                                    filepath=assertions.PASS)]
+                                                    filepath=assertions.PASS,
+                                                    metadata=self.metadata)]
         find_dirs_primary = mock.MagicMock(return_value=passing)
         find_dirs_secondary = mock.MagicMock(return_value=notpassing)
         self.block.primary.find_directives = find_dirs_primary
@@ -252,10 +257,12 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
     def test_find_dirs_second_passing(self):
         notpassing = [augeasparser.AugeasDirectiveNode(name="notpassing",
                                                        ancestor=self.block,
-                                                       filepath="/path/to/whatever")]
+                                                       filepath="/path/to/whatever",
+                                                       metadata=self.metadata)]
         passing = [augeasparser.AugeasDirectiveNode(name=assertions.PASS,
                                                     ancestor=self.block,
-                                                    filepath=assertions.PASS)]
+                                                    filepath=assertions.PASS,
+                                                    metadata=self.metadata)]
         find_dirs_primary = mock.MagicMock(return_value=notpassing)
         find_dirs_secondary = mock.MagicMock(return_value=passing)
         self.block.primary.find_directives = find_dirs_primary
@@ -273,10 +280,12 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
     def test_find_coms_first_passing(self):
         notpassing = [augeasparser.AugeasCommentNode(comment="notpassing",
                                                      ancestor=self.block,
-                                                     filepath="/path/to/whatever")]
+                                                     filepath="/path/to/whatever",
+                                                     metadata=self.metadata)]
         passing = [augeasparser.AugeasCommentNode(comment=assertions.PASS,
                                                   ancestor=self.block,
-                                                  filepath=assertions.PASS)]
+                                                  filepath=assertions.PASS,
+                                                  metadata=self.metadata)]
         find_coms_primary = mock.MagicMock(return_value=passing)
         find_coms_secondary = mock.MagicMock(return_value=notpassing)
         self.block.primary.find_comments = find_coms_primary
@@ -315,10 +324,12 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
     def test_find_blocks_no_pass_equal(self):
         notpassing1 = [augeasparser.AugeasBlockNode(name="notpassing",
                                                     ancestor=self.block,
-                                                    filepath="/path/to/whatever")]
+                                                    filepath="/path/to/whatever",
+                                                    metadata=self.metadata)]
         notpassing2 = [augeasparser.AugeasBlockNode(name="notpassing",
                                                     ancestor=self.block,
-                                                    filepath="/path/to/whatever")]
+                                                    filepath="/path/to/whatever",
+                                                    metadata=self.metadata)]
         find_blocks_primary = mock.MagicMock(return_value=notpassing1)
         find_blocks_secondary = mock.MagicMock(return_value=notpassing2)
         self.block.primary.find_blocks = find_blocks_primary
@@ -332,10 +343,12 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
     def test_find_dirs_no_pass_equal(self):
         notpassing1 = [augeasparser.AugeasDirectiveNode(name="notpassing",
                                                         ancestor=self.block,
-                                                        filepath="/path/to/whatever")]
+                                                        filepath="/path/to/whatever",
+                                                        metadata=self.metadata)]
         notpassing2 = [augeasparser.AugeasDirectiveNode(name="notpassing",
                                                         ancestor=self.block,
-                                                        filepath="/path/to/whatever")]
+                                                        filepath="/path/to/whatever",
+                                                        metadata=self.metadata)]
         find_dirs_primary = mock.MagicMock(return_value=notpassing1)
         find_dirs_secondary = mock.MagicMock(return_value=notpassing2)
         self.block.primary.find_directives = find_dirs_primary
@@ -349,10 +362,12 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
     def test_find_comments_no_pass_equal(self):
         notpassing1 = [augeasparser.AugeasCommentNode(comment="notpassing",
                                                       ancestor=self.block,
-                                                      filepath="/path/to/whatever")]
+                                                      filepath="/path/to/whatever",
+                                                      metadata=self.metadata)]
         notpassing2 = [augeasparser.AugeasCommentNode(comment="notpassing",
                                                       ancestor=self.block,
-                                                      filepath="/path/to/whatever")]
+                                                      filepath="/path/to/whatever",
+                                                      metadata=self.metadata)]
         find_coms_primary = mock.MagicMock(return_value=notpassing1)
         find_coms_secondary = mock.MagicMock(return_value=notpassing2)
         self.block.primary.find_comments = find_coms_primary
@@ -366,10 +381,12 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
     def test_find_blocks_no_pass_notequal(self):
         notpassing1 = [augeasparser.AugeasBlockNode(name="notpassing",
                                                     ancestor=self.block,
-                                                    filepath="/path/to/whatever")]
+                                                    filepath="/path/to/whatever",
+                                                    metadata=self.metadata)]
         notpassing2 = [augeasparser.AugeasBlockNode(name="different",
                                                     ancestor=self.block,
-                                                    filepath="/path/to/whatever")]
+                                                    filepath="/path/to/whatever",
+                                                    metadata=self.metadata)]
         find_blocks_primary = mock.MagicMock(return_value=notpassing1)
         find_blocks_secondary = mock.MagicMock(return_value=notpassing2)
         self.block.primary.find_blocks = find_blocks_primary
