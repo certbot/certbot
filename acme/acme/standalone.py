@@ -7,6 +7,7 @@ import os
 import socket
 import sys
 import threading
+import warnings
 
 from six.moves import BaseHTTPServer  # type: ignore  # pylint: disable=import-error
 from six.moves import http_client  # pylint: disable=import-error
@@ -267,6 +268,9 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 def simple_tls_sni_01_server(cli_args, forever=True):
     """Run simple standalone TLSSNI01 server."""
+    warnings.warn(
+        'simple_tls_sni_01_server is deprecated and will be removed soon.',
+        DeprecationWarning, stacklevel=2)
     logging.basicConfig(level=logging.DEBUG)
 
     parser = argparse.ArgumentParser()
@@ -299,7 +303,3 @@ def simple_tls_sni_01_server(cli_args, forever=True):
 
 # Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
 sys.modules[__name__] = _TLSSNI01DeprecationModule(sys.modules[__name__])
-
-
-if __name__ == "__main__":
-    sys.exit(simple_tls_sni_01_server(sys.argv))  # pragma: no cover
