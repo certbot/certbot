@@ -39,7 +39,7 @@ class ChallengeFactoryTest(unittest.TestCase):
         self.assertEqual(
             [achall.chall for achall in achalls], acme_util.CHALLENGES)
 
-    def test_one_tls_http(self):
+    def test_one_http(self):
         achalls = self.handler._challenge_factory(self.authzr, [0])
 
         self.assertEqual(
