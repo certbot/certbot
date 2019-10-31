@@ -45,7 +45,7 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
     @classmethod
     def _call(cls, key_size, key_dir):
         from certbot.crypto_util import init_save_key
-        key_prop = { "key_type": "rsa", "key_size": key_size }
+        key_prop = {"key_type": "rsa", "key_size": key_size}
         return init_save_key(key_prop, key_dir, 'key-certbot.pem')
 
     @mock.patch('certbot.crypto_util.make_key')
@@ -171,7 +171,7 @@ class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     def test_it(self):  # pylint: disable=no-self-use
         from certbot.crypto_util import make_key
         # Do not test larger keys as it takes too long.
-        key_prop = { "key_type": "rsa", "key_size": 1024 }
+        key_prop = {"key_type": "rsa", "key_size": 1024}
         OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, make_key(key_prop))
 
