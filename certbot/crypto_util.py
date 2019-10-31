@@ -197,7 +197,7 @@ def make_key(key_prop):
         assert curve_type in ec._CURVE_TYPES  # XXX
         cv = ec._CURVE_TYPES[curve_type]
         key = ec.generate_private_key(cv(), default_backend())
-        key_str =  key.private_bytes(
+        key_str = key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption()
