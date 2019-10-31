@@ -342,7 +342,8 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         self.assertTrue('All challenges have failed.' in str(error.exception))
 
     def test_validated_challenge_not_rerun(self):
-        # With pending challenge, we expect the challenge to be tried, and fail.
+        # With a pending challenge that is not supported by the plugin, we
+        # expect an exception to be raised.
         authzr = acme_util.gen_authzr(
                 messages.STATUS_PENDING, "0",
                 [acme_util.DNS01],
@@ -351,7 +352,9 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         self.assertRaises(
             errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
 
-        # With validated challenge; we expect the challenge not be tried again, and succeed.
+        # With a validated challenge that is not supported by the plugin, we
+        # expect the challenge to not be solved again and
+        # handle_authorizations() to succeed.
         authzr = acme_util.gen_authzr(
                 messages.STATUS_VALID, "0",
                 [acme_util.DNS01],
