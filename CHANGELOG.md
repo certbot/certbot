@@ -25,6 +25,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * CLI flags --tls-sni-01-port and --tls-sni-01-address have been removed.
 * The values tls-sni and tls-sni-01 for the --preferred-challenges flag are no
   longer accepted.
+* Removed the flags: `--agree-dev-preview` and `--dialog`
+* Removed the flag: `init-script`
 
 ### Fixed
 
