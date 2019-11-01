@@ -26,6 +26,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * CLI flags --tls-sni-01-port and --tls-sni-01-address have been removed.
 * The values tls-sni and tls-sni-01 for the --preferred-challenges flag are no
   longer accepted.
+* acme.standalone.BaseRequestHandlerWithLogging and
+  acme.standalone.simple_tls_sni_01_server have been deprecated and will be
+  removed in a future release of the library.
 
 ### Fixed
 
