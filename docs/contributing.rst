@@ -197,20 +197,15 @@ using an HTTP-01 challenge on a machine with Python 3:
 Code components and layout
 ==========================
 
-The following components of the Certbot repository are distributed to users:
-
 acme
   contains all protocol specific code
 certbot
   main client code
 certbot-apache and certbot-nginx
   client code to configure specific web servers
-certbot-dns-*
-  client code to configure DNS providers
-certbot-auto and letsencrypt-auto
-  shell scripts to install Certbot and its dependencies on UNIX systems
-windows installer
-  Installs Certbot on Windows and is built using the files in windows-installer/
+certbot.egg-info
+  configuration for packaging Certbot
+
 
 Plugin-architecture
 -------------------
