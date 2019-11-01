@@ -28,7 +28,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed a DeprecationWarning: invalid escape sequence in rebuild_dependencies.py.
 
 More details about these changes can be found on our GitHub repo.
 
