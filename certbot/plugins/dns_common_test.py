@@ -70,7 +70,8 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
     @test_util.patch_get_utility()
     def test_prompt_file(self, mock_get_utility):
         path = os.path.join(self.tempdir, 'file.ini')
-        open(path, "wb").close()
+        with open(path, "wb"):
+            pass
 
         mock_display = mock_get_utility()
         mock_display.directory_select.side_effect = ((display_util.OK, "",),

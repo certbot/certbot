@@ -956,16 +956,20 @@ def create_venv(venv_path, pyver, verbose):
 
     stdout = sys.stdout if verbose == '1' else open(os.devnull, 'w')
 
-    if int(pyver) <= 27:
-        # Use virtualenv binary
-        environ = os.environ.copy()
-        environ['VIRTUALENV_NO_DOWNLOAD'] = '1'
-        command = ['virtualenv', '--no-site-packages', '--python', sys.executable, venv_path]
-        subprocess.check_call(command, stdout=stdout, env=environ)
-    else:
-        # Use embedded venv module in Python 3
-        command = [sys.executable, '-m', 'venv', venv_path]
-        subprocess.check_call(command, stdout=stdout)
+    try:
+      if int(pyver) <= 27:
+          # Use virtualenv binary
+          environ = os.environ.copy()
+          environ['VIRTUALENV_NO_DOWNLOAD'] = '1'
+          command = ['virtualenv', '--no-site-packages', '--python', sys.executable, venv_path]
+          subprocess.check_call(command, stdout=stdout, env=environ)
+      else:
+          # Use embedded venv module in Python 3
+          command = [sys.executable, '-m', 'venv', venv_path]
+          subprocess.check_call(command, stdout=stdout)
+    finally:
+      if stdout is not sys.stdout:
+        stdout.close()
 
 
 if __name__ == '__main__':

@@ -30,7 +30,8 @@ if len(sys.argv) != 2:
     print("Usage: python deactivate.py private_key.pem")
     sys.exit(1)
 
-data = open(sys.argv[1], "r").read()
+with open(sys.argv[1], "r") as fh:
+    data = fh.read()
 key = jose.JWKRSA(key=serialization.load_pem_private_key(
     data, None, default_backend()))
 

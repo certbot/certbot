@@ -338,33 +338,32 @@ def test_client_process(inqueue, outqueue, boulder_url):
         ec2_client = aws_session.resource('ec2')
         instance = ec2_client.Instance(id=instance_id)
 
-        #save all stdout to log file
-        sys.stdout = open(LOGDIR+'/'+'%d_%s.log'%(ii,target['name']), 'w')
+        # save all stdout to log file
+        with open(LOGDIR+'/%d_%s.log' % (ii, target['name']), 'w') as sys.stdout:
+            print("[%s : client %d %s %s]" % (cur_proc.name, ii, target['ami'], target['name']))
+            instance = block_until_instance_ready(instance)
+            print("server %s at %s" % (instance, instance.public_ip_address))
+            env.host_string = "%s@%s" % (target['user'], instance.public_ip_address)
+            print(env.host_string)
 
-        print("[%s : client %d %s %s]" % (cur_proc.name, ii, target['ami'], target['name']))
-        instance = block_until_instance_ready(instance)
-        print("server %s at %s"%(instance, instance.public_ip_address))
-        env.host_string = "%s@%s"%(target['user'], instance.public_ip_address)
-        print(env.host_string)
+            try:
+                install_and_launch_certbot(instance, boulder_url, target)
+                outqueue.put((ii, target, Status.PASS))
+                print("%s - %s SUCCESS" % (target['ami'], target['name']))
+            except Exception:
+                outqueue.put((ii, target, Status.FAIL))
+                print("%s - %s FAIL" % (target['ami'], target['name']))
+                traceback.print_exc(file=sys.stdout)
+                pass
 
-        try:
-            install_and_launch_certbot(instance, boulder_url, target)
-            outqueue.put((ii, target, Status.PASS))
-            print("%s - %s SUCCESS"%(target['ami'], target['name']))
-        except:
-            outqueue.put((ii, target, Status.FAIL))
-            print("%s - %s FAIL"%(target['ami'], target['name']))
-            traceback.print_exc(file=sys.stdout)
-            pass
-
-        # append server certbot.log to each per-machine output log
-        print("\n\ncertbot.log\n" + "-"*80 + "\n")
-        try:
-            execute(grab_certbot_log)
-        except:
-            print("log fail\n")
-            traceback.print_exc(file=sys.stdout)
-            pass
+            # append server certbot.log to each per-machine output log
+            print("\n\ncertbot.log\n" + "-"*80 + "\n")
+            try:
+                execute(grab_certbot_log)
+            except Exception:
+                print("log fail\n")
+                traceback.print_exc(file=sys.stdout)
+                pass
 
 
 def cleanup(cl_args, instances, targetlist):
@@ -558,23 +557,22 @@ def main():
         execute(local_repo_clean)
 
         # print and save summary results
-        results_file = open(LOGDIR+'/results', 'w')
-        outputs = [outq for outq in iter(outqueue.get, SENTINEL)]
-        outputs.sort(key=lambda x: x[0])
-        failed = False
-        for outq in outputs:
-            ii, target, status = outq
-            if status == Status.FAIL:
+        with open(LOGDIR+'/results', 'w') as results_file:
+            outputs = [outq for outq in iter(outqueue.get, SENTINEL)]
+            outputs.sort(key=lambda x: x[0])
+            failed = False
+            for outq in outputs:
+                ii, target, status = outq
+                if status == Status.FAIL:
+                    failed = True
+                print('%d %s %s'%(ii, target['name'], status))
+                results_file.write('%d %s %s\n'%(ii, target['name'], status))
+            if len(outputs) != num_processes:
                 failed = True
-            print('%d %s %s'%(ii, target['name'], status))
-            results_file.write('%d %s %s\n'%(ii, target['name'], status))
-        if len(outputs) != num_processes:
-            failed = True
-            failure_message = 'FAILURE: Some target machines failed to run and were not tested. ' +\
-                'Tests should be rerun.'
-            print(failure_message)
-            results_file.write(failure_message + '\n')
-        results_file.close()
+                failure_message = 'FAILURE: Some target machines failed to run and were not tested. ' +\
+                    'Tests should be rerun.'
+                print(failure_message)
+                results_file.write(failure_message + '\n')
 
         if failed:
             sys.exit(1)

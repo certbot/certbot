@@ -28,7 +28,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         from certbot_dns_google.dns_google import Authenticator
 
         path = os.path.join(self.tempdir, 'file.json')
-        open(path, "wb").close()
+        with open(path, "wb"):
+            pass
 
         super(AuthenticatorTest, self).setUp()
         self.config = mock.MagicMock(google_credentials=path,

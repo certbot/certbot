@@ -182,7 +182,8 @@ class WindowsOpenTest(TempDirTestCase):
 
     def test_existing_file_correct_permissions(self):
         path = os.path.join(self.tempdir, 'file')
-        open(path, 'w').close()
+        with open(path, 'w'):
+            pass
 
         desc = filesystem.open(path, os.O_EXCL | os.O_RDWR, 0o700)
         os.close(desc)
@@ -210,7 +211,8 @@ class WindowsOpenTest(TempDirTestCase):
 
         # os.O_CREAT + file exists (locked) = EACCES OS exception
         path = os.path.join(self.tempdir, '5')
-        open(path, 'w').close()
+        with open(path, 'w'):
+            pass
         filelock = lock.LockFile(path)
         try:
             with self.assertRaises(OSError) as raised:
@@ -403,8 +405,10 @@ class OsReplaceTest(test_util.TempDirTestCase):
         """Ensure that replace will effectively rename src into dst for all platforms."""
         src = os.path.join(self.tempdir, 'src')
         dst = os.path.join(self.tempdir, 'dst')
-        open(src, 'w').close()
-        open(dst, 'w').close()
+        with open(src, 'w'):
+            pass
+        with open(dst, 'w'):
+            pass
 
         # On Windows, a direct call to os.rename would fail because dst already exists.
         filesystem.replace(src, dst)

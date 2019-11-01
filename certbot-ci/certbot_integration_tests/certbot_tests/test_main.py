@@ -326,7 +326,8 @@ def test_renew_empty_hook_scripts(context):
     for hook_dir in misc.list_renewal_hooks_dirs(context.config_dir):
         shutil.rmtree(hook_dir)
         os.makedirs(join(hook_dir, 'dir'))
-        open(join(hook_dir, 'file'), 'w').close()
+        with open(join(hook_dir, 'file'), 'w'):
+            pass
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
@@ -348,7 +349,8 @@ def test_renew_hook_override(context):
     assert_hook_execution(context.hook_probe, 'deploy')
 
     # Now we override all previous hooks during next renew.
-    open(context.hook_probe, 'w').close()
+    with open(context.hook_probe, 'w'):
+        pass
     context.certbot([
         'renew', '--cert-name', certname,
         '--pre-hook', misc.echo('pre_override', context.hook_probe),
@@ -367,7 +369,8 @@ def test_renew_hook_override(context):
         assert_hook_execution(context.hook_probe, 'deploy')
 
     # Expect that this renew will reuse new hooks registered in the previous renew.
-    open(context.hook_probe, 'w').close()
+    with open(context.hook_probe, 'w'):
+        pass
     context.certbot(['renew', '--cert-name', certname])
 
     assert_hook_execution(context.hook_probe, 'pre_override')

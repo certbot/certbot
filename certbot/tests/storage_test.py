@@ -800,7 +800,8 @@ class RenewableCertTests(BaseRenewableCertTest):
             live_path = self.config_file[kind]
             basename = kind + "1.pem"
             archive_path = os.path.join(archive_dir_path, basename)
-            open(archive_path, 'a').close()
+            with open(archive_path, 'a'):
+                pass
             os.symlink(os.path.join(self.config.config_dir, basename), live_path)
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert, self.config_file.filename,

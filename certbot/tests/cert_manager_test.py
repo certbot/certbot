@@ -83,7 +83,8 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
             for kind in ALL_FOUR:
                 live_path = self.config_files[domain][kind]
                 archive_path = archive_paths[domain][kind]
-                open(archive_path, 'a').close()
+                with open(archive_path, 'a'):
+                    pass
                 # path is incorrect but base must be correct
                 os.symlink(os.path.join(self.config.config_dir, kind + "1.pem"), live_path)
 

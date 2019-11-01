@@ -395,7 +395,8 @@ class ExitWithLogPathTest(test_util.TempDirTestCase):
 
     def test_log_file(self):
         log_file = os.path.join(self.tempdir, 'test.log')
-        open(log_file, 'w').close()
+        with open(log_file, 'w'):
+            pass
 
         err_str = self._test_common(log_file)
         self.assertTrue('logfiles' not in err_str)

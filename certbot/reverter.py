@@ -230,28 +230,28 @@ class Reverter(object):
 
         idx = len(existing_filepaths)
 
-        for filename in save_files:
-            # No need to copy/index already existing files
-            # The oldest copy already exists in the directory...
-            if filename not in existing_filepaths:
-                # Tag files with index so multiple files can
-                # have the same filename
-                logger.debug("Creating backup of %s", filename)
-                try:
-                    shutil.copy2(filename, os.path.join(
-                        cp_dir, os.path.basename(filename) + "_" + str(idx)))
-                    op_fd.write('{0}\n'.format(filename))
-                # http://stackoverflow.com/questions/4726260/effective-use-of-python-shutil-copy2
-                except IOError:
-                    op_fd.close()
-                    logger.error(
-                        "Unable to add file %s to checkpoint %s",
-                        filename, cp_dir)
-                    raise errors.ReverterError(
-                        "Unable to add file {0} to checkpoint "
-                        "{1}".format(filename, cp_dir))
-                idx += 1
-        op_fd.close()
+        with op_fd:
+            for filename in save_files:
+                # No need to copy/index already existing files
+                # The oldest copy already exists in the directory...
+                if filename not in existing_filepaths:
+                    # Tag files with index so multiple files can
+                    # have the same filename
+                    logger.debug("Creating backup of %s", filename)
+                    try:
+                        shutil.copy2(filename, os.path.join(
+                            cp_dir, os.path.basename(filename) + "_" + str(idx)))
+                        op_fd.write('{0}\n'.format(filename))
+                    # http://stackoverflow.com/questions/4726260/effective-use-of-python-shutil-copy2
+                    except IOError:
+                        op_fd.close()
+                        logger.error(
+                            "Unable to add file %s to checkpoint %s",
+                            filename, cp_dir)
+                        raise errors.ReverterError(
+                            "Unable to add file {0} to checkpoint "
+                            "{1}".format(filename, cp_dir))
+                    idx += 1
 
         with open(os.path.join(cp_dir, "CHANGES_SINCE"), "a") as notes_fd:
             notes_fd.write(save_notes)
@@ -381,20 +381,17 @@ class Reverter(object):
         cp_dir = self._get_cp_dir(temporary)
 
         # Append all new files (that aren't already registered)
-        new_fd = None
         try:
             new_fd, ex_files = self._read_and_append(os.path.join(cp_dir, "NEW_FILES"))
 
-            for path in files:
-                if path not in ex_files:
-                    new_fd.write("{0}\n".format(path))
+            with new_fd:
+                for path in files:
+                    if path not in ex_files:
+                        new_fd.write("{0}\n".format(path))
         except (IOError, OSError):
             logger.error("Unable to register file creation(s) - %s", files)
             raise errors.ReverterError(
                 "Unable to register file creation(s) - {0}".format(files))
-        finally:
-            if new_fd is not None:
-                new_fd.close()
 
     def register_undo_command(self, temporary, command):
         """Register a command to be run to undo actions taken.
@@ -413,26 +410,19 @@ class Reverter(object):
 
         """
         commands_fp = os.path.join(self._get_cp_dir(temporary), "COMMANDS")
-        command_file = None
         # It is strongly advised to set newline = '' on Python 3 with CSV,
         # and it fixes problems on Windows.
         kwargs = {'newline': ''} if sys.version_info[0] > 2 else {}
         try:
-            if os.path.isfile(commands_fp):
-                command_file = open(commands_fp, "a", **kwargs)  # type: ignore
-            else:
-                command_file = open(commands_fp, "w", **kwargs)  # type: ignore
-
-            csvwriter = csv.writer(command_file)
-            csvwriter.writerow(command)
+            mode = "a" if os.path.isfile(commands_fp) else "w"
+            with open(commands_fp, mode, **kwargs) as command_file:
+                csvwriter = csv.writer(command_file)
+                csvwriter.writerow(command)
 
         except (IOError, OSError):
             logger.error("Unable to register undo command")
             raise errors.ReverterError(
                 "Unable to register undo command.")
-        finally:
-            if command_file is not None:
-                command_file.close()
 
     def _get_cp_dir(self, temporary):
         """Return the proper reverter directory."""
