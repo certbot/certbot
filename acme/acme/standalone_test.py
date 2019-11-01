@@ -75,7 +75,9 @@ class BaseRequestHandlerWithLoggingTest(unittest.TestCase):
         with mock.patch('acme.standalone.warnings.warn') as mock_warn:
             # pylint: disable=unused-variable
             from acme.standalone import BaseRequestHandlerWithLogging
-        mock_warn.call_args[0][0].startswith('BaseRequestHandlerWithLogging')
+        self.assertTrue(mock_warn.called)
+        msg = mock_warn.call_args[0][0]
+        self.assertTrue(msg.startswith('BaseRequestHandlerWithLogging'))
 
 
 class HTTP01ServerTest(unittest.TestCase):
