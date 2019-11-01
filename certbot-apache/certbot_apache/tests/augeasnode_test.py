@@ -105,10 +105,6 @@ class AugeasParserNodeTest(util.ApacheTest):
                 ["test", "setting", "these"]
             )
 
-    def test_set_parameters_error(self):
-        with self.assertRaises(TypeError):
-            self.config.parser_root.parameters = ("something",)
-
     def test_set_parameters_delete(self):
         # Set params
         servername = self.config.parser_root.find_directives("servername")[0]

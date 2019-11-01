@@ -96,16 +96,6 @@ class AugeasDirectiveNode(AugeasParserNode):
         """
         return tuple(self._aug_get_params(self.metadata["augeaspath"]))
 
-    @parameters.setter
-    def parameters(self, _):
-        """
-        Raises a TypeError in order to direct users to use the set_parameters()
-        defined in the interface instead.
-
-        :raises: TypeError
-        """
-        raise TypeError("parameters is immutable, please use set_parameters() instead")
-
     def _aug_get_params(self, path):
         """Helper function to get parameters for DirectiveNodes and BlockNodes"""
 
