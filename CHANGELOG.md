@@ -20,6 +20,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   staging server instead of the live server when `--dry-run` is used.
 * Updated certbot-dns-google to depend on newer versions of
   google-api-python-client and oauth2client.
+* The OS detection logic again uses distro library for Linux OSes
 * certbot.plugins.common.TLSSNI01 has been deprecated and will be removed in a
   future release.
 * CLI flags --tls-sni-01-port and --tls-sni-01-address have been removed.
