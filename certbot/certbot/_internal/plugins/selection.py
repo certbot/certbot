@@ -10,6 +10,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot.compat import os
 from certbot.display import util as display_util
+from certbot._internal.plugins import dns_lexicon
 
 logger = logging.getLogger(__name__)
 z_util = zope.component.getUtility
@@ -303,6 +304,11 @@ def cli_plugin_requests(config):
         req_auth = set_configurator(req_auth, "dns-route53")
     if config.dns_sakuracloud:
         req_auth = set_configurator(req_auth, "dns-sakuracloud")
+
+    # Lexicon provider plugins
+    req_auth = dns_lexicon.LexiconProvider.cli_plugin_requests(config,
+        req_auth, set_configurator)
+
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
     return req_auth, req_inst
 

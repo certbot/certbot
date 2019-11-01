@@ -12,12 +12,14 @@ from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
+from certbot._internal.plugins import dns_lexicon
 
 try:
     # Python 3.3+
     from collections.abc import Mapping
 except ImportError:  # pragma: no cover
     from collections import Mapping
+
 
 logger = logging.getLogger(__name__)
 
@@ -49,12 +51,19 @@ class PluginEntryPoint(object):
     # this object is mutable, don't allow it to be hashed!
     __hash__ = None  # type: ignore
 
-    def __init__(self, entry_point):
-        self.name = self.entry_point_to_plugin_name(entry_point)
-        self.plugin_cls = entry_point.load()
-        self.entry_point = entry_point
-        self._initialized = None
-        self._prepared = None
+    def __init__(self, entry_point, lexicon_plugin=None):
+        if not lexicon_plugin:
+            self.name = self.entry_point_to_plugin_name(entry_point)
+            self.plugin_cls = entry_point.load()
+            self.entry_point = entry_point
+            self._initialized = None
+            self._prepared = None
+        else:
+            self.name = lexicon_plugin.name
+            self.plugin_cls = lexicon_plugin.cls
+            self.entry_point = None
+            self._initialized = None
+            self._prepared = None
 
     @classmethod
     def entry_point_to_plugin_name(cls, entry_point):
@@ -101,7 +110,8 @@ class PluginEntryPoint(object):
     def init(self, config=None):
         """Memoized plugin initialization."""
         if not self.initialized:
-            self.entry_point.require()  # fetch extras!
+            if self.entry_point:
+                self.entry_point.require()  # fetch extras!
             self._initialized = self.plugin_cls(config, self.name)
         return self._initialized
 
@@ -218,6 +228,10 @@ class PluginsRegistry(Mapping):
             else:  # pragma: no cover
                 logger.warning(
                     "%r does not provide IPluginFactory, skipping", plugin_ep)
+
+        # Lexicon plugins
+        for plugin in dns_lexicon.LexiconProvider.plugins:
+            plugins[plugin.name] = PluginEntryPoint(None, plugin)
         return cls(plugins)
 
     def __getitem__(self, name):

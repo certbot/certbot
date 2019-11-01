@@ -44,6 +44,7 @@ install_requires = [
     'configobj',
     'cryptography>=1.2.3',  # load_pem_x509_certificate
     'distro>=1.0.1',
+    'dns-lexicon>=2.2.1',
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
