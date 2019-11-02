@@ -961,24 +961,6 @@ def rollback(config, plugins):
     """
     client.rollback(config.installer, config.checkpoints, config, plugins)
 
-
-def config_changes(config, unused_plugins):
-    """Show changes made to server config during installation
-
-    View checkpoints and associated configuration changes.
-
-    :param config: Configuration object
-    :type config: interfaces.IConfig
-
-    :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
-
-    :returns: `None`
-    :rtype: None
-
-    """
-    logger.error("The config_changes subcommand has been deprecated.")
-
 def update_symlinks(config, unused_plugins):
     """Update the certificate file family symlinks
 

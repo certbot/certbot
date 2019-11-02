@@ -442,7 +442,6 @@ class HelpfulArgumentParser(object):
         self.VERBS = {
             "auth": main.certonly,
             "certonly": main.certonly,
-            "config_changes": main.config_changes,
             "run": main.run,
             "install": main.install,
             "plugins": main.plugins_cmd,
