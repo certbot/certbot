@@ -68,7 +68,7 @@ matrix:
     - python: "3.7"
       env: TOXENV=py37
       <<: *not-on-master
-    - python: "3.8-dev"
+    - python: "3.8"
       env: TOXENV=py38
       <<: *not-on-master
     - sudo: required

@@ -12,9 +12,10 @@ import platform
 import re
 import socket
 import subprocess
+import sys
+import warnings
 
 import configargparse
-import distro
 import six
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
@@ -24,6 +25,12 @@ from certbot import errors
 from certbot import lock
 from certbot.compat import os
 from certbot.compat import filesystem
+
+if sys.platform.startswith('linux'):
+    import distro
+    _USE_DISTRO = True
+else:
+    _USE_DISTRO = False
 
 logger = logging.getLogger(__name__)
 
@@ -277,77 +284,59 @@ def get_filtered_names(all_names):
             logger.debug('Not suggesting name "%s"', name, exc_info=True)
     return filtered_names
 
-
-def get_os_info(filepath="/etc/os-release"):
+def get_os_info():
     """
     Get OS name and version
 
-    :param str filepath: File path of os-release file
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
     """
 
-    if os.path.isfile(filepath):
-        # Systemd os-release parsing might be viable
-        os_name, os_version = get_systemd_os_info(filepath=filepath)
-        if os_name:
-            return os_name, os_version
+    return get_python_os_info(pretty=False)
 
-    # Fallback to platform module
-    return get_python_os_info()
-
-
-def get_os_info_ua(filepath="/etc/os-release"):
+def get_os_info_ua():
     """
     Get OS name and version string for User Agent
 
-    :param str filepath: File path of os-release file
     :returns: os_ua
     :rtype: `str`
     """
+    if _USE_DISTRO:
+        os_info = distro.name(pretty=True)
 
-    if os.path.isfile(filepath):
-        os_ua = get_var_from_file("PRETTY_NAME", filepath=filepath)
-        if not os_ua:
-            os_ua = get_var_from_file("NAME", filepath=filepath)
-        if os_ua:
-            return os_ua
+    if not _USE_DISTRO or not os_info:
+        return " ".join(get_python_os_info(pretty=True))
+    return os_info
 
-    # Fallback
-    return " ".join(get_python_os_info())
-
-
-def get_systemd_os_info(filepath="/etc/os-release"):
+def get_systemd_os_info():
     """
     Parse systemd /etc/os-release for distribution information
 
-    :param str filepath: File path of os-release file
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
     """
 
-    os_name = get_var_from_file("ID", filepath=filepath)
-    os_version = get_var_from_file("VERSION_ID", filepath=filepath)
+    warnings.warn(
+        "The get_sytemd_os_like() function is deprecated and will be removed in "
+        "a future release.", DeprecationWarning, stacklevel=2)
+    return get_os_info()[:2]
 
-    return (os_name, os_version)
-
-
-def get_systemd_os_like(filepath="/etc/os-release"):
+def get_systemd_os_like():
     """
     Get a list of strings that indicate the distribution likeness to
     other distributions.
 
-    :param str filepath: File path of os-release file
     :returns: List of distribution acronyms
     :rtype: `list` of `str`
     """
 
-    return get_var_from_file("ID_LIKE", filepath).split(" ")
-
+    if _USE_DISTRO:
+        return distro.like().split(" ")
+    return []
 
 def get_var_from_file(varname, filepath="/etc/os-release"):
     """
-    Get single value from systemd /etc/os-release
+    Get single value from a file formatted like systemd /etc/os-release
 
     :param str varname: Name of variable to fetch
     :param str filepath: File path of os-release file
@@ -367,7 +356,6 @@ def get_var_from_file(varname, filepath="/etc/os-release"):
             return _normalize_string(line.strip()[len(var_string):])
     return ""
 
-
 def _normalize_string(orig):
     """
     Helper function for get_var_from_file() to remove quotes
@@ -375,11 +363,12 @@ def _normalize_string(orig):
     """
     return orig.replace('"', '').replace("'", "").strip()
 
-
-def get_python_os_info():
+def get_python_os_info(pretty=False):
     """
     Get Operating System type/distribution and major version
     using python platform module
+
+    :param bool pretty: If the returned OS name should be in longer (pretty) form
 
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
@@ -391,8 +380,8 @@ def get_python_os_info():
     )
     os_type, os_ver, _ = info
     os_type = os_type.lower()
-    if os_type.startswith('linux'):
-        info = _get_linux_distribution()
+    if os_type.startswith('linux') and _USE_DISTRO:
+        info = distro.linux_distribution(pretty)
         # On arch, distro.linux_distribution() is reportedly ('','',''),
         # so handle it defensively
         if info[0]:
@@ -423,14 +412,6 @@ def get_python_os_info():
         # Cases known to fall here: Cygwin python
         os_ver = ''
     return os_type, os_ver
-
-def _get_linux_distribution():
-    """Gets the linux distribution name from the underlying OS"""
-
-    try:
-        return platform.linux_distribution()
-    except AttributeError:
-        return distro.linux_distribution()
 
 # Just make sure we don't get pwned... Make sure that it also doesn't
 # start with a period or have two consecutive periods <- this needs to
