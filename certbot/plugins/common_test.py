@@ -3,7 +3,6 @@ import functools
 import shutil
 import tempfile
 import unittest
-import warnings
 
 import OpenSSL
 import josepy as jose

@@ -27,7 +27,6 @@ from certbot import eff
 from certbot import error_handler
 from certbot import errors
 from certbot import interfaces
-from certbot import reverter
 from certbot import storage
 from certbot import util
 from certbot.compat import os

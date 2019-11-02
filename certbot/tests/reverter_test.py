@@ -10,7 +10,6 @@ import six
 
 from certbot import errors
 from certbot.compat import os
-from certbot.compat import filesystem
 from certbot.tests import util as test_util
 
 

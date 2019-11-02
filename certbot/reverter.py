@@ -6,14 +6,11 @@ import shutil
 import sys
 import time
 import traceback
-import warnings
 
 import six
-import zope.component
 
 from certbot import constants
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
