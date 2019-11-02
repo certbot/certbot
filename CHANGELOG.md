@@ -29,7 +29,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * acme.standalone.BaseRequestHandlerWithLogging and
   acme.standalone.simple_tls_sni_01_server have been deprecated and will be
   removed in a future release of the library.
-* Deprecate config_changes
+* Certbot's config_changes subcommand has been removed
 
 ### Fixed
 
