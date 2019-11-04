@@ -174,8 +174,6 @@ class ApacheConfigurator(common.Installer):
                  "(Only Ubuntu/Debian currently)")
         add("ctl", default=DEFAULTS["ctl"],
             help="Full path to Apache control script")
-        util.add_deprecated_argument(
-            add, argument_name="init-script", nargs=1)
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
