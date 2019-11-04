@@ -54,16 +54,12 @@ install_requires = [
     'zope.interface',
 ]
 
-# Load minimal pywin32 version from the Windows installer builder
-windows_installer = os.path.join(here, 'windows-installer', 'construct.py')
-pywin32_version_search = re.search(r'PYWIN32_VERSION = (\d+)', read_file(windows_installer))
-pywin32_req = 'pywin32>={0}'.format(pywin32_version_search.group(1))
-
 # Add pywin32 on Windows platforms to handle low-level system calls.
 # This dependency needs to be added using environment markers to avoid its installation on Linux.
 # However environment markers are supported only with setuptools >= 36.2.
 # So this dependency is not added for old Linux distributions with old setuptools,
 # in order to allow these systems to build certbot from sources.
+pywin32_req = 'pywin32>=225'  # do not forget to edit pywin32 dependency accordingly in windows-installer/construct.py
 if StrictVersion(setuptools_version) >= StrictVersion('36.2'):
     install_requires.append(pywin32_req + " ; sys_platform == 'win32'")
 elif 'bdist_wheel' in sys.argv[1:]:

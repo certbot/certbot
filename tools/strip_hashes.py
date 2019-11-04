@@ -30,6 +30,7 @@ def main(*paths):
 
     Hashes are removed from returned entries.
     """
+
     deps = []
     if paths:
         for path in paths:
