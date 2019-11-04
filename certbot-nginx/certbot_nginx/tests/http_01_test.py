@@ -73,11 +73,11 @@ class HttpPerformTest(util.NginxTest):
             self.http01.add_chall(achall)
             acme_responses.append(achall.response(self.account_key))
 
-        sni_responses = self.http01.perform()
+        http_responses = self.http01.perform()
 
-        self.assertEqual(len(sni_responses), 4)
+        self.assertEqual(len(http_responses), 4)
         for i in six.moves.range(4):
-            self.assertEqual(sni_responses[i], acme_responses[i])
+            self.assertEqual(http_responses[i], acme_responses[i])
 
     def test_mod_config(self):
         self.http01.add_chall(self.achalls[0])

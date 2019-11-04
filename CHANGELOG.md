@@ -10,13 +10,28 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* Removed `--fast` flag from the test farm tests
+* We deprecated support for Python 3.4 in Certbot and its ACME library. Support
+  for Python 3.4 will be removed in the next major release of Certbot.
+  certbot-auto users on RHEL 6 based systems will be asked to enable Software
+  Collections (SCL) repository so Python 3.6 can be installed. certbot-auto can
+  enable the SCL repo for you on CentOS 6 while users on other RHEL 6 based
+  systems will be asked to do this manually.
 * `--server` may now be combined with `--dry-run`. Certbot will, as before, use the
   staging server instead of the live server when `--dry-run` is used.
-* Updated certbot-dns-google to depend on newer versions of
-  google-api-python-client and oauth2client.
 * `--dry-run` now requests fresh authorizations every time, fixing the issue
   where it was prone to falsely reporting success.
+* Updated certbot-dns-google to depend on newer versions of
+  google-api-python-client and oauth2client.
+* The OS detection logic again uses distro library for Linux OSes
+* certbot.plugins.common.TLSSNI01 has been deprecated and will be removed in a
+  future release.
+* CLI flags --tls-sni-01-port and --tls-sni-01-address have been removed.
+* The values tls-sni and tls-sni-01 for the --preferred-challenges flag are no
+  longer accepted.
+* Removed the flags: `--agree-dev-preview`, `--dialog`, and `--apache-init-script`
+* acme.standalone.BaseRequestHandlerWithLogging and
+  acme.standalone.simple_tls_sni_01_server have been deprecated and will be
+  removed in a future release of the library.
 
 ### Fixed
 

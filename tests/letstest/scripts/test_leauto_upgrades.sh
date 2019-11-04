@@ -117,6 +117,8 @@ if ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
 fi
 
 if [ "$RUN_RHEL6_TESTS" = 1 ]; then
+    # Add the SCL python release to PATH in order to resolve python3 command
+    PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
     if ! command -v python3; then
         echo "Python3 wasn't properly installed"
         exit 1

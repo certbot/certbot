@@ -352,6 +352,11 @@ class TLSSNI01Test(unittest.TestCase):
         self.assertEqual(self.sni.get_z_domain(achall),
             achall.response(achall.account_key).z_domain.decode("utf-8"))
 
+    def test_warning(self):
+        with mock.patch('certbot.plugins.common.warnings.warn') as mock_warn:
+            from certbot.plugins.common import TLSSNI01  # pylint: disable=unused-variable
+        self.assertTrue(mock_warn.call_args[0][0].startswith('TLSSNI01'))
+
 
 class InstallVersionControlledFileTest(test_util.TempDirTestCase):
     """Tests for certbot.plugins.common.install_version_controlled_file."""

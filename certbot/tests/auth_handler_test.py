@@ -40,11 +40,11 @@ class ChallengeFactoryTest(unittest.TestCase):
         self.assertEqual(
             [achall.chall for achall in achalls], acme_util.CHALLENGES)
 
-    def test_one_tls_sni(self):
-        achalls = self.handler._challenge_factory(self.authzr, [1])
+    def test_one_http(self):
+        achalls = self.handler._challenge_factory(self.authzr, [0])
 
         self.assertEqual(
-            [achall.chall for achall in achalls], [acme_util.TLSSNI01])
+            [achall.chall for achall in achalls], [acme_util.HTTP01])
 
     def test_unrecognized(self):
         authzr = acme_util.gen_authzr(
@@ -74,7 +74,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
 
         self.mock_auth = mock.MagicMock(name="ApacheConfigurator")
 
-        self.mock_auth.get_chall_pref.return_value = [challenges.TLSSNI01]
+        self.mock_auth.get_chall_pref.return_value = [challenges.HTTP01]
 
         self.mock_auth.perform.side_effect = gen_auth_resp
 
@@ -91,7 +91,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
     def tearDown(self):
         logging.disable(logging.NOTSET)
 
-    def _test_name1_tls_sni_01_1_common(self, combos):
+    def _test_name1_http_01_1_common(self, combos):
         authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=combos)
         mock_order = mock.MagicMock(authorizations=[authzr])
 
@@ -110,44 +110,42 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
             self.assertTrue(mock_time.sleep.call_args_list[1][0][0] > 3)
 
             self.assertEqual(self.mock_auth.cleanup.call_count, 1)
-            # Test if list first element is TLSSNI01, use typ because it is an achall
+            # Test if list first element is http-01, use typ because it is an achall
             self.assertEqual(
-                self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+                self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
 
             self.assertEqual(len(authzr), 1)
 
-    def test_name1_tls_sni_01_1_acme_1(self):
-        self._test_name1_tls_sni_01_1_common(combos=True)
+    def test_name1_http_01_1_acme_1(self):
+        self._test_name1_http_01_1_common(combos=True)
 
-    def test_name1_tls_sni_01_1_acme_2(self):
+    def test_name1_http_01_1_acme_2(self):
         self.mock_net.acme_version = 2
-        self._test_name1_tls_sni_01_1_common(combos=False)
+        self._test_name1_http_01_1_common(combos=False)
 
-    def test_name1_tls_sni_01_1_http_01_1_dns_1_acme_1(self):
+    def test_name1_http_01_1_dns_1_acme_1(self):
         self.mock_net.poll.side_effect = _gen_mock_on_poll()
-        self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
         self.mock_auth.get_chall_pref.return_value.append(challenges.DNS01)
 
         authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=False)
         mock_order = mock.MagicMock(authorizations=[authzr])
         authzr = self.handler.handle_authorizations(mock_order)
 
-        self.assertEqual(self.mock_net.answer_challenge.call_count, 3)
+        self.assertEqual(self.mock_net.answer_challenge.call_count, 2)
 
         self.assertEqual(self.mock_net.poll.call_count, 1)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
-        # Test if list first element is TLSSNI01, use typ because it is an achall
+        # Test if list first element is http-01, use typ because it is an achall
         for achall in self.mock_auth.cleanup.call_args[0][0]:
-            self.assertTrue(achall.typ in ["tls-sni-01", "http-01", "dns-01"])
+            self.assertTrue(achall.typ in ["http-01", "dns-01"])
 
         # Length of authorizations list
         self.assertEqual(len(authzr), 1)
 
-    def test_name1_tls_sni_01_1_http_01_1_dns_1_acme_2(self):
+    def test_name1_http_01_1_dns_1_acme_2(self):
         self.mock_net.acme_version = 2
         self.mock_net.poll.side_effect = _gen_mock_on_poll()
-        self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
         self.mock_auth.get_chall_pref.return_value.append(challenges.DNS01)
 
         authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=False)
@@ -161,12 +159,12 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         cleaned_up_achalls = self.mock_auth.cleanup.call_args[0][0]
         self.assertEqual(len(cleaned_up_achalls), 1)
-        self.assertEqual(cleaned_up_achalls[0].typ, "tls-sni-01")
+        self.assertEqual(cleaned_up_achalls[0].typ, "http-01")
 
         # Length of authorizations list
         self.assertEqual(len(authzr), 1)
 
-    def _test_name3_tls_sni_01_3_common(self, combos):
+    def _test_name3_http_01_3_common(self, combos):
         self.mock_net.request_domain_challenges.side_effect = functools.partial(
             gen_dom_authzr, challs=acme_util.CHALLENGES, combos=combos)
 
@@ -187,12 +185,12 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
 
         self.assertEqual(len(authzr), 3)
 
-    def test_name3_tls_sni_01_3_common_acme_1(self):
-        self._test_name3_tls_sni_01_3_common(combos=True)
+    def test_name3_http_01_3_common_acme_1(self):
+        self._test_name3_http_01_3_common(combos=True)
 
-    def test_name3_tls_sni_01_3_common_acme_2(self):
+    def test_name3_http_01_3_common_acme_2(self):
         self.mock_net.acme_version = 2
-        self._test_name3_tls_sni_01_3_common(combos=False)
+        self._test_name3_http_01_3_common(combos=False)
 
     def test_debug_challenges(self):
         zope.component.provideUtility(
@@ -258,7 +256,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
     def _test_preferred_challenges_not_supported_common(self, combos):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=combos)]
         mock_order = mock.MagicMock(authorizations=authzrs)
-        self.handler.pref_challs.append(challenges.HTTP01.typ)
+        self.handler.pref_challs.append(challenges.DNS01.typ)
         self.assertRaises(
             errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
 
@@ -284,7 +282,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
-            self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+            self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
 
     def test_answer_error(self):
         self.mock_net.answer_challenge.side_effect = errors.AuthorizationError
@@ -296,7 +294,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
             errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
-            self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+            self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
 
     def test_incomplete_authzr_error(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
@@ -309,7 +307,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         self.assertTrue('Some challenges have failed.' in str(error.exception))
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
-            self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+            self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
 
     def test_best_effort(self):
         def _conditional_mock_on_poll(authzr):
@@ -345,19 +343,22 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         self.assertTrue('All challenges have failed.' in str(error.exception))
 
     def test_validated_challenge_not_rerun(self):
-        # With pending challenge, we expect the challenge to be tried, and fail.
+        # With a pending challenge that is not supported by the plugin, we
+        # expect an exception to be raised.
         authzr = acme_util.gen_authzr(
                 messages.STATUS_PENDING, "0",
-                [acme_util.HTTP01],
+                [acme_util.DNS01],
                 [messages.STATUS_PENDING], False)
         mock_order = mock.MagicMock(authorizations=[authzr])
         self.assertRaises(
             errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
 
-        # With validated challenge; we expect the challenge not be tried again, and succeed.
+        # With a validated challenge that is not supported by the plugin, we
+        # expect the challenge to not be solved again and
+        # handle_authorizations() to succeed.
         authzr = acme_util.gen_authzr(
                 messages.STATUS_VALID, "0",
-                [acme_util.HTTP01],
+                [acme_util.DNS01],
                 [messages.STATUS_VALID], False)
         mock_order = mock.MagicMock(authorizations=[authzr])
         self.handler.handle_authorizations(mock_order)
@@ -394,11 +395,6 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         self.assertEqual(authzrs[0].body.status, messages.STATUS_DEACTIVATED)
         self.assertEqual(failed[0].body.identifier.value, "is_valid_but_will_fail")
         self.assertEqual(failed[0].body.status, messages.STATUS_VALID)
-
-    @mock.patch("certbot.auth_handler.logger")
-    def test_tls_sni_logs(self, logger):
-        self._test_name1_tls_sni_01_1_common(combos=True)
-        self.assertTrue("deprecated" in logger.warning.call_args[0][0])
 
 
 def _gen_mock_on_poll(status=messages.STATUS_VALID, retry=0, wait_value=1):
@@ -451,9 +447,9 @@ class GenChallengePathTest(unittest.TestCase):
         return gen_challenge_path(challbs, preferences, combinations)
 
     def test_common_case(self):
-        """Given TLSSNI01 and HTTP01 with appropriate combos."""
-        challbs = (acme_util.TLSSNI01_P, acme_util.HTTP01_P)
-        prefs = [challenges.TLSSNI01, challenges.HTTP01]
+        """Given DNS01 and HTTP01 with appropriate combos."""
+        challbs = (acme_util.DNS01_P, acme_util.HTTP01_P)
+        prefs = [challenges.DNS01, challenges.HTTP01]
         combos = ((0,), (1,))
 
         # Smart then trivial dumb path test
@@ -464,8 +460,8 @@ class GenChallengePathTest(unittest.TestCase):
         self.assertTrue(self._call(challbs[::-1], prefs, None))
 
     def test_not_supported(self):
-        challbs = (acme_util.DNS01_P, acme_util.TLSSNI01_P)
-        prefs = [challenges.TLSSNI01]
+        challbs = (acme_util.DNS01_P, acme_util.HTTP01_P)
+        prefs = [challenges.HTTP01]
         combos = ((0, 1),)
 
         # smart path fails because no challs in perfs satisfies combos
@@ -493,19 +489,19 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
 
         http_01 = messages.ChallengeBody(**kwargs)
 
-        kwargs["chall"] = acme_util.TLSSNI01
-        tls_sni_01 = messages.ChallengeBody(**kwargs)
+        kwargs["chall"] = acme_util.HTTP01
+        http_01 = messages.ChallengeBody(**kwargs)
 
         self.authzr1 = mock.MagicMock()
         self.authzr1.body.identifier.value = 'example.com'
-        self.authzr1.body.challenges = [http_01, tls_sni_01]
+        self.authzr1.body.challenges = [http_01, http_01]
 
         kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
-        tls_sni_01_diff = messages.ChallengeBody(**kwargs)
+        http_01_diff = messages.ChallengeBody(**kwargs)
 
         self.authzr2 = mock.MagicMock()
         self.authzr2.body.identifier.value = 'foo.bar'
-        self.authzr2.body.challenges = [tls_sni_01_diff]
+        self.authzr2.body.challenges = [http_01_diff]
 
     @test_util.patch_get_utility()
     def test_same_error_and_domain(self, mock_zope):

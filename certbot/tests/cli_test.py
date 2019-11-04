@@ -249,13 +249,6 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         expected = [challenges.HTTP01.typ, challenges.DNS01.typ]
         self.assertEqual(namespace.pref_challs, expected)
 
-        # TODO: to be removed once tls-sni deprecation logic is removed
-        with mock.patch('certbot.cli.logger.warning') as mock_warn:
-            self.assertEqual(self.parse(['--preferred-challenges', 'http, tls-sni']).pref_challs,
-                             [challenges.HTTP01.typ])
-        self.assertEqual(mock_warn.call_count, 1)
-        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
-
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
         # argparse.ArgumentError makes argparse print more information
         # to stderr and call sys.exit()
@@ -271,16 +264,6 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = self.parse(short_args)
         self.assertTrue(namespace.must_staple)
         self.assertTrue(namespace.staple)
-
-    def test_no_gui(self):
-        args = ['renew', '--dialog']
-        with mock.patch("certbot.util.logger.warning") as mock_warn:
-            namespace = self.parse(args)
-
-        self.assertTrue(namespace.noninteractive_mode)
-        self.assertEqual(mock_warn.call_count, 1)
-        self.assertTrue("is deprecated" in mock_warn.call_args[0][0])
-        self.assertEqual("--dialog", mock_warn.call_args[0][1])
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:

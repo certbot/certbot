@@ -108,13 +108,9 @@ class MultipleVhostsTest(util.ApacheTest):
                 exp[k.replace("_", "-")] = ApacheConfigurator.OS_DEFAULTS[k]
         # Special cases
         exp["vhost-root"] = None
-        exp["init-script"] = None
 
         found = set()
         for call in mock_add.call_args_list:
-            # init-script is a special case: deprecated argument
-            if call[0][0] != "init-script":
-                self.assertEqual(exp[call[0][0]], call[1]['default'])
             found.add(call[0][0])
 
         # Make sure that all (and only) the expected values exist
@@ -1296,13 +1292,13 @@ class MultipleVhostsTest(util.ApacheTest):
         account_key = self.rsa512jwk
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.TLSSNI01(
+                challenges.HTTP01(
                     token=b"jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q"),
                 "pending"),
             domain="encryption-example.demo", account_key=account_key)
         achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.TLSSNI01(
+                challenges.HTTP01(
                     token=b"uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
                 "pending"),
             domain="certbot.demo", account_key=account_key)

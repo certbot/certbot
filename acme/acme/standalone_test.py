@@ -6,6 +6,7 @@ import socket
 import threading
 import tempfile
 import unittest
+import warnings
 import time
 from contextlib import closing
 
@@ -65,6 +66,18 @@ class TLSSNI01ServerTest(unittest.TestCase):
             b'localhost', host=host, port=port, timeout=1)
         self.assertEqual(jose.ComparableX509(cert),
                          jose.ComparableX509(self.certs[b'localhost'][1]))
+
+
+class BaseRequestHandlerWithLoggingTest(unittest.TestCase):
+    """Test for acme.standalone.BaseRequestHandlerWithLogging."""
+
+    def test_it(self):
+        with mock.patch('acme.standalone.warnings.warn') as mock_warn:
+            # pylint: disable=unused-variable
+            from acme.standalone import BaseRequestHandlerWithLogging
+        self.assertTrue(mock_warn.called)
+        msg = mock_warn.call_args[0][0]
+        self.assertTrue(msg.startswith('BaseRequestHandlerWithLogging'))
 
 
 class HTTP01ServerTest(unittest.TestCase):
@@ -266,8 +279,7 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.port = sock.getsockname()[1]
 
-        from acme.standalone import simple_tls_sni_01_server
-        self.process = multiprocessing.Process(target=simple_tls_sni_01_server,
+        self.process = multiprocessing.Process(target=_simple_tls_sni_01_server_no_warnings,
                                                args=(['path', '-p', str(self.port)],))
         self.old_cwd = os.getcwd()
         os.chdir(self.test_cwd)
@@ -284,8 +296,8 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
 
     @mock.patch('acme.standalone.TLSSNI01Server.handle_request')
     def test_mock(self, handle):
-        from acme.standalone import simple_tls_sni_01_server
-        simple_tls_sni_01_server(cli_args=['path', '-p', str(self.port)], forever=False)
+        _simple_tls_sni_01_server_no_warnings(cli_args=['path', '-p', str(self.port)],
+                                              forever=False)
         self.assertEqual(handle.call_count, 1)
 
     def test_live(self):
@@ -300,6 +312,13 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                 pass
         self.assertEqual(jose.ComparableX509(cert),
                          test_util.load_comparable_cert('rsa2048_cert.pem'))
+
+
+def _simple_tls_sni_01_server_no_warnings(*args, **kwargs):
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', 'simple_tls.*')
+        from acme.standalone import simple_tls_sni_01_server
+        return simple_tls_sni_01_server(*args, **kwargs)
 
 
 if __name__ == "__main__":

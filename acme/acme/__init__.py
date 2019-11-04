@@ -35,7 +35,7 @@ class _TLSSNI01DeprecationModule(object):
         self.__dict__['_module'] = module
 
     def __getattr__(self, attr):
-        if 'TLSSNI01' in attr:
+        if 'TLSSNI01' in attr or attr == 'BaseRequestHandlerWithLogging':
             warnings.warn('{0} attribute is deprecated, and will be removed soon.'.format(attr),
                           DeprecationWarning, stacklevel=2)
         return getattr(self._module, attr)
@@ -48,3 +48,10 @@ class _TLSSNI01DeprecationModule(object):
 
     def __dir__(self):  # pragma: no cover
         return ['_module'] + dir(self._module)
+
+if sys.version_info[:2] == (3, 4):
+    warnings.warn(
+            "Python 3.4 support will be dropped in the next release of "
+            "acme. Please upgrade your Python version.",
+            PendingDeprecationWarning,
+    ) # pragma: no cover

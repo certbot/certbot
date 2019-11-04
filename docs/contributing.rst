@@ -197,15 +197,20 @@ using an HTTP-01 challenge on a machine with Python 3:
 Code components and layout
 ==========================
 
+The following components of the Certbot repository are distributed to users:
+
 acme
   contains all protocol specific code
 certbot
   main client code
 certbot-apache and certbot-nginx
   client code to configure specific web servers
-certbot.egg-info
-  configuration for packaging Certbot
-
+certbot-dns-*
+  client code to configure DNS providers
+certbot-auto and letsencrypt-auto
+  shell scripts to install Certbot and its dependencies on UNIX systems
+windows installer
+  Installs Certbot on Windows and is built using the files in windows-installer/
 
 Plugin-architecture
 -------------------
@@ -234,7 +239,7 @@ Authenticators
 
 Authenticators are plugins that prove control of a domain name by solving a
 challenge provided by the ACME server. ACME currently defines several types of
-challenges: HTTP, TLS-SNI (deprecated), TLS-ALPR, and DNS, represented by classes in `acme.challenges`.
+challenges: HTTP, TLS-ALPN, and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing
