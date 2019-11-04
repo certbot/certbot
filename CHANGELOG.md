@@ -18,6 +18,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   systems will be asked to do this manually.
 * `--server` may now be combined with `--dry-run`. Certbot will, as before, use the
   staging server instead of the live server when `--dry-run` is used.
+* `--dry-run` now requests fresh authorizations every time, fixing the issue
+  where it was prone to falsely reporting success.
 * Updated certbot-dns-google to depend on newer versions of
   google-api-python-client and oauth2client.
 * The OS detection logic again uses distro library for Linux OSes

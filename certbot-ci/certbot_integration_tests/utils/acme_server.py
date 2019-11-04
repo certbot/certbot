@@ -125,6 +125,7 @@ class ACMEServer(object):
         environ = os.environ.copy()
         environ['PEBBLE_VA_NOSLEEP'] = '1'
         environ['PEBBLE_WFE_NONCEREJECT'] = '0'
+        environ['PEBBLE_AUTHZREUSE'] = '100'
 
         self._launch_process(
             [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053'],
