@@ -32,7 +32,7 @@ mkdir -p "$OLD_VENV_BIN"
 touch "$OLD_VENV_BIN/letsencrypt"
 
 letsencrypt-auto certonly --no-self-upgrade -v --standalone --debug \
-                   --text --agree-dev-preview --agree-tos \
+                   --text --agree-tos \
                    --renew-by-default --redirect \
                    --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
