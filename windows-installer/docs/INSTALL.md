@@ -22,11 +22,9 @@ All options available for a given supported command, as described by the documen
 
 The following operations need to be executed using an account with **administrative privileges** on the machine where you want to install Certbot.
 
-Certbot can be installed through an installer that is available:
-- on GitHub: go to the Certbot GitHub release (https://github.com/certbot/certbot/releases), select the last version of Certbot (v0.40.0 currently), and download the installer named `certbot-beta-installer-win32.exe in the assets.
-- on Certbot's official website: _[specific URL and procedure to be defined]_
+Certbot can be installed through an installer that is available on GitHub: go to the [Certbot GitHub releases panel](https://github.com/certbot/certbot/releases), select the last version of Certbot (v0.40.0 currently), and download the installer named `certbot-beta-installer-win32.exe` in the assets.
 
-The Certbot development team can guarantee the authenticity of the Windows installer only for these two sources as of now. Be cautious in downloading Windows installers from other sources, because they could be corrupt or include malicious functionality.
+The Certbot development team can guarantee the authenticity of the Windows installer only for this source as of now. Be cautious in downloading Windows installers from other sources, because they could be corrupted or include a malicious functionality.
 
 Once downloaded, double-click on the installer to run it. You will need to select the location for Certbot installation directory, or keep the default one (`C:\Program Files(x86)\Certbot).
 
@@ -82,6 +80,6 @@ When a new version of Certbot release is available, please download the new inst
 
 ## Getting help, reporting issues, asking for new features
 
-If you encounter some difficulties to install or use Certbot for Windows, there is a dedicated area in the Let's Encrypt Community Forum that can be reached at _[URL to dedicated category on Certbot (beta) for Windows in the Let's Encrypt Community Forum to be defined]_.
+If you encounter some difficulties to install or use Certbot for Windows, you can reach the [Help section](https://community.letsencrypt.org/c/help) of the Let's Encrypt Community Forum to get some support.
 
-If you find an issue, or want to ask for a new feature on Certbot for Windows, do not hesitate to create a new issue in the [Certbot GitHub repository](https://github.com/certbot/certbot/issues). When filing an issue, you can tag it with the `area: windows` tag to ensure that the developers see that it relates to Certbot on Windows. Also please do not forget that some existing features for Linux systems are not yet available on Windows, but are planned to be added (see the section _Supported features_).
+If you find an issue, or want to ask for a new feature on Certbot for Windows, do not hesitate to create a new issue in the [Certbot GitHub repository](https://github.com/certbot/certbot/issues). Also please do not forget that some existing features for Linux systems are not yet available on Windows, but are planned to be added (see the section _Supported features_).
