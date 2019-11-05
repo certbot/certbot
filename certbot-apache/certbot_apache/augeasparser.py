@@ -81,9 +81,9 @@ class AugeasDirectiveNode(AugeasParserNode):
             param_path = "{}/arg[1]".format(self.metadata["augeaspath"])
             self.parser.aug.remove(param_path)
         # Insert new ones
-        for pi, _ in enumerate(parameters):
+        for pi, param in enumerate(parameters):
             param_path = "{}/arg[{}]".format(self.metadata["augeaspath"], pi+1)
-            self.parser.aug.set(param_path, parameters[pi])
+            self.parser.aug.set(param_path, param)
 
     @property
     def parameters(self):
