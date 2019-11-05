@@ -143,7 +143,6 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("how a certificate is deployed" in out)
         self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
-        self.assertTrue("--dialog" not in out)
         self.assertTrue("%s" not in out)
         self.assertTrue("{0}" not in out)
         self.assertTrue("--renew-hook" not in out)
@@ -204,7 +203,6 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("how a certificate is deployed" in out)
         self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
-        self.assertTrue("--dialog" not in out)
         self.assertTrue("%s" not in out)
         self.assertTrue("{0}" not in out)
 

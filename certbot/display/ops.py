@@ -108,7 +108,7 @@ def choose_names(installer, question=None):
     :param installer: An installer object
     :type installer: :class:`certbot.interfaces.IInstaller`
 
-    :param `str` question: Overriding dialog question to ask the user if asked
+    :param `str` question: Overriding default question to ask the user if asked
         to choose from domain names.
 
     :returns: List of selected names
