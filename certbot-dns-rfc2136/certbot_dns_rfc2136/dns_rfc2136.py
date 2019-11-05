@@ -206,7 +206,7 @@ class _RFC2136Client(object):
         request.flags ^= dns.flags.RD
 
         try:
-            response = dns.query.udp(request, self.server, port=self.port)
+            response = dns.query.tcp(request, self.server, port=self.port)
             rcode = response.rcode()
 
             # Authoritative Answer bit should be set
