@@ -392,9 +392,6 @@ unregister:
 install:
   Options for modifying how a certificate is deployed
 
-config_changes:
-  Options for viewing configuration changes
-
 rollback:
   Options for rolling back server configuration changes
 

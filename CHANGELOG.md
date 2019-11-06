@@ -10,7 +10,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Certbot's `config_changes` subcommand has been removed
+* The functions `certbot.client.view_config_changes`,
+  `certbot.main.config_changes`,
+  `certbot.plugins.common.Installer.view_config_changes`, and
+  `certbot.reverter.Reverter.view_config_changes` have been removed
 
 ### Fixed
 
