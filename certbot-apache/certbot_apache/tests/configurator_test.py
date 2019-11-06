@@ -108,13 +108,9 @@ class MultipleVhostsTest(util.ApacheTest):
                 exp[k.replace("_", "-")] = ApacheConfigurator.OS_DEFAULTS[k]
         # Special cases
         exp["vhost-root"] = None
-        exp["init-script"] = None
 
         found = set()
         for call in mock_add.call_args_list:
-            # init-script is a special case: deprecated argument
-            if call[0][0] != "init-script":
-                self.assertEqual(exp[call[0][0]], call[1]['default'])
             found.add(call[0][0])
 
         # Make sure that all (and only) the expected values exist

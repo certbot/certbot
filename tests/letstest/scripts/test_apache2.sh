@@ -51,7 +51,7 @@ fi
 . tests/letstest/scripts/set_python_envvars.sh
 
 "$VENV_SCRIPT" -e acme[dev] -e .[dev,docs] -e certbot-apache
-sudo "$VENV_PATH/bin/certbot" -v --debug --text --agree-dev-preview --agree-tos \
+sudo "$VENV_PATH/bin/certbot" -v --debug --text --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
 if [ $? -ne 0 ] ; then
