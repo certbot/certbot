@@ -59,6 +59,9 @@ matrix:
       dist: trusty
       env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
       <<: *not-on-master
+    - python: "3.5"
+      env: TOXENV=py35
+      <<: *not-on-master
     - python: "3.7"
       env: TOXENV=py37
       <<: *not-on-master
