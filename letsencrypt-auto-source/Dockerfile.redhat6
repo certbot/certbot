@@ -1,9 +1,13 @@
 # For running tests, build a docker image with a passwordless sudo and a trust
 # store we can manipulate.
 
-FROM centos:6
+ARG REDHAT_DIST_FLAVOR
+FROM ${REDHAT_DIST_FLAVOR}:6
 
-RUN yum install -y epel-release
+ARG REDHAT_DIST_FLAVOR
+
+RUN curl -O https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm \
+ && rpm -ivh epel-release-latest-6.noarch.rpm
 
 # Install pip and sudo:
 RUN yum install -y python-pip sudo
@@ -27,11 +31,18 @@ RUN mkdir -p /home/lea/certbot
 COPY ./tests/certs/ca/my-root-ca.crt.pem /usr/local/share/ca-certificates/
 RUN update-ca-trust
 
-# Copy code:
+# Copy current letsencrypt-auto:
 COPY . /home/lea/certbot/letsencrypt-auto-source
+
+# Fetch previous letsencrypt-auto that was installing python 3.4
+RUN curl https://raw.githubusercontent.com/certbot/certbot/v0.38.0/letsencrypt-auto-source/letsencrypt-auto \
+    -o /home/lea/certbot/letsencrypt-auto-source/letsencrypt-auto_py_34 \
+ && chmod +x /home/lea/certbot/letsencrypt-auto-source/letsencrypt-auto_py_34
+
+RUN cp /home/lea/certbot/letsencrypt-auto-source/tests/${REDHAT_DIST_FLAVOR}6_tests.sh /home/lea/certbot/letsencrypt-auto-source/tests/redhat6_tests.sh \
+ && chmod +x /home/lea/certbot/letsencrypt-auto-source/tests/redhat6_tests.sh
 
 USER lea
 WORKDIR /home/lea
 
-RUN sudo chmod +x certbot/letsencrypt-auto-source/tests/centos6_tests.sh
-CMD sudo certbot/letsencrypt-auto-source/tests/centos6_tests.sh
+CMD ["sudo", "certbot/letsencrypt-auto-source/tests/redhat6_tests.sh"]
