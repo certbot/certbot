@@ -1,6 +1,8 @@
 """Tests for AugeasParserNode classes"""
 import mock
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+
 from certbot_apache import assertions
 
 from certbot_apache.tests import util
@@ -72,3 +74,59 @@ class AugeasParserNodeTest(util.ApacheTest):
         self.assertTrue(rootcomment[0].filepath.endswith(
             "debian_apache_2_4/multiple_vhosts/apache2/apache2.conf"
         ))
+
+    def test_set_parameters(self):
+        servernames = self.config.parser_root.find_directives("servername")
+        names = []  # type: List[str]
+        for servername in servernames:
+            names += servername.parameters
+        self.assertFalse("going_to_set_this" in names)
+        servernames[0].set_parameters(["something", "going_to_set_this"])
+        servernames = self.config.parser_root.find_directives("servername")
+        names = []
+        for servername in servernames:
+            names += servername.parameters
+        self.assertTrue("going_to_set_this" in names)
+
+    def test_set_parameters_atinit(self):
+        from certbot_apache.augeasparser import AugeasDirectiveNode
+        servernames = self.config.parser_root.find_directives("servername")
+        setparam = "certbot_apache.augeasparser.AugeasDirectiveNode.set_parameters"
+        with mock.patch(setparam) as mock_set:
+            AugeasDirectiveNode(
+                name=servernames[0].name,
+                parameters=["test", "setting", "these"],
+                ancestor=assertions.PASS,
+                metadata=servernames[0].metadata
+            )
+            self.assertTrue(mock_set.called)
+            self.assertEqual(
+                mock_set.call_args_list[0][0][0],
+                ["test", "setting", "these"]
+            )
+
+    def test_set_parameters_delete(self):
+        # Set params
+        servername = self.config.parser_root.find_directives("servername")[0]
+        servername.set_parameters(["thisshouldnotexistpreviously", "another",
+                                   "third"])
+
+        # Delete params
+        servernames = self.config.parser_root.find_directives("servername")
+        found = False
+        for servername in servernames:
+            if "thisshouldnotexistpreviously" in servername.parameters:
+                self.assertEqual(len(servername.parameters), 3)
+                servername.set_parameters(["thisshouldnotexistpreviously"])
+                found = True
+        self.assertTrue(found)
+
+        # Verify params
+        servernames = self.config.parser_root.find_directives("servername")
+        found = False
+        for servername in servernames:
+            if "thisshouldnotexistpreviously" in servername.parameters:
+                self.assertEqual(len(servername.parameters), 1)
+                servername.set_parameters(["thisshouldnotexistpreviously"])
+                found = True
+        self.assertTrue(found)

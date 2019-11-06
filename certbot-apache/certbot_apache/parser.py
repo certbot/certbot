@@ -680,6 +680,12 @@ class ApacheParser(object):
 
         return value
 
+    def get_root_augpath(self):
+        """
+        Returns the Augeas path of root configuration.
+        """
+        return get_aug_path(self.loc["root"])
+
     def exclude_dirs(self, matches):
         """Exclude directives that are not loaded into the configuration."""
         filters = [("ifmodule", self.modules), ("ifdefine", self.variables)]
