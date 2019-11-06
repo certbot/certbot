@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.41.0 - master
+## 1.0.0 - master
 
 ### Added
 
@@ -10,8 +10,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* Added back support for Python 3.4 to Certbot components and certbot-auto due
-  to a bug when requiring Python 2.7 or 3.5+ on RHEL 6 based systems.
 * Certbot's `config_changes` subcommand has been removed
 * The functions `certbot.client.view_config_changes`,
   `certbot.main.config_changes`,
@@ -21,6 +19,15 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.40.1 - 2019-11-05
+
+### Changed
+
+* Added back support for Python 3.4 to Certbot components and certbot-auto due
+  to a bug when requiring Python 2.7 or 3.5+ on RHEL 6 based systems.
 
 More details about these changes can be found on our GitHub repo.
 
