@@ -48,10 +48,3 @@ class _TLSSNI01DeprecationModule(object):
 
     def __dir__(self):  # pragma: no cover
         return ['_module'] + dir(self._module)
-
-if sys.version_info[:2] == (3, 4):
-    warnings.warn(
-            "Python 3.4 support will be dropped in the next release of "
-            "acme. Please upgrade your Python version.",
-            PendingDeprecationWarning,
-    ) # pragma: no cover

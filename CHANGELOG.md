@@ -2,6 +2,15 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.40.1 - master
+
+### Changed
+
+* Added back support for Python 3.4 to Certbot components and certbot-auto due
+  to a bug when requiring Python 2.7 or 3.5+ on RHEL 6 based systems.
+
+More details about these changes can be found on our GitHub repo.
+
 ## 0.40.0 - 2019-11-05
 
 ### Added
