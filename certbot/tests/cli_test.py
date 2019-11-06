@@ -186,6 +186,10 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--delete-after-revoke" in out)
         self.assertTrue("--no-delete-after-revoke" in out)
 
+        out = self._help_output(['-h', 'register'])
+        self.assertTrue("--cert-path" not in out)
+        self.assertTrue("--key-path" not in out)
+
         out = self._help_output(['-h'])
         self.assertTrue(cli.SHORT_USAGE in out)
         self.assertTrue(cli.COMMAND_OVERVIEW[:100] in out)
