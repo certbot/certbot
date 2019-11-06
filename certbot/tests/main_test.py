@@ -753,17 +753,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         client.rollback.assert_called_once_with(
             mock.ANY, 123, mock.ANY, mock.ANY)
 
-    def test_config_changes(self):
-        _, _, _, client = self._call(['config_changes'])
-        self.assertEqual(1, client.view_config_changes.call_count)
-
-    @mock.patch('certbot.main.logger.warning')
-    def test_config_changes_deprecation(self, mock_warning):
-        self._call(['config_changes'])
-        self.assertTrue(mock_warning.called)
-        msg = mock_warning.call_args[0][0]
-        self.assertIn("config_changes subcommand has been deprecated", msg)
-
     @mock.patch('certbot.cert_manager.update_live_symlinks')
     def test_update_symlinks(self, mock_cert_manager):
         self._call_no_clientmock(['update_symlinks'])
