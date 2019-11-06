@@ -12,6 +12,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Added back support for Python 3.4 to Certbot components and certbot-auto due
   to a bug when requiring Python 2.7 or 3.5+ on RHEL 6 based systems.
+* Certbot's `config_changes` subcommand has been removed
+* The functions `certbot.client.view_config_changes`,
+  `certbot.main.config_changes`,
+  `certbot.plugins.common.Installer.view_config_changes`, and
+  `certbot.reverter.Reverter.view_config_changes` have been removed
 
 ### Fixed
 
@@ -49,7 +54,6 @@ More details about these changes can be found on our GitHub repo.
 * acme.standalone.BaseRequestHandlerWithLogging and
   acme.standalone.simple_tls_sni_01_server have been deprecated and will be
   removed in a future release of the library.
-* Certbot's config_changes subcommand has been removed
 
 ### Fixed
 
