@@ -764,6 +764,12 @@ UNLIKELY_EOF
       error "WARNING: unable to check for updates."
     fi
 
+    # If for any reason REMOTE_VERSION is not set, let's assume certbot-auto is up-to-date,
+    # in order to avoid potential failures because of an unset REMOTE_VERSION variable.
+    if [ -z "$REMOTE_VERSION" ]; then
+      REMOTE_VERSION="$LE_AUTO_VERSION"
+    fi
+
     LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
     if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
       say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
