@@ -1381,11 +1381,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                     jose.ComparableX509(cert),
                     mock.ANY)
 
-    def test_agree_dev_preview_config(self):
-        with mock.patch('certbot.main.run') as mocked_run:
-            self._call(['-c', test_util.vector_path('cli.ini')])
-        self.assertTrue(mocked_run.called)
-
     @mock.patch('certbot.log.post_arg_parse_setup')
     def test_register(self, _):
         with mock.patch('certbot.main.client') as mocked_client:
