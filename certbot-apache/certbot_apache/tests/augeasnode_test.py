@@ -35,7 +35,7 @@ class AugeasParserNodeTest(util.ApacheTest):
             "/Anything": "Anything",
         }
         for test in testcases:
-            self.assertEqual(block._aug_get_block_name(test), testcases[test])  # pylint: disable=protected-access
+            self.assertEqual(block._aug_get_name(test), testcases[test])  # pylint: disable=protected-access
 
     def test_find_blocks(self):
         blocks = self.config.parser_root.find_blocks("VirtualHost", exclude=False)
@@ -130,3 +130,71 @@ class AugeasParserNodeTest(util.ApacheTest):
                 servername.set_parameters(["thisshouldnotexistpreviously"])
                 found = True
         self.assertTrue(found)
+
+    def test_add_child_block(self):
+        nb = self.config.parser_root.primary.add_child_block(
+            "NewBlock",
+            ["first", "second"]
+        )
+        rpath, _, directive = nb.metadata["augeaspath"].rpartition("/")
+        self.assertEqual(
+            rpath,
+            self.config.parser_root.primary.metadata["augeaspath"]
+        )
+        self.assertTrue(directive.startswith("NewBlock"))
+
+    def test_add_child_block_beginning(self):
+        self.config.parser_root.primary.add_child_block(
+            "Beginning",
+            position=0
+        )
+        parser = self.config.parser_root.primary.parser
+        root_path = self.config.parser_root.primary.metadata["augeaspath"]
+        # Get first child
+        first = parser.aug.match("{}/*[1]".format(root_path))
+        self.assertTrue(first[0].endswith("Beginning"))
+
+    def test_add_child_block_append(self):
+        self.config.parser_root.primary.add_child_block(
+            "VeryLast",
+        )
+        parser = self.config.parser_root.primary.parser
+        root_path = self.config.parser_root.primary.metadata["augeaspath"]
+        # Get last child
+        last = parser.aug.match("{}/*[last()]".format(root_path))
+        self.assertTrue(last[0].endswith("VeryLast"))
+
+    def test_add_child_block_append_alt(self):
+        self.config.parser_root.primary.add_child_block(
+            "VeryLastAlt",
+            position=99999
+        )
+        parser = self.config.parser_root.primary.parser
+        root_path = self.config.parser_root.primary.metadata["augeaspath"]
+        # Get last child
+        last = parser.aug.match("{}/*[last()]".format(root_path))
+        self.assertTrue(last[0].endswith("VeryLastAlt"))
+
+    def test_add_child_block_middle(self):
+        self.config.parser_root.primary.add_child_block(
+            "Middle",
+            position=5
+        )
+        parser = self.config.parser_root.primary.parser
+        root_path = self.config.parser_root.primary.metadata["augeaspath"]
+        # Augeas indices start at 1 :(
+        middle = parser.aug.match("{}/*[6]".format(root_path))
+        self.assertTrue(middle[0].endswith("Middle"))
+
+    def test_add_child_block_existing_name(self):
+        parser = self.config.parser_root.primary.parser
+        root_path = self.config.parser_root.primary.metadata["augeaspath"]
+        # There already exists a single VirtualHost in the base config
+        new_block = parser.aug.match("{}/VirtualHost[2]".format(root_path))
+        self.assertEqual(len(new_block), 0)
+        vh = self.config.parser_root.primary.add_child_block(
+            "VirtualHost",
+        )
+        new_block = parser.aug.match("{}/VirtualHost[2]".format(root_path))
+        self.assertEqual(len(new_block), 1)
+        self.assertTrue(vh.metadata["augeaspath"].endswith("VirtualHost[2]"))
