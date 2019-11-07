@@ -20,12 +20,10 @@ EnablePython36SCL() {
   if "$EXISTS" python3.6 > /dev/null 2> /dev/null; then
       return 0
   fi
-  if ! scl --list 2>/dev/null | grep -q rh-python36; then
+  if [ ! -f /opt/rh/rh-python36/enable ]; then
       return 0
   fi
-  set +e
-  . scl_source enable rh-python36
-  set -e
+  . /opt/rh/rh-python36/enable
 }
 
 # This bootstrap concerns old RedHat-based distributions that do not ship by default
