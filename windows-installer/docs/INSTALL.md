@@ -24,7 +24,7 @@ The following operations need to be executed using an account with **administrat
 
 Certbot can be installed through an installer that is available on GitHub: go to the [Certbot GitHub releases panel](https://github.com/certbot/certbot/releases), select the last version of Certbot (v0.40.0 currently), and download the installer named `certbot-beta-installer-win32.exe` in the assets.
 
-The Certbot development team can guarantee the authenticity of the Windows installer only for this source as of now. Be cautious in downloading Windows installers from other sources, because they could be corrupted or include a malicious functionality.
+The Certbot development team can guarantee the authenticity of the Windows installer only for this source as of now. Be cautious in downloading Windows installers from other sources, because they could be corrupted or include malicious functionality.
 
 Once downloaded, double-click on the installer to run it. You will need to select the location for Certbot installation directory, or keep the default one (`C:\Program Files(x86)\Certbot).
 
