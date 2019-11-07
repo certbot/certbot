@@ -206,11 +206,7 @@ class _RFC2136Client(object):
         request.flags ^= dns.flags.RD
 
         try:
-            try:
-                response = dns.query.tcp(request, self.server, port=self.port)
-            except OSError as e:
-                logger.debug('TCP query failed, fallback to UDP: %s', e)
-                response = dns.query.udp(request, self.server, port=self.port)
+            response = dns.query.udp(request, self.server, port=self.port)
             rcode = response.rcode()
 
             # Authoritative Answer bit should be set
