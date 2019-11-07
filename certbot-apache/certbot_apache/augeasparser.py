@@ -1,4 +1,69 @@
-""" Augeas implementation of the ParserNode interfaces """
+"""
+Augeas implementation of the ParserNode interfaces.
+
+Augeas works internally by using XPATH notation. The following is a short example
+of how this all works internally, to better understand what's going on under the
+hood.
+
+A configuration file /etc/apache2/apache2.conf with the following content:
+
+    # First comment line
+    # Second comment line
+    WhateverDirective whatevervalue
+    <ABlock>
+        DirectiveInABlock dirvalue
+    </ABlock>
+    SomeDirective somedirectivevalue
+    <ABlock>
+        AnotherDirectiveInABlock dirvalue
+    </ABlock>
+    # Yet another comment
+
+
+Translates over to Augeas path notation (of immediate children), when calling
+for example: aug.match("/files/etc/apache2/apache2.conf/*")
+
+[
+    "/files/etc/apache2/apache2.conf/#comment[1]",
+    "/files/etc/apache2/apache2.conf/#comment[2]",
+    "/files/etc/apache2/apache2.conf/directive[1]",
+    "/files/etc/apache2/apache2.conf/ABlock[1]",
+    "/files/etc/apache2/apache2.conf/directive[2]",
+    "/files/etc/apache2/apache2.conf/ABlock[2]",
+    "/files/etc/apache2/apache2.conf/#comment[3]"
+]
+
+Regardless of directives name, its key in the Augeas tree is always "directive",
+with index where needed of course. Comments work similarly, while blocks
+have their own key in the Augeas XPATH notation.
+
+It's important to note that all of the unique keys have their own indices.
+
+Augeas paths are case sensitive, while Apache configuration is case insensitive.
+It looks like this:
+
+    <block>
+        directive value
+    </block>
+    <Block>
+        Directive Value
+    </Block>
+    <block>
+        directive value
+    </block>
+    <bLoCk>
+        DiReCtiVe VaLuE
+    </bLoCk>
+
+Translates over to:
+
+[
+    "/files/etc/apache2/apache2.conf/block[1]",
+    "/files/etc/apache2/apache2.conf/Block[1]",
+    "/files/etc/apache2/apache2.conf/block[2]",
+    "/files/etc/apache2/apache2.conf/bLoCk[1]",
+]
+"""
 
 from certbot_apache import apache_util
 from certbot_apache import assertions
@@ -320,7 +385,9 @@ class AugeasBlockNode(AugeasDirectiveNode):
             self.metadata["augeaspath"])
         )
 
-        # Augeas indices start at 1
+        # Calculate resulting_path
+        # Augeas indices start at 1. We use counter to calculate the index to
+        # be used in resulting_path.
         counter = 1
         for i, child in enumerate(all_children):
             if position is not None and i >= position:
@@ -336,6 +403,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
             counter
         )
 
+        # Form the correct insert_path
         # Inserting the only child and appending as the last child work
         # similarly in Augeas.
         append = not all_children or position is None or position >= len(all_children)
