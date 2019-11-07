@@ -193,6 +193,20 @@ class RFC2136ClientTest(unittest.TestCase):
             self.rfc2136_client._query_soa,
             DOMAIN)
 
+    @mock.patch("dns.query.udp")
+    @mock.patch("dns.query.tcp")
+    def test_query_soa_fallback_to_udp(self, tcp_mock, udp_mock):
+        tcp_mock.side_effect = OSError
+        udp_mock.return_value = mock.MagicMock(answer=[mock.MagicMock()], flags=dns.flags.AA)
+        udp_mock.return_value.rcode.return_value = dns.rcode.NOERROR
+
+        # _query_soa | pylint: disable=protected-access
+        result = self.rfc2136_client._query_soa(DOMAIN)
+
+        tcp_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        udp_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        self.assertTrue(result)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
