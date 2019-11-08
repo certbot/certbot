@@ -438,7 +438,7 @@ class HelpfulArgumentParser(object):
 
 
     def __init__(self, args, plugins, detect_defaults=False):
-        from certbot import main
+        from certbot._internal import main
         self.VERBS = {
             "auth": main.certonly,
             "certonly": main.certonly,

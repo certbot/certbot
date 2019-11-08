@@ -3,7 +3,7 @@ import unittest
 import mock
 
 from certbot import interfaces
-from certbot import main
+from certbot._internal import main
 from certbot import updater
 
 from certbot.plugins import enhancements
@@ -21,7 +21,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         self.renew_deployer = mock.MagicMock(spec=interfaces.RenewDeployer)
         self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
 
-    @mock.patch('certbot.main._get_and_save_cert')
+    @mock.patch('certbot._internal.main._get_and_save_cert')
     @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
     @mock.patch('certbot.plugins.selection.get_unprepared_installer')
     @test_util.patch_get_utility()
@@ -32,7 +32,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         # Generic Updater
         mock_select.return_value = (mock_generic_updater, None)
         mock_geti.return_value = mock_generic_updater
-        with mock.patch('certbot.main._init_le_client'):
+        with mock.patch('certbot._internal.main._init_le_client'):
             main.renew_cert(self.config, None, mock.MagicMock())
         self.assertTrue(mock_generic_updater.restart.called)
 

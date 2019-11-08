@@ -429,7 +429,7 @@ def handle_renewal_request(config):  # pylint: disable=too-many-locals,too-many-
                 # XXX: ensure that each call here replaces the previous one
                 zope.component.provideUtility(lineage_config)
                 renewal_candidate.ensure_deployed()
-                from certbot import main
+                from certbot._internal import main
                 plugins = plugins_disco.PluginsRegistry.find_all()
                 if should_renew(lineage_config, renewal_candidate):
                     # Apply random sleep upon first renewal if needed
