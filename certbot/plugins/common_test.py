@@ -1,10 +1,8 @@
 """Tests for certbot.plugins.common."""
 import functools
 import shutil
-import tempfile
 import unittest
 
-import OpenSSL
 import josepy as jose
 import mock
 
@@ -19,16 +17,10 @@ from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
 AUTH_KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
-ACHALLS = [
-    achallenges.KeyAuthorizationAnnotatedChallenge(
-        challb=acme_util.chall_to_challb(
-            challenges.TLSSNI01(token=b'token1'), "pending"),
-        domain="encryption-example.demo", account_key=AUTH_KEY),
-    achallenges.KeyAuthorizationAnnotatedChallenge(
-        challb=acme_util.chall_to_challb(
-            challenges.TLSSNI01(token=b'token2'), "pending"),
-        domain="certbot.demo", account_key=AUTH_KEY),
-]
+ACHALL = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(challenges.HTTP01(token=b'token1'),
+                                             "pending"),
+            domain="encryption-example.demo", account_key=AUTH_KEY)
 
 class NamespaceFunctionsTest(unittest.TestCase):
     """Tests for certbot.plugins.common.*_namespace functions."""
@@ -276,69 +268,12 @@ class ChallengePerformerTest(unittest.TestCase):
         self.performer = ChallengePerformer(configurator)
 
     def test_add_chall(self):
-        self.performer.add_chall(ACHALLS[0], 0)
+        self.performer.add_chall(ACHALL, 0)
         self.assertEqual(1, len(self.performer.achalls))
         self.assertEqual([0], self.performer.indices)
 
     def test_perform(self):
         self.assertRaises(NotImplementedError, self.performer.perform)
-
-
-class TLSSNI01Test(unittest.TestCase):
-    """Tests for certbot.plugins.common.TLSSNI01."""
-
-    def setUp(self):
-        self.tempdir = tempfile.mkdtemp()
-        configurator = mock.MagicMock()
-        configurator.config.config_dir = os.path.join(self.tempdir, "config")
-        configurator.config.work_dir = os.path.join(self.tempdir, "work")
-
-        from certbot.plugins.common import TLSSNI01
-        self.sni = TLSSNI01(configurator=configurator)
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
-
-    def test_setup_challenge_cert(self):
-        # This is a helper function that can be used for handling
-        # open context managers more elegantly. It avoids dealing with
-        # __enter__ and __exit__ calls.
-        # http://www.voidspace.org.uk/python/mock/helpers.html#mock.mock_open
-        mock_open, mock_safe_open = mock.mock_open(), mock.mock_open()
-
-        response = challenges.TLSSNI01Response()
-        achall = mock.MagicMock()
-        achall.chall.encode.return_value = "token"
-        key = test_util.load_pyopenssl_private_key("rsa512_key.pem")
-        achall.response_and_validation.return_value = (
-            response, (test_util.load_cert("cert_512.pem"), key))
-
-        with mock.patch("certbot.plugins.common.open",
-                        mock_open, create=True):
-            with mock.patch("certbot.plugins.common.util.safe_open",
-                            mock_safe_open):
-                # pylint: disable=protected-access
-                self.assertEqual(response, self.sni._setup_challenge_cert(
-                    achall, "randomS1"))
-
-        # pylint: disable=no-member
-        mock_open.assert_called_once_with(self.sni.get_cert_path(achall), "wb")
-        mock_open.return_value.write.assert_called_once_with(
-            test_util.load_vector("cert_512.pem"))
-        mock_safe_open.assert_called_once_with(
-            self.sni.get_key_path(achall), "wb", chmod=0o400)
-        mock_safe_open.return_value.write.assert_called_once_with(
-            OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key))
-
-    def test_get_z_domain(self):
-        achall = ACHALLS[0]
-        self.assertEqual(self.sni.get_z_domain(achall),
-            achall.response(achall.account_key).z_domain.decode("utf-8"))
-
-    def test_warning(self):
-        with mock.patch('certbot.plugins.common.warnings.warn') as mock_warn:
-            from certbot.plugins.common import TLSSNI01  # pylint: disable=unused-variable
-        self.assertTrue(mock_warn.call_args[0][0].startswith('TLSSNI01'))
 
 
 class InstallVersionControlledFileTest(test_util.TempDirTestCase):
