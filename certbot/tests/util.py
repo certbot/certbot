@@ -23,7 +23,7 @@ from certbot import configuration
 from certbot import constants
 from certbot import interfaces
 from certbot._internal import lock
-from certbot import storage
+from certbot._internal import storage
 from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem

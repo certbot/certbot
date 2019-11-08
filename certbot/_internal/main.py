@@ -28,7 +28,7 @@ from certbot import interfaces
 from certbot import log
 from certbot._internal import renewal
 from certbot._internal import reporter
-from certbot import storage
+from certbot._internal import storage
 from certbot import updater
 from certbot import util
 from certbot.compat import filesystem

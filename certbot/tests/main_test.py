@@ -301,7 +301,7 @@ class RevokeTest(test_util.TempDirTestCase):
         self.assertEqual(expected, mock_revoke.call_args_list)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
-    @mock.patch('certbot.storage.cert_path_for_cert_name')
+    @mock.patch('certbot._internal.storage.cert_path_for_cert_name')
     def test_revoke_by_certname(self, mock_cert_path_for_cert_name,
             mock_delete_if_appropriate):
         args = 'revoke --cert-name=example.com'.split()
@@ -357,10 +357,10 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         self._test_delete_opt_out_common(mock_get_utility)
 
     # pylint: disable=too-many-arguments
-    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.delete')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
-    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot._internal.storage.full_archive_path')
     @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
     @test_util.patch_get_utility()
     def test_overlapping_archive_dirs(self, mock_get_utility,
@@ -377,9 +377,9 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         mock_delete.assert_not_called()
 
     # pylint: disable=too-many-arguments
-    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
-    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot._internal.storage.full_archive_path')
     @mock.patch('certbot._internal.cert_manager.delete')
     @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
     @test_util.patch_get_utility()
@@ -396,9 +396,9 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         self.assertEqual(mock_delete.call_count, 1)
 
     # pylint: disable=too-many-arguments
-    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
-    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot._internal.storage.full_archive_path')
     @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
     @mock.patch('certbot._internal.cert_manager.delete')
     @test_util.patch_get_utility()
@@ -417,9 +417,9 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         self.assertEqual(mock_delete.call_count, 1)
 
     # pylint: disable=too-many-arguments
-    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
-    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot._internal.storage.full_archive_path')
     @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
     @mock.patch('certbot._internal.cert_manager.delete')
     @test_util.patch_get_utility()
@@ -1083,7 +1083,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         args = ["renew", "--dry-run", "--reuse-key"]
         self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
 
-    @mock.patch('certbot.storage.RenewableCert.save_successor')
+    @mock.patch('certbot._internal.storage.RenewableCert.save_successor')
     def test_reuse_key_no_dry_run(self, unused_save_successor):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--reuse-key"]
@@ -1175,7 +1175,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     def _test_renew_common(self, renewalparams=None, names=None,
                            assert_oc_called=None, **kwargs):
         self._make_dummy_renewal_config()
-        with mock.patch('certbot.storage.RenewableCert') as mock_rc:
+        with mock.patch('certbot._internal.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
             mock_lineage.fullchain = "somepath/fullchain.pem"
             if renewalparams is not None:
@@ -1247,7 +1247,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     def test_renew_obtain_cert_error(self):
         self._make_dummy_renewal_config()
-        with mock.patch('certbot.storage.RenewableCert') as mock_rc:
+        with mock.patch('certbot._internal.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
             mock_lineage.fullchain = "somewhere/fullchain.pem"
             mock_rc.return_value = mock_lineage

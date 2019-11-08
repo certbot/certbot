@@ -6,7 +6,7 @@ from acme import challenges
 
 from certbot import configuration
 from certbot import errors
-from certbot import storage
+from certbot._internal import storage
 
 import certbot.tests.util as test_util
 

@@ -13,7 +13,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import ocsp
-from certbot import storage
+from certbot._internal import storage
 from certbot import util
 from certbot.compat import os
 from certbot.display import util as display_util

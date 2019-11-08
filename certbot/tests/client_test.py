@@ -441,7 +441,7 @@ class ClientTest(ClientTestCommon):
         self._check_obtain_certificate(auth_count)
 
     @mock.patch('certbot._internal.client.Client.obtain_certificate')
-    @mock.patch('certbot.storage.RenewableCert.new_lineage')
+    @mock.patch('certbot._internal.storage.RenewableCert.new_lineage')
     def test_obtain_and_enroll_certificate(self,
                                            mock_storage, mock_obtain_certificate):
         domains = ["*.example.com", "example.com"]

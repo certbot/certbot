@@ -2345,7 +2345,7 @@ class ApacheConfigurator(common.Installer):
         Enable the AutoHSTS enhancement for defined domains
 
         :param _unused_lineage: Certificate lineage object, unused
-        :type _unused_lineage: certbot.storage.RenewableCert
+        :type _unused_lineage: certbot._internal.storage.RenewableCert
 
         :param domains: List of domains in certificate to enhance
         :type domains: str
@@ -2470,7 +2470,7 @@ class ApacheConfigurator(common.Installer):
         and changes the HSTS max-age to a high value.
 
         :param lineage: Certificate lineage object
-        :type lineage: certbot.storage.RenewableCert
+        :type lineage: certbot._internal.storage.RenewableCert
         """
         self._autohsts_fetch_state()
         if not self._autohsts:
