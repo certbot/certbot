@@ -23,7 +23,12 @@ EnablePython36SCL() {
   if [ ! -f /opt/rh/rh-python36/enable ]; then
       return 0
   fi
-  . /opt/rh/rh-python36/enable
+  set +e
+  if ! . /opt/rh/rh-python36/enable; then
+    error 'Unable to enable rh-python36!'
+    exit 1
+  fi
+  set -e
 }
 
 # This bootstrap concerns old RedHat-based distributions that do not ship by default
