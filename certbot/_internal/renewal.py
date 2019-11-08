@@ -21,7 +21,7 @@ from certbot import errors
 from certbot import hooks
 from certbot import interfaces
 from certbot._internal import storage
-from certbot import updater
+from certbot._internal import updater
 from certbot import util
 from certbot.compat import os
 from certbot.plugins import disco as plugins_disco

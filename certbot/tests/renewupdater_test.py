@@ -4,7 +4,7 @@ import mock
 
 from certbot import interfaces
 from certbot._internal import main
-from certbot import updater
+from certbot._internal import updater
 
 from certbot.plugins import enhancements
 
@@ -48,7 +48,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         updater.run_renewal_deployer(self.config, lineage, mock_deployer)
         self.assertTrue(mock_deployer.renew_deploy.called_with(lineage))
 
-    @mock.patch("certbot.updater.logger.debug")
+    @mock.patch("certbot._internal.updater.logger.debug")
     def test_updater_skip_dry_run(self, mock_log):
         self.config.dry_run = True
         updater.run_generic_updaters(self.config, None, None)
@@ -56,7 +56,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         self.assertEqual(mock_log.call_args[0][0],
                           "Skipping updaters in dry-run mode.")
 
-    @mock.patch("certbot.updater.logger.debug")
+    @mock.patch("certbot._internal.updater.logger.debug")
     def test_deployer_skip_dry_run(self, mock_log):
         self.config.dry_run = True
         updater.run_renewal_deployer(self.config, None, None)

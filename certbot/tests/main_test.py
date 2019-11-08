@@ -29,7 +29,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces  # pylint: disable=unused-import
 from certbot._internal import main
-from certbot import updater
+from certbot._internal import updater
 from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
@@ -1492,7 +1492,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                         self.assertTrue(mock_handle.called)
 
     @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
-    @mock.patch('certbot.updater._run_updaters')
+    @mock.patch('certbot._internal.updater._run_updaters')
     def test_plugin_selection_error(self, mock_run, mock_choose):
         mock_choose.side_effect = errors.PluginSelectionError
         self.assertRaises(errors.PluginSelectionError, main.renew_cert,
