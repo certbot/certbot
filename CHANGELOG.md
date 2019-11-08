@@ -14,8 +14,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * `certbot.plugins.common.TLSSNI01` has been removed.
 * The functions `certbot.client.view_config_changes`,
   `certbot.main.config_changes`,
-  `certbot.plugins.common.Installer.view_config_changes`, and
-  `certbot.reverter.Reverter.view_config_changes` have been removed
+  `certbot.plugins.common.Installer.view_config_changes`,
+  `certbot.reverter.Reverter.view_config_changes`, and
+  `certbot.util.get_systemd_os_info` have been removed
 
 ### Fixed
 

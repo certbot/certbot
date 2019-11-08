@@ -510,14 +510,6 @@ class OsInfoTest(unittest.TestCase):
             m_distro.linux_distribution.return_value = ("something", "else")
             self.assertEqual(cbutil.get_os_info(), ("something", "else"))
 
-    @mock.patch("warnings.warn")
-    @mock.patch("certbot.util.distro")
-    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
-    def test_get_systemd_os_info_deprecation(self, _, mock_warn):
-        import certbot.util as cbutil
-        cbutil.get_systemd_os_info()
-        self.assertTrue(mock_warn.called)
-
     @mock.patch("certbot.util.subprocess.Popen")
     def test_non_systemd_os_info(self, popen_mock):
         import certbot.util as cbutil
