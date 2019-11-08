@@ -26,7 +26,7 @@ class LockDirTest(test_util.TempDirTestCase):
     def test_it(self):
         assert_raises = functools.partial(
             self.assertRaises, errors.LockError, self._call, self.tempdir)
-        lock_path = os.path.join(self.tempdir, '.certbot._internal.lock')
+        lock_path = os.path.join(self.tempdir, '.certbot.lock')
         test_util.lock_and_call(assert_raises, lock_path)
 
 
