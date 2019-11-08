@@ -156,8 +156,8 @@ class CertonlyTest(unittest.TestCase):
     def _assert_no_pause(self, message, pause=True):  # pylint: disable=unused-argument
         self.assertFalse(pause)
 
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
-    @mock.patch('certbot.cert_manager.domains_for_certname')
+    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
+    @mock.patch('certbot._internal.cert_manager.domains_for_certname')
     @mock.patch('certbot.renewal.renew_cert')
     @mock.patch('certbot.main._report_new_cert')
     def test_find_lineage_for_domains_and_certname(self, mock_report_cert,
@@ -185,9 +185,9 @@ class CertonlyTest(unittest.TestCase):
         self.assertRaises(errors.ConfigurationError, self._call,
             ('certonly --webroot -d example.com -d test.com --cert-name example.com').split())
 
-    @mock.patch('certbot.cert_manager.domains_for_certname')
+    @mock.patch('certbot._internal.cert_manager.domains_for_certname')
     @mock.patch('certbot.display.ops.choose_names')
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot.main._report_new_cert')
     def test_find_lineage_for_domains_new_certname(self, mock_report_cert,
         mock_lineage, mock_choose_names, mock_domains_for_certname):
@@ -223,7 +223,7 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
         # pylint: disable=protected-access
         self.assertRaises(errors.Error, main._find_domains_or_certname, mock_config, None)
 
-    @mock.patch('certbot.cert_manager.domains_for_certname')
+    @mock.patch('certbot._internal.cert_manager.domains_for_certname')
     def test_grab_domains(self, mock_domains):
         mock_config = mock.Mock(domains=None, certname="one.com")
         mock_domains.return_value = ["one.com", "two.com"]
@@ -323,7 +323,7 @@ class RevokeTest(test_util.TempDirTestCase):
         self.mock_success_revoke.assert_not_called()
 
     @mock.patch('certbot.main._delete_if_appropriate')
-    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot._internal.cert_manager.delete')
     @test_util.patch_get_utility()
     def test_revocation_with_prompt(self, mock_get_utility,
             mock_delete, mock_delete_if_appropriate):
@@ -340,7 +340,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         _delete_if_appropriate(mock_config)
 
     def _test_delete_opt_out_common(self, mock_get_utility):
-        with mock.patch('certbot.cert_manager.delete') as mock_delete:
+        with mock.patch('certbot._internal.cert_manager.delete') as mock_delete:
             self._call(self.config)
         mock_delete.assert_not_called()
         self.assertTrue(mock_get_utility().add_message.called)
@@ -358,10 +358,10 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
 
     # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')
-    @mock.patch('certbot.cert_manager.delete')
-    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot._internal.cert_manager.delete')
+    @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
-    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
     @test_util.patch_get_utility()
     def test_overlapping_archive_dirs(self, mock_get_utility,
             mock_cert_path_to_lineage, mock_archive,
@@ -378,10 +378,10 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
 
     # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')
-    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
-    @mock.patch('certbot.cert_manager.delete')
-    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @mock.patch('certbot._internal.cert_manager.delete')
+    @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
     @test_util.patch_get_utility()
     def test_cert_path_only(self, mock_get_utility,
             mock_cert_path_to_lineage, mock_delete, mock_archive,
@@ -397,10 +397,10 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
 
     # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')
-    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
-    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
-    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
+    @mock.patch('certbot._internal.cert_manager.delete')
     @test_util.patch_get_utility()
     def test_noninteractive_deletion(self, mock_get_utility, mock_delete,
             mock_cert_path_to_lineage, mock_full_archive_dir,
@@ -418,10 +418,10 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
 
     # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')
-    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
-    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
-    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
+    @mock.patch('certbot._internal.cert_manager.delete')
     @test_util.patch_get_utility()
     def test_opt_in_deletion(self, mock_get_utility, mock_delete,
             mock_cert_path_to_lineage, mock_full_archive_dir,
@@ -645,7 +645,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                                       fullchain_path=test_util.temp_join('chain'),
                                       key_path=test_util.temp_join('privkey'))
 
-        with mock.patch("certbot.cert_manager.lineage_for_certname") as mock_getlin:
+        with mock.patch("certbot._internal.cert_manager.lineage_for_certname") as mock_getlin:
             mock_getlin.return_value = mock_lineage
             self._call(['install', '--cert-name', 'whatever'], mockisfile=True)
             call_config = mock_install.call_args[0][0]
@@ -662,7 +662,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                                       chain_path=test_util.temp_join('chain'),
                                       fullchain_path=test_util.temp_join('chain'),
                                       key_path=test_util.temp_join('privkey'))
-        with mock.patch("certbot.cert_manager.lineage_for_certname") as mock_getlin:
+        with mock.patch("certbot._internal.cert_manager.lineage_for_certname") as mock_getlin:
             mock_getlin.return_value = mock_lineage
             self._call(['install', '--cert-name', 'whatever',
                         '--key-path', test_util.temp_join('overriding_privkey')], mockisfile=True)
@@ -691,14 +691,14 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot.main.plug_sel.pick_installer')
-    @mock.patch('certbot.cert_manager.get_certnames')
+    @mock.patch('certbot._internal.cert_manager.get_certnames')
     @mock.patch('certbot.main._install_cert')
     def test_installer_select_cert(self, mock_inst, mock_getcert, _inst, _rec):
         mock_lineage = mock.MagicMock(cert_path=test_util.temp_join('cert'),
                                       chain_path=test_util.temp_join('chain'),
                                       fullchain_path=test_util.temp_join('chain'),
                                       key_path=test_util.temp_join('privkey'))
-        with mock.patch("certbot.cert_manager.lineage_for_certname") as mock_getlin:
+        with mock.patch("certbot._internal.cert_manager.lineage_for_certname") as mock_getlin:
             mock_getlin.return_value = mock_lineage
             self._call(['install'], mockisfile=True)
         self.assertTrue(mock_getcert.called)
@@ -753,17 +753,17 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         client.rollback.assert_called_once_with(
             mock.ANY, 123, mock.ANY, mock.ANY)
 
-    @mock.patch('certbot.cert_manager.update_live_symlinks')
+    @mock.patch('certbot._internal.cert_manager.update_live_symlinks')
     def test_update_symlinks(self, mock_cert_manager):
         self._call_no_clientmock(['update_symlinks'])
         self.assertEqual(1, mock_cert_manager.call_count)
 
-    @mock.patch('certbot.cert_manager.certificates')
+    @mock.patch('certbot._internal.cert_manager.certificates')
     def test_certificates(self, mock_cert_manager):
         self._call_no_clientmock(['certificates'])
         self.assertEqual(1, mock_cert_manager.call_count)
 
-    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot._internal.cert_manager.delete')
     def test_delete(self, mock_cert_manager):
         self._call_no_clientmock(['delete'])
         self.assertEqual(1, mock_cert_manager.call_count)
@@ -990,7 +990,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             stdout.write(message)
 
         try:
-            with mock.patch('certbot.cert_manager.find_duplicative_certs') as mock_fdc:
+            with mock.patch('certbot._internal.cert_manager.find_duplicative_certs') as mock_fdc:
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
@@ -1605,9 +1605,9 @@ class EnhanceTest(test_util.ConfigTestCase):
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
 
-        with mock.patch('certbot.cert_manager.get_certnames') as mock_certs:
+        with mock.patch('certbot._internal.cert_manager.get_certnames') as mock_certs:
             mock_certs.return_value = ['example.com']
-            with mock.patch('certbot.cert_manager.domains_for_certname') as mock_dom:
+            with mock.patch('certbot._internal.cert_manager.domains_for_certname') as mock_dom:
                 mock_dom.return_value = ['example.com']
                 with mock.patch('certbot.main._init_le_client') as mock_init:
                     mock_client = mock.MagicMock()
@@ -1617,7 +1617,7 @@ class EnhanceTest(test_util.ConfigTestCase):
                     return mock_client # returns the client
 
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot.main.display_ops.choose_values')
     @mock.patch('certbot.main._find_domains_or_certname')
     def test_selection_question(self, mock_find, mock_choose, mock_lineage, _rec):
@@ -1631,7 +1631,7 @@ class EnhanceTest(test_util.ConfigTestCase):
             self.assertTrue("enhancements" in mock_pick.call_args[0][3])
 
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot.main.display_ops.choose_values')
     @mock.patch('certbot.main._find_domains_or_certname')
     def test_selection_auth_warning(self, mock_find, mock_choose, mock_lineage, _rec):
@@ -1645,7 +1645,7 @@ class EnhanceTest(test_util.ConfigTestCase):
                 self.assertTrue("make sense" in mock_log.call_args[0][0])
                 self.assertTrue(mock_client.enhance_config.called)
 
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot.main.display_ops.choose_values')
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     def test_enhance_config_call(self, _rec, mock_choose, mock_lineage):
@@ -1663,7 +1663,7 @@ class EnhanceTest(test_util.ConfigTestCase):
             self.assertTrue(
                 "example.com" in mock_client.enhance_config.call_args[0][0])
 
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot.main.display_ops.choose_values')
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     def test_enhance_noninteractive(self, _rec, mock_choose, mock_lineage):
@@ -1699,7 +1699,7 @@ class EnhanceTest(test_util.ConfigTestCase):
         mock_client = self._call(['enhance', '--hsts'])
         self.assertFalse(mock_client.enhance_config.called)
 
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot.main.display_ops.choose_values')
     @mock.patch('certbot.main.plug_sel.pick_installer')
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
@@ -1713,7 +1713,7 @@ class EnhanceTest(test_util.ConfigTestCase):
         self.assertEqual(self.mockinstaller.enable_autohsts.call_args[0][1],
                           ["example.com", "another.tld"])
 
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot.main.display_ops.choose_values')
     @mock.patch('certbot.main.plug_sel.pick_installer')
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
