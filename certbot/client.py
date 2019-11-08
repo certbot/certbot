@@ -19,7 +19,7 @@ from acme.magic_typing import Optional, List  # pylint: disable=unused-import,no
 
 import certbot
 from certbot._internal import account
-from certbot import auth_handler
+from certbot._internal import auth_handler
 from certbot import cli
 from certbot import constants
 from certbot import crypto_util
