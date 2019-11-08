@@ -22,7 +22,7 @@ from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-
 
 from certbot import constants
 from certbot import errors
-from certbot import lock
+from certbot._internal import lock
 from certbot.compat import os
 from certbot.compat import filesystem
 

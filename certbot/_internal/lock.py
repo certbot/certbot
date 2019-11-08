@@ -23,7 +23,7 @@ def lock_dir(dir_path):
     """Place a lock file on the directory at dir_path.
 
     The lock file is placed in the root of dir_path with the name
-    .certbot.lock.
+    .certbot._internal.lock.
 
     :param str dir_path: path to directory
 
@@ -33,7 +33,7 @@ def lock_dir(dir_path):
     :raises errors.LockError: if unable to acquire the lock
 
     """
-    return LockFile(os.path.join(dir_path, '.certbot.lock'))
+    return LockFile(os.path.join(dir_path, '.certbot._internal.lock'))
 
 
 class LockFile(object):
