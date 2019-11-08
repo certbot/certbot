@@ -248,7 +248,7 @@ def _relevant(namespaces, option):
 
     :rtype: bool
     """
-    from certbot import renewal
+    from certbot._internal import renewal
 
     return (option in renewal.CONFIG_ITEMS or
             any(option.startswith(namespace) for namespace in namespaces))

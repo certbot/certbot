@@ -26,7 +26,7 @@ from certbot import errors
 from certbot import hooks
 from certbot import interfaces
 from certbot import log
-from certbot import renewal
+from certbot._internal import renewal
 from certbot import reporter
 from certbot import storage
 from certbot import updater

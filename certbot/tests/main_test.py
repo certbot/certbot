@@ -158,7 +158,7 @@ class CertonlyTest(unittest.TestCase):
 
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.cert_manager.domains_for_certname')
-    @mock.patch('certbot.renewal.renew_cert')
+    @mock.patch('certbot._internal.renewal.renew_cert')
     @mock.patch('certbot._internal.main._report_new_cert')
     def test_find_lineage_for_domains_and_certname(self, mock_report_cert,
         mock_renew_cert, mock_domains, mock_lineage):
@@ -1109,7 +1109,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._test_renewal_common(True, [], args=args, should_renew=True)
         self.assertEqual(self.mock_sleep.call_count, 0)
 
-    @mock.patch('certbot.renewal.should_renew')
+    @mock.patch('certbot._internal.renewal.should_renew')
     def test_renew_skips_recent_certs(self, should_renew):
         should_renew.return_value = False
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
