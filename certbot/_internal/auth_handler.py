@@ -13,7 +13,7 @@ from acme.magic_typing import Dict, List, Tuple
 # pylint: enable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
-from certbot import error_handler
+from certbot._internal import error_handler
 from certbot import interfaces
 
 logger = logging.getLogger(__name__)
