@@ -916,7 +916,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             'certonly -d example.org --csr {0}'.format(CSR).split())
 
     def _certonly_new_request_common(self, mock_client, args=None):
-        with mock.patch('certbot._internal.main._find_lineage_for_domains_and_certname') as mock_renewal:
+        with mock.patch('certbot._internal.main._find_lineage_for_domains_and_certname') \
+            as mock_renewal:
             mock_renewal.return_value = ("newcert", None)
             with mock.patch('certbot._internal.main._init_le_client') as mock_init:
                 mock_init.return_value = mock_client
@@ -1001,7 +1002,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                             mock_latest = mock.MagicMock()
                             mock_latest.get_issuer.return_value = "Fake fake"
                             mock_ssl.crypto.load_certificate.return_value = mock_latest
-                            with mock.patch('certbot._internal.main.renewal.crypto_util') as mock_crypto_util:
+                            with mock.patch('certbot._internal.main.renewal.crypto_util') \
+                                as mock_crypto_util:
                                 mock_crypto_util.notAfter.return_value = expiry_date
                                 if not args:
                                     args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']

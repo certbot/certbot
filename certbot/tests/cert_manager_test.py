@@ -530,7 +530,8 @@ class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
 
 
 class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
-    """Tests for certbot._internal.cert_manager.match_and_check_overlaps w/o overlapping archive dirs."""
+    """Tests for certbot._internal.cert_manager.match_and_check_overlaps w/o overlapping
+       archive dirs."""
     # A test with real overlapping archive dirs can be found in tests/boulder_integration.sh
     def setUp(self):
         super(MatchAndCheckOverlaps, self).setUp()

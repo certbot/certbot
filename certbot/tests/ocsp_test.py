@@ -276,7 +276,8 @@ def _ocsp_mock(certificate_status, response_status,
             certificate_status, response_status)
         with mock.patch('certbot._internal.ocsp.requests.post') as mock_post:
             mock_post.return_value = mock.Mock(status_code=http_status_code)
-            with mock.patch('certbot._internal.ocsp.crypto_util.verify_signed_payload') as mock_check:
+            with mock.patch('certbot._internal.ocsp.crypto_util.verify_signed_payload') \
+                as mock_check:
                 if check_signature_side_effect:
                     mock_check.side_effect = check_signature_side_effect
                 yield {
