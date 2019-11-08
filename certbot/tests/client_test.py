@@ -256,6 +256,7 @@ class ClientTest(ClientTestCommon):
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
         self.client.auth_handler.handle_authorizations.return_value = [None]
+        self.client.auth_handler.deactivate_valid_authorizations.return_value = ([], [])
         self.acme.finalize_order.return_value = self.eg_order
         self.acme.new_order.return_value = self.eg_order
         self.eg_order.update.return_value = self.eg_order
@@ -359,6 +360,47 @@ class ClientTest(ClientTestCommon):
         mock_crypto.init_save_key.assert_not_called()
         mock_crypto.init_save_csr.assert_not_called()
         self.assertEqual(mock_crypto.cert_and_chain_from_fullchain.call_count, 1)
+
+    @mock.patch("certbot.client.logger")
+    @mock.patch("certbot.client.crypto_util")
+    @mock.patch("certbot.client.acme_crypto_util")
+    def test_obtain_certificate_dry_run_authz_deactivations_failed(self, mock_acme_crypto,
+                                                                   mock_crypto, mock_log):
+        from acme import messages
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_acme_crypto.make_csr.return_value = CSR_SAN
+        mock_crypto.make_key.return_value = mock.sentinel.key_pem
+        key = util.Key(file=None, pem=mock.sentinel.key_pem)
+        self._set_mock_from_fullchain(mock_crypto.cert_and_chain_from_fullchain)
+
+        self._mock_obtain_certificate()
+        self.client.config.dry_run = True
+
+        # Two authzs that are already valid and should get deactivated (dry run)
+        authzrs = self._authzr_from_domains(["example.com", "www.example.com"])
+        for authzr in authzrs:
+            authzr.body.status = messages.STATUS_VALID
+
+        # One deactivation succeeds, one fails
+        auth_handler = self.client.auth_handler
+        auth_handler.deactivate_valid_authorizations.return_value = ([authzrs[0]], [authzrs[1]])
+
+        # Certificate should get issued despite one failed deactivation
+        self.eg_order.authorizations = authzrs
+        self.client.auth_handler.handle_authorizations.return_value = authzrs
+        with test_util.patch_get_utility():
+            result = self.client.obtain_certificate(self.eg_domains)
+        self.assertEqual(result, (mock.sentinel.cert, mock.sentinel.chain, key, csr))
+        self._check_obtain_certificate(1)
+
+        # Deactivation success/failure should have been handled properly
+        self.assertEqual(auth_handler.deactivate_valid_authorizations.call_count, 1,
+                        "Deactivate authorizations should be called")
+        self.assertEqual(self.acme.new_order.call_count, 2,
+                        "Order should be recreated due to successfully deactivated authorizations")
+        mock_log.warning.assert_called_with("Certbot was unable to obtain fresh authorizations for"
+                                            " every domain. The dry run will continue, but results"
+                                            " may not be accurate.")
 
     def _set_mock_from_fullchain(self, mock_from_fullchain):
         mock_cert = mock.Mock()

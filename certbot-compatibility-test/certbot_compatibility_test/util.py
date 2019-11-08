@@ -8,13 +8,13 @@ import tarfile
 
 import josepy as jose
 
-from acme import test_util
+from certbot.tests import util as test_util
 from certbot import constants
 
 from certbot_compatibility_test import errors
 
 
-_KEY_BASE = "rsa1024_key.pem"
+_KEY_BASE = "rsa2048_key.pem"
 KEY_PATH = test_util.vector_path(_KEY_BASE)
 KEY = test_util.load_pyopenssl_private_key(_KEY_BASE)
 JWK = jose.JWKRSA(key=test_util.load_rsa_private_key(_KEY_BASE))

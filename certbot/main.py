@@ -961,26 +961,6 @@ def rollback(config, plugins):
     """
     client.rollback(config.installer, config.checkpoints, config, plugins)
 
-
-def config_changes(config, unused_plugins):
-    """Show changes made to server config during installation
-
-    View checkpoints and associated configuration changes.
-
-    :param config: Configuration object
-    :type config: interfaces.IConfig
-
-    :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
-
-    :returns: `None`
-    :rtype: None
-
-    """
-    logger.warning("The config_changes subcommand has been deprecated"
-                   " and will be removed in a future release.")
-    client.view_config_changes(config)
-
 def update_symlinks(config, unused_plugins):
     """Update the certificate file family symlinks
 
@@ -1367,10 +1347,6 @@ def main(cli_args=None):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:
             raise
-
-    if sys.version_info[:2] == (3, 4):
-        logger.warning("Python 3.4 support will be dropped in the next release "
-                    "of Certbot - please upgrade your Python version.")
 
     set_displayer(config)
 

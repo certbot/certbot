@@ -115,7 +115,7 @@ More detailed help:
    all, automation, commands, paths, security, testing, or any of the
    subcommands or plugins (certonly, renew, install, register, nginx,
    apache, standalone, webroot, etc.)
-  -h all                print a detailed help page including all topics 
+  -h all                print a detailed help page including all topics
   --version             print the version number
 """
 
@@ -398,11 +398,6 @@ VERB_HELP = [
         "usage": "\n\n  certbot install --cert-path /path/to/fullchain.pem "
         " --key-path /path/to/private-key [options]\n\n"
     }),
-    ("config_changes", {
-        "short": "Show changes that Certbot has made to server configurations",
-        "opts": "Options for viewing configuration changes",
-        "usage": "\n\n  certbot config_changes [options]\n\n"
-    }),
     ("rollback", {
         "short": "Roll back server conf changes made during certificate installation",
         "opts": "Options for rolling back server configuration changes",
@@ -447,7 +442,6 @@ class HelpfulArgumentParser(object):
         self.VERBS = {
             "auth": main.certonly,
             "certonly": main.certonly,
-            "config_changes": main.config_changes,
             "run": main.run,
             "install": main.install,
             "plugins": main.plugins_cmd,
@@ -1245,9 +1239,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "renew", "--no-autorenew", action="store_false",
         default=flag_default("autorenew"), dest="autorenew",
         help="Disable auto renewal of certificates.")
-
-    helpful.add_deprecated_argument("--agree-dev-preview", 0)
-    helpful.add_deprecated_argument("--dialog", 0)
 
     # Populate the command line parameters for new style enhancements
     enhancements.populate_cli(helpful.add)
