@@ -64,6 +64,9 @@ Translates over to:
     "/files/etc/apache2/apache2.conf/bLoCk[1]",
 ]
 """
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from certbot import errors
+from certbot.compat import os
 
 from certbot_apache import apache_util
 from certbot_apache import assertions
@@ -71,8 +74,6 @@ from certbot_apache import interfaces
 from certbot_apache import parser
 from certbot_apache import parsernode_util as util
 
-from certbot.compat import os
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 
 
 class AugeasParserNode(interfaces.ParserNode):
@@ -86,6 +87,15 @@ class AugeasParserNode(interfaces.ParserNode):
         self.dirty = dirty
         self.metadata = metadata
         self.parser = self.metadata.get("augeasparser")
+        try:
+            if self.metadata["augeaspath"].endswith("/"):
+                raise errors.PluginError(
+                    "Augeas path: {} has a trailing slash".format(
+                        self.metadata["augeaspath"]
+                    )
+                )
+        except KeyError:
+            raise errors.PluginError("Augeas path is required")
 
     def save(self, msg): # pragma: no cover
         pass

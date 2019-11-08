@@ -2,6 +2,7 @@
 import mock
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from certbot import errors
 
 from certbot_apache import assertions
 
@@ -25,7 +26,7 @@ class AugeasParserNodeTest(util.ApacheTest):
             name=assertions.PASS,
             ancestor=None,
             filepath=assertions.PASS,
-            metadata={"augeasparser": mock.Mock()}
+            metadata={"augeasparser": mock.Mock(), "augeaspath": "/files/anything"}
         )
         testcases = {
             "/some/path/FirstNode/SecondNode": "SecondNode",
@@ -198,3 +199,35 @@ class AugeasParserNodeTest(util.ApacheTest):
         new_block = parser.aug.match("{}/VirtualHost[2]".format(root_path))
         self.assertEqual(len(new_block), 1)
         self.assertTrue(vh.metadata["augeaspath"].endswith("VirtualHost[2]"))
+
+    def test_node_init_error_bad_augeaspath(self):
+        from certbot_apache.augeasparser import AugeasBlockNode
+        parameters = {
+            "name": assertions.PASS,
+            "ancestor": None,
+            "filepath": assertions.PASS,
+            "metadata": {
+                "augeasparser": mock.Mock(),
+                "augeaspath": "/files/path/endswith/slash/"
+            }
+        }
+        self.assertRaises(
+            errors.PluginError,
+            AugeasBlockNode,
+            **parameters
+        )
+    def test_node_init_error_missing_augeaspath(self):
+        from certbot_apache.augeasparser import AugeasBlockNode
+        parameters = {
+            "name": assertions.PASS,
+            "ancestor": None,
+            "filepath": assertions.PASS,
+            "metadata": {
+                "augeasparser": mock.Mock(),
+            }
+        }
+        self.assertRaises(
+            errors.PluginError,
+            AugeasBlockNode,
+            **parameters
+        )

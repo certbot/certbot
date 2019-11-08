@@ -78,7 +78,8 @@ class MultipleVhostsTest(util.ApacheTest):
 
     @mock.patch("certbot_apache.parser.ApacheParser")
     @mock.patch("certbot_apache.configurator.util.exe_exists")
-    def _test_prepare_locked(self, unused_parser, unused_exe_exists):
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.get_parsernode_root")
+    def _test_prepare_locked(self, _node, _exists, _parser):
         try:
             self.config.prepare()
         except errors.PluginError as err:
