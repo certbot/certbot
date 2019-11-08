@@ -1887,35 +1887,34 @@ UNLIKELY_EOF
     fi
 
     # If for any reason REMOTE_VERSION is not set, let's assume certbot-auto is up-to-date,
-    # in order to avoid potential failures because of an unset REMOTE_VERSION variable.
-    if [ -z "$REMOTE_VERSION" ]; then
-      REMOTE_VERSION="$LE_AUTO_VERSION"
+    # and do not go into the self-upgrading process.
+    if [ -n "$REMOTE_VERSION" ]; then
+      LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
+
+      if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
+        say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
+      elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
+        say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+
+        # Now we drop into Python so we don't have to install even more
+        # dependencies (curl, etc.), for better flow control, and for the option of
+        # future Windows compatibility.
+        "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+
+        # Install new copy of certbot-auto.
+        # TODO: Deal with quotes in pathnames.
+        say "Replacing certbot-auto..."
+        # Clone permissions with cp. chmod and chown don't have a --reference
+        # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
+        cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+        cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+        # Using mv rather than cp leaves the old file descriptor pointing to the
+        # original copy so the shell can continue to read it unmolested. mv across
+        # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
+        # cp is unlikely to fail if the rm doesn't.
+        mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      fi  # A newer version is available.
     fi
-
-    LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
-    if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
-      say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
-    elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
-      say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
-
-      # Now we drop into Python so we don't have to install even more
-      # dependencies (curl, etc.), for better flow control, and for the option of
-      # future Windows compatibility.
-      "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
-
-      # Install new copy of certbot-auto.
-      # TODO: Deal with quotes in pathnames.
-      say "Replacing certbot-auto..."
-      # Clone permissions with cp. chmod and chown don't have a --reference
-      # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
-      cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-      cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-      # Using mv rather than cp leaves the old file descriptor pointing to the
-      # original copy so the shell can continue to read it unmolested. mv across
-      # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
-      # cp is unlikely to fail if the rm doesn't.
-      mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
-    fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 
   RerunWithArgs --le-auto-phase2 "$@"
