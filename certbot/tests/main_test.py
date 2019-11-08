@@ -21,7 +21,7 @@ from six.moves import reload_module  # pylint: disable=import-error
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 import certbot.tests.util as test_util
-from certbot import account
+from certbot._internal import account
 from certbot import cli
 from certbot import configuration
 from certbot import constants
@@ -255,7 +255,7 @@ class RevokeTest(test_util.TempDirTestCase):
         self.mock_determine_account = self.patches[2].start()
         self.mock_success_revoke = self.patches[3].start()
 
-        from certbot.account import Account
+        from certbot._internal.account import Account
 
         self.regr = mock.MagicMock()
         self.meta = Account.Meta(

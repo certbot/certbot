@@ -18,7 +18,7 @@ from acme import messages
 from acme.magic_typing import Optional, List  # pylint: disable=unused-import,no-name-in-module
 
 import certbot
-from certbot import account
+from certbot._internal import account
 from certbot import auth_handler
 from certbot import cli
 from certbot import constants

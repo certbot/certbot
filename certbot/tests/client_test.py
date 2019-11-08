@@ -9,7 +9,7 @@ import mock
 from josepy import interfaces
 
 import certbot.tests.util as test_util
-from certbot import account
+from certbot._internal import account
 from certbot import errors
 from certbot.compat import os
 from certbot.compat import filesystem
@@ -89,7 +89,7 @@ class RegisterTest(test_util.ConfigTestCase):
             mock_client.new_account_and_tos().terms_of_service = "http://tos"
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
-                with mock.patch("certbot.account.report_new_account"):
+                with mock.patch("certbot._internal.account.report_new_account"):
                     mock_client().new_account_and_tos.side_effect = errors.Error
                     self.assertRaises(errors.Error, self._call)
                     self.assertFalse(mock_handle.called)
@@ -101,11 +101,11 @@ class RegisterTest(test_util.ConfigTestCase):
     def test_it(self):
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
-            with mock.patch("certbot.account.report_new_account"):
+            with mock.patch("certbot._internal.account.report_new_account"):
                 with mock.patch("certbot.eff.handle_subscription"):
                     self._call()
 
-    @mock.patch("certbot.account.report_new_account")
+    @mock.patch("certbot._internal.account.report_new_account")
     @mock.patch("certbot.client.display_ops.get_email")
     def test_email_retry(self, _rep, mock_get_email):
         from acme import messages
@@ -120,7 +120,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 self.assertEqual(mock_get_email.call_count, 1)
                 self.assertTrue(mock_handle.called)
 
-    @mock.patch("certbot.account.report_new_account")
+    @mock.patch("certbot._internal.account.report_new_account")
     def test_email_invalid_noninteractive(self, _rep):
         from acme import messages
         self.config.noninteractive_mode = True
@@ -141,7 +141,7 @@ class RegisterTest(test_util.ConfigTestCase):
         with mock.patch("certbot.eff.handle_subscription") as mock_handle:
             with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_clnt:
                 mock_clnt().external_account_required.side_effect = self._false_mock
-                with mock.patch("certbot.account.report_new_account"):
+                with mock.patch("certbot._internal.account.report_new_account"):
                     self.config.email = None
                     self.config.register_unsafely_without_email = True
                     self.config.dry_run = False
@@ -149,14 +149,14 @@ class RegisterTest(test_util.ConfigTestCase):
                     mock_logger.info.assert_called_once_with(mock.ANY)
                     self.assertTrue(mock_handle.called)
 
-    @mock.patch("certbot.account.report_new_account")
+    @mock.patch("certbot._internal.account.report_new_account")
     @mock.patch("certbot.client.display_ops.get_email")
     def test_dry_run_no_staging_account(self, _rep, mock_get_email):
         """Tests dry-run for no staging account, expect account created with no email"""
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription"):
-                with mock.patch("certbot.account.report_new_account"):
+                with mock.patch("certbot._internal.account.report_new_account"):
                     self.config.dry_run = True
                     self._call()
                     # check Certbot did not ask the user to provide an email

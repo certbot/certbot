@@ -29,7 +29,7 @@ class AuthHandler(object):
     :ivar acme.client.BackwardsCompatibleClientV2 acme_client: ACME client API.
 
     :ivar account: Client's Account
-    :type account: :class:`certbot.account.Account`
+    :type account: :class:`certbot._internal.account.Account`
 
     :ivar list pref_challs: sorted user specified preferred challenges
         type strings with the most preferred challenge listed first

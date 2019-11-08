@@ -10,7 +10,7 @@ import zope.component
 from acme import messages
 
 import certbot.tests.util as test_util
-from certbot import account
+from certbot._internal import account
 from certbot import errors
 from certbot.compat import os
 from certbot.compat import filesystem
