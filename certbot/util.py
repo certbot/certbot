@@ -13,7 +13,6 @@ import re
 import socket
 import subprocess
 import sys
-import warnings
 
 import configargparse
 import six
@@ -307,19 +306,6 @@ def get_os_info_ua():
     if not _USE_DISTRO or not os_info:
         return " ".join(get_python_os_info(pretty=True))
     return os_info
-
-def get_systemd_os_info():
-    """
-    Parse systemd /etc/os-release for distribution information
-
-    :returns: (os_name, os_version)
-    :rtype: `tuple` of `str`
-    """
-
-    warnings.warn(
-        "The get_sytemd_os_like() function is deprecated and will be removed in "
-        "a future release.", DeprecationWarning, stacklevel=2)
-    return get_os_info()[:2]
 
 def get_systemd_os_like():
     """
