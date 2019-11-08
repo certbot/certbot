@@ -246,7 +246,7 @@ class RevokeTest(test_util.TempDirTestCase):
 
         self.patches = [
             mock.patch('acme.client.BackwardsCompatibleClientV2'),
-            mock.patch('certbot.client.Client'),
+            mock.patch('certbot._internal.client.Client'),
             mock.patch('certbot.main._determine_account'),
             mock.patch('certbot.main.display_ops.success_revocation')
         ]
@@ -473,7 +473,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.assertEqual(self.accs[0].id, self.config.account)
         self.assertTrue(self.config.email is None)
 
-    @mock.patch('certbot.client.display_ops.choose_account')
+    @mock.patch('certbot._internal.client.display_ops.choose_account')
     def test_multiple_accounts(self, mock_choose_accounts):
         for acc in self.accs:
             self.account_storage.save(acc, self.mock_client)
@@ -484,7 +484,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.assertEqual(self.accs[1].id, self.config.account)
         self.assertTrue(self.config.email is None)
 
-    @mock.patch('certbot.client.display_ops.get_email')
+    @mock.patch('certbot._internal.client.display_ops.get_email')
     def test_no_accounts_no_email(self, mock_get_email):
         mock_get_email.return_value = 'foo@bar.baz'
 

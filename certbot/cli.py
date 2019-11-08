@@ -1256,7 +1256,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 
 
 def _create_subparsers(helpful):
-    from certbot.client import sample_user_agent # avoid import loops
+    from certbot._internal.client import sample_user_agent # avoid import loops
     helpful.add(
         None, "--user-agent", default=flag_default("user_agent"),
         help='Set a custom user agent string for the client. User agent strings allow '
