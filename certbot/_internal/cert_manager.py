@@ -12,7 +12,7 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
-from certbot import ocsp
+from certbot._internal import ocsp
 from certbot import storage
 from certbot import util
 from certbot.compat import os
