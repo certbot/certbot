@@ -16,7 +16,7 @@ from certbot import constants
 from certbot import errors
 from certbot.compat import os
 from certbot.compat import filesystem
-from certbot.plugins import disco
+from certbot._internal.plugins import disco
 from certbot.tests.util import TempDirTestCase
 
 PLUGINS = disco.PluginsRegistry.find_all()

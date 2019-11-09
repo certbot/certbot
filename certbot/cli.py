@@ -30,7 +30,7 @@ from certbot import interfaces
 from certbot import util
 from certbot.compat import os
 from certbot.display import util as display_util
-from certbot.plugins import disco as plugins_disco
+from certbot._internal.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 

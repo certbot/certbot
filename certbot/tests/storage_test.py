@@ -44,7 +44,7 @@ class RelevantValuesTest(unittest.TestCase):
         return relevant_values(*args, **kwargs)
 
     @mock.patch("certbot.cli.option_was_set")
-    @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
+    @mock.patch("certbot._internal.plugins.disco.PluginsRegistry.find_all")
     def test_namespace(self, mock_find_all, mock_option_was_set):
         mock_find_all.return_value = ["certbot-foo:bar"]
         mock_option_was_set.return_value = True

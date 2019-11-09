@@ -33,7 +33,7 @@ from certbot._internal import updater
 from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
-from certbot.plugins import disco
+from certbot._internal.plugins import disco
 from certbot.plugins import enhancements
 from certbot._internal.plugins import manual
 from certbot.plugins import null

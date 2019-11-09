@@ -43,7 +43,7 @@ def get_unprepared_installer(config, plugins):
     Get an unprepared interfaces.IInstaller object.
 
     :param certbot.interfaces.IConfig config: Configuration
-    :param certbot.plugins.disco.PluginsRegistry plugins:
+    :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
 
     :returns: Unprepared installer plugin or None
@@ -73,7 +73,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
 
     :param certbot.interfaces.IConfig: Configuration
     :param str default: Plugin name supplied by user or ``None``.
-    :param certbot.plugins.disco.PluginsRegistry plugins:
+    :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
     :param str question: Question to be presented to the user in case
         multiple candidates are found.

@@ -35,7 +35,7 @@ from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import util as display_util, ops as display_ops
-from certbot.plugins import disco as plugins_disco
+from certbot._internal.plugins import disco as plugins_disco
 from certbot.plugins import enhancements
 from certbot.plugins import selection as plug_sel
 

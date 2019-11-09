@@ -1,4 +1,4 @@
-"""Tests for certbot.plugins.disco."""
+"""Tests for certbot._internal.plugins.disco."""
 import functools
 import string
 import unittest
@@ -26,7 +26,7 @@ EP_WR = pkg_resources.EntryPoint(
 
 
 class PluginEntryPointTest(unittest.TestCase):
-    """Tests for certbot.plugins.disco.PluginEntryPoint."""
+    """Tests for certbot._internal.plugins.disco.PluginEntryPoint."""
 
     def setUp(self):
         self.ep1 = pkg_resources.EntryPoint(
@@ -40,11 +40,11 @@ class PluginEntryPointTest(unittest.TestCase):
         self.ep3 = pkg_resources.EntryPoint(
             "ep3", "a.ep3", dist=mock.MagicMock(key="p3"))
 
-        from certbot.plugins.disco import PluginEntryPoint
+        from certbot._internal.plugins.disco import PluginEntryPoint
         self.plugin_ep = PluginEntryPoint(EP_SA)
 
     def test_entry_point_to_plugin_name(self):
-        from certbot.plugins.disco import PluginEntryPoint
+        from certbot._internal.plugins.disco import PluginEntryPoint
 
         names = {
             self.ep1: "p1:ep1",
@@ -183,11 +183,11 @@ class PluginEntryPointTest(unittest.TestCase):
 
 
 class PluginsRegistryTest(unittest.TestCase):
-    """Tests for certbot.plugins.disco.PluginsRegistry."""
+    """Tests for certbot._internal.plugins.disco.PluginsRegistry."""
 
     @classmethod
     def _create_new_registry(cls, plugins):
-        from certbot.plugins.disco import PluginsRegistry
+        from certbot._internal.plugins.disco import PluginsRegistry
         return PluginsRegistry(plugins)
 
     def setUp(self):
@@ -198,8 +198,8 @@ class PluginsRegistryTest(unittest.TestCase):
         self.reg = self._create_new_registry(self.plugins)
 
     def test_find_all(self):
-        from certbot.plugins.disco import PluginsRegistry
-        with mock.patch("certbot.plugins.disco.pkg_resources") as mock_pkg:
+        from certbot._internal.plugins.disco import PluginsRegistry
+        with mock.patch("certbot._internal.plugins.disco.pkg_resources") as mock_pkg:
             mock_pkg.iter_entry_points.side_effect = [iter([EP_SA]),
                                                       iter([EP_WR])]
             plugins = PluginsRegistry.find_all()
