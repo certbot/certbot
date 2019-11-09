@@ -17,7 +17,6 @@ from acme import challenges
 from acme import crypto_util as acme_crypto_util
 from acme.magic_typing import List, Dict, Set  # pylint: disable=unused-import, no-name-in-module
 
-from certbot import constants as core_constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -100,9 +99,6 @@ class NginxConfigurator(common.Installer):
         version = kwargs.pop("version", None)
         openssl_version = kwargs.pop("openssl_version", None)
         super(NginxConfigurator, self).__init__(*args, **kwargs)
-
-        # Verify that all directories and files exist with proper permissions
-        self._verify_setup()
 
         # Files to save
         self.save_notes = ""
@@ -928,18 +924,6 @@ class NginxConfigurator(common.Installer):
             util.run_script([self.conf('ctl'), "-c", self.nginx_conf, "-t"])
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
-
-    def _verify_setup(self):
-        """Verify the setup to ensure safe operating environment.
-
-        Make sure that files/directories are setup with appropriate permissions
-        Aim for defensive coding... make sure all input files
-        have permissions of root.
-
-        """
-        util.make_or_verify_dir(self.config.work_dir, core_constants.CONFIG_DIRS_MODE)
-        util.make_or_verify_dir(self.config.backup_dir, core_constants.CONFIG_DIRS_MODE)
-        util.make_or_verify_dir(self.config.config_dir, core_constants.CONFIG_DIRS_MODE)
 
     def _nginx_version(self):
         """Return results of nginx -V
