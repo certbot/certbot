@@ -7,7 +7,7 @@ import six
 from acme import challenges
 from acme import messages
 
-from certbot import auth_handler
+from certbot._internal import auth_handler
 
 from certbot.tests import util
 

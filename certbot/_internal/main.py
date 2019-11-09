@@ -14,10 +14,10 @@ from acme import errors as acme_errors
 from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 
 import certbot
-from certbot import account
-from certbot import cert_manager
+from certbot._internal import account
+from certbot._internal import cert_manager
 from certbot import cli
-from certbot import client
+from certbot._internal import client
 from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
@@ -26,10 +26,10 @@ from certbot import errors
 from certbot import hooks
 from certbot import interfaces
 from certbot import log
-from certbot import renewal
-from certbot import reporter
-from certbot import storage
-from certbot import updater
+from certbot._internal import renewal
+from certbot._internal import reporter
+from certbot._internal import storage
+from certbot._internal import updater
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import misc
@@ -483,7 +483,7 @@ def _determine_account(config):
 
     :returns: Account and optionally ACME client API (biproduct of new
         registration).
-    :rtype: tuple of :class:`certbot.account.Account` and :class:`acme.client.Client`
+    :rtype: tuple of :class:`certbot._internal.account.Account` and :class:`acme.client.Client`
 
     :raises errors.Error: If unable to register an account with ACME server
 

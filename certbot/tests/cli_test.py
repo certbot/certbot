@@ -86,10 +86,10 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         def write_msg(message, *args, **kwargs): # pylint: disable=missing-docstring,unused-argument
             output.write(message)
 
-        with mock.patch('certbot.main.sys.stdout', new=output):
+        with mock.patch('certbot._internal.main.sys.stdout', new=output):
             with test_util.patch_get_utility() as mock_get_utility:
                 mock_get_utility().notification.side_effect = write_msg
-                with mock.patch('certbot.main.sys.stderr'):
+                with mock.patch('certbot._internal.main.sys.stderr'):
                     self.assertRaises(SystemExit, self._unmocked_parse, args, output)
 
         return output.getvalue()
@@ -126,7 +126,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         chain = 'chain'
         fullchain = 'fullchain'
 
-        with mock.patch('certbot.main.install'):
+        with mock.patch('certbot._internal.main.install'):
             namespace = self.parse(['install', '--cert-path', cert,
                                     '--key-path', 'key', '--chain-path',
                                     'chain', '--fullchain-path', 'fullchain'])

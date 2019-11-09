@@ -135,7 +135,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         super(SetupLogFileHandlerTest, self).setUp()
         self.config.max_log_backups = 42
 
-    @mock.patch('certbot.main.logging.handlers.RotatingFileHandler')
+    @mock.patch('certbot._internal.main.logging.handlers.RotatingFileHandler')
     def test_failure(self, mock_handler):
         mock_handler.side_effect = IOError
 

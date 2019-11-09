@@ -15,7 +15,7 @@ import certbot
 from certbot import cli
 from certbot import constants
 from certbot import crypto_util
-from certbot import error_handler
+from certbot._internal import error_handler
 from certbot import errors
 from certbot import util
 from certbot.compat import os
@@ -248,7 +248,7 @@ def _relevant(namespaces, option):
 
     :rtype: bool
     """
-    from certbot import renewal
+    from certbot._internal import renewal
 
     return (option in renewal.CONFIG_ITEMS or
             any(option.startswith(namespace) for namespace in namespaces))

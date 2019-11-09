@@ -22,7 +22,7 @@ import requests
 from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
 from certbot import crypto_util
 from certbot import errors
-from certbot.storage import RenewableCert # pylint: disable=unused-import
+from certbot._internal.storage import RenewableCert # pylint: disable=unused-import
 from certbot import util
 
 logger = logging.getLogger(__name__)

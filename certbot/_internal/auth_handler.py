@@ -13,7 +13,7 @@ from acme.magic_typing import Dict, List, Tuple
 # pylint: enable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
-from certbot import error_handler
+from certbot._internal import error_handler
 from certbot import interfaces
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class AuthHandler(object):
     :ivar acme.client.BackwardsCompatibleClientV2 acme_client: ACME client API.
 
     :ivar account: Client's Account
-    :type account: :class:`certbot.account.Account`
+    :type account: :class:`certbot._internal.account.Account`
 
     :ivar list pref_challs: sorted user specified preferred challenges
         type strings with the most preferred challenge listed first

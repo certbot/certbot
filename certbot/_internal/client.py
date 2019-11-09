@@ -18,16 +18,16 @@ from acme import messages
 from acme.magic_typing import Optional, List  # pylint: disable=unused-import,no-name-in-module
 
 import certbot
-from certbot import account
-from certbot import auth_handler
+from certbot._internal import account
+from certbot._internal import auth_handler
 from certbot import cli
 from certbot import constants
 from certbot import crypto_util
 from certbot import eff
-from certbot import error_handler
+from certbot._internal import error_handler
 from certbot import errors
 from certbot import interfaces
-from certbot import storage
+from certbot._internal import storage
 from certbot import util
 from certbot.compat import os
 from certbot.display import enhancements
@@ -408,7 +408,7 @@ class Client(object):
         :param certname: requested name of lineage
         :type certname: `str` or `None`
 
-        :returns: A new :class:`certbot.storage.RenewableCert` instance
+        :returns: A new :class:`certbot._internal.storage.RenewableCert` instance
             referred to the enrolled cert lineage, False if the cert could not
             be obtained, or None if doing a successful dry run.
 

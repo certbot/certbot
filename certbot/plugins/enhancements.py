@@ -51,7 +51,7 @@ def enable(lineage, domains, installer, config):
     Run enable method for each requested enhancement that is supported.
 
     :param lineage: Certificate lineage object
-    :type lineage: certbot.storage.RenewableCert
+    :type lineage: certbot._internal.storage.RenewableCert
 
     :param domains: List of domains in certificate to enhance
     :type domains: str
@@ -112,7 +112,7 @@ class AutoHSTSEnhancement(object):
         Implementation of this method should increase the max-age value.
 
         :param lineage: Certificate lineage object
-        :type lineage: certbot.storage.RenewableCert
+        :type lineage: certbot._internal.storage.RenewableCert
 
         .. note:: prepare() method inherited from `interfaces.IPlugin` might need
             to be called manually within implementation of this interface method
@@ -126,7 +126,7 @@ class AutoHSTSEnhancement(object):
         Long max-age value should be set in implementation of this method.
 
         :param lineage: Certificate lineage object
-        :type lineage: certbot.storage.RenewableCert
+        :type lineage: certbot._internal.storage.RenewableCert
         """
 
     @abc.abstractmethod
@@ -137,7 +137,7 @@ class AutoHSTSEnhancement(object):
         over the subsequent runs of Certbot renew.
 
         :param lineage: Certificate lineage object
-        :type lineage: certbot.storage.RenewableCert
+        :type lineage: certbot._internal.storage.RenewableCert
 
         :param domains: List of domains in certificate to enhance
         :type domains: str
