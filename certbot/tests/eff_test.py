@@ -17,7 +17,7 @@ class HandleSubscriptionTest(test_util.ConfigTestCase):
         self.config.eff_email = None
 
     def _call(self):
-        from certbot._internal.eff handle_subscription
+        from certbot._internal.eff import handle_subscription
         return handle_subscription(self.config)
 
     @test_util.patch_get_utility()
@@ -95,7 +95,7 @@ class SubscribeTest(unittest.TestCase):
     def _call(self, mock_post):
         mock_post.return_value = self.response
 
-        from certbot._internal.effort subscribe
+        from certbot._internal.eff import subscribe
         subscribe(self.email)
         self._check_post_call(mock_post)
 
