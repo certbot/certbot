@@ -21,7 +21,7 @@ from certbot._internal import client
 from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
-from certbot import eff
+from certbot._internal import eff
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
