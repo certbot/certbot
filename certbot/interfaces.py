@@ -295,10 +295,10 @@ class IInstaller(IPlugin):
 
         :param str domain: domain for which to provide enhancement
         :param str enhancement: An enhancement as defined in
-            :const:`~certbot.constants.ENHANCEMENTS`
+            :const:`~certbot._internal.constants.ENHANCEMENTS`
         :param options: Flexible options parameter for enhancement.
             Check documentation of
-            :const:`~certbot.constants.ENHANCEMENTS`
+            :const:`~certbot._internal.constants.ENHANCEMENTS`
             for expected options for each enhancement.
 
         :raises .PluginError: If Enhancement is not supported, or if
@@ -310,7 +310,7 @@ class IInstaller(IPlugin):
         """Returns a `collections.Iterable` of supported enhancements.
 
         :returns: supported enhancements which should be a subset of
-            :const:`~certbot.constants.ENHANCEMENTS`
+            :const:`~certbot._internal.constants.ENHANCEMENTS`
         :rtype: :class:`collections.Iterable` of :class:`str`
 
         """

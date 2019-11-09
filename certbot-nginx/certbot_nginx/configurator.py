@@ -704,9 +704,9 @@ class NginxConfigurator(common.Installer):
 
         :param str domain: domain to enhance
         :param str enhancement: enhancement type defined in
-            :const:`~certbot.constants.ENHANCEMENTS`
+            :const:`~certbot._internal.constants.ENHANCEMENTS`
         :param options: options for the enhancement
-            See :const:`~certbot.constants.ENHANCEMENTS`
+            See :const:`~certbot._internal.constants.ENHANCEMENTS`
             documentation for appropriate parameter.
 
         """

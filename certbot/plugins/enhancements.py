@@ -2,7 +2,7 @@
 import abc
 import six
 
-from certbot import constants
+from certbot._internal import constants
 
 from acme.magic_typing import Dict, List, Any  # pylint: disable=unused-import, no-name-in-module
 

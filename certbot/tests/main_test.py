@@ -24,7 +24,7 @@ import certbot.tests.util as test_util
 from certbot._internal import account
 from certbot import cli
 from certbot import configuration
-from certbot import constants
+from certbot._internal import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces  # pylint: disable=unused-import

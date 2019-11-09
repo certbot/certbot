@@ -3,7 +3,7 @@ import unittest
 
 import mock
 
-from certbot import constants
+from certbot._internal import constants
 from certbot import errors
 from certbot.compat import misc
 from certbot.compat import os

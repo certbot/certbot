@@ -13,7 +13,7 @@ import six
 
 import certbot
 from certbot import cli
-from certbot import constants
+from certbot._internal import constants
 from certbot import crypto_util
 from certbot._internal import error_handler
 from certbot import errors

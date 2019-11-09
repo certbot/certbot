@@ -9,7 +9,7 @@ import traceback
 
 import six
 
-from certbot import constants
+from certbot._internal import constants
 from certbot import errors
 from certbot import util
 from certbot.compat import os

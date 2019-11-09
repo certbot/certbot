@@ -21,7 +21,7 @@ import certbot
 from certbot._internal import account
 from certbot._internal import auth_handler
 from certbot import cli
-from certbot import constants
+from certbot._internal import constants
 from certbot import crypto_util
 from certbot import eff
 from certbot._internal import error_handler
