@@ -13,14 +13,14 @@ from certbot import errors
 from certbot import interfaces
 
 from certbot.plugins import standalone
-from certbot.plugins import webroot
+from certbot._internal.plugins import webroot
 
 EP_SA = pkg_resources.EntryPoint(
     "sa", "certbot.plugins.standalone",
     attrs=("Authenticator",),
     dist=mock.MagicMock(key="certbot"))
 EP_WR = pkg_resources.EntryPoint(
-    "wr", "certbot.plugins.webroot",
+    "wr", "certbot._internal.plugins.webroot",
     attrs=("Authenticator",),
     dist=mock.MagicMock(key="certbot"))
 
