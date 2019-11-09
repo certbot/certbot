@@ -18,10 +18,10 @@ class AskTest(unittest.TestCase):
 
     @classmethod
     def _call(cls, enhancement):
-        from certbot.display.enhancements import ask
+        from certbot._internal.display.enhancements import ask
         return ask(enhancement)
 
-    @mock.patch("certbot.display.enhancements.util")
+    @mock.patch("certbot._internal.display.enhancements.util")
     def test_redirect(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 1)
         self.assertTrue(self._call("redirect"))
@@ -34,20 +34,20 @@ class RedirectTest(unittest.TestCase):
     """Test the redirect_by_default method."""
     @classmethod
     def _call(cls):
-        from certbot.display.enhancements import redirect_by_default
+        from certbot._internal.display.enhancements import redirect_by_default
         return redirect_by_default()
 
-    @mock.patch("certbot.display.enhancements.util")
+    @mock.patch("certbot._internal.display.enhancements.util")
     def test_secure(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 1)
         self.assertTrue(self._call())
 
-    @mock.patch("certbot.display.enhancements.util")
+    @mock.patch("certbot._internal.display.enhancements.util")
     def test_cancel(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 1)
         self.assertFalse(self._call())
 
-    @mock.patch("certbot.display.enhancements.util")
+    @mock.patch("certbot._internal.display.enhancements.util")
     def test_easy(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 0)
         self.assertFalse(self._call())

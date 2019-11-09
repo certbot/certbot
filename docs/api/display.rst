@@ -15,9 +15,3 @@
 
 .. automodule:: certbot.display.ops
    :members:
-
-:mod:`certbot.display.enhancements`
-=======================================
-
-.. automodule:: certbot.display.enhancements
-   :members:
