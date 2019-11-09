@@ -2,7 +2,7 @@
 try:
     import readline  # pylint: disable=import-error
 except ImportError:
-    import certbot.display.dummy_readline as readline  # type: ignore
+    import certbot._internal.display.dummy_readline as readline  # type: ignore
 import string
 import sys
 import unittest
