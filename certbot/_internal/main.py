@@ -37,7 +37,7 @@ from certbot.compat import os
 from certbot.display import util as display_util, ops as display_ops
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.plugins import enhancements
-from certbot.plugins import selection as plug_sel
+from certbot._internal.plugins import selection as plug_sel
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")

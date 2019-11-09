@@ -4,7 +4,7 @@ import logging
 from certbot import errors
 from certbot import interfaces
 
-from certbot.plugins import selection as plug_sel
+from certbot._internal.plugins import selection as plug_sel
 import certbot.plugins.enhancements as enhancements
 
 logger = logging.getLogger(__name__)
