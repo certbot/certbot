@@ -119,7 +119,7 @@ class PluginEntryPointTest(unittest.TestCase):
         self.plugin_ep._initialized = plugin = mock.MagicMock()
 
         exceptions = zope.interface.exceptions
-        with mock.patch("certbot.plugins."
+        with mock.patch("certbot._internal.plugins."
                         "disco.zope.interface") as mock_zope:
             mock_zope.exceptions = exceptions
 
