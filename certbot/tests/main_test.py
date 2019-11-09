@@ -36,7 +36,7 @@ from certbot.compat import filesystem
 from certbot._internal.plugins import disco
 from certbot.plugins import enhancements
 from certbot._internal.plugins import manual
-from certbot.plugins import null
+from certbot._internal.plugins import null
 
 CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.vector_path('cert_512.pem')

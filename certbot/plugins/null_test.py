@@ -1,4 +1,4 @@
-"""Tests for certbot.plugins.null."""
+"""Tests for certbot._internal.plugins.null."""
 import unittest
 import six
 
@@ -6,10 +6,10 @@ import mock
 
 
 class InstallerTest(unittest.TestCase):
-    """Tests for certbot.plugins.null.Installer."""
+    """Tests for certbot._internal.plugins.null.Installer."""
 
     def setUp(self):
-        from certbot.plugins.null import Installer
+        from certbot._internal.plugins.null import Installer
         self.installer = Installer(config=mock.MagicMock(), name="null")
 
     def test_it(self):
