@@ -1,4 +1,4 @@
-"""Tests for certbot.plugins.standalone."""
+"""Tests for certbot._internal.plugins.standalone."""
 import socket
 # https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 from socket import errno as socket_errors  # type: ignore
@@ -22,10 +22,10 @@ from certbot.tests import util as test_util
 
 
 class ServerManagerTest(unittest.TestCase):
-    """Tests for certbot.plugins.standalone.ServerManager."""
+    """Tests for certbot._internal.plugins.standalone.ServerManager."""
 
     def setUp(self):
-        from certbot.plugins.standalone import ServerManager
+        from certbot._internal.plugins.standalone import ServerManager
         self.certs = {}  # type: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]]
         self.http_01_resources = {} \
         # type: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
@@ -82,10 +82,10 @@ def get_open_port():
 
 
 class AuthenticatorTest(unittest.TestCase):
-    """Tests for certbot.plugins.standalone.Authenticator."""
+    """Tests for certbot._internal.plugins.standalone.Authenticator."""
 
     def setUp(self):
-        from certbot.plugins.standalone import Authenticator
+        from certbot._internal.plugins.standalone import Authenticator
 
         self.config = mock.MagicMock(http01_port=get_open_port())
         self.auth = Authenticator(self.config, name="standalone")

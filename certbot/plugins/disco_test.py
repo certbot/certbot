@@ -12,11 +12,11 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 from certbot import errors
 from certbot import interfaces
 
-from certbot.plugins import standalone
+from certbot._internal.plugins import standalone
 from certbot._internal.plugins import webroot
 
 EP_SA = pkg_resources.EntryPoint(
-    "sa", "certbot.plugins.standalone",
+    "sa", "certbot._internal.plugins.standalone",
     attrs=("Authenticator",),
     dist=mock.MagicMock(key="certbot"))
 EP_WR = pkg_resources.EntryPoint(
