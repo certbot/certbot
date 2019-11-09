@@ -168,7 +168,7 @@ setup(
             'certbot = certbot._internal.main:main',
         ],
         'certbot.plugins': [
-            'manual = certbot.plugins.manual:Authenticator',
+            'manual = certbot._internal.plugins.manual:Authenticator',
             'null = certbot.plugins.null:Installer',
             'standalone = certbot.plugins.standalone:Authenticator',
             'webroot = certbot.plugins.webroot:Authenticator',
