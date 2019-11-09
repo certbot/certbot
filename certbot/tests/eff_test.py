@@ -17,7 +17,7 @@ class HandleSubscriptionTest(test_util.ConfigTestCase):
         self.config.eff_email = None
 
     def _call(self):
-        from certbot._internal.effort handle_subscription
+        from certbot._internal.eff handle_subscription
         return handle_subscription(self.config)
 
     @test_util.patch_get_utility()
