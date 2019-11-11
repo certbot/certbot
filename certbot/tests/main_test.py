@@ -591,14 +591,14 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             self.assertTrue(message in str(exc))
         self.assertTrue(exc is not None)
 
-    @mock.patch('certbot.log.post_arg_parse_setup')
+    @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_noninteractive(self, _):
         args = ['-n', 'certonly']
         self._cli_missing_flag(args, "specify a plugin")
         args.extend(['--standalone', '-d', 'eg.is'])
         self._cli_missing_flag(args, "register before running")
 
-    @mock.patch('certbot.log.post_arg_parse_setup')
+    @mock.patch('certbot._internal.log.post_arg_parse_setup')
     @mock.patch('certbot._internal.main._report_new_cert')
     @mock.patch('certbot._internal.main.client.acme_client.Client')
     @mock.patch('certbot._internal.main._determine_account')
@@ -653,7 +653,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             self.assertEqual(call_config.fullchain_path, test_util.temp_join('chain'))
             self.assertEqual(call_config.key_path, test_util.temp_join('privkey'))
 
-    @mock.patch('certbot.log.post_arg_parse_setup')
+    @mock.patch('certbot._internal.log.post_arg_parse_setup')
     @mock.patch('certbot._internal.main._install_cert')
     @mock.patch('certbot._internal.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot._internal.main.plug_sel.pick_installer')
@@ -704,7 +704,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue(mock_getcert.called)
         self.assertTrue(mock_inst.called)
 
-    @mock.patch('certbot.log.post_arg_parse_setup')
+    @mock.patch('certbot._internal.log.post_arg_parse_setup')
     @mock.patch('certbot._internal.main._report_new_cert')
     @mock.patch('certbot.util.exe_exists')
     def test_configurator_selection(self, mock_exe_exists, _, __):
@@ -744,7 +744,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             self._call(["auth", "--standalone"])
             self.assertEqual(1, mock_certonly.call_count)
 
-    @mock.patch('certbot.log.post_arg_parse_setup')
+    @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_rollback(self, _):
         _, _, _, client = self._call(['rollback'])
         self.assertEqual(1, client.rollback.call_count)
@@ -768,7 +768,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._call_no_clientmock(['delete'])
         self.assertEqual(1, mock_cert_manager.call_count)
 
-    @mock.patch('certbot.log.post_arg_parse_setup')
+    @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_plugins(self, _):
         flags = ['--init', '--prepare', '--authenticators', '--installers']
         for args in itertools.chain(
@@ -1052,7 +1052,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue('fullchain.pem' in cert_msg)
         self.assertTrue('donate' in get_utility().add_message.call_args[0][0])
 
-    @mock.patch('certbot.log.logging.handlers.RotatingFileHandler.doRollover')
+    @mock.patch('certbot._internal.log.logging.handlers.RotatingFileHandler.doRollover')
     @mock.patch('certbot.crypto_util.notAfter')
     def test_certonly_renewal_triggers(self, _, __):
         # --dry-run should force renewal
@@ -1121,7 +1121,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue('No renewals were attempted.' in stdout.getvalue())
         self.assertTrue('The following certs are not due for renewal yet:' in stdout.getvalue())
 
-    @mock.patch('certbot.log.post_arg_parse_setup')
+    @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_quiet_renew(self, _):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run"]
@@ -1372,7 +1372,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                     jose.ComparableX509(cert),
                     mock.ANY)
 
-    @mock.patch('certbot.log.post_arg_parse_setup')
+    @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_register(self, _):
         with mock.patch('certbot._internal.main.client') as mocked_client:
             acc = mock.MagicMock()
@@ -1432,7 +1432,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     def test_update_account_with_email(self, mock_utility, mock_email):
         email = "user@example.com"
         mock_email.return_value = email
-        with mock.patch('certbot.eff.handle_subscription') as mock_handle:
+        with mock.patch('certbot._internal.eff.handle_subscription') as mock_handle:
             with mock.patch('certbot._internal.main._determine_account') as mocked_det:
                 with mock.patch('certbot._internal.main.account') as mocked_account:
                     with mock.patch('certbot._internal.main.client') as mocked_client:
@@ -1464,7 +1464,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     def test_update_registration_with_email_deprecated(self, mock_utility, mock_email):
         email = "user@example.com"
         mock_email.return_value = email
-        with mock.patch('certbot.eff.handle_subscription') as mock_handle:
+        with mock.patch('certbot._internal.eff.handle_subscription') as mock_handle:
             with mock.patch('certbot._internal.main._determine_account') as mocked_det:
                 with mock.patch('certbot._internal.main.account') as mocked_account:
                     with mock.patch('certbot._internal.main.client') as mocked_client:

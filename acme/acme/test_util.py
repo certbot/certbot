@@ -12,12 +12,6 @@ import josepy as jose
 from OpenSSL import crypto
 
 
-def vector_path(*names):
-    """Path to a test vector."""
-    return pkg_resources.resource_filename(
-        __name__, os.path.join('testdata', *names))
-
-
 def load_vector(*names):
     """Load contents of a test vector."""
     # luckily, resource_string opens file in binary mode

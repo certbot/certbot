@@ -23,14 +23,14 @@ from certbot._internal import auth_handler
 from certbot import cli
 from certbot._internal import constants
 from certbot import crypto_util
-from certbot import eff
+from certbot._internal import eff
 from certbot._internal import error_handler
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import storage
 from certbot import util
 from certbot.compat import os
-from certbot.display import enhancements
+from certbot._internal.display import enhancements
 from certbot.display import ops as display_ops
 from certbot.plugins import selection as plugin_selection
 
