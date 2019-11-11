@@ -6,6 +6,17 @@ from certbot._internal import constants
 
 from acme.magic_typing import Dict, List, Any  # pylint: disable=unused-import, no-name-in-module
 
+ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]
+"""List of possible :class:`certbot.interfaces.IInstaller`
+enhancements.
+
+List of expected options parameters:
+- redirect: None
+- ensure-http-header: name of header (i.e. Strict-Transport-Security)
+- ocsp-stapling: certificate chain file path
+
+"""
+
 def enabled_enhancements(config):
     """
     Generator to yield the enabled new style enhancements.

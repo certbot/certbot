@@ -1612,9 +1612,9 @@ class ApacheConfigurator(common.Installer):
 
         :param str domain: domain to enhance
         :param str enhancement: enhancement type defined in
-            :const:`~certbot._internal.constants.ENHANCEMENTS`
+            :const:`~certbot.plugins.enhancements.ENHANCEMENTS`
         :param options: options for the enhancement
-            See :const:`~certbot._internal.constants.ENHANCEMENTS`
+            See :const:`~certbot.plugins.enhancements.ENHANCEMENTS`
             documentation for appropriate parameter.
 
         :raises .errors.PluginError: If Enhancement is not supported, or if
