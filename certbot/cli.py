@@ -22,7 +22,7 @@ from acme.magic_typing import Any, Dict, Optional
 import certbot
 import certbot.plugins.enhancements as enhancements
 import certbot._internal.plugins.selection as plugin_selection
-from certbot import constants
+from certbot._internal import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import hooks

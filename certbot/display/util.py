@@ -5,7 +5,7 @@ import textwrap
 
 import zope.interface
 
-from certbot import constants
+from certbot._internal import constants
 from certbot import errors
 from certbot import interfaces
 from certbot.compat import misc

@@ -18,7 +18,7 @@ def ask(enhancement):
     """Display the enhancement to the user.
 
     :param str enhancement: One of the
-        :class:`certbot.CONFIG.ENHANCEMENTS` enhancements
+        :const:`~certbot.plugins.enhancements.ENHANCEMENTS` enhancements
 
     :returns: True if feature is desired, False otherwise
     :rtype: bool

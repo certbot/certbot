@@ -14,7 +14,7 @@ from josepy import util as jose_util
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import achallenges  # pylint: disable=unused-import
-from certbot import constants
+from certbot._internal import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
