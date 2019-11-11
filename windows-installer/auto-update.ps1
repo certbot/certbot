@@ -12,7 +12,7 @@ trap {
 
 $ErrorActionPreference = 'Stop'
 
-$installerAuthenticodeCertificateThumbprint = "74B2E146A82F2B71F8EB4B13EBBB6F951757D8C2"
+$installerAuthenticodeCertificateThumbprint = "CHANGEME"
 
 # Get current local certbot version
 try {
@@ -60,15 +60,15 @@ if ([System.Version]"$currentVersion" -ge [System.Version]"$latestVersion") {
         $webClient.DownloadFile($installerUrl, $installerPath)
 
         # Check installer has a valid signature from the Certbot release team
-        $signature = Get-AuthenticodeSignature "C:\Dev\Firefox Installer.exe"
-        
-        if ($signature.Status -ne 'Valid') {
-            throw "Downloaded installer has no or invalid Authenticode signature."
-        }
+        $signature = Get-AuthenticodeSignature $installerPath
 
-        if ($signature.SignerCertificate.Thumbprint -ne $installerAuthenticodeCertificateThumbprint) {
-            throw "Downloaded installer has not been signed by Certbot development team."
-        }
+        # Uncomment the following lines of code once the Certbot installer is correctly signed.
+#       if ($signature.Status -ne 'Valid') {
+#           throw "Downloaded installer has no or invalid Authenticode signature."
+#       }
+#       if ($signature.SignerCertificate.Thumbprint -ne $installerAuthenticodeCertificateThumbprint) {
+#           throw "Downloaded installer has not been signed by Certbot development team."
+#       }
 
         # Install new version of Certbot
         "Running the installer ..."

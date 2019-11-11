@@ -11,7 +11,7 @@ $taskName = "Certbot Renew & Auto-Update Task"
 
 $actionRenew = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument '-NoProfile -WindowStyle Hidden -Command "certbot renew"'
 $actionPreUpgrade = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -Command ""Copy-Item '$InstallDir\auto-update.ps1' ""`$env:TMP\auto-update.ps1"""""
-$actionUpgrade = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -File ""`$env:TMP\auto-update.ps1"" -InstallDir '$InstallDir'"
+$actionUpgrade = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -File ""%TMP%\auto-update.ps1"" -InstallDir ""$InstallDir"""
 $actionPostUpgrade = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument '-NoProfile -WindowStyle Hidden -Command "Remove-Item "$env:TMP\auto-update.ps1" -ErrorAction "Ignore""'
 
 $delay = New-TimeSpan -Hours 12
