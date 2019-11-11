@@ -84,8 +84,9 @@ def _copy_assets(build_path, repo_path):
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'certbot.ico'), build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'run.bat'), build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'template.nsi'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'renew-up.ps1'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'renew-down.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'tasks-up.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'tasks-down.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'auto-update.ps1'), build_path)
 
 
 def _generate_pynsist_config(repo_path, build_path):
@@ -143,8 +144,9 @@ bitness={python_bitness}
 [Include]
 local_wheels=wheels\\*.whl
 files=run.bat
-      renew-up.ps1
-      renew-down.ps1
+      tasks-up.ps1
+      tasks-down.ps1
+      auto-update.ps1
 
 [Command certbot]
 entry_point=certbot._internal.main:main

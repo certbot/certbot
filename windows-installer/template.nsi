@@ -165,9 +165,9 @@ Section "!${PRODUCT_NAME}" sec_app
                    "NoRepair" 1
 
   ; CERTBOT CUSTOM BEGIN
-  ; Execute ps script to create the certbot renew task
-  DetailPrint "Setting up certbot renew scheduled task"
-  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\renew-up.ps1"'
+  ; Execute ps script to create the certbot renew & auto-update task
+  DetailPrint "Setting up certbot renew & auto-update scheduled task"
+  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\tasks-up.ps1" -InstallDir "$INSTDIR"'
   ; CERTBOT CUSTOM END
 
   ; Check if we need to reboot
@@ -180,8 +180,8 @@ SectionEnd
 
 Section "Uninstall"
   ; CERTBOT CUSTOM BEGIN
-  ; Execute ps script to remove the certbot renew task
-  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\renew-down.ps1"'
+  ; Execute ps script to remove the certbot renew & auto-update task
+  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\tasks-down.ps1"'
   ; CERTBOT CUSTOM END
 
   SetRegView [[ib.py_bitness]]
