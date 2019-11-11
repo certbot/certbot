@@ -1,4 +1,72 @@
-""" Augeas implementation of the ParserNode interfaces """
+"""
+Augeas implementation of the ParserNode interfaces.
+
+Augeas works internally by using XPATH notation. The following is a short example
+of how this all works internally, to better understand what's going on under the
+hood.
+
+A configuration file /etc/apache2/apache2.conf with the following content:
+
+    # First comment line
+    # Second comment line
+    WhateverDirective whatevervalue
+    <ABlock>
+        DirectiveInABlock dirvalue
+    </ABlock>
+    SomeDirective somedirectivevalue
+    <ABlock>
+        AnotherDirectiveInABlock dirvalue
+    </ABlock>
+    # Yet another comment
+
+
+Translates over to Augeas path notation (of immediate children), when calling
+for example: aug.match("/files/etc/apache2/apache2.conf/*")
+
+[
+    "/files/etc/apache2/apache2.conf/#comment[1]",
+    "/files/etc/apache2/apache2.conf/#comment[2]",
+    "/files/etc/apache2/apache2.conf/directive[1]",
+    "/files/etc/apache2/apache2.conf/ABlock[1]",
+    "/files/etc/apache2/apache2.conf/directive[2]",
+    "/files/etc/apache2/apache2.conf/ABlock[2]",
+    "/files/etc/apache2/apache2.conf/#comment[3]"
+]
+
+Regardless of directives name, its key in the Augeas tree is always "directive",
+with index where needed of course. Comments work similarly, while blocks
+have their own key in the Augeas XPATH notation.
+
+It's important to note that all of the unique keys have their own indices.
+
+Augeas paths are case sensitive, while Apache configuration is case insensitive.
+It looks like this:
+
+    <block>
+        directive value
+    </block>
+    <Block>
+        Directive Value
+    </Block>
+    <block>
+        directive value
+    </block>
+    <bLoCk>
+        DiReCtiVe VaLuE
+    </bLoCk>
+
+Translates over to:
+
+[
+    "/files/etc/apache2/apache2.conf/block[1]",
+    "/files/etc/apache2/apache2.conf/Block[1]",
+    "/files/etc/apache2/apache2.conf/block[2]",
+    "/files/etc/apache2/apache2.conf/bLoCk[1]",
+]
+"""
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from certbot import errors
+from certbot.compat import os
 
 from certbot_apache import apache_util
 from certbot_apache import assertions
@@ -6,8 +74,6 @@ from certbot_apache import interfaces
 from certbot_apache import parser
 from certbot_apache import parsernode_util as util
 
-from certbot.compat import os
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 
 
 class AugeasParserNode(interfaces.ParserNode):
@@ -21,6 +87,15 @@ class AugeasParserNode(interfaces.ParserNode):
         self.dirty = dirty
         self.metadata = metadata
         self.parser = self.metadata.get("augeasparser")
+        try:
+            if self.metadata["augeaspath"].endswith("/"):
+                raise errors.PluginError(
+                    "Augeas path: {} has a trailing slash".format(
+                        self.metadata["augeaspath"]
+                    )
+                )
+        except KeyError:
+            raise errors.PluginError("Augeas path is required")
 
     def save(self, msg): # pragma: no cover
         pass
@@ -125,12 +200,22 @@ class AugeasBlockNode(AugeasDirectiveNode):
     # pylint: disable=unused-argument
     def add_child_block(self, name, parameters=None, position=None):  # pragma: no cover
         """Adds a new BlockNode to the sequence of children"""
-        new_metadata = {"augeasparser": self.parser, "augeaspath": assertions.PASS}
-        new_block = AugeasBlockNode(name=assertions.PASS,
-                                    ancestor=self,
-                                    filepath=assertions.PASS,
+
+        insertpath, realpath, before = self._aug_resolve_child_position(
+            name,
+            position
+        )
+        new_metadata = {"augeasparser": self.parser, "augeaspath": realpath}
+
+        # Create the new block
+        self.parser.aug.insert(insertpath, name, before)
+
+        # Parameters will be set at the initialization of the new object
+        new_block = AugeasBlockNode(name=name,
+                                    parameters=parameters,
+                                    ancestor=assertions.PASS,
+                                    filepath=apache_util.get_file_path(realpath),
                                     metadata=new_metadata)
-        self.children += (new_block,)
         return new_block
 
     # pylint: disable=unused-argument
@@ -238,7 +323,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
     def _create_blocknode(self, path):
         """Helper function to create a BlockNode from Augeas path"""
 
-        name = self._aug_get_block_name(path)
+        name = self._aug_get_name(path)
         metadata = {"augeasparser": self.parser, "augeaspath": path}
 
         # Because of the dynamic nature, and the fact that we're not populating
@@ -262,8 +347,10 @@ class AugeasBlockNode(AugeasDirectiveNode):
                               name.lower() in os.path.basename(path).lower()])
         return blk_paths
 
-    def _aug_get_block_name(self, path):
-        """Helper function to get name of a configuration block from path."""
+    def _aug_get_name(self, path):
+        """
+        Helper function to get name of a configuration block or variable from path.
+        """
 
         # Remove the ending slash if any
         if path[-1] == "/":  # pragma: no cover
@@ -276,6 +363,75 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # for indexing within Augeas
         name = name.split("[")[0]
         return name
+
+    def _aug_resolve_child_position(self, name, position):
+        """
+        Helper function that iterates through the immediate children and figures
+        out the insertion path for a new AugeasParserNode.
+
+        Augeas also generalizes indices for directives and comments, simply by
+        using "directive" or "comment" respectively as their names.
+
+        This function iterates over the existing children of the AugeasBlockNode,
+        returning their insertion path, resulting Augeas path and if the new node
+        should be inserted before or after the returned insertion path.
+
+        Note: while Apache is case insensitive, Augeas is not, and blocks like
+        Nameofablock and NameOfABlock have different indices.
+
+        :param str name: Name of the AugeasBlockNode to insert, "directive" for
+            AugeasDirectiveNode or "comment" for AugeasCommentNode
+        :param int position: The position to insert the child AugeasParserNode to
+
+        :returns: Tuple of insert path, resulting path and a boolean if the new
+            node should be inserted before it.
+        :rtype: tuple of str, str, bool
+        """
+
+        # Default to appending
+        before = False
+
+        all_children = self.parser.aug.match("{}/*".format(
+            self.metadata["augeaspath"])
+        )
+
+        # Calculate resulting_path
+        # Augeas indices start at 1. We use counter to calculate the index to
+        # be used in resulting_path.
+        counter = 1
+        for i, child in enumerate(all_children):
+            if position is not None and i >= position:
+                # We're not going to insert the new node to an index after this
+                break
+            childname = self._aug_get_name(child)
+            if name == childname:
+                counter += 1
+
+        resulting_path = "{}/{}[{}]".format(
+            self.metadata["augeaspath"],
+            name,
+            counter
+        )
+
+        # Form the correct insert_path
+        # Inserting the only child and appending as the last child work
+        # similarly in Augeas.
+        append = not all_children or position is None or position >= len(all_children)
+        if append:
+            insert_path = "{}/*[last()]".format(
+                self.metadata["augeaspath"]
+            )
+        elif position == 0:
+            # Insert as the first child, before the current first one.
+            insert_path = all_children[0]
+            before = True
+        else:
+            insert_path = "{}/*[{}]".format(
+                self.metadata["augeaspath"],
+                position
+            )
+
+        return (insert_path, resulting_path, before)
 
 
 interfaces.CommentNode.register(AugeasCommentNode)
