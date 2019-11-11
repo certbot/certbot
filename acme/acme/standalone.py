@@ -4,7 +4,6 @@ import functools
 import logging
 import socket
 import threading
-import warnings
 
 from six.moves import BaseHTTPServer  # type: ignore  # pylint: disable=import-error
 from six.moves import http_client  # pylint: disable=import-error
