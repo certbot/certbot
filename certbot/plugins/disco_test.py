@@ -1,4 +1,4 @@
-"""Tests for certbot.plugins.disco."""
+"""Tests for certbot._internal.plugins.disco."""
 import functools
 import string
 import unittest
@@ -12,21 +12,21 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 from certbot import errors
 from certbot import interfaces
 
-from certbot.plugins import standalone
-from certbot.plugins import webroot
+from certbot._internal.plugins import standalone
+from certbot._internal.plugins import webroot
 
 EP_SA = pkg_resources.EntryPoint(
-    "sa", "certbot.plugins.standalone",
+    "sa", "certbot._internal.plugins.standalone",
     attrs=("Authenticator",),
     dist=mock.MagicMock(key="certbot"))
 EP_WR = pkg_resources.EntryPoint(
-    "wr", "certbot.plugins.webroot",
+    "wr", "certbot._internal.plugins.webroot",
     attrs=("Authenticator",),
     dist=mock.MagicMock(key="certbot"))
 
 
 class PluginEntryPointTest(unittest.TestCase):
-    """Tests for certbot.plugins.disco.PluginEntryPoint."""
+    """Tests for certbot._internal.plugins.disco.PluginEntryPoint."""
 
     def setUp(self):
         self.ep1 = pkg_resources.EntryPoint(
@@ -40,11 +40,11 @@ class PluginEntryPointTest(unittest.TestCase):
         self.ep3 = pkg_resources.EntryPoint(
             "ep3", "a.ep3", dist=mock.MagicMock(key="p3"))
 
-        from certbot.plugins.disco import PluginEntryPoint
+        from certbot._internal.plugins.disco import PluginEntryPoint
         self.plugin_ep = PluginEntryPoint(EP_SA)
 
     def test_entry_point_to_plugin_name(self):
-        from certbot.plugins.disco import PluginEntryPoint
+        from certbot._internal.plugins.disco import PluginEntryPoint
 
         names = {
             self.ep1: "p1:ep1",
@@ -119,7 +119,7 @@ class PluginEntryPointTest(unittest.TestCase):
         self.plugin_ep._initialized = plugin = mock.MagicMock()
 
         exceptions = zope.interface.exceptions
-        with mock.patch("certbot.plugins."
+        with mock.patch("certbot._internal.plugins."
                         "disco.zope.interface") as mock_zope:
             mock_zope.exceptions = exceptions
 
@@ -183,11 +183,11 @@ class PluginEntryPointTest(unittest.TestCase):
 
 
 class PluginsRegistryTest(unittest.TestCase):
-    """Tests for certbot.plugins.disco.PluginsRegistry."""
+    """Tests for certbot._internal.plugins.disco.PluginsRegistry."""
 
     @classmethod
     def _create_new_registry(cls, plugins):
-        from certbot.plugins.disco import PluginsRegistry
+        from certbot._internal.plugins.disco import PluginsRegistry
         return PluginsRegistry(plugins)
 
     def setUp(self):
@@ -198,8 +198,8 @@ class PluginsRegistryTest(unittest.TestCase):
         self.reg = self._create_new_registry(self.plugins)
 
     def test_find_all(self):
-        from certbot.plugins.disco import PluginsRegistry
-        with mock.patch("certbot.plugins.disco.pkg_resources") as mock_pkg:
+        from certbot._internal.plugins.disco import PluginsRegistry
+        with mock.patch("certbot._internal.plugins.disco.pkg_resources") as mock_pkg:
             mock_pkg.iter_entry_points.side_effect = [iter([EP_SA]),
                                                       iter([EP_WR])]
             plugins = PluginsRegistry.find_all()

@@ -24,7 +24,7 @@ from certbot._internal import storage
 from certbot._internal import updater
 from certbot import util
 from certbot.compat import os
-from certbot.plugins import disco as plugins_disco
+from certbot._internal.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ import unittest
 import mock
 
 from certbot.plugins import enhancements
-from certbot.plugins import null
+from certbot._internal.plugins import null
 
 import certbot.tests.util as test_util
 

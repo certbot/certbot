@@ -33,10 +33,10 @@ from certbot._internal import updater
 from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
-from certbot.plugins import disco
+from certbot._internal.plugins import disco
 from certbot.plugins import enhancements
-from certbot.plugins import manual
-from certbot.plugins import null
+from certbot._internal.plugins import manual
+from certbot._internal.plugins import null
 
 CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.vector_path('cert_512.pem')
@@ -1220,7 +1220,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._test_renew_common(renewalparams=renewalparams, error_expected=True,
                                 names=names, assert_oc_called=False)
 
-    @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
+    @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
     def test_renew_with_configurator(self, mock_sel):
         mock_sel.return_value = (mock.MagicMock(), mock.MagicMock())
         renewalparams = {'authenticator': 'webroot'}
@@ -1493,7 +1493,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                             email in mock_utility().add_message.call_args[0][0])
                         self.assertTrue(mock_handle.called)
 
-    @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
+    @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
     @mock.patch('certbot._internal.updater._run_updaters')
     def test_plugin_selection_error(self, mock_run, mock_choose):
         mock_choose.side_effect = errors.PluginSelectionError

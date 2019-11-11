@@ -21,7 +21,7 @@ from acme.magic_typing import Any, Dict, Optional
 
 import certbot
 import certbot.plugins.enhancements as enhancements
-import certbot.plugins.selection as plugin_selection
+import certbot._internal.plugins.selection as plugin_selection
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -30,7 +30,7 @@ from certbot import interfaces
 from certbot import util
 from certbot.compat import os
 from certbot.display import util as display_util
-from certbot.plugins import disco as plugins_disco
+from certbot._internal.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 
