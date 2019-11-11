@@ -2,7 +2,38 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.40.0 - master
+## 1.0.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* Certbot's `config_changes` subcommand has been removed
+* `certbot.plugins.common.TLSSNI01` has been removed.
+* The functions `certbot.client.view_config_changes`,
+  `certbot.main.config_changes`,
+  `certbot.plugins.common.Installer.view_config_changes`,
+  `certbot.reverter.Reverter.view_config_changes`, and
+  `certbot.util.get_systemd_os_info` have been removed
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.40.1 - 2019-11-05
+
+### Changed
+
+* Added back support for Python 3.4 to Certbot components and certbot-auto due
+  to a bug when requiring Python 2.7 or 3.5+ on RHEL 6 based systems.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.40.0 - 2019-11-05
 
 ### Added
 
@@ -18,13 +49,21 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   systems will be asked to do this manually.
 * `--server` may now be combined with `--dry-run`. Certbot will, as before, use the
   staging server instead of the live server when `--dry-run` is used.
+* `--dry-run` now requests fresh authorizations every time, fixing the issue
+  where it was prone to falsely reporting success.
 * Updated certbot-dns-google to depend on newer versions of
   google-api-python-client and oauth2client.
+* The OS detection logic again uses distro library for Linux OSes
 * certbot.plugins.common.TLSSNI01 has been deprecated and will be removed in a
   future release.
 * CLI flags --tls-sni-01-port and --tls-sni-01-address have been removed.
 * The values tls-sni and tls-sni-01 for the --preferred-challenges flag are no
   longer accepted.
+* Removed the flags: `--agree-dev-preview`, `--dialog`, and `--apache-init-script`
+* acme.standalone.BaseRequestHandlerWithLogging and
+  acme.standalone.simple_tls_sni_01_server have been deprecated and will be
+  removed in a future release of the library.
+* certbot-dns-rfc2136 now use TCP to query SOA records.
 
 ### Fixed
 

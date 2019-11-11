@@ -86,10 +86,10 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         def write_msg(message, *args, **kwargs): # pylint: disable=missing-docstring,unused-argument
             output.write(message)
 
-        with mock.patch('certbot.main.sys.stdout', new=output):
+        with mock.patch('certbot._internal.main.sys.stdout', new=output):
             with test_util.patch_get_utility() as mock_get_utility:
                 mock_get_utility().notification.side_effect = write_msg
-                with mock.patch('certbot.main.sys.stderr'):
+                with mock.patch('certbot._internal.main.sys.stderr'):
                     self.assertRaises(SystemExit, self._unmocked_parse, args, output)
 
         return output.getvalue()
@@ -126,7 +126,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         chain = 'chain'
         fullchain = 'fullchain'
 
-        with mock.patch('certbot.main.install'):
+        with mock.patch('certbot._internal.main.install'):
             namespace = self.parse(['install', '--cert-path', cert,
                                     '--key-path', 'key', '--chain-path',
                                     'chain', '--fullchain-path', 'fullchain'])
@@ -186,7 +186,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--delete-after-revoke" in out)
         self.assertTrue("--no-delete-after-revoke" in out)
 
-        out = self._help_output(['-h', 'config_changes'])
+        out = self._help_output(['-h', 'register'])
         self.assertTrue("--cert-path" not in out)
         self.assertTrue("--key-path" not in out)
 
@@ -264,16 +264,6 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = self.parse(short_args)
         self.assertTrue(namespace.must_staple)
         self.assertTrue(namespace.staple)
-
-    def test_no_gui(self):
-        args = ['renew', '--dialog']
-        with mock.patch("certbot.util.logger.warning") as mock_warn:
-            namespace = self.parse(args)
-
-        self.assertTrue(namespace.noninteractive_mode)
-        self.assertEqual(mock_warn.call_count, 1)
-        self.assertTrue("is deprecated" in mock_warn.call_args[0][0])
-        self.assertEqual("--dialog", mock_warn.call_args[0][1])
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:

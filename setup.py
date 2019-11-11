@@ -34,7 +34,7 @@ version = meta['version']
 # specified here to avoid masking the more specific request requirements in
 # acme. See https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
-    'acme>=0.29.0',
+    'acme>=0.40.0',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
@@ -59,7 +59,7 @@ install_requires = [
 # However environment markers are supported only with setuptools >= 36.2.
 # So this dependency is not added for old Linux distributions with old setuptools,
 # in order to allow these systems to build certbot from sources.
-pywin32_req = 'pywin32>=225'
+pywin32_req = 'pywin32>=225'  # do not forget to edit pywin32 dependency accordingly in windows-installer/construct.py
 if StrictVersion(setuptools_version) >= StrictVersion('36.2'):
     install_requires.append(pywin32_req + " ; sys_platform == 'win32'")
 elif 'bdist_wheel' in sys.argv[1:]:
@@ -165,7 +165,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'certbot = certbot.main:main',
+            'certbot = certbot._internal.main:main',
         ],
         'certbot.plugins': [
             'manual = certbot.plugins.manual:Authenticator',

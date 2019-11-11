@@ -6,7 +6,6 @@ import sys
 import tempfile
 import warnings
 
-import OpenSSL
 import pkg_resources
 import zope.interface
 
@@ -20,7 +19,6 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter
-from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
 from certbot.plugins.storage import PluginStorage
@@ -192,26 +190,6 @@ class Installer(Plugin):
         except errors.ReverterError as err:
             raise errors.PluginError(str(err))
 
-    def view_config_changes(self):
-        """Show all of the configuration changes that have taken place.
-
-        :raises .errors.PluginError: If there is a problem while processing
-            the checkpoints directories.
-
-        """
-        warnings.warn(
-            "The view_config_changes method is no longer part of Certbot's"
-            " plugin interface, has been deprecated, and will be removed in a"
-            " future release.", DeprecationWarning, stacklevel=2)
-        with warnings.catch_warnings():
-            # Don't let the reverter code warn about this function. Calling
-            # this function in the first place is the real problem.
-            warnings.filterwarnings("ignore", ".*view_config_changes", DeprecationWarning)
-            try:
-                self.reverter.view_config_changes()
-            except errors.ReverterError as err:
-                raise errors.PluginError(str(err))
-
     @property
     def ssl_dhparams(self):
         """Full absolute path to ssl_dhparams file."""
@@ -367,63 +345,6 @@ class ChallengePerformer(object):
 
         """
         raise NotImplementedError()
-
-
-class TLSSNI01(ChallengePerformer):
-    # pylint: disable=abstract-method
-    """Abstract base for TLS-SNI-01 challenge performers"""
-
-    def __init__(self, configurator):
-        super(TLSSNI01, self).__init__(configurator)
-        self.challenge_conf = os.path.join(
-            configurator.config.config_dir, "le_tls_sni_01_cert_challenge.conf")
-        # self.completed = 0
-
-    def get_cert_path(self, achall):
-        """Returns standardized name for challenge certificate.
-
-        :param .KeyAuthorizationAnnotatedChallenge achall: Annotated
-            tls-sni-01 challenge.
-
-        :returns: certificate file name
-        :rtype: str
-
-        """
-        return os.path.join(self.configurator.config.work_dir,
-                            achall.chall.encode("token") + ".crt")
-
-    def get_key_path(self, achall):
-        """Get standardized path to challenge key."""
-        return os.path.join(self.configurator.config.work_dir,
-                            achall.chall.encode("token") + '.pem')
-
-    def get_z_domain(self, achall):
-        """Returns z_domain (SNI) name for the challenge."""
-        return achall.response(achall.account_key).z_domain.decode("utf-8")
-
-    def _setup_challenge_cert(self, achall, cert_key=None):
-
-        """Generate and write out challenge certificate."""
-        cert_path = self.get_cert_path(achall)
-        key_path = self.get_key_path(achall)
-        # Register the path before you write out the file
-        self.configurator.reverter.register_file_creation(True, key_path)
-        self.configurator.reverter.register_file_creation(True, cert_path)
-
-        response, (cert, key) = achall.response_and_validation(
-            cert_key=cert_key)
-        cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, cert)
-        key_pem = OpenSSL.crypto.dump_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, key)
-
-        # Write out challenge cert and key
-        with open(cert_path, "wb") as cert_chall_fd:
-            cert_chall_fd.write(cert_pem)
-        with util.safe_open(key_path, 'wb', chmod=0o400) as key_file:
-            key_file.write(key_pem)
-
-        return response
 
 
 def install_version_controlled_file(dest_path, digest_path, src_path, all_hashes):

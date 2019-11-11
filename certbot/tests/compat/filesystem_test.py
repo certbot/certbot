@@ -16,7 +16,7 @@ except ImportError:
     POSIX_MODE = True
 
 import certbot.tests.util as test_util
-from certbot import lock
+from certbot._internal import lock
 from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem

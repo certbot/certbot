@@ -14,22 +14,22 @@ from acme import errors as acme_errors
 from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 
 import certbot
-from certbot import account
-from certbot import cert_manager
+from certbot._internal import account
+from certbot._internal import cert_manager
 from certbot import cli
-from certbot import client
+from certbot._internal import client
 from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
-from certbot import eff
+from certbot._internal import eff
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
-from certbot import log
-from certbot import renewal
-from certbot import reporter
-from certbot import storage
-from certbot import updater
+from certbot._internal import log
+from certbot._internal import renewal
+from certbot._internal import reporter
+from certbot._internal import storage
+from certbot._internal import updater
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import misc
@@ -483,7 +483,7 @@ def _determine_account(config):
 
     :returns: Account and optionally ACME client API (biproduct of new
         registration).
-    :rtype: tuple of :class:`certbot.account.Account` and :class:`acme.client.Client`
+    :rtype: tuple of :class:`certbot._internal.account.Account` and :class:`acme.client.Client`
 
     :raises errors.Error: If unable to register an account with ACME server
 
@@ -961,26 +961,6 @@ def rollback(config, plugins):
     """
     client.rollback(config.installer, config.checkpoints, config, plugins)
 
-
-def config_changes(config, unused_plugins):
-    """Show changes made to server config during installation
-
-    View checkpoints and associated configuration changes.
-
-    :param config: Configuration object
-    :type config: interfaces.IConfig
-
-    :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
-
-    :returns: `None`
-    :rtype: None
-
-    """
-    logger.warning("The config_changes subcommand has been deprecated"
-                   " and will be removed in a future release.")
-    client.view_config_changes(config)
-
 def update_symlinks(config, unused_plugins):
     """Update the certificate file family symlinks
 
@@ -1367,10 +1347,6 @@ def main(cli_args=None):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:
             raise
-
-    if sys.version_info[:2] == (3, 4):
-        logger.warning("Python 3.4 support will be dropped in the next release "
-                    "of Certbot - please upgrade your Python version.")
 
     set_displayer(config)
 

@@ -594,3 +594,21 @@ def test_ocsp_status_live(context):
 
     assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)
     assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
+
+
+def test_dry_run_deactivate_authzs(context):
+    """Test that Certbot deactivates authorizations when performing a dry run"""
+
+    name = context.get_domain('dry-run-authz-deactivation')
+    args = ['certonly', '--cert-name', name, '-d', name, '--dry-run']
+    log_line = 'Recreating order after authz deactivation'
+
+    # First order will not need deactivation
+    context.certbot(args)
+    with open(join(context.workspace, 'logs', 'letsencrypt.log'), 'r') as f:
+        assert log_line not in f.read(), 'First order should not have had any authz reuse'
+
+    # Second order will require deactivation
+    context.certbot(args)
+    with open(join(context.workspace, 'logs', 'letsencrypt.log'), 'r') as f:
+        assert log_line in f.read(), 'Second order should have been recreated due to authz reuse'
