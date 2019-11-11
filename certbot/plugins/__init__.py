@@ -1,1 +1,1 @@
-"""Certbot client.plugins."""
+"""Certbot plugins."""
