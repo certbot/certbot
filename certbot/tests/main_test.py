@@ -1432,7 +1432,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     def test_update_account_with_email(self, mock_utility, mock_email):
         email = "user@example.com"
         mock_email.return_value = email
-        with mock.patch('certbot.eff.handle_subscription') as mock_handle:
+        with mock.patch('certbot._internal.eff.handle_subscription') as mock_handle:
             with mock.patch('certbot._internal.main._determine_account') as mocked_det:
                 with mock.patch('certbot._internal.main.account') as mocked_account:
                     with mock.patch('certbot._internal.main.client') as mocked_client:
@@ -1464,7 +1464,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     def test_update_registration_with_email_deprecated(self, mock_utility, mock_email):
         email = "user@example.com"
         mock_email.return_value = email
-        with mock.patch('certbot.eff.handle_subscription') as mock_handle:
+        with mock.patch('certbot._internal.eff.handle_subscription') as mock_handle:
             with mock.patch('certbot._internal.main._determine_account') as mocked_det:
                 with mock.patch('certbot._internal.main.account') as mocked_account:
                     with mock.patch('certbot._internal.main.client') as mocked_client:
