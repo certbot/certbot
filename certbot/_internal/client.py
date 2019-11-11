@@ -32,7 +32,7 @@ from certbot import util
 from certbot.compat import os
 from certbot._internal.display import enhancements
 from certbot.display import ops as display_ops
-from certbot.plugins import selection as plugin_selection
+from certbot._internal.plugins import selection as plugin_selection
 
 logger = logging.getLogger(__name__)
 

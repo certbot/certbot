@@ -1,4 +1,4 @@
-"""Tests for certbot.plugins.webroot."""
+"""Tests for certbot._internal.plugins.webroot."""
 
 from __future__ import print_function
 
@@ -27,13 +27,13 @@ KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
 class AuthenticatorTest(unittest.TestCase):
-    """Tests for certbot.plugins.webroot.Authenticator."""
+    """Tests for certbot._internal.plugins.webroot.Authenticator."""
 
     achall = achallenges.KeyAuthorizationAnnotatedChallenge(
         challb=acme_util.HTTP01_P, domain="thing.com", account_key=KEY)
 
     def setUp(self):
-        from certbot.plugins.webroot import Authenticator
+        from certbot._internal.plugins.webroot import Authenticator
         # On Linux directories created by tempfile.mkdtemp inherit their permissions from their
         # parent directory. So the actual permissions are inconsistent over various tests env.
         # To circumvent this, a dedicated sub-workspace is created under the workspace, using
@@ -147,7 +147,7 @@ class AuthenticatorTest(unittest.TestCase):
             self.assertRaises(errors.PluginError, self.auth.perform, [])
         filesystem.chmod(self.path, 0o700)
 
-    @mock.patch("certbot.plugins.webroot.filesystem.copy_ownership_and_apply_mode")
+    @mock.patch("certbot._internal.plugins.webroot.filesystem.copy_ownership_and_apply_mode")
     def test_failed_chown(self, mock_ownership):
         mock_ownership.side_effect = OSError(errno.EACCES, "msg")
         self.auth.perform([self.achall])  # exception caught and logged
@@ -262,7 +262,7 @@ class WebrootActionTest(unittest.TestCase):
         challb=acme_util.HTTP01_P, domain="thing.com", account_key=KEY)
 
     def setUp(self):
-        from certbot.plugins.webroot import Authenticator
+        from certbot._internal.plugins.webroot import Authenticator
         self.path = tempfile.mkdtemp()
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument("-d", "--domains",
@@ -308,7 +308,7 @@ class WebrootActionTest(unittest.TestCase):
         self.assertEqual(args.webroot_path, [self.path, other_webroot_path])
 
     def _get_config_after_perform(self, config):
-        from certbot.plugins.webroot import Authenticator
+        from certbot._internal.plugins.webroot import Authenticator
         auth = Authenticator(config, "webroot")
         auth.perform([self.achall])
         return auth.config
