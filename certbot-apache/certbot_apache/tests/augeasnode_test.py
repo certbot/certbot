@@ -9,7 +9,7 @@ from certbot_apache import assertions
 from certbot_apache.tests import util
 
 
-class AugeasParserNodeTest(util.ApacheTest):
+class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-methods
     """Test AugeasParserNode using available test configurations"""
 
     def setUp(self):  # pylint: disable=arguments-differ
