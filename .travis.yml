@@ -46,7 +46,7 @@ matrix:
     - python: "2.7"
       env: TOXENV=py27-cover FYI="py27 tests + code coverage"
 
-    - python: "2.7"
+    - python: "3.8"
       env: TOXENV=lint
       <<: *not-on-master
     - python: "3.4"
