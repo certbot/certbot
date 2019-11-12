@@ -25,7 +25,7 @@ import certbot._internal.plugins.selection as plugin_selection
 from certbot._internal import constants
 from certbot import crypto_util
 from certbot import errors
-from certbot import hooks
+from certbot._internal import hooks
 from certbot import interfaces
 from certbot import util
 from certbot.compat import os

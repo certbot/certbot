@@ -23,7 +23,7 @@ from certbot._internal import constants
 from certbot import crypto_util
 from certbot._internal import eff
 from certbot import errors
-from certbot import hooks
+from certbot._internal import hooks
 from certbot import interfaces
 from certbot._internal import log
 from certbot._internal import renewal

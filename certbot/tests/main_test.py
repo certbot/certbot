@@ -1145,7 +1145,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
                 "--disable-hook-validation"]
-        with mock.patch("certbot.hooks.post_hook"):
+        with mock.patch("certbot._internal.hooks.post_hook"):
             self._test_renewal_common(True, [], args=args, should_renew=True,
                                       error_expected=False)
 
