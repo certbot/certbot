@@ -221,12 +221,26 @@ class AugeasBlockNode(AugeasDirectiveNode):
     # pylint: disable=unused-argument
     def add_child_directive(self, name, parameters=None, position=None):  # pragma: no cover
         """Adds a new DirectiveNode to the sequence of children"""
-        new_metadata = {"augeasparser": self.parser, "augeaspath": assertions.PASS}
-        new_dir = AugeasDirectiveNode(name=assertions.PASS,
-                                      ancestor=self,
-                                      filepath=assertions.PASS,
+
+        if not parameters:
+            raise errors.PluginError("Directive requires parameters and none were set.")
+
+        insertpath, realpath, before = self._aug_resolve_child_position(
+            "directive",
+            position
+        )
+        new_metadata = {"augeasparser": self.parser, "augeaspath": realpath}
+
+        # Create the new directive
+        self.parser.aug.insert(insertpath, "directive", before)
+        # Set the directive key
+        self.parser.aug.set(realpath, name)
+
+        new_dir = AugeasDirectiveNode(name=name,
+                                      parameters=parameters,
+                                      ancestor=assertions.PASS,
+                                      filepath=apache_util.get_file_path(realpath),
                                       metadata=new_metadata)
-        self.children += (new_dir,)
         return new_dir
 
     def add_child_comment(self, comment="", position=None):  # pylint: disable=unused-argument
