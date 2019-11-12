@@ -285,7 +285,7 @@ class NginxConfigurator(common.Installer):
                     filtered_vhosts[name] = vhost
 
         # Only unique VHost objects
-        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
+        dialog_input = {vhost for vhost in filtered_vhosts.values()}
 
         # Ask the user which of names to enable, expect list of names back
         return_vhosts = display_ops.select_vhost_multiple(list(dialog_input))
@@ -416,7 +416,7 @@ class NginxConfigurator(common.Installer):
 
         if len(port_matching_vhosts) == 1:
             return port_matching_vhosts[0]
-        elif len(all_default_vhosts) == 1 and allow_port_mismatch:
+        if len(all_default_vhosts) == 1 and allow_port_mismatch:
             return all_default_vhosts[0]
 
         # TODO: present a list of vhosts for user to choose from
@@ -448,7 +448,7 @@ class NginxConfigurator(common.Installer):
         """
         if not matches:
             return None
-        elif matches[0]['rank'] in [START_WILDCARD_RANK, END_WILDCARD_RANK,
+        if matches[0]['rank'] in [START_WILDCARD_RANK, END_WILDCARD_RANK,
             START_WILDCARD_RANK + NO_SSL_MODIFIER, END_WILDCARD_RANK + NO_SSL_MODIFIER]:
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
