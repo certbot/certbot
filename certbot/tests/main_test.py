@@ -966,7 +966,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertRaises(errors.Error,
                           self._certonly_new_request_common, mock_client)
 
-    def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
+    def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,  # pylint: disable=too-many-statements
                              args=None, should_renew=True, error_expected=False,
                              quiet_mode=False, expiry_date=datetime.datetime.now(),
                              reuse_key=False):

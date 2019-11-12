@@ -179,12 +179,10 @@ class UnspacedList(list):
 
         """
         if not isinstance(inbound, list):                      # str or None
-            return (inbound, inbound)
-        else:
-            if not hasattr(inbound, "spaced"):
-                inbound = UnspacedList(inbound)
-            return (inbound, inbound.spaced)
-
+            return inbound, inbound
+        if not hasattr(inbound, "spaced"):
+            inbound = UnspacedList(inbound)
+        return inbound, inbound.spaced
 
     def insert(self, i, x):
         item, spaced_item = self._coerce(x)
