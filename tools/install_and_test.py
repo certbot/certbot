@@ -41,9 +41,6 @@ def main(args):
         call_with_print(' '.join(current_command))
         pkg = re.sub(r'\[\w+\]', '', requirement)
 
-        if pkg == '.':
-            pkg = 'certbot'
-
         temp_cwd = tempfile.mkdtemp()
         shutil.copy2("pytest.ini", temp_cwd)
         try:
