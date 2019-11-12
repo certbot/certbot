@@ -288,7 +288,7 @@ def test_renew_with_changed_private_key_complexity(context):
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
     context.certbot(['renew'])
-    
+
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     key2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
     assert os.stat(key2).st_size > 3000
