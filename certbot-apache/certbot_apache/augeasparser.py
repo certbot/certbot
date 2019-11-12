@@ -97,8 +97,8 @@ class AugeasParserNode(interfaces.ParserNode):
         except KeyError:
             raise errors.PluginError("Augeas path is required")
 
-    def save(self, msg): # pragma: no cover
-        pass
+    def save(self, msg):
+        self.parser.save(msg)
 
 
 class AugeasCommentNode(AugeasParserNode):
@@ -290,9 +290,9 @@ class AugeasBlockNode(AugeasDirectiveNode):
         """Deletes a ParserNode from the sequence of children"""
         pass
 
-    def unsaved_files(self):  # pragma: no cover
+    def unsaved_files(self):
         """Returns a list of unsaved filepaths"""
-        return [assertions.PASS]
+        return self.parser.unsaved_files()
 
     def _create_commentnode(self, path):
         """Helper function to create a CommentNode from Augeas path"""

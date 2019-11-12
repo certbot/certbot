@@ -20,6 +20,18 @@ class AugeasParserNodeTest(util.ApacheTest):
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
+    def test_save(self):
+        with mock.patch('certbot_apache.parser.ApacheParser.save') as mock_save:
+            self.config.parser_root.save("A save message")
+        self.assertTrue(mock_save.called)
+        self.assertEqual(mock_save.call_args[0][0], "A save message")
+
+    def test_unsaved_files(self):
+        with mock.patch('certbot_apache.parser.ApacheParser.unsaved_files') as mock_uf:
+            mock_uf.return_value = ["first", "second"]
+            files = self.config.parser_root.unsaved_files()
+        self.assertEqual(files, ["first", "second"])
+
     def test_get_block_node_name(self):
         from certbot_apache.augeasparser import AugeasBlockNode
         block = AugeasBlockNode(
