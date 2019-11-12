@@ -9,7 +9,7 @@ import tarfile
 import josepy as jose
 
 from certbot.tests import util as test_util
-from certbot import constants
+from certbot._internal import constants
 
 from certbot_compatibility_test import errors
 

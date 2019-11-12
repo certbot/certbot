@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives import serialization
 from acme import fields as acme_fields
 from acme import messages
 
-from certbot import constants
+from certbot._internal import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util

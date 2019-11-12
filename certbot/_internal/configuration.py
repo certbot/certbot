@@ -4,7 +4,7 @@ import copy
 import zope.interface
 from six.moves.urllib import parse  # pylint: disable=relative-import
 
-from certbot import constants
+from certbot._internal import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -20,7 +20,7 @@ class NamespaceConfig(object):
     :class:`certbot.interfaces.IConfig`. However, note that
     the following attributes are dynamically resolved using
     :attr:`~certbot.interfaces.IConfig.work_dir` and relative
-    paths defined in :py:mod:`certbot.constants`:
+    paths defined in :py:mod:`certbot._internal.constants`:
 
       - `accounts_dir`
       - `csr_dir`
@@ -30,7 +30,7 @@ class NamespaceConfig(object):
 
     And the following paths are dynamically resolved using
     :attr:`~certbot.interfaces.IConfig.config_dir` and relative
-    paths defined in :py:mod:`certbot.constants`:
+    paths defined in :py:mod:`certbot._internal.constants`:
 
       - `default_archive_dir`
       - `live_dir`

@@ -4,7 +4,7 @@ import unittest
 import mock
 import requests
 
-from certbot import constants
+from certbot._internal import constants
 import certbot.tests.util as test_util
 
 

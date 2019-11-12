@@ -147,18 +147,6 @@ RENEWER_DEFAULTS = dict(
 )
 """Defaults for renewer script."""
 
-
-ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]
-"""List of possible :class:`certbot.interfaces.IInstaller`
-enhancements.
-
-List of expected options parameters:
-- redirect: None
-- ensure-http-header: name of header (i.e. Strict-Transport-Security)
-- ocsp-stapling: certificate chain file path
-
-"""
-
 ARCHIVE_DIR = "archive"
 """Archive directory, relative to `IConfig.config_dir`."""
 
