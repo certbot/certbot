@@ -22,7 +22,7 @@ import re
 
 REQUIREMENTS = [
     '-e acme[dev]',
-    '-e .[dev,docs]',
+    '-e certbot[dev,docs]',
     '-e certbot-apache',
     '-e certbot-dns-cloudflare',
     '-e certbot-dns-cloudxns',
