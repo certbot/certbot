@@ -24,6 +24,11 @@ persistent=yes
 # usually to register additional checkers.
 load-plugins=linter_plugin
 
+# A comma-separated list of package or module names from where C extensions may
+# be loaded. Extensions are loading into the active Python interpreter and may
+# run arbitrary code.
+extension-pkg-whitelist=win32security
+
 
 [MESSAGES CONTROL]
 
@@ -41,7 +46,7 @@ load-plugins=linter_plugin
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=fixme,locally-disabled,locally-enabled,abstract-class-not-used,abstract-class-little-used,bad-continuation,too-few-public-methods,no-self-use,invalid-name,too-many-instance-attributes,cyclic-import,duplicate-code
+disable=fixme,locally-disabled,locally-enabled,abstract-class-not-used,abstract-class-little-used,bad-continuation,too-few-public-methods,no-self-use,invalid-name,too-many-instance-attributes,cyclic-import,duplicate-code,import-outside-toplevel
 # abstract-class-not-used cannot be disabled locally (at least in
 # pylint 1.4.1), same for abstract-class-little-used
 
