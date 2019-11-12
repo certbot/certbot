@@ -144,6 +144,24 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
                 found = True
         self.assertTrue(found)
 
+    def test_delete_child(self):
+        listens = self.config.parser_root.find_directives("Listen")
+        self.assertEqual(len(listens), 1)
+        self.config.parser_root.primary.delete_child(listens[0])
+
+        listens = self.config.parser_root.find_directives("Listen")
+        self.assertEqual(len(listens), 0)
+
+    def test_delete_child_not_found(self):
+        listen = self.config.parser_root.find_directives("Listen")[0]
+        listen.primary.metadata["augeaspath"] = "/files/something/nonexistent"
+
+        self.assertRaises(
+            errors.PluginError,
+            self.config.parser_root.delete_child,
+            listen
+        )
+
     def test_add_child_block(self):
         nb = self.config.parser_root.primary.add_child_block(
             "NewBlock",
