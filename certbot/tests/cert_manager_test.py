@@ -9,7 +9,7 @@ import unittest
 import configobj
 import mock
 
-from certbot import configuration
+from certbot._internal import configuration
 from certbot import errors
 from certbot.compat import os
 from certbot.compat import filesystem
