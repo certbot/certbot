@@ -16,7 +16,7 @@ from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in
 import certbot
 from certbot._internal import account
 from certbot._internal import cert_manager
-from certbot import cli
+from certbot._internal import cli
 from certbot._internal import client
 from certbot import configuration
 from certbot._internal import constants

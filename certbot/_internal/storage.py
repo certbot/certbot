@@ -12,7 +12,7 @@ import pytz
 import six
 
 import certbot
-from certbot import cli
+from certbot._internal import cli
 from certbot._internal import constants
 from certbot import crypto_util
 from certbot._internal import error_handler

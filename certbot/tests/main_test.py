@@ -22,7 +22,7 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 
 import certbot.tests.util as test_util
 from certbot._internal import account
-from certbot import cli
+from certbot._internal import cli
 from certbot import configuration
 from certbot._internal import constants
 from certbot import crypto_util
@@ -715,7 +715,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         # This needed two calls to find_all(), which we're avoiding for now
         # because of possible side effects:
         # https://github.com/letsencrypt/letsencrypt/commit/51ed2b681f87b1eb29088dd48718a54f401e4855
-        #with mock.patch('certbot.cli.plugins_testable') as plugins:
+        #with mock.patch('certbot._internal.cli.plugins_testable') as plugins:
         #    plugins.return_value = {"apache": True, "nginx": True}
         #    ret, _, _, _ = self._call(args)
         #    self.assertTrue("Too many flags setting" in ret)

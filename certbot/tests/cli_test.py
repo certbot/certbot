@@ -1,4 +1,4 @@
-"""Tests for certbot.cli."""
+"""Tests for certbot._internal.cli."""
 import argparse
 import copy
 import tempfile
@@ -11,7 +11,7 @@ from six.moves import reload_module  # pylint: disable=import-error
 from acme import challenges
 
 import certbot.tests.util as test_util
-from certbot import cli
+from certbot._internal import cli
 from certbot._internal import constants
 from certbot import errors
 from certbot.compat import os
@@ -94,7 +94,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         return output.getvalue()
 
-    @mock.patch("certbot.cli.flag_default")
+    @mock.patch("certbot._internal.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
         with tempfile.NamedTemporaryFile() as tmp_config:
             tmp_config.close()  # close now because of compatibility issues on Windows
@@ -366,7 +366,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             errors.Error, self.parse, "-n --force-interactive".split())
 
     def test_deploy_hook_conflict(self):
-        with mock.patch("certbot.cli.sys.stderr"):
+        with mock.patch("certbot._internal.cli.sys.stderr"):
             self.assertRaises(SystemExit, self.parse,
                               "--renew-hook foo --deploy-hook bar".split())
 
@@ -386,7 +386,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.renew_hook, value)
 
     def test_renew_hook_conflict(self):
-        with mock.patch("certbot.cli.sys.stderr"):
+        with mock.patch("certbot._internal.cli.sys.stderr"):
             self.assertRaises(SystemExit, self.parse,
                               "--deploy-hook foo --renew-hook bar".split())
 
@@ -406,7 +406,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.renew_hook, value)
 
     def test_max_log_backups_error(self):
-        with mock.patch('certbot.cli.sys.stderr'):
+        with mock.patch('certbot._internal.cli.sys.stderr'):
             self.assertRaises(
                 SystemExit, self.parse, "--max-log-backups foo".split())
             self.assertRaises(
@@ -462,7 +462,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
 
 class DefaultTest(unittest.TestCase):
-    """Tests for certbot.cli._Default."""
+    """Tests for certbot._internal.cli._Default."""
 
 
     def setUp(self):
@@ -536,7 +536,7 @@ class SetByCliTest(unittest.TestCase):
 
 
 def _call_set_by_cli(var, args, verb):
-    with mock.patch('certbot.cli.helpful_parser') as mock_parser:
+    with mock.patch('certbot._internal.cli.helpful_parser') as mock_parser:
         with test_util.patch_get_utility():
             mock_parser.args = args
             mock_parser.verb = verb
