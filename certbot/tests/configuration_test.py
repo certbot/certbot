@@ -15,7 +15,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
 
     def setUp(self):
         super(NamespaceConfigTest, self).setUp()
-        self.config.foo = 'bar'
+        self.config.foo = 'bar' # pylint: disable=blacklisted-name
         self.config.server = 'https://acme-server.org:443/new'
         self.config.https_port = 1234
         self.config.http01_port = 4321
