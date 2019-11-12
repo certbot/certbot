@@ -132,6 +132,16 @@ class AugeasParserNodeTest(util.ApacheTest):
                 found = True
         self.assertTrue(found)
 
+    def test_add_child_comment(self):
+        newc = self.config.parser_root.primary.add_child_comment("The content")
+        comments = self.config.parser_root.find_comments("The content")
+        self.assertEqual(len(comments), 1)
+        self.assertEqual(
+            newc.metadata["augeaspath"],
+            comments[0].primary.metadata["augeaspath"]
+        )
+        self.assertEqual(newc.comment, comments[0].comment)
+
     def test_add_child_block(self):
         nb = self.config.parser_root.primary.add_child_block(
             "NewBlock",

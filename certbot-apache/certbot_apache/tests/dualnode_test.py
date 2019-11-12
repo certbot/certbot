@@ -6,7 +6,6 @@ import mock
 from certbot_apache import assertions
 from certbot_apache import augeasparser
 from certbot_apache import dualparser
-from certbot_apache import interfaces
 
 
 class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
@@ -151,15 +150,13 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.assertTrue(mock_second.called)
 
     def test_add_child_comment(self):
-        self.assertEqual(len(self.block.primary.children), 0)
-        self.assertEqual(len(self.block.secondary.children), 0)
+        mock_first = mock.MagicMock(return_value=self.comment.primary)
+        mock_second = mock.MagicMock(return_value=self.comment.secondary)
+        self.block.primary.add_child_comment = mock_first
+        self.block.secondary.add_child_comment = mock_second
         self.block.add_child_comment("Comment")
-        self.assertEqual(len(self.block.primary.children), 1)
-        self.assertEqual(len(self.block.secondary.children), 1)
-        self.assertTrue(isinstance(self.block.primary.children[0],
-                                   interfaces.CommentNode))
-        self.assertEqual(self.block.primary.children[0].ancestor,
-                         self.block.primary)
+        self.assertTrue(mock_first.called)
+        self.assertTrue(mock_second.called)
 
     def test_find_comments(self):
         pri_comments = [augeasparser.AugeasCommentNode(comment="some comment",
