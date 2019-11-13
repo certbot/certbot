@@ -72,7 +72,6 @@ elif os.name == 'nt':
     install_requires.append(pywin32_req)
 
 dev_extras = [
-    'astroid==1.6.5',
     'coverage',
     'ipdb',
     'pytest',
@@ -85,8 +84,10 @@ dev_extras = [
 ]
 
 dev3_extras = [
+    'astroid==2.3.3',
     'mypy',
-    'typing', # for python3.4
+    'pylint==2.4.3',
+    'typing',  # for python3.4
 ]
 
 docs_extras = [
