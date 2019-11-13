@@ -602,9 +602,9 @@ class ApacheConfigurator(common.Installer):
                 "in the Apache config.",
                 target_name)
             raise errors.PluginError("No vhost selected")
-        elif temp:
+        if temp:
             return vhost
-        elif not vhost.ssl:
+        if not vhost.ssl:
             addrs = self._get_proposed_addrs(vhost, "443")
             # TODO: Conflicts is too conservative
             if not any(vhost.enabled and vhost.conflicts(addrs) for

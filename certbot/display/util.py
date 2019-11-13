@@ -283,7 +283,7 @@ class FileDisplay(object):
         # assert_valid_call(prompt, default, cli_flag, force_interactive)
         if self._can_interact(force_interactive):
             return False
-        elif default is None:
+        if default is None:
             msg = "Unable to get an answer for the question:\n{0}".format(prompt)
             if cli_flag:
                 msg += (
@@ -309,7 +309,7 @@ class FileDisplay(object):
         if (self.force_interactive or force_interactive or
                 sys.stdin.isatty() and self.outfile.isatty()):
             return True
-        elif not self.skipped_interaction:
+        if not self.skipped_interaction:
             logger.warning(
                 "Skipped user interaction because Certbot doesn't appear to "
                 "be running in a terminal. You should probably include "

@@ -54,7 +54,7 @@ def _guess_loader(filename, loader_pem, loader_der):
     _, ext = os.path.splitext(filename)
     if ext.lower() == '.pem':
         return loader_pem
-    elif ext.lower() == '.der':
+    if ext.lower() == '.der':
         return loader_der
     else:  # pragma: no cover
         raise ValueError("Loader could not be recognized based on extension")
@@ -213,7 +213,7 @@ class FreezableMock(object):
                 return object.__getattribute__(self, name)
             except AttributeError:
                 return False
-        elif name in ('return_value', 'side_effect',):
+        if name in ('return_value', 'side_effect',):
             return getattr(object.__getattribute__(self, '_mock'), name)
         elif name == '_frozen_set' or name in self._frozen_set:
             return object.__getattribute__(self, name)

@@ -446,7 +446,7 @@ class Client(object):
         """
         if certname:
             return certname
-        elif util.is_wildcard_domain(domains[0]):
+        if util.is_wildcard_domain(domains[0]):
             # Don't make files and directories starting with *.
             return domains[0][2:]
         return domains[0]

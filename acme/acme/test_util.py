@@ -23,10 +23,9 @@ def _guess_loader(filename, loader_pem, loader_der):
     _, ext = os.path.splitext(filename)
     if ext.lower() == '.pem':
         return loader_pem
-    elif ext.lower() == '.der':
+    if ext.lower() == '.der':
         return loader_der
-    else:  # pragma: no cover
-        raise ValueError("Loader could not be recognized based on extension")
+    raise ValueError("Loader could not be recognized based on extension")  # pragma: no cover
 
 
 def load_cert(*names):

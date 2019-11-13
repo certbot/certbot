@@ -62,9 +62,9 @@ def get_email(invalid=False, optional=True):
                     "--register-unsafely-without-email must be provided.")
             else:
                 raise errors.Error("An e-mail address must be provided.")
-        elif util.safe_email(email):
+        if util.safe_email(email):
             return email
-        elif suggest_unsafe:
+        if suggest_unsafe:
             msg += unsafe_suggestion
             suggest_unsafe = False  # add this message at most once
 
@@ -299,9 +299,9 @@ def _gen_https_names(domains):
     """
     if len(domains) == 1:
         return "https://{0}".format(domains[0])
-    elif len(domains) == 2:
+    if len(domains) == 2:
         return "https://{dom[0]} and https://{dom[1]}".format(dom=domains)
-    elif len(domains) > 2:
+    if len(domains) > 2:
         return "{0}{1}{2}".format(
             ", ".join("https://%s" % dom for dom in domains[:-1]),
             ", and https://",
