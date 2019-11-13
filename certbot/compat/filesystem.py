@@ -588,6 +588,10 @@ def _get_current_user():
     """
     Return the pySID corresponding to the current user.
     """
+    # We craft the account_name ourselves instead of calling for instance win32api.GetUserNameEx,
+    # because this function returns nonsense values when Certbot is run under NT AUTHORITY\SYSTEM.
+    # To run Certbot under NT AUTHORITY\SYSTEM, you can open a shell using the instructions here:
+    # https://blogs.technet.microsoft.com/ben_parker/2010/10/27/how-do-i-run-powershell-execommand-prompt-as-the-localsystem-account-on-windows-7/
     account_name = r"{0}\{1}".format(win32api.GetDomainName(), win32api.GetUserName())
     # LookupAccountName() expects the system name as first parameter. By passing None to it,
     # we instruct Windows to first search the matching account in the machine local accounts,
