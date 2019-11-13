@@ -12,6 +12,6 @@ $triggerPM = New-ScheduledTaskTrigger -Daily -At 12pm -RandomDelay $delay
 # If in the future we allow the Installer to install Certbot for one specific user, the scheduled task will need to
 # switch to this user, since Certbot will be available only for him.
 $adminsSID = New-Object System.Security.Principal.SecurityIdentifier("S-1-5-32-544")
-$adminsGroupID = $adminSID.Translate([System.Security.Principal.NTAccount]).Value
+$adminsGroupID = $adminsSID.Translate([System.Security.Principal.NTAccount]).Value
 $principal = New-ScheduledTaskPrincipal -GroupId $adminsGroupID -RunLevel Highest
 Register-ScheduledTask -Action $action -Trigger $triggerAM,$triggerPM -TaskName $taskName -Description "Execute twice a day the 'certbot renew' command, to renew managed certificates if needed." -Principal $principal
