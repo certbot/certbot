@@ -224,7 +224,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
                               messages.Revocation(
                                 certificate=cert,
                                 reason=rsn))
-        if response.status_code != http_client.OK:
+        if response.status_code != http_client.OK:  # pylint: disable=no-member
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
 
@@ -277,7 +277,7 @@ class Client(ClientBase):
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
         response = self._post(self.directory[new_reg], new_reg)
         # TODO: handle errors
-        assert response.status_code == http_client.CREATED
+        assert response.status_code == http_client.CREATED  # pylint: disable=no-member
 
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
@@ -330,7 +330,7 @@ class Client(ClientBase):
         new_authz = messages.NewAuthorization(identifier=identifier)
         response = self._post(self.directory.new_authz, new_authz)
         # TODO: handle errors
-        assert response.status_code == http_client.CREATED
+        assert response.status_code == http_client.CREATED  # pylint: disable=no-member
         return self._authzr_from_response(response, identifier)
 
     def request_domain_challenges(self, domain, new_authzr_uri=None):
@@ -731,7 +731,7 @@ class ClientV2(ClientBase):
         for authzr in responses:
             if authzr.body.status != messages.STATUS_VALID:
                 for chall in authzr.body.challenges:
-                    if chall.error != None:
+                    if chall.error is not None:
                         failed.append(authzr)
         if failed:
             raise errors.ValidationError(failed)
@@ -1196,8 +1196,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             if error.code == 'badNonce':
                 logger.debug('Retrying request after error:\n%s', error)
                 return self._post_once(*args, **kwargs)
-            else:
-                raise
+            raise
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
             acme_version=1, **kwargs):

@@ -45,7 +45,7 @@ class TLSServer(socketserver.TCPServer):
         return socketserver.TCPServer.server_bind(self)
 
 
-class ACMEServerMixin:  # pylint: disable=old-style-class
+class ACMEServerMixin:
     """ACME server common settings mixin."""
     # TODO: c.f. #858
     server_version = "ACME client standalone challenge solver"

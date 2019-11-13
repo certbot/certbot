@@ -69,7 +69,7 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
         stats = os.stat(src)
         user_id = stats.st_uid if copy_user else -1
         group_id = stats.st_gid if copy_group else -1
-        os.chown(dst, user_id, group_id)
+        os.chown(dst, user_id, group_id)  # pylint: disable=no-member
     elif copy_user:
         # There is no group handling in Windows
         _copy_win_ownership(src, dst)
@@ -103,7 +103,7 @@ def check_owner(file_path):
     :return: True if given file is owned by current user, False otherwise.
     """
     if POSIX_MODE:
-        return os.stat(file_path).st_uid == os.getuid()
+        return os.stat(file_path).st_uid == os.getuid()  # pylint: disable=no-member
 
     # Get owner sid of the file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
@@ -171,7 +171,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
             handle = win32file.CreateFile(file_path, win32file.GENERIC_READ,
                                           win32file.FILE_SHARE_READ & win32file.FILE_SHARE_WRITE,
                                           attributes, disposition, 0, None)
-        except pywintypes.error as err:
+        except pywintypes.error as err:  # pylint: disable=no-member
             # Handle native windows errors into python errors to be consistent with the API
             # of os.open in the situation of a file already existing or locked.
             if err.winerror == winerror.ERROR_FILE_EXISTS:
@@ -237,7 +237,7 @@ def mkdir(file_path, mode=0o777):
 
     try:
         win32file.CreateDirectory(file_path, attributes)
-    except pywintypes.error as err:
+    except pywintypes.error as err:  # pylint: disable=no-member
         # Handle native windows error into python error to be consistent with the API
         # of os.mkdir in the situation of a directory already existing.
         if err.winerror == winerror.ERROR_ALREADY_EXISTS:

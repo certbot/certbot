@@ -942,7 +942,7 @@ class RenewableCert(object):
             interval = self.configuration.get("renew_before_expiry", default_interval)
             expiry = crypto_util.notAfter(self.version(
                 "cert", self.latest_common_version()))
-            now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+            now = pytz.UTC.fromutc(datetime.datetime.utcnow())  # pylint: disable=no-value-for-parameter
             if expiry < add_time_interval(now, interval):
                 logger.debug("Should renew, less than %s before certificate "
                              "expiry %s.", interval,
@@ -1012,10 +1012,8 @@ class RenewableCert(object):
                      "directory %s created.", archive, live_dir)
 
         # Put the data into the appropriate files on disk
-        target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
-                       for kind in ALL_FOUR])
-        archive_target = dict([(kind, os.path.join(archive, kind + "1.pem"))
-                               for kind in ALL_FOUR])
+        target = {kind: os.path.join(live_dir, kind + ".pem") for kind in ALL_FOUR}
+        archive_target = {kind: os.path.join(archive, kind + "1.pem") for kind in ALL_FOUR}
         for kind in ALL_FOUR:
             os.symlink(_relpath_from_file(archive_target[kind], target[kind]), target[kind])
         with open(target["cert"], "wb") as f:
@@ -1080,10 +1078,8 @@ class RenewableCert(object):
 
         self.cli_config = cli_config
         target_version = self.next_free_version()
-        target = dict(
-            [(kind,
-              os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version)))
-             for kind in ALL_FOUR])
+        target = {kind: os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version))
+                  for kind in ALL_FOUR}
 
         old_privkey = os.path.join(
             self.archive_dir, "privkey{0}.pem".format(prior_version))

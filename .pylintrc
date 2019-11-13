@@ -27,7 +27,7 @@ load-plugins=linter_plugin
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code.
-extension-pkg-whitelist=win32security
+extension-pkg-whitelist=pywintypes,win32api,win32file,win32security
 
 
 [MESSAGES CONTROL]
@@ -324,10 +324,10 @@ max-returns=6
 max-branches=12
 
 # Maximum number of statements in function / method body
-max-statements=50
+max-statements=51
 
 # Maximum number of parents for a class (see R0901).
-max-parents=13
+max-parents=14
 
 # Maximum number of attributes for a class (see R0902).
 max-attributes=7

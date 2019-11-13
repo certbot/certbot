@@ -83,8 +83,7 @@ class Proxy(object):
         """Returns the set of domain names that the plugin should find"""
         if self._all_names:
             return self._all_names
-        else:
-            raise errors.Error("No configuration file loaded")
+        raise errors.Error("No configuration file loaded")
 
     def get_testable_domain_names(self):
         """Returns the set of domain names that can be tested against"""

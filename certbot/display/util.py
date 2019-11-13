@@ -178,7 +178,7 @@ class FileDisplay(object):
         message = _wrap_lines("%s (Enter 'c' to cancel):" % message) + " "
         ans = input_with_timeout(message)
 
-        if ans == "c" or ans == "C":
+        if ans in ("c", "C"):
             return CANCEL, "-1"
         return OK, ans
 
@@ -259,12 +259,10 @@ class FileDisplay(object):
                 selected_tags = self._scrub_checklist_input(indices, tags)
                 if selected_tags:
                     return code, selected_tags
-                else:
-                    self.outfile.write(
-                        "** Error - Invalid selection **%s" % os.linesep)
-                    self.outfile.flush()
-            else:
-                return code, []
+                self.outfile.write(
+                    "** Error - Invalid selection **%s" % os.linesep)
+                self.outfile.flush()
+            return code, []
 
     def _return_default(self, prompt, default, cli_flag, force_interactive):
         """Should we return the default instead of prompting the user?

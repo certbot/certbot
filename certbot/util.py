@@ -12,7 +12,6 @@ import platform
 import re
 import socket
 import subprocess
-import sys
 
 import configargparse
 import six

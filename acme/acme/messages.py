@@ -491,7 +491,7 @@ class Authorization(ResourceBody):
     @property
     def resolved_combinations(self):
         """Combinations with challenges instead of indices."""
-        return tuple(tuple(self.challenges[idx] for idx in combo)
+        return tuple(tuple(self.challenges[idx] for idx in combo)  # pylint: disable=unsubscriptable-object
                      for combo in self.combinations)  # pylint: disable=not-an-iterable
 
 

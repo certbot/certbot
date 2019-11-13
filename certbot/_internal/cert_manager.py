@@ -255,7 +255,7 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
         return ""
     if config.domains and not set(config.domains).issubset(cert.names()):
         return ""
-    now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+    now = pytz.UTC.fromutc(datetime.datetime.utcnow())  # pylint: disable=no-value-for-parameter
 
     reasons = []
     if cert.is_test_cert:

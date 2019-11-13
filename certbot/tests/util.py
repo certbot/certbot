@@ -214,10 +214,9 @@ class FreezableMock(object):
                 return False
         if name in ('return_value', 'side_effect',):
             return getattr(object.__getattribute__(self, '_mock'), name)
-        elif name == '_frozen_set' or name in self._frozen_set:
+        if name == '_frozen_set' or name in self._frozen_set:
             return object.__getattribute__(self, name)
-        else:
-            return getattr(object.__getattribute__(self, '_mock'), name)
+        return getattr(object.__getattribute__(self, '_mock'), name)
 
     def __setattr__(self, name, value):
         """ Before it is frozen, attributes are set on the FreezableMock

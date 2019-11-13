@@ -362,7 +362,7 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         self.assertTrue(filesystem.check_owner(self.probe_path))
 
         import os as std_os  # pylint: disable=os-module-forbidden
-        uid = std_os.getuid()
+        uid = std_os.getuid()  # pylint: disable=no-member
 
         with mock.patch('os.getuid') as mock_uid:
             mock_uid.return_value = uid + 1

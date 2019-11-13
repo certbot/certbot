@@ -699,10 +699,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         from certbot._internal import storage
 
         # this month has 30 days, and the next year is a leap year
-        time_1 = pytz.UTC.fromutc(datetime.datetime(2003, 11, 20, 11, 59, 21))
+        time_1 = pytz.UTC.fromutc(datetime.datetime(2003, 11, 20, 11, 59, 21))  # pylint: disable=no-value-for-parameter
 
         # this month has 31 days, and the next year is not a leap year
-        time_2 = pytz.UTC.fromutc(datetime.datetime(2012, 10, 18, 21, 31, 16))
+        time_2 = pytz.UTC.fromutc(datetime.datetime(2012, 10, 18, 21, 31, 16))  # pylint: disable=no-value-for-parameter
 
         # in different time zone (GMT+8)
         time_3 = pytz.timezone('Asia/Shanghai').fromutc(
