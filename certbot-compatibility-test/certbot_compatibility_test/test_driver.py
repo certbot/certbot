@@ -92,8 +92,7 @@ def test_authenticator(plugin, config, temp_dir):
         if _dirs_are_unequal(config, backup):
             logger.error("Challenge cleanup failed for %s", config)
             return False
-        else:
-            logger.info("Challenge cleanup succeeded")
+        logger.info("Challenge cleanup succeeded")
 
     return success
 

@@ -146,12 +146,10 @@ to serve all files under specified web root ({0})."""
         if code == display_util.CANCEL:
             if not allowraise:
                 return None
-            else:
-                raise errors.PluginError(
-                    "Every requested domain must have a "
-                    "webroot when using the webroot plugin.")
-        else:  # code == display_util.OK
-            return _validate_webroot(webroot)
+            raise errors.PluginError(
+                "Every requested domain must have a "
+                "webroot when using the webroot plugin.")
+        return _validate_webroot(webroot)  # code == display_util.OK
 
     def _create_challenge_dirs(self):
         path_map = self.conf("map")

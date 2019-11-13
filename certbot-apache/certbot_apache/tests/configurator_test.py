@@ -515,7 +515,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue(mock_add_dir.called)
         self.assertTrue(mock_find.called)
         self.assertEqual(mock_add_dir.call_args[0][1], "Listen")  # pylint: disable=unsubscriptable-object
-        self.assertEqual(mock_add_dir.call_args[0][2], "80")
+        self.assertEqual(mock_add_dir.call_args[0][2], "80")  # pylint: disable=unsubscriptable-object
 
     def test_add_listen_80_named(self):
         mock_find = mock.Mock()

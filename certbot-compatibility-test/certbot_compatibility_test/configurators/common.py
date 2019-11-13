@@ -45,8 +45,7 @@ class Proxy(object):
         method = getattr(self._configurator, name, None)
         if callable(method):
             return method
-        else:
-            raise AttributeError()
+        raise AttributeError()
 
     def has_more_configs(self):
         """Returns true if there are more configs to test"""

@@ -64,9 +64,8 @@ def get_unprepared_installer(config, plugins):
         inst = list(installers.values())[0]
         logger.debug("Selecting plugin: %s", inst)
         return inst.init(config)
-    else:
-        raise errors.PluginSelectionError(
-            "Could not select or initialize the requested installer %s." % req_inst)
+    raise errors.PluginSelectionError(
+        "Could not select or initialize the requested installer %s." % req_inst)
 
 def pick_plugin(config, default, plugins, question, ifaces):
     """Pick plugin.

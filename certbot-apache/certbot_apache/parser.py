@@ -666,8 +666,7 @@ class ApacheParser(object):
         # e.g. strip now, not later
         if not value:
             return None
-        else:
-            value = value.strip("'\"")
+        value = value.strip("'\"")
 
         variables = ApacheParser.arg_var_interpreter.findall(value)
 

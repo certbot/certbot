@@ -198,8 +198,7 @@ class DNSAuthenticator(common.Plugin):
 
         if code == display_util.OK:
             return response
-        else:
-            raise errors.PluginError('{0} required to proceed.'.format(label))
+        raise errors.PluginError('{0} required to proceed.'.format(label))
 
     @staticmethod
     def _prompt_for_file(label, validator=None):

@@ -105,10 +105,9 @@ def exe_exists(exe):
     path, _ = os.path.split(exe)
     if path:
         return filesystem.is_executable(exe)
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            if filesystem.is_executable(os.path.join(path, exe)):
-                return True
+    for path in os.environ["PATH"].split(os.pathsep):
+        if filesystem.is_executable(os.path.join(path, exe)):
+            return True
 
     return False
 
