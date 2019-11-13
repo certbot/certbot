@@ -77,7 +77,6 @@ dev_extras = [
     'pytest',
     'pytest-cov',
     'pytest-xdist',
-    'pylint==1.9.4',
     'tox',
     'twine',
     'wheel',
