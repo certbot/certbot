@@ -514,8 +514,8 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.ensure_listen("80")
         self.assertTrue(mock_add_dir.called)
         self.assertTrue(mock_find.called)
-        self.assertEqual(mock_add_dir.call_args.args[1], "Listen")
-        self.assertEqual(mock_add_dir.call_args.args[2], "80")
+        self.assertEqual(mock_add_dir.call_args[0][1], "Listen")
+        self.assertEqual(mock_add_dir.call_args[0][2], "80")
 
     def test_add_listen_80_named(self):
         mock_find = mock.Mock()
@@ -539,7 +539,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.ensure_listen("8080")
         self.assertEqual(mock_add_dir.call_count, 3)
         self.assertTrue(mock_add_dir.called)
-        self.assertEqual(mock_add_dir.call_args.args[1], "Listen")
+        self.assertEqual(mock_add_dir.call_args[0][1], "Listen")
         call_found = False
         for mock_call in mock_add_dir.mock_calls:
             if mock_call[1][2] == ['1.2.3.4:8080']:
@@ -560,15 +560,15 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.prepare_server_https("443")
         # Changing the order these modules are enabled breaks the reverter
         self.assertEqual(mock_enable.call_args_list[0][0][0], "socache_shmcb")
-        self.assertEqual(mock_enable.call_args.args[0], "ssl")
-        self.assertEqual(mock_enable.call_args.args[1], {"temp": False})
+        self.assertEqual(mock_enable.call_args[0][0], "ssl")
+        self.assertEqual(mock_enable.call_args[1], {"temp": False})
 
         self.config.prepare_server_https("8080", temp=True)
         # Changing the order these modules are enabled breaks the reverter
         self.assertEqual(mock_enable.call_args_list[2][0][0], "socache_shmcb")
-        self.assertEqual(mock_enable.call_args.args[0], "ssl")
+        self.assertEqual(mock_enable.call_args[0][0], "ssl")
         # Enable mod is temporary
-        self.assertEqual(mock_enable.call_args.args[1], {"temp": True})
+        self.assertEqual(mock_enable.call_args[1], {"temp": True})
 
         self.assertEqual(mock_add_dir.call_count, 2)
 
@@ -930,16 +930,16 @@ class MultipleVhostsTest(util.ApacheTest):
             self.assertRaises(errors.PluginError, self.config.enhance,
                               "certbot.demo", "redirect")
             # Check that correct logger.warning was printed
-            self.assertTrue("not able to find" in mock_log.call_args.args[0])
-            self.assertTrue("\"redirect\"" in mock_log.call_args.args[0])
+            self.assertTrue("not able to find" in mock_log.call_args[0][0])
+            self.assertTrue("\"redirect\"" in mock_log.call_args[0][0])
 
             mock_log.reset_mock()
 
             self.assertRaises(errors.PluginError, self.config.enhance,
                               "certbot.demo", "ensure-http-header", "Test")
             # Check that correct logger.warning was printed
-            self.assertTrue("not able to find" in mock_log.call_args.args[0])
-            self.assertTrue("Test" in mock_log.call_args.args[0])
+            self.assertTrue("not able to find" in mock_log.call_args[0][0])
+            self.assertTrue("Test" in mock_log.call_args[0][0])
 
     @mock.patch("certbot.util.exe_exists")
     def test_ocsp_stapling(self, mock_exe):
@@ -1375,7 +1375,7 @@ class MultipleVhostsTest(util.ApacheTest):
             vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
                                                      create_ssl=True)
             # Check that the dialog was called with one vh: certbot.demo
-            self.assertEqual(mock_select_vhs.call_args.args[0][0], self.vh_truth[3])
+            self.assertEqual(mock_select_vhs.call_args[0][0][0], self.vh_truth[3])
             self.assertEqual(len(mock_select_vhs.call_args_list), 1)
 
             # And the actual returned values
@@ -1407,7 +1407,7 @@ class MultipleVhostsTest(util.ApacheTest):
             mock_select_vhs.return_value = [self.vh_truth[7]]
             vhs = self.config._choose_vhosts_wildcard("whatever",
                                                      create_ssl=True)
-            self.assertEqual(mock_select_vhs.call_args.args[0][0], self.vh_truth[7])
+            self.assertEqual(mock_select_vhs.call_args[0][0][0], self.vh_truth[7])
             self.assertEqual(len(mock_select_vhs.call_args_list), 1)
             # Ensure that make_vhost_ssl was not called, vhost.ssl == true
             self.assertFalse(mock_makessl.called)
@@ -1750,7 +1750,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             f.write("hashofanoldversion")
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
-            self.assertEqual(mock_logger.warning.call_args.args[0],
+            self.assertEqual(mock_logger.warning.call_args[0][0],
                 "%s has been manually modified; updated file "
                 "saved to %s. We recommend updating %s for security purposes.")
         self.assertEqual(crypto_util.sha256sum(
