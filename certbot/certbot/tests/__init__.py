@@ -1,1 +1,1 @@
-"""Certbot Tests"""
+"""Utilities for running Certbot tests"""
