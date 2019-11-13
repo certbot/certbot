@@ -69,6 +69,9 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
         stats = os.stat(src)
         user_id = stats.st_uid if copy_user else -1
         group_id = stats.st_gid if copy_group else -1
+        # On Windows, os.chown does not exist. This is checked through POSIX_MODE value,
+        # but MyPy/PyLint does not know it and raises an error here on Windows.
+        # We disable specifically the check to fix the issue.
         os.chown(dst, user_id, group_id)  # type: ignore # pylint: disable=no-member
     elif copy_user:
         # There is no group handling in Windows
@@ -103,6 +106,9 @@ def check_owner(file_path):
     :return: True if given file is owned by current user, False otherwise.
     """
     if POSIX_MODE:
+        # On Windows, os.getuid does not exist. This is checked through POSIX_MODE value,
+        # but MyPy/PyLint does not know it and raises an error here on Windows.
+        # We disable specifically the check to fix the issue.
         return os.stat(file_path).st_uid == os.getuid()  # type: ignore # pylint: disable=no-member
 
     # Get owner sid of the file
