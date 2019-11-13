@@ -97,8 +97,8 @@ class AugeasParserNode(interfaces.ParserNode):
         except KeyError:
             raise errors.PluginError("Augeas path is required")
 
-    def save(self, msg): # pragma: no cover
-        pass
+    def save(self, msg):
+        self.parser.save(msg)
 
 
 class AugeasCommentNode(AugeasParserNode):
@@ -221,12 +221,26 @@ class AugeasBlockNode(AugeasDirectiveNode):
     # pylint: disable=unused-argument
     def add_child_directive(self, name, parameters=None, position=None):  # pragma: no cover
         """Adds a new DirectiveNode to the sequence of children"""
-        new_metadata = {"augeasparser": self.parser, "augeaspath": assertions.PASS}
-        new_dir = AugeasDirectiveNode(name=assertions.PASS,
-                                      ancestor=self,
-                                      filepath=assertions.PASS,
+
+        if not parameters:
+            raise errors.PluginError("Directive requires parameters and none were set.")
+
+        insertpath, realpath, before = self._aug_resolve_child_position(
+            "directive",
+            position
+        )
+        new_metadata = {"augeasparser": self.parser, "augeaspath": realpath}
+
+        # Create the new directive
+        self.parser.aug.insert(insertpath, "directive", before)
+        # Set the directive key
+        self.parser.aug.set(realpath, name)
+
+        new_dir = AugeasDirectiveNode(name=name,
+                                      parameters=parameters,
+                                      ancestor=assertions.PASS,
+                                      filepath=apache_util.get_file_path(realpath),
                                       metadata=new_metadata)
-        self.children += (new_dir,)
         return new_dir
 
     def add_child_comment(self, comment="", position=None):
@@ -296,13 +310,22 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
         return nodes
 
-    def delete_child(self, child):  # pragma: no cover
-        """Deletes a ParserNode from the sequence of children"""
-        pass
+    def delete_child(self, child):
+        """
+        Deletes a ParserNode from the sequence of children, and raises an
+        exception if it's unable to do so.
+        :param AugeasParserNode: child: A node to delete.
+        """
+        if not self.parser.aug.remove(child.metadata["augeaspath"]):
 
-    def unsaved_files(self):  # pragma: no cover
+            raise errors.PluginError(
+                ("Could not delete child node, the Augeas path: {} doesn't " +
+                 "seem to exist.").format(child.metadata["augeaspath"])
+            )
+
+    def unsaved_files(self):
         """Returns a list of unsaved filepaths"""
-        return [assertions.PASS]
+        return self.parser.unsaved_files()
 
     def _create_commentnode(self, path):
         """Helper function to create a CommentNode from Augeas path"""

@@ -9,7 +9,7 @@ from certbot_apache import assertions
 from certbot_apache.tests import util
 
 
-class AugeasParserNodeTest(util.ApacheTest):
+class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-methods
     """Test AugeasParserNode using available test configurations"""
 
     def setUp(self):  # pylint: disable=arguments-differ
@@ -19,6 +19,18 @@ class AugeasParserNodeTest(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
+
+    def test_save(self):
+        with mock.patch('certbot_apache.parser.ApacheParser.save') as mock_save:
+            self.config.parser_root.save("A save message")
+        self.assertTrue(mock_save.called)
+        self.assertEqual(mock_save.call_args[0][0], "A save message")
+
+    def test_unsaved_files(self):
+        with mock.patch('certbot_apache.parser.ApacheParser.unsaved_files') as mock_uf:
+            mock_uf.return_value = ["first", "second"]
+            files = self.config.parser_root.unsaved_files()
+        self.assertEqual(files, ["first", "second"])
 
     def test_get_block_node_name(self):
         from certbot_apache.augeasparser import AugeasBlockNode
@@ -142,6 +154,24 @@ class AugeasParserNodeTest(util.ApacheTest):
         )
         self.assertEqual(newc.comment, comments[0].comment)
 
+    def test_delete_child(self):
+        listens = self.config.parser_root.find_directives("Listen")
+        self.assertEqual(len(listens), 1)
+        self.config.parser_root.primary.delete_child(listens[0])
+
+        listens = self.config.parser_root.find_directives("Listen")
+        self.assertEqual(len(listens), 0)
+
+    def test_delete_child_not_found(self):
+        listen = self.config.parser_root.find_directives("Listen")[0]
+        listen.primary.metadata["augeaspath"] = "/files/something/nonexistent"
+
+        self.assertRaises(
+            errors.PluginError,
+            self.config.parser_root.delete_child,
+            listen
+        )
+
     def test_add_child_block(self):
         nb = self.config.parser_root.primary.add_child_block(
             "NewBlock",
@@ -226,6 +256,7 @@ class AugeasParserNodeTest(util.ApacheTest):
             AugeasBlockNode,
             **parameters
         )
+
     def test_node_init_error_missing_augeaspath(self):
         from certbot_apache.augeasparser import AugeasBlockNode
         parameters = {
@@ -240,4 +271,23 @@ class AugeasParserNodeTest(util.ApacheTest):
             errors.PluginError,
             AugeasBlockNode,
             **parameters
+        )
+
+    def test_add_child_directive(self):
+        self.config.parser_root.primary.add_child_directive(
+            "ThisWasAdded",
+            ["with", "parameters"],
+            position=0
+        )
+        dirs = self.config.parser_root.find_directives("ThisWasAdded")
+        self.assertEqual(len(dirs), 1)
+        self.assertEqual(dirs[0].parameters, ("with", "parameters"))
+        # The new directive was added to the very first line of the config
+        self.assertTrue(dirs[0].metadata["augeaspath"].endswith("[1]"))
+
+    def test_add_child_directive_exception(self):
+        self.assertRaises(
+            errors.PluginError,
+            self.config.parser_root.primary.add_child_directive,
+            "ThisRaisesErrorBecauseMissingParameters"
         )
