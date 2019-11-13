@@ -35,6 +35,7 @@ def dest_namespace(name):
     """ArgumentParser dest namespace (prefix of all destinations)."""
     return name.replace("-", "_") + "_"
 
+
 private_ips_regex = re.compile(
     r"(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"
     r"(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)")
@@ -231,9 +232,8 @@ class Addr(object):
             if len(str_addr) > endIndex + 2 and str_addr[endIndex + 1] == ':':
                 port = str_addr[endIndex + 2:]
             return cls((host, port), ipv6=True)
-        else:
-            tup = str_addr.partition(':')
-            return cls((tup[0], tup[2]))
+        tup = str_addr.partition(':')
+        return cls((tup[0], tup[2]))
 
     def __str__(self):
         if self.tup[1]:
@@ -375,9 +375,9 @@ def install_version_controlled_file(dest_path, digest_path, src_path, all_hashes
     active_file_digest = crypto_util.sha256sum(dest_path)
     if active_file_digest == current_hash: # already up to date
         return
-    elif active_file_digest in all_hashes: # safe to update
+    if active_file_digest in all_hashes: # safe to update
         _install_current_file()
-    else: # has been manually modified, not safe to update
+    else:  # has been manually modified, not safe to update
         # did they modify the current version or an old version?
         if os.path.isfile(digest_path):
             with open(digest_path, "r") as f:

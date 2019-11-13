@@ -402,8 +402,7 @@ class ApacheConfigurator(common.Installer):
             # Ask user which VHosts to support.
             # Returned objects are guaranteed to be ssl vhosts
             return self._choose_vhosts_wildcard(domain, create_if_no_ssl)
-        else:
-            return [self.choose_vhost(domain, create_if_no_ssl)]
+        return [self.choose_vhost(domain, create_if_no_ssl)]
 
     def _vhosts_for_wildcard(self, domain):
         """
@@ -451,7 +450,7 @@ class ApacheConfigurator(common.Installer):
                     filtered_vhosts[name] = vhost
 
         # Only unique VHost objects
-        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
+        dialog_input = set(filtered_vhosts.values())
 
         # Ask the user which of names to enable, expect list of names back
         dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
@@ -953,10 +952,10 @@ class ApacheConfigurator(common.Installer):
 
         loc = parser.get_aug_path(self.parser.loc["name"])
         if addr.get_port() == "443":
-            path = self.parser.add_dir_to_ifmodssl(
+            path = self.parser.add_dir_to_ifmodssl(  # pylint: disable=assignment-from-no-return
                 loc, "NameVirtualHost", [str(addr)])
         else:
-            path = self.parser.add_dir(loc, "NameVirtualHost", [str(addr)])
+            path = self.parser.add_dir(loc, "NameVirtualHost", [str(addr)])  # pylint: disable=assignment-from-no-return
 
         msg = ("Setting %s to be NameBasedVirtualHost\n"
                "\tDirective added to %s\n" % (addr, path))

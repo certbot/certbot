@@ -51,7 +51,7 @@ class ClientTestBase(unittest.TestCase):
 
     def setUp(self):
         self.response = mock.MagicMock(
-            ok=True, status_code=http_client.OK, headers={}, links={})
+            ok=True, status_code=http_client.OK, headers={}, links={})  # pylint: disable=no-member
         self.net = mock.MagicMock()
         self.net.post.return_value = self.response
         self.net.get.return_value = self.response
@@ -63,7 +63,7 @@ class ClientTestBase(unittest.TestCase):
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key())
-        the_arg = dict(reg) # type: Dict
+        the_arg = dict(reg)  # type: Dict
         self.new_reg = messages.NewRegistration(**the_arg)
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')
@@ -358,7 +358,7 @@ class ClientTest(ClientTestBase):
 
     def test_register(self):
         # "Instance of 'Field' has no to_json/update member" bug:
-        self.response.status_code = http_client.CREATED
+        self.response.status_code = http_client.CREATED  # pylint: disable=no-member
         self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
         self.response.links.update({
@@ -396,7 +396,7 @@ class ClientTest(ClientTestBase):
         self.assertEqual(self.regr.terms_of_service, regr.body.agreement)
 
     def _prepare_response_for_request_challenges(self):
-        self.response.status_code = http_client.CREATED
+        self.response.status_code = http_client.CREATED  # pylint: disable=no-member
         self.response.headers['Location'] = self.authzr.uri
         self.response.json.return_value = self.authz.to_json()
 
@@ -706,7 +706,7 @@ class ClientTest(ClientTestBase):
         self.assertEqual(self.rsn, obj.to_partial_json()['reason'])
 
     def test_revoke_bad_status_raises_error(self):
-        self.response.status_code = http_client.METHOD_NOT_ALLOWED
+        self.response.status_code = http_client.METHOD_NOT_ALLOWED  # pylint: disable=no-member
         self.assertRaises(
             errors.ClientError,
             self.client.revoke,
@@ -745,20 +745,20 @@ class ClientV2Test(ClientTestBase):
             authorizations=[self.authzr, self.authzr2], csr_pem=CSR_SAN_PEM)
 
     def test_new_account(self):
-        self.response.status_code = http_client.CREATED
+        self.response.status_code = http_client.CREATED  # pylint: disable=no-member
         self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
 
         self.assertEqual(self.regr, self.client.new_account(self.new_reg))
 
     def test_new_account_conflict(self):
-        self.response.status_code = http_client.OK
+        self.response.status_code = http_client.OK  # pylint: disable=no-member
         self.response.headers['Location'] = self.regr.uri
         self.assertRaises(errors.ConflictError, self.client.new_account, self.new_reg)
 
     def test_new_order(self):
         order_response = copy.deepcopy(self.response)
-        order_response.status_code = http_client.CREATED
+        order_response.status_code = http_client.CREATED  # pylint: disable=no-member
         order_response.json.return_value = self.order.to_json()
         order_response.headers['Location'] = self.orderr.uri
         self.net.post.return_value = order_response
@@ -928,7 +928,7 @@ class ClientNetworkTest(unittest.TestCase):
             key=KEY, alg=jose.RS256, verify_ssl=self.verify_ssl,
             user_agent='acme-python-test')
 
-        self.response = mock.MagicMock(ok=True, status_code=http_client.OK)
+        self.response = mock.MagicMock(ok=True, status_code=http_client.OK)  # pylint: disable=no-member
         self.response.headers = {}
         self.response.links = {}
 
@@ -1025,7 +1025,7 @@ class ClientNetworkTest(unittest.TestCase):
     def test_send_request_get_der(self, mock_logger):
         self.net.session = mock.MagicMock()
         self.net.session.request.return_value = mock.MagicMock(
-            ok=True, status_code=http_client.OK,
+            ok=True, status_code=http_client.OK,  # pylint: disable=no-member
             headers={"Content-Type": "application/pkix-cert"},
             content=b"hi")
         # pylint: disable=protected-access
@@ -1129,12 +1129,12 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         from acme.client import ClientNetwork
         self.net = ClientNetwork(key=None, alg=None)
 
-        self.response = mock.MagicMock(ok=True, status_code=http_client.OK)
+        self.response = mock.MagicMock(ok=True, status_code=http_client.OK)  # pylint: disable=no-member
         self.response.headers = {}
         self.response.links = {}
         self.response.checked = False
-        self.acmev1_nonce_response = mock.MagicMock(ok=False,
-            status_code=http_client.METHOD_NOT_ALLOWED)
+        self.acmev1_nonce_response = mock.MagicMock(
+            ok=False, status_code=http_client.METHOD_NOT_ALLOWED)  # pylint: disable=no-member
         self.acmev1_nonce_response.headers = {}
         self.obj = mock.MagicMock()
         self.wrapped_obj = mock.MagicMock()
@@ -1264,7 +1264,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     def test_post_bad_nonce_head(self):
         # pylint: disable=protected-access
         # regression test for https://github.com/certbot/certbot/issues/6092
-        bad_response = mock.MagicMock(ok=False, status_code=http_client.SERVICE_UNAVAILABLE)
+        bad_response = mock.MagicMock(ok=False, status_code=http_client.SERVICE_UNAVAILABLE)  # pylint: disable=no-member
         self.net._send_request = mock.MagicMock()
         self.net._send_request.return_value = bad_response
         self.content_type = None
