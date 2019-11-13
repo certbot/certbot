@@ -262,7 +262,8 @@ class FileDisplay(object):
                 self.outfile.write(
                     "** Error - Invalid selection **%s" % os.linesep)
                 self.outfile.flush()
-            return code, []
+            else:
+                return code, []
 
     def _return_default(self, prompt, default, cli_flag, force_interactive):
         """Should we return the default instead of prompting the user?
