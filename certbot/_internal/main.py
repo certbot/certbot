@@ -668,14 +668,6 @@ def register(config, unused_plugins):
     :rtype: None or str
 
     """
-    # TODO: When `certbot register --update-registration` is fully deprecated,
-    # delete the true case of if block
-    if config.update_registration:
-        msg = ("Usage 'certbot register --update-registration' is deprecated.\n"
-               "Please use 'certbot update_account [options]' instead.\n")
-        logger.warning(msg)
-        return update_account(config, unused_plugins)
-
     # Portion of _determine_account logic to see whether accounts already
     # exist or not.
     account_storage = account.AccountFileStorage(config)

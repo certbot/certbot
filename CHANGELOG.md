@@ -20,6 +20,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `certbot.plugins.common.Installer.view_config_changes`,
   `certbot.reverter.Reverter.view_config_changes`, and
   `certbot.util.get_systemd_os_info` have been removed
+* Certbot's `register --update-registration` subcommand has been removed
 
 ### Fixed
 
