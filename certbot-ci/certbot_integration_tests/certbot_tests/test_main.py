@@ -62,11 +62,6 @@ def test_registration_override(context):
     context.certbot(['unregister'])
     context.certbot(['register', '--email', 'ex1@domain.org,ex2@domain.org'])
 
-    # TODO: When `certbot register --update-registration` is fully deprecated,
-    #  delete the two following deprecated uses
-    context.certbot(['register', '--update-registration', '--email', 'ex1@domain.org'])
-    context.certbot(['register', '--update-registration', '--email', 'ex1@domain.org,ex2@domain.org'])
-
     context.certbot(['update_account', '--email', 'example@domain.org'])
     context.certbot(['update_account', '--email', 'ex1@domain.org,ex2@domain.org'])
 
