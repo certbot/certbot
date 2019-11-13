@@ -15,7 +15,7 @@ from acme.magic_typing import Dict, Set, DefaultDict, List
 # pylint: enable=unused-import, no-name-in-module
 
 from certbot import achallenges  # pylint: disable=unused-import
-from certbot import cli
+from certbot._internal import cli
 from certbot import errors
 from certbot import interfaces
 from certbot.compat import os

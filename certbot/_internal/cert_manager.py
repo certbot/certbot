@@ -33,7 +33,7 @@ def update_live_symlinks(config):
     .. note:: This assumes that the installation is using a Reverter object.
 
     :param config: Configuration.
-    :type config: :class:`certbot.configuration.NamespaceConfig`
+    :type config: :class:`certbot._internal.configuration.NamespaceConfig`
 
     """
     for renewal_file in storage.renewal_conf_files(config):
@@ -43,7 +43,7 @@ def rename_lineage(config):
     """Rename the specified lineage to the new name.
 
     :param config: Configuration.
-    :type config: :class:`certbot.configuration.NamespaceConfig`
+    :type config: :class:`certbot._internal.configuration.NamespaceConfig`
 
     """
     disp = zope.component.getUtility(interfaces.IDisplay)
@@ -70,7 +70,7 @@ def certificates(config):
     """Display information about certs configured with Certbot
 
     :param config: Configuration.
-    :type config: :class:`certbot.configuration.NamespaceConfig`
+    :type config: :class:`certbot._internal.configuration.NamespaceConfig`
     """
     parsed_certs = []
     parse_failures = []
@@ -136,7 +136,7 @@ def find_duplicative_certs(config, domains):
     undefined.
 
     :param config: Configuration.
-    :type config: :class:`certbot.configuration.NamespaceConfig`
+    :type config: :class:`certbot._internal.configuration.NamespaceConfig`
     :param domains: List of domain names
     :type domains: `list` of `str`
 

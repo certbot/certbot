@@ -25,7 +25,7 @@ import certbot._internal.plugins.selection as plugin_selection
 from certbot._internal import constants
 from certbot import crypto_util
 from certbot import errors
-from certbot import hooks
+from certbot._internal import hooks
 from certbot import interfaces
 from certbot import util
 from certbot.compat import os
@@ -980,12 +980,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "certificates. Updates to the Subscriber Agreement will still "
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
-    # TODO: When `certbot register --update-registration` is fully deprecated,
-    # delete following helpful.add
-    helpful.add(
-        "register", "--update-registration", action="store_true",
-        default=flag_default("update_registration"), dest="update_registration",
-        help=argparse.SUPPRESS)
     helpful.add(
         ["register", "update_account", "unregister", "automation"], "-m", "--email",
         default=flag_default("email"),

@@ -195,7 +195,7 @@ def choose_configurator_plugins(config, plugins, verb):
     # Which plugins do we need?
     if verb == "run":
         need_inst = need_auth = True
-        from certbot.cli import cli_command
+        from certbot._internal.cli import cli_command
         if req_auth in noninstaller_plugins and not req_inst:
             msg = ('With the {0} plugin, you probably want to use the "certonly" command, eg:{1}'
                    '{1}    {2} certonly --{0}{1}{1}'
@@ -326,7 +326,7 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
                    "your existing configuration.\nThe error was: {1!r}"
                    .format(requested, plugins[requested].problem))
     elif cfg_type == "installer":
-        from certbot.cli import cli_command
+        from certbot._internal.cli import cli_command
         msg = ('Certbot doesn\'t know how to automatically configure the web '
           'server on this system. However, it can still get a certificate for '
           'you. Please run "{0} certonly" to do so. You\'ll need to '
