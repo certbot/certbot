@@ -62,8 +62,7 @@ CERTBOT_REPO_PATH = dirname(dirname(abspath(__file__)))
 #     without pinned dependencies, and respecting input authoritative requirements
 #   - `certbot plugins` is called to check we have an healthy environment
 #   - finally current set of dependencies is extracted out of the docker using pip freeze
-SCRIPT = r"""\
-#!/bin/sh
+SCRIPT = r"""#!/bin/sh
 set -e
 
 cd /tmp/certbot

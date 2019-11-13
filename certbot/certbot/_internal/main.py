@@ -16,14 +16,14 @@ from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in
 import certbot
 from certbot._internal import account
 from certbot._internal import cert_manager
-from certbot import cli
+from certbot._internal import cli
 from certbot._internal import client
-from certbot import configuration
+from certbot._internal import configuration
 from certbot._internal import constants
 from certbot import crypto_util
 from certbot._internal import eff
 from certbot import errors
-from certbot import hooks
+from certbot._internal import hooks
 from certbot import interfaces
 from certbot._internal import log
 from certbot._internal import renewal
@@ -668,14 +668,6 @@ def register(config, unused_plugins):
     :rtype: None or str
 
     """
-    # TODO: When `certbot register --update-registration` is fully deprecated,
-    # delete the true case of if block
-    if config.update_registration:
-        msg = ("Usage 'certbot register --update-registration' is deprecated.\n"
-               "Please use 'certbot update_account [options]' instead.\n")
-        logger.warning(msg)
-        return update_account(config, unused_plugins)
-
     # Portion of _determine_account logic to see whether accounts already
     # exist or not.
     account_storage = account.AccountFileStorage(config)

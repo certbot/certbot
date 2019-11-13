@@ -6,7 +6,7 @@ import subprocess
 import mock
 import zope.interface
 
-from certbot import configuration
+from certbot._internal import configuration
 from certbot import errors as le_errors
 from certbot import util as certbot_util
 from certbot_apache import entrypoint

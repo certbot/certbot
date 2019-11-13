@@ -78,9 +78,9 @@ def enable(lineage, domains, installer, config):
 
 def populate_cli(add):
     """
-    Populates the command line flags for certbot.cli.HelpfulParser
+    Populates the command line flags for certbot._internal.cli.HelpfulParser
 
-    :param add: Add function of certbot.cli.HelpfulParser
+    :param add: Add function of certbot._internal.cli.HelpfulParser
     :type add: func
     """
     for enh in _INDEX:
