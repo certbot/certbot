@@ -43,10 +43,10 @@ matrix:
       <<: *not-on-master
 
     # This job is always executed, including on master
-    - python: "3.8"
-      env: TOXENV=py38-cover FYI="py38 tests + code coverage"
+    - python: "3.7"
+      env: TOXENV=py37-cover FYI="py37 tests + code coverage"
 
-    - python: "3.8"
+    - python: "3.7"
       env: TOXENV=lint
       <<: *not-on-master
     - python: "3.4"
@@ -296,7 +296,7 @@ install: 'tools/pip_install.py -U codecov tox virtualenv'
 # flakiness of these specific tests.
 script: '$TRAVIS_RETRY tox'
 
-after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
+after_success: '[ "$TOXENV" == "py37-cover" ] && codecov -F linux'
 
 notifications:
   email: false
