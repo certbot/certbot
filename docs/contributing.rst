@@ -36,29 +36,36 @@ run Certbot in Docker. You can find instructions for how to do this :ref:`here
 install dependencies and set up a virtual environment where you can run
 Certbot.
 
+Install the OS system dependencies required to run Certbot.
+
+.. code-block:: shell
+
+   # For APT-based distributions (e.g. Debian, Ubuntu ...)
+   sudo apt update
+   sudo apt install python3-dev python3-venv gcc libaugeas0 libssl-dev \
+                    libffi-dev ca-certificates openssl
+   # For RPM-based distributions (e.g. Fedora, CentOS ...)
+   # NB1: old distributions will use yum instead of dnf
+   # NB2: RHEL-based distributions use python3X-devel instead of python3-devel (e.g. python36-devel)
+   sudo dnf install python3-devel gcc augeas-libs openssl-devel libffi-devel \
+                    redhat-rpm-config ca-certificates openssl
+
+Set up the Python virtual environment that will host your Certbot local instance.
+
 .. code-block:: shell
 
    cd certbot
-   ./certbot-auto --debug --os-packages-only
-   python tools/venv.py
-
-If you have Python3 available and want to use it, run the ``venv3.py`` script.
-
-.. code-block:: shell
-
    python tools/venv3.py
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
 
 You can now run the copy of Certbot from git either by executing
-``venv/bin/certbot``, or by activating the virtual environment. You can do the
+``venv3/bin/certbot``, or by activating the virtual environment. You can do the
 latter by running:
 
 .. code-block:: shell
 
-   source venv/bin/activate
-   # or
    source venv3/bin/activate
 
 After running this command, ``certbot`` and development tools like ``ipdb``,

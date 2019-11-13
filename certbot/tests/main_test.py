@@ -23,7 +23,7 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 import certbot.tests.util as test_util
 from certbot._internal import account
 from certbot._internal import cli
-from certbot import configuration
+from certbot._internal import configuration
 from certbot._internal import constants
 from certbot import crypto_util
 from certbot import errors

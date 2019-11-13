@@ -18,7 +18,7 @@ from certbot._internal import account
 from certbot._internal import cert_manager
 from certbot._internal import cli
 from certbot._internal import client
-from certbot import configuration
+from certbot._internal import configuration
 from certbot._internal import constants
 from certbot import crypto_util
 from certbot._internal import eff
