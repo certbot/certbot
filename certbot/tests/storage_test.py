@@ -43,7 +43,7 @@ class RelevantValuesTest(unittest.TestCase):
         from certbot._internal.storage import relevant_values
         return relevant_values(*args, **kwargs)
 
-    @mock.patch("certbot.cli.option_was_set")
+    @mock.patch("certbot._internal.cli.option_was_set")
     @mock.patch("certbot._internal.plugins.disco.PluginsRegistry.find_all")
     def test_namespace(self, mock_find_all, mock_option_was_set):
         mock_find_all.return_value = ["certbot-foo:bar"]
@@ -53,7 +53,7 @@ class RelevantValuesTest(unittest.TestCase):
         self.assertEqual(
             self._call(self.values.copy()), self.values)
 
-    @mock.patch("certbot.cli.option_was_set")
+    @mock.patch("certbot._internal.cli.option_was_set")
     def test_option_set(self, mock_option_was_set):
         mock_option_was_set.return_value = True
 
@@ -65,7 +65,7 @@ class RelevantValuesTest(unittest.TestCase):
 
         self.assertEqual(self._call(self.values), expected_relevant_values)
 
-    @mock.patch("certbot.cli.option_was_set")
+    @mock.patch("certbot._internal.cli.option_was_set")
     def test_option_unset(self, mock_option_was_set):
         mock_option_was_set.return_value = False
 
