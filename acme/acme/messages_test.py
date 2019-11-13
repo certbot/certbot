@@ -25,9 +25,7 @@ class ErrorTest(unittest.TestCase):
             'title': 'some title',
             'type': ERROR_PREFIX + 'malformed',
         }
-        self.error_custom = Error.with_code('serverInternal', detail='bar')
         self.empty_error = Error()
-        self.jobj_custom = {'type': ERROR_PREFIX + 'serverInternal', 'detail': 'bar'}
 
     def test_default_typ(self):
         from acme.messages import Error
@@ -42,20 +40,17 @@ class ErrorTest(unittest.TestCase):
         hash(Error.from_json(self.error.to_json()))
 
     def test_description(self):
-        self.assertEqual(
-            'The request message was malformed', self.error.description)
-        self.assertTrue(self.error_custom.description is None)
+        self.assertEqual('The request message was malformed', self.error.description)
 
     def test_code(self):
         from acme.messages import Error
         self.assertEqual('malformed', self.error.code)
-        self.assertEqual(None, self.error_custom.code)
         self.assertEqual(None, Error().code)
 
     def test_is_acme_error(self):
-        from acme.messages import is_acme_error
+        from acme.messages import is_acme_error, Error
         self.assertTrue(is_acme_error(self.error))
-        self.assertFalse(is_acme_error(self.error_custom))
+        self.assertFalse(is_acme_error(Error()))
         self.assertFalse(is_acme_error(self.empty_error))
         self.assertFalse(is_acme_error("must pet all the {dogs|rabbits}"))
 
