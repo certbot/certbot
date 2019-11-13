@@ -4,7 +4,7 @@ import mock
 
 from acme import challenges
 
-from certbot import configuration
+from certbot._internal import configuration
 from certbot import errors
 from certbot._internal import storage
 

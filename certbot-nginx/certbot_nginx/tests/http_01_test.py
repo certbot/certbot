@@ -47,7 +47,7 @@ class HttpPerformTest(util.NginxTest):
     def setUp(self):
         super(HttpPerformTest, self).setUp()
 
-        config = util.get_nginx_configurator(
+        config = self.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
         from certbot_nginx import http_01
