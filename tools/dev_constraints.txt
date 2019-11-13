@@ -6,7 +6,7 @@ alabaster==0.7.10
 apipkg==1.4
 appnope==0.1.0
 asn1crypto==0.22.0
-astroid==2.3.3
+astroid==2.1.0
 attrs==17.3.0
 Babel==2.5.1
 backports.functools-lru-cache==1.5
@@ -43,7 +43,7 @@ logilab-common==1.4.1
 MarkupSafe==1.0
 mccabe==0.6.1
 more-itertools==5.0.0
-mypy==0.710
+mypy==0.600
 ndg-httpsclient==0.3.2
 oauth2client==4.0.0
 packaging==19.2
@@ -58,7 +58,7 @@ py==1.8.0
 pyasn1==0.1.9
 pyasn1-modules==0.0.10
 Pygments==2.2.0
-pylint==2.4.3
+pylint==2.2.3
 # If pynsist version is upgraded, our NSIS template windows-installer/template.nsi
 # must be upgraded if necessary using the new built-in one from pynsist.
 pynsist==2.4
@@ -90,7 +90,7 @@ tox==3.14.0
 tqdm==4.19.4
 traitlets==4.3.2
 twine==1.11.0
-typed-ast==1.4.0
+typed-ast==1.1.2
 typing==3.6.4
 uritemplate==3.0.0
 virtualenv==16.6.2

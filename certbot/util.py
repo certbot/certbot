@@ -25,11 +25,13 @@ from certbot._internal import lock
 from certbot.compat import os
 from certbot.compat import filesystem
 
-if sys.platform.startswith('linux'):
+try:
+    # pylint: disable=import-error
     import distro
-    _USE_DISTRO = True
-else:
+except ImportError:
     _USE_DISTRO = False
+else:
+    _USE_DISTRO = True
 
 logger = logging.getLogger(__name__)
 
