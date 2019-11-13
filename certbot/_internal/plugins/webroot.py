@@ -135,8 +135,7 @@ to serve all files under specified web root ({0})."""
                 raise errors.PluginError(
                     "Every requested domain must have a "
                     "webroot when using the webroot plugin.")
-            else:  # code == display_util.OK
-                return None if index == 0 else known_webroots[index - 1]
+            return None if index == 0 else known_webroots[index - 1]  # code == display_util.OK
 
     def _prompt_for_new_webroot(self, domain, allowraise=False):
         code, webroot = ops.validated_directory(

@@ -195,7 +195,7 @@ def _handle_perform_error(error):
             "the appropriate permissions (for example, you "
             "aren't running this program as "
             "root).".format(error.port))
-    elif error.socket_error.errno == socket_errors.EADDRINUSE:
+    if error.socket_error.errno == socket_errors.EADDRINUSE:
         display = zope.component.getUtility(interfaces.IDisplay)
         msg = (
             "Could not bind TCP port {0} because it is already in "

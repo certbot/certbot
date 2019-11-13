@@ -537,7 +537,7 @@ def enforce_domain_sanity(domain):
     for l in labels:
         if not l:
             raise errors.ConfigurationError("{0} it contains an empty label.".format(msg))
-        elif len(l) > 63:
+        if len(l) > 63:
             raise errors.ConfigurationError("{0} label {1} is too long.".format(msg, l))
 
     return domain

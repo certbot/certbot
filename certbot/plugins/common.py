@@ -296,7 +296,7 @@ class Addr(object):
                 # appended to the end
                 append_to_end = True
                 continue
-            elif len(block) > 1:
+            if len(block) > 1:
                 # remove leading zeros
                 block = block.lstrip("0")
             if not append_to_end:

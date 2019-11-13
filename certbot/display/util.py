@@ -289,11 +289,10 @@ class FileDisplay(object):
                     "\nYou can provide an answer on the "
                     "command line with the {0} flag.".format(cli_flag))
             raise errors.Error(msg)
-        else:
-            logger.debug(
-                "Falling back to default %s for the prompt:\n%s",
-                default, prompt)
-            return True
+        logger.debug(
+            "Falling back to default %s for the prompt:\n%s",
+            default, prompt)
+        return True
 
     def _can_interact(self, force_interactive):
         """Can we safely interact with the user?

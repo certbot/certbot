@@ -60,8 +60,7 @@ def get_email(invalid=False, optional=True):
                 raise errors.Error(
                     "An e-mail address or "
                     "--register-unsafely-without-email must be provided.")
-            else:
-                raise errors.Error("An e-mail address must be provided.")
+            raise errors.Error("An e-mail address must be provided.")
         if util.safe_email(email):
             return email
         if suggest_unsafe:

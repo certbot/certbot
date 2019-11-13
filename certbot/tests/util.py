@@ -232,8 +232,7 @@ class FreezableMock(object):
         if self._frozen:
             if name in self._frozen_set:
                 raise AttributeError('Cannot change frozen attribute ' + name)
-            else:
-                return setattr(self._mock, name, value)
+            return setattr(self._mock, name, value)
 
         if name != '_frozen_set':
             self._frozen_set.add(name)

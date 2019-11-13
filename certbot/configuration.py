@@ -2,7 +2,7 @@
 import copy
 
 import zope.interface
-from six.moves.urllib import parse  # pylint: disable=relative-import
+from six.moves.urllib import parse
 
 from certbot._internal import constants
 from certbot import errors

@@ -5,7 +5,7 @@ import josepy as jose
 import mock
 import requests
 
-from six.moves.urllib import parse as urllib_parse  # pylint: disable=relative-import
+from six.moves.urllib import parse as urllib_parse
 
 from acme import test_util
 

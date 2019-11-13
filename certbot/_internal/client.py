@@ -225,11 +225,9 @@ def perform_registration(acme, config, tos_cb):
                        "Please ensure it is a valid email and attempt "
                        "registration again." % config.email)
                 raise errors.Error(msg)
-            else:
-                config.email = display_ops.get_email(invalid=True)
-                return perform_registration(acme, config, tos_cb)
-        else:
-            raise
+            config.email = display_ops.get_email(invalid=True)
+            return perform_registration(acme, config, tos_cb)
+        raise
 
 
 class Client(object):

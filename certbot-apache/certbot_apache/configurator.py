@@ -507,7 +507,7 @@ class ApacheConfigurator(common.Installer):
                 "VirtualHost was not modified", vhost.path)
             raise errors.PluginError(
                 "Unable to find an SSLCertificateFile directive")
-        elif not path["cert_key"]:
+        if not path["cert_key"]:
             logger.warning(
                 "Cannot find an SSLCertificateKeyFile directive for "
                 "certificate in %s. VirtualHost was not modified", vhost.path)
@@ -1369,9 +1369,8 @@ class ApacheConfigurator(common.Installer):
                     result.append('\n'.join(
                         ['# ' + l for l in chunk]))
                     continue
-                else:
-                    result.append('\n'.join(chunk))
-                    continue
+                result.append('\n'.join(chunk))
+                continue
         return result, sift
 
     def _get_vhost_block(self, vhost):
