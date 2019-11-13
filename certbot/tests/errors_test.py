@@ -17,7 +17,7 @@ class FailedChallengesTest(unittest.TestCase):
         self.error = FailedChallenges(set([achallenges.DNS(
             domain="example.com", challb=messages.ChallengeBody(
                 chall=acme_util.DNS01, uri=None,
-                error=messages.Error(typ="tls", detail="detail")))]))
+                error=messages.Error.with_code("tls", detail="detail")))]))
 
     def test_str(self):
         self.assertTrue(str(self.error).startswith(
@@ -29,7 +29,7 @@ class FailedChallengesTest(unittest.TestCase):
         arabic_error = FailedChallenges(set([achallenges.DNS(
             domain="example.com", challb=messages.ChallengeBody(
                 chall=acme_util.DNS01, uri=None,
-                error=messages.Error(typ="tls", detail=arabic_detail)))]))
+                error=messages.Error.with_code("tls", detail=arabic_detail)))]))
 
         self.assertTrue(str(arabic_error).startswith(
             "Failed authorization procedure. example.com (dns-01): tls"))

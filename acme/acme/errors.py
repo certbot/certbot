@@ -29,7 +29,12 @@ class NonceError(ClientError):
 class BadNonce(NonceError):
     """Bad nonce error."""
     def __init__(self, nonce, error, *args, **kwargs):
-        super(BadNonce, self).__init__(*args, **kwargs)
+        # MyPy complains here that there is too many arguments for BaseException constructor.
+        # This is an error fixed in typeshed, see https://github.com/python/mypy/issues/4183
+        # The fix is included in MyPy>=0.740, but upgrading it would bring dozen of errors due to
+        #   new types definitions. So we ignore the error until the code base is fixed to match
+        #   with MyPy>=0.740 referential.
+        super(BadNonce, self).__init__(*args, **kwargs)  # type: ignore
         self.nonce = nonce
         self.error = error
 
@@ -48,7 +53,8 @@ class MissingNonce(NonceError):
 
     """
     def __init__(self, response, *args, **kwargs):
-        super(MissingNonce, self).__init__(*args, **kwargs)
+        # See comment in BadNonce constructor above for an explanation of type: ignore here.
+        super(MissingNonce, self).__init__(*args, **kwargs)  # type: ignore
         self.response = response
 
     def __str__(self):

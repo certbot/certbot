@@ -69,7 +69,7 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
         stats = os.stat(src)
         user_id = stats.st_uid if copy_user else -1
         group_id = stats.st_gid if copy_group else -1
-        os.chown(dst, user_id, group_id)  # pylint: disable=no-member
+        os.chown(dst, user_id, group_id)  # type: ignore # pylint: disable=no-member
     elif copy_user:
         # There is no group handling in Windows
         _copy_win_ownership(src, dst)
@@ -103,7 +103,7 @@ def check_owner(file_path):
     :return: True if given file is owned by current user, False otherwise.
     """
     if POSIX_MODE:
-        return os.stat(file_path).st_uid == os.getuid()  # pylint: disable=no-member
+        return os.stat(file_path).st_uid == os.getuid()  # type: ignore # pylint: disable=no-member
 
     # Get owner sid of the file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
