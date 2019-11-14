@@ -33,7 +33,7 @@ class ApacheCommentNode(ApacheParserNode):
         super(ApacheCommentNode, self).__init__(**kwargs)
         self.comment = comment
 
-    def __eq__(self, other):
+    def __eq__(self, other):  # pragma: no cover
         if isinstance(other, self.__class__):
             return (self.comment == other.comment and
                     self.dirty == other.dirty and
@@ -54,7 +54,7 @@ class ApacheDirectiveNode(ApacheParserNode):
         self.enabled = enabled
         self.include = None
 
-    def __eq__(self, other):
+    def __eq__(self, other):  # pragma: no cover
         if isinstance(other, self.__class__):
             return (self.name == other.name and
                     self.filepath == other.filepath and
@@ -77,7 +77,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         super(ApacheBlockNode, self).__init__(**kwargs)
         self.children = ()
 
-    def __eq__(self, other):
+    def __eq__(self, other):  # pragma: no cover
         if isinstance(other, self.__class__):
             return (self.name == other.name and
                     self.filepath == other.filepath and
@@ -109,7 +109,9 @@ class ApacheBlockNode(ApacheDirectiveNode):
         self.children += (new_dir,)
         return new_dir
 
-    def add_child_comment(self, comment="", position=None):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def add_child_comment(self, comment="", position=None):  # pragma: no cover
+
         """Adds a new CommentNode to the sequence of children"""
         new_comment = ApacheCommentNode(comment=assertions.PASS,
                                         ancestor=self,
