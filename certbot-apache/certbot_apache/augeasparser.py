@@ -317,6 +317,12 @@ class AugeasBlockNode(AugeasDirectiveNode):
         """Returns a list of unsaved filepaths"""
         return self.parser.unsaved_files()
 
+    def parsed_paths(self):
+        """Returns a list of parsed filepaths"""
+
+        parsed_paths = self.parser.aug.match("/augeas/load/Httpd/incl")
+        return [self.parser.aug.get(path) for path in parsed_paths]
+
     def _create_commentnode(self, path):
         """Helper function to create a CommentNode from Augeas path"""
 

@@ -281,3 +281,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
             self.config.parser_root.primary.add_child_directive,
             "ThisRaisesErrorBecauseMissingParameters"
         )
+
+    def test_parsed_paths(self):
+        paths = self.config.parser_root.parsed_paths()
+        self.assertEqual(len(paths), 6)

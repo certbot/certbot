@@ -277,3 +277,11 @@ class DualBlockNode(DualNodeBase):
         assertions.assertEqualSimple(primary_files, secondary_files)
 
         return primary_files
+
+    def parsed_paths(self):
+        """Returns a list of files that were parsed into the parser node tree"""
+
+        primary_paths = self.primary.parsed_paths()
+        secondary_paths = self.secondary.parsed_paths()
+        assertions.assertEqualPathsList(primary_paths, secondary_paths)
+        return primary_paths
