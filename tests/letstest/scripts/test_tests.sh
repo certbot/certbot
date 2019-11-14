@@ -7,7 +7,7 @@
 REPO_ROOT="letsencrypt"
 LE_AUTO="$REPO_ROOT/letsencrypt-auto-source/letsencrypt-auto"
 LE_AUTO="$LE_AUTO --debug --no-self-upgrade --non-interactive"
-MODULES="acme certbot certbot_apache certbot_nginx"
+MODULES="acme certbot certbot-apache certbot-nginx"
 PIP_INSTALL="$REPO_ROOT/tools/pip_install.py"
 VENV_NAME=venv
 
@@ -22,5 +22,5 @@ cd $(mktemp -d)
 
 for module in $MODULES ; do
     echo testing $module
-    pytest -v --pyargs $module
+    pytest -v $module
 done

@@ -30,7 +30,6 @@ SUBPKGS_NOT_IN_AUTO="certbot-dns-cloudflare certbot-dns-cloudxns certbot-dns-dig
 SUBPKGS_IN_AUTO="certbot $SUBPKGS_IN_AUTO_NO_CERTBOT"
 SUBPKGS_NO_CERTBOT="$SUBPKGS_IN_AUTO_NO_CERTBOT $SUBPKGS_NOT_IN_AUTO"
 SUBPKGS="$SUBPKGS_IN_AUTO $SUBPKGS_NOT_IN_AUTO"
-subpkgs_modules="$(echo $SUBPKGS | sed s/-/_/g)"
 # certbot_compatibility_test is not packaged because:
 # - it is not meant to be used by anyone else than Certbot devs
 # - it causes problems when running pytest - the latter tries to
@@ -177,10 +176,10 @@ mkdir kgs
 kgs="kgs/$version"
 pip freeze | tee $kgs
 python ../tools/pip_install.py pytest
-for module in $subpkgs_modules ; do
+for module in $SUBPKGS ; do
     echo testing $module
     # use an empty configuration file rather than the one in the repo root
-    pytest -c <(echo '') --pyargs $module
+    pytest -c <(echo '') $module
 done
 cd ~-
 
