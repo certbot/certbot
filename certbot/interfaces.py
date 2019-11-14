@@ -4,7 +4,6 @@ import six
 import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
-# pylint: disable=too-few-public-methods
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -372,7 +371,6 @@ class IInstaller(IPlugin):
 
 class IDisplay(zope.interface.Interface):
     """Generic display."""
-    # pylint: disable=too-many-arguments
     # see https://github.com/certbot/certbot/issues/3915
 
     def notification(message, pause, wrap=True, force_interactive=False):

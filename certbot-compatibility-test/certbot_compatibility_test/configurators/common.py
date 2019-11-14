@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class Proxy(object):
-    # pylint: disable=too-many-instance-attributes
     """A common base for compatibility test configurators"""
 
     @classmethod

@@ -377,7 +377,6 @@ def delete_files(config, certname):
 
 
 class RenewableCert(object):
-    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Renewable certificate.
 
     Represents a lineage of certificates that is under the management of
@@ -952,7 +951,6 @@ class RenewableCert(object):
 
     @classmethod
     def new_lineage(cls, lineagename, cert, privkey, chain, cli_config):
-        # pylint: disable=too-many-locals
         """Create a new certificate lineage.
 
         Attempts to create a certificate lineage -- enrolled for
