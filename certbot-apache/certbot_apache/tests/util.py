@@ -18,7 +18,7 @@ from certbot_apache import entrypoint
 from certbot_apache import obj
 
 
-class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
+class ApacheTest(unittest.TestCase):
 
     def setUp(self, test_dir="debian_apache_2_4/multiple_vhosts",
               config_root="debian_apache_2_4/multiple_vhosts/apache2",
@@ -81,7 +81,7 @@ class ParserTest(ApacheTest):
                 self.config_path, self.vhost_path, configurator=self.config)
 
 
-def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-locals
+def get_apache_configurator(
         config_path, vhost_path,
         config_dir, work_dir, version=(2, 4, 7),
         os_info="generic",

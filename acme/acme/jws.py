@@ -43,7 +43,7 @@ class JWS(jose.JWS):
     __slots__ = jose.JWS._orig_slots  # pylint: disable=no-member
 
     @classmethod
-    # pylint: disable=arguments-differ,too-many-arguments
+    # pylint: disable=arguments-differ
     def sign(cls, payload, key, alg, nonce, url=None, kid=None):
         # Per ACME spec, jwk and kid are mutually exclusive, so only include a
         # jwk field if kid is not provided.
