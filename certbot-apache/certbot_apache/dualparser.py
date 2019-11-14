@@ -21,6 +21,14 @@ class DualNodeBase(object):
             assertions.assertEqualSimple(firstval, secondval)
         return firstval
 
+    def find_ancestors(self, name):
+        """ Traverses the ancestor tree and returns ancestors matching name """
+
+        primary_ancs = self.primary.find_ancestors(name)
+        secondary_ancs = self.secondary.find_ancestors(name)
+        assert primary_ancs == secondary_ancs
+        return primary_ancs
+
 
 class DualCommentNode(DualNodeBase):
     """ Dual parser implementation of CommentNode interface """

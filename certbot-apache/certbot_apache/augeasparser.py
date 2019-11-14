@@ -75,7 +75,6 @@ from certbot_apache import parser
 from certbot_apache import parsernode_util as util
 
 
-
 class AugeasParserNode(interfaces.ParserNode):
     """ Augeas implementation of ParserNode interface """
 
@@ -99,6 +98,65 @@ class AugeasParserNode(interfaces.ParserNode):
 
     def save(self, msg):
         self.parser.save(msg)
+
+    def find_ancestors(self, name):
+        """
+        Searches ancestor BlockNodes with a given name.
+
+        :param str name: Name of the BlockNode parent to search for
+
+        :returns: List of matching ancestor nodes.
+        :rtype: list of AugeasBlockNode
+        """
+
+        ancestors = []
+
+        parent = self.metadata["augeaspath"]
+        while True:
+            # Get the path of ancestor node
+            parent = parent.rpartition("/")[0]
+            if not parent:
+                break
+            anc = self._create_blocknode(parent)
+            if anc.name.lower() == name.lower():
+                ancestors.append(anc)
+
+        return ancestors
+
+    def _create_blocknode(self, path):
+        """
+        Helper function to create a BlockNode from Augeas path. This is used by
+        AugeasParserNode.find_ancestors and AugeasBlockNode.
+        and AugeasBlockNode.find_blocks
+
+        """
+
+        name = self._aug_get_name(path)
+        metadata = {"augeasparser": self.parser, "augeaspath": path}
+
+        # Because of the dynamic nature, and the fact that we're not populating
+        # the complete ParserNode tree, we use the search parent as ancestor
+        return AugeasBlockNode(name=name,
+                               ancestor=assertions.PASS,
+                               filepath=apache_util.get_file_path(path),
+                               metadata=metadata)
+
+    def _aug_get_name(self, path):
+        """
+        Helper function to get name of a configuration block or variable from path.
+        """
+
+        # Remove the ending slash if any
+        if path[-1] == "/":  # pragma: no cover
+            path = path[:-1]
+
+        # Get the block name
+        name = path.split("/")[-1]
+
+        # remove [...], it's not allowed in Apache configuration and is used
+        # for indexing within Augeas
+        name = name.split("[")[0]
+        return name
 
 
 class AugeasCommentNode(AugeasParserNode):
@@ -253,7 +311,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         self.children += (new_comment,)
         return new_comment
 
-    def find_blocks(self, name, exclude=True): # pylint: disable=unused-argument
+    def find_blocks(self, name, exclude=True):
         """Recursive search of BlockNodes from the sequence of children"""
 
         nodes = list()
@@ -265,7 +323,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
         return nodes
 
-    def find_directives(self, name, exclude=True): # pylint: disable=unused-argument
+    def find_directives(self, name, exclude=True):
         """Recursive search of DirectiveNodes from the sequence of children"""
 
         nodes = list()
@@ -343,19 +401,6 @@ class AugeasBlockNode(AugeasDirectiveNode):
                                    filepath=apache_util.get_file_path(path),
                                    metadata=metadata)
 
-    def _create_blocknode(self, path):
-        """Helper function to create a BlockNode from Augeas path"""
-
-        name = self._aug_get_name(path)
-        metadata = {"augeasparser": self.parser, "augeaspath": path}
-
-        # Because of the dynamic nature, and the fact that we're not populating
-        # the complete ParserNode tree, we use the search parent as ancestor
-        return AugeasBlockNode(name=name,
-                               ancestor=assertions.PASS,
-                               filepath=apache_util.get_file_path(path),
-                               metadata=metadata)
-
     def _aug_find_blocks(self, name):
         """Helper function to perform a search to Augeas DOM tree to search
         configuration blocks with a given name"""
@@ -369,23 +414,6 @@ class AugeasBlockNode(AugeasDirectiveNode):
             blk_paths.update([path for path in paths if
                               name.lower() in os.path.basename(path).lower()])
         return blk_paths
-
-    def _aug_get_name(self, path):
-        """
-        Helper function to get name of a configuration block or variable from path.
-        """
-
-        # Remove the ending slash if any
-        if path[-1] == "/":  # pragma: no cover
-            path = path[:-1]
-
-        # Get the block name
-        name = path.split("/")[-1]
-
-        # remove [...], it's not allowed in Apache configuration and is used
-        # for indexing within Augeas
-        name = name.split("[")[0]
-        return name
 
     def _aug_resolve_child_position(self, name, position):
         """

@@ -24,6 +24,10 @@ class DummyParserNode(interfaces.ParserNode):
         """Save"""
         pass
 
+    def find_ancestors(self, name):  # pragma: no cover
+        """ Find ancestors """
+        return []
+
 
 class DummyCommentNode(DummyParserNode):
     """ A dummy class implementing CommentNode interface """
