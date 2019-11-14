@@ -70,7 +70,7 @@ git add CHANGELOG.md
 git diff --cached
 git commit -m "Update changelog for $version release"
 
-for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
+for pkg_dir in $SUBPKGS certbot-compatibility-test
 do
   sed -i 's/\.dev0//' "$pkg_dir/setup.py"
   git add "$pkg_dir/setup.py"
@@ -78,8 +78,8 @@ do
   if [ -f "$pkg_dir/local-oldest-requirements.txt" ]; then
     sed -i "s/-e acme\[dev\]/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
     sed -i "s/-e acme/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e \.\[dev\]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e \./certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    sed -i "s/-e certbot\[dev\]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    sed -i "s/-e certbot/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
     git add "$pkg_dir/local-oldest-requirements.txt"
   fi
 done
@@ -96,7 +96,7 @@ SetVersion() {
       fi
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
-    init_file="certbot/__init__.py"
+    init_file="certbot/certbot/__init__.py"
     if [ $(grep -c '^__version' "$init_file") != 1 ]; then
       echo "Unexpected count of __version variables in $init_file"
       exit 1
@@ -112,7 +112,7 @@ SetVersion "$version"
 # conditionals like the one found in certbot-dns-dnsimple's setup.py file.
 unset CERTBOT_OLDEST
 echo "Preparing sdists and wheels"
-for pkg_dir in . $SUBPKGS_NO_CERTBOT
+for pkg_dir in $SUBPKGS
 do
   cd $pkg_dir
 
@@ -132,8 +132,7 @@ done
 
 
 mkdir "dist.$version"
-mv dist "dist.$version/certbot"
-for pkg_dir in $SUBPKGS_NO_CERTBOT
+for pkg_dir in $SUBPKGS
 do
   mv $pkg_dir/dist "dist.$version/$pkg_dir/"
 done
