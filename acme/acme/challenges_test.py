@@ -75,7 +75,6 @@ class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
 
 
 class DNS01ResponseTest(unittest.TestCase):
-    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
         from acme.challenges import DNS01Response
@@ -147,7 +146,6 @@ class DNS01Test(unittest.TestCase):
 
 
 class HTTP01ResponseTest(unittest.TestCase):
-    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
         from acme.challenges import HTTP01Response
@@ -258,7 +256,6 @@ class HTTP01Test(unittest.TestCase):
 
 
 class TLSALPN01ResponseTest(unittest.TestCase):
-    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
         from acme.challenges import TLSALPN01Response

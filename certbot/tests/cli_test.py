@@ -60,7 +60,7 @@ class FlagDefaultTest(unittest.TestCase):
             self.assertEqual(cli.flag_default('logs_dir'), 'C:\\Certbot\\log')
 
 
-class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
 

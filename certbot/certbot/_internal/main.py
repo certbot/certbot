@@ -532,7 +532,7 @@ def _determine_account(config):
     return acc, acme
 
 
-def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-branches
+def _delete_if_appropriate(config):
     """Does the user want to delete their now-revoked certs? If run in non-interactive mode,
     deleting happens automatically.
 
@@ -1068,7 +1068,7 @@ def revoke(config, unused_plugins):
     return None
 
 
-def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
+def run(config, plugins):
     """Obtain a certificate and install.
 
     :param config: Configuration object

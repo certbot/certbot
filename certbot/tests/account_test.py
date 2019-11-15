@@ -93,7 +93,6 @@ class AccountMemoryStorageTest(unittest.TestCase):
 
 class AccountFileStorageTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.account.AccountFileStorage."""
-    #pylint: disable=too-many-public-methods
 
     def setUp(self):
         super(AccountFileStorageTest, self).setUp()

@@ -10,6 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* certbot-auto has deprecated support for systems using OpenSSL 1.0.1 that are
+  not running on x86-64. This primarily affects RHEL 6 based systems.
 * Certbot's `config_changes` subcommand has been removed
 * `certbot.plugins.common.TLSSNI01` has been removed.
 * Deprecated attributes related to the TLS-SNI-01 challenge in
