@@ -105,11 +105,15 @@ def assertEqualSimple(first, second):
     if not isPass(first) and not isPass(second):
         assert first == second
 
-def assertEqualPathsList(first, second):
+def assertEqualPathsList(first, second):  # pragma: no cover
     """
     Checks that the two lists of file paths match. This assertion allows for wildcard
     paths.
     """
+    if any([isPass(path) for path in first]):
+        return
+    if any([isPass(path) for path in second]):
+        return
     for fpath in first:
         assert any([fnmatch.fnmatch(fpath, spath) for spath in second])
     for spath in second:
