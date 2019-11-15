@@ -258,7 +258,8 @@ class ApacheConfigurator(common.Installer):
 
         # Set up ParserNode root
         pn_meta = {"augeasparser": self.parser,
-                   "augeaspath": self.parser.get_root_augpath()}
+                   "augeaspath": self.parser.get_root_augpath(),
+                   "ac_ast": None}
         self.parser_root = self.get_parsernode_root(pn_meta)
 
         # Check for errors in parsing files with Augeas
