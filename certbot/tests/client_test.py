@@ -464,7 +464,6 @@ class ClientTest(ClientTestCommon):
 
     @mock.patch("certbot._internal.cli.helpful_parser")
     def test_save_certificate(self, mock_parser):
-        # pylint: disable=too-many-locals
         certs = ["cert_512.pem", "cert-san_512.pem"]
         tmp_path = tempfile.mkdtemp()
         filesystem.chmod(tmp_path, 0o755)  # TODO: really??

@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD  # type: ignore
 
 
-class SSLSocket(object):  # pylint: disable=too-few-public-methods
+class SSLSocket(object):
     """SSL wrapper for sockets.
 
     :ivar socket sock: Original wrapped socket.
@@ -74,7 +74,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     class FakeConnection(object):
         """Fake OpenSSL.SSL.Connection."""
 
-        # pylint: disable=too-few-public-methods,missing-docstring
+        # pylint: disable=missing-docstring
 
         def __init__(self, connection):
             self._wrapped = connection

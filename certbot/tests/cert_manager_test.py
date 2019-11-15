@@ -68,7 +68,6 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
     """
     def test_update_live_symlinks(self):
         """Test update_live_symlinks"""
-        # pylint: disable=too-many-statements
         # create files with incorrect symlinks
         from certbot._internal import cert_manager
         archive_paths = {}

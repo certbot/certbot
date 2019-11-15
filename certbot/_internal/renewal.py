@@ -372,7 +372,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     disp.notification("\n".join(out), wrap=False)
 
 
-def handle_renewal_request(config):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def handle_renewal_request(config):
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty

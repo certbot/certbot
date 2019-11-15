@@ -58,7 +58,6 @@ class FileOutputDisplayTest(unittest.TestCase):
     functions look to a user, uncomment the test_visual function.
 
     """
-    # pylint:disable=too-many-public-methods
     def setUp(self):
         super(FileOutputDisplayTest, self).setUp()
         self.mock_stdout = mock.MagicMock()

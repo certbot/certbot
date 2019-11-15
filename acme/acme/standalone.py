@@ -17,7 +17,7 @@ from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-m
 logger = logging.getLogger(__name__)
 
 # six.moves.* | pylint: disable=no-member,attribute-defined-outside-init
-# pylint: disable=too-few-public-methods,no-init
+# pylint: disable=no-init
 
 
 class TLSServer(socketserver.TCPServer):

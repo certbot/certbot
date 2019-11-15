@@ -356,7 +356,6 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         util_mock.yesno.return_value = False
         self._test_delete_opt_out_common(mock_get_utility)
 
-    # pylint: disable=too-many-arguments
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.delete')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
@@ -376,7 +375,6 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         self._call(config)
         mock_delete.assert_not_called()
 
-    # pylint: disable=too-many-arguments
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot._internal.storage.full_archive_path')
@@ -395,7 +393,6 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         self._call(config)
         self.assertEqual(mock_delete.call_count, 1)
 
-    # pylint: disable=too-many-arguments
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot._internal.storage.full_archive_path')
@@ -416,7 +413,6 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         self._call(config)
         self.assertEqual(mock_delete.call_count, 1)
 
-    # pylint: disable=too-many-arguments
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot._internal.storage.full_archive_path')
@@ -507,7 +503,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.assertEqual('other email', self.config.email)
 
 
-class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-methods
+class MainTest(test_util.ConfigTestCase):
     """Tests for different commands."""
 
     def setUp(self):
@@ -970,7 +966,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                              args=None, should_renew=True, error_expected=False,
                              quiet_mode=False, expiry_date=datetime.datetime.now(),
                              reuse_key=False):
-        # pylint: disable=too-many-locals,too-many-arguments,too-many-branches
         cert_path = test_util.vector_path('cert_512.pem')
         chain_path = os.path.normpath(os.path.join(self.config.config_dir,
                                                    'live/foo.bar/fullchain.pem'))

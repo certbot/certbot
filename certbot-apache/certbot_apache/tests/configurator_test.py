@@ -1,4 +1,4 @@
-# pylint: disable=too-many-public-methods,too-many-lines
+# pylint: disable=too-many-lines
 """Test for certbot_apache.configurator."""
 import copy
 import shutil

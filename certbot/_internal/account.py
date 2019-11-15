@@ -25,7 +25,7 @@ from certbot.compat import os
 logger = logging.getLogger(__name__)
 
 
-class Account(object):  # pylint: disable=too-few-public-methods
+class Account(object):
     """ACME protocol registration.
 
     :ivar .RegistrationResource regr: Registration Resource

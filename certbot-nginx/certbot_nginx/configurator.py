@@ -44,7 +44,6 @@ logger = logging.getLogger(__name__)
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class NginxConfigurator(common.Installer):
-    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Nginx configurator.
 
     .. todo:: Add proper support for comments in the config. Currently,

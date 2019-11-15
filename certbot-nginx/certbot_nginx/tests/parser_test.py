@@ -15,7 +15,7 @@ from certbot_nginx import parser
 from certbot_nginx.tests import util
 
 
-class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
+class NginxParserTest(util.NginxTest):
     """Nginx Parser Test."""
 
     def tearDown(self):

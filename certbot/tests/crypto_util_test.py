@@ -164,7 +164,7 @@ class ImportCSRFileTest(unittest.TestCase):
                           test_util.load_vector('cert_512.pem'))
 
 
-class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
+class MakeKeyTest(unittest.TestCase):
     """Tests for certbot.crypto_util.make_key."""
 
     def test_it(self):  # pylint: disable=no-self-use

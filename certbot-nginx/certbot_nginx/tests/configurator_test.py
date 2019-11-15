@@ -1,4 +1,3 @@
-# pylint: disable=too-many-public-methods
 """Test for certbot_nginx.configurator."""
 import unittest
 
