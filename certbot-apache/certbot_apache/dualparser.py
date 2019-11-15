@@ -1,6 +1,7 @@
 """ Dual ParserNode implementation """
 from certbot_apache import assertions
 from certbot_apache import augeasparser
+from certbot_apache import apacheparser
 
 
 class DualNodeBase(object):
@@ -57,7 +58,7 @@ class DualCommentNode(DualNodeBase):
             self.secondary = secondary
         else:
             self.primary = augeasparser.AugeasCommentNode(**kwargs)
-            self.secondary = augeasparser.AugeasCommentNode(**kwargs)
+            self.secondary = apacheparser.ApacheCommentNode(**kwargs)
 
         assertions.assertEqual(self.primary, self.secondary)
 
@@ -91,7 +92,7 @@ class DualDirectiveNode(DualNodeBase):
             self.secondary = secondary
         else:
             self.primary = augeasparser.AugeasDirectiveNode(**kwargs)
-            self.secondary = augeasparser.AugeasDirectiveNode(**kwargs)
+            self.secondary = apacheparser.ApacheDirectiveNode(**kwargs)
 
         assertions.assertEqual(self.primary, self.secondary)
 
@@ -131,7 +132,7 @@ class DualBlockNode(DualNodeBase):
             self.secondary = secondary
         else:
             self.primary = augeasparser.AugeasBlockNode(**kwargs)
-            self.secondary = augeasparser.AugeasBlockNode(**kwargs)
+            self.secondary = apacheparser.ApacheBlockNode(**kwargs)
 
         assertions.assertEqual(self.primary, self.secondary)
 
