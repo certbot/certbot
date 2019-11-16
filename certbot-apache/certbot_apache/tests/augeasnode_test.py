@@ -74,7 +74,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
 
     def test_find_directive_found(self):
         directives = self.config.parser_root.find_directives("Listen")
-        self.assertEqual(len(directives), 3)
+        self.assertEqual(len(directives), 1)
         self.assertTrue(directives[0].filepath.endswith("/apache2/ports.conf"))
         self.assertEqual(directives[0].parameters, (u'80',))
 
@@ -116,7 +116,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
 
     def test_set_parameters_atinit(self):
         from certbot_apache.augeasparser import AugeasDirectiveNode
-        servernames = self.config.parser_root.find_directives("servername", exclude=False)
+        servernames = self.config.parser_root.find_directives("servername")
         setparam = "certbot_apache.augeasparser.AugeasDirectiveNode.set_parameters"
         with mock.patch(setparam) as mock_set:
             AugeasDirectiveNode(
