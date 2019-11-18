@@ -243,14 +243,24 @@ class AugeasBlockNode(AugeasDirectiveNode):
                                       metadata=new_metadata)
         return new_dir
 
-    def add_child_comment(self, comment="", position=None):  # pylint: disable=unused-argument
+    def add_child_comment(self, comment="", position=None):
         """Adds a new CommentNode to the sequence of children"""
-        new_metadata = {"augeasparser": self.parser, "augeaspath": assertions.PASS}
-        new_comment = AugeasCommentNode(comment=assertions.PASS,
-                                        ancestor=self,
-                                        filepath=assertions.PASS,
+
+        insertpath, realpath, before = self._aug_resolve_child_position(
+            "#comment",
+            position
+        )
+        new_metadata = {"augeasparser": self.parser, "augeaspath": realpath}
+
+        # Create the new comment
+        self.parser.aug.insert(insertpath, "#comment", before)
+        # Set the comment content
+        self.parser.aug.set(realpath, comment)
+
+        new_comment = AugeasCommentNode(comment=comment,
+                                        ancestor=assertions.PASS,
+                                        filepath=apache_util.get_file_path(realpath),
                                         metadata=new_metadata)
-        self.children += (new_comment,)
         return new_comment
 
     def find_blocks(self, name, exclude=True): # pylint: disable=unused-argument
