@@ -134,8 +134,6 @@ class AugeasParserNode(interfaces.ParserNode):
         name = self._aug_get_name(path)
         metadata = {"augeasparser": self.parser, "augeaspath": path}
 
-        # Because of the dynamic nature, and the fact that we're not populating
-        # the complete ParserNode tree, we use the search parent as ancestor
         return AugeasBlockNode(name=name,
                                ancestor=assertions.PASS,
                                filepath=apache_util.get_file_path(path),
