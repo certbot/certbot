@@ -338,6 +338,9 @@ class Client(object):
 
         key_size = self.config.rsa_key_size
 
+        # key-type defaults to a list, but we are only handling 1 currently
+        if isinstance(self.config.key_type, list):
+            self.config.key_type = self.config.key_type[0]
         if self.config.ecdsa_key_size and self.config.key_type.lower() == 'ecdsa':
             key_size = self.config.ecdsa_key_size
         elif self.config.rsa_key_size and self.config.key_type.lower() == 'rsa':

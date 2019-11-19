@@ -421,14 +421,38 @@ def test_reuse_key(context):
 
 
 def test_ecdsa(context):
-    """Test certificate issuance with ECDSA key."""
+    """Test certificate issuance methods utilizing ECDSA."""
+    """Test failures for bad `key-type` flags"""
+    with pytest.raises(subprocess.CalledProcessError):
+        context.certbot(['--key-type="failwhale"'])
+
+    """Test issuance for ECDSA CSR based request (legacy supported mode)."""
     key_path = join(context.workspace, 'privkey-p384.pem')
     csr_path = join(context.workspace, 'csr-p384.der')
     cert_path = join(context.workspace, 'cert-p384.pem')
     chain_path = join(context.workspace, 'chain-p384.pem')
+    misc.generate_csr(
+        [context.get_domain('ecdsa')],
+        key_path, csr_path,
+        key_type=misc.ECDSA_KEY_TYPE
+    )
+    context.certbot([
+        'auth', '--csr', csr_path, '--cert-path', cert_path,
+        '--chain-path', chain_path]
+    )
 
-    misc.generate_csr([context.get_domain('ecdsa')], key_path, csr_path, key_type=misc.ECDSA_KEY_TYPE)
-    context.certbot(['auth', '--csr', csr_path, '--cert-path', cert_path, '--chain-path', chain_path])
+    certificate = misc.read_certificate(cert_path)
+    assert 'ASN1 OID: secp384r1' in certificate
+
+    """Test proper ECDSA generation (non-CSR)"""
+    # Should yield an ECDSA type key
+    key_path = join(context.workspace, 'privkey-p384.pem')
+    cert_path = join(context.workspace, 'cert-p384.pem')
+    chain_path = join(context.workspace, 'chain-p384.pem')
+    context.certbot([
+        'certonly', '--cert-name', 'newname', '-d', context.get_domain('newname'),
+        '--key-type=ecdsa'
+    ])
 
     certificate = misc.read_certificate(cert_path)
     assert 'ASN1 OID: secp384r1' in certificate

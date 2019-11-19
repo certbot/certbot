@@ -645,7 +645,6 @@ class HelpfulArgumentParser(object):
         possible_deprecation_warning(parsed_args)
 
         if isinstance(parsed_args.key_type, list) and len(parsed_args.key_type) > 1:
-            print("Parser {} Type: {}".format(parsed_args.key_type, type(parsed_args.key_type)))
             raise errors.Error(
                 "Only *one* --key-type type may be provided at this time.")
 
@@ -1148,7 +1147,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--ecdsa-key-size", type=int, metavar="N",
         default=flag_default("ecdsa_key_size"), help=config_help("ecdsa_key_size"))
     helpful.add(
-        "security", "--key-type", type=str, choices=['rsa', 'ecdsa'], nargs="+",
+        "security", "--key-type", choices=['rsa', 'ecdsa'], nargs="+",
         default=flag_default("key_type"), help=config_help("key_type"))
     helpful.add(
         "security", "--must-staple", action="store_true",
