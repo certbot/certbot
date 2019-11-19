@@ -69,8 +69,13 @@ process {
     #           throw "Downloaded installer has not been signed by Certbot development team."
     #       }
 
+            if (Test-Path $installDir\uninstall.exe) {
+                # Uninstall old Certbot first
+                "Running the uninstaller for old version (install dir: $installDir) ..."
+                Start-Process -FilePath $installDir\uninstall.exe -ArgumentList "/S _?=$installDir"
+            }
             # Install new version of Certbot
-            "Running the installer (installation directory: $installDir) ..."
+            "Running the installer for new version (install dir: $installDir) ..."
             Start-Process -FilePath $installerPath -ArgumentList "/S /D=$installDir"
 
             "Certbot $latestVersion is installed."
