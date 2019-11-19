@@ -1,6 +1,10 @@
 """Tests for letsencrypt-auto"""
 
-from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+# PY2,PY3
+try:
+    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+except Exception as e:
+    from http.server import HTTPServer, BaseHTTPRequestHandler
 from contextlib import contextmanager
 from functools import partial
 from json import dumps
