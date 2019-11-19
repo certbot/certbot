@@ -1,4 +1,3 @@
-# pylint: disable=too-many-public-methods
 """Tests for certbot_apache.parser."""
 import shutil
 import unittest

@@ -71,7 +71,6 @@ logger = logging.getLogger(__name__)
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class ApacheConfigurator(common.Installer):
-    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Apache configurator.
 
     :ivar config: Configuration.
@@ -1116,7 +1115,7 @@ class ApacheConfigurator(common.Installer):
             if "ssl_module" not in self.parser.modules:
                 self.enable_mod("ssl", temp=temp)
 
-    def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
+    def make_vhost_ssl(self, nonssl_vhost):
         """Makes an ssl_vhost version of a nonssl_vhost.
 
         Duplicates vhost and adds default ssl options
@@ -1612,9 +1611,9 @@ class ApacheConfigurator(common.Installer):
 
         :param str domain: domain to enhance
         :param str enhancement: enhancement type defined in
-            :const:`~certbot.constants.ENHANCEMENTS`
+            :const:`~certbot.plugins.enhancements.ENHANCEMENTS`
         :param options: options for the enhancement
-            See :const:`~certbot.constants.ENHANCEMENTS`
+            See :const:`~certbot.plugins.enhancements.ENHANCEMENTS`
             documentation for appropriate parameter.
 
         :raises .errors.PluginError: If Enhancement is not supported, or if

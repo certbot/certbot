@@ -15,16 +15,16 @@ import zope.component
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
-from certbot import cli
+from certbot._internal import cli
 from certbot import crypto_util
 from certbot import errors
-from certbot import hooks
+from certbot._internal import hooks
 from certbot import interfaces
 from certbot._internal import storage
 from certbot._internal import updater
 from certbot import util
 from certbot.compat import os
-from certbot.plugins import disco as plugins_disco
+from certbot._internal.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 
@@ -372,7 +372,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     disp.notification("\n".join(out), wrap=False)
 
 
-def handle_renewal_request(config):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def handle_renewal_request(config):
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty

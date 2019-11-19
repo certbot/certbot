@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives import serialization
 from acme import fields as acme_fields
 from acme import messages
 
-from certbot import constants
+from certbot._internal import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -25,7 +25,7 @@ from certbot.compat import os
 logger = logging.getLogger(__name__)
 
 
-class Account(object):  # pylint: disable=too-few-public-methods
+class Account(object):
     """ACME protocol registration.
 
     :ivar .RegistrationResource regr: Registration Resource

@@ -1,4 +1,3 @@
-# pylint: disable=too-many-public-methods
 """Test for certbot_nginx.configurator."""
 import unittest
 
@@ -27,7 +26,7 @@ class NginxConfiguratorTest(util.NginxTest):
     def setUp(self):
         super(NginxConfiguratorTest, self).setUp()
 
-        self.config = util.get_nginx_configurator(
+        self.config = self.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
@@ -935,7 +934,7 @@ class InstallSslOptionsConfTest(util.NginxTest):
     def setUp(self):
         super(InstallSslOptionsConfTest, self).setUp()
 
-        self.config = util.get_nginx_configurator(
+        self.config = self.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
     def _call(self):

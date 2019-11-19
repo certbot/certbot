@@ -462,9 +462,8 @@ class ClientTest(ClientTestCommon):
         names = [call[0][0] for call in mock_storage.call_args_list]
         self.assertEqual(names, ["example_cert", "example.com", "example.com"])
 
-    @mock.patch("certbot.cli.helpful_parser")
+    @mock.patch("certbot._internal.cli.helpful_parser")
     def test_save_certificate(self, mock_parser):
-        # pylint: disable=too-many-locals
         certs = ["cert_512.pem", "cert-san_512.pem"]
         tmp_path = tempfile.mkdtemp()
         filesystem.chmod(tmp_path, 0o755)  # TODO: really??

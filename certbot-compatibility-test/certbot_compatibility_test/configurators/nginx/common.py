@@ -7,7 +7,7 @@ import zope.interface
 
 from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 
-from certbot import configuration
+from certbot._internal import configuration
 from certbot_nginx import configurator
 from certbot_nginx import constants
 from certbot_compatibility_test import errors
@@ -18,7 +18,6 @@ from certbot_compatibility_test.configurators import common as configurators_com
 
 @zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(configurators_common.Proxy):
-    # pylint: disable=too-many-instance-attributes
     """A common base for Nginx test configurators"""
 
     def load_config(self):

@@ -93,7 +93,6 @@ class AccountMemoryStorageTest(unittest.TestCase):
 
 class AccountFileStorageTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.account.AccountFileStorage."""
-    #pylint: disable=too-many-public-methods
 
     def setUp(self):
         super(AccountFileStorageTest, self).setUp()
@@ -278,7 +277,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         # ensure v2 isn't already linked to it
-        with mock.patch('certbot.constants.LE_REUSE_SERVERS', {}):
+        with mock.patch('certbot._internal.constants.LE_REUSE_SERVERS', {}):
             self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
             self.assertRaises(errors.AccountNotFound, self.storage.load, self.acc.id)
 

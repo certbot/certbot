@@ -43,7 +43,7 @@ def get_unprepared_installer(config, plugins):
     Get an unprepared interfaces.IInstaller object.
 
     :param certbot.interfaces.IConfig config: Configuration
-    :param certbot.plugins.disco.PluginsRegistry plugins:
+    :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
 
     :returns: Unprepared installer plugin or None
@@ -73,7 +73,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
 
     :param certbot.interfaces.IConfig: Configuration
     :param str default: Plugin name supplied by user or ``None``.
-    :param certbot.plugins.disco.PluginsRegistry plugins:
+    :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
     :param str question: Question to be presented to the user in case
         multiple candidates are found.
@@ -175,7 +175,6 @@ def record_chosen_plugins(config, plugins, auth, inst):
 
 
 def choose_configurator_plugins(config, plugins, verb):
-    # pylint: disable=too-many-branches
     """
     Figure out which configurator we're going to use, modifies
     config.authenticator and config.installer strings to reflect that choice if
@@ -197,7 +196,7 @@ def choose_configurator_plugins(config, plugins, verb):
     # Which plugins do we need?
     if verb == "run":
         need_inst = need_auth = True
-        from certbot.cli import cli_command
+        from certbot._internal.cli import cli_command
         if req_auth in noninstaller_plugins and not req_inst:
             msg = ('With the {0} plugin, you probably want to use the "certonly" command, eg:{1}'
                    '{1}    {2} certonly --{0}{1}{1}'
@@ -254,7 +253,7 @@ def set_configurator(previously, now):
     return now
 
 
-def cli_plugin_requests(config):  # pylint: disable=too-many-branches
+def cli_plugin_requests(config):
     """
     Figure out which plugins the user requested with CLI and config options
 
@@ -328,7 +327,7 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
                    "your existing configuration.\nThe error was: {1!r}"
                    .format(requested, plugins[requested].problem))
     elif cfg_type == "installer":
-        from certbot.cli import cli_command
+        from certbot._internal.cli import cli_command
         msg = ('Certbot doesn\'t know how to automatically configure the web '
           'server on this system. However, it can still get a certificate for '
           'you. Please run "{0} certonly" to do so. You\'ll need to '

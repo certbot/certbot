@@ -4,7 +4,7 @@ import mock
 
 from acme import challenges
 
-from certbot import configuration
+from certbot._internal import configuration
 from certbot import errors
 from certbot._internal import storage
 
@@ -12,7 +12,7 @@ import certbot.tests.util as test_util
 
 
 class RenewalTest(test_util.ConfigTestCase):
-    @mock.patch('certbot.cli.set_by_cli')
+    @mock.patch('certbot._internal.cli.set_by_cli')
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         rc_path = test_util.make_lineage(
@@ -31,7 +31,8 @@ class RenewalTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_webroot_params_conservation(self, mock_set_by_cli):
         # For more details about why this test is important, see:
-        # certbot.plugins.webroot_test::WebrootActionTest::test_webroot_map_partial_without_perform
+        # certbot._internal.plugins.webroot_test::
+        #   WebrootActionTest::test_webroot_map_partial_without_perform
         from certbot._internal import renewal
         mock_set_by_cli.return_value = False
 

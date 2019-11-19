@@ -24,7 +24,7 @@ import traceback
 
 from acme import messages
 
-from certbot import constants
+from certbot._internal import constants
 from certbot import errors
 from certbot import util
 from certbot.compat import os
@@ -41,7 +41,7 @@ def pre_arg_parse_setup():
     """Setup logging before command line arguments are parsed.
 
     Terminal logging is setup using
-    `certbot.constants.QUIET_LOGGING_LEVEL` so Certbot is as quiet as
+    `certbot._internal.constants.QUIET_LOGGING_LEVEL` so Certbot is as quiet as
     possible. File logging is setup so that logging messages are
     buffered in memory. If Certbot exits before `post_arg_parse_setup`
     is called, these buffered messages are written to a temporary file.

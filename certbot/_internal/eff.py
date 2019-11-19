@@ -4,7 +4,7 @@ import logging
 import requests
 import zope.component
 
-from certbot import constants
+from certbot._internal import constants
 from certbot import interfaces
 
 

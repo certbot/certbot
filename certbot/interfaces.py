@@ -4,7 +4,6 @@ import six
 import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
-# pylint: disable=too-few-public-methods
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -295,10 +294,10 @@ class IInstaller(IPlugin):
 
         :param str domain: domain for which to provide enhancement
         :param str enhancement: An enhancement as defined in
-            :const:`~certbot.constants.ENHANCEMENTS`
+            :const:`~certbot.plugins.enhancements.ENHANCEMENTS`
         :param options: Flexible options parameter for enhancement.
             Check documentation of
-            :const:`~certbot.constants.ENHANCEMENTS`
+            :const:`~certbot.plugins.enhancements.ENHANCEMENTS`
             for expected options for each enhancement.
 
         :raises .PluginError: If Enhancement is not supported, or if
@@ -310,7 +309,7 @@ class IInstaller(IPlugin):
         """Returns a `collections.Iterable` of supported enhancements.
 
         :returns: supported enhancements which should be a subset of
-            :const:`~certbot.constants.ENHANCEMENTS`
+            :const:`~certbot.plugins.enhancements.ENHANCEMENTS`
         :rtype: :class:`collections.Iterable` of :class:`str`
 
         """
@@ -372,7 +371,6 @@ class IInstaller(IPlugin):
 
 class IDisplay(zope.interface.Interface):
     """Generic display."""
-    # pylint: disable=too-many-arguments
     # see https://github.com/certbot/certbot/issues/3915
 
     def notification(message, pause, wrap=True, force_interactive=False):

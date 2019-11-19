@@ -63,7 +63,6 @@ class RawNginxParser(object):
         return self.parse().asList()
 
 class RawNginxDumper(object):
-    # pylint: disable=too-few-public-methods
     """A class that dumps nginx configuration from the provided tree."""
     def __init__(self, blocks):
         self.blocks = blocks

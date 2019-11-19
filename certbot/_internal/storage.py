@@ -12,8 +12,8 @@ import pytz
 import six
 
 import certbot
-from certbot import cli
-from certbot import constants
+from certbot._internal import cli
+from certbot._internal import constants
 from certbot import crypto_util
 from certbot._internal import error_handler
 from certbot import errors
@@ -21,7 +21,7 @@ from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
 from certbot.plugins import common as plugins_common
-from certbot.plugins import disco as plugins_disco
+from certbot._internal.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 
@@ -377,7 +377,6 @@ def delete_files(config, certname):
 
 
 class RenewableCert(object):
-    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Renewable certificate.
 
     Represents a lineage of certificates that is under the management of
@@ -952,7 +951,6 @@ class RenewableCert(object):
 
     @classmethod
     def new_lineage(cls, lineagename, cert, privkey, chain, cli_config):
-        # pylint: disable=too-many-locals
         """Create a new certificate lineage.
 
         Attempts to create a certificate lineage -- enrolled for

@@ -9,7 +9,7 @@ import unittest
 import configobj
 import mock
 
-from certbot import configuration
+from certbot._internal import configuration
 from certbot import errors
 from certbot.compat import os
 from certbot.compat import filesystem
@@ -68,7 +68,6 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
     """
     def test_update_live_symlinks(self):
         """Test update_live_symlinks"""
-        # pylint: disable=too-many-statements
         # create files with incorrect symlinks
         from certbot._internal import cert_manager
         archive_paths = {}
@@ -202,7 +201,7 @@ class CertificatesTest(BaseCertManagerTest):
         shutil.rmtree(empty_tempdir)
 
     @mock.patch('certbot._internal.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
-    def test_report_human_readable(self, mock_revoked): #pylint: disable=too-many-statements
+    def test_report_human_readable(self, mock_revoked):
         mock_revoked.return_value = None
         from certbot._internal import cert_manager
         import datetime

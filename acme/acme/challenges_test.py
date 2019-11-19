@@ -3,12 +3,10 @@ import unittest
 
 import josepy as jose
 import mock
-import OpenSSL
 import requests
 
 from six.moves.urllib import parse as urllib_parse  # pylint: disable=relative-import
 
-from acme import errors
 from acme import test_util
 
 CERT = test_util.load_comparable_cert('cert.pem')
@@ -77,7 +75,6 @@ class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
 
 
 class DNS01ResponseTest(unittest.TestCase):
-    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
         from acme.challenges import DNS01Response
@@ -149,7 +146,6 @@ class DNS01Test(unittest.TestCase):
 
 
 class HTTP01ResponseTest(unittest.TestCase):
-    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
         from acme.challenges import HTTP01Response
@@ -259,152 +255,7 @@ class HTTP01Test(unittest.TestCase):
             self.msg.update(token=b'..').good_token)
 
 
-class TLSSNI01ResponseTest(unittest.TestCase):
-    # pylint: disable=too-many-instance-attributes
-
-    def setUp(self):
-        from acme.challenges import TLSSNI01
-        self.chall = TLSSNI01(
-            token=jose.b64decode(b'a82d5ff8ef740d12881f6d3c2277ab2e'))
-
-        self.response = self.chall.response(KEY)
-        self.jmsg = {
-            'resource': 'challenge',
-            'type': 'tls-sni-01',
-            'keyAuthorization': self.response.key_authorization,
-        }
-
-        # pylint: disable=invalid-name
-        label1 = b'dc38d9c3fa1a4fdcc3a5501f2d38583f'
-        label2 = b'b7793728f084394f2a1afd459556bb5c'
-        self.z = label1 + label2
-        self.z_domain = label1 + b'.' + label2 + b'.acme.invalid'
-        self.domain = 'foo.com'
-
-    def test_z_and_domain(self):
-        self.assertEqual(self.z, self.response.z)
-        self.assertEqual(self.z_domain, self.response.z_domain)
-
-    def test_to_partial_json(self):
-        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
-                         self.response.to_partial_json())
-
-    def test_from_json(self):
-        from acme.challenges import TLSSNI01Response
-        self.assertEqual(self.response, TLSSNI01Response.from_json(self.jmsg))
-
-    def test_from_json_hashable(self):
-        from acme.challenges import TLSSNI01Response
-        hash(TLSSNI01Response.from_json(self.jmsg))
-
-    @mock.patch('acme.challenges.socket.gethostbyname')
-    @mock.patch('acme.challenges.crypto_util.probe_sni')
-    def test_probe_cert(self, mock_probe_sni, mock_gethostbyname):
-        mock_gethostbyname.return_value = '127.0.0.1'
-        self.response.probe_cert('foo.com')
-        mock_gethostbyname.assert_called_once_with('foo.com')
-        mock_probe_sni.assert_called_once_with(
-            host='127.0.0.1', port=self.response.PORT,
-            name=self.z_domain)
-
-        self.response.probe_cert('foo.com', host='8.8.8.8')
-        mock_probe_sni.assert_called_with(
-            host='8.8.8.8', port=mock.ANY, name=mock.ANY)
-
-        self.response.probe_cert('foo.com', port=1234)
-        mock_probe_sni.assert_called_with(
-            host=mock.ANY, port=1234, name=mock.ANY)
-
-        self.response.probe_cert('foo.com', bar='baz')
-        mock_probe_sni.assert_called_with(
-            host=mock.ANY, port=mock.ANY, name=mock.ANY, bar='baz')
-
-        self.response.probe_cert('foo.com', name=b'xxx')
-        mock_probe_sni.assert_called_with(
-            host=mock.ANY, port=mock.ANY,
-            name=self.z_domain)
-
-    def test_gen_verify_cert(self):
-        key1 = test_util.load_pyopenssl_private_key('rsa512_key.pem')
-        cert, key2 = self.response.gen_cert(key1)
-        self.assertEqual(key1, key2)
-        self.assertTrue(self.response.verify_cert(cert))
-
-    def test_gen_verify_cert_gen_key(self):
-        cert, key = self.response.gen_cert()
-        self.assertTrue(isinstance(key, OpenSSL.crypto.PKey))
-        self.assertTrue(self.response.verify_cert(cert))
-
-    def test_verify_bad_cert(self):
-        self.assertFalse(self.response.verify_cert(
-            test_util.load_cert('cert.pem')))
-
-    def test_simple_verify_bad_key_authorization(self):
-        key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
-        self.response.simple_verify(self.chall, "local", key2.public_key())
-
-    @mock.patch('acme.challenges.TLSSNI01Response.verify_cert', autospec=True)
-    def test_simple_verify(self, mock_verify_cert):
-        mock_verify_cert.return_value = mock.sentinel.verification
-        self.assertEqual(
-            mock.sentinel.verification, self.response.simple_verify(
-                self.chall, self.domain, KEY.public_key(),
-                cert=mock.sentinel.cert))
-        mock_verify_cert.assert_called_once_with(
-            self.response, mock.sentinel.cert)
-
-    @mock.patch('acme.challenges.TLSSNI01Response.probe_cert')
-    def test_simple_verify_false_on_probe_error(self, mock_probe_cert):
-        mock_probe_cert.side_effect = errors.Error
-        self.assertFalse(self.response.simple_verify(
-            self.chall, self.domain, KEY.public_key()))
-
-
-class TLSSNI01Test(unittest.TestCase):
-
-    def setUp(self):
-        self.jmsg = {
-            'type': 'tls-sni-01',
-            'token': 'a82d5ff8ef740d12881f6d3c2277ab2e',
-        }
-        from acme.challenges import TLSSNI01
-        self.msg = TLSSNI01(
-            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
-
-    def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
-
-    def test_from_json(self):
-        from acme.challenges import TLSSNI01
-        self.assertEqual(self.msg, TLSSNI01.from_json(self.jmsg))
-
-    def test_from_json_hashable(self):
-        from acme.challenges import TLSSNI01
-        hash(TLSSNI01.from_json(self.jmsg))
-
-    def test_from_json_invalid_token_length(self):
-        from acme.challenges import TLSSNI01
-        self.jmsg['token'] = jose.encode_b64jose(b'abcd')
-        self.assertRaises(
-            jose.DeserializationError, TLSSNI01.from_json, self.jmsg)
-
-    @mock.patch('acme.challenges.TLSSNI01Response.gen_cert')
-    def test_validation(self, mock_gen_cert):
-        mock_gen_cert.return_value = ('cert', 'key')
-        self.assertEqual(('cert', 'key'), self.msg.validation(
-            KEY, cert_key=mock.sentinel.cert_key))
-        mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
-
-    def test_deprecation_message(self):
-        with mock.patch('acme.warnings.warn') as mock_warn:
-            from acme.challenges import TLSSNI01
-            assert TLSSNI01
-        self.assertEqual(mock_warn.call_count, 1)
-        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
-
-
 class TLSALPN01ResponseTest(unittest.TestCase):
-    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
         from acme.challenges import TLSALPN01Response
