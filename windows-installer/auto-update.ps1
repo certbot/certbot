@@ -1,25 +1,21 @@
 #Requires -RunAsAdministrator
 [CmdletBinding()]
-param(
-    [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-    [string]
-    $InstallDir
-)
+param()
 begin {}
 process {
     Start-Transcript -Path "C:\Certbot\log\auto-update.log"
-    trap {
-        Stop-Transcript
-    }
+    trap { Stop-Transcript }
 
     $ErrorActionPreference = 'Stop'
 
+    $installDir = $PSScriptRoot
     $installerAuthenticodeCertificateThumbprint = "CHANGEME"
 
     # Get current local certbot version
     try {
         $currentVersion = certbot --version
         $currentVersion = $currentVersion -replace '^certbot (\d+\.\d+\.\d+).*$', '$1'
+        $currentVersion = [System.Version]"$currentVersion"
     } catch {
         "An error occured while fetching the current local certbot version:"
         $_.Exception
@@ -31,13 +27,14 @@ process {
     try {
         $result = Invoke-RestMethod -Uri https://api.github.com/repos/certbot/certbot/releases/latest
         $latestVersion = $result.tag_name -replace '^v(\d+\.\d+\.\d+).*$', '$1'
+        $latestVersion = [System.Version]"$latestVersion"
     } catch {
         "Could not get the latest remote certbot version. Error was:"
         $_.Exception
         throw "Aborting auto-upgrade process."
     }
 
-    if ([System.Version]"$currentVersion" -ge [System.Version]"$latestVersion") {
+    if ($currentVersion -ge $latestVersion) {
         "No upgrade is needed, Certbot is already at the latest version ($currentVersion)."
     } else {
         # Search for the Windows installer asset
@@ -73,13 +70,15 @@ process {
     #       }
 
             # Install new version of Certbot
-            "Running the installer ..."
-            Start-Process -FilePath $installerPath -ArgumentList "/S /D=$InstallDir"
+            "Running the installer (installation directory: $installDir) ..."
+            Start-Process -FilePath $installerPath -ArgumentList "/S /D=$installDir"
 
             "Certbot $latestVersion is installed."
         } finally {
             Remove-Item $installerPath -ErrorAction 'Ignore'
         }
     }
+
+    Stop-Transcript
 }
 end {}

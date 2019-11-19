@@ -180,8 +180,11 @@ SectionEnd
 
 Section "Uninstall"
   ; CERTBOT CUSTOM BEGIN
-  ; Execute ps script to remove the certbot renew & auto-update task
+  ; Execute ps script to remove the certbot renew & auto-update task, then delete scripts
   nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\tasks-down.ps1"'
+  Delete "$INSTDIR\tasks-down.ps1"
+  Delete "$INSTDIR\tasks-up.ps1"
+  Delete "$INSTDIR\auto-update.ps1"
   ; CERTBOT CUSTOM END
 
   SetRegView [[ib.py_bitness]]
