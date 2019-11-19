@@ -101,7 +101,7 @@ class AugeasParserNode(interfaces.ParserNode):
 
     def find_ancestors(self, name):
         """
-        Searches ancestor BlockNodes with a given name.
+        Searches for ancestor BlockNodes with a given name.
 
         :param str name: Name of the BlockNode parent to search for
 
