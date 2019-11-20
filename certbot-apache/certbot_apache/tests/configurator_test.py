@@ -807,7 +807,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(mock_restart.call_count, 1)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache.apache_util._get_runtime_cfg")
     def test_cleanup(self, mock_cfg, mock_restart):
         mock_cfg.return_value = ""
         _, achalls = self.get_key_and_achalls()
@@ -823,7 +823,7 @@ class MultipleVhostsTest(util.ApacheTest):
                 self.assertFalse(mock_restart.called)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache.apache_util._get_runtime_cfg")
     def test_cleanup_no_errors(self, mock_cfg, mock_restart):
         mock_cfg.return_value = ""
         _, achalls = self.get_key_and_achalls()

@@ -107,7 +107,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
     def test_get_parser(self):
         self.assertIsInstance(self.config.parser, override_centos.CentOSParser)
 
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache.apache_util._get_runtime_cfg")
     def test_opportunistic_httpd_runtime_parsing(self, mock_get):
         define_val = (
             'Define: TEST1\n'
@@ -156,7 +156,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
         self.assertEqual(found, 2)
 
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache.apache_util._get_runtime_cfg")
     def test_get_sysconfig_vars(self, mock_cfg):
         """Make sure we read the sysconfig OPTIONS variable correctly"""
         # Return nothing for the process calls

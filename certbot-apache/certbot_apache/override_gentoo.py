@@ -70,6 +70,6 @@ class GentooParser(parser.ApacheParser):
     def update_modules(self):
         """Get loaded modules from httpd process, and add them to DOM"""
         mod_cmd = [self.configurator.option("ctl"), "modules"]
-        matches = self.parse_from_subprocess(mod_cmd, r"(.*)_module")
+        matches = apache_util.parse_from_subprocess(mod_cmd, r"(.*)_module")
         for mod in matches:
             self.add_mod(mod.strip())
