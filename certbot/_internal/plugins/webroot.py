@@ -62,9 +62,8 @@ to serve all files under specified web root ({0})."""
                  "file, it needs to be on a single line, like: webroot-map = "
                  '{"example.com":"/var/www"}.')
 
-    @staticmethod
-    def get_chall_pref():  # pragma: no cover
-        # pylint: disable=missing-docstring
+    def get_chall_pref(self, domain):  # pragma: no cover
+        # pylint: disable=missing-docstring,no-self-use,unused-argument
         return [challenges.HTTP01]
 
     def __init__(self, *args, **kwargs):
