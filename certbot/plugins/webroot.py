@@ -71,7 +71,7 @@ to serve all files under specified web root ({0})."""
         super(Authenticator, self).__init__(*args, **kwargs)
         self.full_roots = {}  # type: Dict[str, str]
         self.performed = collections.defaultdict(set) \
-        # type: DefaultDict[str, Set[achallenges.KeyAuthorizationAnnotatedChallenge]]
+            # type: DefaultDict[str, Set[achallenges.KeyAuthorizationAnnotatedChallenge]]
         # stack of dirs successfully created by this authenticator
         self._created_dirs = []  # type: List[str]
 
