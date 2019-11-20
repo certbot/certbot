@@ -343,6 +343,9 @@ class Client(object):
             self.config.key_type = self.config.key_type[0]
         if self.config.ecdsa_key_size and self.config.key_type.lower() == 'ecdsa':
             key_size = self.config.ecdsa_key_size
+            self.config.auth_chain_path = "./chain-ecdsa.pem"
+            self.config.auth_cert_path = "./cert-ecdsa.pem"
+            self.config.key_path = "./key-ecdsa.pem"
         elif self.config.rsa_key_size and self.config.key_type.lower() == 'rsa':
             key_size = self.config.rsa_key_size
 
