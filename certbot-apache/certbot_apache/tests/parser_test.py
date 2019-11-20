@@ -305,7 +305,7 @@ class BasicParserTest(util.ParserTest):
             errors.PluginError, self.parser.update_runtime_variables)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.option")
-    @mock.patch("certbot_apache.parser.subprocess.Popen")
+    @mock.patch("certbot_apache.apache_util.subprocess.Popen")
     def test_update_runtime_vars_bad_ctl(self, mock_popen, mock_opt):
         mock_popen.side_effect = OSError
         mock_opt.return_value = "nonexistent"
@@ -313,7 +313,7 @@ class BasicParserTest(util.ParserTest):
             errors.MisconfigurationError,
             self.parser.update_runtime_variables)
 
-    @mock.patch("certbot_apache.parser.subprocess.Popen")
+    @mock.patch("certbot_apache.apache_util.subprocess.Popen")
     def test_update_runtime_vars_bad_exit(self, mock_popen):
         mock_popen().communicate.return_value = ("", "")
         mock_popen.returncode = -1
