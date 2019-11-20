@@ -26,7 +26,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed issue where webroot plugin would incorrectly raise `Read-only file system` 
+  error when creating challenge directories (issue #7165).
 
 More details about these changes can be found on our GitHub repo.
 
