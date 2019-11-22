@@ -12,6 +12,9 @@ from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
 API_ERROR = CloudFlare.exceptions.CloudFlareAPIError(1000, '', '')
+
+API_TOKEN = 'an-api-token' # or None for Global API Key testing
+
 API_KEY = 'an-api-key'
 EMAIL = 'example@example.com'
 
@@ -24,7 +27,10 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         super(AuthenticatorTest, self).setUp()
 
         path = os.path.join(self.tempdir, 'file.ini')
-        dns_test_common.write({"cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY}, path)
+        if API_TOKEN:
+            dns_test_common.write({"cloudflare_api_token": API_TOKEN}, path)
+        else:
+            dns_test_common.write({"cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY}, path)
 
         self.config = mock.MagicMock(cloudflare_credentials=path,
                                      cloudflare_propagation_seconds=0)  # don't wait during tests
