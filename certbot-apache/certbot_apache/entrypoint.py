@@ -12,7 +12,7 @@ from certbot_apache._internal import override_darwin
 from certbot_apache import override_debian
 from certbot_apache._internal import override_centos
 from certbot_apache._internal import override_gentoo
-from certbot_apache import override_suse
+from certbot_apache._internal import override_suse
 
 OVERRIDE_CLASSES = {
     "arch": override_arch.ArchConfigurator,
