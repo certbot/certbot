@@ -53,7 +53,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.assertEqual(expected, self.mock_client.mock_calls)
 
     def test_api_token(self):
-        dns_test_common.write({"cloudflare_api_token": API_TOKEN}, self.config.cloudflare_credentials)
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN},
+                              self.config.cloudflare_credentials)
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
@@ -77,17 +78,20 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
                           [self.achall])
 
     def test_email_or_key_with_token(self):
-        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_email": EMAIL}, self.config.cloudflare_credentials)
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_email": EMAIL},
+                              self.config.cloudflare_credentials)
         self.assertRaises(errors.PluginError,
                           self.auth.perform,
                           [self.achall])
 
-        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_api_key": API_KEY}, self.config.cloudflare_credentials)
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_api_key": API_KEY},
+                              self.config.cloudflare_credentials)
         self.assertRaises(errors.PluginError,
                           self.auth.perform,
                           [self.achall])
 
-        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY}, self.config.cloudflare_credentials)
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_email": EMAIL,
+                               "cloudflare_api_key": API_KEY}, self.config.cloudflare_credentials)
         self.assertRaises(errors.PluginError,
                           self.auth.perform,
                           [self.achall])
