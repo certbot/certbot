@@ -11,7 +11,7 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import acme_util
 
-from certbot_apache.parser import get_aug_path
+from certbot_apache._internal.parser import get_aug_path
 from certbot_apache.tests import util
 
 

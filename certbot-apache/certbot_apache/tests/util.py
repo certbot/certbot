@@ -72,10 +72,10 @@ class ParserTest(ApacheTest):
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
                                                                False))
 
-        from certbot_apache.parser import ApacheParser
+        from certbot_apache._internal.parser import ApacheParser
         self.aug = augeas.Augeas(
             flags=augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD)
-        with mock.patch("certbot_apache.parser.ApacheParser."
+        with mock.patch("certbot_apache._internal.parser.ApacheParser."
                         "update_runtime_variables"):
             self.parser = ApacheParser(
                 self.config_path, self.vhost_path, configurator=self.config)
@@ -109,7 +109,7 @@ def get_apache_configurator(
         with mock.patch("certbot_apache.configurator.util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
-            with mock.patch("certbot_apache.parser.ApacheParser."
+            with mock.patch("certbot_apache._internal.parser.ApacheParser."
                             "update_runtime_variables"):
                 try:
                     config_class = entrypoint.OVERRIDE_CLASSES[os_info]

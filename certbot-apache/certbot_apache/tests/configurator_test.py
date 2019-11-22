@@ -23,7 +23,7 @@ from certbot.tests import util as certbot_util
 from certbot_apache._internal import apache_util
 from certbot_apache import constants
 from certbot_apache import obj
-from certbot_apache import parser
+from certbot_apache._internal import parser
 from certbot_apache.tests import util
 
 
@@ -59,7 +59,7 @@ class MultipleVhostsTest(util.ApacheTest):
             self.assertRaises(errors.NoInstallationError, self.config.prepare)
             self.assertEqual(mock_surgery.call_count, 1)
 
-    @mock.patch("certbot_apache.parser.ApacheParser")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser")
     @mock.patch("certbot_apache.configurator.util.exe_exists")
     def test_prepare_version(self, mock_exe_exists, _):
         mock_exe_exists.return_value = True
@@ -76,7 +76,7 @@ class MultipleVhostsTest(util.ApacheTest):
         os.remove(os.path.join(server_root, ".certbot.lock"))
         certbot_util.lock_and_call(self._test_prepare_locked, server_root)
 
-    @mock.patch("certbot_apache.parser.ApacheParser")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser")
     @mock.patch("certbot_apache.configurator.util.exe_exists")
     def _test_prepare_locked(self, unused_parser, unused_exe_exists):
         try:
@@ -253,7 +253,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue(chosen_vhost.ssl)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._find_best_vhost")
-    @mock.patch("certbot_apache.parser.ApacheParser.add_dir")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.add_dir")
     def test_choose_vhost_and_servername_addition(self, mock_add, mock_find):
         ret_vh = self.vh_truth[8]
         ret_vh.enabled = False
@@ -802,7 +802,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(mock_restart.call_count, 1)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser._get_runtime_cfg")
     def test_cleanup(self, mock_cfg, mock_restart):
         mock_cfg.return_value = ""
         _, achalls = self.get_key_and_achalls()
@@ -818,7 +818,7 @@ class MultipleVhostsTest(util.ApacheTest):
                 self.assertFalse(mock_restart.called)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser._get_runtime_cfg")
     def test_cleanup_no_errors(self, mock_cfg, mock_restart):
         mock_cfg.return_value = ""
         _, achalls = self.get_key_and_achalls()
@@ -1334,7 +1334,7 @@ class MultipleVhostsTest(util.ApacheTest):
         tmp_path = filesystem.realpath(tempfile.mkdtemp("vhostroot"))
         filesystem.chmod(tmp_path, 0o755)
         mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
-        mock_a = "certbot_apache.parser.ApacheParser.add_include"
+        mock_a = "certbot_apache._internal.parser.ApacheParser.add_include"
 
         with mock.patch(mock_p) as mock_path:
             mock_path.return_value = os.path.join(tmp_path, "whatever.conf")
@@ -1347,7 +1347,7 @@ class MultipleVhostsTest(util.ApacheTest):
                 self.assertTrue(mock_add.called)
         shutil.rmtree(tmp_path)
 
-    @mock.patch("certbot_apache.parser.ApacheParser.parsed_in_original")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.parsed_in_original")
     def test_choose_vhost_and_servername_addition_parsed(self, mock_parsed):
         ret_vh = self.vh_truth[8]
         ret_vh.enabled = True

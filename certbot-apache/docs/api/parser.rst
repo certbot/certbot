@@ -1,5 +1,5 @@
-:mod:`certbot_apache.parser`
+:mod:`certbot_apache._internal.parser`
 --------------------------------
 
-.. automodule:: certbot_apache.parser
+.. automodule:: certbot_apache._internal.parser
    :members:

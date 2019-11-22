@@ -34,7 +34,7 @@ from certbot_apache import constants
 from certbot_apache._internal import display_ops
 from certbot_apache import http_01
 from certbot_apache import obj
-from certbot_apache import parser
+from certbot_apache._internal import parser
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class ApacheConfigurator(common.Installer):
     :type config: :class:`~certbot.interfaces.IConfig`
 
     :ivar parser: Handles low level parsing
-    :type parser: :class:`~certbot_apache.parser`
+    :type parser: :class:`~certbot_apache._internal.parser`
 
     :ivar tup version: version of Apache
     :ivar list vhosts: All vhosts found in the configuration
