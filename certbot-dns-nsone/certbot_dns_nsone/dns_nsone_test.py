@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_nsone.dns_nsone."""
+"""Tests for certbot_dns_nsone._internal.dns_nsone."""
 
 import unittest
 
@@ -20,7 +20,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
     def setUp(self):
         super(AuthenticatorTest, self).setUp()
 
-        from certbot_dns_nsone.dns_nsone import Authenticator
+        from certbot_dns_nsone._internal.dns_nsone import Authenticator
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"nsone_api_key": API_KEY}, path)
@@ -40,7 +40,7 @@ class NS1LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexico
     LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: {0}.'.format(DOMAIN))
 
     def setUp(self):
-        from certbot_dns_nsone.dns_nsone import _NS1LexiconClient
+        from certbot_dns_nsone._internal.dns_nsone import _NS1LexiconClient
 
         self.client = _NS1LexiconClient(API_KEY, 0)
 
