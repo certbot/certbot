@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_gehirn.dns_gehirn."""
+"""Tests for certbot_dns_gehirn._internal.dns_gehirn."""
 
 import unittest
 
@@ -20,7 +20,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
     def setUp(self):
         super(AuthenticatorTest, self).setUp()
 
-        from certbot_dns_gehirn.dns_gehirn import Authenticator
+        from certbot_dns_gehirn._internal.dns_gehirn import Authenticator
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write(
@@ -43,7 +43,7 @@ class GehirnLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLex
     LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: {0}.'.format(DOMAIN))
 
     def setUp(self):
-        from certbot_dns_gehirn.dns_gehirn import _GehirnLexiconClient
+        from certbot_dns_gehirn._internal.dns_gehirn import _GehirnLexiconClient
 
         self.client = _GehirnLexiconClient(API_TOKEN, API_SECRET, 0)
 

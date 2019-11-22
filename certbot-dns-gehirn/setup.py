@@ -59,7 +59,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-gehirn = certbot_dns_gehirn.dns_gehirn:Authenticator',
+            'dns-gehirn = certbot_dns_gehirn._internal.dns_gehirn:Authenticator',
         ],
     },
     test_suite='certbot_dns_gehirn',
