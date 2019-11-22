@@ -23,7 +23,8 @@ class VirtualHostTest(unittest.TestCase):
             "fp", "vhp", set([self.addr2]), False, False, "localhost")
 
     def test_repr(self):
-        self.assertEqual(repr(self.addr2), "certbot_apache._internal.obj.Addr(('127.0.0.1', '443'))")
+        self.assertEqual(repr(self.addr2),
+            "certbot_apache._internal.obj.Addr(('127.0.0.1', '443'))")
 
     def test_eq(self):
         self.assertTrue(self.vhost1b == self.vhost1)

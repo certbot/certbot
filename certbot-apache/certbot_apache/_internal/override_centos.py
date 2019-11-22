@@ -7,6 +7,7 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import os
 from certbot.errors import MisconfigurationError
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module

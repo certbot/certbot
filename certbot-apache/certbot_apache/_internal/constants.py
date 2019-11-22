@@ -1,6 +1,7 @@
 """Apache plugin constants."""
-import os
 import pkg_resources
+
+from certbot.compat import os
 
 
 MOD_SSL_CONF_DEST = "options-ssl-apache.conf"

@@ -5,6 +5,7 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import os
 
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator

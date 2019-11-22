@@ -52,6 +52,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
                                                     config_root=config_root,
                                                     vhost_root=vhost_root)
 
+        # pylint: disable=line-too-long
         with mock.patch("certbot_apache._internal.override_gentoo.GentooParser.update_runtime_variables"):
             self.config = util.get_apache_configurator(
                 self.config_path, self.vhost_path, self.config_dir, self.work_dir,
