@@ -2,19 +2,151 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.37.0 - master
+## 1.0.0 - master
 
 ### Added
 
-* acme: Authz deactivation added to `acme` module.
+*
 
 ### Changed
 
-*
+* certbot-auto has deprecated support for systems using OpenSSL 1.0.1 that are
+  not running on x86-64. This primarily affects RHEL 6 based systems.
+* Certbot's `config_changes` subcommand has been removed
+* `certbot.plugins.common.TLSSNI01` has been removed.
+* Deprecated attributes related to the TLS-SNI-01 challenge in
+  `acme.challenges` and `acme.standalone`
+  have been removed.
+* The functions `certbot.client.view_config_changes`,
+  `certbot.main.config_changes`,
+  `certbot.plugins.common.Installer.view_config_changes`,
+  `certbot.reverter.Reverter.view_config_changes`, and
+  `certbot.util.get_systemd_os_info` have been removed
+* Certbot's `register --update-registration` subcommand has been removed
 
 ### Fixed
 
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.40.1 - 2019-11-05
+
+### Changed
+
+* Added back support for Python 3.4 to Certbot components and certbot-auto due
+  to a bug when requiring Python 2.7 or 3.5+ on RHEL 6 based systems.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.40.0 - 2019-11-05
+
+### Added
+
+*
+
+### Changed
+
+* We deprecated support for Python 3.4 in Certbot and its ACME library. Support
+  for Python 3.4 will be removed in the next major release of Certbot.
+  certbot-auto users on RHEL 6 based systems will be asked to enable Software
+  Collections (SCL) repository so Python 3.6 can be installed. certbot-auto can
+  enable the SCL repo for you on CentOS 6 while users on other RHEL 6 based
+  systems will be asked to do this manually.
+* `--server` may now be combined with `--dry-run`. Certbot will, as before, use the
+  staging server instead of the live server when `--dry-run` is used.
+* `--dry-run` now requests fresh authorizations every time, fixing the issue
+  where it was prone to falsely reporting success.
+* Updated certbot-dns-google to depend on newer versions of
+  google-api-python-client and oauth2client.
+* The OS detection logic again uses distro library for Linux OSes
+* certbot.plugins.common.TLSSNI01 has been deprecated and will be removed in a
+  future release.
+* CLI flags --tls-sni-01-port and --tls-sni-01-address have been removed.
+* The values tls-sni and tls-sni-01 for the --preferred-challenges flag are no
+  longer accepted.
+* Removed the flags: `--agree-dev-preview`, `--dialog`, and `--apache-init-script`
+* acme.standalone.BaseRequestHandlerWithLogging and
+  acme.standalone.simple_tls_sni_01_server have been deprecated and will be
+  removed in a future release of the library.
+* certbot-dns-rfc2136 now use TCP to query SOA records.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.39.0 - 2019-10-01
+
+### Added
+
+* Support for Python 3.8 was added to Certbot and all of its components.
+* Support for CentOS 8 was added to certbot-auto.
+
+### Changed
+
+* Don't send OCSP requests for expired certificates
+* Return to using platform.linux_distribution instead of distro.linux_distribution in OS fingerprinting for Python < 3.8 
+* Updated the Nginx plugin's TLS configuration to keep support for some versions of IE11.
+
+### Fixed
+
+* Fixed OS detection in the Apache plugin on RHEL 6.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.38.0 - 2019-09-03
+
+### Added
+
+* Disable session tickets for Nginx users when appropriate.
+
+### Changed
+
+* If Certbot fails to rollback your server configuration, the error message
+  links to the Let's Encrypt forum. Change the link to the Help category now
+  that the Server category has been closed.
+* Replace platform.linux_distribution with distro.linux_distribution as a step
+  towards Python 3.8 support in Certbot.
+
+### Fixed
+
+* Fixed OS detection in the Apache plugin on Scientific Linux.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.2 - 2019-08-21
+
+* Stop disabling TLS session tickets in Nginx as it caused TLS failures on
+  some systems.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.1 - 2019-08-08
+
+### Fixed
+
+* Stop disabling TLS session tickets in Apache as it caused TLS failures on
+  some systems.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.0 - 2019-08-07
+
+### Added
+
+* Turn off session tickets for apache plugin by default
+* acme: Authz deactivation added to `acme` module.
+
+### Changed
+
+* Follow updated Mozilla recommendations for Nginx ssl_protocols, ssl_ciphers,
+  and ssl_prefer_server_ciphers
+
+### Fixed
+
+* Fix certbot-auto failures on RHEL 8.
 
 More details about these changes can be found on our GitHub repo.
 

@@ -6,7 +6,7 @@ import subprocess
 import mock
 import zope.interface
 
-from certbot import configuration
+from certbot._internal import configuration
 from certbot import errors as le_errors
 from certbot import util as certbot_util
 from certbot_apache import entrypoint
@@ -18,7 +18,6 @@ from certbot_compatibility_test.configurators import common as configurators_com
 
 @zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(configurators_common.Proxy):
-    # pylint: disable=too-many-instance-attributes
     """A common base for Apache test configurators"""
 
     def __init__(self, args):

@@ -12,18 +12,24 @@ import platform
 import re
 import socket
 import subprocess
+import sys
 
 import configargparse
 import six
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
 
-from certbot import constants
+from certbot._internal import constants
 from certbot import errors
-from certbot import lock
-from certbot.compat import misc
+from certbot._internal import lock
 from certbot.compat import os
 from certbot.compat import filesystem
+
+if sys.platform.startswith('linux'):
+    import distro
+    _USE_DISTRO = True
+else:
+    _USE_DISTRO = False
 
 logger = logging.getLogger(__name__)
 
@@ -87,18 +93,6 @@ def run_script(params, log=logger.error):
     return stdout, stderr
 
 
-def is_exe(path):
-    """Is path an executable file?
-
-    :param str path: path to test
-
-    :returns: True iff path is an executable file
-    :rtype: bool
-
-    """
-    return os.path.isfile(path) and os.access(path, os.X_OK)
-
-
 def exe_exists(exe):
     """Determine whether path/name refers to an executable.
 
@@ -110,10 +104,10 @@ def exe_exists(exe):
     """
     path, _ = os.path.split(exe)
     if path:
-        return is_exe(exe)
+        return filesystem.is_executable(exe)
     else:
         for path in os.environ["PATH"].split(os.pathsep):
-            if is_exe(os.path.join(path, exe)):
+            if filesystem.is_executable(os.path.join(path, exe)):
                 return True
 
     return False
@@ -144,12 +138,11 @@ def _release_locks():
     _LOCKS.clear()
 
 
-def set_up_core_dir(directory, mode, uid, strict):
+def set_up_core_dir(directory, mode, strict):
     """Ensure directory exists with proper permissions and is locked.
 
     :param str directory: Path to a directory.
     :param int mode: Directory mode.
-    :param int uid: Directory owner.
     :param bool strict: require directory to be owned by current user
 
     :raises .errors.LockError: if the directory cannot be locked
@@ -157,19 +150,18 @@ def set_up_core_dir(directory, mode, uid, strict):
 
     """
     try:
-        make_or_verify_dir(directory, mode, uid, strict)
+        make_or_verify_dir(directory, mode, strict)
         lock_dir_until_exit(directory)
     except OSError as error:
         logger.debug("Exception was:", exc_info=True)
         raise errors.Error(PERM_ERR_FMT.format(error))
 
 
-def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
+def make_or_verify_dir(directory, mode=0o755, strict=False):
     """Make sure directory exists with proper permissions.
 
     :param str directory: Path to a directory.
     :param int mode: Directory mode.
-    :param int uid: Directory owner.
     :param bool strict: require directory to be owned by current user
 
     :raises .errors.Error: if a directory already exists,
@@ -184,27 +176,12 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
         filesystem.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
-            if strict and not check_permissions(directory, mode, uid):
+            if strict and not filesystem.check_permissions(directory, mode):
                 raise errors.Error(
-                    "%s exists, but it should be owned by user %d with"
-                    "permissions %s" % (directory, uid, oct(mode)))
+                    "%s exists, but it should be owned by current user with"
+                    " permissions %s" % (directory, oct(mode)))
         else:
             raise
-
-
-def check_permissions(filepath, mode, uid=0):
-    """Check file or directory permissions.
-
-    :param str filepath: Path to the tested file (or directory).
-    :param int mode: Expected file mode.
-    :param int uid: Expected file owner.
-
-    :returns: True if `mode` and `uid` match, False otherwise.
-    :rtype: bool
-
-    """
-    file_stat = os.stat(filepath)
-    return misc.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
 
 
 def safe_open(path, mode="w", chmod=None):
@@ -306,77 +283,46 @@ def get_filtered_names(all_names):
             logger.debug('Not suggesting name "%s"', name, exc_info=True)
     return filtered_names
 
-
-def get_os_info(filepath="/etc/os-release"):
+def get_os_info():
     """
     Get OS name and version
 
-    :param str filepath: File path of os-release file
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
     """
 
-    if os.path.isfile(filepath):
-        # Systemd os-release parsing might be viable
-        os_name, os_version = get_systemd_os_info(filepath=filepath)
-        if os_name:
-            return os_name, os_version
+    return get_python_os_info(pretty=False)
 
-    # Fallback to platform module
-    return get_python_os_info()
-
-
-def get_os_info_ua(filepath="/etc/os-release"):
+def get_os_info_ua():
     """
     Get OS name and version string for User Agent
 
-    :param str filepath: File path of os-release file
     :returns: os_ua
     :rtype: `str`
     """
+    if _USE_DISTRO:
+        os_info = distro.name(pretty=True)
 
-    if os.path.isfile(filepath):
-        os_ua = get_var_from_file("PRETTY_NAME", filepath=filepath)
-        if not os_ua:
-            os_ua = get_var_from_file("NAME", filepath=filepath)
-        if os_ua:
-            return os_ua
+    if not _USE_DISTRO or not os_info:
+        return " ".join(get_python_os_info(pretty=True))
+    return os_info
 
-    # Fallback
-    return " ".join(get_python_os_info())
-
-
-def get_systemd_os_info(filepath="/etc/os-release"):
-    """
-    Parse systemd /etc/os-release for distribution information
-
-    :param str filepath: File path of os-release file
-    :returns: (os_name, os_version)
-    :rtype: `tuple` of `str`
-    """
-
-    os_name = get_var_from_file("ID", filepath=filepath)
-    os_version = get_var_from_file("VERSION_ID", filepath=filepath)
-
-    return (os_name, os_version)
-
-
-def get_systemd_os_like(filepath="/etc/os-release"):
+def get_systemd_os_like():
     """
     Get a list of strings that indicate the distribution likeness to
     other distributions.
 
-    :param str filepath: File path of os-release file
     :returns: List of distribution acronyms
     :rtype: `list` of `str`
     """
 
-    return get_var_from_file("ID_LIKE", filepath).split(" ")
-
+    if _USE_DISTRO:
+        return distro.like().split(" ")
+    return []
 
 def get_var_from_file(varname, filepath="/etc/os-release"):
     """
-    Get single value from systemd /etc/os-release
+    Get single value from a file formatted like systemd /etc/os-release
 
     :param str varname: Name of variable to fetch
     :param str filepath: File path of os-release file
@@ -396,7 +342,6 @@ def get_var_from_file(varname, filepath="/etc/os-release"):
             return _normalize_string(line.strip()[len(var_string):])
     return ""
 
-
 def _normalize_string(orig):
     """
     Helper function for get_var_from_file() to remove quotes
@@ -404,11 +349,12 @@ def _normalize_string(orig):
     """
     return orig.replace('"', '').replace("'", "").strip()
 
-
-def get_python_os_info():
+def get_python_os_info(pretty=False):
     """
     Get Operating System type/distribution and major version
     using python platform module
+
+    :param bool pretty: If the returned OS name should be in longer (pretty) form
 
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
@@ -420,9 +366,9 @@ def get_python_os_info():
     )
     os_type, os_ver, _ = info
     os_type = os_type.lower()
-    if os_type.startswith('linux'):
-        info = platform.linux_distribution()
-        # On arch, platform.linux_distribution() is reportedly ('','',''),
+    if os_type.startswith('linux') and _USE_DISTRO:
+        info = distro.linux_distribution(pretty)
+        # On arch, distro.linux_distribution() is reportedly ('','',''),
         # so handle it defensively
         if info[0]:
             os_type = info[0]

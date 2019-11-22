@@ -34,13 +34,14 @@ version = meta['version']
 # specified here to avoid masking the more specific request requirements in
 # acme. See https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
-    'acme>=0.29.0',
+    'acme>=0.40.0',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
     'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=1.2.3',  # load_pem_x509_certificate
+    'distro>=1.0.1',
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
@@ -58,11 +59,17 @@ install_requires = [
 # However environment markers are supported only with setuptools >= 36.2.
 # So this dependency is not added for old Linux distributions with old setuptools,
 # in order to allow these systems to build certbot from sources.
+pywin32_req = 'pywin32>=225'  # do not forget to edit pywin32 dependency accordingly in windows-installer/construct.py
 if StrictVersion(setuptools_version) >= StrictVersion('36.2'):
-    install_requires.append("pywin32 ; sys_platform == 'win32'")
+    install_requires.append(pywin32_req + " ; sys_platform == 'win32'")
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
                        'of setuptools. Version 36.2+ of setuptools is required.')
+elif os.name == 'nt':
+    # This branch exists to improve this package's behavior on Windows. Without
+    # it, if the sdist is installed on Windows with an old version of
+    # setuptools, pywin32 will not be specified as a dependency.
+    install_requires.append(pywin32_req)
 
 dev_extras = [
     'astroid==1.6.5',
@@ -131,6 +138,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',
@@ -157,13 +165,13 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'certbot = certbot.main:main',
+            'certbot = certbot._internal.main:main',
         ],
         'certbot.plugins': [
-            'manual = certbot.plugins.manual:Authenticator',
-            'null = certbot.plugins.null:Installer',
-            'standalone = certbot.plugins.standalone:Authenticator',
-            'webroot = certbot.plugins.webroot:Authenticator',
+            'manual = certbot._internal.plugins.manual:Authenticator',
+            'null = certbot._internal.plugins.null:Installer',
+            'standalone = certbot._internal.plugins.standalone:Authenticator',
+            'webroot = certbot._internal.plugins.webroot:Authenticator',
         ],
     },
 )

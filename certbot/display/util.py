@@ -5,12 +5,12 @@ import textwrap
 
 import zope.interface
 
-from certbot import constants
+from certbot._internal import constants
 from certbot import errors
 from certbot import interfaces
 from certbot.compat import misc
 from certbot.compat import os
-from certbot.display import completer
+from certbot._internal.display import completer
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,6 @@ def input_with_timeout(prompt=None, timeout=36000.0):
 @zope.interface.implementer(interfaces.IDisplay)
 class FileDisplay(object):
     """File-based display."""
-    # pylint: disable=too-many-arguments
     # see https://github.com/certbot/certbot/issues/3915
 
     def __init__(self, outfile, force_interactive):
@@ -482,7 +481,7 @@ class NoninteractiveDisplay(object):
 
     def menu(self, message, choices, ok_label=None, cancel_label=None,
              help_label=None, default=None, cli_flag=None, **unused_kwargs):
-        # pylint: disable=unused-argument,too-many-arguments
+        # pylint: disable=unused-argument
         """Avoid displaying a menu.
 
         :param str message: title of menu

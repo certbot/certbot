@@ -1,15 +1,15 @@
-"""Tests for certbot.eff."""
+"""Tests for certbot._internal.eff."""
 import unittest
 
 import mock
 import requests
 
-from certbot import constants
+from certbot._internal import constants
 import certbot.tests.util as test_util
 
 
 class HandleSubscriptionTest(test_util.ConfigTestCase):
-    """Tests for certbot.eff.handle_subscription."""
+    """Tests for certbot._internal.eff.handle_subscription."""
     def setUp(self):
         super(HandleSubscriptionTest, self).setUp()
         self.email = 'certbot@example.org'
@@ -17,11 +17,11 @@ class HandleSubscriptionTest(test_util.ConfigTestCase):
         self.config.eff_email = None
 
     def _call(self):
-        from certbot.eff import handle_subscription
+        from certbot._internal.eff import handle_subscription
         return handle_subscription(self.config)
 
     @test_util.patch_get_utility()
-    @mock.patch('certbot.eff.subscribe')
+    @mock.patch('certbot._internal.eff.subscribe')
     def test_failure(self, mock_subscribe, mock_get_utility):
         self.config.email = None
         self.config.eff_email = True
@@ -32,7 +32,7 @@ class HandleSubscriptionTest(test_util.ConfigTestCase):
         expected_part = "because you didn't provide an e-mail address"
         self.assertTrue(expected_part in actual)
 
-    @mock.patch('certbot.eff.subscribe')
+    @mock.patch('certbot._internal.eff.subscribe')
     def test_no_subscribe_with_no_prompt(self, mock_subscribe):
         self.config.eff_email = False
         with test_util.patch_get_utility() as mock_get_utility:
@@ -41,7 +41,7 @@ class HandleSubscriptionTest(test_util.ConfigTestCase):
         self._assert_no_get_utility_calls(mock_get_utility)
 
     @test_util.patch_get_utility()
-    @mock.patch('certbot.eff.subscribe')
+    @mock.patch('certbot._internal.eff.subscribe')
     def test_subscribe_with_no_prompt(self, mock_subscribe, mock_get_utility):
         self.config.eff_email = True
         self._call()
@@ -53,7 +53,7 @@ class HandleSubscriptionTest(test_util.ConfigTestCase):
         self.assertFalse(mock_get_utility().add_message.called)
 
     @test_util.patch_get_utility()
-    @mock.patch('certbot.eff.subscribe')
+    @mock.patch('certbot._internal.eff.subscribe')
     def test_subscribe_with_prompt(self, mock_subscribe, mock_get_utility):
         mock_get_utility().yesno.return_value = True
         self._call()
@@ -66,7 +66,7 @@ class HandleSubscriptionTest(test_util.ConfigTestCase):
         self.assertEqual(mock_subscribe.call_args[0][0], self.email)
 
     @test_util.patch_get_utility()
-    @mock.patch('certbot.eff.subscribe')
+    @mock.patch('certbot._internal.eff.subscribe')
     def test_no_subscribe_with_prompt(self, mock_subscribe, mock_get_utility):
         mock_get_utility().yesno.return_value = False
         self._call()
@@ -84,18 +84,18 @@ class HandleSubscriptionTest(test_util.ConfigTestCase):
 
 
 class SubscribeTest(unittest.TestCase):
-    """Tests for certbot.eff.subscribe."""
+    """Tests for certbot._internal.eff.subscribe."""
     def setUp(self):
         self.email = 'certbot@example.org'
         self.json = {'status': True}
         self.response = mock.Mock(ok=True)
         self.response.json.return_value = self.json
 
-    @mock.patch('certbot.eff.requests.post')
+    @mock.patch('certbot._internal.eff.requests.post')
     def _call(self, mock_post):
         mock_post.return_value = self.response
 
-        from certbot.eff import subscribe
+        from certbot._internal.eff import subscribe
         subscribe(self.email)
         self._check_post_call(mock_post)
 

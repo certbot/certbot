@@ -20,7 +20,7 @@ except ImportError:
 else:
     POSIX_MODE = False
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List, Union, Tuple  # pylint: disable=unused-import, no-name-in-module
 
 
 def chmod(file_path, mode):
@@ -77,6 +77,54 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
     chmod(dst, mode)
 
 
+def check_mode(file_path, mode):
+    # type: (str, int) -> bool
+    """
+    Check if the given mode matches the permissions of the given file.
+    On Linux, will make a direct comparison, on Windows, mode will be compared against
+    the security model.
+    :param str file_path: Path of the file
+    :param int mode: POSIX mode to test
+    :rtype: bool
+    :return: True if the POSIX mode matches the file permissions
+    """
+    if POSIX_MODE:
+        return stat.S_IMODE(os.stat(file_path).st_mode) == mode
+
+    return _check_win_mode(file_path, mode)
+
+
+def check_owner(file_path):
+    # type: (str) -> bool
+    """
+    Check if given file is owned by current user.
+    :param str file_path: File path to check
+    :rtype: bool
+    :return: True if given file is owned by current user, False otherwise.
+    """
+    if POSIX_MODE:
+        return os.stat(file_path).st_uid == os.getuid()
+
+    # Get owner sid of the file
+    security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
+    user = security.GetSecurityDescriptorOwner()
+
+    # Compare sids
+    return _get_current_user() == user
+
+
+def check_permissions(file_path, mode):
+    # type: (str, int) -> bool
+    """
+    Check if given file has the given mode and is owned by current user.
+    :param str file_path: File path to check
+    :param int mode: POSIX mode to check
+    :rtype: bool
+    :return: True if file has correct mode and owner, False otherwise.
+    """
+    return check_owner(file_path) and check_mode(file_path, mode)
+
+
 def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     # type: (str, int, int) -> int
     """
@@ -107,6 +155,10 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
         security = attributes.SECURITY_DESCRIPTOR
         user = _get_current_user()
         dacl = _generate_dacl(user, mode)
+        # We set second parameter to 0 (`False`) to say that this security descriptor is
+        # NOT constructed from a default mechanism, but is explicitly set by the user.
+        # See https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-setsecuritydescriptorowner  # pylint: disable=line-too-long
+        security.SetSecurityDescriptorOwner(user, 0)
         # We set first parameter to 1 (`True`) to say that this security descriptor contains
         # a DACL. Otherwise second and third parameters are ignored.
         # We set third parameter to 0 (`False`) to say that this security descriptor is
@@ -114,11 +166,11 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
         # See https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-setsecuritydescriptordacl  # pylint: disable=line-too-long
         security.SetSecurityDescriptorDacl(1, dacl, 0)
 
+        handle = None
         try:
             handle = win32file.CreateFile(file_path, win32file.GENERIC_READ,
                                           win32file.FILE_SHARE_READ & win32file.FILE_SHARE_WRITE,
                                           attributes, disposition, 0, None)
-            handle.Close()
         except pywintypes.error as err:
             # Handle native windows errors into python errors to be consistent with the API
             # of os.open in the situation of a file already existing or locked.
@@ -127,6 +179,9 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
             if err.winerror == winerror.ERROR_SHARING_VIOLATION:
                 raise OSError(errno.EACCES, err.strerror)
             raise err
+        finally:
+            if handle:
+                handle.Close()
 
         # At this point, the file that did not exist has been created with proper permissions,
         # so os.O_CREAT and os.O_EXCL are not needed anymore. We remove them from the flags to
@@ -177,6 +232,7 @@ def mkdir(file_path, mode=0o777):
     security = attributes.SECURITY_DESCRIPTOR
     user = _get_current_user()
     dacl = _generate_dacl(user, mode)
+    security.SetSecurityDescriptorOwner(user, False)
     security.SetSecurityDescriptorDacl(1, dacl, 0)
 
     try:
@@ -208,6 +264,7 @@ def replace(src, dst):
 
 
 def realpath(file_path):
+    # type: (str) -> str
     """
     Find the real path for the given path. This method resolves symlinks, including
     recursive symlinks, and is protected against symlinks that creates an infinite loop.
@@ -234,6 +291,155 @@ def realpath(file_path):
         inspected_paths.append(file_path)
 
     return os.path.abspath(file_path)
+
+
+# On Windows is_executable run from an unprivileged shell may claim that a path is
+# executable when it is excutable only if run from a privileged shell. This result
+# is due to the fact that GetEffectiveRightsFromAcl calculate effective rights
+# without taking into consideration if the target user has currently required the
+# elevated privileges or not. However this is not a problem since certbot always
+# requires to be run under a privileged shell, so the user will always benefit
+# from the highest (privileged one) set of permissions on a given file.
+def is_executable(path):
+    # type: (str) -> bool
+    """
+    Is path an executable file?
+    :param str path: path to test
+    :return: True if path is an executable file
+    :rtype: bool
+    """
+    if POSIX_MODE:
+        return os.path.isfile(path) and os.access(path, os.X_OK)
+
+    return _win_is_executable(path)
+
+
+def has_world_permissions(path):
+    # type: (str) -> bool
+    """
+    Check if everybody/world has any right (read/write/execute) on a file given its path
+    :param str path: path to test
+    :return: True if everybody/world has any right to the file
+    :rtype: bool
+    """
+    if POSIX_MODE:
+        return bool(stat.S_IMODE(os.stat(path).st_mode) & stat.S_IRWXO)
+
+    security = win32security.GetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION)
+    dacl = security.GetSecurityDescriptorDacl()
+
+    return bool(dacl.GetEffectiveRightsFromAcl({
+        'TrusteeForm': win32security.TRUSTEE_IS_SID,
+        'TrusteeType': win32security.TRUSTEE_IS_USER,
+        'Identifier': win32security.ConvertStringSidToSid('S-1-1-0'),
+    }))
+
+
+def compute_private_key_mode(old_key, base_mode):
+    # type: (str, int) -> int
+    """
+    Calculate the POSIX mode to apply to a private key given the previous private key
+    :param str old_key: path to the previous private key
+    :param int base_mode: the minimum modes to apply to a private key
+    :return: the POSIX mode to apply
+    :rtype: int
+    """
+    if POSIX_MODE:
+        # On Linux, we keep read/write/execute permissions
+        # for group and read permissions for everybody.
+        old_mode = (stat.S_IMODE(os.stat(old_key).st_mode) &
+                    (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | stat.S_IROTH))
+        return base_mode | old_mode
+
+    # On Windows, the mode returned by os.stat is not reliable,
+    # so we do not keep any permission from the previous private key.
+    return base_mode
+
+
+def has_same_ownership(path1, path2):
+    # type: (str, str) -> bool
+    """
+    Return True if the ownership of two files given their respective path is the same.
+    On Windows, ownership is checked against owner only, since files do not have a group owner.
+    :param str path1: path to the first file
+    :param str path2: path to the second file
+    :return: True if both files have the same ownership, False otherwise
+    :rtype: bool
+
+    """
+    if POSIX_MODE:
+        stats1 = os.stat(path1)
+        stats2 = os.stat(path2)
+        return (stats1.st_uid, stats1.st_gid) == (stats2.st_uid, stats2.st_gid)
+
+    security1 = win32security.GetFileSecurity(path1, win32security.OWNER_SECURITY_INFORMATION)
+    user1 = security1.GetSecurityDescriptorOwner()
+
+    security2 = win32security.GetFileSecurity(path2, win32security.OWNER_SECURITY_INFORMATION)
+    user2 = security2.GetSecurityDescriptorOwner()
+
+    return user1 == user2
+
+
+def has_min_permissions(path, min_mode):
+    # type: (str, int) -> bool
+    """
+    Check if a file given its path has at least the permissions defined by the given minimal mode.
+    On Windows, group permissions are ignored since files do not have a group owner.
+    :param str path: path to the file to check
+    :param int min_mode: the minimal permissions expected
+    :return: True if the file matches the minimal permissions expectations, False otherwise
+    :rtype: bool
+    """
+    if POSIX_MODE:
+        st_mode = os.stat(path).st_mode
+        return st_mode == st_mode | min_mode
+
+    # Resolve symlinks, to get a consistent result with os.stat on Linux,
+    # that follows symlinks by default.
+    path = realpath(path)
+
+    # Get owner sid of the file
+    security = win32security.GetFileSecurity(
+        path, win32security.OWNER_SECURITY_INFORMATION | win32security.DACL_SECURITY_INFORMATION)
+    user = security.GetSecurityDescriptorOwner()
+    dacl = security.GetSecurityDescriptorDacl()
+    min_dacl = _generate_dacl(user, min_mode)
+
+    for index in range(min_dacl.GetAceCount()):
+        min_ace = min_dacl.GetAce(index)
+
+        # On a given ACE, index 0 is the ACE type, 1 is the permission mask, and 2 is the SID.
+        # See: http://timgolden.me.uk/pywin32-docs/PyACL__GetAce_meth.html
+        mask = min_ace[1]
+        user = min_ace[2]
+
+        effective_mask = dacl.GetEffectiveRightsFromAcl({
+            'TrusteeForm': win32security.TRUSTEE_IS_SID,
+            'TrusteeType': win32security.TRUSTEE_IS_USER,
+            'Identifier': user,
+        })
+
+        if effective_mask != effective_mask | mask:
+            return False
+
+    return True
+
+
+def _win_is_executable(path):
+    if not os.path.isfile(path):
+        return False
+
+    security = win32security.GetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION)
+    dacl = security.GetSecurityDescriptorDacl()
+
+    mode = dacl.GetEffectiveRightsFromAcl({
+        'TrusteeForm': win32security.TRUSTEE_IS_SID,
+        'TrusteeType': win32security.TRUSTEE_IS_USER,
+        'Identifier': _get_current_user(),
+    })
+
+    return mode & ntsecuritycon.FILE_GENERIC_EXECUTE == ntsecuritycon.FILE_GENERIC_EXECUTE
 
 
 def _apply_win_mode(file_path, mode):
@@ -340,17 +546,33 @@ def _generate_windows_flags(rights_desc):
     if rights_desc['write']:
         flag = flag | (ntsecuritycon.FILE_ALL_ACCESS
                        ^ ntsecuritycon.FILE_GENERIC_READ
-                       ^ ntsecuritycon.FILE_GENERIC_EXECUTE
-                       # Despite bit `512` being present in ntsecuritycon.FILE_ALL_ACCESS, it is
-                       # not effectively applied to the file or the directory.
-                       # As _generate_windows_flags is also used to compare two dacls, we remove
-                       # it right now to have flags that contain only the bits effectively applied
-                       # by Windows.
-                       ^ 512)
+                       ^ ntsecuritycon.FILE_GENERIC_EXECUTE)
     if rights_desc['execute']:
         flag = flag | ntsecuritycon.FILE_GENERIC_EXECUTE
 
     return flag
+
+
+def _check_win_mode(file_path, mode):
+    # Resolve symbolic links
+    file_path = realpath(file_path)
+    # Get current dacl file
+    security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION
+                                             | win32security.DACL_SECURITY_INFORMATION)
+    dacl = security.GetSecurityDescriptorDacl()
+
+    # Get current file owner sid
+    user = security.GetSecurityDescriptorOwner()
+
+    if not dacl:
+        # No DACL means full control to everyone
+        # This is not a deterministic permissions set.
+        return False
+
+    # Calculate the target dacl
+    ref_dacl = _generate_dacl(user, mode)
+
+    return _compare_dacls(dacl, ref_dacl)
 
 
 def _compare_dacls(dacl1, dacl2):
@@ -358,15 +580,19 @@ def _compare_dacls(dacl1, dacl2):
     This method compare the two given DACLs to check if they are identical.
     Identical means here that they contains the same set of ACEs in the same order.
     """
-    return ([dacl1.GetAce(index) for index in range(0, dacl1.GetAceCount())] ==
-            [dacl2.GetAce(index) for index in range(0, dacl2.GetAceCount())])
+    return ([dacl1.GetAce(index) for index in range(dacl1.GetAceCount())] ==
+            [dacl2.GetAce(index) for index in range(dacl2.GetAceCount())])
 
 
 def _get_current_user():
     """
     Return the pySID corresponding to the current user.
     """
-    account_name = win32api.GetUserNameEx(win32api.NameSamCompatible)
+    # We craft the account_name ourselves instead of calling for instance win32api.GetUserNameEx,
+    # because this function returns nonsense values when Certbot is run under NT AUTHORITY\SYSTEM.
+    # To run Certbot under NT AUTHORITY\SYSTEM, you can open a shell using the instructions here:
+    # https://blogs.technet.microsoft.com/ben_parker/2010/10/27/how-do-i-run-powershell-execommand-prompt-as-the-localsystem-account-on-windows-7/
+    account_name = r"{0}\{1}".format(win32api.GetDomainName(), win32api.GetUserName())
     # LookupAccountName() expects the system name as first parameter. By passing None to it,
     # we instruct Windows to first search the matching account in the machine local accounts,
     # then into the primary domain accounts, if the machine has joined a domain, then finally

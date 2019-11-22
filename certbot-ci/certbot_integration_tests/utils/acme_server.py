@@ -125,6 +125,7 @@ class ACMEServer(object):
         environ = os.environ.copy()
         environ['PEBBLE_VA_NOSLEEP'] = '1'
         environ['PEBBLE_WFE_NONCEREJECT'] = '0'
+        environ['PEBBLE_AUTHZREUSE'] = '100'
 
         self._launch_process(
             [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053'],
@@ -133,6 +134,13 @@ class ACMEServer(object):
         self._launch_process(
             [challtestsrv_path, '-management', ':{0}'.format(CHALLTESTSRV_PORT), '-defaultIPv6', '""',
              '-defaultIPv4', '127.0.0.1', '-http01', '""', '-tlsalpn01', '""', '-https01', '""'])
+
+        # pebble_ocsp_server is imported here and not at the top of module in order to avoid a useless
+        # ImportError, in the case where cryptography dependency is too old to support ocsp, but
+        # Boulder is used instead of Pebble, so pebble_ocsp_server is not used. This is the typical
+        # situation of integration-certbot-oldest tox testenv.
+        from certbot_integration_tests.utils import pebble_ocsp_server
+        self._launch_process([sys.executable, pebble_ocsp_server.__file__])
 
         # Wait for the ACME CA server to be up.
         print('=> Waiting for pebble instance to respond...')
@@ -159,7 +167,7 @@ class ACMEServer(object):
 
         # Wait for the ACME CA server to be up.
         print('=> Waiting for boulder instance to respond...')
-        misc.check_until_timeout(self.acme_xdist['directory_url'])
+        misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=240)
 
         # Configure challtestsrv to answer any A record request with ip of the docker host.
         response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),

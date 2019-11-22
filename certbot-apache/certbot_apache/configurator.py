@@ -71,7 +71,6 @@ logger = logging.getLogger(__name__)
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class ApacheConfigurator(common.Installer):
-    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Apache configurator.
 
     :ivar config: Configuration.
@@ -174,8 +173,6 @@ class ApacheConfigurator(common.Installer):
                  "(Only Ubuntu/Debian currently)")
         add("ctl", default=DEFAULTS["ctl"],
             help="Full path to Apache control script")
-        util.add_deprecated_argument(
-            add, argument_name="init-script", nargs=1)
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
@@ -1118,7 +1115,7 @@ class ApacheConfigurator(common.Installer):
             if "ssl_module" not in self.parser.modules:
                 self.enable_mod("ssl", temp=temp)
 
-    def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
+    def make_vhost_ssl(self, nonssl_vhost):
         """Makes an ssl_vhost version of a nonssl_vhost.
 
         Duplicates vhost and adds default ssl options
@@ -1614,9 +1611,9 @@ class ApacheConfigurator(common.Installer):
 
         :param str domain: domain to enhance
         :param str enhancement: enhancement type defined in
-            :const:`~certbot.constants.ENHANCEMENTS`
+            :const:`~certbot.plugins.enhancements.ENHANCEMENTS`
         :param options: options for the enhancement
-            See :const:`~certbot.constants.ENHANCEMENTS`
+            See :const:`~certbot.plugins.enhancements.ENHANCEMENTS`
             documentation for appropriate parameter.
 
         :raises .errors.PluginError: If Enhancement is not supported, or if
@@ -2347,7 +2344,7 @@ class ApacheConfigurator(common.Installer):
         Enable the AutoHSTS enhancement for defined domains
 
         :param _unused_lineage: Certificate lineage object, unused
-        :type _unused_lineage: certbot.storage.RenewableCert
+        :type _unused_lineage: certbot._internal.storage.RenewableCert
 
         :param domains: List of domains in certificate to enhance
         :type domains: str
@@ -2472,7 +2469,7 @@ class ApacheConfigurator(common.Installer):
         and changes the HSTS max-age to a high value.
 
         :param lineage: Certificate lineage object
-        :type lineage: certbot.storage.RenewableCert
+        :type lineage: certbot._internal.storage.RenewableCert
         """
         self._autohsts_fetch_state()
         if not self._autohsts:

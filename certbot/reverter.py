@@ -6,16 +6,12 @@ import shutil
 import sys
 import time
 import traceback
-import warnings
 
 import six
-import zope.component
 
-from certbot import constants
+from certbot._internal import constants
 from certbot import errors
-from certbot import interfaces
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.compat import filesystem
 
@@ -68,8 +64,7 @@ class Reverter(object):
         self.config = config
 
         util.make_or_verify_dir(
-            config.backup_dir, constants.CONFIG_DIRS_MODE, misc.os_geteuid(),
-            self.config.strict_permissions)
+            config.backup_dir, constants.CONFIG_DIRS_MODE, self.config.strict_permissions)
 
     def revert_temporary_config(self):
         """Reload users original configuration files after a temporary save.
@@ -133,64 +128,6 @@ class Reverter(object):
                     "Unable to load checkpoint during rollback")
             rollback -= 1
 
-    def view_config_changes(self):
-        """Displays all saved checkpoints.
-
-        All checkpoints are printed by
-        :meth:`certbot.interfaces.IDisplay.notification`.
-
-        .. todo:: Decide on a policy for error handling, OSError IOError...
-
-        :raises .errors.ReverterError: If invalid directory structure.
-
-        """
-        warnings.warn(
-            "The view_config_changes method has been deprecated and will be"
-            " removed in a future release. If you were using this method to"
-            " implement the view_config_changes method of IInstaller, know that"
-            " that method has been removed from the plugin interface and is no"
-            " longer used by Certbot.", DeprecationWarning, stacklevel=2)
-        backups = os.listdir(self.config.backup_dir)
-        backups.sort(reverse=True)
-        if not backups:
-            logger.info("Certbot has not saved backups of your configuration")
-
-            return None
-        # Make sure there isn't anything unexpected in the backup folder
-        # There should only be timestamped (float) directories
-        try:
-            for bkup in backups:
-                float(bkup)
-        except ValueError:
-            raise errors.ReverterError(
-                "Invalid directories in {0}".format(self.config.backup_dir))
-
-        output = []
-        for bkup in backups:
-            output.append(time.ctime(float(bkup)))
-            cur_dir = os.path.join(self.config.backup_dir, bkup)
-            with open(os.path.join(cur_dir, "CHANGES_SINCE")) as changes_fd:
-                output.append(changes_fd.read())
-
-            output.append("Affected files:")
-            with open(os.path.join(cur_dir, "FILEPATHS")) as paths_fd:
-                filepaths = paths_fd.read().splitlines()
-                for path in filepaths:
-                    output.append("  {0}".format(path))
-
-            if os.path.isfile(os.path.join(cur_dir, "NEW_FILES")):
-                with open(os.path.join(cur_dir, "NEW_FILES")) as new_fd:
-                    output.append("New Configuration Files:")
-                    filepaths = new_fd.read().splitlines()
-                    for path in filepaths:
-                        output.append("  {0}".format(path))
-
-            output.append('\n')
-
-        zope.component.getUtility(interfaces.IDisplay).notification(
-            '\n'.join(output), force_interactive=True, pause=False)
-        return None
-
     def add_to_temp_checkpoint(self, save_files, save_notes):
         """Add files to temporary checkpoint.
 
@@ -225,8 +162,7 @@ class Reverter(object):
 
         """
         util.make_or_verify_dir(
-            cp_dir, constants.CONFIG_DIRS_MODE, misc.os_geteuid(),
-            self.config.strict_permissions)
+            cp_dir, constants.CONFIG_DIRS_MODE, self.config.strict_permissions)
 
         op_fd, existing_filepaths = self._read_and_append(
             os.path.join(cp_dir, "FILEPATHS"))
@@ -445,8 +381,7 @@ class Reverter(object):
             cp_dir = self.config.in_progress_dir
 
         util.make_or_verify_dir(
-            cp_dir, constants.CONFIG_DIRS_MODE, misc.os_geteuid(),
-            self.config.strict_permissions)
+            cp_dir, constants.CONFIG_DIRS_MODE, self.config.strict_permissions)
 
         return cp_dir
 

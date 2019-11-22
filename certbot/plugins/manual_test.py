@@ -1,4 +1,4 @@
-"""Tests for certbot.plugins.manual"""
+"""Tests for certbot._internal.plugins.manual"""
 import unittest
 import sys
 
@@ -15,7 +15,7 @@ from certbot.tests import util as test_util
 
 
 class AuthenticatorTest(test_util.TempDirTestCase):
-    """Tests for certbot.plugins.manual.Authenticator."""
+    """Tests for certbot._internal.plugins.manual.Authenticator."""
 
     def setUp(self):
         super(AuthenticatorTest, self).setUp()
@@ -39,7 +39,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
                                         self.tempdir, "temp_checkpoint_dir"),
             in_progress_dir=os.path.join(self.tempdir, "in_progess"))
 
-        from certbot.plugins.manual import Authenticator
+        from certbot._internal.plugins.manual import Authenticator
         self.auth = Authenticator(self.config, name='manual')
 
     def test_prepare_no_hook_noninteractive(self):

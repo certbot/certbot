@@ -36,29 +36,36 @@ run Certbot in Docker. You can find instructions for how to do this :ref:`here
 install dependencies and set up a virtual environment where you can run
 Certbot.
 
+Install the OS system dependencies required to run Certbot.
+
+.. code-block:: shell
+
+   # For APT-based distributions (e.g. Debian, Ubuntu ...)
+   sudo apt update
+   sudo apt install python3-dev python3-venv gcc libaugeas0 libssl-dev \
+                    libffi-dev ca-certificates openssl
+   # For RPM-based distributions (e.g. Fedora, CentOS ...)
+   # NB1: old distributions will use yum instead of dnf
+   # NB2: RHEL-based distributions use python3X-devel instead of python3-devel (e.g. python36-devel)
+   sudo dnf install python3-devel gcc augeas-libs openssl-devel libffi-devel \
+                    redhat-rpm-config ca-certificates openssl
+
+Set up the Python virtual environment that will host your Certbot local instance.
+
 .. code-block:: shell
 
    cd certbot
-   ./certbot-auto --debug --os-packages-only
-   python tools/venv.py
-
-If you have Python3 available and want to use it, run the ``venv3.py`` script.
-
-.. code-block:: shell
-
    python tools/venv3.py
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
 
 You can now run the copy of Certbot from git either by executing
-``venv/bin/certbot``, or by activating the virtual environment. You can do the
+``venv3/bin/certbot``, or by activating the virtual environment. You can do the
 latter by running:
 
 .. code-block:: shell
 
-   source venv/bin/activate
-   # or
    source venv3/bin/activate
 
 After running this command, ``certbot`` and development tools like ``ipdb``,
@@ -114,9 +121,9 @@ Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
 run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
 2.7).
 
-Once all the unittests pass, check for sufficient test coverage using
-``tox -e cover``, and then check for code style with ``tox -e lint`` (all files)
-or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
+Once all the unittests pass, check for sufficient test coverage using ``tox -e
+py27-cover``, and then check for code style with ``tox -e lint`` (all files) or
+``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
 
 Once all of the above is successful, you may run the full test suite using
 ``tox --skip-missing-interpreters``. We recommend running the commands above
@@ -197,15 +204,20 @@ using an HTTP-01 challenge on a machine with Python 3:
 Code components and layout
 ==========================
 
+The following components of the Certbot repository are distributed to users:
+
 acme
   contains all protocol specific code
 certbot
   main client code
 certbot-apache and certbot-nginx
   client code to configure specific web servers
-certbot.egg-info
-  configuration for packaging Certbot
-
+certbot-dns-*
+  client code to configure DNS providers
+certbot-auto and letsencrypt-auto
+  shell scripts to install Certbot and its dependencies on UNIX systems
+windows installer
+  Installs Certbot on Windows and is built using the files in windows-installer/
 
 Plugin-architecture
 -------------------
@@ -234,7 +246,7 @@ Authenticators
 
 Authenticators are plugins that prove control of a domain name by solving a
 challenge provided by the ACME server. ACME currently defines several types of
-challenges: HTTP, TLS-SNI (deprecated), TLS-ALPR, and DNS, represented by classes in `acme.challenges`.
+challenges: HTTP, TLS-ALPN, and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing

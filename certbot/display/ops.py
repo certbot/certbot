@@ -75,7 +75,7 @@ def choose_account(accounts):
     """Choose an account.
 
     :param list accounts: Containing at least one
-        :class:`~certbot.account.Account`
+        :class:`~certbot._internal.account.Account`
 
     """
     # Note this will get more complicated once we start recording authorizations

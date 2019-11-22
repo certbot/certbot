@@ -4,7 +4,7 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.37.0.dev0'
+version = '1.0.0.dev0'
 
 install_requires = [
     'certbot',
@@ -20,11 +20,6 @@ if sys.version_info < (2, 7, 9):
     install_requires.append('ndg-httpsclient')
     install_requires.append('pyasn1')
 
-docs_extras = [
-    'repoze.sphinx.autointerface',
-    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
-    'sphinx_rtd_theme',
-]
 
 setup(
     name='certbot-compatibility-test',
@@ -47,6 +42,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
     ],
@@ -54,9 +50,6 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
-    extras_require={
-        'docs': docs_extras,
-    },
     entry_points={
         'console_scripts': [
             'certbot-compatibility-test = certbot_compatibility_test.test_driver:main',

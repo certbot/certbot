@@ -3,8 +3,8 @@ import unittest
 import mock
 
 from certbot import interfaces
-from certbot import main
-from certbot import updater
+from certbot._internal import main
+from certbot._internal import updater
 
 from certbot.plugins import enhancements
 
@@ -21,9 +21,9 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         self.renew_deployer = mock.MagicMock(spec=interfaces.RenewDeployer)
         self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
 
-    @mock.patch('certbot.main._get_and_save_cert')
-    @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
-    @mock.patch('certbot.plugins.selection.get_unprepared_installer')
+    @mock.patch('certbot._internal.main._get_and_save_cert')
+    @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
+    @mock.patch('certbot._internal.plugins.selection.get_unprepared_installer')
     @test_util.patch_get_utility()
     def test_server_updates(self, _, mock_geti, mock_select, mock_getsave):
         mock_getsave.return_value = mock.MagicMock()
@@ -32,7 +32,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         # Generic Updater
         mock_select.return_value = (mock_generic_updater, None)
         mock_geti.return_value = mock_generic_updater
-        with mock.patch('certbot.main._init_le_client'):
+        with mock.patch('certbot._internal.main._init_le_client'):
             main.renew_cert(self.config, None, mock.MagicMock())
         self.assertTrue(mock_generic_updater.restart.called)
 
@@ -48,7 +48,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         updater.run_renewal_deployer(self.config, lineage, mock_deployer)
         self.assertTrue(mock_deployer.renew_deploy.called_with(lineage))
 
-    @mock.patch("certbot.updater.logger.debug")
+    @mock.patch("certbot._internal.updater.logger.debug")
     def test_updater_skip_dry_run(self, mock_log):
         self.config.dry_run = True
         updater.run_generic_updaters(self.config, None, None)
@@ -56,7 +56,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         self.assertEqual(mock_log.call_args[0][0],
                           "Skipping updaters in dry-run mode.")
 
-    @mock.patch("certbot.updater.logger.debug")
+    @mock.patch("certbot._internal.updater.logger.debug")
     def test_deployer_skip_dry_run(self, mock_log):
         self.config.dry_run = True
         updater.run_renewal_deployer(self.config, None, None)
@@ -64,7 +64,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         self.assertEqual(mock_log.call_args[0][0],
                           "Skipping renewal deployer in dry-run mode.")
 
-    @mock.patch('certbot.plugins.selection.get_unprepared_installer')
+    @mock.patch('certbot._internal.plugins.selection.get_unprepared_installer')
     def test_enhancement_updates(self, mock_geti):
         mock_geti.return_value = self.mockinstaller
         updater.run_generic_updaters(self.config, mock.MagicMock(), None)
@@ -76,7 +76,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
                                      self.mockinstaller)
         self.assertTrue(self.mockinstaller.deploy_autohsts.called)
 
-    @mock.patch('certbot.plugins.selection.get_unprepared_installer')
+    @mock.patch('certbot._internal.plugins.selection.get_unprepared_installer')
     def test_enhancement_updates_not_called(self, mock_geti):
         self.config.disable_renew_updates = True
         mock_geti.return_value = self.mockinstaller
@@ -89,7 +89,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
                                      self.mockinstaller)
         self.assertFalse(self.mockinstaller.deploy_autohsts.called)
 
-    @mock.patch('certbot.plugins.selection.get_unprepared_installer')
+    @mock.patch('certbot._internal.plugins.selection.get_unprepared_installer')
     def test_enhancement_no_updater(self, mock_geti):
         FAKEINDEX = [
             {

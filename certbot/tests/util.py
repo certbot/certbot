@@ -5,7 +5,6 @@
 """
 import logging
 import shutil
-import stat
 import sys
 import tempfile
 import unittest
@@ -20,11 +19,11 @@ from six.moves import reload_module  # pylint: disable=import-error
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
-from certbot import configuration
-from certbot import constants
+from certbot._internal import configuration
+from certbot._internal import constants
 from certbot import interfaces
-from certbot import lock
-from certbot import storage
+from certbot._internal import lock
+from certbot._internal import storage
 from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
@@ -93,26 +92,6 @@ def load_pyopenssl_private_key(*names):
     loader = _guess_loader(
         names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
     return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
-
-
-def skip_unless(condition, reason):  # pragma: no cover
-    """Skip tests unless a condition holds.
-
-    This implements the basic functionality of unittest.skipUnless
-    which is only available on Python 2.7+.
-
-    :param bool condition: If ``False``, the test will be skipped
-    :param str reason: the reason for skipping the test
-
-    :rtype: callable
-    :returns: decorator that hides tests unless condition is ``True``
-
-    """
-    if hasattr(unittest, "skipUnless"):
-        return unittest.skipUnless(condition, reason)
-    elif condition:
-        return lambda cls: cls
-    return lambda cls: None
 
 
 def make_lineage(config_dir, testfile):
@@ -339,16 +318,7 @@ class TempDirTestCase(unittest.TestCase):
         logging.getLogger().handlers = []
         util._release_locks()  # pylint: disable=protected-access
 
-        def handle_rw_files(_, path, __):
-            """Handle read-only files, that will fail to be removed on Windows."""
-            filesystem.chmod(path, stat.S_IWRITE)
-            try:
-                os.remove(path)
-            except (IOError, OSError):
-                # TODO: remote the try/except once all logic from windows file permissions is merged
-                if os.name != 'nt':
-                    raise
-        shutil.rmtree(self.tempdir, onerror=handle_rw_files)
+        shutil.rmtree(self.tempdir)
 
 
 class ConfigTestCase(TempDirTestCase):
@@ -419,15 +389,6 @@ def skip_on_windows(reason):
         """Wrapped version"""
         return unittest.skipIf(sys.platform == 'win32', reason)(function)
     return wrapper
-
-
-def broken_on_windows(function):
-    """Decorator to skip temporarily a broken test on Windows."""
-    reason = 'Test is broken and ignored on windows but should be fixed.'
-    return unittest.skipIf(
-        sys.platform == 'win32'
-        and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
-        reason)(function)
 
 
 def temp_join(path):

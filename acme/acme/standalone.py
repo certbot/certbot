@@ -1,29 +1,23 @@
 """Support for standalone client challenge solvers. """
-import argparse
 import collections
 import functools
 import logging
-import os
 import socket
-import sys
 import threading
 
 from six.moves import BaseHTTPServer  # type: ignore  # pylint: disable=import-error
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
-import OpenSSL
-
 from acme import challenges
 from acme import crypto_util
 from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
-from acme import _TLSSNI01DeprecationModule
 
 
 logger = logging.getLogger(__name__)
 
 # six.moves.* | pylint: disable=no-member,attribute-defined-outside-init
-# pylint: disable=too-few-public-methods,no-init
+# pylint: disable=no-init
 
 
 class TLSServer(socketserver.TCPServer):
@@ -132,35 +126,6 @@ class BaseDualNetworkedServers(object):
         self.threads = []
 
 
-class TLSSNI01Server(TLSServer, ACMEServerMixin):
-    """TLSSNI01 Server."""
-
-    def __init__(self, server_address, certs, ipv6=False):
-        TLSServer.__init__(
-            self, server_address, BaseRequestHandlerWithLogging, certs=certs, ipv6=ipv6)
-
-
-class TLSSNI01DualNetworkedServers(BaseDualNetworkedServers):
-    """TLSSNI01Server Wrapper. Tries everything for both. Failures for one don't
-       affect the other."""
-
-    def __init__(self, *args, **kwargs):
-        BaseDualNetworkedServers.__init__(self, TLSSNI01Server, *args, **kwargs)
-
-
-class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
-    """BaseRequestHandler with logging."""
-
-    def log_message(self, format, *args):  # pylint: disable=redefined-builtin
-        """Log arbitrary message."""
-        logger.debug("%s - - %s", self.client_address[0], format % args)
-
-    def handle(self):
-        """Handle request."""
-        self.log_message("Incoming request")
-        socketserver.BaseRequestHandler.handle(self)
-
-
 class HTTPServer(BaseHTTPServer.HTTPServer):
     """Generic HTTP Server."""
 
@@ -263,43 +228,3 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         """
         return functools.partial(
             cls, simple_http_resources=simple_http_resources)
-
-
-def simple_tls_sni_01_server(cli_args, forever=True):
-    """Run simple standalone TLSSNI01 server."""
-    logging.basicConfig(level=logging.DEBUG)
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-p", "--port", default=0, help="Port to serve at. By default "
-        "picks random free port.")
-    args = parser.parse_args(cli_args[1:])
-
-    certs = {}
-
-    _, hosts, _ = next(os.walk('.')) # type: ignore # https://github.com/python/mypy/issues/465
-    for host in hosts:
-        with open(os.path.join(host, "cert.pem")) as cert_file:
-            cert_contents = cert_file.read()
-        with open(os.path.join(host, "key.pem")) as key_file:
-            key_contents = key_file.read()
-        certs[host.encode()] = (
-            OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM, key_contents),
-            OpenSSL.crypto.load_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, cert_contents))
-
-    server = TLSSNI01Server(('', int(args.port)), certs=certs)
-    logger.info("Serving at https://%s:%s...", *server.socket.getsockname()[:2])
-    if forever:  # pragma: no cover
-        server.serve_forever()
-    else:
-        server.handle_request()
-
-
-# Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
-sys.modules[__name__] = _TLSSNI01DeprecationModule(sys.modules[__name__])
-
-
-if __name__ == "__main__":
-    sys.exit(simple_tls_sni_01_server(sys.argv))  # pragma: no cover
