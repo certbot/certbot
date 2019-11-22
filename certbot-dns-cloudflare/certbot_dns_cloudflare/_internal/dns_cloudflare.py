@@ -44,14 +44,22 @@ class Authenticator(dns_common.DNSAuthenticator):
         key = credentials.conf('api-key')
         if token:
             if email or key:
-                raise errors.PluginError('{}: dns_cloudflare_email and dns_cloudflare_api_key are not needed when using an API Token'.format(credentials.confobj.filename))
+                raise errors.PluginError('{}: dns_cloudflare_email and dns_cloudflare_api_key are '
+                                         'not needed when using an API Token'
+                                         .format(credentials.confobj.filename))
         elif email or key:
             if not email:
-                raise errors.PluginError('{}: dns_cloudflare_email is required when using a Global API Key. (should be email address associated with Cloudflare account)'.format(credentials.confobj.filename))
+                raise errors.PluginError('{}: dns_cloudflare_email is required when using a Global '
+                                         'API Key. (should be email address associated with '
+                                         'Cloudflare account)'.format(credentials.confobj.filename))
             if not key:
-                raise errors.PluginError('{}: dns_cloudflare_api_key is required when using a Global API Key. (see {})'.format(credentials.confobj.filename, ACCOUNT_URL))
+                raise errors.PluginError('{}: dns_cloudflare_api_key is required when using a '
+                                         'Global API Key. (see {})'
+                                         .format(credentials.confobj.filename, ACCOUNT_URL))
         else:
-            raise errors.PluginError('{}: Either dns_cloudflare_api_token(recommended), or dns_cloudflare_email and dns_cloudflare_api_key are required. (see {})'.format(credentials.confobj.filename, ACCOUNT_URL))
+            raise errors.PluginError('{}: Either dns_cloudflare_api_token(recommended), or '
+                                     'dns_cloudflare_email and dns_cloudflare_api_key are required.'
+                                     ' (see {})'.format(credentials.confobj.filename, ACCOUNT_URL))
 
     def _setup_credentials(self):
         self.credentials = self._configure_credentials(
@@ -70,8 +78,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_cloudflare_client(self):
         if self.credentials.conf('api-token'):
             return _CloudflareClient(None, self.credentials.conf('api-token'))
-        else:
-            return _CloudflareClient(self.credentials.conf('email'), self.credentials.conf('api-key'))
+        return _CloudflareClient(self.credentials.conf('email'), self.credentials.conf('api-key'))
 
 
 class _CloudflareClient(object):
@@ -170,8 +177,8 @@ class _CloudflareClient(object):
                     hint = 'Did you copy your entire API key/token?'
                 elif code == 9103:
                     hint = 'Did you enter the correct email address?'
-                elif code = 9109:
-                    hint = 'Does your API token have "Zone DNS Edit" permissions for these domains/zones?'
+                elif code == 9109:
+                    hint = 'Does your API token have "Zone DNS Edit" permissions for these zones?'
 
                 raise errors.PluginError('Error determining zone_id: {0} {1}. Please confirm that '
                                          'you have supplied valid Cloudflare API credentials.{2}'

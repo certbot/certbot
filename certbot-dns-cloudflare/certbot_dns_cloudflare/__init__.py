@@ -42,7 +42,7 @@ zones(domains) you wish to obtain certificates for.
 
 .. code-block:: ini
    :name: certbot_cloudflare_key.ini
-   :caption: Example credentials file using global API key (not recommended):
+   :caption: Example credentials file using Global API key (not recommended):
 
    # Cloudflare API credentials used by Certbot
    dns_cloudflare_email = cloudflare@example.com
