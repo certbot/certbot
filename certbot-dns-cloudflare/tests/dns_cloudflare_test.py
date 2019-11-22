@@ -13,7 +13,7 @@ from certbot.tests import util as test_util
 
 API_ERROR = CloudFlare.exceptions.CloudFlareAPIError(1000, '', '')
 
-API_TOKEN = 'an-api-token' # or None for Global API Key testing
+API_TOKEN = 'an-api-token'
 
 API_KEY = 'an-api-key'
 EMAIL = 'example@example.com'
@@ -27,10 +27,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         super(AuthenticatorTest, self).setUp()
 
         path = os.path.join(self.tempdir, 'file.ini')
-        if API_TOKEN:
-            dns_test_common.write({"cloudflare_api_token": API_TOKEN}, path)
-        else:
-            dns_test_common.write({"cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY}, path)
+        dns_test_common.write({"cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY}, path)
 
         self.config = mock.MagicMock(cloudflare_credentials=path,
                                      cloudflare_propagation_seconds=0)  # don't wait during tests
@@ -54,6 +51,46 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
         expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
+
+    def test_api_token(self):
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN}, self.config.cloudflare_credentials)
+        self.auth.perform([self.achall])
+
+        expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
+        self.assertEqual(expected, self.mock_client.mock_calls)
+
+    def test_no_creds(self):
+        dns_test_common.write({}, self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+    def test_missing_email_or_key(self):
+        dns_test_common.write({"cloudflare_api_key": API_KEY}, self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+        dns_test_common.write({"cloudflare_email": EMAIL}, self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+    def test_email_or_key_with_token(self):
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_email": EMAIL}, self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_api_key": API_KEY}, self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY}, self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
 
 
 class CloudflareClientTest(unittest.TestCase):
