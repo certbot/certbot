@@ -9,7 +9,7 @@ from certbot_apache import configurator
 from certbot_apache import override_arch
 from certbot_apache import override_fedora
 from certbot_apache._internal import override_darwin
-from certbot_apache import override_debian
+from certbot_apache._internal import override_debian
 from certbot_apache._internal import override_centos
 from certbot_apache._internal import override_gentoo
 from certbot_apache._internal import override_suse

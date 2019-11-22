@@ -33,7 +33,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         def mocked_deploy_cert(*args, **kwargs):
             """a helper to mock a deployed cert"""
             g_mod = "certbot_apache.configurator.ApacheConfigurator.enable_mod"
-            d_mod = "certbot_apache.override_debian.DebianConfigurator.enable_mod"
+            d_mod = "certbot_apache._internal.override_debian.DebianConfigurator.enable_mod"
             with mock.patch(g_mod):
                 with mock.patch(d_mod):
                     config.real_deploy_cert(*args, **kwargs)
