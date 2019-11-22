@@ -5,7 +5,7 @@ import zope.interface
 
 from certbot import interfaces
 
-from certbot_apache import configurator
+from certbot_apache._internal import configurator
 
 @zope.interface.provider(interfaces.IPluginFactory)
 class ArchConfigurator(configurator.ApacheConfigurator):

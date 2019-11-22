@@ -3,7 +3,7 @@ import unittest
 
 import mock
 
-from certbot_apache import configurator
+from certbot_apache._internal import configurator
 from certbot_apache._internal import entrypoint
 
 

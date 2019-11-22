@@ -51,7 +51,7 @@ class ApacheHttp01Test(util.ApacheTest):
     def test_empty_perform(self):
         self.assertFalse(self.http.perform())
 
-    @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_2(self, mock_enmod):
         self.config.version = (2, 2)
         self.config.parser.modules.remove("authz_host_module")
@@ -60,7 +60,7 @@ class ApacheHttp01Test(util.ApacheTest):
         enmod_calls = self.common_enable_modules_test(mock_enmod)
         self.assertEqual(enmod_calls[0][0][0], "authz_host")
 
-    @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_4(self, mock_enmod):
         self.config.parser.modules.remove("authz_core_module")
         self.config.parser.modules.remove("mod_authz_core.c")

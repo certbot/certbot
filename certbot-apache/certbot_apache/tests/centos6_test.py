@@ -1,4 +1,4 @@
-"""Test for certbot_apache.configurator for CentOS 6 overrides"""
+"""Test for certbot_apache._internal.configurator for CentOS 6 overrides"""
 import unittest
 
 from certbot.compat import os

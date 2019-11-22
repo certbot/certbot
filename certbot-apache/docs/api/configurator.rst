@@ -1,5 +1,5 @@
-:mod:`certbot_apache.configurator`
+:mod:`certbot_apache._internal.configurator`
 --------------------------------------
 
-.. automodule:: certbot_apache.configurator
+.. automodule:: certbot_apache._internal.configurator
    :members:

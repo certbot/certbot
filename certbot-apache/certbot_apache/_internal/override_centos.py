@@ -12,7 +12,7 @@ from certbot.errors import MisconfigurationError
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot_apache._internal import apache_util
-from certbot_apache import configurator
+from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
 
 

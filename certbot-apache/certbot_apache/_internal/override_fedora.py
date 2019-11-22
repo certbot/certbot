@@ -7,7 +7,7 @@ from certbot import interfaces
 from certbot import util
 
 from certbot_apache._internal import apache_util
-from certbot_apache import configurator
+from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
 
 

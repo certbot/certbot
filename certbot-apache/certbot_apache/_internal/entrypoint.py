@@ -5,7 +5,7 @@ from distutils.version import LooseVersion  # pylint: disable=no-name-in-module,
 
 from certbot import util
 
-from certbot_apache import configurator
+from certbot_apache._internal import configurator
 from certbot_apache._internal import override_arch
 from certbot_apache._internal import override_fedora
 from certbot_apache._internal import override_darwin

@@ -1,4 +1,4 @@
-"""Test for certbot_apache.configurator for Gentoo overrides"""
+"""Test for certbot_apache._internal.configurator for Gentoo overrides"""
 import unittest
 
 import mock
@@ -128,7 +128,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         self.assertEqual(len(self.config.parser.modules), 4)
         self.assertTrue("mod_another.c" in self.config.parser.modules)
 
-    @mock.patch("certbot_apache.configurator.util.run_script")
+    @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_alt_restart_works(self, mock_run_script):
         mock_run_script.side_effect = [None, errors.SubprocessError, None]
         self.config.restart()

@@ -1,4 +1,4 @@
-"""Test for certbot_apache.configurator for Debian overrides"""
+"""Test for certbot_apache._internal.configurator for Debian overrides"""
 import shutil
 import unittest
 
@@ -32,7 +32,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
         def mocked_deploy_cert(*args, **kwargs):
             """a helper to mock a deployed cert"""
-            g_mod = "certbot_apache.configurator.ApacheConfigurator.enable_mod"
+            g_mod = "certbot_apache._internal.configurator.ApacheConfigurator.enable_mod"
             d_mod = "certbot_apache._internal.override_debian.DebianConfigurator.enable_mod"
             with mock.patch(g_mod):
                 with mock.patch(d_mod):
@@ -196,7 +196,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
     def test_enable_site_call_parent(self):
         with mock.patch(
-            "certbot_apache.configurator.ApacheConfigurator.enable_site") as e_s:
+            "certbot_apache._internal.configurator.ApacheConfigurator.enable_site") as e_s:
             self.config.parser.root = "/tmp/nonexistent"
             vh = self.vh_truth[0]
             vh.enabled = False

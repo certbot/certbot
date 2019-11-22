@@ -13,7 +13,7 @@ from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.tests import util as test_util
 
-from certbot_apache import configurator
+from certbot_apache._internal import configurator
 from certbot_apache._internal import entrypoint
 from certbot_apache._internal import obj
 
@@ -105,8 +105,8 @@ def get_apache_configurator(
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    with mock.patch("certbot_apache.configurator.util.run_script"):
-        with mock.patch("certbot_apache.configurator.util."
+    with mock.patch("certbot_apache._internal.configurator.util.run_script"):
+        with mock.patch("certbot_apache._internal.configurator.util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
             with mock.patch("certbot_apache._internal.parser.ApacheParser."
