@@ -27,5 +27,5 @@ class ArchConfigurator(configurator.ApacheConfigurator):
         handle_sites=False,
         challenge_location="/etc/httpd/conf",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "options-ssl-apache.conf")
+            "certbot_apache", os.path.join("_internal", "options-ssl-apache.conf"))
     )

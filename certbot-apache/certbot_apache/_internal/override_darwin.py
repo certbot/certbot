@@ -27,5 +27,5 @@ class DarwinConfigurator(configurator.ApacheConfigurator):
         handle_sites=False,
         challenge_location="/etc/apache2/other",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "options-ssl-apache.conf")
+            "certbot_apache", os.path.join("_internal", "options-ssl-apache.conf"))
     )

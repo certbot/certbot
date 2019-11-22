@@ -36,7 +36,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         handle_sites=True,
         challenge_location="/etc/apache2",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "options-ssl-apache.conf")
+            "certbot_apache", os.path.join("_internal", "options-ssl-apache.conf"))
     )
 
     def enable_site(self, vhost):
