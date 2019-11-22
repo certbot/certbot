@@ -1,5 +1,5 @@
-:mod:`certbot_dns_dnsmadeeasy.dns_dnsmadeeasy`
+:mod:`certbot_dns_dnsmadeeasy._internal.dns_dnsmadeeasy`
 ------------------------------------
 
-.. automodule:: certbot_dns_dnsmadeeasy.dns_dnsmadeeasy
+.. automodule:: certbot_dns_dnsmadeeasy._internal.dns_dnsmadeeasy
    :members:

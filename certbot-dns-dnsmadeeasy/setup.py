@@ -60,7 +60,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-dnsmadeeasy = certbot_dns_dnsmadeeasy.dns_dnsmadeeasy:Authenticator',
+            'dns-dnsmadeeasy = certbot_dns_dnsmadeeasy._internal.dns_dnsmadeeasy:Authenticator',
         ],
     },
     test_suite='certbot_dns_dnsmadeeasy',

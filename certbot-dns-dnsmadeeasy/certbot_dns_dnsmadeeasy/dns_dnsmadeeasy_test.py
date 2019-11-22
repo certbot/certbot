@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_dnsmadeeasy.dns_dnsmadeeasy."""
+"""Tests for certbot_dns_dnsmadeeasy._internal.dns_dnsmadeeasy."""
 
 import unittest
 
@@ -21,7 +21,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
     def setUp(self):
         super(AuthenticatorTest, self).setUp()
 
-        from certbot_dns_dnsmadeeasy.dns_dnsmadeeasy import Authenticator
+        from certbot_dns_dnsmadeeasy._internal.dns_dnsmadeeasy import Authenticator
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"dnsmadeeasy_api_key": API_KEY,
@@ -44,7 +44,7 @@ class DNSMadeEasyLexiconClientTest(unittest.TestCase,
     LOGIN_ERROR = HTTPError('403 Client Error: Forbidden for url: {0}.'.format(DOMAIN))
 
     def setUp(self):
-        from certbot_dns_dnsmadeeasy.dns_dnsmadeeasy import _DNSMadeEasyLexiconClient
+        from certbot_dns_dnsmadeeasy._internal.dns_dnsmadeeasy import _DNSMadeEasyLexiconClient
 
         self.client = _DNSMadeEasyLexiconClient(API_KEY, SECRET_KEY, 0)
 
