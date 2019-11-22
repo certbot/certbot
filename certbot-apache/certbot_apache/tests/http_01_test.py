@@ -1,4 +1,4 @@
-"""Test for certbot_apache.http_01."""
+"""Test for certbot_apache._internal.http_01."""
 import unittest
 import mock
 
@@ -19,7 +19,7 @@ NUM_ACHALLS = 3
 
 
 class ApacheHttp01Test(util.ApacheTest):
-    """Test for certbot_apache.http_01.ApacheHttp01."""
+    """Test for certbot_apache._internal.http_01.ApacheHttp01."""
 
     def setUp(self, *args, **kwargs):  # pylint: disable=arguments-differ
         super(ApacheHttp01Test, self).setUp(*args, **kwargs)
@@ -45,7 +45,7 @@ class ApacheHttp01Test(util.ApacheTest):
             self.config.parser.modules.add("mod_{0}.c".format(mod))
             self.config.parser.modules.add(mod + "_module")
 
-        from certbot_apache.http_01 import ApacheHttp01
+        from certbot_apache._internal.http_01 import ApacheHttp01
         self.http = ApacheHttp01(self.config)
 
     def test_empty_perform(self):
