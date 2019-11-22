@@ -10,7 +10,7 @@ from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 
-from certbot_apache import apache_util
+from certbot_apache._internal import apache_util
 from certbot_apache import configurator
 
 logger = logging.getLogger(__name__)

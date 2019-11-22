@@ -20,7 +20,7 @@ from certbot.compat import filesystem
 from certbot.tests import acme_util
 from certbot.tests import util as certbot_util
 
-from certbot_apache import apache_util
+from certbot_apache._internal import apache_util
 from certbot_apache import constants
 from certbot_apache import obj
 from certbot_apache import parser
@@ -175,7 +175,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(self.config._create_vhost("nonexistent"), None) # pylint: disable=protected-access
 
     def test_get_aug_internal_path(self):
-        from certbot_apache.apache_util import get_internal_aug_path
+        from certbot_apache._internal.apache_util import get_internal_aug_path
         internal_paths = [
             "Virtualhost", "IfModule/VirtualHost", "VirtualHost", "VirtualHost",
             "Macro/VirtualHost", "IfModule/VirtualHost", "VirtualHost",
