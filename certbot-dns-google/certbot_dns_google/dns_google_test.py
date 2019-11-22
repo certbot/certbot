@@ -156,6 +156,7 @@ class GoogleClientTest(unittest.TestCase):
     def test_add_txt_record_delete_old(self, unused_credential_mock):
         client, changes = self._setUp_client_with_mock(
             [{'managedZones': [{'id': self.zone}]}])
+        # pylint: disable=line-too-long
         mock_get_rrs = "certbot_dns_google._internal.dns_google._GoogleClient.get_existing_txt_rrset"
         with mock.patch(mock_get_rrs) as mock_rrs:
             mock_rrs.return_value = ["sample-txt-contents"]
@@ -209,6 +210,7 @@ class GoogleClientTest(unittest.TestCase):
     def test_del_txt_record(self, unused_credential_mock):
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
 
+        # pylint: disable=line-too-long
         mock_get_rrs = "certbot_dns_google._internal.dns_google._GoogleClient.get_existing_txt_rrset"
         with mock.patch(mock_get_rrs) as mock_rrs:
             mock_rrs.return_value = ["\"sample-txt-contents\"",
