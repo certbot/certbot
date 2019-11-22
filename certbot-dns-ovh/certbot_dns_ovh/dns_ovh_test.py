@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_ovh.dns_ovh."""
+"""Tests for certbot_dns_ovh._internal.dns_ovh."""
 
 import unittest
 
@@ -22,7 +22,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
     def setUp(self):
         super(AuthenticatorTest, self).setUp()
 
-        from certbot_dns_ovh.dns_ovh import Authenticator
+        from certbot_dns_ovh._internal.dns_ovh import Authenticator
 
         path = os.path.join(self.tempdir, 'file.ini')
         credentials = {
@@ -48,7 +48,7 @@ class OVHLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexico
     LOGIN_ERROR = HTTPError('403 Client Error: Forbidden for url: https://eu.api.ovh.com/1.0/...')
 
     def setUp(self):
-        from certbot_dns_ovh.dns_ovh import _OVHLexiconClient
+        from certbot_dns_ovh._internal.dns_ovh import _OVHLexiconClient
 
         self.client = _OVHLexiconClient(
             ENDPOINT, APPLICATION_KEY, APPLICATION_SECRET, CONSUMER_KEY, 0
