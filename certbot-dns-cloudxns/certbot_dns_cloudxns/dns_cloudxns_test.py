@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_cloudxns.dns_cloudxns."""
+"""Tests for certbot_dns_cloudxns._internal.dns_cloudxns."""
 
 import unittest
 
@@ -24,7 +24,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
     def setUp(self):
         super(AuthenticatorTest, self).setUp()
 
-        from certbot_dns_cloudxns.dns_cloudxns import Authenticator
+        from certbot_dns_cloudxns._internal.dns_cloudxns import Authenticator
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"cloudxns_api_key": API_KEY, "cloudxns_secret_key": SECRET}, path)
@@ -42,7 +42,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 class CloudXNSLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
 
     def setUp(self):
-        from certbot_dns_cloudxns.dns_cloudxns import _CloudXNSLexiconClient
+        from certbot_dns_cloudxns._internal.dns_cloudxns import _CloudXNSLexiconClient
 
         self.client = _CloudXNSLexiconClient(API_KEY, SECRET, 0)
 
