@@ -7,7 +7,7 @@ import mock
 import six  # pylint: disable=unused-import
 
 from certbot import errors
-from certbot_apache import constants
+from certbot_apache._internal import constants
 from certbot_apache.tests import util
 
 
@@ -54,7 +54,7 @@ class AutoHSTSTest(util.ApacheTest):
                           self.config.enable_autohsts,
                           mock.MagicMock(), ["ocspvhost.com"])
 
-    @mock.patch("certbot_apache.constants.AUTOHSTS_FREQ", 0)
+    @mock.patch("certbot_apache._internal.constants.AUTOHSTS_FREQ", 0)
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.prepare")
     def test_autohsts_increase(self, mock_prepare, _mock_restart):
@@ -90,7 +90,7 @@ class AutoHSTSTest(util.ApacheTest):
 
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot_apache.constants.AUTOHSTS_FREQ", 0)
+    @mock.patch("certbot_apache._internal.constants.AUTOHSTS_FREQ", 0)
     def test_autohsts_increase_no_header(self, _restart):
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         # Remove the header
@@ -102,7 +102,7 @@ class AutoHSTSTest(util.ApacheTest):
                           self.config.update_autohsts,
                           mock.MagicMock())
 
-    @mock.patch("certbot_apache.constants.AUTOHSTS_FREQ", 0)
+    @mock.patch("certbot_apache._internal.constants.AUTOHSTS_FREQ", 0)
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
     def test_autohsts_increase_and_make_permanent(self, _mock_restart):
         maxage = "\"max-age={0}\""

@@ -30,7 +30,7 @@ from certbot.plugins.util import path_surgery
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 
 from certbot_apache._internal import apache_util
-from certbot_apache import constants
+from certbot_apache._internal import constants
 from certbot_apache._internal import display_ops
 from certbot_apache._internal import http_01
 from certbot_apache._internal import obj

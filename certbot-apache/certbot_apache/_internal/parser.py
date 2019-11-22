@@ -13,7 +13,7 @@ from acme.magic_typing import Dict, List, Set  # pylint: disable=unused-import, 
 from certbot import errors
 from certbot.compat import os
 
-from certbot_apache import constants
+from certbot_apache._internal import constants
 
 logger = logging.getLogger(__name__)
 

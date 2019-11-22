@@ -21,7 +21,7 @@ from certbot.tests import acme_util
 from certbot.tests import util as certbot_util
 
 from certbot_apache._internal import apache_util
-from certbot_apache import constants
+from certbot_apache._internal import constants
 from certbot_apache._internal import obj
 from certbot_apache._internal import parser
 from certbot_apache.tests import util
@@ -1723,7 +1723,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         self._assert_current_file()
 
     def test_prev_file_updates_to_current(self):
-        from certbot_apache.constants import ALL_SSL_OPTIONS_HASHES
+        from certbot_apache._internal.constants import ALL_SSL_OPTIONS_HASHES
         ALL_SSL_OPTIONS_HASHES.insert(0, "test_hash_does_not_match")
         with mock.patch('certbot.crypto_util.sha256sum') as mock_sha256:
             mock_sha256.return_value = ALL_SSL_OPTIONS_HASHES[0]
@@ -1762,7 +1762,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertFalse(mock_logger.warning.called)
 
     def test_current_file_hash_in_all_hashes(self):
-        from certbot_apache.constants import ALL_SSL_OPTIONS_HASHES
+        from certbot_apache._internal.constants import ALL_SSL_OPTIONS_HASHES
         self.assertTrue(self._current_ssl_options_hash() in ALL_SSL_OPTIONS_HASHES,
             "Constants.ALL_SSL_OPTIONS_HASHES must be appended"
             " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
