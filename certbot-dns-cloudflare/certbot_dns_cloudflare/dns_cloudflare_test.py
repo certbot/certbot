@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_cloudflare.dns_cloudflare."""
+"""Tests for certbot_dns_cloudflare._internal.dns_cloudflare."""
 
 import unittest
 
@@ -19,7 +19,7 @@ EMAIL = 'example@example.com'
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
 
     def setUp(self):
-        from certbot_dns_cloudflare.dns_cloudflare import Authenticator
+        from certbot_dns_cloudflare._internal.dns_cloudflare import Authenticator
 
         super(AuthenticatorTest, self).setUp()
 
@@ -58,7 +58,7 @@ class CloudflareClientTest(unittest.TestCase):
     record_id = 2
 
     def setUp(self):
-        from certbot_dns_cloudflare.dns_cloudflare import _CloudflareClient
+        from certbot_dns_cloudflare._internal.dns_cloudflare import _CloudflareClient
 
         self.cloudflare_client = _CloudflareClient(EMAIL, API_KEY)
 
