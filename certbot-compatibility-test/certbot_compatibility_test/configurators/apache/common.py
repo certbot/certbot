@@ -9,7 +9,7 @@ import zope.interface
 from certbot._internal import configuration
 from certbot import errors as le_errors
 from certbot import util as certbot_util
-from certbot_apache import entrypoint
+from certbot_apache._internal import entrypoint
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util
