@@ -543,17 +543,14 @@ UNLIKELY_EOF
 }
 
 if [ "$1" = "--le-auto-phase2" -a "$DEPRECATED_OS" = 1 ]; then
-  # Phase 2 damage control mode with deprecated OSes.
+  # Phase 2 damage control mode for deprecated OSes.
   # In this situation, we bypass any bootstrap or certbot venv setup.
   shift 1
 
-  if [ ! -f "$VENV_BIN/letsencrypt" ]; then
-    error "Your system is not supported by certbot-auto anymore, and so certbot cannot be installed."
-    error "Please consult official Certbot site (https://certbot.eff.org/) to check other alternatives."
-  else
-    error "Your system is not supported by certbot-auto anymore, so certbot cannot be upgraded."
-    error "Please consult official Certbot site (https://certbot.eff.org/) to check other alternatives."
+  error "Your system is not supported by certbot-auto anymore, and so certbot cannot be installed or upgraded."
+  error "Please consult official Certbot site (https://certbot.eff.org/) to check other alternatives."
 
+  if [ -f "$VENV_BIN/letsencrypt" ]; then
     "$VENV_BIN/letsencrypt" "$@"
   fi
 
