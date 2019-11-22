@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_rfc2136.dns_rfc2136."""
+"""Tests for certbot_dns_rfc2136._internal.dns_rfc2136."""
 
 import unittest
 
@@ -23,7 +23,7 @@ VALID_CONFIG = {"rfc2136_server": SERVER, "rfc2136_name": NAME, "rfc2136_secret"
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
 
     def setUp(self):
-        from certbot_dns_rfc2136.dns_rfc2136 import Authenticator
+        from certbot_dns_rfc2136._internal.dns_rfc2136 import Authenticator
 
         super(AuthenticatorTest, self).setUp()
 
@@ -73,7 +73,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 class RFC2136ClientTest(unittest.TestCase):
 
     def setUp(self):
-        from certbot_dns_rfc2136.dns_rfc2136 import _RFC2136Client
+        from certbot_dns_rfc2136._internal.dns_rfc2136 import _RFC2136Client
 
         self.rfc2136_client = _RFC2136Client(SERVER, PORT, NAME, SECRET, dns.tsig.HMAC_MD5)
 
