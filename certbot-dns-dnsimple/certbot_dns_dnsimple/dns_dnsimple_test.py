@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_dnsimple.dns_dnsimple."""
+"""Tests for certbot_dns_dnsimple._internal.dns_dnsimple."""
 
 import unittest
 
@@ -19,7 +19,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
     def setUp(self):
         super(AuthenticatorTest, self).setUp()
 
-        from certbot_dns_dnsimple.dns_dnsimple import Authenticator
+        from certbot_dns_dnsimple._internal.dns_dnsimple import Authenticator
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"dnsimple_token": TOKEN}, path)
@@ -39,7 +39,7 @@ class DNSimpleLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseL
     LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: ...')
 
     def setUp(self):
-        from certbot_dns_dnsimple.dns_dnsimple import _DNSimpleLexiconClient
+        from certbot_dns_dnsimple._internal.dns_dnsimple import _DNSimpleLexiconClient
 
         self.client = _DNSimpleLexiconClient(TOKEN, 0)
 
