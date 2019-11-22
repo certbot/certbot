@@ -167,9 +167,11 @@ class _CloudflareClient(object):
                 hint = None
 
                 if code == 6003:
-                    hint = 'Did you copy your entire API key?'
+                    hint = 'Did you copy your entire API key/token?'
                 elif code == 9103:
                     hint = 'Did you enter the correct email address?'
+                elif code = 9109:
+                    hint = 'Does your API token have "Zone DNS Edit" permissions for these domains/zones?'
 
                 raise errors.PluginError('Error determining zone_id: {0} {1}. Please confirm that '
                                          'you have supplied valid Cloudflare API credentials.{2}'
