@@ -1,1 +1,1 @@
-Internal implementation of `~certbot_dns_luadns.dns_luadns` plugin.
+"""Internal implementation of `~certbot_dns_luadns.dns_luadns` plugin."""
