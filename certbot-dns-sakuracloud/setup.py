@@ -59,7 +59,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-sakuracloud = certbot_dns_sakuracloud.dns_sakuracloud:Authenticator',
+            'dns-sakuracloud = certbot_dns_sakuracloud._internal.dns_sakuracloud:Authenticator',
         ],
     },
     test_suite='certbot_dns_sakuracloud',
