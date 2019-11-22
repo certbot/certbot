@@ -22,13 +22,27 @@ Credentials
 
 Use of this plugin requires a configuration file containing Cloudflare API
 credentials, obtained from your Cloudflare
-`account page <https://www.cloudflare.com/a/account/my-account>`_. This plugin
-does not currently support Cloudflare's "API Tokens", so please ensure you use
-the "Global API Key" for authentication.
+`account page <https://dash.cloudflare.com/profile/api-tokens>`_.
+
+Previously, Cloudflare's "Global API Key" was used for authentication, however
+this key can access the entire Cloudflare API for all domains in your account,
+meaning it could cause a lot of damage if leaked.
+
+Cloudflare's newer API Tokens can be restricted to specific domains and
+oparations, and are therefore now the recommended authentication option. When
+creating an API Token for Certbot, it needs "Zone DNS Edit" permissions for the
+zones(domains) you wish to obtain certificates for.
 
 .. code-block:: ini
-   :name: credentials.ini
-   :caption: Example credentials file:
+   :name: certbot_cloudflare_token.ini
+   :caption: Example credentials file using restricted API token (recommended):
+
+   # Cloudflare API token used by Certbot
+   dns_cloudflare_api_token = 0123456789abcdef0123456789abcdef01234567
+
+.. code-block:: ini
+   :name: certbot_cloudflare_key.ini
+   :caption: Example credentials file using global API key (not recommended):
 
    # Cloudflare API credentials used by Certbot
    dns_cloudflare_email = cloudflare@example.com

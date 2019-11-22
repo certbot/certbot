@@ -38,14 +38,27 @@ class Authenticator(dns_common.DNSAuthenticator):
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'the Cloudflare API.'
 
+    def _validate_credentials(self, credentials):
+        token = credentials.conf('api-token')
+        email = credentials.conf('email')
+        key = credentials.conf('api-key')
+        if token:
+            if email or key:
+                raise errors.PluginError('{}: dns_cloudflare_email and dns_cloudflare_api_key are not needed when using an API Token'.format(credentials.confobj.filename))
+        elif email or key:
+            if not email:
+                raise errors.PluginError('{}: dns_cloudflare_email is required when using a Global API Key. (should be email address associated with Cloudflare account)'.format(credentials.confobj.filename))
+            if not key:
+                raise errors.PluginError('{}: dns_cloudflare_api_key is required when using a Global API Key. (see {})'.format(credentials.confobj.filename, ACCOUNT_URL))
+        else:
+            raise errors.PluginError('{}: Either dns_cloudflare_api_token(recommended), or dns_cloudflare_email and dns_cloudflare_api_key are required. (see {})'.format(credentials.confobj.filename, ACCOUNT_URL))
+
     def _setup_credentials(self):
         self.credentials = self._configure_credentials(
             'credentials',
             'Cloudflare credentials INI file',
-            {
-                'email': 'email address associated with Cloudflare account',
-                'api-key': 'API key for Cloudflare account, obtained from {0}'.format(ACCOUNT_URL)
-            }
+            None,
+            self._validate_credentials
         )
 
     def _perform(self, domain, validation_name, validation):
@@ -55,7 +68,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_cloudflare_client().del_txt_record(domain, validation_name, validation)
 
     def _get_cloudflare_client(self):
-        return _CloudflareClient(self.credentials.conf('email'), self.credentials.conf('api-key'))
+        if self.credentials.conf('api-token'):
+            return _CloudflareClient(None, self.credentials.conf('api-token'))
+        else:
+            return _CloudflareClient(self.credentials.conf('email'), self.credentials.conf('api-key'))
 
 
 class _CloudflareClient(object):
