@@ -1,5 +1,5 @@
-:mod:`certbot_dns_luadns.dns_luadns`
+:mod:`certbot_dns_luadns._internal.dns_luadns`
 ----------------------------------
 
-.. automodule:: certbot_dns_luadns.dns_luadns
+.. automodule:: certbot_dns_luadns._internal.dns_luadns
    :members:

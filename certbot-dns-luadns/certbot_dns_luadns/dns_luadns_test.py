@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_luadns.dns_luadns."""
+"""Tests for certbot_dns_luadns._internal.dns_luadns."""
 
 import unittest
 
@@ -20,7 +20,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
     def setUp(self):
         super(AuthenticatorTest, self).setUp()
 
-        from certbot_dns_luadns.dns_luadns import Authenticator
+        from certbot_dns_luadns._internal.dns_luadns import Authenticator
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"luadns_email": EMAIL, "luadns_token": TOKEN}, path)
@@ -40,7 +40,7 @@ class LuaDNSLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLex
     LOGIN_ERROR = HTTPError("401 Client Error: Unauthorized for url: ...")
 
     def setUp(self):
-        from certbot_dns_luadns.dns_luadns import _LuaDNSLexiconClient
+        from certbot_dns_luadns._internal.dns_luadns import _LuaDNSLexiconClient
 
         self.client = _LuaDNSLexiconClient(EMAIL, TOKEN, 0)
 
