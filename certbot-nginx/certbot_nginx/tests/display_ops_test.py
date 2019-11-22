@@ -1,4 +1,4 @@
-"""Test certbot_apache._internal.display_ops."""
+"""Test certbot_nginx._internal.display_ops."""
 import unittest
 
 from certbot.display import util as display_util

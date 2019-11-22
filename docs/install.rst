@@ -41,7 +41,7 @@ client as root, either `letsencrypt-nosudo
 
 The Apache plugin currently requires an OS with augeas version 1.0; currently `it
 supports
-<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
+<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/constants.py>`_
 modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin.
 
 
