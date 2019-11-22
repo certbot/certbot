@@ -22,7 +22,7 @@ from certbot.tests import util as certbot_util
 
 from certbot_apache._internal import apache_util
 from certbot_apache import constants
-from certbot_apache import obj
+from certbot_apache._internal import obj
 from certbot_apache._internal import parser
 from certbot_apache.tests import util
 
@@ -239,7 +239,7 @@ class MultipleVhostsTest(util.ApacheTest):
             self.vh_truth[1], self.config.choose_vhost("none.com"))
 
     @mock.patch("certbot_apache._internal.display_ops.select_vhost")
-    @mock.patch("certbot_apache.obj.VirtualHost.conflicts")
+    @mock.patch("certbot_apache._internal.obj.VirtualHost.conflicts")
     def test_choose_vhost_select_vhost_non_ssl(self, mock_conf, mock_select):
         mock_select.return_value = self.vh_truth[0]
         mock_conf.return_value = False
@@ -1540,7 +1540,7 @@ class AugeasVhostsTest(util.ApacheTest):
         for name in names:
             self.assertFalse(name in self.config.choose_vhost(name).aliases)
 
-    @mock.patch("certbot_apache.obj.VirtualHost.conflicts")
+    @mock.patch("certbot_apache._internal.obj.VirtualHost.conflicts")
     def test_choose_vhost_without_matching_wildcard(self, mock_conflicts):
         mock_conflicts.return_value = False
         mock_path = "certbot_apache._internal.display_ops.select_vhost"
@@ -1548,7 +1548,7 @@ class AugeasVhostsTest(util.ApacheTest):
             for name in ("a.example.net", "other.example.net"):
                 self.assertTrue(name in self.config.choose_vhost(name).aliases)
 
-    @mock.patch("certbot_apache.obj.VirtualHost.conflicts")
+    @mock.patch("certbot_apache._internal.obj.VirtualHost.conflicts")
     def test_choose_vhost_wildcard_not_found(self, mock_conflicts):
         mock_conflicts.return_value = False
         mock_path = "certbot_apache._internal.display_ops.select_vhost"

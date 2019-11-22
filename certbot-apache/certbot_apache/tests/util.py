@@ -15,7 +15,7 @@ from certbot.tests import util as test_util
 
 from certbot_apache import configurator
 from certbot_apache import entrypoint
-from certbot_apache import obj
+from certbot_apache._internal import obj
 
 
 class ApacheTest(unittest.TestCase):

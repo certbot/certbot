@@ -46,7 +46,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
                   modules are enabled appropriately.
 
         :param vhost: vhost to enable
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :raises .errors.NotSupportedError: If filesystem layout is not
             supported.
