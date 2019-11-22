@@ -1,5 +1,5 @@
-:mod:`certbot_dns_google.dns_google`
+:mod:`certbot_dns_google._internal.dns_google`
 ------------------------------------
 
-.. automodule:: certbot_dns_google.dns_google
+.. automodule:: certbot_dns_google._internal.dns_google
    :members:

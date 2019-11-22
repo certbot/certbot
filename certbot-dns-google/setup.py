@@ -63,7 +63,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-google = certbot_dns_google.dns_google:Authenticator',
+            'dns-google = certbot_dns_google._internal.dns_google:Authenticator',
         ],
     },
     test_suite='certbot_dns_google',
