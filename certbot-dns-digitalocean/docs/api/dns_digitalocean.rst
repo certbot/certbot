@@ -1,5 +1,5 @@
-:mod:`certbot_dns_digitalocean.dns_digitalocean`
+:mod:`certbot_dns_digitalocean._internal.dns_digitalocean`
 ------------------------------------------------
 
-.. automodule:: certbot_dns_digitalocean.dns_digitalocean
+.. automodule:: certbot_dns_digitalocean._internal.dns_digitalocean
    :members:

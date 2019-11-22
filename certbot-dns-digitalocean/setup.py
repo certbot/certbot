@@ -61,7 +61,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-digitalocean = certbot_dns_digitalocean.dns_digitalocean:Authenticator',
+            'dns-digitalocean = certbot_dns_digitalocean._internal.dns_digitalocean:Authenticator',
         ],
     },
     test_suite='certbot_dns_digitalocean',
