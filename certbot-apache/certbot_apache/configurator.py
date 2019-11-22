@@ -31,7 +31,7 @@ from certbot.plugins.enhancements import AutoHSTSEnhancement
 
 from certbot_apache._internal import apache_util
 from certbot_apache import constants
-from certbot_apache import display_ops
+from certbot_apache._internal import display_ops
 from certbot_apache import http_01
 from certbot_apache import obj
 from certbot_apache import parser

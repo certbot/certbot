@@ -226,19 +226,19 @@ class MultipleVhostsTest(util.ApacheTest):
             vhs = self.config.get_virtual_hosts()
             self.assertEqual(len(vhs), 12)
 
-    @mock.patch("certbot_apache.display_ops.select_vhost")
+    @mock.patch("certbot_apache._internal.display_ops.select_vhost")
     def test_choose_vhost_none_avail(self, mock_select):
         mock_select.return_value = None
         self.assertRaises(
             errors.PluginError, self.config.choose_vhost, "none.com")
 
-    @mock.patch("certbot_apache.display_ops.select_vhost")
+    @mock.patch("certbot_apache._internal.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_ssl(self, mock_select):
         mock_select.return_value = self.vh_truth[1]
         self.assertEqual(
             self.vh_truth[1], self.config.choose_vhost("none.com"))
 
-    @mock.patch("certbot_apache.display_ops.select_vhost")
+    @mock.patch("certbot_apache._internal.display_ops.select_vhost")
     @mock.patch("certbot_apache.obj.VirtualHost.conflicts")
     def test_choose_vhost_select_vhost_non_ssl(self, mock_conf, mock_select):
         mock_select.return_value = self.vh_truth[0]
@@ -261,13 +261,13 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.choose_vhost("whatever.com")
         self.assertTrue(mock_add.called)
 
-    @mock.patch("certbot_apache.display_ops.select_vhost")
+    @mock.patch("certbot_apache._internal.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_with_temp(self, mock_select):
         mock_select.return_value = self.vh_truth[0]
         chosen_vhost = self.config.choose_vhost("none.com", create_if_no_ssl=False)
         self.assertEqual(self.vh_truth[0], chosen_vhost)
 
-    @mock.patch("certbot_apache.display_ops.select_vhost")
+    @mock.patch("certbot_apache._internal.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_conflicting_non_ssl(self, mock_select):
         mock_select.return_value = self.vh_truth[3]
         conflicting_vhost = obj.VirtualHost(
@@ -903,7 +903,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(self.vh_truth[0].aliases, res.aliases)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._get_http_vhost")
-    @mock.patch("certbot_apache.display_ops.select_vhost")
+    @mock.patch("certbot_apache._internal.display_ops.select_vhost")
     @mock.patch("certbot.util.exe_exists")
     def test_enhance_unknown_vhost(self, mock_exe, mock_sel_vhost, mock_get):
         self.config.parser.modules.add("rewrite_module")
@@ -1369,7 +1369,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_choose_vhosts_wildcard(self):
         # pylint: disable=protected-access
-        mock_path = "certbot_apache.display_ops.select_vhost_multiple"
+        mock_path = "certbot_apache._internal.display_ops.select_vhost_multiple"
         with mock.patch(mock_path) as mock_select_vhs:
             mock_select_vhs.return_value = [self.vh_truth[3]]
             vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
@@ -1388,7 +1388,7 @@ class MultipleVhostsTest(util.ApacheTest):
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.make_vhost_ssl")
     def test_choose_vhosts_wildcard_no_ssl(self, mock_makessl):
         # pylint: disable=protected-access
-        mock_path = "certbot_apache.display_ops.select_vhost_multiple"
+        mock_path = "certbot_apache._internal.display_ops.select_vhost_multiple"
         with mock.patch(mock_path) as mock_select_vhs:
             mock_select_vhs.return_value = [self.vh_truth[1]]
             vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
@@ -1402,7 +1402,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         # Already SSL vhost
         mock_vh_for_w.return_value = [self.vh_truth[7]]
-        mock_path = "certbot_apache.display_ops.select_vhost_multiple"
+        mock_path = "certbot_apache._internal.display_ops.select_vhost_multiple"
         with mock.patch(mock_path) as mock_select_vhs:
             mock_select_vhs.return_value = [self.vh_truth[7]]
             vhs = self.config._choose_vhosts_wildcard("whatever",
@@ -1431,7 +1431,7 @@ class MultipleVhostsTest(util.ApacheTest):
             self.assertEqual(len(mock_dep.call_args_list), 1)
             self.assertEqual(self.vh_truth[7], mock_dep.call_args_list[0][0][0])
 
-    @mock.patch("certbot_apache.display_ops.select_vhost_multiple")
+    @mock.patch("certbot_apache._internal.display_ops.select_vhost_multiple")
     def test_deploy_cert_wildcard_no_vhosts(self, mock_dialog):
         # pylint: disable=protected-access
         mock_dialog.return_value = []
@@ -1543,7 +1543,7 @@ class AugeasVhostsTest(util.ApacheTest):
     @mock.patch("certbot_apache.obj.VirtualHost.conflicts")
     def test_choose_vhost_without_matching_wildcard(self, mock_conflicts):
         mock_conflicts.return_value = False
-        mock_path = "certbot_apache.display_ops.select_vhost"
+        mock_path = "certbot_apache._internal.display_ops.select_vhost"
         with mock.patch(mock_path, lambda _, vhosts: vhosts[0]):
             for name in ("a.example.net", "other.example.net"):
                 self.assertTrue(name in self.config.choose_vhost(name).aliases)
@@ -1551,7 +1551,7 @@ class AugeasVhostsTest(util.ApacheTest):
     @mock.patch("certbot_apache.obj.VirtualHost.conflicts")
     def test_choose_vhost_wildcard_not_found(self, mock_conflicts):
         mock_conflicts.return_value = False
-        mock_path = "certbot_apache.display_ops.select_vhost"
+        mock_path = "certbot_apache._internal.display_ops.select_vhost"
         names = (
             "abc.example.net", "not.there.tld", "aa.wildcard.tld"
         )
@@ -1563,7 +1563,7 @@ class AugeasVhostsTest(util.ApacheTest):
                 self.assertEqual(mock_select.call_count - orig_cc, 1)
 
     def test_choose_vhost_wildcard_found(self):
-        mock_path = "certbot_apache.display_ops.select_vhost"
+        mock_path = "certbot_apache._internal.display_ops.select_vhost"
         names = (
             "ab.example.net", "a.wildcard.tld", "yetanother.example.net"
         )

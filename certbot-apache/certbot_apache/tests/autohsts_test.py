@@ -141,7 +141,7 @@ class AutoHSTSTest(util.ApacheTest):
         # Make sure that the execution does not continue when no entries in store
         self.assertFalse(self.config.storage.put.called)
 
-    @mock.patch("certbot_apache.display_ops.select_vhost")
+    @mock.patch("certbot_apache._internal.display_ops.select_vhost")
     def test_autohsts_no_ssl_vhost(self, mock_select):
         mock_select.return_value = self.vh_truth[0]
         with mock.patch("certbot_apache.configurator.logger.warning") as mock_log:
