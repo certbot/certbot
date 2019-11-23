@@ -154,7 +154,7 @@ class NginxConfigurator(common.Installer):
                 config_filename = "options-ssl-nginx-old.conf"
 
         return pkg_resources.resource_filename(
-            "certbot_nginx", os.path.join("tls_configs", config_filename))
+            "certbot_nginx", os.path.join("_internal", "tls_configs", config_filename))
 
     @property
     def mod_ssl_conf(self):

@@ -1033,7 +1033,8 @@ class InstallSslOptionsConfTest(util.NginxTest):
         from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
         import pkg_resources
         all_files = [
-            pkg_resources.resource_filename("certbot_nginx", os.path.join("tls_configs", x))
+            pkg_resources.resource_filename("certbot_nginx",
+                os.path.join("_internal", "tls_configs", x))
             for x in ("options-ssl-nginx.conf",
                       "options-ssl-nginx-old.conf",
                       "options-ssl-nginx-tls12-only.conf")
