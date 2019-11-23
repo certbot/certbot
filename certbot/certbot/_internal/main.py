@@ -1348,10 +1348,3 @@ def main(cli_args=None):
     util.atexit_register(report.print_messages)
 
     return config.func(config, plugins)
-
-
-if __name__ == "__main__":
-    err_string = main()
-    if err_string:
-        logger.warning("Exiting with message %s", err_string)
-    sys.exit(err_string)  # pragma: no cover
