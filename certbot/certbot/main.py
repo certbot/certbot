@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(cli_args=None):
-    """Shim around internal main script execution.
+    """Command line argument parsing and main script execution.
 
     :returns: result of requested command
 
