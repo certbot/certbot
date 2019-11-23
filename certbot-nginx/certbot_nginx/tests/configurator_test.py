@@ -12,7 +12,7 @@ from certbot import errors
 from certbot.compat import os
 from certbot.tests import util as certbot_test_util
 
-from certbot_nginx import obj
+from certbot_nginx._internal import obj
 from certbot_nginx import parser
 from certbot_nginx._internal.configurator import _redirect_block_for_domain
 from certbot_nginx._internal.nginxparser import UnspacedList
@@ -623,7 +623,7 @@ class NginxConfiguratorTest(util.NginxTest):
             "ensure-http-header", "Strict-Transport-Security")
 
 
-    @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
+    @mock.patch('certbot_nginx._internal.obj.VirtualHost.contains_list')
     def test_certbot_redirect_exists(self, mock_contains_list):
         # Test that we add no redirect statement if there is already a
         # redirect in the block that is managed by certbot

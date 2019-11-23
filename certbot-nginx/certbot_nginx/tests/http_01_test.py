@@ -11,7 +11,7 @@ from certbot import achallenges
 from certbot.plugins import common_test
 from certbot.tests import acme_util
 
-from certbot_nginx.obj import Addr
+from certbot_nginx._internal.obj import Addr
 from certbot_nginx.tests import util
 
 

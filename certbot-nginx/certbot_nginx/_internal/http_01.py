@@ -9,7 +9,7 @@ from certbot import errors
 from certbot.compat import os
 from certbot.plugins import common
 
-from certbot_nginx import obj
+from certbot_nginx._internal import obj
 from certbot_nginx._internal import nginxparser
 
 
@@ -110,7 +110,7 @@ class NginxHttp01(common.ChallengePerformer):
 
     def _default_listen_addresses(self):
         """Finds addresses for a challenge block to listen on.
-        :returns: list of :class:`certbot_nginx.obj.Addr` to apply
+        :returns: list of :class:`certbot_nginx._internal.obj.Addr` to apply
         :rtype: list
         """
         addresses = [] # type: List[obj.Addr]

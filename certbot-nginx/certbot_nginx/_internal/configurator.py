@@ -28,7 +28,7 @@ from certbot_nginx._internal import constants
 from certbot_nginx._internal import display_ops
 from certbot_nginx._internal import http_01
 from certbot_nginx._internal import nginxparser
-from certbot_nginx import obj  # pylint: disable=unused-import
+from certbot_nginx._internal import obj  # pylint: disable=unused-import
 from certbot_nginx import parser
 
 NAME_RANK = 0
@@ -323,7 +323,7 @@ class NginxConfigurator(common.Installer):
             MisconfigurationError.
 
         :returns: ssl vhosts associated with name
-        :rtype: list of :class:`~certbot_nginx.obj.VirtualHost`
+        :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
 
         """
         if util.is_wildcard_domain(target_name):
@@ -442,7 +442,7 @@ class NginxConfigurator(common.Installer):
         :param list matches: list of dicts containing the vhost, the matching name,
             and the numerical rank
         :returns: the most matching vhost
-        :rtype: :class:`~certbot_nginx.obj.VirtualHost`
+        :rtype: :class:`~certbot_nginx._internal.obj.VirtualHost`
 
         """
         if not matches:
@@ -529,7 +529,7 @@ class NginxConfigurator(common.Installer):
             MisconfigurationError.
 
         :returns: vhosts associated with name
-        :rtype: list of :class:`~certbot_nginx.obj.VirtualHost`
+        :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
 
         """
         if util.is_wildcard_domain(target_name):
@@ -643,7 +643,7 @@ class NginxConfigurator(common.Installer):
         Make a server SSL by adding new listen and SSL directives.
 
         :param vhost: The vhost to add SSL to.
-        :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
+        :type vhost: :class:`~certbot_nginx._internal.obj.VirtualHost`
 
         """
         https_port = self.config.https_port
@@ -771,9 +771,9 @@ class NginxConfigurator(common.Installer):
         :param vhost: The server block to break up into two.
         :param list only_directives: If this exists, only duplicate these directives
             when splitting the block.
-        :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
+        :type vhost: :class:`~certbot_nginx._internal.obj.VirtualHost`
         :returns: tuple (http_vhost, https_vhost)
-        :rtype: tuple of type :class:`~certbot_nginx.obj.VirtualHost`
+        :rtype: tuple of type :class:`~certbot_nginx._internal.obj.VirtualHost`
         """
         http_vhost = self.parser.duplicate_vhost(vhost, only_directives=only_directives)
 

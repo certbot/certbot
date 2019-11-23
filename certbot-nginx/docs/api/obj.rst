@@ -1,5 +1,5 @@
-:mod:`certbot_nginx.obj`
+:mod:`certbot_nginx._internal.obj`
 ----------------------------
 
-.. automodule:: certbot_nginx.obj
+.. automodule:: certbot_nginx._internal.obj
    :members:
