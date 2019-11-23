@@ -1,5 +1,5 @@
-:mod:`certbot_nginx.nginxparser`
+:mod:`certbot_nginx._internal.nginxparser`
 ------------------------------------
 
-.. automodule:: certbot_nginx.nginxparser
+.. automodule:: certbot_nginx._internal.nginxparser
    :members:

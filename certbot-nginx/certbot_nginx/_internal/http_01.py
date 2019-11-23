@@ -10,7 +10,7 @@ from certbot.compat import os
 from certbot.plugins import common
 
 from certbot_nginx import obj
-from certbot_nginx import nginxparser
+from certbot_nginx._internal import nginxparser
 
 
 logger = logging.getLogger(__name__)

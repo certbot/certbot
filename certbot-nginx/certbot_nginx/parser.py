@@ -12,7 +12,7 @@ from certbot import errors
 from certbot.compat import os
 
 from certbot_nginx import obj
-from certbot_nginx import nginxparser
+from certbot_nginx._internal import nginxparser
 from acme.magic_typing import Union, Dict, Set, Any, List, Tuple # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)

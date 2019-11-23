@@ -14,7 +14,7 @@ from certbot.plugins import common
 from certbot.tests import util as test_util
 
 from certbot_nginx._internal import configurator
-from certbot_nginx import nginxparser
+from certbot_nginx._internal import nginxparser
 
 
 class NginxTest(test_util.ConfigTestCase):
