@@ -185,7 +185,7 @@ class VirtualHostTest(unittest.TestCase):
     def test_contains_list(self):
         from certbot_nginx.obj import VirtualHost
         from certbot_nginx.obj import Addr
-        from certbot_nginx.configurator import _test_block_from_block
+        from certbot_nginx._internal.configurator import _test_block_from_block
         test_block = [
             ['\n    ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
             ['\n']
