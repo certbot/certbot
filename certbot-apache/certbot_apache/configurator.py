@@ -1288,9 +1288,9 @@ class ApacheConfigurator(common.Installer):
 
             with open(ssl_fp, "a") as new_file:
                 new_file.write("<IfModule mod_ssl.c>\n")
-                new_file.write("\n".join(ssl_vh_contents))
+                new_file.write("\n".join(self._rearrange_indent(ssl_vh_contents, 2, 2)))
                 # The content does not include the closing tag, so add it
-                new_file.write("</VirtualHost>\n")
+                new_file.write("  </VirtualHost>\n")
                 new_file.write("</IfModule>\n")
             # Add new file to augeas paths if we're supposed to handle
             # activation (it's not included as default)
@@ -1373,6 +1373,27 @@ class ApacheConfigurator(common.Installer):
                     result.append('\n'.join(chunk))
                     continue
         return result, sift
+
+    def _rearrange_indent(self, contents, ind, step):
+        result = []
+        for l in range(len(contents)):
+            CurrentIndent = ind
+
+            #delete leading spaces
+            contents[l] = contents[l].lstrip()
+            # skip blank lines
+            if len(contents[l]) == 0:
+                result.append(contents[l])
+                continue
+            # set current & next indent
+            elif contents[l][0] == '<':
+                if contents[l][1] == '/':
+                    CurrentIndent = ind - step
+                    ind = ind - step
+                else:
+                    ind = ind + step
+            result.append(' ' * CurrentIndent + contents[l])
+        return result
 
     def _get_vhost_block(self, vhost):
         """ Helper method to get VirtualHost contents from the original file.
