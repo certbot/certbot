@@ -13,7 +13,7 @@ from certbot.compat import os
 from certbot.tests import util as certbot_test_util
 
 from certbot_nginx._internal import obj
-from certbot_nginx import parser
+from certbot_nginx._internal import parser
 from certbot_nginx._internal.configurator import _redirect_block_for_domain
 from certbot_nginx._internal.nginxparser import UnspacedList
 from certbot_nginx.tests import util
@@ -217,7 +217,7 @@ class NginxConfiguratorTest(util.NginxTest):
             "example/chain.pem",
             None)
 
-    @mock.patch('certbot_nginx.parser.NginxParser.update_or_add_server_directives')
+    @mock.patch('certbot_nginx._internal.parser.NginxParser.update_or_add_server_directives')
     def test_deploy_cert_raise_on_add_error(self, mock_update_or_add_server_directives):
         mock_update_or_add_server_directives.side_effect = errors.MisconfigurationError()
         self.assertRaises(
@@ -827,7 +827,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
 
     @mock.patch('certbot.reverter.logger')
-    @mock.patch('certbot_nginx.parser.NginxParser.load')
+    @mock.patch('certbot_nginx._internal.parser.NginxParser.load')
     def test_parser_reload_after_config_changes(self, mock_parser_load, unused_mock_logger):
         self.config.recovery_routine()
         self.config.revert_challenge_config()

@@ -29,7 +29,7 @@ from certbot_nginx._internal import display_ops
 from certbot_nginx._internal import http_01
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj  # pylint: disable=unused-import
-from certbot_nginx import parser
+from certbot_nginx._internal import parser
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1
@@ -53,7 +53,7 @@ class NginxConfigurator(common.Installer):
     :type config: :class:`~certbot.interfaces.IConfig`
 
     :ivar parser: Handles low level parsing
-    :type parser: :class:`~certbot_nginx.parser`
+    :type parser: :class:`~certbot_nginx._internal.parser`
 
     :ivar str save_notes: Human-readable config change notes
 
