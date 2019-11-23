@@ -56,7 +56,7 @@ class ChallengeFactoryTest(unittest.TestCase):
              errors.Error, self.handler._challenge_factory, authzr, [0])
 
 
-class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+class HandleAuthorizationsTest(unittest.TestCase):
     """handle_authorizations test.
 
     This tests everything except for all functions under _poll_challenges.

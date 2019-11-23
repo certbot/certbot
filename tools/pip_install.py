@@ -69,9 +69,9 @@ def merge_requirements(tools_path, requirements, test_constraints, all_constrain
         fd.write(merged_requirements)
 
 
-def call_with_print(command, cwd=None):
+def call_with_print(command):
     print(command)
-    subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
+    subprocess.check_call(command, shell=True)
 
 
 def pip_install_with_print(args_str):

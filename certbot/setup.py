@@ -163,7 +163,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'certbot = certbot._internal.main:main',
+            'certbot = certbot.main:main',
         ],
         'certbot.plugins': [
             'manual = certbot._internal.plugins.manual:Authenticator',

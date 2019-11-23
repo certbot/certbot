@@ -37,7 +37,6 @@ class Addr(common.Addr):
     CANONICAL_UNSPECIFIED_ADDRESS = UNSPECIFIED_IPV4_ADDRESSES[0]
 
     def __init__(self, host, port, ssl, default, ipv6, ipv6only):
-        # pylint: disable=too-many-arguments
         super(Addr, self).__init__((host, port))
         self.ssl = ssl
         self.default = default
@@ -145,7 +144,7 @@ class Addr(common.Addr):
         return False
 
 
-class VirtualHost(object):  # pylint: disable=too-few-public-methods
+class VirtualHost(object):
     """Represents an Nginx Virtualhost.
 
     :ivar str filep: file path of VH
@@ -162,7 +161,6 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self, filep, addrs, ssl, enabled, names, raw, path):
-        # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
         self.addrs = addrs

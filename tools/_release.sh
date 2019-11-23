@@ -161,7 +161,7 @@ cd ~-
 
 # get a snapshot of the CLI help for the docs
 # We set CERTBOT_DOCS to use dummy values in example user-agent string.
-CERTBOT_DOCS=1 certbot --help all > docs/cli-help.txt
+CERTBOT_DOCS=1 certbot --help all > certbot/docs/cli-help.txt
 jws --help > acme/docs/jws-help.txt
 
 cd ..
@@ -175,12 +175,12 @@ mkdir kgs
 kgs="kgs/$version"
 pip freeze | tee $kgs
 python ../tools/pip_install.py pytest
+cd ~-
 for module in $SUBPKGS ; do
     echo testing $module
     # use an empty configuration file rather than the one in the repo root
     pytest -c <(echo '') $module
 done
-cd ~-
 
 # pin pip hashes of the things we just built
 for pkg in $SUBPKGS_IN_AUTO ; do
@@ -229,7 +229,7 @@ mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-
 cp -p letsencrypt-auto-source/letsencrypt-auto certbot-auto
 cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
 
-git add certbot-auto letsencrypt-auto letsencrypt-auto-source docs/cli-help.txt
+git add certbot-auto letsencrypt-auto letsencrypt-auto-source certbot/docs/cli-help.txt
 git diff --cached
 while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
     echo "Unable to sign the release commit using git."

@@ -140,7 +140,6 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
 
 
 class RenewableCertTests(BaseRenewableCertTest):
-    # pylint: disable=too-many-public-methods
     """Tests for certbot._internal.storage."""
 
     def test_initialization(self):
@@ -202,7 +201,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue("version" in mock_logger.info.call_args[0][0])
 
     def test_consistent(self):
-        # pylint: disable=too-many-statements,protected-access
+        # pylint: disable=protected-access
         oldcert = self.test_rc.cert
         self.test_rc.cert = "relative/path"
         # Absolute path for item requirement
@@ -483,7 +482,6 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_should_autorenew(self, mock_ocsp, mock_cli):
         """Test should_autorenew on the basis of reasons other than
         expiry time window."""
-        # pylint: disable=too-many-statements
         mock_cli.set_by_cli.return_value = False
         # Autorenewal turned off
         self.test_rc.configuration["renewalparams"] = {"autorenew": "False"}

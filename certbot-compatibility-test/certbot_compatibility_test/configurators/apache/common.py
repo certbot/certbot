@@ -18,7 +18,6 @@ from certbot_compatibility_test.configurators import common as configurators_com
 
 @zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(configurators_common.Proxy):
-    # pylint: disable=too-many-instance-attributes
     """A common base for Apache test configurators"""
 
     def __init__(self, args):

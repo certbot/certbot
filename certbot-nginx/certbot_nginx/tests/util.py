@@ -17,7 +17,7 @@ from certbot_nginx import configurator
 from certbot_nginx import nginxparser
 
 
-class NginxTest(test_util.ConfigTestCase):  # pylint: disable=too-few-public-methods
+class NginxTest(test_util.ConfigTestCase):
 
     def setUp(self):
         super(NginxTest, self).setUp()
@@ -46,7 +46,6 @@ class NginxTest(test_util.ConfigTestCase):  # pylint: disable=too-few-public-met
         shutil.rmtree(self.work_dir)
         shutil.rmtree(self.logs_dir)
 
-    # pylint: disable=too-many-arguments
     def get_nginx_configurator(self, config_path, config_dir, work_dir, logs_dir,
             version=(1, 6, 2), openssl_version="1.0.2g"):
         """Create an Nginx Configurator with the specified options."""

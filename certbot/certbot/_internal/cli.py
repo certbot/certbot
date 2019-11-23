@@ -870,7 +870,7 @@ def _add_all_groups(helpful):
         helpful.add_group(name, description=docs["opts"])
 
 
-def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: disable=too-many-statements
+def prepare_and_parse_args(plugins, args, detect_defaults=False):
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -881,7 +881,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 
     """
 
-    # pylint: disable=too-many-statements
 
     helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
     _add_all_groups(helpful)

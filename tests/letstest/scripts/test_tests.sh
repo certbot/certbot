@@ -17,8 +17,11 @@ LE_AUTO_SUDO="" VENV_PATH="$VENV_NAME" $LE_AUTO --no-bootstrap --version
 . $VENV_NAME/bin/activate
 "$PIP_INSTALL" pytest
 
-# change to an empty directory to ensure CWD doesn't affect tests
-cd $(mktemp -d)
+# To run tests that aren't packaged in modules, run pytest
+# from the repo root. The directory structure should still
+# cause the installed packages to be tested while using
+# the tests available in the subdirectories.
+cd $REPO_ROOT
 
 for module in $MODULES ; do
     echo testing $module

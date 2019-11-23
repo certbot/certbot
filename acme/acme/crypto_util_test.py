@@ -30,7 +30,6 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
 
         class _TestServer(socketserver.TCPServer):
 
-            # pylint: disable=too-few-public-methods
             # six.moves.* | pylint: disable=attribute-defined-outside-init,no-init
 
             def server_bind(self):  # pylint: disable=missing-docstring

@@ -175,7 +175,6 @@ def record_chosen_plugins(config, plugins, auth, inst):
 
 
 def choose_configurator_plugins(config, plugins, verb):
-    # pylint: disable=too-many-branches
     """
     Figure out which configurator we're going to use, modifies
     config.authenticator and config.installer strings to reflect that choice if
@@ -254,7 +253,7 @@ def set_configurator(previously, now):
     return now
 
 
-def cli_plugin_requests(config):  # pylint: disable=too-many-branches
+def cli_plugin_requests(config):
     """
     Figure out which plugins the user requested with CLI and config options
 
