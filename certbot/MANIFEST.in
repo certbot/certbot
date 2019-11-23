@@ -4,4 +4,5 @@ include LICENSE.txt
 recursive-include docs *
 recursive-include examples *
 recursive-include certbot/tests/testdata *
+recursive-include tests *.py
 include certbot/ssl-dhparams.pem
