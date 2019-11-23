@@ -974,14 +974,14 @@ class InstallSslOptionsConfTest(util.NginxTest):
         return _hash
 
     def test_prev_file_updates_to_current(self):
-        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
+        from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
         with mock.patch('certbot.crypto_util.sha256sum',
                 new=self._mock_hash_except_ssl_conf_src(ALL_SSL_OPTIONS_HASHES[0])):
             self._call()
         self._assert_current_file()
 
     def test_prev_file_updates_to_current_old_nginx(self):
-        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
+        from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
         self.config.version = (1, 5, 8)
         with mock.patch('certbot.crypto_util.sha256sum',
                 new=self._mock_hash_except_ssl_conf_src(ALL_SSL_OPTIONS_HASHES[0])):
@@ -1018,7 +1018,7 @@ class InstallSslOptionsConfTest(util.NginxTest):
             self.assertFalse(mock_logger.warning.called)
 
     def test_current_file_hash_in_all_hashes(self):
-        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
+        from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
         self.assertTrue(self._current_ssl_options_hash() in ALL_SSL_OPTIONS_HASHES,
             "Constants.ALL_SSL_OPTIONS_HASHES must be appended"
             " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
@@ -1030,7 +1030,7 @@ class InstallSslOptionsConfTest(util.NginxTest):
         file has been manually edited by the user, and will refuse to update it.
         This test ensures that all necessary hashes are present.
         """
-        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
+        from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
         import pkg_resources
         all_files = [
             pkg_resources.resource_filename("certbot_nginx", os.path.join("tls_configs", x))

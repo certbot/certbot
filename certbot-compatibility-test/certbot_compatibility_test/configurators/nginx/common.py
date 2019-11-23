@@ -9,7 +9,7 @@ from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-m
 
 from certbot._internal import configuration
 from certbot_nginx._internal import configurator
-from certbot_nginx import constants
+from certbot_nginx._internal import constants
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util
