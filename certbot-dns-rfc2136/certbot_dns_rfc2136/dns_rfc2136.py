@@ -1,6 +1,8 @@
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
 import logging
 
+import socket
+
 import dns.flags
 import dns.message
 import dns.name
@@ -92,8 +94,12 @@ class _RFC2136Client(object):
     Encapsulates all communication with the target DNS server.
     """
     def __init__(self, server, port, key_name, key_secret, key_algorithm):
-        self.server = server
-        self.port = port
+        try:
+            self.server = self._get_ip_for_hostname(server)
+            self.port = port
+        except Exception as e:
+            raise errors.PluginError("Failed to resolve {0}: {1}".format(server, e))
+
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
         })
@@ -168,6 +174,30 @@ class _RFC2136Client(object):
         else:
             raise errors.PluginError('Received response from server: {0}'
                                      .format(dns.rcode.to_text(rcode)))
+
+    def _get_ip_for_hostname(self, hostname):
+        """
+        Get an IP address for a supplied hostname.
+
+        When the system has IPv6 configured, also IPv6 adresses may be returned
+        here.
+
+        :param str hostname: The hostname to be resolved.
+        :raises OSError: if an error occurs during the lookup.
+        """
+        results = socket.getaddrinfo(hostname,  # host
+                                     53,  # port
+                                     0,  # family
+                                     socket.SOCK_DGRAM,  # type
+                                     0,  # proto
+                                     socket.AI_V4MAPPED | socket.AI_ADDRCONFIG)  # flags
+
+        # results is now a none empty list of addresses associated with the
+        # host in the order of preferences. Should no address be available, an
+        # exception would have been raised by getaddrinfo.
+
+        # Just return the first address in string representation.
+        return results[0][4][0]
 
     def _find_domain(self, record_name):
         """
