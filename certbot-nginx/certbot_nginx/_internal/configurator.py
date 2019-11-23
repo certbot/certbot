@@ -25,7 +25,7 @@ from certbot.compat import os
 from certbot.plugins import common
 
 from certbot_nginx._internal import constants
-from certbot_nginx import display_ops
+from certbot_nginx._internal import display_ops
 from certbot_nginx import http_01
 from certbot_nginx import nginxparser
 from certbot_nginx import obj  # pylint: disable=unused-import

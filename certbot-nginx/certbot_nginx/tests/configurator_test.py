@@ -836,7 +836,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_choose_vhosts_wildcard(self):
         # pylint: disable=protected-access
-        mock_path = "certbot_nginx.display_ops.select_vhost_multiple"
+        mock_path = "certbot_nginx._internal.display_ops.select_vhost_multiple"
         with mock.patch(mock_path) as mock_select_vhs:
             vhost = [x for x in self.config.parser.get_vhosts()
               if 'summer.com' in x.names][0]
@@ -852,7 +852,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_choose_vhosts_wildcard_redirect(self):
         # pylint: disable=protected-access
-        mock_path = "certbot_nginx.display_ops.select_vhost_multiple"
+        mock_path = "certbot_nginx._internal.display_ops.select_vhost_multiple"
         with mock.patch(mock_path) as mock_select_vhs:
             vhost = [x for x in self.config.parser.get_vhosts()
               if 'summer.com' in x.names][0]
@@ -881,7 +881,7 @@ class NginxConfiguratorTest(util.NginxTest):
             self.assertEqual(len(mock_dep.call_args_list), 1)
             self.assertEqual(vhost, mock_dep.call_args_list[0][0][0])
 
-    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    @mock.patch("certbot_nginx._internal.display_ops.select_vhost_multiple")
     def test_deploy_cert_wildcard_no_vhosts(self, mock_dialog):
         # pylint: disable=protected-access
         mock_dialog.return_value = []
@@ -890,7 +890,7 @@ class NginxConfiguratorTest(util.NginxTest):
                           "*.wild.cat", "/tmp/path", "/tmp/path",
                            "/tmp/path", "/tmp/path")
 
-    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    @mock.patch("certbot_nginx._internal.display_ops.select_vhost_multiple")
     def test_enhance_wildcard_ocsp_after_install(self, mock_dialog):
         # pylint: disable=protected-access
         vhost = [x for x in self.config.parser.get_vhosts()
@@ -899,7 +899,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.enhance("*.com", "staple-ocsp", "example/chain.pem")
         self.assertFalse(mock_dialog.called)
 
-    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    @mock.patch("certbot_nginx._internal.display_ops.select_vhost_multiple")
     def test_enhance_wildcard_redirect_or_ocsp_no_install(self, mock_dialog):
         vhost = [x for x in self.config.parser.get_vhosts()
             if 'summer.com' in x.names][0]
@@ -907,7 +907,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.enhance("*.com", "staple-ocsp", "example/chain.pem")
         self.assertTrue(mock_dialog.called)
 
-    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    @mock.patch("certbot_nginx._internal.display_ops.select_vhost_multiple")
     def test_enhance_wildcard_double_redirect(self, mock_dialog):
       # pylint: disable=protected-access
         vhost = [x for x in self.config.parser.get_vhosts()
@@ -918,7 +918,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_choose_vhosts_wildcard_no_ssl_filter_port(self):
         # pylint: disable=protected-access
-        mock_path = "certbot_nginx.display_ops.select_vhost_multiple"
+        mock_path = "certbot_nginx._internal.display_ops.select_vhost_multiple"
         with mock.patch(mock_path) as mock_select_vhs:
             mock_select_vhs.return_value = []
             self.config._choose_vhosts_wildcard("*.com",

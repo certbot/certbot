@@ -7,12 +7,12 @@ from certbot.tests import util as certbot_util
 
 from certbot_nginx import parser
 
-from certbot_nginx.display_ops import select_vhost_multiple
+from certbot_nginx._internal.display_ops import select_vhost_multiple
 from certbot_nginx.tests import util
 
 
 class SelectVhostMultiTest(util.NginxTest):
-    """Tests for certbot_nginx.display_ops.select_vhost_multiple."""
+    """Tests for certbot_nginx._internal.display_ops.select_vhost_multiple."""
 
     def setUp(self):
         super(SelectVhostMultiTest, self).setUp()
