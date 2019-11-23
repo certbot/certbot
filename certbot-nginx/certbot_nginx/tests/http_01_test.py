@@ -1,4 +1,4 @@
-"""Tests for certbot_nginx.http_01"""
+"""Tests for certbot_nginx._internal.http_01"""
 import unittest
 
 import mock
@@ -50,7 +50,7 @@ class HttpPerformTest(util.NginxTest):
         config = self.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
-        from certbot_nginx import http_01
+        from certbot_nginx._internal import http_01
         self.http01 = http_01.NginxHttp01(config)
 
     def test_perform0(self):
