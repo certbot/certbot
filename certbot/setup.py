@@ -157,15 +157,13 @@ setup(
         'docs': docs_extras,
     },
 
-    # to test all packages run "python setup.py test -s
-    # {acme,certbot_apache,certbot_nginx}"
     test_suite='certbot',
     tests_require=["pytest"],
     cmdclass={"test": PyTest},
 
     entry_points={
         'console_scripts': [
-            'certbot = certbot._internal.main:main',
+            'certbot = certbot.main:main',
         ],
         'certbot.plugins': [
             'manual = certbot._internal.plugins.manual:Authenticator',

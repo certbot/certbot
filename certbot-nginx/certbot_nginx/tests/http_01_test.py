@@ -1,6 +1,7 @@
 """Tests for certbot_nginx.http_01"""
 import unittest
 
+import josepy as jose
 import mock
 import six
 
@@ -8,17 +9,19 @@ from acme import challenges
 
 from certbot import achallenges
 
-from certbot.plugins import common_test
 from certbot.tests import acme_util
+from certbot.tests import util as test_util
 
 from certbot_nginx.obj import Addr
 from certbot_nginx.tests import util
+
+AUTH_KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
 class HttpPerformTest(util.NginxTest):
     """Test the NginxHttp01 challenge."""
 
-    account_key = common_test.AUTH_KEY
+    account_key = AUTH_KEY
     achalls = [
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(

@@ -147,7 +147,7 @@ files=run.bat
       renew-down.ps1
 
 [Command certbot]
-entry_point=certbot._internal.main:main
+entry_point=certbot.main:main
 extra_preamble=pywin32_paths.py
 '''.format(certbot_version=certbot_version,
            installer_suffix='win_amd64' if PYTHON_BITNESS == 64 else 'win32',
