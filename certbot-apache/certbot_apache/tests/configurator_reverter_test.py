@@ -1,4 +1,4 @@
-"""Test for certbot_apache.configurator implementations of reverter"""
+"""Test for certbot_apache._internal.configurator implementations of reverter"""
 import shutil
 import unittest
 

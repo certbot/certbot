@@ -58,7 +58,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-linode = certbot_dns_linode.dns_linode:Authenticator',
+            'dns-linode = certbot_dns_linode._internal.dns_linode:Authenticator',
         ],
     },
     test_suite='certbot_dns_linode',

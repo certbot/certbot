@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_linode.dns_linode."""
+"""Tests for certbot_dns_linode._internal.dns_linode."""
 
 import unittest
 
@@ -9,7 +9,7 @@ from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins import dns_test_common_lexicon
 from certbot.tests import util as test_util
-from certbot_dns_linode.dns_linode import Authenticator
+from certbot_dns_linode._internal.dns_linode import Authenticator
 
 TOKEN = 'a-token'
 TOKEN_V3 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ64'
@@ -121,7 +121,7 @@ class LinodeLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLex
     DOMAIN_NOT_FOUND = Exception('Domain not found')
 
     def setUp(self):
-        from certbot_dns_linode.dns_linode import _LinodeLexiconClient
+        from certbot_dns_linode._internal.dns_linode import _LinodeLexiconClient
 
         self.client = _LinodeLexiconClient(TOKEN, 3)
 
@@ -133,7 +133,7 @@ class Linode4LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLe
     DOMAIN_NOT_FOUND = Exception('Domain not found')
 
     def setUp(self):
-        from certbot_dns_linode.dns_linode import _LinodeLexiconClient
+        from certbot_dns_linode._internal.dns_linode import _LinodeLexiconClient
 
         self.client = _LinodeLexiconClient(TOKEN, 4)
 

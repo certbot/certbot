@@ -1,4 +1,4 @@
-"""Test for certbot_apache.configurator for Gentoo overrides"""
+"""Test for certbot_apache._internal.configurator for Gentoo overrides"""
 import unittest
 
 import mock
@@ -7,8 +7,8 @@ from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 
-from certbot_apache import obj
-from certbot_apache import override_gentoo
+from certbot_apache._internal import obj
+from certbot_apache._internal import override_gentoo
 from certbot_apache.tests import util
 
 
@@ -52,7 +52,8 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
                                                     config_root=config_root,
                                                     vhost_root=vhost_root)
 
-        with mock.patch("certbot_apache.override_gentoo.GentooParser.update_runtime_variables"):
+        # pylint: disable=line-too-long
+        with mock.patch("certbot_apache._internal.override_gentoo.GentooParser.update_runtime_variables"):
             self.config = util.get_apache_configurator(
                 self.config_path, self.vhost_path, self.config_dir, self.work_dir,
                 os_info="gentoo")
@@ -85,17 +86,17 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         self.config.parser.apacheconfig_filep = filesystem.realpath(
             os.path.join(self.config.parser.root, "../conf.d/apache2"))
         self.config.parser.variables = {}
-        with mock.patch("certbot_apache.override_gentoo.GentooParser.update_modules"):
+        with mock.patch("certbot_apache._internal.override_gentoo.GentooParser.update_modules"):
             self.config.parser.update_runtime_variables()
         for define in defines:
             self.assertTrue(define in self.config.parser.variables.keys())
 
-    @mock.patch("certbot_apache.parser.ApacheParser.parse_from_subprocess")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.parse_from_subprocess")
     def test_no_binary_configdump(self, mock_subprocess):
         """Make sure we don't call binary dumps other than modules from Apache
         as this is not supported in Gentoo currently"""
 
-        with mock.patch("certbot_apache.override_gentoo.GentooParser.update_modules"):
+        with mock.patch("certbot_apache._internal.override_gentoo.GentooParser.update_modules"):
             self.config.parser.update_runtime_variables()
             self.config.parser.reset_modules()
         self.assertFalse(mock_subprocess.called)
@@ -104,7 +105,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         self.config.parser.reset_modules()
         self.assertTrue(mock_subprocess.called)
 
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser._get_runtime_cfg")
     def test_opportunistic_httpd_runtime_parsing(self, mock_get):
         mod_val = (
             'Loaded Modules:\n'
@@ -128,7 +129,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         self.assertEqual(len(self.config.parser.modules), 4)
         self.assertTrue("mod_another.c" in self.config.parser.modules)
 
-    @mock.patch("certbot_apache.configurator.util.run_script")
+    @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_alt_restart_works(self, mock_run_script):
         mock_run_script.side_effect = [None, errors.SubprocessError, None]
         self.config.restart()

@@ -71,7 +71,7 @@ setup(
     install_requires=install_requires,
     entry_points={
         'certbot.plugins': [
-            'apache = certbot_apache.entrypoint:ENTRYPOINT',
+            'apache = certbot_apache._internal.entrypoint:ENTRYPOINT',
         ],
     },
     test_suite='certbot_apache',

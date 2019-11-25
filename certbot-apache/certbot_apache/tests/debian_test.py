@@ -1,4 +1,4 @@
-"""Test for certbot_apache.configurator for Debian overrides"""
+"""Test for certbot_apache._internal.configurator for Debian overrides"""
 import shutil
 import unittest
 
@@ -7,8 +7,8 @@ import mock
 from certbot import errors
 from certbot.compat import os
 
-from certbot_apache import apache_util
-from certbot_apache import obj
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import obj
 from certbot_apache.tests import util
 
 
@@ -32,8 +32,8 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
         def mocked_deploy_cert(*args, **kwargs):
             """a helper to mock a deployed cert"""
-            g_mod = "certbot_apache.configurator.ApacheConfigurator.enable_mod"
-            d_mod = "certbot_apache.override_debian.DebianConfigurator.enable_mod"
+            g_mod = "certbot_apache._internal.configurator.ApacheConfigurator.enable_mod"
+            d_mod = "certbot_apache._internal.override_debian.DebianConfigurator.enable_mod"
             with mock.patch(g_mod):
                 with mock.patch(d_mod):
                     config.real_deploy_cert(*args, **kwargs)
@@ -47,7 +47,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
-    @mock.patch("certbot_apache.parser.subprocess.Popen")
+    @mock.patch("certbot_apache._internal.parser.subprocess.Popen")
     def test_enable_mod(self, mock_popen, mock_exe_exists, mock_run_script):
         mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
         mock_popen().returncode = 0
@@ -196,7 +196,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
     def test_enable_site_call_parent(self):
         with mock.patch(
-            "certbot_apache.configurator.ApacheConfigurator.enable_site") as e_s:
+            "certbot_apache._internal.configurator.ApacheConfigurator.enable_site") as e_s:
             self.config.parser.root = "/tmp/nonexistent"
             vh = self.vh_truth[0]
             vh.enabled = False

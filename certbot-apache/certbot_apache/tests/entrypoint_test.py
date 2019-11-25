@@ -1,10 +1,10 @@
-"""Test for certbot_apache.entrypoint for override class resolution"""
+"""Test for certbot_apache._internal.entrypoint for override class resolution"""
 import unittest
 
 import mock
 
-from certbot_apache import configurator
-from certbot_apache import entrypoint
+from certbot_apache._internal import configurator
+from certbot_apache._internal import entrypoint
 
 
 class EntryPointTest(unittest.TestCase):
