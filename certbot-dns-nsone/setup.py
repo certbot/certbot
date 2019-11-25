@@ -60,7 +60,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-nsone = certbot_dns_nsone.dns_nsone:Authenticator',
+            'dns-nsone = certbot_dns_nsone._internal.dns_nsone:Authenticator',
         ],
     },
     test_suite='certbot_dns_nsone',

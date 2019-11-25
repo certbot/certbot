@@ -60,7 +60,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-ovh = certbot_dns_ovh.dns_ovh:Authenticator',
+            'dns-ovh = certbot_dns_ovh._internal.dns_ovh:Authenticator',
         ],
     },
     test_suite='certbot_dns_ovh',

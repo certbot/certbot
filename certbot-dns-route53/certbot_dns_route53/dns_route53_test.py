@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_route53.dns_route53.Authenticator"""
+"""Tests for certbot_dns_route53._internal.dns_route53.Authenticator"""
 
 import unittest
 
@@ -15,7 +15,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
     # pylint: disable=protected-access
 
     def setUp(self):
-        from certbot_dns_route53.dns_route53 import Authenticator
+        from certbot_dns_route53._internal.dns_route53 import Authenticator
 
         super(AuthenticatorTest, self).setUp()
 
@@ -122,7 +122,7 @@ class ClientTest(unittest.TestCase):
                             }
 
     def setUp(self):
-        from certbot_dns_route53.dns_route53 import Authenticator
+        from certbot_dns_route53._internal.dns_route53 import Authenticator
 
         super(ClientTest, self).setUp()
 
