@@ -28,6 +28,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `certbot.reverter.Reverter.view_config_changes`, and
   `certbot.util.get_systemd_os_info` have been removed
 * Certbot's `register --update-registration` subcommand has been removed
+* When possible, default to automatically configuring the webserver so all requests
+  redirect to secure HTTPS access. This is mostly relevant when running Certbot
+  in non-interactive mode. Previously, the default was to not redirect all requests.
 
 ### Fixed
 
