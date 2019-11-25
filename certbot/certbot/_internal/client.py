@@ -557,11 +557,6 @@ class Client(object):
                 if ask_redirect:
                     if config_name == "redirect" and config_value is None:
                         config_value = enhancements.ask(enhancement_name)
-                        if not config_value:
-                            logger.warning("Future versions of Certbot will automatically "
-                                "configure the webserver so that all requests redirect to secure "
-                                "HTTPS access. You can control this behavior and disable this "
-                                "warning with the --redirect and --no-redirect flags.")
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True
