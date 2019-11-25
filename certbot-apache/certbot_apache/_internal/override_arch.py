@@ -4,8 +4,9 @@ import pkg_resources
 import zope.interface
 
 from certbot import interfaces
+from certbot.compat import os
 
-from certbot_apache import configurator
+from certbot_apache._internal import configurator
 
 @zope.interface.provider(interfaces.IPluginFactory)
 class ArchConfigurator(configurator.ApacheConfigurator):
@@ -27,5 +28,5 @@ class ArchConfigurator(configurator.ApacheConfigurator):
         handle_sites=False,
         challenge_location="/etc/httpd/conf",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "options-ssl-apache.conf")
+            "certbot_apache", os.path.join("_internal", "options-ssl-apache.conf"))
     )

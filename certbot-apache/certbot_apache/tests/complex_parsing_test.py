@@ -1,4 +1,4 @@
-"""Tests for certbot_apache.parser."""
+"""Tests for certbot_apache._internal.parser."""
 import shutil
 import unittest
 
@@ -88,7 +88,7 @@ class ComplexParserTest(util.ParserTest):
 
     def verify_fnmatch(self, arg, hit=True):
         """Test if Include was correctly parsed."""
-        from certbot_apache import parser
+        from certbot_apache._internal import parser
         self.parser.add_dir(parser.get_aug_path(self.parser.loc["default"]),
                             "Include", [arg])
         if hit:

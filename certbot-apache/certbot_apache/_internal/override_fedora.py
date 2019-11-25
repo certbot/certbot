@@ -5,10 +5,11 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import os
 
-from certbot_apache import apache_util
-from certbot_apache import configurator
-from certbot_apache import parser
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import configurator
+from certbot_apache._internal import parser
 
 
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -33,7 +34,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         challenge_location="/etc/httpd/conf.d",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
             # TODO: eventually newest version of Fedora will need their own config
-            "certbot_apache", "centos-options-ssl-apache.conf")
+            "certbot_apache", os.path.join("_internal", "centos-options-ssl-apache.conf"))
     )
 
     def config_test(self):

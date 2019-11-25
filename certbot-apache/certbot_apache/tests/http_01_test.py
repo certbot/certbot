@@ -1,4 +1,4 @@
-"""Test for certbot_apache.http_01."""
+"""Test for certbot_apache._internal.http_01."""
 import unittest
 import mock
 
@@ -11,7 +11,7 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import acme_util
 
-from certbot_apache.parser import get_aug_path
+from certbot_apache._internal.parser import get_aug_path
 from certbot_apache.tests import util
 
 
@@ -19,7 +19,7 @@ NUM_ACHALLS = 3
 
 
 class ApacheHttp01Test(util.ApacheTest):
-    """Test for certbot_apache.http_01.ApacheHttp01."""
+    """Test for certbot_apache._internal.http_01.ApacheHttp01."""
 
     def setUp(self, *args, **kwargs):  # pylint: disable=arguments-differ
         super(ApacheHttp01Test, self).setUp(*args, **kwargs)
@@ -45,13 +45,13 @@ class ApacheHttp01Test(util.ApacheTest):
             self.config.parser.modules.add("mod_{0}.c".format(mod))
             self.config.parser.modules.add(mod + "_module")
 
-        from certbot_apache.http_01 import ApacheHttp01
+        from certbot_apache._internal.http_01 import ApacheHttp01
         self.http = ApacheHttp01(self.config)
 
     def test_empty_perform(self):
         self.assertFalse(self.http.perform())
 
-    @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_2(self, mock_enmod):
         self.config.version = (2, 2)
         self.config.parser.modules.remove("authz_host_module")
@@ -60,7 +60,7 @@ class ApacheHttp01Test(util.ApacheTest):
         enmod_calls = self.common_enable_modules_test(mock_enmod)
         self.assertEqual(enmod_calls[0][0][0], "authz_host")
 
-    @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_4(self, mock_enmod):
         self.config.parser.modules.remove("authz_core_module")
         self.config.parser.modules.remove("mod_authz_core.c")

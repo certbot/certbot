@@ -1,6 +1,8 @@
 """Apache plugin constants."""
 import pkg_resources
 
+from certbot.compat import os
+
 
 MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
 """Name of the mod_ssl config file as saved in `IConfig.config_dir`."""
@@ -27,7 +29,7 @@ ALL_SSL_OPTIONS_HASHES = [
 """SHA256 hashes of the contents of previous versions of all versions of MOD_SSL_CONF_SRC"""
 
 AUGEAS_LENS_DIR = pkg_resources.resource_filename(
-    "certbot_apache", "augeas_lens")
+    "certbot_apache", os.path.join("_internal", "augeas_lens"))
 """Path to the Augeas lens directory"""
 
 REWRITE_HTTPS_ARGS = [

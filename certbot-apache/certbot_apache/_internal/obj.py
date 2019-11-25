@@ -24,7 +24,7 @@ class Addr(common.Addr):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "certbot_apache.obj.Addr(" + repr(self.tup) + ")"
+        return "certbot_apache._internal.obj.Addr(" + repr(self.tup) + ")"
 
     def __hash__(self):  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__ if __eq__ or

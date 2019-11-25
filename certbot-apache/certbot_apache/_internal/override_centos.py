@@ -7,13 +7,14 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import os
 from certbot.errors import MisconfigurationError
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
-from certbot_apache import apache_util
-from certbot_apache import configurator
-from certbot_apache import parser
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import configurator
+from certbot_apache._internal import parser
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         handle_sites=False,
         challenge_location="/etc/httpd/conf.d",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "centos-options-ssl-apache.conf")
+            "certbot_apache", os.path.join("_internal", "centos-options-ssl-apache.conf"))
     )
 
     def config_test(self):

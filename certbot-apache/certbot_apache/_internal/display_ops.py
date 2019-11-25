@@ -77,7 +77,7 @@ def _vhost_menu(domain, vhosts):
 
     if free_chars < 2:
         logger.debug("Display size is too small for "
-                     "certbot_apache.display_ops._vhost_menu()")
+                     "certbot_apache._internal.display_ops._vhost_menu()")
         # This runs the edge off the screen, but it doesn't cause an "error"
         filename_size = 1
         disp_name_size = 1

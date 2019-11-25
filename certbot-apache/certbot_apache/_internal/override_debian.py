@@ -10,8 +10,8 @@ from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 
-from certbot_apache import apache_util
-from certbot_apache import configurator
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import configurator
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         handle_sites=True,
         challenge_location="/etc/apache2",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "options-ssl-apache.conf")
+            "certbot_apache", os.path.join("_internal", "options-ssl-apache.conf"))
     )
 
     def enable_site(self, vhost):
@@ -46,7 +46,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
                   modules are enabled appropriately.
 
         :param vhost: vhost to enable
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :raises .errors.NotSupportedError: If filesystem layout is not
             supported.

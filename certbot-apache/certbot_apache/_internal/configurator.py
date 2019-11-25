@@ -29,12 +29,12 @@ from certbot.plugins import common
 from certbot.plugins.util import path_surgery
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 
-from certbot_apache import apache_util
-from certbot_apache import constants
-from certbot_apache import display_ops
-from certbot_apache import http_01
-from certbot_apache import obj
-from certbot_apache import parser
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import constants
+from certbot_apache._internal import display_ops
+from certbot_apache._internal import http_01
+from certbot_apache._internal import obj
+from certbot_apache._internal import parser
 
 logger = logging.getLogger(__name__)
 
@@ -77,11 +77,11 @@ class ApacheConfigurator(common.Installer):
     :type config: :class:`~certbot.interfaces.IConfig`
 
     :ivar parser: Handles low level parsing
-    :type parser: :class:`~certbot_apache.parser`
+    :type parser: :class:`~certbot_apache._internal.parser`
 
     :ivar tup version: version of Apache
     :ivar list vhosts: All vhosts found in the configuration
-        (:class:`list` of :class:`~certbot_apache.obj.VirtualHost`)
+        (:class:`list` of :class:`~certbot_apache._internal.obj.VirtualHost`)
 
     :ivar dict assoc: Mapping between domains and vhosts
 
@@ -110,7 +110,7 @@ class ApacheConfigurator(common.Installer):
         handle_sites=False,
         challenge_location="/etc/apache2",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "options-ssl-apache.conf")
+            "certbot_apache", os.path.join("_internal", "options-ssl-apache.conf"))
     )
 
     def option(self, key):
@@ -391,7 +391,7 @@ class ApacheConfigurator(common.Installer):
             counterpart, should one get created
 
         :returns: List of VirtualHosts or None
-        :rtype: `list` of :class:`~certbot_apache.obj.VirtualHost`
+        :rtype: `list` of :class:`~certbot_apache._internal.obj.VirtualHost`
         """
 
         if self._wildcard_domain(domain):
@@ -566,7 +566,7 @@ class ApacheConfigurator(common.Installer):
             counterpart, should one get created
 
         :returns: vhost associated with name
-        :rtype: :class:`~certbot_apache.obj.VirtualHost`
+        :rtype: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :raises .errors.PluginError: If no vhost is available or chosen
 
@@ -669,7 +669,7 @@ class ApacheConfigurator(common.Installer):
 
         :param str target_name: domain handled by the desired vhost
         :param vhosts: vhosts to consider
-        :type vhosts: `collections.Iterable` of :class:`~certbot_apache.obj.VirtualHost`
+        :type vhosts: `collections.Iterable` of :class:`~certbot_apache._internal.obj.VirtualHost`
         :param bool filter_defaults: whether a vhost with a _default_
             addr is acceptable
 
@@ -811,7 +811,7 @@ class ApacheConfigurator(common.Installer):
         """Helper function for get_virtual_hosts().
 
         :param host: In progress vhost whose names will be added
-        :type host: :class:`~certbot_apache.obj.VirtualHost`
+        :type host: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         """
 
@@ -830,7 +830,7 @@ class ApacheConfigurator(common.Installer):
         :param str path: Augeas path to virtual host
 
         :returns: newly created vhost
-        :rtype: :class:`~certbot_apache.obj.VirtualHost`
+        :rtype: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         """
         addrs = set()
@@ -871,7 +871,7 @@ class ApacheConfigurator(common.Installer):
     def get_virtual_hosts(self):
         """Returns list of virtual hosts found in the Apache configuration.
 
-        :returns: List of :class:`~certbot_apache.obj.VirtualHost`
+        :returns: List of :class:`~certbot_apache._internal.obj.VirtualHost`
             objects found in configuration
         :rtype: list
 
@@ -928,7 +928,7 @@ class ApacheConfigurator(common.Installer):
         now NameVirtualHosts. If version is earlier than 2.4, check if addr
         has a NameVirtualHost directive in the Apache config
 
-        :param certbot_apache.obj.Addr target_addr: vhost address
+        :param certbot_apache._internal.obj.Addr target_addr: vhost address
 
         :returns: Success
         :rtype: bool
@@ -946,7 +946,7 @@ class ApacheConfigurator(common.Installer):
         """Adds NameVirtualHost directive for given address.
 
         :param addr: Address that will be added as NameVirtualHost directive
-        :type addr: :class:`~certbot_apache.obj.Addr`
+        :type addr: :class:`~certbot_apache._internal.obj.Addr`
 
         """
 
@@ -1125,10 +1125,10 @@ class ApacheConfigurator(common.Installer):
         .. note:: This function saves the configuration
 
         :param nonssl_vhost: Valid VH that doesn't have SSLEngine on
-        :type nonssl_vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type nonssl_vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :returns: SSL vhost
-        :rtype: :class:`~certbot_apache.obj.VirtualHost`
+        :rtype: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :raises .errors.PluginError: If more than one virtual host is in
             the file or if plugin is unable to write/read vhost files.
@@ -1499,7 +1499,7 @@ class ApacheConfigurator(common.Installer):
         https://httpd.apache.org/docs/2.2/mod/core.html#namevirtualhost
 
         :param vhost: New virtual host that was recently created.
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         """
         need_to_save = False
@@ -1534,7 +1534,7 @@ class ApacheConfigurator(common.Installer):
         :param str id_str: Id string for matching
 
         :returns: The matched VirtualHost or None
-        :rtype: :class:`~certbot_apache.obj.VirtualHost` or None
+        :rtype: :class:`~certbot_apache._internal.obj.VirtualHost` or None
 
         :raises .errors.PluginError: If no VirtualHost is found
         """
@@ -1551,7 +1551,7 @@ class ApacheConfigurator(common.Installer):
         used for keeping track of VirtualHost directive over time.
 
         :param vhost: Virtual host to add the id
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :returns: The unique ID or None
         :rtype: str or None
@@ -1573,7 +1573,7 @@ class ApacheConfigurator(common.Installer):
         If ID already exists, returns that instead.
 
         :param vhost: Virtual host to add or find the id
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :returns: The unique ID for vhost
         :rtype: str or None
@@ -1651,7 +1651,7 @@ class ApacheConfigurator(common.Installer):
         """Increase the AutoHSTS max-age value
 
         :param vhost: Virtual host object to modify
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :param str id_str: The unique ID string of VirtualHost
 
@@ -1735,13 +1735,13 @@ class ApacheConfigurator(common.Installer):
         .. note:: This function saves the configuration
 
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
-        :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type ssl_vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :param unused_options: Not currently used
         :type unused_options: Not Available
 
         :returns: Success, general_vhost (HTTP vhost)
-        :rtype: (bool, :class:`~certbot_apache.obj.VirtualHost`)
+        :rtype: (bool, :class:`~certbot_apache._internal.obj.VirtualHost`)
 
         """
         min_apache_ver = (2, 3, 3)
@@ -1791,14 +1791,14 @@ class ApacheConfigurator(common.Installer):
         .. note:: This function saves the configuration
 
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
-        :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type ssl_vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :param header_substring: string that uniquely identifies a header.
                 e.g: Strict-Transport-Security, Upgrade-Insecure-Requests.
         :type str
 
         :returns: Success, general_vhost (HTTP vhost)
-        :rtype: (bool, :class:`~certbot_apache.obj.VirtualHost`)
+        :rtype: (bool, :class:`~certbot_apache._internal.obj.VirtualHost`)
 
         :raises .errors.PluginError: If no viable HTTP host can be created or
             set with header header_substring.
@@ -1826,7 +1826,7 @@ class ApacheConfigurator(common.Installer):
         contains the string header_substring.
 
         :param ssl_vhost: vhost to check
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :param header_substring: string that uniquely identifies a header.
                 e.g: Strict-Transport-Security, Upgrade-Insecure-Requests.
@@ -1863,7 +1863,7 @@ class ApacheConfigurator(common.Installer):
         .. note:: This function saves the configuration
 
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
-        :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type ssl_vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :param unused_options: Not currently used
         :type unused_options: Not Available
@@ -1948,7 +1948,7 @@ class ApacheConfigurator(common.Installer):
         delete certbot's old rewrite rules and set the new one instead.
 
         :param vhost: vhost to check
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :raises errors.PluginEnhancementAlreadyPresent: When the exact
                 certbot redirection WriteRule exists in virtual host.
@@ -1990,7 +1990,7 @@ class ApacheConfigurator(common.Installer):
         """Checks if there exists a RewriteRule directive in vhost
 
         :param vhost: vhost to check
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :returns: True if a RewriteRule directive exists.
         :rtype: bool
@@ -2004,7 +2004,7 @@ class ApacheConfigurator(common.Installer):
         """Checks if a RewriteEngine directive is on
 
         :param vhost: vhost to check
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         """
         rewrite_engine_path_list = self.parser.find_dir("RewriteEngine", "on",
@@ -2021,10 +2021,10 @@ class ApacheConfigurator(common.Installer):
         """Creates an http_vhost specifically to redirect for the ssl_vhost.
 
         :param ssl_vhost: ssl vhost
-        :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type ssl_vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :returns: tuple of the form
-            (`success`, :class:`~certbot_apache.obj.VirtualHost`)
+            (`success`, :class:`~certbot_apache._internal.obj.VirtualHost`)
         :rtype: tuple
 
         """
@@ -2150,7 +2150,7 @@ class ApacheConfigurator(common.Installer):
                   of this method where available.
 
         :param vhost: vhost to enable
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :raises .errors.NotSupportedError: If filesystem layout is not
             supported.
@@ -2387,7 +2387,7 @@ class ApacheConfigurator(common.Installer):
         """Do the initial AutoHSTS deployment to a vhost
 
         :param ssl_vhost: The VirtualHost object to deploy the AutoHSTS
-        :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost` or None
+        :type ssl_vhost: :class:`~certbot_apache._internal.obj.VirtualHost` or None
 
         :raises errors.PluginEnhancementAlreadyPresent: When already enhanced
 
