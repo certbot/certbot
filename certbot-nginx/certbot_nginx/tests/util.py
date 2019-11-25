@@ -13,8 +13,8 @@ from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
 
-from certbot_nginx import configurator
-from certbot_nginx import nginxparser
+from certbot_nginx._internal import configurator
+from certbot_nginx._internal import nginxparser
 
 
 class NginxTest(test_util.ConfigTestCase):
@@ -64,9 +64,9 @@ class NginxTest(test_util.ConfigTestCase):
         self.configuration.http01_port = 80
         self.configuration.https_port = 5001
 
-        with mock.patch("certbot_nginx.configurator.NginxConfigurator."
+        with mock.patch("certbot_nginx._internal.configurator.NginxConfigurator."
                         "config_test"):
-            with mock.patch("certbot_nginx.configurator.util."
+            with mock.patch("certbot_nginx._internal.configurator.util."
                             "exe_exists") as mock_exe_exists:
                 mock_exe_exists.return_value = True
                 config = configurator.NginxConfigurator(

@@ -1,4 +1,4 @@
-"""Test the helper objects in certbot_nginx.obj."""
+"""Test the helper objects in certbot_nginx._internal.obj."""
 import unittest
 import itertools
 
@@ -6,7 +6,7 @@ import itertools
 class AddrTest(unittest.TestCase):
     """Test the Addr class."""
     def setUp(self):
-        from certbot_nginx.obj import Addr
+        from certbot_nginx._internal.obj import Addr
         self.addr1 = Addr.fromstring("192.168.1.1")
         self.addr2 = Addr.fromstring("192.168.1.1:* ssl")
         self.addr3 = Addr.fromstring("192.168.1.1:80")
@@ -71,14 +71,14 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(self.addr6.to_string(include_default=False), "80")
 
     def test_eq(self):
-        from certbot_nginx.obj import Addr
+        from certbot_nginx._internal.obj import Addr
         new_addr1 = Addr.fromstring("192.168.1.1 spdy")
         self.assertEqual(self.addr1, new_addr1)
         self.assertNotEqual(self.addr1, self.addr2)
         self.assertFalse(self.addr1 == 3333)
 
     def test_equivalent_any_addresses(self):
-        from certbot_nginx.obj import Addr
+        from certbot_nginx._internal.obj import Addr
         any_addresses = ("0.0.0.0:80 default_server ssl",
                          "80 default_server ssl",
                          "*:80 default_server ssl",
@@ -97,7 +97,7 @@ class AddrTest(unittest.TestCase):
                 Addr.fromstring(any_address))
 
     def test_set_inclusion(self):
-        from certbot_nginx.obj import Addr
+        from certbot_nginx._internal.obj import Addr
         set_a = set([self.addr1, self.addr2])
         addr1b = Addr.fromstring("192.168.1.1")
         addr2b = Addr.fromstring("192.168.1.1:* ssl")
@@ -109,8 +109,8 @@ class AddrTest(unittest.TestCase):
 class VirtualHostTest(unittest.TestCase):
     """Test the VirtualHost class."""
     def setUp(self):
-        from certbot_nginx.obj import VirtualHost
-        from certbot_nginx.obj import Addr
+        from certbot_nginx._internal.obj import VirtualHost
+        from certbot_nginx._internal.obj import Addr
         raw1 = [
             ['listen', '69.50.225.155:9000'],
             [['if', '($scheme', '!=', '"https") '],
@@ -159,8 +159,8 @@ class VirtualHostTest(unittest.TestCase):
             set(['localhost']), raw_has_hsts, [])
 
     def test_eq(self):
-        from certbot_nginx.obj import Addr
-        from certbot_nginx.obj import VirtualHost
+        from certbot_nginx._internal.obj import Addr
+        from certbot_nginx._internal.obj import VirtualHost
         vhost1b = VirtualHost(
             "filep",
             set([Addr.fromstring("localhost blah")]), False, False,
@@ -183,9 +183,9 @@ class VirtualHostTest(unittest.TestCase):
         self.assertFalse(self.vhost1.has_header('Bogus-Header'))
 
     def test_contains_list(self):
-        from certbot_nginx.obj import VirtualHost
-        from certbot_nginx.obj import Addr
-        from certbot_nginx.configurator import _test_block_from_block
+        from certbot_nginx._internal.obj import VirtualHost
+        from certbot_nginx._internal.obj import Addr
+        from certbot_nginx._internal.configurator import _test_block_from_block
         test_block = [
             ['\n    ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
             ['\n']

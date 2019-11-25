@@ -71,7 +71,7 @@ setup(
     install_requires=install_requires,
     entry_points={
         'certbot.plugins': [
-            'nginx = certbot_nginx.configurator:NginxConfigurator',
+            'nginx = certbot_nginx._internal.configurator:NginxConfigurator',
         ],
     },
     test_suite='certbot_nginx',

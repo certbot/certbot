@@ -1,4 +1,4 @@
-"""Tests for certbot_nginx.parser."""
+"""Tests for certbot_nginx._internal.parser."""
 import glob
 import re
 import shutil
@@ -9,9 +9,9 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 from certbot import errors
 from certbot.compat import os
 
-from certbot_nginx import nginxparser
-from certbot_nginx import obj
-from certbot_nginx import parser
+from certbot_nginx._internal import nginxparser
+from certbot_nginx._internal import obj
+from certbot_nginx._internal import parser
 from certbot_nginx.tests import util
 
 
@@ -253,7 +253,7 @@ class NginxParserTest(util.NginxTest):
                                       [['foo', 'bar'], ['ssl_certificate',
                                                         '/etc/ssl/cert2.pem']])
         nparser.add_server_directives(mock_vhost, [['foo', 'bar']])
-        from certbot_nginx.parser import COMMENT
+        from certbot_nginx._internal.parser import COMMENT
         self.assertEqual(nparser.parsed[example_com],
             [[['server'], [['listen', '69.50.225.155:9000'],
                            ['listen', '127.0.0.1'],
@@ -288,7 +288,7 @@ class NginxParserTest(util.NginxTest):
         nparser.add_server_directives(mock_vhost,
                                       [['\n  ', 'include', ' ',
                                       nparser.abs_path('comment_in_file.conf')]])
-        from certbot_nginx.parser import COMMENT
+        from certbot_nginx._internal.parser import COMMENT
         self.assertEqual(nparser.parsed[example_com],
             [[['server'], [['listen', '69.50.225.155:9000'],
                            ['listen', '127.0.0.1'],
@@ -308,7 +308,7 @@ class NginxParserTest(util.NginxTest):
         mock_vhost = obj.VirtualHost(filep, None, None, None, target, None, [0])
         nparser.update_or_add_server_directives(
             mock_vhost, [['server_name', 'foobar.com']])
-        from certbot_nginx.parser import COMMENT
+        from certbot_nginx._internal.parser import COMMENT
         self.assertEqual(
             nparser.parsed[filep],
             [[['server'], [['listen', '69.50.225.155:9000'],
@@ -367,7 +367,7 @@ class NginxParserTest(util.NginxTest):
             ["\n", "a", " ", "b", "\n"],
             ["c", " ", "d"],
             ["\n", "e", " ", "f"]])
-        from certbot_nginx.parser import comment_directive, COMMENT_BLOCK
+        from certbot_nginx._internal.parser import comment_directive, COMMENT_BLOCK
         comment_directive(block, 1)
         comment_directive(block, 0)
         self.assertEqual(block.spaced, [
@@ -391,7 +391,7 @@ class NginxParserTest(util.NginxTest):
                 ssl_prefer_server_ciphers on;
             }""")
         block = server_block[0][1]
-        from certbot_nginx.parser import _comment_out_directive
+        from certbot_nginx._internal.parser import _comment_out_directive
         _comment_out_directive(block, 4, "blah1")
         _comment_out_directive(block, 5, "blah2")
         _comment_out_directive(block, 6, "blah3")

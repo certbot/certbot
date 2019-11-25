@@ -1,4 +1,4 @@
 include LICENSE.txt
 include README.rst
 recursive-include certbot_nginx/tests/testdata *
-recursive-include certbot_nginx/tls_configs *.conf
+recursive-include certbot_nginx/_internal/tls_configs *.conf

@@ -3,18 +3,18 @@
 import unittest
 import mock
 
-from certbot_nginx.parser_obj import parse_raw
-from certbot_nginx.parser_obj import COMMENT_BLOCK
+from certbot_nginx._internal.parser_obj import parse_raw
+from certbot_nginx._internal.parser_obj import COMMENT_BLOCK
 
 class CommentHelpersTest(unittest.TestCase):
     def test_is_comment(self):
-        from certbot_nginx.parser_obj import _is_comment
+        from certbot_nginx._internal.parser_obj import _is_comment
         self.assertTrue(_is_comment(parse_raw(['#'])))
         self.assertTrue(_is_comment(parse_raw(['#', ' literally anything else'])))
         self.assertFalse(_is_comment(parse_raw(['not', 'even', 'a', 'comment'])))
 
     def test_is_certbot_comment(self):
-        from certbot_nginx.parser_obj import _is_certbot_comment
+        from certbot_nginx._internal.parser_obj import _is_certbot_comment
         self.assertTrue(_is_certbot_comment(
             parse_raw(COMMENT_BLOCK)))
         self.assertFalse(_is_certbot_comment(
@@ -25,7 +25,7 @@ class CommentHelpersTest(unittest.TestCase):
             parse_raw(['not', 'even', 'a', 'comment'])))
 
     def test_certbot_comment(self):
-        from certbot_nginx.parser_obj import _certbot_comment, _is_certbot_comment
+        from certbot_nginx._internal.parser_obj import _certbot_comment, _is_certbot_comment
         comment = _certbot_comment(None)
         self.assertTrue(_is_certbot_comment(comment))
         self.assertEqual(comment.dump(), COMMENT_BLOCK)
@@ -35,7 +35,7 @@ class CommentHelpersTest(unittest.TestCase):
 
 class ParsingHooksTest(unittest.TestCase):
     def test_is_sentence(self):
-        from certbot_nginx.parser_obj import Sentence
+        from certbot_nginx._internal.parser_obj import Sentence
         self.assertFalse(Sentence.should_parse([]))
         self.assertTrue(Sentence.should_parse(['']))
         self.assertTrue(Sentence.should_parse(['word']))
@@ -44,7 +44,7 @@ class ParsingHooksTest(unittest.TestCase):
         self.assertFalse(Sentence.should_parse(['word', []]))
 
     def test_is_block(self):
-        from certbot_nginx.parser_obj import Block
+        from certbot_nginx._internal.parser_obj import Block
         self.assertFalse(Block.should_parse([]))
         self.assertFalse(Block.should_parse(['']))
         self.assertFalse(Block.should_parse(['two', 'words']))
@@ -71,7 +71,7 @@ class ParsingHooksTest(unittest.TestCase):
         fake_parser1.not_called()
         fake_parser2.called_once()
 
-    @mock.patch("certbot_nginx.parser_obj.Parsable.parsing_hooks")
+    @mock.patch("certbot_nginx._internal.parser_obj.Parsable.parsing_hooks")
     def test_parse_raw_no_match(self, parsing_hooks):
         from certbot import errors
         fake_parser1 = mock.Mock()
@@ -91,7 +91,7 @@ class ParsingHooksTest(unittest.TestCase):
 
 class SentenceTest(unittest.TestCase):
     def setUp(self):
-        from certbot_nginx.parser_obj import Sentence
+        from certbot_nginx._internal.parser_obj import Sentence
         self.sentence = Sentence(None)
 
     def test_parse_bad_sentence_raises_error(self):
@@ -137,7 +137,7 @@ class SentenceTest(unittest.TestCase):
 
 class BlockTest(unittest.TestCase):
     def setUp(self):
-        from certbot_nginx.parser_obj import Block
+        from certbot_nginx._internal.parser_obj import Block
         self.bloc = Block(None)
         self.name = ['server', 'name']
         self.contents = [['thing', '1'], ['thing', '2'], ['another', 'one']]
@@ -153,7 +153,7 @@ class BlockTest(unittest.TestCase):
 
     def test_iterate_match(self):
         # can match on contents while expanded
-        from certbot_nginx.parser_obj import Block, Sentence
+        from certbot_nginx._internal.parser_obj import Block, Sentence
         expected = [['thing', '1'], ['thing', '2']]
         for i, elem in enumerate(self.bloc.iterate(expanded=True,
             match=lambda x: isinstance(x, Sentence) and 'thing' in x.words)):
@@ -192,7 +192,7 @@ class BlockTest(unittest.TestCase):
 
 class StatementsTest(unittest.TestCase):
     def setUp(self):
-        from certbot_nginx.parser_obj import Statements
+        from certbot_nginx._internal.parser_obj import Statements
         self.statements = Statements(None)
         self.raw = [
             ['sentence', 'one'],

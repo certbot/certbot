@@ -1,4 +1,4 @@
-"""Test for certbot_nginx.nginxparser."""
+"""Test for certbot_nginx._internal.nginxparser."""
 import copy
 import operator
 import tempfile
@@ -6,7 +6,7 @@ import unittest
 
 from pyparsing import ParseException
 
-from certbot_nginx.nginxparser import (
+from certbot_nginx._internal.nginxparser import (
     RawNginxParser, loads, load, dumps, dump, UnspacedList)
 from certbot_nginx.tests import util
 

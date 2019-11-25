@@ -11,8 +11,8 @@ import six
 from certbot import errors
 from certbot.compat import os
 
-from certbot_nginx import obj
-from certbot_nginx import nginxparser
+from certbot_nginx._internal import obj
+from certbot_nginx._internal import nginxparser
 from acme.magic_typing import Union, Dict, Set, Any, List, Tuple # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
@@ -129,7 +129,7 @@ class NginxParser(object):
         Technically this is a misnomer because Nginx does not have virtual
         hosts, it has 'server blocks'.
 
-        :returns: List of :class:`~certbot_nginx.obj.VirtualHost`
+        :returns: List of :class:`~certbot_nginx._internal.obj.VirtualHost`
             objects found in configuration
         :rtype: list
 
@@ -262,7 +262,7 @@ class NginxParser(object):
     def has_ssl_on_directive(self, vhost):
         """Does vhost have ssl on for all ports?
 
-        :param :class:`~certbot_nginx.obj.VirtualHost` vhost: The vhost in question
+        :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost: The vhost in question
 
         :returns: True if 'ssl on' directive is included
         :rtype: bool
@@ -288,7 +288,7 @@ class NginxParser(object):
         ..todo :: Doesn't match server blocks whose server_name directives are
             split across multiple conf files.
 
-        :param :class:`~certbot_nginx.obj.VirtualHost` vhost: The vhost
+        :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost: The vhost
             whose information we use to match on
         :param list directives: The directives to add
         :param bool insert_at_top: True if the directives need to be inserted at the top
@@ -310,7 +310,7 @@ class NginxParser(object):
         ..todo :: Doesn't match server blocks whose server_name directives are
             split across multiple conf files.
 
-        :param :class:`~certbot_nginx.obj.VirtualHost` vhost: The vhost
+        :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost: The vhost
             whose information we use to match on
         :param list directives: The directives to add
         :param bool insert_at_top: True if the directives need to be inserted at the top
@@ -323,7 +323,7 @@ class NginxParser(object):
     def remove_server_directives(self, vhost, directive_name, match_func=None):
         """Remove all directives of type directive_name.
 
-        :param :class:`~certbot_nginx.obj.VirtualHost` vhost: The vhost
+        :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost: The vhost
             to remove directives from
         :param string directive_name: The directive type to remove
         :param callable match_func: Function of the directive that returns true for directives
@@ -359,7 +359,7 @@ class NginxParser(object):
         only_directives=None):
         """Duplicate the vhost in the configuration files.
 
-        :param :class:`~certbot_nginx.obj.VirtualHost` vhost_template: The vhost
+        :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost_template: The vhost
             whose information we copy
         :param bool remove_singleton_listen_params: If we should remove parameters
             from listen directives in the block that can only be used once per address
@@ -367,7 +367,7 @@ class NginxParser(object):
             looks at first level of depth; does not expand includes.
 
         :returns: A vhost object for the newly created vhost
-        :rtype: :class:`~certbot_nginx.obj.VirtualHost`
+        :rtype: :class:`~certbot_nginx._internal.obj.VirtualHost`
         """
         # TODO: https://github.com/certbot/certbot/issues/5185
         # put it in the same file as the template, at the same level
