@@ -72,7 +72,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-dnsimple = certbot_dns_dnsimple.dns_dnsimple:Authenticator',
+            'dns-dnsimple = certbot_dns_dnsimple._internal.dns_dnsimple:Authenticator',
         ],
     },
     test_suite='certbot_dns_dnsimple',

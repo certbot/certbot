@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_sakuracloud.dns_sakuracloud."""
+"""Tests for certbot_dns_sakuracloud._internal.dns_sakuracloud."""
 
 import unittest
 
@@ -20,7 +20,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
     def setUp(self):
         super(AuthenticatorTest, self).setUp()
 
-        from certbot_dns_sakuracloud.dns_sakuracloud import Authenticator
+        from certbot_dns_sakuracloud._internal.dns_sakuracloud import Authenticator
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write(
@@ -44,7 +44,7 @@ class SakuraCloudLexiconClientTest(unittest.TestCase,
     LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: {0}.'.format(DOMAIN))
 
     def setUp(self):
-        from certbot_dns_sakuracloud.dns_sakuracloud import _SakuraCloudLexiconClient
+        from certbot_dns_sakuracloud._internal.dns_sakuracloud import _SakuraCloudLexiconClient
 
         self.client = _SakuraCloudLexiconClient(API_TOKEN, API_SECRET, 0)
 

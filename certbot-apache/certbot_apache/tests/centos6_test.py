@@ -1,12 +1,12 @@
-"""Test for certbot_apache.configurator for CentOS 6 overrides"""
+"""Test for certbot_apache._internal.configurator for CentOS 6 overrides"""
 import unittest
 
 from certbot.compat import os
 from certbot.errors import MisconfigurationError
 
-from certbot_apache import obj
-from certbot_apache import override_centos
-from certbot_apache import parser
+from certbot_apache._internal import obj
+from certbot_apache._internal import override_centos
+from certbot_apache._internal import parser
 from certbot_apache.tests import util
 
 

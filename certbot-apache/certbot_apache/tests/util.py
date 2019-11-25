@@ -13,9 +13,9 @@ from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.tests import util as test_util
 
-from certbot_apache import configurator
-from certbot_apache import entrypoint
-from certbot_apache import obj
+from certbot_apache._internal import configurator
+from certbot_apache._internal import entrypoint
+from certbot_apache._internal import obj
 
 
 class ApacheTest(unittest.TestCase):
@@ -72,10 +72,10 @@ class ParserTest(ApacheTest):
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
                                                                False))
 
-        from certbot_apache.parser import ApacheParser
+        from certbot_apache._internal.parser import ApacheParser
         self.aug = augeas.Augeas(
             flags=augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD)
-        with mock.patch("certbot_apache.parser.ApacheParser."
+        with mock.patch("certbot_apache._internal.parser.ApacheParser."
                         "update_runtime_variables"):
             self.parser = ApacheParser(
                 self.config_path, self.vhost_path, configurator=self.config)
@@ -105,11 +105,11 @@ def get_apache_configurator(
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    with mock.patch("certbot_apache.configurator.util.run_script"):
-        with mock.patch("certbot_apache.configurator.util."
+    with mock.patch("certbot_apache._internal.configurator.util.run_script"):
+        with mock.patch("certbot_apache._internal.configurator.util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
-            with mock.patch("certbot_apache.parser.ApacheParser."
+            with mock.patch("certbot_apache._internal.parser.ApacheParser."
                             "update_runtime_variables"):
                 try:
                     config_class = entrypoint.OVERRIDE_CLASSES[os_info]

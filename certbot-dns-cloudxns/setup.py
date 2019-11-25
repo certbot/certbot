@@ -60,7 +60,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-cloudxns = certbot_dns_cloudxns.dns_cloudxns:Authenticator',
+            'dns-cloudxns = certbot_dns_cloudxns._internal.dns_cloudxns:Authenticator',
         ],
     },
     test_suite='certbot_dns_cloudxns',

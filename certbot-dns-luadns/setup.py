@@ -60,7 +60,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-luadns = certbot_dns_luadns.dns_luadns:Authenticator',
+            'dns-luadns = certbot_dns_luadns._internal.dns_luadns:Authenticator',
         ],
     },
     test_suite='certbot_dns_luadns',

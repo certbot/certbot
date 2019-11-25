@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_digitalocean.dns_digitalocean."""
+"""Tests for certbot_dns_digitalocean._internal.dns_digitalocean."""
 
 import unittest
 
@@ -18,7 +18,7 @@ TOKEN = 'a-token'
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
 
     def setUp(self):
-        from certbot_dns_digitalocean.dns_digitalocean import Authenticator
+        from certbot_dns_digitalocean._internal.dns_digitalocean import Authenticator
 
         super(AuthenticatorTest, self).setUp()
 
@@ -57,7 +57,7 @@ class DigitalOceanClientTest(unittest.TestCase):
     record_content = "bar"
 
     def setUp(self):
-        from certbot_dns_digitalocean.dns_digitalocean import _DigitalOceanClient
+        from certbot_dns_digitalocean._internal.dns_digitalocean import _DigitalOceanClient
 
         self.digitalocean_client = _DigitalOceanClient(TOKEN)
 

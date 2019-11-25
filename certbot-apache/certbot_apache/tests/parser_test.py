@@ -1,4 +1,4 @@
-"""Tests for certbot_apache.parser."""
+"""Tests for certbot_apache._internal.parser."""
 import shutil
 import unittest
 
@@ -113,7 +113,7 @@ class BasicParserTest(util.ParserTest):
         Path must be valid before attempting to add to augeas
 
         """
-        from certbot_apache.parser import get_aug_path
+        from certbot_apache._internal.parser import get_aug_path
         # This makes sure that find_dir will work
         self.parser.modules.add("mod_ssl.c")
 
@@ -127,7 +127,7 @@ class BasicParserTest(util.ParserTest):
         self.assertTrue("IfModule" in matches[0])
 
     def test_add_dir_to_ifmodssl_multiple(self):
-        from certbot_apache.parser import get_aug_path
+        from certbot_apache._internal.parser import get_aug_path
         # This makes sure that find_dir will work
         self.parser.modules.add("mod_ssl.c")
 
@@ -141,11 +141,11 @@ class BasicParserTest(util.ParserTest):
         self.assertTrue("IfModule" in matches[0])
 
     def test_get_aug_path(self):
-        from certbot_apache.parser import get_aug_path
+        from certbot_apache._internal.parser import get_aug_path
         self.assertEqual("/files/etc/apache", get_aug_path("/etc/apache"))
 
     def test_set_locations(self):
-        with mock.patch("certbot_apache.parser.os.path") as mock_path:
+        with mock.patch("certbot_apache._internal.parser.os.path") as mock_path:
 
             mock_path.isfile.side_effect = [False, False]
 
@@ -155,18 +155,18 @@ class BasicParserTest(util.ParserTest):
             self.assertEqual(results["default"], results["listen"])
             self.assertEqual(results["default"], results["name"])
 
-    @mock.patch("certbot_apache.parser.ApacheParser.find_dir")
-    @mock.patch("certbot_apache.parser.ApacheParser.get_arg")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.find_dir")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.get_arg")
     def test_parse_modules_bad_syntax(self, mock_arg, mock_find):
         mock_find.return_value = ["1", "2", "3", "4", "5", "6", "7", "8"]
         mock_arg.return_value = None
-        with mock.patch("certbot_apache.parser.logger") as mock_logger:
+        with mock.patch("certbot_apache._internal.parser.logger") as mock_logger:
             self.parser.parse_modules()
             # Make sure that we got None return value and logged the file
             self.assertTrue(mock_logger.debug.called)
 
-    @mock.patch("certbot_apache.parser.ApacheParser.find_dir")
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.find_dir")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser._get_runtime_cfg")
     def test_update_runtime_variables(self, mock_cfg, _):
         define_val = (
             'ServerRoot: "/etc/apache2"\n'
@@ -263,7 +263,7 @@ class BasicParserTest(util.ParserTest):
 
         self.parser.modules = set()
         with mock.patch(
-            "certbot_apache.parser.ApacheParser.parse_file") as mock_parse:
+            "certbot_apache._internal.parser.ApacheParser.parse_file") as mock_parse:
             self.parser.update_runtime_variables()
             self.assertEqual(self.parser.variables, expected_vars)
             self.assertEqual(len(self.parser.modules), 58)
@@ -271,8 +271,8 @@ class BasicParserTest(util.ParserTest):
             # Make sure we tried to include them all.
             self.assertEqual(mock_parse.call_count, 25)
 
-    @mock.patch("certbot_apache.parser.ApacheParser.find_dir")
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.find_dir")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser._get_runtime_cfg")
     def test_update_runtime_variables_alt_values(self, mock_cfg, _):
         inc_val = (
             'Included configuration files:\n'
@@ -286,7 +286,7 @@ class BasicParserTest(util.ParserTest):
         self.parser.modules = set()
 
         with mock.patch(
-            "certbot_apache.parser.ApacheParser.parse_file") as mock_parse:
+            "certbot_apache._internal.parser.ApacheParser.parse_file") as mock_parse:
             self.parser.update_runtime_variables()
             # No matching modules should have been found
             self.assertEqual(len(self.parser.modules), 0)
@@ -294,7 +294,7 @@ class BasicParserTest(util.ParserTest):
             # path derived from root configuration Include statements
             self.assertEqual(mock_parse.call_count, 1)
 
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser._get_runtime_cfg")
     def test_update_runtime_vars_bad_output(self, mock_cfg):
         mock_cfg.return_value = "Define: TLS=443=24"
         self.parser.update_runtime_variables()
@@ -303,8 +303,8 @@ class BasicParserTest(util.ParserTest):
         self.assertRaises(
             errors.PluginError, self.parser.update_runtime_variables)
 
-    @mock.patch("certbot_apache.configurator.ApacheConfigurator.option")
-    @mock.patch("certbot_apache.parser.subprocess.Popen")
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.option")
+    @mock.patch("certbot_apache._internal.parser.subprocess.Popen")
     def test_update_runtime_vars_bad_ctl(self, mock_popen, mock_opt):
         mock_popen.side_effect = OSError
         mock_opt.return_value = "nonexistent"
@@ -312,7 +312,7 @@ class BasicParserTest(util.ParserTest):
             errors.MisconfigurationError,
             self.parser.update_runtime_variables)
 
-    @mock.patch("certbot_apache.parser.subprocess.Popen")
+    @mock.patch("certbot_apache._internal.parser.subprocess.Popen")
     def test_update_runtime_vars_bad_exit(self, mock_popen):
         mock_popen().communicate.return_value = ("", "")
         mock_popen.returncode = -1
@@ -321,7 +321,7 @@ class BasicParserTest(util.ParserTest):
             self.parser.update_runtime_variables)
 
     def test_add_comment(self):
-        from certbot_apache.parser import get_aug_path
+        from certbot_apache._internal.parser import get_aug_path
         self.parser.add_comment(get_aug_path(self.parser.loc["name"]), "123456")
         comm = self.parser.find_comments("123456")
         self.assertEqual(len(comm), 1)
@@ -337,9 +337,9 @@ class ParserInitTest(util.ApacheTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    @mock.patch("certbot_apache.parser.ApacheParser.init_augeas")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.init_augeas")
     def test_prepare_no_augeas(self, mock_init_augeas):
-        from certbot_apache.parser import ApacheParser
+        from certbot_apache._internal.parser import ApacheParser
         mock_init_augeas.side_effect = errors.NoInstallationError
         self.config.config_test = mock.Mock()
         self.assertRaises(
@@ -348,17 +348,17 @@ class ParserInitTest(util.ApacheTest):
             version=(2, 4, 22), configurator=self.config)
 
     def test_init_old_aug(self):
-        from certbot_apache.parser import ApacheParser
-        with mock.patch("certbot_apache.parser.ApacheParser.check_aug_version") as mock_c:
+        from certbot_apache._internal.parser import ApacheParser
+        with mock.patch("certbot_apache._internal.parser.ApacheParser.check_aug_version") as mock_c:
             mock_c.return_value = False
             self.assertRaises(
                 errors.NotSupportedError,
                 ApacheParser, os.path.relpath(self.config_path),
                 "/dummy/vhostpath", version=(2, 4, 22), configurator=self.config)
 
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser._get_runtime_cfg")
     def test_unparseable(self, mock_cfg):
-        from certbot_apache.parser import ApacheParser
+        from certbot_apache._internal.parser import ApacheParser
         mock_cfg.return_value = ('Define: TEST')
         self.assertRaises(
             errors.PluginError,
@@ -366,9 +366,9 @@ class ParserInitTest(util.ApacheTest):
             "/dummy/vhostpath", version=(2, 2, 22), configurator=self.config)
 
     def test_root_normalized(self):
-        from certbot_apache.parser import ApacheParser
+        from certbot_apache._internal.parser import ApacheParser
 
-        with mock.patch("certbot_apache.parser.ApacheParser."
+        with mock.patch("certbot_apache._internal.parser.ApacheParser."
                         "update_runtime_variables"):
             path = os.path.join(
                 self.temp_dir,
@@ -379,8 +379,8 @@ class ParserInitTest(util.ApacheTest):
         self.assertEqual(parser.root, self.config_path)
 
     def test_root_absolute(self):
-        from certbot_apache.parser import ApacheParser
-        with mock.patch("certbot_apache.parser.ApacheParser."
+        from certbot_apache._internal.parser import ApacheParser
+        with mock.patch("certbot_apache._internal.parser.ApacheParser."
                         "update_runtime_variables"):
             parser = ApacheParser(
                 os.path.relpath(self.config_path),
@@ -389,8 +389,8 @@ class ParserInitTest(util.ApacheTest):
         self.assertEqual(parser.root, self.config_path)
 
     def test_root_no_trailing_slash(self):
-        from certbot_apache.parser import ApacheParser
-        with mock.patch("certbot_apache.parser.ApacheParser."
+        from certbot_apache._internal.parser import ApacheParser
+        with mock.patch("certbot_apache._internal.parser.ApacheParser."
                         "update_runtime_variables"):
             parser = ApacheParser(
                 self.config_path + os.path.sep,

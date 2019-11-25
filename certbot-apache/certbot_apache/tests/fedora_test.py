@@ -1,4 +1,4 @@
-"""Test for certbot_apache.configurator for Fedora 29+ overrides"""
+"""Test for certbot_apache._internal.configurator for Fedora 29+ overrides"""
 import unittest
 
 import mock
@@ -7,8 +7,8 @@ from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 
-from certbot_apache import obj
-from certbot_apache import override_fedora
+from certbot_apache._internal import obj
+from certbot_apache._internal import override_fedora
 from certbot_apache.tests import util
 
 
@@ -58,7 +58,7 @@ class FedoraRestartTest(util.ApacheTest):
         self.config.config_test()
 
     def test_fedora_restart_error(self):
-        c_test = "certbot_apache.configurator.ApacheConfigurator.config_test"
+        c_test = "certbot_apache._internal.configurator.ApacheConfigurator.config_test"
         with mock.patch(c_test) as mock_test:
             # First call raises error, second doesn't
             mock_test.side_effect = [errors.MisconfigurationError, '']
@@ -68,7 +68,7 @@ class FedoraRestartTest(util.ApacheTest):
                                   self._run_fedora_test)
 
     def test_fedora_restart(self):
-        c_test = "certbot_apache.configurator.ApacheConfigurator.config_test"
+        c_test = "certbot_apache._internal.configurator.ApacheConfigurator.config_test"
         with mock.patch(c_test) as mock_test:
             with mock.patch("certbot.util.run_script") as mock_run:
                 # First call raises error, second doesn't
@@ -101,7 +101,7 @@ class MultipleVhostsTestFedora(util.ApacheTest):
     def test_get_parser(self):
         self.assertIsInstance(self.config.parser, override_fedora.FedoraParser)
 
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser._get_runtime_cfg")
     def test_opportunistic_httpd_runtime_parsing(self, mock_get):
         define_val = (
             'Define: TEST1\n'
@@ -135,7 +135,7 @@ class MultipleVhostsTestFedora(util.ApacheTest):
         self.assertTrue("TEST2" in self.config.parser.variables.keys())
         self.assertTrue("mod_another.c" in self.config.parser.modules)
 
-    @mock.patch("certbot_apache.configurator.util.run_script")
+    @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_get_version(self, mock_run_script):
         mock_run_script.return_value = ('', None)
         self.assertRaises(errors.PluginError, self.config.get_version)
@@ -156,7 +156,7 @@ class MultipleVhostsTestFedora(util.ApacheTest):
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
         self.assertEqual(found, 2)
 
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache._internal.parser.ApacheParser._get_runtime_cfg")
     def test_get_sysconfig_vars(self, mock_cfg):
         """Make sure we read the sysconfig OPTIONS variable correctly"""
         # Return nothing for the process calls
@@ -177,13 +177,13 @@ class MultipleVhostsTestFedora(util.ApacheTest):
         self.assertTrue("MOCK_NOSEP" in self.config.parser.variables.keys())
         self.assertEqual("NOSEP_VAL", self.config.parser.variables["NOSEP_TWO"])
 
-    @mock.patch("certbot_apache.configurator.util.run_script")
+    @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_alt_restart_works(self, mock_run_script):
         mock_run_script.side_effect = [None, errors.SubprocessError, None]
         self.config.restart()
         self.assertEqual(mock_run_script.call_count, 3)
 
-    @mock.patch("certbot_apache.configurator.util.run_script")
+    @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_alt_restart_errors(self, mock_run_script):
         mock_run_script.side_effect = [None,
                                        errors.SubprocessError,
