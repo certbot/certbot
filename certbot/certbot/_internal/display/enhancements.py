@@ -50,7 +50,7 @@ def redirect_by_default():
 
     code, selection = util(interfaces.IDisplay).menu(
         "Please choose whether or not to redirect HTTP traffic to HTTPS, removing HTTP access.",
-        choices, default=0,
+        choices, default=1,
         cli_flag="--redirect / --no-redirect", force_interactive=True)
 
     if code != display_util.OK:
