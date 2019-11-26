@@ -119,8 +119,9 @@ imp.load_dynamic('pythoncom', pcom)
 
     installer_cfg_path = os.path.join(build_path, 'installer.cfg')
 
+    certbot_pkg_path = os.path.join(repo_path, 'certbot')
     certbot_version = subprocess.check_output([sys.executable, '-c', 'import certbot; print(certbot.__version__)'],
-                                              universal_newlines=True, cwd=repo_path).strip()
+                                              universal_newlines=True, cwd=certbot_pkg_path).strip()
 
     with open(installer_cfg_path, 'w') as file_h:
         file_h.write('''\
