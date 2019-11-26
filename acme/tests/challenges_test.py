@@ -7,7 +7,7 @@ import requests
 
 from six.moves.urllib import parse as urllib_parse  # pylint: disable=relative-import
 
-from acme import test_util
+import test_util
 
 CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))
