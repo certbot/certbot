@@ -12,7 +12,8 @@ from certbot.compat import os
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
 from certbot_nginx._internal import parser
-from certbot_nginx.tests import util
+
+import test_util as util
 
 
 class NginxParserTest(util.NginxTest):

@@ -26,7 +26,7 @@ class NginxTest(test_util.ConfigTestCase):
         self.config = None
 
         self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
-            "etc_nginx", "certbot_nginx.tests")
+            "etc_nginx", __name__)
         self.logs_dir = tempfile.mkdtemp('logs')
 
         self.config_path = os.path.join(self.temp_dir, "etc_nginx")
@@ -85,7 +85,7 @@ class NginxTest(test_util.ConfigTestCase):
 def get_data_filename(filename):
     """Gets the filename of a test data file."""
     return pkg_resources.resource_filename(
-        "certbot_nginx.tests", os.path.join(
+        __name__, os.path.join(
             "testdata", "etc_nginx", filename))
 
 

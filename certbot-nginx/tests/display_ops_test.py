@@ -8,7 +8,8 @@ from certbot.tests import util as certbot_util
 from certbot_nginx._internal import parser
 
 from certbot_nginx._internal.display_ops import select_vhost_multiple
-from certbot_nginx.tests import util
+
+import test_util as util
 
 
 class SelectVhostMultiTest(util.NginxTest):

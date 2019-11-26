@@ -13,7 +13,8 @@ from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
 from certbot_nginx._internal.obj import Addr
-from certbot_nginx.tests import util
+
+import test_util as util
 
 AUTH_KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
