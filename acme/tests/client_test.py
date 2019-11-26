@@ -16,10 +16,10 @@ from acme import challenges
 from acme import errors
 from acme import jws as acme_jws
 from acme import messages
-from acme import messages_test
 from acme import test_util
 from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
 
+import messages_test
 
 CERT_DER = test_util.load_vector('cert.der')
 CERT_SAN_PEM = test_util.load_vector('cert-san.pem')
