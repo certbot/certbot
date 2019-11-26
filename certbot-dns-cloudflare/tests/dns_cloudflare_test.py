@@ -153,6 +153,25 @@ class CloudflareClientTest(unittest.TestCase):
             self.cloudflare_client.add_txt_record,
             DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
+    def test_add_txt_record_bad_creds(self):
+        self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(6003, '', '')
+        self.assertRaises(
+            errors.PluginError,
+            self.cloudflare_client.add_txt_record,
+            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
+        self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(9103, '', '')
+        self.assertRaises(
+            errors.PluginError,
+            self.cloudflare_client.add_txt_record,
+            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
+        self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(9109, '', '')
+        self.assertRaises(
+            errors.PluginError,
+            self.cloudflare_client.add_txt_record,
+            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
     def test_del_txt_record(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
         self.cf.zones.dns_records.get.return_value = [{'id': self.record_id}]
@@ -175,6 +194,9 @@ class CloudflareClientTest(unittest.TestCase):
         self.cf.zones.get.side_effect = API_ERROR
 
         self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+        expected = [mock.call.zones.get(params=mock.ANY)]
+
+        self.assertEqual(expected, self.cf.mock_calls)
 
     def test_del_txt_record_error_during_delete(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
