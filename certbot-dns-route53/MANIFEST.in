@@ -1,3 +1,4 @@
 include LICENSE.txt
 include README
 recursive-include docs *
+recursive-include tests *
