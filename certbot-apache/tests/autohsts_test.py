@@ -8,7 +8,8 @@ import six  # pylint: disable=unused-import
 
 from certbot import errors
 from certbot_apache._internal import constants
-from certbot_apache.tests import util
+
+import util
 
 
 class AutoHSTSTest(util.ApacheTest):

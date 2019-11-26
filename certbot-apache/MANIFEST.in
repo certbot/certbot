@@ -1,6 +1,6 @@
 include LICENSE.txt
 include README.rst
-recursive-include certbot_apache/tests/testdata *
+recursive-include tests *
 include certbot_apache/_internal/centos-options-ssl-apache.conf
 include certbot_apache/_internal/options-ssl-apache.conf
 recursive-include certbot_apache/_internal/augeas_lens *.aug

@@ -9,7 +9,8 @@ from certbot.compat import os
 
 from certbot_apache._internal import obj
 from certbot_apache._internal import override_gentoo
-from certbot_apache.tests import util
+
+import util
 
 
 def get_vh_truth(temp_dir, config_name):
