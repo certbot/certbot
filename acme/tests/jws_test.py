@@ -3,7 +3,7 @@ import unittest
 
 import josepy as jose
 
-from acme import test_util
+import test_util
 
 
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))

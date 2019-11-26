@@ -5,9 +5,9 @@ import josepy as jose
 import mock
 
 from acme import challenges
-from acme import test_util
 from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
 
+import test_util
 
 CERT = test_util.load_comparable_cert('cert.der')
 CSR = test_util.load_comparable_csr('csr.der')
