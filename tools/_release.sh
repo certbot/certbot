@@ -65,8 +65,8 @@ fi
 git checkout "$RELEASE_BRANCH"
 
 # Update changelog
-sed -i "s/master/$(date +'%Y-%m-%d')/" CHANGELOG.md
-git add CHANGELOG.md
+sed -i "s/master/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
+git add certbot/CHANGELOG.md
 git diff --cached
 git commit -m "Update changelog for $version release"
 
@@ -249,17 +249,17 @@ echo gpg2 -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
 cd ~-
 
 # Add master section to CHANGELOG.md
-header=$(head -n 4 CHANGELOG.md)
+header=$(head -n 4 certbot/CHANGELOG.md)
 body=$(sed s/nextversion/$nextversion/ tools/_changelog_top.txt)
-footer=$(tail -n +5 CHANGELOG.md)
+footer=$(tail -n +5 certbot/CHANGELOG.md)
 echo "$header
 
 $body
 
-$footer" > CHANGELOG.md
-git add CHANGELOG.md
+$footer" > certbot/CHANGELOG.md
+git add certbot/CHANGELOG.md
 git diff --cached
-git commit -m "Add contents to CHANGELOG.md for next version"
+git commit -m "Add contents to certbot/CHANGELOG.md for next version"
 
 echo "New root: $root"
 echo "Test commands (in the letstest repo):"
