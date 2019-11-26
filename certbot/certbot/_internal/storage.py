@@ -17,6 +17,7 @@ from certbot._internal import constants
 from certbot import crypto_util
 from certbot._internal import error_handler
 from certbot import errors
+from certbot import interfaces
 from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
@@ -1126,3 +1127,6 @@ class RenewableCert(object):
         self.configuration = config_with_defaults(self.configfile)
 
         return target_version
+
+
+interfaces.RenewableCert.register(RenewableCert)

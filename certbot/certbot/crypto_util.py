@@ -213,26 +213,28 @@ def verify_renewable_cert(renewable_cert):
         2. That fullchain matches cert and chain when concatenated.
         3. Check that the private key matches the certificate.
 
-    :param `.storage.RenewableCert` renewable_cert: cert to verify
+    :param renewable_cert: cert to verify
+    :type renewable_cert: certbot.interfaces.RenewableCert
 
     :raises errors.Error: If verification fails.
     """
     verify_renewable_cert_sig(renewable_cert)
     verify_fullchain(renewable_cert)
-    verify_cert_matches_priv_key(renewable_cert.cert, renewable_cert.privkey)
+    verify_cert_matches_priv_key(renewable_cert.cert_path, renewable_cert.key_path)
 
 
 def verify_renewable_cert_sig(renewable_cert):
-    """Verifies the signature of a `.storage.RenewableCert` object.
+    """Verifies the signature of a RenewableCert object.
 
-    :param `.storage.RenewableCert` renewable_cert: cert to verify
+    :param renewable_cert: cert to verify
+    :type renewable_cert: certbot.interfaces.RenewableCert
 
     :raises errors.Error: If signature verification fails.
     """
     try:
-        with open(renewable_cert.chain, 'rb') as chain_file:  # type: IO[bytes]
+        with open(renewable_cert.chain_path, 'rb') as chain_file:  # type: IO[bytes]
             chain = x509.load_pem_x509_certificate(chain_file.read(), default_backend())
-        with open(renewable_cert.cert, 'rb') as cert_file:  # type: IO[bytes]
+        with open(renewable_cert.cert_path, 'rb') as cert_file:  # type: IO[bytes]
             cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
         pk = chain.public_key()
         with warnings.catch_warnings():
@@ -240,7 +242,7 @@ def verify_renewable_cert_sig(renewable_cert):
                                   cert.signature_hash_algorithm)
     except (IOError, ValueError, InvalidSignature) as e:
         error_str = "verifying the signature of the cert located at {0} has failed. \
-                Details: {1}".format(renewable_cert.cert, e)
+                Details: {1}".format(renewable_cert.cert_path, e)
         logger.exception(error_str)
         raise errors.Error(error_str)
 
@@ -301,16 +303,17 @@ def verify_cert_matches_priv_key(cert_path, key_path):
 def verify_fullchain(renewable_cert):
     """ Verifies that fullchain is indeed cert concatenated with chain.
 
-    :param `.storage.RenewableCert` renewable_cert: cert to verify
+    :param renewable_cert: cert to verify
+    :type renewable_cert: certbot.interfaces.RenewableCert
 
     :raises errors.Error: If cert and chain do not combine to fullchain.
     """
     try:
-        with open(renewable_cert.chain) as chain_file:  # type: IO[str]
+        with open(renewable_cert.chain_path) as chain_file:  # type: IO[str]
             chain = chain_file.read()
-        with open(renewable_cert.cert) as cert_file:  # type: IO[str]
+        with open(renewable_cert.cert_path) as cert_file:  # type: IO[str]
             cert = cert_file.read()
-        with open(renewable_cert.fullchain) as fullchain_file:  # type: IO[str]
+        with open(renewable_cert.fullchain_path) as fullchain_file:  # type: IO[str]
             fullchain = fullchain_file.read()
         if (cert + chain) != fullchain:
             error_str = "fullchain does not match cert + chain for {0}!"

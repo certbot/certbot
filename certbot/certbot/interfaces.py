@@ -532,6 +532,41 @@ class IReporter(zope.interface.Interface):
         """Prints messages to the user and clears the message queue."""
 
 
+@six.add_metaclass(abc.ABCMeta)
+class RenewableCert(object):
+    """Interface to a certificate lineage.
+
+    RenewableCert objects have the following attributes:
+
+    .. code-block:: python
+
+        # Path to the certificate file.
+        cert_path: str
+
+        # Path to the private key file.
+        key_path: str
+
+        # Path to the certificate chain file.
+        chain_path: str
+
+        # Path to the full chain file (cert plus chain).
+        fullchain_path: str
+
+        # Name given to the certificate lineage
+        lineagename: str
+
+    """
+
+    @abc.abstractmethod
+    def names(self):
+        """What are the subject names of this certificate?
+
+        :returns: the subject names
+        :rtype: `list` of `str`
+        :raises .CertStorageError: if could not find cert file.
+
+        """
+
 # Updater interfaces
 #
 # When "certbot renew" is run, Certbot will iterate over each lineage and check
@@ -570,7 +605,7 @@ class GenericUpdater(object):
         This method is called once for each lineage.
 
         :param lineage: Certificate lineage object
-        :type lineage: storage.RenewableCert
+        :type lineage: RenewableCert
 
         """
 
@@ -599,6 +634,6 @@ class RenewDeployer(object):
         This method is called once for each lineage renewed
 
         :param lineage: Certificate lineage object
-        :type lineage: storage.RenewableCert
+        :type lineage: RenewableCert
 
         """
