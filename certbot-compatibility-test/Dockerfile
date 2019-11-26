@@ -14,7 +14,7 @@ RUN /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only
 # the above is not likely to change, so by putting it further up the
 # Dockerfile we make sure we cache as much as possible
 
-COPY certbot/setup.py certbot/README.rst CHANGELOG.md certbot/MANIFEST.in linter_plugin.py tox.cover.py tox.ini .pylintrc /opt/certbot/src/
+COPY certbot/setup.py certbot/README.rst certbot/CHANGELOG.md certbot/MANIFEST.in linter_plugin.py tox.cover.py tox.ini .pylintrc /opt/certbot/src/
 
 # all above files are necessary for setup.py, however, package source
 # code directory has to be copied separately to a subdirectory...
