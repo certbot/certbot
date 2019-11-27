@@ -45,7 +45,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         self.assertEqual(self.auth._wait_for_change.call_count, 1)
 
     def test_perform_base_domain(self):
-	self.config.route53_base_domain = "base.com"
+        self.config.route53_base_domain = "base.com"
 
         self.auth._change_txt_record = mock.MagicMock()
         self.auth._wait_for_change = mock.MagicMock()
@@ -84,7 +84,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
                                                              mock.ANY)
 
     def test_cleanup_base_domain(self):
-	self.config.route53_base_domain = "base.com"
+        self.config.route53_base_domain = "base.com"
 
         self.auth._attempt_cleanup = True
 
