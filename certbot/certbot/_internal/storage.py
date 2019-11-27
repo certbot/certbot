@@ -17,6 +17,7 @@ from certbot._internal import constants
 from certbot import crypto_util
 from certbot._internal import error_handler
 from certbot import errors
+from certbot import interfaces
 from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
@@ -376,7 +377,7 @@ def delete_files(config, certname):
         logger.debug("Unable to remove %s", archive_path)
 
 
-class RenewableCert(object):
+class RenewableCert(interfaces.RenewableCert):
     """Renewable certificate.
 
     Represents a lineage of certificates that is under the management of
@@ -423,7 +424,7 @@ class RenewableCert(object):
 
         """
         self.cli_config = cli_config
-        self.lineagename = lineagename_for_filename(config_filename)
+        self._lineagename = lineagename_for_filename(config_filename)
 
         # self.configuration should be used to read parameters that
         # may have been chosen based on default values from the
@@ -482,6 +483,15 @@ class RenewableCert(object):
     def fullchain_path(self):
         """Duck type for self.fullchain"""
         return self.fullchain
+
+    @property
+    def lineagename(self):
+        """Name given to the certificate lineage.
+
+        :rtype: str
+
+        """
+        return self._lineagename
 
     @property
     def target_expiry(self):
@@ -858,21 +868,15 @@ class RenewableCert(object):
             for _, link in previous_links:
                 os.unlink(link)
 
-    def names(self, version=None):
+    def names(self):
         """What are the subject names of this certificate?
 
-        (If no version is specified, use the current version.)
-
-        :param int version: the desired version number
         :returns: the subject names
         :rtype: `list` of `str`
         :raises .CertStorageError: if could not find cert file.
 
         """
-        if version is None:
-            target = self.current_target("cert")
-        else:
-            target = self.version("cert", version)
+        target = self.current_target("cert")
         if target is None:
             raise errors.CertStorageError("could not find cert file")
         with open(target) as f:
