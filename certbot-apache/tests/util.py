@@ -28,7 +28,7 @@ class ApacheTest(unittest.TestCase):
 
         self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
             test_dir=test_dir,
-            pkg="certbot_apache.tests")
+            pkg=__name__)
 
         self.config_path = os.path.join(self.temp_dir, config_root)
         self.vhost_path = os.path.join(self.temp_dir, vhost_root)

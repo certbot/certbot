@@ -24,7 +24,8 @@ from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
 from certbot_apache._internal import obj
 from certbot_apache._internal import parser
-from certbot_apache.tests import util
+
+import util
 
 
 class MultipleVhostsTest(util.ApacheTest):
