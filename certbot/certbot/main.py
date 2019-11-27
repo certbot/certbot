@@ -3,12 +3,13 @@ from certbot._internal import main as internal_main
 
 
 def main(cli_args=None):
-    """Command line argument parsing and main script execution.
+    """Run Certbot.
 
-    :returns: result of requested command
+    :param cli_args: command line to Certbot, defaults to ``sys.argv[1:]``
+    :type cli_args: `list` of `str`
 
-    :raises errors.Error: OS errors triggered by wrong permissions
-    :raises errors.Error: error if plugin command is not supported
+    :returns: value for `sys.exit` about the exit status of Certbot
+    :rtype: `str` or `int` or `None`
 
     """
     return internal_main.main(cli_args)
