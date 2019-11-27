@@ -534,28 +534,49 @@ class IReporter(zope.interface.Interface):
 
 @six.add_metaclass(abc.ABCMeta)
 class RenewableCert(object):
-    """Interface to a certificate lineage.
+    """Interface to a certificate lineage."""
 
-    RenewableCert objects have the following attributes:
+    @abc.abstractproperty
+    def cert_path(self):
+        """Path to the certificate file.
 
-    .. code-block:: python
+        :rtype: str
 
-        # Path to the certificate file.
-        cert_path: str
+        """
 
-        # Path to the private key file.
-        key_path: str
+    @abc.abstractproperty
+    def key_path(self):
+        """Path to the private key file.
 
-        # Path to the certificate chain file.
-        chain_path: str
+        :rtype: str
 
-        # Path to the full chain file (cert plus chain).
-        fullchain_path: str
+        """
 
-        # Name given to the certificate lineage
-        lineagename: str
+    @abc.abstractproperty
+    def chain_path(self):
+        """Path to the certificate chain file.
 
-    """
+        :rtype: str
+
+        """
+
+    @abc.abstractproperty
+    def fullchain_path(self):
+        """Path to the full chain file.
+
+        The full chain is the certificate file plus the chain file.
+
+        :rtype: str
+
+        """
+
+    @abc.abstractproperty
+    def lineagename(self):
+        """Name given to the certificate lineage.
+
+        :rtype: str
+
+        """
 
     @abc.abstractmethod
     def names(self):
