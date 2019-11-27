@@ -8,7 +8,8 @@ from pyparsing import ParseException
 
 from certbot_nginx._internal.nginxparser import (
     RawNginxParser, loads, load, dumps, dump, UnspacedList)
-from certbot_nginx.tests import util
+
+import test_util as util
 
 
 FIRST = operator.itemgetter(0)
