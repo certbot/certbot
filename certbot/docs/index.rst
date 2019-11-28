@@ -10,7 +10,7 @@ Welcome to the Certbot documentation!
    using
    contributing
    packaging
-   compatability
+   compatibility
    resources
 
 .. toctree::
