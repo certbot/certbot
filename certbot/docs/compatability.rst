@@ -1,5 +1,5 @@
 =======================
-Backwards Compatability
+Backwards Compatibility
 =======================
 
 All Certbot components including `acme <https://acme-python.readthedocs.io/>`_,
