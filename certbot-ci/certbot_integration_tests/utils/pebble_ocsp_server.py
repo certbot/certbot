@@ -7,16 +7,16 @@ import datetime
 import re
 
 import requests
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.x509 import ocsp
 from dateutil import parser
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography import x509
-from cryptography.x509 import ocsp
-from six.moves import BaseHTTPServer
-
+from certbot_integration_tests.utils.constants import (
+    MOCK_OCSP_SERVER_PORT, PEBBLE_MANAGEMENT_URL)
 from certbot_integration_tests.utils.misc import GracefulTCPServer
-from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT, PEBBLE_MANAGEMENT_URL
+from six.moves import BaseHTTPServer
 
 
 class _ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):

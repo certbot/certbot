@@ -23,10 +23,8 @@ import tempfile
 import traceback
 
 from acme import messages
-
+from certbot import errors, util
 from certbot._internal import constants
-from certbot import errors
-from certbot import util
 from certbot.compat import os
 
 # Logging format

@@ -12,8 +12,7 @@ import dns.tsigkeyring
 import dns.update
 import zope.interface
 
-from certbot import errors
-from certbot import interfaces
+from certbot import errors, interfaces
 from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)

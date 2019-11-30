@@ -5,7 +5,7 @@ import josepy as jose
 import mock
 
 from acme import challenges
-from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 
 import test_util
 

@@ -3,7 +3,7 @@ import logging
 
 from requests.exceptions import HTTPError, RequestException
 
-from acme.magic_typing import Union, Dict, Any  # pylint: disable=unused-import,no-name-in-module
+from acme.magic_typing import Any, Dict, Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.plugins import dns_common
 

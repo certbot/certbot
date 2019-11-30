@@ -1,20 +1,17 @@
 """ACME AuthHandler."""
+import datetime
 import logging
 import time
-import datetime
 
 import zope.component
 
-from acme import challenges
-from acme import messages
 from acme import errors as acme_errors
+from acme import challenges, messages
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Dict, List, Tuple
 # pylint: enable=unused-import, no-name-in-module
-from certbot import achallenges
-from certbot import errors
+from certbot import achallenges, errors, interfaces
 from certbot._internal import error_handler
-from certbot import interfaces
 
 logger = logging.getLogger(__name__)
 

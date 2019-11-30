@@ -6,14 +6,10 @@ import subprocess
 import zope.interface
 
 from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
-
 from certbot._internal import configuration
-from certbot_nginx._internal import configurator
-from certbot_nginx._internal import constants
-from certbot_compatibility_test import errors
-from certbot_compatibility_test import interfaces
-from certbot_compatibility_test import util
+from certbot_compatibility_test import errors, interfaces, util
 from certbot_compatibility_test.configurators import common as configurators_common
+from certbot_nginx._internal import configurator, constants
 
 
 @zope.interface.implementer(interfaces.IConfiguratorProxy)

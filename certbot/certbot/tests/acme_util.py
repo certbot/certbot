@@ -4,13 +4,9 @@ import datetime
 import josepy as jose
 import six
 
-from acme import challenges
-from acme import messages
-
+from acme import challenges, messages
 from certbot._internal import auth_handler
-
 from certbot.tests import util
-
 
 JWK = jose.JWK.load(util.load_vector('rsa512_key.pem'))
 KEY = util.load_rsa_private_key('rsa512_key.pem')

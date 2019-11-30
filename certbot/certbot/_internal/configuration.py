@@ -2,14 +2,11 @@
 import copy
 
 import zope.interface
-from six.moves.urllib import parse  # pylint: disable=relative-import
 
+from certbot import errors, interfaces, util
 from certbot._internal import constants
-from certbot import errors
-from certbot import interfaces
-from certbot import util
-from certbot.compat import misc
-from certbot.compat import os
+from certbot.compat import misc, os
+from six.moves.urllib import parse  # pylint: disable=relative-import
 
 
 @zope.interface.implementer(interfaces.IConfig)

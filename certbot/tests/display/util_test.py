@@ -7,8 +7,7 @@ import unittest
 import mock
 import six
 
-from certbot import errors
-from certbot import interfaces
+from certbot import errors, interfaces
 from certbot.display import util as display_util
 
 CHOICES = [("First", "Description1"), ("Second", "Description2")]

@@ -6,11 +6,9 @@ import unittest
 
 from pyparsing import ParseException
 
-from certbot_nginx._internal.nginxparser import (
-    RawNginxParser, loads, load, dumps, dump, UnspacedList)
-
 import test_util as util
-
+from certbot_nginx._internal.nginxparser import (
+    RawNginxParser, UnspacedList, dump, dumps, load, loads)
 
 FIRST = operator.itemgetter(0)
 

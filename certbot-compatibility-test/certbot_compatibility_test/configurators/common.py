@@ -5,9 +5,7 @@ import shutil
 import tempfile
 
 from certbot._internal import constants
-from certbot_compatibility_test import errors
-from certbot_compatibility_test import util
-
+from certbot_compatibility_test import errors, util
 
 logger = logging.getLogger(__name__)
 

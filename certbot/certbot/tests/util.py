@@ -8,25 +8,20 @@ import shutil
 import sys
 import tempfile
 import unittest
-from multiprocessing import Process, Event
+from multiprocessing import Event, Process
 
-import OpenSSL
 import josepy as jose
 import mock
+import OpenSSL
 import pkg_resources
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
-from certbot._internal import configuration
-from certbot._internal import constants
-from certbot import interfaces
-from certbot._internal import lock
-from certbot._internal import storage
-from certbot import util
-from certbot.compat import os
-from certbot.compat import filesystem
+from certbot import interfaces, util
+from certbot._internal import configuration, constants, lock, storage
+from certbot.compat import filesystem, os
 from certbot.display import util as display_util
 
 

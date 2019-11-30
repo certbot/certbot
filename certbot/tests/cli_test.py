@@ -8,15 +8,12 @@ import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
-from acme import challenges
-
 import certbot.tests.util as test_util
-from certbot._internal import cli
-from certbot._internal import constants
+from acme import challenges
 from certbot import errors
-from certbot.compat import os
-from certbot.compat import filesystem
+from certbot._internal import cli, constants
 from certbot._internal.plugins import disco
+from certbot.compat import filesystem, os
 from certbot.tests.util import TempDirTestCase
 
 PLUGINS = disco.PluginsRegistry.find_all()

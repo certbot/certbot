@@ -1,18 +1,17 @@
 """ACME protocol messages."""
 import json
+
+import josepy as jose
 import six
+
+from acme import challenges, errors, fields, jws, util
+
 try:
     from collections.abc import Hashable  # pylint: disable=no-name-in-module
 except ImportError:  # pragma: no cover
     from collections import Hashable
 
-import josepy as jose
 
-from acme import challenges
-from acme import errors
-from acme import fields
-from acme import util
-from acme import jws
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"

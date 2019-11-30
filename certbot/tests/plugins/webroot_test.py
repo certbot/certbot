@@ -14,14 +14,11 @@ import mock
 import six
 
 from acme import challenges
-
-from certbot import achallenges
-from certbot import errors
-from certbot.compat import os
-from certbot.compat import filesystem
+from certbot import achallenges, errors
+from certbot.compat import filesystem, os
 from certbot.display import util as display_util
-from certbot.tests import acme_util
 from certbot.tests import util as test_util
+from certbot.tests import acme_util
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 

@@ -1,11 +1,11 @@
 """Tests for new style enhancements"""
 import unittest
+
 import mock
 
-from certbot.plugins import enhancements
-from certbot._internal.plugins import null
-
 import certbot.tests.util as test_util
+from certbot._internal.plugins import null
+from certbot.plugins import enhancements
 
 
 class EnhancementTest(test_util.ConfigTestCase):

@@ -8,13 +8,10 @@ import configobj
 import zope.interface
 
 from acme import challenges
-
-from certbot import errors
-from certbot import interfaces
-from certbot.compat import filesystem
-from certbot.compat import os
-from certbot.display import ops
+from certbot import errors, interfaces
+from certbot.compat import filesystem, os
 from certbot.display import util as display_util
+from certbot.display import ops
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)

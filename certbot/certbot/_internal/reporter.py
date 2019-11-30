@@ -6,12 +6,10 @@ import logging
 import sys
 import textwrap
 
-from six.moves import queue  # type: ignore  # pylint: disable=import-error
 import zope.interface
+from six.moves import queue  # type: ignore  # pylint: disable=import-error
 
-from certbot import interfaces
-from certbot import util
-
+from certbot import interfaces, util
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import json
-import sys
 import re
+import sys
 
 import requests
-from six.moves import BaseHTTPServer
 
 from certbot_integration_tests.utils.misc import GracefulTCPServer
+from six.moves import BaseHTTPServer
 
 
 def _create_proxy(mapping):

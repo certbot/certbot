@@ -9,11 +9,9 @@ import traceback
 
 import six
 
+from certbot import errors, util
 from certbot._internal import constants
-from certbot import errors
-from certbot import util
-from certbot.compat import os
-from certbot.compat import filesystem
+from certbot.compat import filesystem, os
 
 logger = logging.getLogger(__name__)
 

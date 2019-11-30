@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
+
 import errno
 import json
+import os
+import shutil
+import subprocess
+import sys
 import tempfile
 import time
-import os
-import subprocess
-import shutil
-import sys
 from os.path import join
 
 import requests
 
-from certbot_integration_tests.utils import misc, proxy, pebble_artifacts
+from certbot_integration_tests.utils import misc, pebble_artifacts, proxy
 from certbot_integration_tests.utils.constants import *
 
 

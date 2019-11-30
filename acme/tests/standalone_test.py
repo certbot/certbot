@@ -3,17 +3,18 @@ import socket
 import threading
 import unittest
 
-from six.moves import http_client  # pylint: disable=import-error
-from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
-
 import josepy as jose
 import mock
 import requests
+from six.moves import http_client  # pylint: disable=import-error
+from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
+
 
 from acme import challenges
-from acme.magic_typing import Set # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 
 import test_util
+
 
 class TLSServerTest(unittest.TestCase):
     """Tests for acme.standalone.TLSServer."""

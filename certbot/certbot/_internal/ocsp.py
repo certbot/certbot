@@ -2,7 +2,19 @@
 import logging
 import re
 from datetime import datetime, timedelta
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
+
+import pytz
+import requests
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes  # type: ignore
+from cryptography.hazmat.primitives import serialization
+
+from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
+from certbot import crypto_util, errors, util
+from certbot._internal.storage import RenewableCert  # pylint: disable=unused-import
 
 try:
     # Only cryptography>=2.5 has ocsp module
@@ -11,19 +23,7 @@ try:
     getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp = None  # type: ignore
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives import hashes  # type: ignore
-from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
-import pytz
-import requests
 
-from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
-from certbot import crypto_util
-from certbot import errors
-from certbot._internal.storage import RenewableCert # pylint: disable=unused-import
-from certbot import util
 
 logger = logging.getLogger(__name__)
 

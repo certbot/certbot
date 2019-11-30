@@ -2,7 +2,6 @@
 import argparse
 import atexit
 import collections
-from collections import OrderedDict
 # distutils.version under virtualenv confuses pylint
 # For more info, see: https://github.com/PyCQA/pylint/issues/73
 import distutils.version  # pylint: disable=import-error,no-name-in-module
@@ -13,17 +12,15 @@ import re
 import socket
 import subprocess
 import sys
+from collections import OrderedDict
 
 import configargparse
 import six
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
-
-from certbot._internal import constants
 from certbot import errors
-from certbot._internal import lock
-from certbot.compat import os
-from certbot.compat import filesystem
+from certbot._internal import constants, lock
+from certbot.compat import filesystem, os
 
 if sys.platform.startswith('linux'):
     import distro

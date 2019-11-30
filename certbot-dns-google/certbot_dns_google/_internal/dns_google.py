@@ -4,12 +4,11 @@ import logging
 
 import httplib2
 import zope.interface
-from googleapiclient import discovery
 from googleapiclient import errors as googleapiclient_errors
+from googleapiclient import discovery
 from oauth2client.service_account import ServiceAccountCredentials
 
-from certbot import errors
-from certbot import interfaces
+from certbot import errors, interfaces
 from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)

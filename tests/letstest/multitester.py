@@ -29,20 +29,26 @@ see:
   https://docs.aws.amazon.com/cli/latest/userguide/cli-ec2-keypairs.html
 """
 
-from __future__ import print_function
-from __future__ import with_statement
+from __future__ import print_function, with_statement
 
-import sys, os, time, argparse, socket, traceback
+import argparse
 import multiprocessing as mp
-from multiprocessing import Manager
+import os
+import socket
+import sys
+import time
+import traceback
 import urllib2
-import yaml
+from multiprocessing import Manager
+
 import boto3
+import yaml
 from botocore.exceptions import ClientError
+
 import fabric
-from fabric.api import run, execute, local, env, sudo, cd, lcd
-from fabric.operations import get, put
+from fabric.api import cd, env, execute, lcd, local, run, sudo
 from fabric.context_managers import shell_env
+from fabric.operations import get, put
 
 # Command line parser
 #-------------------------------------------------------------------------------

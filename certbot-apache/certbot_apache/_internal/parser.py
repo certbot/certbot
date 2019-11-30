@@ -8,11 +8,10 @@ import sys
 
 import six
 
-from acme.magic_typing import Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
-
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List, Set
 from certbot import errors
 from certbot.compat import os
-
 from certbot_apache._internal import constants
 
 logger = logging.getLogger(__name__)

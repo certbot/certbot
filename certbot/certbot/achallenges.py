@@ -23,7 +23,6 @@ import josepy as jose
 
 from acme import challenges
 
-
 logger = logging.getLogger(__name__)
 
 

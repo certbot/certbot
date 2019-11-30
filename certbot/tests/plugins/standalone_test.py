@@ -1,24 +1,20 @@
 """Tests for certbot._internal.plugins.standalone."""
 import socket
+import unittest
 # https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 from socket import errno as socket_errors  # type: ignore
-import unittest
 
 import josepy as jose
 import mock
+import OpenSSL.crypto  # pylint: disable=unused-import
 import six
 
-import OpenSSL.crypto  # pylint: disable=unused-import
-
-from acme import challenges
 from acme import standalone as acme_standalone  # pylint: disable=unused-import
-from acme.magic_typing import Dict, Tuple, Set  # pylint: disable=unused-import, no-name-in-module
-
-from certbot import achallenges
-from certbot import errors
-
-from certbot.tests import acme_util
+from acme import challenges
+from acme.magic_typing import Dict, Set, Tuple  # pylint: disable=unused-import, no-name-in-module
+from certbot import achallenges, errors
 from certbot.tests import util as test_util
+from certbot.tests import acme_util
 
 
 class ServerManagerTest(unittest.TestCase):

@@ -3,10 +3,8 @@ import logging
 
 import zope.component
 
-from certbot import interfaces
-
 import certbot.display.util as display_util
-
+from certbot import interfaces
 
 logger = logging.getLogger(__name__)
 

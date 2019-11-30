@@ -7,7 +7,6 @@ http://docs.pylint.org/plugins.html
 from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
 
-
 # Modules in theses packages can import the os module.
 WHITELIST_PACKAGES = ['acme', 'certbot_compatibility_test', 'letshelp_certbot', 'lock_test']
 

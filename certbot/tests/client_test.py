@@ -5,15 +5,12 @@ import tempfile
 import unittest
 
 import mock
-
 from josepy import interfaces
 
 import certbot.tests.util as test_util
+from certbot import errors, util
 from certbot._internal import account
-from certbot import errors
-from certbot.compat import os
-from certbot.compat import filesystem
-from certbot import util
+from certbot.compat import filesystem, os
 
 KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")

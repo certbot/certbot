@@ -5,6 +5,8 @@ import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 
+from acme.magic_typing import List, Tuple, Union  # pylint: disable=unused-import, no-name-in-module
+
 try:
     # pylint: disable=import-error
     import ntsecuritycon
@@ -19,8 +21,6 @@ except ImportError:
     POSIX_MODE = True
 else:
     POSIX_MODE = False
-
-from acme.magic_typing import List, Union, Tuple  # pylint: disable=unused-import, no-name-in-module
 
 
 def chmod(file_path, mode):

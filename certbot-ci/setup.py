@@ -1,8 +1,8 @@
 import sys
-
 from distutils.version import StrictVersion
-from setuptools import setup, find_packages, __version__ as setuptools_version
 
+from setuptools import __version__ as setuptools_version
+from setuptools import find_packages, setup
 
 version = '0.32.0.dev0'
 

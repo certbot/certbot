@@ -7,13 +7,10 @@ import josepy as jose
 import mock
 import pytz
 
-from acme import messages
-
 import certbot.tests.util as test_util
+from acme import messages
 from certbot import errors
-from certbot.compat import filesystem
-from certbot.compat import misc
-from certbot.compat import os
+from certbot.compat import filesystem, misc, os
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 

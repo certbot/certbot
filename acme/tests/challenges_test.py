@@ -5,9 +5,8 @@ import josepy as jose
 import mock
 import requests
 
-from six.moves.urllib import parse as urllib_parse  # pylint: disable=relative-import
-
 import test_util
+from six.moves.urllib import parse as urllib_parse  # pylint: disable=relative-import
 
 CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))

@@ -2,6 +2,13 @@
 import functools
 import multiprocessing
 import unittest
+
+import mock
+
+from certbot import errors
+from certbot.compat import os
+from certbot.tests import util as test_util
+
 try:
     import fcntl  # pylint: disable=import-error,unused-import
 except ImportError:
@@ -9,11 +16,7 @@ except ImportError:
 else:
     POSIX_MODE = True
 
-import mock
 
-from certbot import errors
-from certbot.compat import os
-from certbot.tests import util as test_util
 
 
 class LockDirTest(test_util.TempDirTestCase):

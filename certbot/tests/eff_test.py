@@ -4,8 +4,8 @@ import unittest
 import mock
 import requests
 
-from certbot._internal import constants
 import certbot.tests.util as test_util
+from certbot._internal import constants
 
 
 class HandleSubscriptionTest(test_util.ConfigTestCase):

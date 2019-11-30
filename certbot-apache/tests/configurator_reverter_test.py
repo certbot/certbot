@@ -4,9 +4,8 @@ import unittest
 
 import mock
 
-from certbot import errors
-
 import util
+from certbot import errors
 
 
 class ConfiguratorReverterTest(util.ApacheTest):

@@ -4,13 +4,10 @@ import unittest
 
 import mock
 
+import util
 from certbot import errors
 from certbot.compat import os
-
-from certbot_apache._internal import apache_util
-from certbot_apache._internal import obj
-
-import util
+from certbot_apache._internal import apache_util, obj
 
 
 class MultipleVhostsTestDebian(util.ApacheTest):

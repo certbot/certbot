@@ -2,14 +2,11 @@
 from __future__ import print_function
 
 import logging
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 
-from acme.magic_typing import Set, List  # pylint: disable=unused-import, no-name-in-module
-
-from certbot import errors
-from certbot import util
-from certbot.compat import filesystem
-from certbot.compat import os
+from acme.magic_typing import List, Set  # pylint: disable=unused-import, no-name-in-module
+from certbot import errors, util
+from certbot.compat import filesystem, os
 from certbot.plugins import util as plug_util
 
 logger = logging.getLogger(__name__)

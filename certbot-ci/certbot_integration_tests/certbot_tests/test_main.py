@@ -6,17 +6,21 @@ import re
 import shutil
 import subprocess
 import time
-from os.path import join, exists
+from os.path import exists, join
 
 import pytest
+
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.certbot_tests.assertions import (
-    assert_hook_execution, assert_saved_renew_hook,
+    EVERYBODY_SID,
     assert_cert_count_for_lineage,
-    assert_world_no_permissions, assert_world_read_permissions,
-    assert_equals_group_owner, assert_equals_group_permissions, assert_equals_world_read_permissions,
-    EVERYBODY_SID
-)
+    assert_equals_group_owner,
+    assert_equals_group_permissions,
+    assert_equals_world_read_permissions,
+    assert_hook_execution,
+    assert_saved_renew_hook,
+    assert_world_no_permissions,
+    assert_world_read_permissions)
 from certbot_integration_tests.utils import misc
 
 

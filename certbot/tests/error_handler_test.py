@@ -9,7 +9,6 @@ import mock
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Callable, Dict, Union
 # pylint: enable=unused-import, no-name-in-module
-
 from certbot.compat import os
 
 

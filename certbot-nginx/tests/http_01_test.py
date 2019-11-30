@@ -5,16 +5,12 @@ import josepy as jose
 import mock
 import six
 
-from acme import challenges
-
-from certbot import achallenges
-
-from certbot.tests import acme_util
-from certbot.tests import util as test_util
-
-from certbot_nginx._internal.obj import Addr
-
 import test_util as util
+from acme import challenges
+from certbot import achallenges
+from certbot.tests import util as test_util
+from certbot.tests import acme_util
+from certbot_nginx._internal.obj import Addr
 
 AUTH_KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 

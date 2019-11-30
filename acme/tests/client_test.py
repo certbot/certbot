@@ -5,21 +5,17 @@ import datetime
 import json
 import unittest
 
-from six.moves import http_client  # pylint: disable=import-error
-
 import josepy as jose
 import mock
 import OpenSSL
 import requests
 
-from acme import challenges
-from acme import errors
-from acme import jws as acme_jws
-from acme import messages
-from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
-
 import messages_test
 import test_util
+from acme import jws as acme_jws
+from acme import challenges, errors, messages
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from six.moves import http_client  # pylint: disable=import-error
 
 CERT_DER = test_util.load_vector('cert.der')
 CERT_SAN_PEM = test_util.load_vector('cert-san.pem')

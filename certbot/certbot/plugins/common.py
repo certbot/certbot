@@ -8,19 +8,13 @@ import warnings
 
 import pkg_resources
 import zope.interface
-
 from josepy import util as jose_util
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-
 from certbot import achallenges  # pylint: disable=unused-import
+from certbot import crypto_util, errors, interfaces, reverter
 from certbot._internal import constants
-from certbot import crypto_util
-from certbot import errors
-from certbot import interfaces
-from certbot import reverter
-from certbot.compat import os
-from certbot.compat import filesystem
+from certbot.compat import filesystem, os
 from certbot.plugins.storage import PluginStorage
 
 logger = logging.getLogger(__name__)

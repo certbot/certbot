@@ -14,23 +14,19 @@ import zope.component
 import zope.interface
 from zope.interface import interfaces as zope_interfaces
 
+import certbot
+import certbot._internal.plugins.selection as plugin_selection
+import certbot.plugins.enhancements as enhancements
 from acme import challenges
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Any, Dict, Optional
 # pylint: enable=unused-import, no-name-in-module
-
-import certbot
-import certbot.plugins.enhancements as enhancements
-import certbot._internal.plugins.selection as plugin_selection
-from certbot._internal import constants
-from certbot import crypto_util
-from certbot import errors
-from certbot._internal import hooks
-from certbot import interfaces
-from certbot import util
+from certbot import crypto_util, errors, interfaces, util
+from certbot._internal import constants, hooks
+from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import os
 from certbot.display import util as display_util
-from certbot._internal.plugins import disco as plugins_disco
+
 
 logger = logging.getLogger(__name__)
 

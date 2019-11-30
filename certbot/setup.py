@@ -2,9 +2,10 @@ import codecs
 import os
 import re
 import sys
-
 from distutils.version import StrictVersion
-from setuptools import find_packages, setup, __version__ as setuptools_version
+
+from setuptools import __version__ as setuptools_version
+from setuptools import find_packages, setup
 from setuptools.command.test import test as TestCommand
 
 # Workaround for http://bugs.python.org/issue8876, see

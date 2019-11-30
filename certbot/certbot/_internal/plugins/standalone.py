@@ -9,15 +9,12 @@ import OpenSSL  # pylint: disable=unused-import
 import six
 import zope.interface
 
-from acme import challenges
 from acme import standalone as acme_standalone
+from acme import challenges
 # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import DefaultDict, Dict, Set, Tuple, List, Type, TYPE_CHECKING
-
+from acme.magic_typing import TYPE_CHECKING, DefaultDict, Dict, Set, Tuple
 from certbot import achallenges  # pylint: disable=unused-import
-from certbot import errors
-from certbot import interfaces
-
+from certbot import errors, interfaces
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)

@@ -3,36 +3,27 @@ import datetime
 import logging
 import platform
 
-import OpenSSL
 import josepy as jose
+import OpenSSL
 import zope.component
 from cryptography.hazmat.backends import default_backend
 # https://github.com/python/typeshed/blob/master/third_party/
 # 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
 
+import certbot
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import Optional, List  # pylint: disable=unused-import,no-name-in-module
-
-import certbot
-from certbot._internal import account
-from certbot._internal import auth_handler
-from certbot._internal import cli
-from certbot._internal import constants
-from certbot import crypto_util
-from certbot._internal import eff
-from certbot._internal import error_handler
-from certbot import errors
-from certbot import interfaces
-from certbot._internal import storage
-from certbot import util
-from certbot.compat import os
+from acme.magic_typing import List, Optional  # pylint: disable=unused-import, no-name-in-module
+from certbot import crypto_util, errors, interfaces, util
+from certbot._internal import (account, auth_handler, cli, constants, eff,
+                               error_handler, storage)
 from certbot._internal.display import enhancements
-from certbot.display import ops as display_ops
 from certbot._internal.plugins import selection as plugin_selection
+from certbot.compat import os
+from certbot.display import ops as display_ops
 
 logger = logging.getLogger(__name__)
 
