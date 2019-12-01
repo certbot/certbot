@@ -7,8 +7,7 @@ import boto3
 import zope.interface
 from botocore.exceptions import ClientError, NoCredentialsError
 
-from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict, List
+from acme.magic_typing import DefaultDict, Dict, List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors, interfaces
 from certbot.plugins import dns_common
 
@@ -18,6 +17,7 @@ INSTRUCTIONS = (
     "To use certbot-dns-route53, configure credentials as described at "
     "https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials "  # pylint: disable=line-too-long
     "and add the necessary permissions for Route53 access.")
+
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)

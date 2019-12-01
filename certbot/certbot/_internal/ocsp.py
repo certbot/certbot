@@ -11,11 +11,6 @@ from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes  # type: ignore
 from cryptography.hazmat.primitives import serialization
-
-from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
-from certbot import crypto_util, errors, util
-from certbot._internal.storage import RenewableCert  # pylint: disable=unused-import
-
 try:
     # Only cryptography>=2.5 has ocsp module
     # and signature_hash_algorithm attribute in OCSPResponse class
@@ -23,6 +18,10 @@ try:
     getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp = None  # type: ignore
+
+from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
+from certbot import crypto_util, errors, util
+from certbot._internal.storage import RenewableCert  # pylint: disable=unused-import
 
 
 logger = logging.getLogger(__name__)

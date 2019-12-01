@@ -14,8 +14,7 @@ from urllib3.util import connection
 from six.moves import xrange  # pylint: disable=import-error,redefined-builtin
 
 from acme import challenges, crypto_util, messages
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple
+from acme.magic_typing import List, Tuple  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors as le_errors
 from certbot import achallenges
 from certbot.tests import acme_util

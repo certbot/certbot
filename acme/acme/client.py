@@ -12,14 +12,13 @@ from email.utils import parsedate_tz
 import josepy as jose
 import OpenSSL
 import requests
-import six
 from requests.adapters import HTTPAdapter
 from requests_toolbelt.adapters.source import SourceAddressAdapter
+import six
+from six.moves import http_client  # pylint: disable=import-error
 
 from acme import crypto_util, errors, jws, messages
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict, List, Set, Text
-from six.moves import http_client  # pylint: disable=import-error
+from acme.magic_typing import Dict, List, Set, Text  # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 

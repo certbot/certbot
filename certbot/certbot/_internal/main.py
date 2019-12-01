@@ -10,9 +10,9 @@ import configobj
 import josepy as jose
 import zope.component
 
-import certbot
 from acme import errors as acme_errors
 from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+import certbot
 from certbot import crypto_util, errors, interfaces, util
 from certbot._internal import (account, cert_manager, cli, client,
                                configuration, constants, eff, hooks, log,

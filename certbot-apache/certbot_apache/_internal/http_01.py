@@ -1,8 +1,7 @@
 """A class that performs HTTP-01 challenges for Apache"""
 import logging
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set
+from acme.magic_typing import List, Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.compat import filesystem, os
 from certbot.plugins import common

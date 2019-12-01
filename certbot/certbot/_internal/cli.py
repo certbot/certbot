@@ -14,13 +14,11 @@ import zope.component
 import zope.interface
 from zope.interface import interfaces as zope_interfaces
 
+from acme import challenges
+from acme.magic_typing import Any, Dict, Optional  # pylint: disable=unused-import, no-name-in-module
 import certbot
 import certbot._internal.plugins.selection as plugin_selection
 import certbot.plugins.enhancements as enhancements
-from acme import challenges
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Any, Dict, Optional
-# pylint: enable=unused-import, no-name-in-module
 from certbot import crypto_util, errors, interfaces, util
 from certbot._internal import constants, hooks
 from certbot._internal.plugins import disco as plugins_disco

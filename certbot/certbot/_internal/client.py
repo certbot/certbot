@@ -11,12 +11,12 @@ from cryptography.hazmat.backends import default_backend
 # 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
 
-import certbot
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
 from acme.magic_typing import List, Optional  # pylint: disable=unused-import, no-name-in-module
+import certbot
 from certbot import crypto_util, errors, interfaces, util
 from certbot._internal import (account, auth_handler, cli, constants, eff,
                                error_handler, storage)
