@@ -3,7 +3,6 @@ import copy
 import fnmatch
 import logging
 import re
-import subprocess
 import sys
 
 import six
@@ -13,6 +12,7 @@ from acme.magic_typing import Dict, List, Set  # pylint: disable=unused-import, 
 from certbot import errors
 from certbot.compat import os
 
+from certbot_apache import apache_util
 from certbot_apache import constants
 
 logger = logging.getLogger(__name__)
@@ -291,32 +291,15 @@ class ApacheParser(object):
 
     def update_runtime_variables(self):
         """Update Includes, Defines and Includes from httpd config dump data"""
+
         self.update_defines()
         self.update_includes()
         self.update_modules()
 
     def update_defines(self):
-        """Get Defines from httpd process"""
+        """Updates the dictionary of known variables in the configuration"""
 
-        variables = dict()
-        define_cmd = [self.configurator.option("ctl"), "-t", "-D",
-                      "DUMP_RUN_CFG"]
-        matches = self.parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
-        try:
-            matches.remove("DUMP_RUN_CFG")
-        except ValueError:
-            return
-
-        for match in matches:
-            if match.count("=") > 1:
-                logger.error("Unexpected number of equal signs in "
-                             "runtime config dump.")
-                raise errors.PluginError(
-                    "Error parsing Apache runtime variables")
-            parts = match.partition("=")
-            variables[parts[0]] = parts[2]
-
-        self.variables = variables
+        self.variables = apache_util.parse_defines(self.configurator.option("ctl"))
 
     def update_includes(self):
         """Get includes from httpd process, and add them to DOM if needed"""
@@ -326,9 +309,7 @@ class ApacheParser(object):
         # configuration files
         _ = self.find_dir("Include")
 
-        inc_cmd = [self.configurator.option("ctl"), "-t", "-D",
-                   "DUMP_INCLUDES"]
-        matches = self.parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
+        matches = apache_util.parse_includes(self.configurator.option("ctl"))
         if matches:
             for i in matches:
                 if not self.parsed_in_current(i):
@@ -337,55 +318,9 @@ class ApacheParser(object):
     def update_modules(self):
         """Get loaded modules from httpd process, and add them to DOM"""
 
-        mod_cmd = [self.configurator.option("ctl"), "-t", "-D",
-                       "DUMP_MODULES"]
-        matches = self.parse_from_subprocess(mod_cmd, r"(.*)_module")
+        matches = apache_util.parse_modules(self.configurator.option("ctl"))
         for mod in matches:
             self.add_mod(mod.strip())
-
-    def parse_from_subprocess(self, command, regexp):
-        """Get values from stdout of subprocess command
-
-        :param list command: Command to run
-        :param str regexp: Regexp for parsing
-
-        :returns: list parsed from command output
-        :rtype: list
-
-        """
-        stdout = self._get_runtime_cfg(command)
-        return re.compile(regexp).findall(stdout)
-
-    def _get_runtime_cfg(self, command):  # pylint: disable=no-self-use
-        """Get runtime configuration info.
-        :param command: Command to run
-
-        :returns: stdout from command
-
-        """
-        try:
-            proc = subprocess.Popen(
-                command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True)
-            stdout, stderr = proc.communicate()
-
-        except (OSError, ValueError):
-            logger.error(
-                "Error running command %s for runtime parameters!%s",
-                command, os.linesep)
-            raise errors.MisconfigurationError(
-                "Error accessing loaded Apache parameters: {0}".format(
-                command))
-        # Small errors that do not impede
-        if proc.returncode != 0:
-            logger.warning("Error in checking parameter list: %s", stderr)
-            raise errors.MisconfigurationError(
-                "Apache is unable to check whether or not the module is "
-                "loaded because Apache is misconfigured.")
-
-        return stdout
 
     def filter_args_num(self, matches, args):  # pylint: disable=no-self-use
         """Filter out directives with specific number of arguments.
