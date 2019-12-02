@@ -19,7 +19,7 @@ WORKDIR /opt/certbot
 RUN mkdir -p src \
  && wget -O certbot-${CERTBOT_VERSION}.tar.gz https://github.com/certbot/certbot/archive/v${CERTBOT_VERSION}.tar.gz \
  && tar xf certbot-${CERTBOT_VERSION}.tar.gz \
- && cp certbot-${CERTBOT_VERSION}/CHANGELOG.md certbot-${CERTBOT_VERSION}/README.rst certbot-${CERTBOT_VERSION}/setup.py src/ \
+ && cp certbot-${CERTBOT_VERSION}/CHANGELOG.md certbot-${CERTBOT_VERSION}/README.rst src/ \
  && cp certbot-${CERTBOT_VERSION}/letsencrypt-auto-source/pieces/dependency-requirements.txt . \
  && cp -r certbot-${CERTBOT_VERSION}/tools tools \
  && cp -r certbot-${CERTBOT_VERSION}/acme src/acme \
@@ -48,5 +48,5 @@ RUN apk add --no-cache --virtual .build-deps \
     && pip install -r dependency-requirements.txt \
     && pip install --no-cache-dir --no-deps \
         --editable src/acme \
-        --editable src \
+        --editable src/certbot \
 && apk del .build-deps
