@@ -291,3 +291,24 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
             self.config.parser_root.add_child_directive,
             "ThisRaisesErrorBecauseMissingParameters"
         )
+
+    def test_find_ancestors(self):
+        vhsblocks = self.config.parser_root.find_blocks("VirtualHost")
+        macro_test = False
+        nonmacro_test = False
+        for vh in vhsblocks:
+            if "/macro/" in vh.metadata["augeaspath"].lower():
+                ancs = vh.find_ancestors("Macro")
+                self.assertEqual(len(ancs), 1)
+                macro_test = True
+            else:
+                ancs = vh.find_ancestors("Macro")
+                self.assertEqual(len(ancs), 0)
+                nonmacro_test = True
+        self.assertTrue(macro_test)
+        self.assertTrue(nonmacro_test)
+
+    def test_find_ancestors_bad_path(self):
+        self.config.parser_root.primary.metadata["augeaspath"] = ""
+        ancs = self.config.parser_root.primary.find_ancestors("Anything")
+        self.assertEqual(len(ancs), 0)

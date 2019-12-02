@@ -18,9 +18,58 @@ class DualNodeBase(object):
         """ Attribute value assertion """
         firstval = getattr(self.primary, aname)
         secondval = getattr(self.secondary, aname)
-        if not callable(firstval):
+        exclusions = [
+            # Metadata will inherently be different, as ApacheParserNode does
+            # not have Augeas paths and so on.
+            aname == "metadata",
+            callable(firstval)
+        ]
+        if not any(exclusions):
             assertions.assertEqualSimple(firstval, secondval)
         return firstval
+
+    def find_ancestors(self, name):
+        """ Traverses the ancestor tree and returns ancestors matching name """
+        return self._find_helper(DualBlockNode, "find_ancestors", name)
+
+    def _find_helper(self, nodeclass, findfunc, search, **kwargs):
+        """A helper for find_* functions. The function specific attributes should
+        be passed as keyword arguments.
+
+        :param interfaces.ParserNode nodeclass: The node class for results.
+        :param str findfunc: Name of the find function to call
+        :param str search: The search term
+        """
+
+        primary_res = getattr(self.primary, findfunc)(search, **kwargs)
+        secondary_res = getattr(self.secondary, findfunc)(search, **kwargs)
+
+        # The order of search results for Augeas implementation cannot be
+        # assured.
+
+        pass_primary = assertions.isPassNodeList(primary_res)
+        pass_secondary = assertions.isPassNodeList(secondary_res)
+        new_nodes = list()
+
+        if pass_primary and pass_secondary:
+            # Both unimplemented
+            new_nodes.append(nodeclass(primary=primary_res[0],
+                                       secondary=secondary_res[0])) # pragma: no cover
+        elif pass_primary:
+            for c in secondary_res:
+                new_nodes.append(nodeclass(primary=primary_res[0],
+                                           secondary=c))
+        elif pass_secondary:
+            for c in primary_res:
+                new_nodes.append(nodeclass(primary=c,
+                                           secondary=secondary_res[0]))
+        else:
+            assert len(primary_res) == len(secondary_res)
+            matches = self._create_matching_list(primary_res, secondary_res)
+            for p, s in matches:
+                new_nodes.append(nodeclass(primary=p, secondary=s))
+
+        return new_nodes
 
 
 class DualCommentNode(DualNodeBase):
@@ -223,44 +272,6 @@ class DualBlockNode(DualNodeBase):
 
         return self._find_helper(DualCommentNode, "find_comments", comment)
 
-    def _find_helper(self, nodeclass, findfunc, search, **kwargs):
-        """A helper for find_* functions. The function specific attributes should
-        be passed as keyword arguments.
-
-        :param interfaces.ParserNode nodeclass: The node class for results.
-        :param str findfunc: Name of the find function to call
-        :param str search: The search term
-        """
-
-        primary_res = getattr(self.primary, findfunc)(search, **kwargs)
-        secondary_res = getattr(self.secondary, findfunc)(search, **kwargs)
-
-        # The order of search results for Augeas implementation cannot be
-        # assured.
-
-        pass_primary = assertions.isPassNodeList(primary_res)
-        pass_secondary = assertions.isPassNodeList(secondary_res)
-        new_nodes = list()
-
-        if pass_primary and pass_secondary:
-            # Both unimplemented
-            new_nodes.append(nodeclass(primary=primary_res[0],
-                                       secondary=secondary_res[0])) # pragma: no cover
-        elif pass_primary:
-            for c in secondary_res:
-                new_nodes.append(nodeclass(primary=primary_res[0],
-                                           secondary=c))
-        elif pass_secondary:
-            for c in primary_res:
-                new_nodes.append(nodeclass(primary=c,
-                                           secondary=secondary_res[0]))
-        else:
-            assert len(primary_res) == len(secondary_res)
-            matches = self._create_matching_list(primary_res, secondary_res)
-            for p, s in matches:
-                new_nodes.append(nodeclass(primary=p, secondary=s))
-
-        return new_nodes
 
     def delete_child(self, child):
         """Deletes a child from the ParserNode implementations. The actual

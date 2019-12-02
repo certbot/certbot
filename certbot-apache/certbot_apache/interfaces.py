@@ -192,6 +192,18 @@ class ParserNode(object):
 
         """
 
+    @abc.abstractmethod
+    def find_ancestors(self, name):
+        """
+        Traverses the ancestor tree up, searching for BlockNodes with a specific
+        name.
+
+        :param str name: Name of the ancestor BlockNode to search for
+
+        :returns: A list of ancestor BlockNodes that match the name
+        :rtype: list of BlockNode
+        """
+
 
 # Linter rule exclusion done because of https://github.com/PyCQA/pylint/issues/179
 @six.add_metaclass(abc.ABCMeta)  # pylint: disable=abstract-method

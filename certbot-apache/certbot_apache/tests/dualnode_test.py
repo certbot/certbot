@@ -412,3 +412,12 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.assertFalse(self.block == ne_block)
         self.assertFalse(self.directive == ne_directive)
         self.assertFalse(self.comment == ne_comment)
+
+    def test_find_ancestors(self):
+        primarymock = mock.MagicMock(return_value=[])
+        secondarymock = mock.MagicMock(return_value=[])
+        self.block.primary.find_ancestors = primarymock
+        self.block.secondary.find_ancestors = secondarymock
+        self.block.find_ancestors("anything")
+        self.assertTrue(primarymock.called)
+        self.assertTrue(secondarymock.called)

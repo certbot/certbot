@@ -24,6 +24,14 @@ class ApacheParserNode(interfaces.ParserNode):
     def save(self, msg): # pragma: no cover
         pass
 
+    def find_ancestors(self, name):  # pylint: disable=unused-variable
+        """Find ancestor BlockNodes with a given name"""
+        return [ApacheBlockNode(name=assertions.PASS,
+                                parameters=assertions.PASS,
+                                ancestor=self,
+                                filepath=assertions.PASS,
+                                metadata=self.metadata)]
+
 
 class ApacheCommentNode(ApacheParserNode):
     """ apacheconfig implementation of CommentNode interface """
