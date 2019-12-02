@@ -13,6 +13,8 @@ from certbot.compat import os
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 
+from certbot.plugins.enhancements import OCSPPrefetchEnhancement
+
 logger = logging.getLogger(__name__)
 
 
@@ -144,3 +146,6 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         self.reverter.register_undo_command(
             temp, [self.option("dismod"), "-f", mod_name])
         util.run_script([self.option("enmod"), mod_name])
+
+
+OCSPPrefetchEnhancement.register(DebianConfigurator)  # pylint: disable=no-member

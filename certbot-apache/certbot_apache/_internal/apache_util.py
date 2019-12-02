@@ -1,9 +1,55 @@
 """ Utility functions for certbot-apache plugin """
 import binascii
 
+import six
+import struct
+import time
+
+from certbot import crypto_util
 from certbot import util
 from certbot.compat import os
 
+
+def get_apache_ocsp_struct(ttl, ocsp_response):
+    """Create Apache OCSP response structure to be used in response cache
+
+    :param int ttl: Time-To-Live in seocnds
+    :param str ocsp_response: OCSP response data
+
+    :returns: Apache OCSP structure
+    :rtype: `str`
+
+    """
+    ttl = time.time() + ttl
+    # As microseconds
+    ttl_struct = struct.pack('l', int(ttl*1000000))
+    return b'\x01'.join([ttl_struct, ocsp_response])
+
+def certid_sha1_hex(cert_path):
+    """Hex representation of certificate SHA1 fingerprint
+
+    :param str cert_path: File path to certificate
+
+    :returns: Hex representation SHA1 fingerprint of certificate
+    :rtype: `str`
+
+    """
+    sha1_hex = binascii.hexlify(certid_sha1(cert_path))
+    if isinstance(sha1_hex, six.binary_type):
+        return sha1_hex.decode('utf-8')  # pragma: no cover
+    return sha1_hex  # pragma: no cover
+
+
+def certid_sha1(cert_path):
+    """SHA1 fingerprint of certificate
+
+    :param str cert_path: File path to certificate
+
+    :returns: SHA1 fingerprint bytestring
+    :rtype: `str`
+
+    """
+    return crypto_util.cert_sha1_fingerprint(cert_path)
 
 def get_mod_deps(mod_name):
     """Get known module dependencies.

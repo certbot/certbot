@@ -68,3 +68,9 @@ AUTOHSTS_FREQ = 172800
 MANAGED_COMMENT = "DO NOT REMOVE - Managed by Certbot"
 MANAGED_COMMENT_ID = MANAGED_COMMENT+", VirtualHost id: {0}"
 """Managed by Certbot comments and the VirtualHost identification template"""
+
+OCSP_APACHE_TTL = 432000
+"""Apache TTL for OCSP response: 5 days"""
+
+OCSP_INTERNAL_TTL = 86400
+"""Internal TTL for OCSP response: 1 day"""
