@@ -292,9 +292,14 @@ class ApacheParser(object):
     def update_runtime_variables(self):
         """Update Includes, Defines and Includes from httpd config dump data"""
 
-        self.variables = apache_util.parse_defines(self.configurator.option("ctl"))
+        self.update_defines()
         self.update_includes()
         self.update_modules()
+
+    def update_defines(self):
+        """Updates the dictionary of known variables in the configuration"""
+
+        self.variables = apache_util.parse_defines(self.configurator.option("ctl"))
 
     def update_includes(self):
         """Get includes from httpd process, and add them to DOM if needed"""

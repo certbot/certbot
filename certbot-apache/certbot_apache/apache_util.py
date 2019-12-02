@@ -4,8 +4,9 @@ import logging
 import re
 import subprocess
 
-from certbot import util
 from certbot import errors
+from certbot import util
+
 from certbot.compat import os
 
 logger = logging.getLogger(__name__)
@@ -142,8 +143,6 @@ def parse_defines(apachectl):
         parts = match.partition("=")
         variables[parts[0]] = parts[2]
 
-    if not variables:
-        return {}
     return variables
 
 
