@@ -3,10 +3,19 @@
 import copy
 import logging
 
+from pyparsing import Combine
+from pyparsing import Forward
+from pyparsing import Group
+from pyparsing import Literal
+from pyparsing import OneOrMore
+from pyparsing import Optional
+from pyparsing import QuotedString
+from pyparsing import Regex
+from pyparsing import White
+from pyparsing import ZeroOrMore
+from pyparsing import restOfLine
+from pyparsing import stringEnd
 import six
-from pyparsing import (Combine, Forward, Group, Literal, OneOrMore, Optional,
-                       QuotedString, Regex, White, ZeroOrMore, restOfLine,
-                       stringEnd)
 
 logger = logging.getLogger(__name__)
 

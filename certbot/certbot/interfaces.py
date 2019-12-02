@@ -4,7 +4,6 @@ import abc
 import six
 import zope.interface
 
-
 # pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
 
 

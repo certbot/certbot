@@ -4,7 +4,8 @@ import datetime
 import josepy as jose
 import six
 
-from acme import challenges, messages
+from acme import challenges
+from acme import messages
 from certbot._internal import auth_handler
 from certbot.tests import util
 

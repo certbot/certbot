@@ -5,16 +5,18 @@ from __future__ import print_function
 import errno
 import json
 import os
+from os.path import join
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
-from os.path import join
 
 import requests
 
-from certbot_integration_tests.utils import misc, pebble_artifacts, proxy
+from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils import pebble_artifacts
+from certbot_integration_tests.utils import proxy
 from certbot_integration_tests.utils.constants import *
 
 

@@ -8,23 +8,25 @@ import hashlib
 import logging
 import warnings
 
-import pyrfc3339
-import six
-import zope.component
 # https://github.com/python/typeshed/tree/master/third_party/2/cryptography
+from OpenSSL import SSL  # type: ignore
+from OpenSSL import crypto
 from cryptography import x509  # type: ignore
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.ec import (
-    ECDSA, EllipticCurvePublicKey)
+from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from OpenSSL import SSL  # type: ignore
-from OpenSSL import crypto
+import pyrfc3339
+import six
+import zope.component
 
 from acme import crypto_util as acme_crypto_util
 from acme.magic_typing import IO  # pylint: disable=unused-import, no-name-in-module
-from certbot import errors, interfaces, util
+from certbot import errors
+from certbot import interfaces
+from certbot import util
 from certbot.compat import os
 
 logger = logging.getLogger(__name__)

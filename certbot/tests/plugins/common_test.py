@@ -7,10 +7,13 @@ import josepy as jose
 import mock
 
 from acme import challenges
-from certbot import achallenges, crypto_util, errors
-from certbot.compat import filesystem, os
-from certbot.tests import util as test_util
+from certbot import achallenges
+from certbot import crypto_util
+from certbot import errors
+from certbot.compat import filesystem
+from certbot.compat import os
 from certbot.tests import acme_util
+from certbot.tests import util as test_util
 
 AUTH_KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 ACHALL = achallenges.KeyAuthorizationAnnotatedChallenge(

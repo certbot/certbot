@@ -3,9 +3,9 @@ import unittest
 
 import mock
 
-import certbot.tests.util as test_util
 from certbot._internal.plugins import null
 from certbot.plugins import enhancements
+import certbot.tests.util as test_util
 
 
 class EnhancementTest(test_util.ConfigTestCase):

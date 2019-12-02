@@ -6,7 +6,8 @@ import mock
 
 from certbot import errors
 from certbot.compat import os
-from certbot.plugins import dns_test_common, dns_test_common_lexicon
+from certbot.plugins import dns_test_common
+from certbot.plugins import dns_test_common_lexicon
 from certbot.tests import util as test_util
 from certbot_dns_linode._internal.dns_linode import Authenticator
 

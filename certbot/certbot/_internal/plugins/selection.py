@@ -6,7 +6,8 @@ import logging
 import six
 import zope.component
 
-from certbot import errors, interfaces
+from certbot import errors
+from certbot import interfaces
 from certbot.compat import os
 from certbot.display import util as display_util
 

@@ -6,17 +6,23 @@ import socket
 import tempfile
 import unittest
 
-import mock
 # six is used in mock.patch()
+import mock
 import six  # pylint: disable=unused-import
 
-import util
 from acme import challenges
-from certbot import achallenges, crypto_util, errors
-from certbot.compat import filesystem, os
-from certbot.tests import util as certbot_util
+from certbot import achallenges
+from certbot import crypto_util
+from certbot import errors
+from certbot.compat import filesystem
+from certbot.compat import os
 from certbot.tests import acme_util
-from certbot_apache._internal import apache_util, constants, obj, parser
+from certbot.tests import util as certbot_util
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import constants
+from certbot_apache._internal import obj
+from certbot_apache._internal import parser
+import util
 
 
 class MultipleVhostsTest(util.ApacheTest):

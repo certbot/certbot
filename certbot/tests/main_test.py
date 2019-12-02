@@ -18,15 +18,24 @@ import pytz
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
-import certbot.tests.util as test_util
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from certbot import crypto_util
+from certbot import errors
 from certbot import interfaces  # pylint: disable=unused-import
-from certbot import crypto_util, errors, util
-from certbot._internal import (
-    account, cli, configuration, constants, main, updater)
-from certbot._internal.plugins import disco, manual, null
-from certbot.compat import filesystem, os
+from certbot import util
+from certbot._internal import account
+from certbot._internal import cli
+from certbot._internal import configuration
+from certbot._internal import constants
+from certbot._internal import main
+from certbot._internal import updater
+from certbot._internal.plugins import disco
+from certbot._internal.plugins import manual
+from certbot._internal.plugins import null
+from certbot.compat import filesystem
+from certbot.compat import os
 from certbot.plugins import enhancements
+import certbot.tests.util as test_util
 
 CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.vector_path('cert_512.pem')

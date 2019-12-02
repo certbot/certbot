@@ -1,26 +1,34 @@
 """Nginx Configuration"""
+# https://github.com/PyCQA/pylint/issues/73
+from distutils.version import LooseVersion  # pylint: disable=no-name-in-module, import-error
 import logging
 import re
 import socket
 import subprocess
 import tempfile
 import time
-# https://github.com/PyCQA/pylint/issues/73
-from distutils.version import LooseVersion # pylint: disable=no-name-in-module, import-error
 
 import OpenSSL
 import pkg_resources
 import zope.interface
 
-from acme import crypto_util as acme_crypto_util
 from acme import challenges
-from acme.magic_typing import Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
-from certbot import crypto_util, errors, interfaces, util
+from acme import crypto_util as acme_crypto_util
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List
+from acme.magic_typing import Set
+from certbot import crypto_util
+from certbot import errors
+from certbot import interfaces
+from certbot import util
 from certbot.compat import os
 from certbot.plugins import common
+from certbot_nginx._internal import constants
+from certbot_nginx._internal import display_ops
+from certbot_nginx._internal import http_01
+from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj  # pylint: disable=unused-import
-from certbot_nginx._internal import (
-    constants, display_ops, http_01, nginxparser, parser)
+from certbot_nginx._internal import parser
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1

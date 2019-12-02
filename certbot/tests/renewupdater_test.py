@@ -3,10 +3,11 @@ import unittest
 
 import mock
 
-import certbot.tests.util as test_util
 from certbot import interfaces
-from certbot._internal import main, updater
+from certbot._internal import main
+from certbot._internal import updater
 from certbot.plugins import enhancements
+import certbot.tests.util as test_util
 
 
 class RenewUpdaterTest(test_util.ConfigTestCase):

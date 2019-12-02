@@ -6,8 +6,8 @@ import requests
 import six
 from six.moves import xrange  # pylint: disable=import-error, redefined-builtin
 
-from acme import errors as acme_errors
 from acme import crypto_util
+from acme import errors as acme_errors
 
 logger = logging.getLogger(__name__)
 

@@ -3,13 +3,13 @@
 import re
 import unittest
 
-import mock
 # six is used in mock.patch()
+import mock
 import six  # pylint: disable=unused-import
 
-import util
 from certbot import errors
 from certbot_apache._internal import constants
+import util
 
 
 class AutoHSTSTest(util.ApacheTest):

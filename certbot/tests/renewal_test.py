@@ -3,10 +3,11 @@ import unittest
 
 import mock
 
-import certbot.tests.util as test_util
 from acme import challenges
 from certbot import errors
-from certbot._internal import configuration, storage
+from certbot._internal import configuration
+from certbot._internal import storage
+import certbot.tests.util as test_util
 
 
 class RenewalTest(test_util.ConfigTestCase):

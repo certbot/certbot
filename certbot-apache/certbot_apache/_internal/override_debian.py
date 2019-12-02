@@ -4,9 +4,13 @@ import logging
 import pkg_resources
 import zope.interface
 
-from certbot import errors, interfaces, util
-from certbot.compat import filesystem, os
-from certbot_apache._internal import apache_util, configurator
+from certbot import errors
+from certbot import interfaces
+from certbot import util
+from certbot.compat import filesystem
+from certbot.compat import os
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import configurator
 
 logger = logging.getLogger(__name__)
 

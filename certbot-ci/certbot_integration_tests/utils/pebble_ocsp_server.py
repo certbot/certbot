@@ -6,17 +6,18 @@ to serve a mock OCSP responder during integration tests against Pebble.
 import datetime
 import re
 
-import requests
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
 from cryptography.x509 import ocsp
 from dateutil import parser
-
-from certbot_integration_tests.utils.constants import (
-    MOCK_OCSP_SERVER_PORT, PEBBLE_MANAGEMENT_URL)
-from certbot_integration_tests.utils.misc import GracefulTCPServer
+import requests
 from six.moves import BaseHTTPServer
+
+from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
+from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
+from certbot_integration_tests.utils.misc import GracefulTCPServer
 
 
 class _ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):

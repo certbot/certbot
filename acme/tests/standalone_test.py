@@ -9,10 +9,8 @@ import requests
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
-
 from acme import challenges
 from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
-
 import test_util
 
 

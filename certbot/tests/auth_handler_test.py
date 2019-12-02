@@ -6,12 +6,16 @@ import unittest
 import mock
 import zope.component
 
+from acme import challenges
 from acme import client as acme_client
 from acme import errors as acme_errors
-from acme import challenges, messages
-from certbot import achallenges, errors, interfaces, util
-from certbot.tests import util as test_util
+from acme import messages
+from certbot import achallenges
+from certbot import errors
+from certbot import interfaces
+from certbot import util
 from certbot.tests import acme_util
+from certbot.tests import util as test_util
 
 
 class ChallengeFactoryTest(unittest.TestCase):

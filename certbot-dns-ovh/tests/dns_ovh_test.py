@@ -6,7 +6,8 @@ import mock
 from requests.exceptions import HTTPError
 
 from certbot.compat import os
-from certbot.plugins import dns_test_common, dns_test_common_lexicon
+from certbot.plugins import dns_test_common
+from certbot.plugins import dns_test_common_lexicon
 from certbot.tests import util as test_util
 
 ENDPOINT = 'ovh-eu'

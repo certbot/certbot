@@ -14,8 +14,14 @@ import six
 import zope.component
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from certbot import crypto_util, errors, interfaces, util
-from certbot._internal import cli, hooks, storage, updater
+from certbot import crypto_util
+from certbot import errors
+from certbot import interfaces
+from certbot import util
+from certbot._internal import cli
+from certbot._internal import hooks
+from certbot._internal import storage
+from certbot._internal import updater
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import os
 

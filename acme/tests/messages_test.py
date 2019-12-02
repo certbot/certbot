@@ -6,7 +6,6 @@ import mock
 
 from acme import challenges
 from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-
 import test_util
 
 CERT = test_util.load_comparable_cert('cert.der')

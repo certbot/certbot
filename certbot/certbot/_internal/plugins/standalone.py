@@ -1,20 +1,25 @@
 """Standalone Authenticator."""
+# https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 import collections
 import logging
 import socket
-# https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 from socket import errno as socket_errors  # type: ignore
 
 import OpenSSL  # pylint: disable=unused-import
 import six
 import zope.interface
 
-from acme import standalone as acme_standalone
-from acme import challenges
 # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import TYPE_CHECKING, DefaultDict, Dict, Set, Tuple
+from acme import challenges
+from acme import standalone as acme_standalone
+from acme.magic_typing import TYPE_CHECKING
+from acme.magic_typing import DefaultDict
+from acme.magic_typing import Dict
+from acme.magic_typing import Set
+from acme.magic_typing import Tuple
 from certbot import achallenges  # pylint: disable=unused-import
-from certbot import errors, interfaces
+from certbot import errors
+from certbot import interfaces
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)

@@ -1,16 +1,27 @@
 """Tools for checking certificate revocation."""
+from datetime import datetime
+from datetime import timedelta
 import logging
 import re
-from datetime import datetime, timedelta
-from subprocess import PIPE, Popen
+from subprocess import PIPE
+from subprocess import Popen
 
-import pytz
-import requests
 from cryptography import x509
-from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
+from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes  # type: ignore
 from cryptography.hazmat.primitives import serialization
+import pytz
+import requests
+
+from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple
+from certbot import crypto_util
+from certbot import errors
+from certbot import util
+from certbot._internal.storage import RenewableCert  # pylint: disable=unused-import
+
 try:
     # Only cryptography>=2.5 has ocsp module
     # and signature_hash_algorithm attribute in OCSPResponse class
@@ -19,9 +30,6 @@ try:
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp = None  # type: ignore
 
-from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
-from certbot import crypto_util, errors, util
-from certbot._internal.storage import RenewableCert  # pylint: disable=unused-import
 
 
 logger = logging.getLogger(__name__)

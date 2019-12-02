@@ -4,8 +4,10 @@ import unittest
 import mock
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from certbot import errors, util
-from certbot.compat import filesystem, os
+from certbot import errors
+from certbot import util
+from certbot.compat import filesystem
+from certbot.compat import os
 from certbot.tests import util as test_util
 
 

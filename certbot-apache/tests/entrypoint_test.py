@@ -3,7 +3,8 @@ import unittest
 
 import mock
 
-from certbot_apache._internal import configurator, entrypoint
+from certbot_apache._internal import configurator
+from certbot_apache._internal import entrypoint
 
 
 class EntryPointTest(unittest.TestCase):

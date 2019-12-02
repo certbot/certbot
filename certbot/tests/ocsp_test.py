@@ -1,15 +1,17 @@
 """Tests for ocsp.py"""
 # pylint: disable=protected-access
 import contextlib
+from datetime import datetime
+from datetime import timedelta
 import unittest
-from datetime import datetime, timedelta
 
-import mock
-import pytz
 from cryptography import x509
-from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
+from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes  # type: ignore
+import mock
+import pytz
 
 from certbot import errors
 from certbot.tests import util as test_util

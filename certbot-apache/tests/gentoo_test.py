@@ -3,10 +3,12 @@ import unittest
 
 import mock
 
-import util
 from certbot import errors
-from certbot.compat import filesystem, os
-from certbot_apache._internal import obj, override_gentoo
+from certbot.compat import filesystem
+from certbot.compat import os
+from certbot_apache._internal import obj
+from certbot_apache._internal import override_gentoo
+import util
 
 
 def get_vh_truth(temp_dir, config_name):

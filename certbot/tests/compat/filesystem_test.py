@@ -5,10 +5,11 @@ import unittest
 
 import mock
 
-import certbot.tests.util as test_util
 from certbot import util
 from certbot._internal import lock
-from certbot.compat import filesystem, os
+from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
 
 try:

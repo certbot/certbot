@@ -4,7 +4,11 @@ import json
 import josepy as jose
 import six
 
-from acme import challenges, errors, fields, jws, util
+from acme import challenges
+from acme import errors
+from acme import fields
+from acme import jws
+from acme import util
 
 try:
     from collections.abc import Hashable  # pylint: disable=no-name-in-module

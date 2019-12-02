@@ -5,7 +5,9 @@ import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 
-from acme.magic_typing import List, Tuple, Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple
+from acme.magic_typing import Union
 
 try:
     # pylint: disable=import-error

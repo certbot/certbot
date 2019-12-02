@@ -1,10 +1,12 @@
 """Test for certbot_apache._internal.configurator for CentOS 6 overrides"""
 import unittest
 
-import util
 from certbot.compat import os
 from certbot.errors import MisconfigurationError
-from certbot_apache._internal import obj, override_centos, parser
+from certbot_apache._internal import obj
+from certbot_apache._internal import override_centos
+from certbot_apache._internal import parser
+import util
 
 
 def get_vh_truth(temp_dir, config_name):

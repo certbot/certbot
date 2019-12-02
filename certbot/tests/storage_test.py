@@ -11,10 +11,11 @@ import pytz
 import six
 
 import certbot
-import certbot.tests.util as test_util
 from certbot import errors
 from certbot._internal.storage import ALL_FOUR
-from certbot.compat import filesystem, os
+from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 
 CERT = test_util.load_cert('cert_512.pem')
 

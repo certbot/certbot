@@ -1,6 +1,7 @@
 import sys
 
-from setuptools import find_packages, setup
+from setuptools import find_packages
+from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
 version = '1.0.0.dev0'

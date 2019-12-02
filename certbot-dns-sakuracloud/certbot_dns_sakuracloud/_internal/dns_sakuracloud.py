@@ -1,11 +1,12 @@
 """DNS Authenticator for Sakura Cloud DNS."""
 import logging
 
-import zope.interface
 from lexicon.providers import sakuracloud
+import zope.interface
 
 from certbot import interfaces
-from certbot.plugins import dns_common, dns_common_lexicon
+from certbot.plugins import dns_common
+from certbot.plugins import dns_common_lexicon
 
 logger = logging.getLogger(__name__)
 

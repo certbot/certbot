@@ -2,10 +2,10 @@
 """Module to call certbot in test mode"""
 from __future__ import absolute_import
 
+from distutils.version import LooseVersion
 import os
 import subprocess
 import sys
-from distutils.version import LooseVersion
 
 import certbot_integration_tests
 from certbot_integration_tests.utils.constants import *

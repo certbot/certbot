@@ -2,9 +2,9 @@
 import shutil
 import unittest
 
-import util
 from certbot import errors
 from certbot.compat import os
+import util
 
 
 class ComplexParserTest(util.ParserTest):

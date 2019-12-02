@@ -4,10 +4,10 @@ import functools
 import hashlib
 import logging
 
+from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
 import requests
 import six
-from cryptography.hazmat.primitives import hashes  # type: ignore
 
 from acme import fields
 

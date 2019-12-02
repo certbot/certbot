@@ -1,17 +1,21 @@
 """Test for certbot_nginx._internal.configurator."""
 import unittest
 
-import mock
 import OpenSSL
+import mock
 
-import test_util as util
-from acme import challenges, messages
-from certbot import achallenges, crypto_util, errors
+from acme import challenges
+from acme import messages
+from certbot import achallenges
+from certbot import crypto_util
+from certbot import errors
 from certbot.compat import os
 from certbot.tests import util as certbot_test_util
-from certbot_nginx._internal import obj, parser
+from certbot_nginx._internal import obj
+from certbot_nginx._internal import parser
 from certbot_nginx._internal.configurator import _redirect_block_for_domain
 from certbot_nginx._internal.nginxparser import UnspacedList
+import test_util as util
 
 
 class NginxConfiguratorTest(util.NginxTest):

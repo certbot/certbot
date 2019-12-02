@@ -4,11 +4,15 @@ import logging
 import time
 
 import boto3
+from botocore.exceptions import ClientError
+from botocore.exceptions import NoCredentialsError
 import zope.interface
-from botocore.exceptions import ClientError, NoCredentialsError
 
-from acme.magic_typing import DefaultDict, Dict, List  # pylint: disable=unused-import, no-name-in-module
-from certbot import errors, interfaces
+from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from certbot import errors
+from certbot import interfaces
 from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)

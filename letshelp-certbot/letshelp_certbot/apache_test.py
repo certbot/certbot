@@ -7,9 +7,9 @@ import tarfile
 import tempfile
 import unittest
 
+# six is used in mock.patch()
 import mock
 import pkg_resources
-# six is used in mock.patch()
 import six  # pylint: disable=unused-import
 
 import letshelp_certbot.apache as letshelp_le_apache

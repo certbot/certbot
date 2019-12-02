@@ -9,19 +9,24 @@ import six
 import zope.component
 import zope.interface
 
-from acme import challenges  # pylint: disable=unused-import
 # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import DefaultDict, Dict, List, Set
 # pylint: enable=unused-import, no-name-in-module
+from acme import challenges  # pylint: disable=unused-import
+from acme.magic_typing import DefaultDict
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
 from certbot import achallenges  # pylint: disable=unused-import
-from certbot import errors, interfaces
+from certbot import errors
+from certbot import interfaces
 from certbot._internal import cli
-from certbot.compat import filesystem, os
-from certbot.display import util as display_util
+from certbot.compat import filesystem
+from certbot.compat import os
 from certbot.display import ops
-from certbot.plugins import common, util
+from certbot.display import util as display_util
+from certbot.plugins import common
+from certbot.plugins import util
 from certbot.util import safe_open
-
 
 logger = logging.getLogger(__name__)
 

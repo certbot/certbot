@@ -1,9 +1,10 @@
 """Certbot PyLint plugin.
 http://docs.pylint.org/plugins.html
 """
-# The built-in ImportChecker of Pylint does a similar job to ForbidStandardOsModule to detect
+
 # deprecated modules. You can check its behavior as a reference to what is coded here.
 # See https://github.com/PyCQA/pylint/blob/b20a2984c94e2946669d727dbda78735882bf50a/pylint/checkers/imports.py#L287
+# The built-in ImportChecker of Pylint does a similar job to ForbidStandardOsModule to detect
 from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
 

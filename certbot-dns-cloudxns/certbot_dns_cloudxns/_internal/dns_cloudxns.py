@@ -1,11 +1,13 @@
 """DNS Authenticator for CloudXNS DNS."""
 import logging
 
-import zope.interface
 from lexicon.providers import cloudxns
+import zope.interface
 
-from certbot import errors, interfaces
-from certbot.plugins import dns_common, dns_common_lexicon
+from certbot import errors
+from certbot import interfaces
+from certbot.plugins import dns_common
+from certbot.plugins import dns_common_lexicon
 
 logger = logging.getLogger(__name__)
 
