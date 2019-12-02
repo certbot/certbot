@@ -16,7 +16,7 @@ from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Optional
+from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
 import certbot
 from certbot import crypto_util
 from certbot import errors

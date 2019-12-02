@@ -9,8 +9,8 @@ from botocore.exceptions import NoCredentialsError
 import zope.interface
 
 from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict
-from acme.magic_typing import List
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common

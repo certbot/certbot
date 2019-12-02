@@ -16,7 +16,7 @@ import pytz
 import requests
 
 from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple
+from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
 from certbot import crypto_util
 from certbot import errors
 from certbot import util

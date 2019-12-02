@@ -5,8 +5,8 @@ from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
 from acme.magic_typing import Any  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict
-from acme.magic_typing import Union
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.plugins import dns_common
 

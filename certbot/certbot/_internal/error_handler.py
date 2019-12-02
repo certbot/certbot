@@ -3,14 +3,11 @@ import functools
 import logging
 import signal
 import traceback
-
-# pylint: disable=unused-import, no-name-in-module
-# pylint: enable=unused-import, no-name-in-module
-from acme.magic_typing import Any
-from acme.magic_typing import Callable
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Union
+from acme.magic_typing import Any  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Callable  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.compat import os
 

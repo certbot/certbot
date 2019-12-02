@@ -18,7 +18,7 @@ import configargparse
 import six
 
 from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot._internal import constants
 from certbot._internal import lock

@@ -6,8 +6,8 @@ import os  # pylint: disable=os-module-forbidden
 import stat
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple
-from acme.magic_typing import Union
+from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 
 try:
     # pylint: disable=import-error

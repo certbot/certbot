@@ -6,7 +6,7 @@ from subprocess import PIPE
 from subprocess import Popen
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot import util
 from certbot.compat import filesystem

@@ -9,15 +9,11 @@ import socket
 from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 from OpenSSL import crypto
 import josepy as jose
-
-# pylint: disable=unused-import, no-name-in-module
 from acme import errors
-from acme.magic_typing import Callable
-from acme.magic_typing import Optional
-from acme.magic_typing import Tuple
-from acme.magic_typing import Union
-
-# pylint: enable=unused-import, no-name-in-module
+from acme.magic_typing import Callable  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 
 
 logger = logging.getLogger(__name__)
