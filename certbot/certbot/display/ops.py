@@ -292,7 +292,7 @@ def _gen_ssl_lab_urls(domains):
 def _gen_https_names(domains):
     """Returns a string of the https domains.
 
-    Domains are formatted nicely with https:// prepended to each.
+    Domains are formatted nicely with ``https://`` prepended to each.
 
     :param list domains: Each domain is a 'str'
 

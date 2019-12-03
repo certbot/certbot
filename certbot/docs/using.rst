@@ -288,7 +288,7 @@ dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 .. _varnish: http://git.sesse.net/?p=letsencrypt-varnish-plugin
 .. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
-.. _external: https://github.com/EnigmaBridge/certbot-external-auth
+.. _external-auth: https://github.com/EnigmaBridge/certbot-external-auth
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
 
