@@ -4,7 +4,8 @@ import logging
 import platform
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore  # See https://github.com/pyca/cryptography/issues/4275
+# See https://github.com/pyca/cryptography/issues/4275
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
 import josepy as jose
 import OpenSSL
 import zope.component

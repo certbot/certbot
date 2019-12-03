@@ -10,7 +10,8 @@ from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes  # type: ignore  # See https://github.com/pyca/cryptography/issues/4275
+# See https://github.com/pyca/cryptography/issues/4275
+from cryptography.hazmat.primitives import hashes  # type: ignore
 from cryptography.hazmat.primitives import serialization
 import pytz
 import requests
@@ -25,7 +26,7 @@ from certbot._internal.storage import RenewableCert  # pylint: disable=unused-im
 try:
     # Only cryptography>=2.5 has ocsp module
     # and signature_hash_algorithm attribute in OCSPResponse class
-    from cryptography.x509 import ocsp  # pylint: disable=import-error, wrong-order
+    from cryptography.x509 import ocsp  # pylint: disable=import-error, ungrouped-imports
     getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp = None  # type: ignore
