@@ -14,8 +14,8 @@ install_requires = [
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
-    # Connection.set_tlsext_host_name (>=0.13)
     'mock',
+    # Connection.set_tlsext_host_name (>=0.13)
     'PyOpenSSL>=0.13.1',
     'pyrfc3339',
     'pytz',
