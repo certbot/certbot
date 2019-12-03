@@ -4,13 +4,13 @@ from setuptools.command.test import test as TestCommand
 import sys
 
 
-version = '1.0.0.dev0'
+version = '1.0.0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'acme>=1.0.0.dev0',
-    'certbot>=1.0.0.dev0',
+    'acme>=1.0.0',
+    'certbot>=1.0.0',
     'mock',
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
