@@ -521,13 +521,14 @@ Updating the documentation
 ==========================
 
 Many of the packages in the Certbot repository have documentation in a
-``docs/`` directory in the top level directory for the package. For instance,
-Certbot's documentation is under ``certbot/docs``.
+``docs/`` directory. This directory is located under the top level directory
+for the package. For instance, Certbot's documentation is under
+``certbot/docs``.
 
-To build this any of this documentation, make sure you have followed the
+To build the documentation of a package, make sure you have followed the
 instructions to set up a `local copy`_ of Certbot including activating the
-virtual environment and then ``cd`` to the docs directory you want to build and
-run the command:
+virtual environment. After that, ``cd`` to the docs directory you want to build
+and run the command:
 
 .. code-block:: shell
 
