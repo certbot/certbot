@@ -8,8 +8,7 @@ import hashlib
 import logging
 import warnings
 
-# https://github.com/python/typeshed/tree/master/third_party/2/cryptography
-from cryptography import x509  # type: ignore
+from cryptography import x509  # type: ignore  # See https://github.com/pyca/cryptography/issues/4275
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA

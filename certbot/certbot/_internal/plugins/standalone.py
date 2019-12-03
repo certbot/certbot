@@ -1,9 +1,8 @@
 """Standalone Authenticator."""
-# https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 import collections
 import logging
 import socket
-from socket import errno as socket_errors  # type: ignore
+from socket import errno as socket_errors  # type: ignore  # https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 
 import OpenSSL  # pylint: disable=unused-import
 import six
