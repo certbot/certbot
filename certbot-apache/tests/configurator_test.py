@@ -6,9 +6,8 @@ import socket
 import tempfile
 import unittest
 
-# six is used in mock.patch()
 import mock
-import six  # pylint: disable=unused-import
+import six  # pylint: disable=unused-import  # six is used in mock.patch()
 
 from acme import challenges
 from certbot import achallenges

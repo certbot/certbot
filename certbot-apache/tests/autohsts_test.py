@@ -3,9 +3,8 @@
 import re
 import unittest
 
-# six is used in mock.patch()
 import mock
-import six  # pylint: disable=unused-import
+import six  # pylint: disable=unused-import  # six is used in mock.patch()
 
 from certbot import errors
 from certbot_apache._internal import constants
