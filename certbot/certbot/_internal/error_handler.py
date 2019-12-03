@@ -3,6 +3,7 @@ import functools
 import logging
 import signal
 import traceback
+
 from acme.magic_typing import Any  # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Callable  # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module

@@ -5,6 +5,7 @@ import sys
 import unittest
 
 import mock
+
 from acme.magic_typing import Callable  # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
