@@ -12,7 +12,6 @@ import time
 import pytest
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
-from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_owner
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_permissions
@@ -21,6 +20,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_hook_execu
 from certbot_integration_tests.certbot_tests.assertions import assert_saved_renew_hook
 from certbot_integration_tests.certbot_tests.assertions import assert_world_no_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
+from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
 from certbot_integration_tests.utils import misc
 
 

@@ -9,8 +9,6 @@ import logging
 import warnings
 
 # https://github.com/python/typeshed/tree/master/third_party/2/cryptography
-from OpenSSL import SSL  # type: ignore
-from OpenSSL import crypto
 from cryptography import x509  # type: ignore
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
@@ -18,6 +16,8 @@ from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+from OpenSSL import crypto
+from OpenSSL import SSL  # type: ignore
 import pyrfc3339
 import six
 import zope.component

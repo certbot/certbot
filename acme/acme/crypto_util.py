@@ -6,9 +6,9 @@ import os
 import re
 import socket
 
-from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
-from OpenSSL import crypto
 import josepy as jose
+from OpenSSL import crypto
+from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 
 from acme import errors
 from acme.magic_typing import Callable  # pylint: disable=unused-import, no-name-in-module

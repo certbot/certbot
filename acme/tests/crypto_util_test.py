@@ -5,8 +5,8 @@ import threading
 import time
 import unittest
 
-import OpenSSL
 import josepy as jose
+import OpenSSL
 import six
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 

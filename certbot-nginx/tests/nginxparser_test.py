@@ -6,12 +6,12 @@ import unittest
 
 from pyparsing import ParseException
 
-from certbot_nginx._internal.nginxparser import RawNginxParser
-from certbot_nginx._internal.nginxparser import UnspacedList
 from certbot_nginx._internal.nginxparser import dump
 from certbot_nginx._internal.nginxparser import dumps
 from certbot_nginx._internal.nginxparser import load
 from certbot_nginx._internal.nginxparser import loads
+from certbot_nginx._internal.nginxparser import RawNginxParser
+from certbot_nginx._internal.nginxparser import UnspacedList
 import test_util as util
 
 FIRST = operator.itemgetter(0)

@@ -2,8 +2,8 @@
 import logging
 import unittest
 
-import OpenSSL
 import mock
+import OpenSSL
 import zope.component
 
 from certbot import errors

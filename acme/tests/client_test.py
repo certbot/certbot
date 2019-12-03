@@ -5,9 +5,9 @@ import datetime
 import json
 import unittest
 
-import OpenSSL
 import josepy as jose
 import mock
+import OpenSSL
 import requests
 from six.moves import http_client  # pylint: disable=import-error
 

@@ -9,8 +9,8 @@ import re
 import sys
 import time
 
-import OpenSSL
 import josepy as jose
+import OpenSSL
 import requests
 from requests.adapters import HTTPAdapter
 from requests_toolbelt.adapters.source import SourceAddressAdapter

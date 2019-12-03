@@ -11,10 +11,10 @@ from pyparsing import OneOrMore
 from pyparsing import Optional
 from pyparsing import QuotedString
 from pyparsing import Regex
-from pyparsing import White
-from pyparsing import ZeroOrMore
 from pyparsing import restOfLine
 from pyparsing import stringEnd
+from pyparsing import White
+from pyparsing import ZeroOrMore
 import six
 
 logger = logging.getLogger(__name__)

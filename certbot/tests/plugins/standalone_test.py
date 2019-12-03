@@ -4,9 +4,9 @@ import socket
 from socket import errno as socket_errors  # type: ignore
 import unittest
 
-import OpenSSL.crypto  # pylint: disable=unused-import
 import josepy as jose
 import mock
+import OpenSSL.crypto  # pylint: disable=unused-import
 import six
 
 from acme import challenges

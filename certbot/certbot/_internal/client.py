@@ -3,12 +3,10 @@ import datetime
 import logging
 import platform
 
-# https://github.com/python/typeshed/blob/master/third_party/
-# 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
-import OpenSSL
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore  # See https://github.com/pyca/cryptography/issues/4275
 import josepy as jose
+import OpenSSL
 import zope.component
 
 from acme import client as acme_client

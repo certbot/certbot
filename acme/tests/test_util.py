@@ -5,10 +5,10 @@
 """
 import os
 
-from OpenSSL import crypto
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
+from OpenSSL import crypto
 import pkg_resources
 
 
