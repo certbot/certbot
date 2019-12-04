@@ -951,13 +951,13 @@ class ApacheConfigurator(common.Installer):
 
         loc = parser.get_aug_path(self.parser.loc["name"])
         if addr.get_port() == "443":
-            path = self.parser.add_dir_to_ifmodssl(  # pylint: disable=assignment-from-no-return
+            self.parser.add_dir_to_ifmodssl(
                 loc, "NameVirtualHost", [str(addr)])
         else:
-            path = self.parser.add_dir(loc, "NameVirtualHost", [str(addr)])  # pylint: disable=assignment-from-no-return
+            self.parser.add_dir(loc, "NameVirtualHost", [str(addr)])
 
         msg = ("Setting %s to be NameBasedVirtualHost\n"
-               "\tDirective added to %s\n" % (addr, path))
+               "\tDirective added to %s\n" % (addr, loc))
         logger.debug(msg)
         self.save_notes += msg
 
