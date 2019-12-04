@@ -25,6 +25,7 @@ class ErrorTest(unittest.TestCase):
             'title': 'some title',
             'type': ERROR_PREFIX + 'malformed',
         }
+        self.error_custom = Error(typ='custom', detail='bar')
         self.empty_error = Error()
 
     def test_default_typ(self):
@@ -41,6 +42,7 @@ class ErrorTest(unittest.TestCase):
 
     def test_description(self):
         self.assertEqual('The request message was malformed', self.error.description)
+        self.assertTrue(self.error_custom.description is None)
 
     def test_code(self):
         from acme.messages import Error
@@ -50,6 +52,7 @@ class ErrorTest(unittest.TestCase):
     def test_is_acme_error(self):
         from acme.messages import is_acme_error, Error
         self.assertTrue(is_acme_error(self.error))
+        self.assertFalse(is_acme_error(self.error_custom))
         self.assertFalse(is_acme_error(Error()))
         self.assertFalse(is_acme_error(self.empty_error))
         self.assertFalse(is_acme_error("must pet all the {dogs|rabbits}"))
