@@ -10,7 +10,7 @@ version = '1.0.0.dev0'
 # acme/certbot version.
 install_requires = [
     'acme>=0.29.0',
-    'certbot>=0.39.0',
+    'certbot>=1.0.0.dev0',
     'google-api-python-client>=1.5.5',
     'mock',
     'oauth2client>=4.0',
