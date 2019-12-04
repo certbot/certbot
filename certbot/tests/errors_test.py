@@ -33,7 +33,6 @@ class FailedChallengesTest(unittest.TestCase):
                 chall=acme_util.DNS01, uri=None,
                 error=messages.Error.with_code("tls", detail=arabic_detail)))})
 
-        print(str(self.error))
         self.assertTrue(str(arabic_error).startswith(
             "Failed authorization procedure. example.com (dns-01): "
             "urn:ietf:params:acme:error:tls"))
