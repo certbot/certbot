@@ -143,7 +143,7 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
         if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
             raise jose.DeserializationError(
                 '{0} not recognized'.format(cls.__name__))
-        return cls.POSSIBLE_NAMES[jobj]  # pylint: disable=unsubscriptable-object
+        return cls.POSSIBLE_NAMES[jobj]
 
     def __repr__(self):
         return '{0}({1})'.format(self.__class__.__name__, self.name)
@@ -491,7 +491,7 @@ class Authorization(ResourceBody):
     @property
     def resolved_combinations(self):
         """Combinations with challenges instead of indices."""
-        return tuple(tuple(self.challenges[idx] for idx in combo)  # pylint: disable=unsubscriptable-object
+        return tuple(tuple(self.challenges[idx] for idx in combo)
                      for combo in self.combinations)  # pylint: disable=not-an-iterable
 
 

@@ -391,7 +391,7 @@ class ClientTest(ClientTestBase):
     def test_agree_to_tos(self):
         self.client.update_registration = mock.Mock()
         self.client.agree_to_tos(self.regr)
-        regr = self.client.update_registration.call_args[0][0]  # pylint: disable=unsubscriptable-object
+        regr = self.client.update_registration.call_args[0][0]
         self.assertEqual(self.regr.terms_of_service, regr.body.agreement)
 
     def _prepare_response_for_request_challenges(self):
