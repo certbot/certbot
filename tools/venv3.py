@@ -21,7 +21,7 @@ def main(pip_args=None):
     create_venv(venv_path)
 
     if not pip_args:
-        pip_args = _venv_common.REQUIREMENTS + ['-e .[dev3]']
+        pip_args = _venv_common.REQUIREMENTS + ['-e certbot[dev3]']
 
     _venv_common.install_packages(venv_path, pip_args)
 

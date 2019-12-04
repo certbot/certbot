@@ -16,7 +16,7 @@ def main():
     section_pattern = re.compile(r'^##\s*{0}\s*-\s*[\d-]+$'
                                  .format(version.replace('.', '\\.')))
 
-    with open(os.path.join(CERTBOT_ROOT, 'CHANGELOG.md')) as file_h:
+    with open(os.path.join(CERTBOT_ROOT, 'certbot', 'CHANGELOG.md')) as file_h:
         lines = file_h.read().splitlines()
 
     changelog = []

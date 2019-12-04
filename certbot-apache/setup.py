@@ -4,7 +4,7 @@ from setuptools.command.test import test as TestCommand
 import sys
 
 
-version = '1.0.0.dev0'
+version = '1.1.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
@@ -71,7 +71,7 @@ setup(
     install_requires=install_requires,
     entry_points={
         'certbot.plugins': [
-            'apache = certbot_apache.entrypoint:ENTRYPOINT',
+            'apache = certbot_apache._internal.entrypoint:ENTRYPOINT',
         ],
     },
     test_suite='certbot_apache',
