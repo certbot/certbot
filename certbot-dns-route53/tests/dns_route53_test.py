@@ -142,7 +142,7 @@ class ClientTest(unittest.TestCase):
 
     def test_find_zone_id_for_domain(self):
         self.client.r53.get_paginator = mock.MagicMock()
-        self.client.r53.get_paginator().paginate.return_value = [  # pylint: disable=no-value-for-parameter
+        self.client.r53.get_paginator().paginate.return_value = [
             {
                 "HostedZones": [
                     self.EXAMPLE_NET_ZONE,
@@ -156,7 +156,7 @@ class ClientTest(unittest.TestCase):
 
     def test_find_zone_id_for_domain_pagination(self):
         self.client.r53.get_paginator = mock.MagicMock()
-        self.client.r53.get_paginator().paginate.return_value = [  # pylint: disable=no-value-for-parameter
+        self.client.r53.get_paginator().paginate.return_value = [
             {
                 "HostedZones": [
                     self.PRIVATE_ZONE,
@@ -176,7 +176,7 @@ class ClientTest(unittest.TestCase):
 
     def test_find_zone_id_for_domain_no_results(self):
         self.client.r53.get_paginator = mock.MagicMock()
-        self.client.r53.get_paginator().paginate.return_value = []  # pylint: disable=no-value-for-parameter
+        self.client.r53.get_paginator().paginate.return_value = []
 
         self.assertRaises(errors.PluginError,
                           self.client._find_zone_id_for_domain,
@@ -184,7 +184,7 @@ class ClientTest(unittest.TestCase):
 
     def test_find_zone_id_for_domain_no_correct_results(self):
         self.client.r53.get_paginator = mock.MagicMock()
-        self.client.r53.get_paginator().paginate.return_value = [  # pylint: disable=no-value-for-parameter
+        self.client.r53.get_paginator().paginate.return_value = [
             {
                 "HostedZones": [
                     self.PRIVATE_ZONE,
