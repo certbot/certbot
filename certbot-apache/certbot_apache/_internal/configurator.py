@@ -1364,11 +1364,9 @@ class ApacheConfigurator(common.Installer):
                         result.append(comment)
                         sift = True
 
-                    result.append('\n'.join(
-                        ['# ' + l for l in chunk]))
-                    continue
-                result.append('\n'.join(chunk))
-                continue
+                    result.append('\n'.join(['# ' + l for l in chunk]))
+                else:
+                    result.append('\n'.join(chunk))
         return result, sift
 
     def _get_vhost_block(self, vhost):
