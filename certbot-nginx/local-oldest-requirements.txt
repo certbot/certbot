@@ -1,3 +1,3 @@
 # Remember to update setup.py to match the package versions below.
 -e acme[dev]
--e .[dev]
+-e certbot[dev]
