@@ -44,6 +44,7 @@ MarkupSafe==1.0
 mccabe==0.6.1
 more-itertools==5.0.0
 mypy==0.710
+mypy-extensions==0.4.3
 ndg-httpsclient==0.3.2
 oauth2client==4.0.0
 packaging==19.2

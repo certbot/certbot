@@ -83,9 +83,9 @@ dev_extras = [
 ]
 
 dev3_extras = [
-    'astroid==2.3.3',
+    'astroid',
     'mypy',
-    'pylint==2.4.3',
+    'pylint',
     'typing',  # for python3.4
 ]
 

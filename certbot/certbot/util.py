@@ -12,6 +12,7 @@ import platform
 import re
 import socket
 import subprocess
+import sys
 
 import configargparse
 import six
@@ -24,13 +25,11 @@ from certbot._internal import lock
 from certbot.compat import os
 from certbot.compat import filesystem
 
-try:
-    # pylint: disable=import-error
-    import distro
-except ImportError:
-    _USE_DISTRO = False
-else:
+if sys.platform.startswith('linux'):
+    import distro  # pylint: disable=import-error
     _USE_DISTRO = True
+else:
+    _USE_DISTRO = False
 
 logger = logging.getLogger(__name__)
 
