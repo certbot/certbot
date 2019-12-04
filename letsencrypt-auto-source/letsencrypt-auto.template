@@ -452,7 +452,7 @@ fi
 
 if [ "$DEPRECATED_OS" = 1 ]; then
   Bootstrap() {
-    error "Skipping bootstrap on deprecated systems."
+    error "Skipping bootstrap because certbot-auto is deprecated on this system."
   }
   unset BOOTSTRAP_VERSION
 fi
