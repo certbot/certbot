@@ -49,9 +49,6 @@ matrix:
     - python: "3.7"
       env: TOXENV=lint
       <<: *not-on-master
-    - python: "3.4"
-      env: TOXENV=mypy
-      <<: *not-on-master
     - python: "3.5"
       env: TOXENV=mypy
       <<: *not-on-master

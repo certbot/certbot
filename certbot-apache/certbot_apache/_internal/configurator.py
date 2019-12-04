@@ -956,8 +956,7 @@ class ApacheConfigurator(common.Installer):
         else:
             self.parser.add_dir(loc, "NameVirtualHost", [str(addr)])
 
-        msg = ("Setting %s to be NameBasedVirtualHost\n"
-               "\tDirective added to %s\n" % (addr, loc))
+        msg = "Setting {0} to be NameBasedVirtualHost".format(addr)
         logger.debug(msg)
         self.save_notes += msg
 
