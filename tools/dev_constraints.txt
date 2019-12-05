@@ -19,7 +19,7 @@ configparser==3.7.4
 contextlib2==0.6.0.post1
 coverage==4.5.4
 decorator==4.1.2
-dns-lexicon==3.2.1
+dns-lexicon==3.3.11
 dnspython==1.15.0
 docutils==0.12
 execnet==1.5.0
