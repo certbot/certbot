@@ -6,6 +6,20 @@ yum install -y python27 > /dev/null 2> /dev/null
 
 LE_AUTO="certbot/letsencrypt-auto-source/letsencrypt-auto"
 
+echo ""
+
+# we're going to modify env variables, so do this in a subshell
+(
+# ensure CentOS6 32bits is not supported anymore, and so certbot is not installed
+export UNAME_FAKE_32BITS=true
+if ! "$LE_AUTO" 2>&1 | grep -q "Certbot cannot be installed."; then
+  echo "On CentOS 32 bits, certbot-auto installed certbot."
+  exit 1
+fi
+
+echo "PASSED: On CentOS6 32 bits, certbot-auto refuses to install certbot."
+)
+
 # we're going to modify env variables, so do this in a subshell
 (
 source /opt/rh/python27/enable
@@ -37,7 +51,6 @@ if [ $RESULT -eq 0 ]; then
   exit 1
 fi
 
-echo ""
 echo "PASSED: Did not upgrade to Python3 when Python2.7 is present."
 )
 
@@ -76,6 +89,18 @@ if [ "$($VENV_PATH/bin/python -V 2>&1 | cut -d" " -f2 | cut -d. -f1)" != 3 ]; th
   exit 1
 fi
 unset VENV_PATH
+
+# we're going to modify env variables, so do this in a subshell
+(
+# ensure CentOS6 32bits is not supported anymore, and so certbot is not upgraded
+export UNAME_FAKE_32BITS=true
+if ! "$LE_AUTO" 2>&1 | grep -q "Certbot will no longer receive updates."; then
+  echo "On CentOS 32 bits, certbot-auto installed certbot."
+  exit 1
+fi
+
+echo "PASSED: On CentOS6 32 bits, certbot-auto refuses to install certbot."
+)
 
 # test using python3
 pytest -v -s certbot/letsencrypt-auto-source/tests
