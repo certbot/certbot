@@ -9,7 +9,7 @@ version = '1.1.0.dev0'
 install_requires = [
     'acme>=0.31.0',
     'certbot>=0.39.0',
-    'dns-lexicon>=2.2.3',
+    'dns-lexicon>=3.3.11',
     'mock',
     'setuptools',
     'zope.interface',
