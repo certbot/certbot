@@ -295,15 +295,15 @@ script: '$TRAVIS_RETRY tox'
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 
-notifications:
-  email: false
-  irc:
-    channels:
-      # This is set to a secure variable to prevent forks from sending
-      # notifications. This value was created by installing
-      # https://github.com/travis-ci/travis.rb and running
-      # `travis encrypt "chat.freenode.net#certbot-devel"`.
-      - secure: "EWW66E2+KVPZyIPR8ViENZwfcup4Gx3/dlimmAZE0WuLwxDCshBBOd3O8Rf6pBokEoZlXM5eDT6XdyJj8n0DLslgjO62pExdunXpbcMwdY7l1ELxX2/UbnDTE6UnPYa09qVBHNG7156Z6yE0x2lH4M9Ykvp0G0cubjPQHylAwo0="
-    on_cancel: never
-    on_success: never
-    on_failure: always
+#notifications:
+#  email: false
+#  irc:
+#    channels:
+#      # This is set to a secure variable to prevent forks from sending
+#      # notifications. This value was created by installing
+#      # https://github.com/travis-ci/travis.rb and running
+#      # `travis encrypt "chat.freenode.net#certbot-devel"`.
+#      - secure: "EWW66E2+KVPZyIPR8ViENZwfcup4Gx3/dlimmAZE0WuLwxDCshBBOd3O8Rf6pBokEoZlXM5eDT6XdyJj8n0DLslgjO62pExdunXpbcMwdY7l1ELxX2/UbnDTE6UnPYa09qVBHNG7156Z6yE0x2lH4M9Ykvp0G0cubjPQHylAwo0="
+#    on_cancel: never
+#    on_success: never
+#    on_failure: always
