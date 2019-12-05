@@ -498,7 +498,7 @@ class BlockNode(DirectiveNode):
         tree. The returned list  may include paths with wildcard characters, for
         example: ['/etc/apache2/conf.d/*.load']
 
-        This is typically called for the root node of the ParserNode tree.
+        This is typically called on the root node of the ParserNode tree.
 
         :returns: list of file paths of files that have been parsed
         """
