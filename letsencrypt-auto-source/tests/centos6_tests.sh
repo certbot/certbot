@@ -95,7 +95,7 @@ unset VENV_PATH
 # ensure CentOS6 32bits is not supported anymore, and so certbot is not upgraded
 export UNAME_FAKE_32BITS=true
 if ! "$LE_AUTO" 2>&1 | grep -q "Certbot will no longer receive updates."; then
-  echo "On CentOS 32 bits, certbot-auto installed certbot."
+  echo "On CentOS 32 bits, certbot-auto upgraded certbot."
   exit 1
 fi
 
