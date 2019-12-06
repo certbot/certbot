@@ -313,9 +313,9 @@ class FileOutputDisplayTest(unittest.TestCase):
         # force_interactive to prevent workflow regressions.
         for name in interfaces.IDisplay.names():  # pylint: disable=no-member,no-value-for-parameter
             if six.PY2:
-                getargspec = inspect.getargspec  # pylint: disable=no-member
+                getargspec = inspect.getargspec
             else:
-                getargspec = inspect.getfullargspec  # pylint: disable=no-member
+                getargspec = inspect.getfullargspec
             arg_spec = getargspec(getattr(self.displayer, name))  # pylint: disable=deprecated-method
             self.assertTrue("force_interactive" in arg_spec.args)
 
@@ -376,7 +376,7 @@ class NoninteractiveDisplayTest(unittest.TestCase):
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
             if six.PY2:
-                result = inspect.getargspec(method).keywords  # pylint: disable=no-member,deprecated-method
+                result = inspect.getargspec(method).keywords  # pylint:deprecated-method
                 self.assertFalse(result is None)
             else:
                 result = inspect.getfullargspec(method).varkw # pylint: disable=no-member

@@ -364,7 +364,7 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         import os as std_os  # pylint: disable=os-module-forbidden
         # See related inline comment in certbot.compat.filesystem.check_owner method
         # that explains why MyPy/PyLint check disable is needed here.
-        uid = std_os.getuid()  # type: ignore # pylint: disable=no-member
+        uid = std_os.getuid()
 
         with mock.patch('os.getuid') as mock_uid:
             mock_uid.return_value = uid + 1
