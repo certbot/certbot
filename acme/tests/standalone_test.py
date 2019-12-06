@@ -63,7 +63,7 @@ class HTTP01ServerTest(unittest.TestCase):
     def test_404(self):
         response = requests.get(
             'http://localhost:{0}/foo'.format(self.port), verify=False)
-        self.assertEqual(response.status_code, http_client.NOT_FOUND)  # pylint: disable=no-member
+        self.assertEqual(response.status_code, http_client.NOT_FOUND)
 
     def _test_http01(self, add):
         chall = challenges.HTTP01(token=(b'x' * 16))
@@ -164,7 +164,7 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
     def test_404(self):
         response = requests.get(
             'http://localhost:{0}/foo'.format(self.port), verify=False)
-        self.assertEqual(response.status_code, http_client.NOT_FOUND)  # pylint: disable=no-member
+        self.assertEqual(response.status_code, http_client.NOT_FOUND)
 
     def _test_http01(self, add):
         chall = challenges.HTTP01(token=(b'x' * 16))

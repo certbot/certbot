@@ -224,7 +224,7 @@ class ClientBase(object):
                               messages.Revocation(
                                 certificate=cert,
                                 reason=rsn))
-        if response.status_code != http_client.OK:  # pylint: disable=no-member
+        if response.status_code != http_client.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
 
@@ -276,7 +276,7 @@ class Client(ClientBase):
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
         response = self._post(self.directory[new_reg], new_reg)
         # TODO: handle errors
-        assert response.status_code == http_client.CREATED  # pylint: disable=no-member
+        assert response.status_code == http_client.CREATED
 
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
@@ -329,7 +329,7 @@ class Client(ClientBase):
         new_authz = messages.NewAuthorization(identifier=identifier)
         response = self._post(self.directory.new_authz, new_authz)
         # TODO: handle errors
-        assert response.status_code == http_client.CREATED  # pylint: disable=no-member
+        assert response.status_code == http_client.CREATED
         return self._authzr_from_response(response, identifier)
 
     def request_domain_challenges(self, domain, new_authzr_uri=None):
