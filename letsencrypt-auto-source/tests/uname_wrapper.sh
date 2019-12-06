@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 uname_output=$(/bin/uname_orig "$@")
 
