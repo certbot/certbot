@@ -1085,7 +1085,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # In this situation, we bypass any bootstrap or certbot venv setup.
     error "Your system is not supported by certbot-auto anymore."
 
-    if [ -f "$VENV_BIN/letsencrypt" ]; then
+    if [ -f "$VENV_BIN/letsencrypt" -a "$INSTALL_ONLY" != 1 ]; then
       error "Certbot will no longer receive updates."
       error "Please visit https://certbot.eff.org/ to check for other alternatives."
       "$VENV_BIN/letsencrypt" "$@"
@@ -1648,6 +1648,8 @@ UNLIKELY_EOF
   fi
 
   if [ "$INSTALL_ONLY" = 1 ]; then
+    # If you're modifying any of the code after this point in this `if` block, you may
+    # need to update the "$DEPRECATED_OS" = 1 case at the beginning of phase 2 as well.
     say "Certbot is installed."
     exit 0
   fi
