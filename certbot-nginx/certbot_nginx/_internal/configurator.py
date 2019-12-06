@@ -415,7 +415,7 @@ class NginxConfigurator(common.Installer):
 
         if len(port_matching_vhosts) == 1:
             return port_matching_vhosts[0]
-        if len(all_default_vhosts) == 1 and allow_port_mismatch:
+        elif len(all_default_vhosts) == 1 and allow_port_mismatch:
             return all_default_vhosts[0]
 
         # TODO: present a list of vhosts for user to choose from
@@ -447,7 +447,7 @@ class NginxConfigurator(common.Installer):
         """
         if not matches:
             return None
-        if matches[0]['rank'] in [START_WILDCARD_RANK, END_WILDCARD_RANK,
+        elif matches[0]['rank'] in [START_WILDCARD_RANK, END_WILDCARD_RANK,
             START_WILDCARD_RANK + NO_SSL_MODIFIER, END_WILDCARD_RANK + NO_SSL_MODIFIER]:
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']

@@ -298,9 +298,9 @@ def _gen_https_names(domains):
     """
     if len(domains) == 1:
         return "https://{0}".format(domains[0])
-    if len(domains) == 2:
+    elif len(domains) == 2:
         return "https://{dom[0]} and https://{dom[1]}".format(dom=domains)
-    if len(domains) > 2:
+    elif len(domains) > 2:
         return "{0}{1}{2}".format(
             ", ".join("https://%s" % dom for dom in domains[:-1]),
             ", and https://",

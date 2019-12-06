@@ -401,7 +401,8 @@ class ApacheConfigurator(common.Installer):
             # Ask user which VHosts to support.
             # Returned objects are guaranteed to be ssl vhosts
             return self._choose_vhosts_wildcard(domain, create_if_no_ssl)
-        return [self.choose_vhost(domain, create_if_no_ssl)]
+        else:
+            return [self.choose_vhost(domain, create_if_no_ssl)]
 
     def _vhosts_for_wildcard(self, domain):
         """
@@ -506,7 +507,7 @@ class ApacheConfigurator(common.Installer):
                 "VirtualHost was not modified", vhost.path)
             raise errors.PluginError(
                 "Unable to find an SSLCertificateFile directive")
-        if not path["cert_key"]:
+        elif not path["cert_key"]:
             logger.warning(
                 "Cannot find an SSLCertificateKeyFile directive for "
                 "certificate in %s. VirtualHost was not modified", vhost.path)

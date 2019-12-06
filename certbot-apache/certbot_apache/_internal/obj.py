@@ -45,7 +45,7 @@ class Addr(common.Addr):
         """
         if self.get_addr() == "_default_":
             return 0
-        if self.get_addr() == "*":
+        elif self.get_addr() == "*":
             return 1
         return 2
 
@@ -72,7 +72,7 @@ class Addr(common.Addr):
         """
         if self._addr_less_specific(addr):
             return True
-        if self.get_addr() == addr.get_addr():
+        elif self.get_addr() == addr.get_addr():
             if self.is_wildcard() or self.get_port() == addr.get_port():
                 return True
         return False

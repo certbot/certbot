@@ -250,9 +250,9 @@ class BasicParserTest(util.ParserTest):
             """Mock command output"""
             if cmd[-1] == "DUMP_RUN_CFG":
                 return define_val
-            if cmd[-1] == "DUMP_INCLUDES":
+            elif cmd[-1] == "DUMP_INCLUDES":
                 return inc_val
-            if cmd[-1] == "DUMP_MODULES":
+            elif cmd[-1] == "DUMP_MODULES":
                 return mod_val
             return None  # pragma: no cover
 

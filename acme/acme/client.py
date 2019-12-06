@@ -846,10 +846,11 @@ class BackwardsCompatibleClientV2(object):
                 _assess_tos(regr.terms_of_service)
                 return self.client.agree_to_tos(regr)
             return regr
-        if "terms_of_service" in self.client.directory.meta:
-            _assess_tos(self.client.directory.meta.terms_of_service)
-            regr = regr.update(terms_of_service_agreed=True)
-        return self.client.new_account(regr)
+        else:
+            if "terms_of_service" in self.client.directory.meta:
+                _assess_tos(self.client.directory.meta.terms_of_service)
+                regr = regr.update(terms_of_service_agreed=True)
+            return self.client.new_account(regr)
 
     def new_order(self, csr_pem):
         """Request a new Order object from the server.

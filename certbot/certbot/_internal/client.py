@@ -357,8 +357,9 @@ class Client(object):
                 os.remove(key.file)
                 os.remove(csr.file)
             return self.obtain_certificate(successful_domains)
-        cert, chain = self.obtain_certificate_from_csr(csr, orderr)
-        return cert, chain, key, csr
+        else:
+            cert, chain = self.obtain_certificate_from_csr(csr, orderr)
+            return cert, chain, key, csr
 
     def _get_order_and_authorizations(self, csr_pem, best_effort):
         # type: (str, bool) -> List[messages.OrderResource]
@@ -440,7 +441,7 @@ class Client(object):
         """
         if certname:
             return certname
-        if util.is_wildcard_domain(domains[0]):
+        elif util.is_wildcard_domain(domains[0]):
             # Don't make files and directories starting with *.
             return domains[0][2:]
         return domains[0]

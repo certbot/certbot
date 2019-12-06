@@ -124,7 +124,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
             """Mock httpd process stdout"""
             if command == ['apachectl', '-t', '-D', 'DUMP_RUN_CFG']:
                 return define_val
-            if command == ['apachectl', '-t', '-D', 'DUMP_MODULES']:
+            elif command == ['apachectl', '-t', '-D', 'DUMP_MODULES']:
                 return mod_val
             return ""
         mock_get.side_effect = mock_get_cfg

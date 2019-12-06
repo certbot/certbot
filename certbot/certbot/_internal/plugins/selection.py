@@ -110,14 +110,15 @@ def pick_plugin(config, default, plugins, question, ifaces):
         if plugin_ep is None:
             return None
         return plugin_ep.init()
-    if len(prepared) == 1:
+    elif len(prepared) == 1:
         plugin_ep = list(prepared.values())[0]
         logger.debug("Single candidate plugin: %s", plugin_ep)
         if plugin_ep.misconfigured:
             return None
         return plugin_ep.init()
-    logger.debug("No candidate plugin")
-    return None
+    else:
+        logger.debug("No candidate plugin")
+        return None
 
 
 def choose_plugin(prepared, question):
@@ -207,7 +208,7 @@ def choose_configurator_plugins(config, plugins, verb):
         need_inst = need_auth = False
     if verb == "certonly":
         need_auth = True
-    if verb in ("install", "enhance"):
+    elif verb in ("install", "enhance"):
         need_inst = True
         if config.authenticator:
             logger.warning("Specifying an authenticator doesn't make sense when "

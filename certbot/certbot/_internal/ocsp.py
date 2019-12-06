@@ -279,13 +279,14 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
         logger.info("Revocation status for %s is unknown", cert_path)
         logger.debug("Uncertain output:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
         return False
-    if good and not warning:
+    elif good and not warning:
         return False
-    if revoked:
+    elif revoked:
         warning = revoked.group(1)
         if warning:
             logger.info("OCSP revocation warning: %s", warning)
         return True
-    logger.warning("Unable to properly parse OCSP output: %s\nstderr:%s",
-                   ocsp_output, ocsp_errors)
-    return False
+    else:
+        logger.warning("Unable to properly parse OCSP output: %s\nstderr:%s",
+                    ocsp_output, ocsp_errors)
+        return False

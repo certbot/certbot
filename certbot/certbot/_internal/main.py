@@ -221,7 +221,7 @@ def _handle_identical_cert_request(config, lineage):
             "Operation canceled. You may re-run the client.")
     if response[1] == 0:
         return "reinstall", lineage
-    if response[1] == 1:
+    elif response[1] == 1:
         return "renew", lineage
     raise AssertionError('This is impossible')
 
@@ -261,7 +261,7 @@ def _find_lineage_for_domains(config, domains):
 
     if ident_names_cert is not None:
         return _handle_identical_cert_request(config, ident_names_cert)
-    if subset_names_cert is not None:
+    elif subset_names_cert is not None:
         return _handle_subset_cert_request(config, domains, subset_names_cert)
     return None, None
 
@@ -320,7 +320,7 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
                 return "renew", lineage
         # unnecessarily specified domains or no domains specified
         return _handle_identical_cert_request(config, lineage)
-    if domains:
+    elif domains:
         return "newcert", None
     raise errors.ConfigurationError("No certificate with name {0} found. "
         "Use -d to specify domains, or run certbot certificates to see "

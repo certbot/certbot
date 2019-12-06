@@ -232,8 +232,9 @@ class Addr(object):
             if len(str_addr) > endIndex + 2 and str_addr[endIndex + 1] == ':':
                 port = str_addr[endIndex + 2:]
             return cls((host, port), ipv6=True)
-        tup = str_addr.partition(':')
-        return cls((tup[0], tup[2]))
+        else:
+            tup = str_addr.partition(':')
+            return cls((tup[0], tup[2]))
 
     def __str__(self):
         if self.tup[1]:

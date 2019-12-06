@@ -262,7 +262,7 @@ def _dirs_are_unequal(dir1, dir2):
             else:
                 logger.error(str(dircmp.right_only))
             return True
-        if dircmp.common_funny or dircmp.funny_files:
+        elif dircmp.common_funny or dircmp.funny_files:
             logger.error("The following files and directories could not be "
                          "compared:")
             if dircmp.common_funny:
@@ -270,7 +270,7 @@ def _dirs_are_unequal(dir1, dir2):
             else:
                 logger.error(str(dircmp.funny_files))
             return True
-        if dircmp.diff_files:
+        elif dircmp.diff_files:
             logger.error("The following files differ:")
             logger.error(str(dircmp.diff_files))
             return True
