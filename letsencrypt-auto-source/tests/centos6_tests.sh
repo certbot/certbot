@@ -99,7 +99,7 @@ if ! "$LE_AUTO" 2>&1 | grep -q "Certbot will no longer receive updates."; then
   exit 1
 fi
 
-echo "PASSED: On CentOS6 32 bits, certbot-auto refuses to install certbot."
+echo "PASSED: On CentOS6 32 bits, certbot-auto refuses to upgrade certbot."
 )
 
 # test using python3
