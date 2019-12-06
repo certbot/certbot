@@ -311,7 +311,7 @@ class FileOutputDisplayTest(unittest.TestCase):
     def test_methods_take_force_interactive(self):
         # Every IDisplay method implemented by FileDisplay must take
         # force_interactive to prevent workflow regressions.
-        for name in interfaces.IDisplay.names():  # pylint: disable=no-member,no-value-for-parameter
+        for name in interfaces.IDisplay.names():  # pylint: disable=no-value-for-parameter
             if six.PY2:
                 getargspec = inspect.getargspec
             else:
@@ -372,14 +372,14 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         # NoninteractiveDisplay.
 
         # Use pylint code for disable to keep on single line under line length limit
-        for name in interfaces.IDisplay.names():  # pylint: disable=no-member,E1120
+        for name in interfaces.IDisplay.names():  # pylint: disable=E1120
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
             if six.PY2:
                 result = inspect.getargspec(method).keywords  # pylint:deprecated-method
                 self.assertFalse(result is None)
             else:
-                result = inspect.getfullargspec(method).varkw # pylint: disable=no-member
+                result = inspect.getfullargspec(method).varkw
                 self.assertFalse(result is None)
 
 

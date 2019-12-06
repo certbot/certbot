@@ -235,7 +235,7 @@ class _GoogleClient(object):
         :rtype: `list` of `string` or `None`
 
         """
-        rrs_request = self.dns.resourceRecordSets()  # pylint: disable=no-member
+        rrs_request = self.dns.resourceRecordSets()
         request = rrs_request.list(managedZone=zone_id, project=self.project_id)
         # Add dot as the API returns absolute domains
         record_name += "."

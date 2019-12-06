@@ -39,7 +39,6 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
         self.server = _TestServer(('', 0), socketserver.BaseRequestHandler)
         self.port = self.server.socket.getsockname()[1]
         self.server_thread = threading.Thread(
-            # pylint: disable=no-member
             target=self.server.handle_request)
 
     def tearDown(self):
@@ -66,7 +65,7 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
 
     def test_probe_connection_error(self):
         # pylint has a hard time with six
-        self.server.server_close()  # pylint: disable=no-member
+        self.server.server_close()
         original_timeout = socket.getdefaulttimeout()
         try:
             socket.setdefaulttimeout(1)

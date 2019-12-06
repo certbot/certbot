@@ -2509,4 +2509,4 @@ class ApacheConfigurator(common.Installer):
         self._autohsts_save_state()
 
 
-AutoHSTSEnhancement.register(ApacheConfigurator)  # pylint: disable=no-member
+AutoHSTSEnhancement.register(ApacheConfigurator)

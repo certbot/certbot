@@ -288,7 +288,6 @@ def flag_default(name):
 
 def config_help(name, hidden=False):
     """Extract the help message for an `.IConfig` attribute."""
-    # pylint: disable=no-member
     if hidden:
         return argparse.SUPPRESS
     field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute  # pylint: disable=no-value-for-parameter

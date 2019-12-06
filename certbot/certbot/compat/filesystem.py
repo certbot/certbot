@@ -72,7 +72,7 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
         # On Windows, os.chown does not exist. This is checked through POSIX_MODE value,
         # but MyPy/PyLint does not know it and raises an error here on Windows.
         # We disable specifically the check to fix the issue.
-        os.chown(dst, user_id, group_id)  # type: ignore # pylint: disable=no-member
+        os.chown(dst, user_id, group_id)
     elif copy_user:
         # There is no group handling in Windows
         _copy_win_ownership(src, dst)
@@ -109,7 +109,7 @@ def check_owner(file_path):
         # On Windows, os.getuid does not exist. This is checked through POSIX_MODE value,
         # but MyPy/PyLint does not know it and raises an error here on Windows.
         # We disable specifically the check to fix the issue.
-        return os.stat(file_path).st_uid == os.getuid()  # type: ignore # pylint: disable=no-member
+        return os.stat(file_path).st_uid == os.getuid()  # type: ignore
 
     # Get owner sid of the file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
@@ -177,7 +177,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
             handle = win32file.CreateFile(file_path, win32file.GENERIC_READ,
                                           win32file.FILE_SHARE_READ & win32file.FILE_SHARE_WRITE,
                                           attributes, disposition, 0, None)
-        except pywintypes.error as err:  # pylint: disable=no-member
+        except pywintypes.error as err:
             # Handle native windows errors into python errors to be consistent with the API
             # of os.open in the situation of a file already existing or locked.
             if err.winerror == winerror.ERROR_FILE_EXISTS:
@@ -243,7 +243,7 @@ def mkdir(file_path, mode=0o777):
 
     try:
         win32file.CreateDirectory(file_path, attributes)
-    except pywintypes.error as err:  # pylint: disable=no-member
+    except pywintypes.error as err:
         # Handle native windows error into python error to be consistent with the API
         # of os.mkdir in the situation of a directory already existing.
         if err.winerror == winerror.ERROR_ALREADY_EXISTS:

@@ -19,7 +19,6 @@ class ChallengeTest(unittest.TestCase):
         from acme.challenges import Challenge
         from acme.challenges import UnrecognizedChallenge
         chall = UnrecognizedChallenge({"type": "foo"})
-        # pylint: disable=no-member
         self.assertEqual(chall, Challenge.from_json(chall.jobj))
 
 

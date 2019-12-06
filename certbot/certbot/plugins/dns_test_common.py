@@ -29,18 +29,14 @@ class BaseAuthenticatorTest(object):
         challb=acme_util.DNS01, domain=DOMAIN, account_key=KEY)
 
     def test_more_info(self):
-        # pylint: disable=no-member
-        self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
+        self.assertTrue(isinstance(self.auth.more_info(), six.string_types))  # pylint: disable=no-member
 
     def test_get_chall_pref(self):
-        # pylint: disable=no-member
-        self.assertEqual(self.auth.get_chall_pref(None), [challenges.DNS01])
+        self.assertEqual(self.auth.get_chall_pref(None), [challenges.DNS01])  # pylint: disable=no-member
 
     def test_parser_arguments(self):
         m = mock.MagicMock()
-
-        # pylint: disable=no-member
-        self.auth.add_parser_arguments(m)
+        self.auth.add_parser_arguments(m)  # pylint: disable=no-member
 
         m.assert_any_call('propagation-seconds', type=int, default=mock.ANY, help=mock.ANY)
 

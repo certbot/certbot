@@ -75,7 +75,6 @@ class ServerManager(object):
         servers.serve_forever()
 
         # if port == 0, then random free port on OS is taken
-        # pylint: disable=no-member
         # both servers, if they exist, have the same port
         real_port = servers.getsocknames()[0][1]
         self._instances[real_port] = servers

@@ -179,7 +179,7 @@ class CertificatesTest(BaseCertManagerTest):
         mock_verifier.return_value = None
         mock_report.return_value = ""
         self._certificates(self.config)
-        self.assertFalse(mock_logger.warning.called) # pylint: disable=no-member
+        self.assertFalse(mock_logger.warning.called)
         self.assertTrue(mock_report.called)
         self.assertTrue(mock_utility.called)
         self.assertTrue(mock_renewable_cert.called)
@@ -197,7 +197,7 @@ class CertificatesTest(BaseCertManagerTest):
 
         filesystem.makedirs(empty_config.renewal_configs_dir)
         self._certificates(empty_config)
-        self.assertFalse(mock_logger.warning.called) # pylint: disable=no-member
+        self.assertFalse(mock_logger.warning.called)
         self.assertTrue(mock_utility.called)
         shutil.rmtree(empty_tempdir)
 

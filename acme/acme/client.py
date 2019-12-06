@@ -33,7 +33,6 @@ logger = logging.getLogger(__name__)
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     try:
-        # pylint: disable=no-member
         requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
     except AttributeError:
         import urllib3.contrib.pyopenssl  # pylint: disable=import-error
@@ -279,7 +278,6 @@ class Client(ClientBase):
         assert response.status_code == http_client.CREATED
 
         # "Instance of 'Field' has no key/contact member" bug:
-        # pylint: disable=no-member
         return self._regr_from_response(response)
 
     def query_registration(self, regr):
@@ -464,7 +462,6 @@ class Client(ClientBase):
             updated[authzr] = updated_authzr
 
             attempts[authzr] += 1
-            # pylint: disable=no-member
             if updated_authzr.body.status not in (
                     messages.STATUS_VALID, messages.STATUS_INVALID):
                 if attempts[authzr] < max_attempts:
@@ -605,7 +602,6 @@ class ClientV2(ClientBase):
         if response.status_code == 200 and 'Location' in response.headers:
             raise errors.ConflictError(response.headers.get('Location'))
         # "Instance of 'Field' has no key/contact member" bug:
-        # pylint: disable=no-member
         regr = self._regr_from_response(response)
         self.net.account = regr
         return regr

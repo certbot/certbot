@@ -435,7 +435,6 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
         # In version 0.12.0 ACTION_TYPES_THAT_DONT_NEED_A_VALUE was
         # changed from a set to a tuple.
         if isinstance(configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE, set):
-            # pylint: disable=no-member
             configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE.add(
                 _ShowWarning)
         else:
@@ -570,7 +569,6 @@ def get_strict_version(normalized):
 
     """
     # strict version ending with "a" and a number designates a pre-release
-    # pylint: disable=no-member
     return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
 
 
