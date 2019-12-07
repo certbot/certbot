@@ -78,12 +78,60 @@ class ApacheDirectiveNode(ApacheParserNode):
         return
 
 
+def _parameters_from_string(text):
+    text = text.strip()
+    words = []
+    word = ""
+    quote = None
+    escape = False
+    for c in text:
+        if c.isspace() and not quote:
+            if word:
+                words.append(word)
+            word = ""
+        else:
+            word += c
+        if not escape:
+            if not quote and c in "\"\'":
+                quote = c
+            elif c == quote:
+                words.append(word[1:-1])
+                word = ""
+                quote = None
+        escape = c == "\\"
+    if word:
+        words.append(word)
+    return tuple(words)
+
+
 class ApacheBlockNode(ApacheDirectiveNode):
     """ apacheconfig implementation of BlockNode interface """
 
     def __init__(self, **kwargs):
         super(ApacheBlockNode, self).__init__(**kwargs)
-        self.children = ()
+        self._raw_children = self._raw
+        children = []
+        for raw_node in self._raw_children:
+            metadata = self.metadata.copy()
+            metadata['ac_ast'] = raw_node
+            if raw_node.typestring == "comment":
+                node = ApacheCommentNode(comment=raw_node.name[2:],
+                                         metadata=metadata, ancestor=self,
+                                         filepath=self.filepath)
+            elif raw_node.typestring == "block":
+                parameters = _parameters_from_string(raw_node.arguments)
+                node = ApacheBlockNode(name=raw_node.tag, parameters=parameters,
+                                       metadata=metadata, ancestor=self,
+                                       filepath=self.filepath, enabled=self.enabled)
+            else:
+                parameters = ()
+                if raw_node.value:
+                    parameters = _parameters_from_string(raw_node.value)
+                node = ApacheDirectiveNode(name=raw_node.name, parameters=parameters,
+                                           metadata=metadata, ancestor=self,
+                                           filepath=self.filepath, enabled=self.enabled)
+            children.append(node)
+        self.children = tuple(children)
 
     def __eq__(self, other):  # pragma: no cover
         if isinstance(other, self.__class__):
