@@ -154,7 +154,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         self.assertTrue(found)
 
     def test_add_child_comment(self):
-        newc = self.config.parser_root.primary.add_child_comment("The content")
+        newc = self.config.parser_root.add_child_comment("The content")
         comments = self.config.parser_root.find_comments("The content")
         self.assertEqual(len(comments), 1)
         self.assertEqual(

@@ -1,5 +1,7 @@
 """ apacheconfig implementation of the ParserNode interfaces """
 
+from functools import partial
+
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
 from certbot_apache._internal import parsernode_util as util
@@ -145,36 +147,41 @@ class ApacheBlockNode(ApacheDirectiveNode):
                     self.metadata == other.metadata)
         return False
 
-    def add_child_block(self, name, parameters=None, position=None):  # pylint: disable=unused-argument
+    def _add_child_thing(self, raw_string, partial_node, position):
+        position = len(self._raw_children) if not position else position
+        # Cap position to length to mimic AugeasNode behavior. TODO: document that this happens
+        position = min(len(self._raw_children), position)
+        raw_ast = self._raw_children.add(position, raw_string)
+        metadata = self.metadata.copy()
+        metadata['ac_ast'] = raw_ast
+        new_node = partial_node(ancestor=self, metadata=metadata, filepath=self.filepath)
+
+        # Update metadata
+        children = list(self.children)
+        children.insert(position, new_node)
+        self.children = tuple(children)
+        return new_node
+
+    def add_child_block(self, name, parameters=None, position=None):
         """Adds a new BlockNode to the sequence of children"""
-        new_block = ApacheBlockNode(name=assertions.PASS,
-                                    parameters=assertions.PASS,
-                                    ancestor=self,
-                                    filepath=assertions.PASS,
-                                    metadata=self.metadata)
-        self.children += (new_block,)
-        return new_block
+        parameters_str = " " + " ".join(parameters) if parameters else ""
+        if not parameters:
+            parameters = []
+        partial_block = partial(ApacheBlockNode, name=name, parameters=tuple(parameters), enabled=self.enabled)
+        return self._add_child_thing("\n<%s%s>\n</%s>" % (name, parameters_str, name), partial_block, position)
 
-    def add_child_directive(self, name, parameters=None, position=None):  # pylint: disable=unused-argument
+    def add_child_directive(self, name, parameters=None, position=None):
         """Adds a new DirectiveNode to the sequence of children"""
-        new_dir = ApacheDirectiveNode(name=assertions.PASS,
-                                      parameters=assertions.PASS,
-                                      ancestor=self,
-                                      filepath=assertions.PASS,
-                                      metadata=self.metadata)
-        self.children += (new_dir,)
-        return new_dir
+        parameters_str = " " + " ".join(parameters) if parameters else ""
+        if not parameters:
+            parameters = []
+        partial_block = partial(ApacheDirectiveNode, name=name, parameters=tuple(parameters), enabled=self.enabled)
+        return self._add_child_thing("\n%s%s" % (name, parameters_str), partial_block, position)
 
-    # pylint: disable=unused-argument
-    def add_child_comment(self, comment="", position=None):  # pragma: no cover
-
+    def add_child_comment(self, comment="", position=None):
         """Adds a new CommentNode to the sequence of children"""
-        new_comment = ApacheCommentNode(comment=assertions.PASS,
-                                        ancestor=self,
-                                        filepath=assertions.PASS,
-                                        metadata=self.metadata)
-        self.children += (new_comment,)
-        return new_comment
+        partial_comment = partial(ApacheCommentNode, comment=comment)
+        return self._add_child_thing(comment, partial_comment, position)
 
     def find_blocks(self, name, exclude=True): # pylint: disable=unused-argument
         """Recursive search of BlockNodes from the sequence of children"""
