@@ -206,9 +206,21 @@ class ApacheBlockNode(ApacheDirectiveNode):
                                   filepath=assertions.PASS,
                                   metadata=self.metadata)]
 
-    def delete_child(self, child):  # pragma: no cover
+    def delete_child(self, child):
         """Deletes a ParserNode from the sequence of children"""
-        return
+        index = -1
+        i = None
+        for i, elem in enumerate(self.children):
+            if elem == child:
+                index = i
+                break
+        if index < 0:
+            raise errors.PluginError("Could not find child node to delete")
+        children_list = list(self.children)
+        thing = children_list.pop(i)
+        self.children = tuple(children_list)
+        self._raw_children.remove(i)
+        return thing
 
     def unsaved_files(self):  # pragma: no cover
         """Returns a list of unsaved filepaths"""
