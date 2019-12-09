@@ -50,12 +50,15 @@ class RawNginxParser(object):
 
     script = OneOrMore(contents) + space + stringEnd
     script.parseWithTabs().leaveWhitespace()
+    blank_parse = space + stringEnd
 
     def __init__(self, source):
         self.source = source
 
     def parse(self):
         """Returns the parsed tree."""
+        if self.source.isspace():
+            return self.blank_parse.parseString(self.source)
         return self.script.parseString(self.source)
 
     def as_list(self):
@@ -108,8 +111,6 @@ def loads(source):
     :rtype: list
 
     """
-    if len(''.join(source.split())) == 0:
-        source = '# comment'
     return UnspacedList(RawNginxParser(source).as_list())
 
 
