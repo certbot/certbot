@@ -108,6 +108,8 @@ def loads(source):
     :rtype: list
 
     """
+    if len(''.join(source.split())) == 0:
+        source = '# comment'
     return UnspacedList(RawNginxParser(source).as_list())
 
 
