@@ -10,7 +10,7 @@ import zope.component
 from acme import messages
 
 import certbot.tests.util as test_util
-from certbot import account
+from certbot._internal import account
 from certbot import errors
 from certbot.compat import os
 from certbot.compat import filesystem
@@ -354,7 +354,6 @@ class ChooseNamesTest(unittest.TestCase):
 
 
 class SuccessInstallationTest(unittest.TestCase):
-    # pylint: disable=too-few-public-methods
     """Test the success installation message."""
     @classmethod
     def _call(cls, names):
@@ -376,7 +375,6 @@ class SuccessInstallationTest(unittest.TestCase):
 
 
 class SuccessRenewalTest(unittest.TestCase):
-    # pylint: disable=too-few-public-methods
     """Test the success renewal message."""
     @classmethod
     def _call(cls, names):
@@ -397,7 +395,6 @@ class SuccessRenewalTest(unittest.TestCase):
             self.assertTrue(name in arg)
 
 class SuccessRevocationTest(unittest.TestCase):
-    # pylint: disable=too-few-public-methods
     """Test the success revocation message."""
     @classmethod
     def _call(cls, path):

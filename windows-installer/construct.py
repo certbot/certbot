@@ -11,7 +11,7 @@ import time
 
 PYTHON_VERSION = (3, 7, 4)
 PYTHON_BITNESS = 32
-PYWIN32_VERSION = 225  # do not forget to edit pywin32 dependency accordingly in setup.py
+PYWIN32_VERSION = 227  # do not forget to edit pywin32 dependency accordingly in setup.py
 NSIS_VERSION = '3.04'
 
 
@@ -40,7 +40,7 @@ def _compile_wheels(repo_path, build_path, venv_python):
     wheels_path = os.path.join(build_path, 'wheels')
     os.makedirs(wheels_path)
 
-    certbot_packages = ['acme', '.']
+    certbot_packages = ['acme', 'certbot']
     # Uncomment following line to include all DNS plugins in the installer
     # certbot_packages.extend([name for name in os.listdir(repo_path) if name.startswith('certbot-dns-')])
     wheels_project = [os.path.join(repo_path, package) for package in certbot_packages]
@@ -119,8 +119,9 @@ imp.load_dynamic('pythoncom', pcom)
 
     installer_cfg_path = os.path.join(build_path, 'installer.cfg')
 
+    certbot_pkg_path = os.path.join(repo_path, 'certbot')
     certbot_version = subprocess.check_output([sys.executable, '-c', 'import certbot; print(certbot.__version__)'],
-                                              universal_newlines=True, cwd=repo_path).strip()
+                                              universal_newlines=True, cwd=certbot_pkg_path).strip()
 
     with open(installer_cfg_path, 'w') as file_h:
         file_h.write('''\

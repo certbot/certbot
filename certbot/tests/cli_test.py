@@ -1,4 +1,4 @@
-"""Tests for certbot.cli."""
+"""Tests for certbot._internal.cli."""
 import argparse
 import copy
 import tempfile
@@ -11,12 +11,12 @@ from six.moves import reload_module  # pylint: disable=import-error
 from acme import challenges
 
 import certbot.tests.util as test_util
-from certbot import cli
-from certbot import constants
+from certbot._internal import cli
+from certbot._internal import constants
 from certbot import errors
 from certbot.compat import os
 from certbot.compat import filesystem
-from certbot.plugins import disco
+from certbot._internal.plugins import disco
 from certbot.tests.util import TempDirTestCase
 
 PLUGINS = disco.PluginsRegistry.find_all()
@@ -60,7 +60,7 @@ class FlagDefaultTest(unittest.TestCase):
             self.assertEqual(cli.flag_default('logs_dir'), 'C:\\Certbot\\log')
 
 
-class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
 
@@ -86,15 +86,15 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         def write_msg(message, *args, **kwargs): # pylint: disable=missing-docstring,unused-argument
             output.write(message)
 
-        with mock.patch('certbot.main.sys.stdout', new=output):
+        with mock.patch('certbot._internal.main.sys.stdout', new=output):
             with test_util.patch_get_utility() as mock_get_utility:
                 mock_get_utility().notification.side_effect = write_msg
-                with mock.patch('certbot.main.sys.stderr'):
+                with mock.patch('certbot._internal.main.sys.stderr'):
                     self.assertRaises(SystemExit, self._unmocked_parse, args, output)
 
         return output.getvalue()
 
-    @mock.patch("certbot.cli.flag_default")
+    @mock.patch("certbot._internal.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
         with tempfile.NamedTemporaryFile() as tmp_config:
             tmp_config.close()  # close now because of compatibility issues on Windows
@@ -126,7 +126,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         chain = 'chain'
         fullchain = 'fullchain'
 
-        with mock.patch('certbot.main.install'):
+        with mock.patch('certbot._internal.main.install'):
             namespace = self.parse(['install', '--cert-path', cert,
                                     '--key-path', 'key', '--chain-path',
                                     'chain', '--fullchain-path', 'fullchain'])
@@ -366,7 +366,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             errors.Error, self.parse, "-n --force-interactive".split())
 
     def test_deploy_hook_conflict(self):
-        with mock.patch("certbot.cli.sys.stderr"):
+        with mock.patch("certbot._internal.cli.sys.stderr"):
             self.assertRaises(SystemExit, self.parse,
                               "--renew-hook foo --deploy-hook bar".split())
 
@@ -386,7 +386,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.renew_hook, value)
 
     def test_renew_hook_conflict(self):
-        with mock.patch("certbot.cli.sys.stderr"):
+        with mock.patch("certbot._internal.cli.sys.stderr"):
             self.assertRaises(SystemExit, self.parse,
                               "--deploy-hook foo --renew-hook bar".split())
 
@@ -406,7 +406,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.renew_hook, value)
 
     def test_max_log_backups_error(self):
-        with mock.patch('certbot.cli.sys.stderr'):
+        with mock.patch('certbot._internal.cli.sys.stderr'):
             self.assertRaises(
                 SystemExit, self.parse, "--max-log-backups foo".split())
             self.assertRaises(
@@ -462,7 +462,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
 
 class DefaultTest(unittest.TestCase):
-    """Tests for certbot.cli._Default."""
+    """Tests for certbot._internal.cli._Default."""
 
 
     def setUp(self):
@@ -536,7 +536,7 @@ class SetByCliTest(unittest.TestCase):
 
 
 def _call_set_by_cli(var, args, verb):
-    with mock.patch('certbot.cli.helpful_parser') as mock_parser:
+    with mock.patch('certbot._internal.cli.helpful_parser') as mock_parser:
         with test_util.patch_get_utility():
             mock_parser.args = args
             mock_parser.verb = verb

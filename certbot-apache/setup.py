@@ -4,7 +4,7 @@ from setuptools.command.test import test as TestCommand
 import sys
 
 
-version = '1.0.0.dev0'
+version = '1.1.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
@@ -16,11 +16,6 @@ install_requires = [
     'setuptools',
     'zope.component',
     'zope.interface',
-]
-
-docs_extras = [
-    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
-    'sphinx_rtd_theme',
 ]
 
 
@@ -74,12 +69,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
-    extras_require={
-        'docs': docs_extras,
-    },
     entry_points={
         'certbot.plugins': [
-            'apache = certbot_apache.entrypoint:ENTRYPOINT',
+            'apache = certbot_apache._internal.entrypoint:ENTRYPOINT',
         ],
     },
     test_suite='certbot_apache',

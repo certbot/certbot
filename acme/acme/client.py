@@ -44,7 +44,7 @@ DEFAULT_NETWORK_TIMEOUT = 45
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
 
-class ClientBase(object):  # pylint: disable=too-many-instance-attributes
+class ClientBase(object):
     """ACME client base object.
 
     :ivar messages.Directory directory:
@@ -254,7 +254,6 @@ class Client(ClientBase):
             URI from which the resource will be downloaded.
 
         """
-        # pylint: disable=too-many-arguments
         self.key = key
         if net is None:
             net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl)
@@ -435,7 +434,6 @@ class Client(ClientBase):
             was marked by the CA as invalid
 
         """
-        # pylint: disable=too-many-locals
         assert max_attempts > 0
         attempts = collections.defaultdict(int) # type: Dict[messages.AuthorizationResource, int]
         exhausted = set()
@@ -947,7 +945,7 @@ class BackwardsCompatibleClientV2(object):
         return self.client.external_account_required()
 
 
-class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
+class ClientNetwork(object):
     """Wrapper around requests that signs POSTs for authentication.
 
     Also adds user agent, and handles Content-Type.
@@ -973,7 +971,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
                  user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT,
                  source_address=None):
-        # pylint: disable=too-many-arguments
         self.key = key
         self.account = account
         self.alg = alg
@@ -1081,7 +1078,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         return response
 
     def _send_request(self, method, url, *args, **kwargs):
-        # pylint: disable=too-many-locals
         """Send HTTP request.
 
         Makes sure that `verify_ssl` is respected. Logs request and

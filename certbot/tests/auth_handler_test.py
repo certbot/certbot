@@ -1,4 +1,4 @@
-"""Tests for certbot.auth_handler."""
+"""Tests for certbot._internal.auth_handler."""
 import functools
 import logging
 import unittest
@@ -24,7 +24,7 @@ class ChallengeFactoryTest(unittest.TestCase):
     # pylint: disable=protected-access
 
     def setUp(self):
-        from certbot.auth_handler import AuthHandler
+        from certbot._internal.auth_handler import AuthHandler
 
         # Account is mocked...
         self.handler = AuthHandler(None, None, mock.Mock(key="mock_key"), [])
@@ -56,7 +56,7 @@ class ChallengeFactoryTest(unittest.TestCase):
              errors.Error, self.handler._challenge_factory, authzr, [0])
 
 
-class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+class HandleAuthorizationsTest(unittest.TestCase):
     """handle_authorizations test.
 
     This tests everything except for all functions under _poll_challenges.
@@ -64,7 +64,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
     """
 
     def setUp(self):
-        from certbot.auth_handler import AuthHandler
+        from certbot._internal.auth_handler import AuthHandler
 
         self.mock_display = mock.Mock()
         zope.component.provideUtility(
@@ -96,7 +96,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         mock_order = mock.MagicMock(authorizations=[authzr])
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll(retry=1, wait_value=30)
-        with mock.patch('certbot.auth_handler.time') as mock_time:
+        with mock.patch('certbot._internal.auth_handler.time') as mock_time:
             authzr = self.handler.handle_authorizations(mock_order)
 
             self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
@@ -326,7 +326,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
 
         mock_order = mock.MagicMock(authorizations=authzrs)
 
-        with mock.patch('certbot.auth_handler._report_failed_authzrs') as mock_report:
+        with mock.patch('certbot._internal.auth_handler._report_failed_authzrs') as mock_report:
             valid_authzr = self.handler.handle_authorizations(mock_order, True)
 
         # Because best_effort=True, we did not blow up. Instead ...
@@ -414,10 +414,10 @@ def _gen_mock_on_poll(status=messages.STATUS_VALID, retry=0, wait_value=1):
 
 
 class ChallbToAchallTest(unittest.TestCase):
-    """Tests for certbot.auth_handler.challb_to_achall."""
+    """Tests for certbot._internal.auth_handler.challb_to_achall."""
 
     def _call(self, challb):
-        from certbot.auth_handler import challb_to_achall
+        from certbot._internal.auth_handler import challb_to_achall
         return challb_to_achall(challb, "account_key", "domain")
 
     def test_it(self):
@@ -430,7 +430,7 @@ class ChallbToAchallTest(unittest.TestCase):
 
 
 class GenChallengePathTest(unittest.TestCase):
-    """Tests for certbot.auth_handler.gen_challenge_path.
+    """Tests for certbot._internal.auth_handler.gen_challenge_path.
 
     .. todo:: Add more tests for dumb_path... depending on what we want to do.
 
@@ -443,7 +443,7 @@ class GenChallengePathTest(unittest.TestCase):
 
     @classmethod
     def _call(cls, challbs, preferences, combinations):
-        from certbot.auth_handler import gen_challenge_path
+        from certbot._internal.auth_handler import gen_challenge_path
         return gen_challenge_path(challbs, preferences, combinations)
 
     def test_common_case(self):
@@ -473,7 +473,7 @@ class GenChallengePathTest(unittest.TestCase):
 
 
 class ReportFailedAuthzrsTest(unittest.TestCase):
-    """Tests for certbot.auth_handler._report_failed_authzrs."""
+    """Tests for certbot._internal.auth_handler._report_failed_authzrs."""
     # pylint: disable=protected-access
 
     def setUp(self):
@@ -505,7 +505,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
 
     @test_util.patch_get_utility()
     def test_same_error_and_domain(self, mock_zope):
-        from certbot import auth_handler
+        from certbot._internal import auth_handler
 
         auth_handler._report_failed_authzrs([self.authzr1], 'key')
         call_list = mock_zope().add_message.call_args_list
@@ -514,7 +514,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
 
     @test_util.patch_get_utility()
     def test_different_errors_and_domains(self, mock_zope):
-        from certbot import auth_handler
+        from certbot._internal import auth_handler
 
         auth_handler._report_failed_authzrs([self.authzr1, self.authzr2], 'key')
         self.assertTrue(mock_zope().add_message.call_count == 2)

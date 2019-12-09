@@ -1,4 +1,4 @@
-"""Tests for certbot.reporter."""
+"""Tests for certbot._internal.reporter."""
 import sys
 import unittest
 import mock
@@ -7,9 +7,9 @@ import six
 
 
 class ReporterTest(unittest.TestCase):
-    """Tests for certbot.reporter.Reporter."""
+    """Tests for certbot._internal.reporter.Reporter."""
     def setUp(self):
-        from certbot import reporter
+        from certbot._internal import reporter
         self.reporter = reporter.Reporter(mock.MagicMock(quiet=False))
 
         self.old_stdout = sys.stdout  # type: ignore

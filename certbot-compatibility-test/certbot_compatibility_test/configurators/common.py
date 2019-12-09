@@ -4,7 +4,7 @@ import os
 import shutil
 import tempfile
 
-from certbot import constants
+from certbot._internal import constants
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 
@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class Proxy(object):
-    # pylint: disable=too-many-instance-attributes
     """A common base for compatibility test configurators"""
 
     @classmethod
