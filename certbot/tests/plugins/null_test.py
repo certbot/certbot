@@ -1,8 +1,8 @@
 """Tests for certbot._internal.plugins.null."""
 import unittest
-import six
 
 import mock
+import six
 
 
 class InstallerTest(unittest.TestCase):

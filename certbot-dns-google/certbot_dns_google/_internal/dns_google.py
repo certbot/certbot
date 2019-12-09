@@ -2,11 +2,11 @@
 import json
 import logging
 
-import httplib2
-import zope.interface
 from googleapiclient import discovery
 from googleapiclient import errors as googleapiclient_errors
+import httplib2
 from oauth2client.service_account import ServiceAccountCredentials
+import zope.interface
 
 from certbot import errors
 from certbot import interfaces

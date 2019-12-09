@@ -1,6 +1,5 @@
 from setuptools import setup
 
-
 setup(
     name='certbot-example-plugins',
     package='certbot_example_plugins.py',

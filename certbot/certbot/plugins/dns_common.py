@@ -8,7 +8,6 @@ import configobj
 import zope.interface
 
 from acme import challenges
-
 from certbot import errors
 from certbot import interfaces
 from certbot.compat import filesystem

@@ -1,8 +1,8 @@
 """DNS Authenticator for CloudXNS DNS."""
 import logging
 
-import zope.interface
 from lexicon.providers import cloudxns
+import zope.interface
 
 from certbot import errors
 from certbot import interfaces

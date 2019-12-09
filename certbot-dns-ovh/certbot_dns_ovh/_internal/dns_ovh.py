@@ -1,8 +1,8 @@
 """DNS Authenticator for OVH DNS."""
 import logging
 
-import zope.interface
 from lexicon.providers import ovh
+import zope.interface
 
 from certbot import errors
 from certbot import interfaces

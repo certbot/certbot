@@ -8,9 +8,9 @@
 from __future__ import print_function
 
 import os
-import sys
-import subprocess
 import re
+import subprocess
+import sys
 
 SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache', 'letshelp-certbot']
 

@@ -5,7 +5,6 @@ import josepy as jose
 
 import test_util
 
-
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 
 

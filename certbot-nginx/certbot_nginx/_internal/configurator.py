@@ -1,6 +1,6 @@
 """Nginx Configuration"""
 # https://github.com/PyCQA/pylint/issues/73
-from distutils.version import LooseVersion # pylint: disable=no-name-in-module,import-error
+from distutils.version import LooseVersion  # pylint: disable=no-name-in-module, import-error
 import logging
 import re
 import socket
@@ -8,22 +8,21 @@ import subprocess
 import tempfile
 import time
 
-import pkg_resources
-
 import OpenSSL
+import pkg_resources
 import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
-from acme.magic_typing import List, Dict, Set  # pylint: disable=unused-import, no-name-in-module
-
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot.compat import os
 from certbot.plugins import common
-
 from certbot_nginx._internal import constants
 from certbot_nginx._internal import display_ops
 from certbot_nginx._internal import http_01

@@ -12,7 +12,6 @@ import zope.interface
 from certbot import interfaces
 from certbot import util
 
-
 logger = logging.getLogger(__name__)
 
 

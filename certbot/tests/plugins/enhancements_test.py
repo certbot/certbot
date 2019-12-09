@@ -1,10 +1,10 @@
 """Tests for new style enhancements"""
 import unittest
+
 import mock
 
-from certbot.plugins import enhancements
 from certbot._internal.plugins import null
-
+from certbot.plugins import enhancements
 import certbot.tests.util as test_util
 
 

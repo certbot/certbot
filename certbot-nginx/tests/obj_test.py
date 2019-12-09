@@ -1,6 +1,6 @@
 """Test the helper objects in certbot_nginx._internal.obj."""
-import unittest
 import itertools
+import unittest
 
 
 class AddrTest(unittest.TestCase):

@@ -2,6 +2,7 @@
 import importlib
 import unittest
 
+
 class JoseTest(unittest.TestCase):
     """Tests for acme.jose shim."""
 

@@ -3,11 +3,11 @@ raw lists of tokens from pyparsing. """
 
 import abc
 import logging
+
 import six
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
-
-from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 COMMENT = " managed by Certbot"

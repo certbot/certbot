@@ -7,14 +7,15 @@ from __future__ import absolute_import
 import select
 import sys
 
+from certbot import errors
+from certbot.compat import os
+
 try:
     from win32com.shell import shell as shellwin32  # pylint: disable=import-error
     POSIX_MODE = False
 except ImportError:  # pragma: no cover
     POSIX_MODE = True
 
-from certbot import errors
-from certbot.compat import os
 
 
 # For Linux: define OS specific standard binary directories

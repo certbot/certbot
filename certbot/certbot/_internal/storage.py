@@ -12,17 +12,17 @@ import pytz
 import six
 
 import certbot
-from certbot._internal import cli
-from certbot._internal import constants
 from certbot import crypto_util
-from certbot._internal import error_handler
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import os
-from certbot.compat import filesystem
-from certbot.plugins import common as plugins_common
+from certbot._internal import cli
+from certbot._internal import constants
+from certbot._internal import error_handler
 from certbot._internal.plugins import disco as plugins_disco
+from certbot.compat import filesystem
+from certbot.compat import os
+from certbot.plugins import common as plugins_common
 
 logger = logging.getLogger(__name__)
 
