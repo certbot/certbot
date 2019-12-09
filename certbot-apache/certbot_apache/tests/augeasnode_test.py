@@ -144,6 +144,16 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
                 found = True
         self.assertTrue(found)
 
+    def test_add_child_comment(self):
+        newc = self.config.parser_root.primary.add_child_comment("The content")
+        comments = self.config.parser_root.find_comments("The content")
+        self.assertEqual(len(comments), 1)
+        self.assertEqual(
+            newc.metadata["augeaspath"],
+            comments[0].primary.metadata["augeaspath"]
+        )
+        self.assertEqual(newc.comment, comments[0].comment)
+
     def test_delete_child(self):
         listens = self.config.parser_root.primary.find_directives("Listen")
         self.assertEqual(len(listens), 1)
@@ -285,3 +295,24 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
     def test_parsed_paths(self):
         paths = self.config.parser_root.parsed_paths()
         self.assertEqual(len(paths), 6)
+
+    def test_find_ancestors(self):
+        vhsblocks = self.config.parser_root.find_blocks("VirtualHost")
+        macro_test = False
+        nonmacro_test = False
+        for vh in vhsblocks:
+            if "/macro/" in vh.metadata["augeaspath"].lower():
+                ancs = vh.find_ancestors("Macro")
+                self.assertEqual(len(ancs), 1)
+                macro_test = True
+            else:
+                ancs = vh.find_ancestors("Macro")
+                self.assertEqual(len(ancs), 0)
+                nonmacro_test = True
+        self.assertTrue(macro_test)
+        self.assertTrue(nonmacro_test)
+
+    def test_find_ancestors_bad_path(self):
+        self.config.parser_root.primary.metadata["augeaspath"] = ""
+        ancs = self.config.parser_root.primary.find_ancestors("Anything")
+        self.assertEqual(len(ancs), 0)

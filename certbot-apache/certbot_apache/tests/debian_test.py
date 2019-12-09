@@ -47,7 +47,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
-    @mock.patch("certbot_apache.parser.subprocess.Popen")
+    @mock.patch("certbot_apache.apache_util.subprocess.Popen")
     def test_enable_mod(self, mock_popen, mock_exe_exists, mock_run_script):
         mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
         mock_popen().returncode = 0

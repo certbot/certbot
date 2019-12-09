@@ -359,6 +359,13 @@ class ApacheConfigurator(common.Installer):
 
     def get_parsernode_root(self, metadata):
         """Initializes the ParserNode parser root instance."""
+
+        apache_vars = dict()
+        apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
+        apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
+        apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
+        metadata["apache_vars"] = apache_vars
+
         return dualparser.DualBlockNode(
             name=assertions.PASS,
             ancestor=None,

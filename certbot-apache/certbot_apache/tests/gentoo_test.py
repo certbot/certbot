@@ -90,7 +90,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         for define in defines:
             self.assertTrue(define in self.config.parser.variables.keys())
 
-    @mock.patch("certbot_apache.parser.ApacheParser.parse_from_subprocess")
+    @mock.patch("certbot_apache.apache_util.parse_from_subprocess")
     def test_no_binary_configdump(self, mock_subprocess):
         """Make sure we don't call binary dumps other than modules from Apache
         as this is not supported in Gentoo currently"""
@@ -104,7 +104,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         self.config.parser.reset_modules()
         self.assertTrue(mock_subprocess.called)
 
-    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache.apache_util._get_runtime_cfg")
     def test_opportunistic_httpd_runtime_parsing(self, mock_get):
         mod_val = (
             'Loaded Modules:\n'
