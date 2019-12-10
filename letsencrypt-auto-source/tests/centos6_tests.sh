@@ -28,7 +28,7 @@ source /opt/rh/python27/enable
 python3 --version 2> /dev/null
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
-  error "Python3 is already installed."
+  echo "Python3 is already installed."
   exit 1
 fi
 
@@ -36,7 +36,7 @@ fi
 python2.7 --version 2> /dev/null
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
-  error "Python3 is not available."
+  echo "Python3 is not available."
   exit 1
 fi
 
@@ -47,7 +47,7 @@ fi
 python3 --version 2> /dev/null
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
-  error "letsencrypt-auto installed Python3 even though Python2.7 is present."
+  echo "letsencrypt-auto installed Python3 even though Python2.7 is present."
   exit 1
 fi
 
@@ -58,7 +58,7 @@ echo "PASSED: Did not upgrade to Python3 when Python2.7 is present."
 python2.7 --version 2> /dev/null
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
-  error "Python2.7 is still available."
+  echo "Python2.7 is still available."
   exit 1
 fi
 
@@ -75,7 +75,7 @@ fi
 python3 --version > /dev/null
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
-  error "letsencrypt-auto failed to install Python3 when only Python2.6 is present."
+  echo "letsencrypt-auto failed to install Python3 when only Python2.6 is present."
   exit 1
 fi
 
