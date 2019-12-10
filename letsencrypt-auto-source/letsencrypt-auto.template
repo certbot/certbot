@@ -687,9 +687,10 @@ UNLIKELY_EOF
     say "Installation succeeded."
   fi
 
+  # If you're modifying any of the code after this point in this current `if` block, you
+  # may need to update the "$DEPRECATED_OS" = 1 case at the beginning of phase 2 as well.
+
   if [ "$INSTALL_ONLY" = 1 ]; then
-    # If you're modifying any of the code after this point in this `if` block, you may
-    # need to update the "$DEPRECATED_OS" = 1 case at the beginning of phase 2 as well.
     say "Certbot is installed."
     exit 0
   fi
