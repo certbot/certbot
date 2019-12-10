@@ -100,7 +100,7 @@ if ! "$LE_AUTO" 2>&1 | grep -q "Certbot will no longer receive updates."; then
   exit 1
 fi
 if ! "$LE_AUTO" --install-only 2>&1 | grep -q "Certbot cannot be installed."; then
-  echo "On CentOS 32 bits, certbot-auto installed again certbot."
+  echo "On CentOS 32 bits, certbot-auto installed certbot again."
   exit 1
 fi
 
