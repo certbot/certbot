@@ -502,3 +502,15 @@ class BlockNode(DirectiveNode):
         :returns: list of file paths of files that have been changed but not yet
             saved to disk.
         """
+
+    @abc.abstractmethod
+    def parsed_paths(self):
+        """
+        Returns a list of file paths that have currently been parsed into the parser
+        tree. The returned list may include paths with wildcard characters, for
+        example: ['/etc/apache2/conf.d/*.load']
+
+        This is typically called on the root node of the ParserNode tree.
+
+        :returns: list of file paths of files that have been parsed
+        """

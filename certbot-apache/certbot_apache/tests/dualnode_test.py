@@ -413,6 +413,25 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.assertFalse(self.directive == ne_directive)
         self.assertFalse(self.comment == ne_comment)
 
+    def test_parsed_paths(self):
+        mock_p = mock.MagicMock(return_value=['/path/file.conf',
+                                              '/another/path',
+                                              '/path/other.conf'])
+        mock_s = mock.MagicMock(return_value=['/path/*.conf', '/another/path'])
+        self.block.primary.parsed_paths = mock_p
+        self.block.secondary.parsed_paths = mock_s
+        self.block.parsed_paths()
+        self.assertTrue(mock_p.called)
+        self.assertTrue(mock_s.called)
+
+    def test_parsed_paths_error(self):
+        mock_p = mock.MagicMock(return_value=['/path/file.conf'])
+        mock_s = mock.MagicMock(return_value=['/path/*.conf', '/another/path'])
+        self.block.primary.parsed_paths = mock_p
+        self.block.secondary.parsed_paths = mock_s
+        with self.assertRaises(AssertionError):
+            self.block.parsed_paths()
+
     def test_find_ancestors(self):
         primarymock = mock.MagicMock(return_value=[])
         secondarymock = mock.MagicMock(return_value=[])

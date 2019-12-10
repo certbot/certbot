@@ -292,6 +292,10 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
             "ThisRaisesErrorBecauseMissingParameters"
         )
 
+    def test_parsed_paths(self):
+        paths = self.config.parser_root.parsed_paths()
+        self.assertEqual(len(paths), 6)
+
     def test_find_ancestors(self):
         vhsblocks = self.config.parser_root.find_blocks("VirtualHost")
         macro_test = False

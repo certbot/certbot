@@ -159,6 +159,10 @@ class ApacheBlockNode(ApacheDirectiveNode):
         """Returns a list of unsaved filepaths"""
         return [assertions.PASS]
 
+    def parsed_paths(self):  # pragma: no cover
+        """Returns a list of parsed configuration file paths"""
+        return [assertions.PASS]
+
 
 interfaces.CommentNode.register(ApacheCommentNode)
 interfaces.DirectiveNode.register(ApacheDirectiveNode)

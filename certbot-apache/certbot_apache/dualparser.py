@@ -54,7 +54,7 @@ class DualNodeBase(object):
         if pass_primary and pass_secondary:
             # Both unimplemented
             new_nodes.append(nodeclass(primary=primary_res[0],
-                                       secondary=secondary_res[0])) # pragma: no cover
+                                       secondary=secondary_res[0]))  # pragma: no cover
         elif pass_primary:
             for c in secondary_res:
                 new_nodes.append(nodeclass(primary=primary_res[0],
@@ -272,7 +272,6 @@ class DualBlockNode(DualNodeBase):
 
         return self._find_helper(DualCommentNode, "find_comments", comment)
 
-
     def delete_child(self, child):
         """Deletes a child from the ParserNode implementations. The actual
         ParserNode implementations are used here directly in order to be able
@@ -289,3 +288,19 @@ class DualBlockNode(DualNodeBase):
         assertions.assertEqualSimple(primary_files, secondary_files)
 
         return primary_files
+
+    def parsed_paths(self):
+        """
+        Returns a list of file paths that have currently been parsed into the parser
+        tree. The returned list may include paths with wildcard characters, for
+        example: ['/etc/apache2/conf.d/*.load']
+
+        This is typically called on the root node of the ParserNode tree.
+
+        :returns: list of file paths of files that have been parsed
+        """
+
+        primary_paths = self.primary.parsed_paths()
+        secondary_paths = self.secondary.parsed_paths()
+        assertions.assertEqualPathsList(primary_paths, secondary_paths)
+        return primary_paths
