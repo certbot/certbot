@@ -19,7 +19,6 @@ import sys
 
 import sphinx
 
-
 here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init

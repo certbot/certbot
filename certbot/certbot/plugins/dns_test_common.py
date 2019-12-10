@@ -6,7 +6,6 @@ import mock
 import six
 
 from acme import challenges
-
 from certbot import achallenges
 from certbot.compat import filesystem
 from certbot.tests import acme_util

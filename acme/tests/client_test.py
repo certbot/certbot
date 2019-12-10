@@ -5,19 +5,17 @@ import datetime
 import json
 import unittest
 
-from six.moves import http_client  # pylint: disable=import-error
-
 import josepy as jose
 import mock
 import OpenSSL
 import requests
+from six.moves import http_client  # pylint: disable=import-error
 
 from acme import challenges
 from acme import errors
 from acme import jws as acme_jws
 from acme import messages
-from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
-
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 import messages_test
 import test_util
 

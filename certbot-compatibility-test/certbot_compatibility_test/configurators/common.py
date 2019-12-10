@@ -8,7 +8,6 @@ from certbot._internal import constants
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -1,9 +1,12 @@
 """Common code for DNS Authenticator Plugins built on Lexicon."""
 import logging
 
-from requests.exceptions import HTTPError, RequestException
+from requests.exceptions import HTTPError
+from requests.exceptions import RequestException
 
-from acme.magic_typing import Union, Dict, Any  # pylint: disable=unused-import,no-name-in-module
+from acme.magic_typing import Any  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.plugins import dns_common
 

@@ -15,16 +15,15 @@ import tempfile
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 # TODO: once mypy has cryptography types bundled, type: ignore can be removed.
-# See https://github.com/python/typeshed/tree/master/third_party/2/cryptography
-from cryptography.hazmat.primitives import serialization, hashes  # type: ignore
+# See https://github.com/pyca/cryptography/issues/4275
+from cryptography.hazmat.primitives import hashes  # type: ignore
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from certbot._internal import lock
 from certbot import util
+from certbot._internal import lock
 from certbot.compat import filesystem
-
 from certbot.tests import util as test_util
-
 
 logger = logging.getLogger(__name__)
 

@@ -5,25 +5,26 @@ import datetime
 from email.utils import parsedate_tz
 import heapq
 import logging
-import time
 import re
 import sys
+import time
 
-import six
-from six.moves import http_client  # pylint: disable=import-error
 import josepy as jose
 import OpenSSL
 import requests
 from requests.adapters import HTTPAdapter
 from requests_toolbelt.adapters.source import SourceAddressAdapter
+import six
+from six.moves import http_client  # pylint: disable=import-error
 
 from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict, List, Set, Text
-
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Text  # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 

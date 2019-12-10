@@ -4,7 +4,6 @@ import unittest
 import mock
 
 from acme import messages
-
 from certbot import achallenges
 from certbot.tests import acme_util
 

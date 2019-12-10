@@ -13,7 +13,6 @@ import warnings
 #
 # It is based on
 # https://github.com/requests/requests/blob/1278ecdf71a312dc2268f3bfc0aabfab3c006dcf/requests/packages.py
-
 import josepy as jose
 
 for mod in list(sys.modules):

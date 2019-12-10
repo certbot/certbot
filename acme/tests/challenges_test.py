@@ -4,7 +4,6 @@ import unittest
 import josepy as jose
 import mock
 import requests
-
 from six.moves.urllib import parse as urllib_parse
 
 import test_util

@@ -5,12 +5,12 @@ import textwrap
 
 import zope.interface
 
-from certbot._internal import constants
 from certbot import errors
 from certbot import interfaces
+from certbot._internal import constants
+from certbot._internal.display import completer
 from certbot.compat import misc
 from certbot.compat import os
-from certbot._internal.display import completer
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,8 @@
 
 import josepy as jose
 import mock
-from requests.exceptions import HTTPError, RequestException
+from requests.exceptions import HTTPError
+from requests.exceptions import RequestException
 
 from certbot import errors
 from certbot.plugins import dns_test_common

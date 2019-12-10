@@ -7,24 +7,20 @@ import tempfile
 import unittest
 
 import mock
-# six is used in mock.patch()
-import six  # pylint: disable=unused-import
+import six  # pylint: disable=unused-import  # six is used in mock.patch()
 
 from acme import challenges
-
 from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
-from certbot.compat import os
 from certbot.compat import filesystem
+from certbot.compat import os
 from certbot.tests import acme_util
 from certbot.tests import util as certbot_util
-
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
 from certbot_apache._internal import obj
 from certbot_apache._internal import parser
-
 import util
 
 

@@ -1,5 +1,6 @@
 """Apache Configurator."""
 # pylint: disable=too-many-lines
+from collections import defaultdict
 import copy
 import fnmatch
 import logging
@@ -7,28 +8,26 @@ import re
 import socket
 import time
 
-from collections import defaultdict
-
 import pkg_resources
 import six
-
 import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import DefaultDict, Dict, List, Set, Union  # pylint: disable=unused-import, no-name-in-module
-
+from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
-from certbot.plugins.util import path_surgery
 from certbot.plugins.enhancements import AutoHSTSEnhancement
-
+from certbot.plugins.util import path_surgery
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
 from certbot_apache._internal import display_ops

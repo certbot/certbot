@@ -5,6 +5,13 @@ import unittest
 
 import mock
 
+from certbot import util
+from certbot._internal import lock
+from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
+from certbot.tests.util import TempDirTestCase
+
 try:
     # pylint: disable=import-error
     import win32api
@@ -15,12 +22,6 @@ try:
 except ImportError:
     POSIX_MODE = True
 
-import certbot.tests.util as test_util
-from certbot._internal import lock
-from certbot import util
-from certbot.compat import os
-from certbot.compat import filesystem
-from certbot.tests.util import TempDirTestCase
 
 
 EVERYBODY_SID = 'S-1-1-0'

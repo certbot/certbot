@@ -1,13 +1,13 @@
 """Certbot user-supplied configuration."""
 import copy
 
-import zope.interface
 from six.moves.urllib import parse
+import zope.interface
 
-from certbot._internal import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot._internal import constants
 from certbot.compat import misc
 from certbot.compat import os
 

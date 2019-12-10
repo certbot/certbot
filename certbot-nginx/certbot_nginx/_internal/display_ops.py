@@ -4,9 +4,7 @@ import logging
 import zope.component
 
 from certbot import interfaces
-
 import certbot.display.util as display_util
-
 
 logger = logging.getLogger(__name__)
 
