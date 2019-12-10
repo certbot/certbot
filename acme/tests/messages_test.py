@@ -18,8 +18,7 @@ class ErrorTest(unittest.TestCase):
 
     def setUp(self):
         from acme.messages import Error, ERROR_PREFIX
-        self.error = Error(
-            detail='foo', typ=ERROR_PREFIX + 'malformed', title='title')
+        self.error = Error.with_code('malformed', detail='foo', title='title')
         self.jobj = {
             'detail': 'foo',
             'title': 'some title',
@@ -27,7 +26,6 @@ class ErrorTest(unittest.TestCase):
         }
         self.error_custom = Error(typ='custom', detail='bar')
         self.empty_error = Error()
-        self.jobj_custom = {'type': 'custom', 'detail': 'bar'}
 
     def test_default_typ(self):
         from acme.messages import Error
@@ -42,8 +40,7 @@ class ErrorTest(unittest.TestCase):
         hash(Error.from_json(self.error.to_json()))
 
     def test_description(self):
-        self.assertEqual(
-            'The request message was malformed', self.error.description)
+        self.assertEqual('The request message was malformed', self.error.description)
         self.assertTrue(self.error_custom.description is None)
 
     def test_code(self):
@@ -53,17 +50,17 @@ class ErrorTest(unittest.TestCase):
         self.assertEqual(None, Error().code)
 
     def test_is_acme_error(self):
-        from acme.messages import is_acme_error
+        from acme.messages import is_acme_error, Error
         self.assertTrue(is_acme_error(self.error))
         self.assertFalse(is_acme_error(self.error_custom))
+        self.assertFalse(is_acme_error(Error()))
         self.assertFalse(is_acme_error(self.empty_error))
         self.assertFalse(is_acme_error("must pet all the {dogs|rabbits}"))
 
     def test_unicode_error(self):
-        from acme.messages import Error, ERROR_PREFIX, is_acme_error
-        arabic_error = Error(
-                detail=u'\u0639\u062f\u0627\u0644\u0629', typ=ERROR_PREFIX + 'malformed',
-            title='title')
+        from acme.messages import Error, is_acme_error
+        arabic_error = Error.with_code(
+            'malformed', detail=u'\u0639\u062f\u0627\u0644\u0629', title='title')
         self.assertTrue(is_acme_error(arabic_error))
 
     def test_with_code(self):
@@ -304,8 +301,7 @@ class ChallengeBodyTest(unittest.TestCase):
         from acme.messages import Error
         from acme.messages import STATUS_INVALID
         self.status = STATUS_INVALID
-        error = Error(typ='urn:ietf:params:acme:error:serverInternal',
-                      detail='Unable to communicate with DNS server')
+        error = Error.with_code('serverInternal', detail='Unable to communicate with DNS server')
         self.challb = ChallengeBody(
             uri='http://challb', chall=self.chall, status=self.status,
             error=error)

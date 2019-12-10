@@ -173,7 +173,7 @@ def setup_certificate(workspace):
 
     key_path = os.path.join(workspace, 'cert.key')
     with open(key_path, 'wb') as file_handle:
-        file_handle.write(private_key.private_bytes(
+        file_handle.write(private_key.private_bytes(  # type: ignore
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption()

@@ -194,8 +194,8 @@ class ApacheHttp01(common.ChallengePerformer):
 
         if vhost not in self.moded_vhosts:
             logger.debug(
-                "Adding a temporary challenge validation Include for name: %s " +
-                "in: %s", vhost.name, vhost.filep)
+                "Adding a temporary challenge validation Include for name: %s in: %s",
+                vhost.name, vhost.filep)
             self.configurator.parser.add_dir_beginning(
                 vhost.path, "Include", self.challenge_conf_pre)
             self.configurator.parser.add_dir(

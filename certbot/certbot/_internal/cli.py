@@ -287,10 +287,9 @@ def flag_default(name):
 
 def config_help(name, hidden=False):
     """Extract the help message for an `.IConfig` attribute."""
-    # pylint: disable=no-member
     if hidden:
         return argparse.SUPPRESS
-    field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute  # pylint: disable=no-value-for-parameter
+    field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute
     return field.__doc__
 
 
@@ -674,7 +673,7 @@ class HelpfulArgumentParser(object):
 
         parsed_args.actual_csr = (csr, typ)
 
-        csr_domains = set([d.lower() for d in domains])
+        csr_domains = {d.lower() for d in domains}
         config_domains = set(parsed_args.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
@@ -847,11 +846,11 @@ class HelpfulArgumentParser(object):
             chosen_topic = "run"
         if chosen_topic == "all":
             # Addition of condition closes #6209 (removal of duplicate route53 option).
-            return dict([(t, True) if t != 'certbot-route53:auth' else (t, False)
-                         for t in self.help_topics])
+            return {t: t != 'certbot-route53:auth' for t in self.help_topics}
         elif not chosen_topic:
-            return dict([(t, False) for t in self.help_topics])
-        return dict([(t, t == chosen_topic) for t in self.help_topics])
+            return {t: False for t in self.help_topics}
+        return {t: t == chosen_topic for t in self.help_topics}
+
 
 def _add_all_groups(helpful):
     helpful.add_group("automation", description="Flags for automating execution & other tweaks")

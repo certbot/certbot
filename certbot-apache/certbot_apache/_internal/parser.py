@@ -284,8 +284,8 @@ class ApacheParser(object):
                     mods.add(mod_name)
                     mods.add(os.path.basename(mod_filename)[:-2] + "c")
                 else:
-                    logger.debug("Could not read LoadModule directive from " +
-                                 "Augeas path: %s", match_name[6:])
+                    logger.debug("Could not read LoadModule directive from Augeas path: %s",
+                                 match_name[6:])
         self.modules.update(mods)
 
     def update_runtime_variables(self):
@@ -625,7 +625,7 @@ class ApacheParser(object):
         # https://httpd.apache.org/docs/2.4/mod/core.html#include
         for match in matches:
             dir_ = self.aug.get(match).lower()
-            if dir_ == "include" or dir_ == "includeoptional":
+            if dir_ in ("include", "includeoptional"):
                 ordered_matches.extend(self.find_dir(
                     directive, arg,
                     self._get_include_path(self.get_arg(match + "/arg")),
@@ -665,8 +665,7 @@ class ApacheParser(object):
         # e.g. strip now, not later
         if not value:
             return None
-        else:
-            value = value.strip("'\"")
+        value = value.strip("'\"")
 
         variables = ApacheParser.arg_var_interpreter.findall(value)
 

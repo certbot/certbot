@@ -285,9 +285,8 @@ def challb_to_achall(challb, account_key, domain):
             challb=challb, domain=domain, account_key=account_key)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, domain=domain)
-    else:
-        raise errors.Error(
-            "Received unsupported challenge of type: {0}".format(chall.typ))
+    raise errors.Error(
+        "Received unsupported challenge of type: {0}".format(chall.typ))
 
 
 def gen_challenge_path(challbs, preferences, combinations):

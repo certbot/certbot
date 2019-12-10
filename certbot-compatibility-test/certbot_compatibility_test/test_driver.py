@@ -10,7 +10,6 @@ import tempfile
 import time
 
 import OpenSSL
-from six.moves import xrange  # pylint: disable=import-error,redefined-builtin
 from urllib3.util import connection
 
 from acme import challenges
@@ -57,26 +56,27 @@ def test_authenticator(plugin, config, temp_dir):
         return False
 
     success = True
-    for i in xrange(len(responses)):
-        if not responses[i]:
+    for i, response in enumerate(responses):
+        achall = achalls[i]
+        if not response:
             logger.error(
                 "Plugin failed to complete %s for %s in %s",
-                type(achalls[i]), achalls[i].domain, config)
+                type(achall), achall.domain, config)
             success = False
-        elif isinstance(responses[i], challenges.HTTP01Response):
+        elif isinstance(response, challenges.HTTP01Response):
             # We fake the DNS resolution to ensure that any domain is resolved
             # to the local HTTP server setup for the compatibility tests
             with _fake_dns_resolution("127.0.0.1"):
-                verified = responses[i].simple_verify(
-                    achalls[i].chall, achalls[i].domain,
+                verified = response.simple_verify(
+                    achall.chall, achall.domain,
                     util.JWK.public_key(), port=plugin.http_port)
             if verified:
                 logger.info(
-                    "http-01 verification for %s succeeded", achalls[i].domain)
+                    "http-01 verification for %s succeeded", achall.domain)
             else:
                 logger.error(
                     "**** http-01 verification for %s in %s failed",
-                    achalls[i].domain, config)
+                    achall.domain, config)
                 success = False
 
     if success:
@@ -89,8 +89,7 @@ def test_authenticator(plugin, config, temp_dir):
         if _dirs_are_unequal(config, backup):
             logger.error("Challenge cleanup failed for %s", config)
             return False
-        else:
-            logger.info("Challenge cleanup succeeded")
+        logger.info("Challenge cleanup succeeded")
 
     return success
 
@@ -305,7 +304,7 @@ def get_args():
         "-e", "--enhance", action="store_true", help="tests the enhancements "
         "the plugin supports (implicitly includes installer tests)")
 
-    for plugin in PLUGINS.itervalues():
+    for plugin in PLUGINS.values():
         plugin.add_parser_arguments(parser)
 
     args = parser.parse_args()

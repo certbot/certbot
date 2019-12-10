@@ -33,6 +33,7 @@ def dest_namespace(name):
     """ArgumentParser dest namespace (prefix of all destinations)."""
     return name.replace("-", "_") + "_"
 
+
 private_ips_regex = re.compile(
     r"(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"
     r"(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)")
@@ -294,7 +295,7 @@ class Addr(object):
                 # appended to the end
                 append_to_end = True
                 continue
-            elif len(block) > 1:
+            if len(block) > 1:
                 # remove leading zeros
                 block = block.lstrip("0")
             if not append_to_end:
@@ -373,9 +374,9 @@ def install_version_controlled_file(dest_path, digest_path, src_path, all_hashes
     active_file_digest = crypto_util.sha256sum(dest_path)
     if active_file_digest == current_hash: # already up to date
         return
-    elif active_file_digest in all_hashes: # safe to update
+    if active_file_digest in all_hashes: # safe to update
         _install_current_file()
-    else: # has been manually modified, not safe to update
+    else:  # has been manually modified, not safe to update
         # did they modify the current version or an old version?
         if os.path.isfile(digest_path):
             with open(digest_path, "r") as f:

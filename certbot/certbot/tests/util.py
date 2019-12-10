@@ -57,8 +57,7 @@ def _guess_loader(filename, loader_pem, loader_der):
         return loader_pem
     elif ext.lower() == '.der':
         return loader_der
-    else:  # pragma: no cover
-        raise ValueError("Loader could not be recognized based on extension")
+    raise ValueError("Loader could not be recognized based on extension")  # pragma: no cover
 
 
 def load_cert(*names):
@@ -235,8 +234,7 @@ class FreezableMock(object):
         if self._frozen:
             if name in self._frozen_set:
                 raise AttributeError('Cannot change frozen attribute ' + name)
-            else:
-                return setattr(self._mock, name, value)
+            return setattr(self._mock, name, value)
 
         if name != '_frozen_set':
             self._frozen_set.add(name)
@@ -250,7 +248,7 @@ class FreezableMock(object):
 def _create_get_utility_mock():
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():  # pylint: disable=no-member,E1120
+    for name in interfaces.IDisplay.names():  # pylint: E1120
         if name != 'notification':
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
@@ -275,7 +273,7 @@ def _create_get_utility_mock_with_stdout(stdout):
 
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():  # pylint: disable=no-member,E1120
+    for name in interfaces.IDisplay.names():  # pylint: E1120
         if name == 'notification':
             frozen_mock = FreezableMock(frozen=True,
                                         func=_write_msg)

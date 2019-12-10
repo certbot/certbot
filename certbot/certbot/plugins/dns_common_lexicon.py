@@ -100,7 +100,7 @@ class LexiconClient(object):
                 result = self._handle_general_error(e, domain_name)
 
                 if result:
-                    raise result
+                    raise result  # pylint: disable=raising-bad-type
 
         raise errors.PluginError('Unable to determine zone identifier for {0} using zone names: {1}'
                                  .format(domain, domain_name_guesses))

@@ -93,7 +93,7 @@ class ErrorHandler(object):
         # SystemExit is ignored to properly handle forks that don't exec
         if exec_type is SystemExit:
             return retval
-        elif exec_type is None:
+        if exec_type is None:
             if not self.call_on_regular_exit:
                 return retval
         elif exec_type is errors.SignalExit:

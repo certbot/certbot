@@ -205,7 +205,7 @@ class RegisterTest(test_util.ConfigTestCase):
     def test_unsupported_error(self):
         from acme import messages
         msg = "Test"
-        mx_err = messages.Error(detail=msg, typ="malformed", title="title")
+        mx_err = messages.Error.with_code("malformed", detail=msg, title="title")
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().client.directory.__getitem__ = mock.Mock(
                 side_effect=self._new_acct_dir_mock

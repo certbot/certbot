@@ -44,7 +44,7 @@ class TLSServer(socketserver.TCPServer):
         return socketserver.TCPServer.server_bind(self)
 
 
-class ACMEServerMixin:  # pylint: disable=old-style-class
+class ACMEServerMixin:
     """ACME server common settings mixin."""
     # TODO: c.f. #858
     server_version = "ACME client standalone challenge solver"
@@ -105,7 +105,6 @@ class BaseDualNetworkedServers(object):
         """Wraps socketserver.TCPServer.serve_forever"""
         for server in self.servers:
             thread = threading.Thread(
-                # pylint: disable=no-member
                 target=server.serve_forever)
             thread.start()
             self.threads.append(thread)

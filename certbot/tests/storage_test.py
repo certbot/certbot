@@ -356,8 +356,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             basename = os.path.basename(path)
             if "fullchain" in basename and basename.startswith("prev"):
                 raise ValueError
-            else:
-                real_unlink(path)
+            real_unlink(path)
 
         self._write_out_ex_kinds()
         with mock.patch("certbot._internal.storage.os.unlink") as mock_unlink:
@@ -372,8 +371,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             # pylint: disable=missing-docstring
             if "fullchain" in os.path.basename(path):
                 raise ValueError
-            else:
-                real_unlink(path)
+            real_unlink(path)
 
         self._write_out_ex_kinds()
         with mock.patch("certbot._internal.storage.os.unlink") as mock_unlink:

@@ -1014,10 +1014,8 @@ class RenewableCert(interfaces.RenewableCert):
                      "directory %s created.", archive, live_dir)
 
         # Put the data into the appropriate files on disk
-        target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
-                       for kind in ALL_FOUR])
-        archive_target = dict([(kind, os.path.join(archive, kind + "1.pem"))
-                               for kind in ALL_FOUR])
+        target = {kind: os.path.join(live_dir, kind + ".pem") for kind in ALL_FOUR}
+        archive_target = {kind: os.path.join(archive, kind + "1.pem") for kind in ALL_FOUR}
         for kind in ALL_FOUR:
             os.symlink(_relpath_from_file(archive_target[kind], target[kind]), target[kind])
         with open(target["cert"], "wb") as f:
@@ -1082,10 +1080,8 @@ class RenewableCert(interfaces.RenewableCert):
 
         self.cli_config = cli_config
         target_version = self.next_free_version()
-        target = dict(
-            [(kind,
-              os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version)))
-             for kind in ALL_FOUR])
+        target = {kind: os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version))
+                  for kind in ALL_FOUR}
 
         old_privkey = os.path.join(
             self.archive_dir, "privkey{0}.pem".format(prior_version))

@@ -224,11 +224,9 @@ def perform_registration(acme, config, tos_cb):
                        "Please ensure it is a valid email and attempt "
                        "registration again." % config.email)
                 raise errors.Error(msg)
-            else:
-                config.email = display_ops.get_email(invalid=True)
-                return perform_registration(acme, config, tos_cb)
-        else:
-            raise
+            config.email = display_ops.get_email(invalid=True)
+            return perform_registration(acme, config, tos_cb)
+        raise
 
 
 class Client(object):
@@ -360,7 +358,6 @@ class Client(object):
             return self.obtain_certificate(successful_domains)
         else:
             cert, chain = self.obtain_certificate_from_csr(csr, orderr)
-
             return cert, chain, key, csr
 
     def _get_order_and_authorizations(self, csr_pem, best_effort):
@@ -393,8 +390,6 @@ class Client(object):
 
         authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
         return orderr.update(authorizations=authzr)
-
-    # pylint: disable=no-member
     def obtain_and_enroll_certificate(self, domains, certname):
         """Obtain and enroll certificate.
 

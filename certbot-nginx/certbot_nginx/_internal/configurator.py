@@ -283,7 +283,7 @@ class NginxConfigurator(common.Installer):
                     filtered_vhosts[name] = vhost
 
         # Only unique VHost objects
-        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
+        dialog_input = set(filtered_vhosts.values())
 
         # Ask the user which of names to enable, expect list of names back
         return_vhosts = display_ops.select_vhost_multiple(list(dialog_input))

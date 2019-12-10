@@ -216,9 +216,8 @@ class AccountFileStorage(interfaces.AccountStorage):
                 else:
                     self._symlink_to_accounts_dir(prev_server_path, server_path)
                 return prev_loaded_account
-            else:
-                raise errors.AccountNotFound(
-                    "Account at %s does not exist" % account_dir_path)
+            raise errors.AccountNotFound(
+                "Account at %s does not exist" % account_dir_path)
 
         try:
             with open(self._regr_path(account_dir_path)) as regr_file:

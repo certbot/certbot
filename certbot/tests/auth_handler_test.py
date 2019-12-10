@@ -494,7 +494,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         self.authzr1.body.identifier.value = 'example.com'
         self.authzr1.body.challenges = [http_01, http_01]
 
-        kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
+        kwargs["error"] = messages.Error.with_code("dnssec", detail="detail")
         http_01_diff = messages.ChallengeBody(**kwargs)
 
         self.authzr2 = mock.MagicMock()

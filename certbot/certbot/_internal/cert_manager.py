@@ -242,8 +242,8 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
         raise errors.Error("No match found for cert-path {0}!".format(cli_config.cert_path[0]))
     elif len(matched) > 1:
         raise errors.OverlappingMatchFound()
-    else:
-        return matched
+    return matched
+
 
 def human_readable_cert_info(config, cert, skip_filter_checks=False):
     """ Returns a human readable description of info about a RenewableCert object"""

@@ -449,7 +449,7 @@ class ApacheConfigurator(common.Installer):
                     filtered_vhosts[name] = vhost
 
         # Only unique VHost objects
-        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
+        dialog_input = set(filtered_vhosts.values())
 
         # Ask the user which of names to enable, expect list of names back
         dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
@@ -600,9 +600,9 @@ class ApacheConfigurator(common.Installer):
                 "in the Apache config.",
                 target_name)
             raise errors.PluginError("No vhost selected")
-        elif temp:
+        if temp:
             return vhost
-        elif not vhost.ssl:
+        if not vhost.ssl:
             addrs = self._get_proposed_addrs(vhost, "443")
             # TODO: Conflicts is too conservative
             if not any(vhost.enabled and vhost.conflicts(addrs) for
@@ -951,13 +951,12 @@ class ApacheConfigurator(common.Installer):
 
         loc = parser.get_aug_path(self.parser.loc["name"])
         if addr.get_port() == "443":
-            path = self.parser.add_dir_to_ifmodssl(
+            self.parser.add_dir_to_ifmodssl(
                 loc, "NameVirtualHost", [str(addr)])
         else:
-            path = self.parser.add_dir(loc, "NameVirtualHost", [str(addr)])
+            self.parser.add_dir(loc, "NameVirtualHost", [str(addr)])
 
-        msg = ("Setting %s to be NameBasedVirtualHost\n"
-               "\tDirective added to %s\n" % (addr, path))
+        msg = "Setting {0} to be NameBasedVirtualHost\n".format(addr)
         logger.debug(msg)
         self.save_notes += msg
 
@@ -1365,12 +1364,9 @@ class ApacheConfigurator(common.Installer):
                         result.append(comment)
                         sift = True
 
-                    result.append('\n'.join(
-                        ['# ' + l for l in chunk]))
-                    continue
+                    result.append('\n'.join(['# ' + l for l in chunk]))
                 else:
                     result.append('\n'.join(chunk))
-                    continue
         return result, sift
 
     def _get_vhost_block(self, vhost):
@@ -2513,4 +2509,4 @@ class ApacheConfigurator(common.Installer):
         self._autohsts_save_state()
 
 
-AutoHSTSEnhancement.register(ApacheConfigurator)  # pylint: disable=no-member
+AutoHSTSEnhancement.register(ApacheConfigurator)

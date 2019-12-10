@@ -471,5 +471,4 @@ def handle_renewal_request(config):
     if renew_failures or parse_failures:
         raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
             len(renew_failures), len(parse_failures)))
-    else:
-        logger.debug("no renewal failures")
+    logger.debug("no renewal failures")

@@ -121,7 +121,7 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
-            elif lineage is not None:
+            if lineage is not None:
                 hooks.deploy_hook(config, lineage.names(), lineage.live_dir)
     finally:
         hooks.post_hook(config)
@@ -162,19 +162,18 @@ def _handle_subset_cert_request(config, domains, cert):
                                        cli_flag="--expand",
                                        force_interactive=True):
         return "renew", cert
-    else:
-        reporter_util = zope.component.getUtility(interfaces.IReporter)
-        reporter_util.add_message(
-            "To obtain a new certificate that contains these names without "
-            "replacing your existing certificate for {0}, you must use the "
-            "--duplicate option.{br}{br}"
-            "For example:{br}{br}{1} --duplicate {2}".format(
-                existing,
-                sys.argv[0], " ".join(sys.argv[1:]),
-                br=os.linesep
-            ),
-            reporter_util.HIGH_PRIORITY)
-        raise errors.Error(USER_CANCELLED)
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    reporter_util.add_message(
+        "To obtain a new certificate that contains these names without "
+        "replacing your existing certificate for {0}, you must use the "
+        "--duplicate option.{br}{br}"
+        "For example:{br}{br}{1} --duplicate {2}".format(
+            existing,
+            sys.argv[0], " ".join(sys.argv[1:]),
+            br=os.linesep
+        ),
+        reporter_util.HIGH_PRIORITY)
+    raise errors.Error(USER_CANCELLED)
 
 
 def _handle_identical_cert_request(config, lineage):
@@ -220,7 +219,7 @@ def _handle_identical_cert_request(config, lineage):
         #       skipping the menu for this case.
         raise errors.Error(
             "Operation canceled. You may re-run the client.")
-    elif response[1] == 0:
+    if response[1] == 0:
         return "reinstall", lineage
     elif response[1] == 1:
         return "renew", lineage
@@ -312,23 +311,20 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
     """
     if not certname:
         return _find_lineage_for_domains(config, domains)
-    else:
-        lineage = cert_manager.lineage_for_certname(config, certname)
-        if lineage:
-            if domains:
-                if set(cert_manager.domains_for_certname(config, certname)) != set(domains):
-                    _ask_user_to_confirm_new_names(config, domains, certname,
-                        lineage.names()) # raises if no
-                    return "renew", lineage
-            # unnecessarily specified domains or no domains specified
-            return _handle_identical_cert_request(config, lineage)
-        else:
-            if domains:
-                return "newcert", None
-            else:
-                raise errors.ConfigurationError("No certificate with name {0} found. "
-                    "Use -d to specify domains, or run certbot certificates to see "
-                    "possible certificate names.".format(certname))
+    lineage = cert_manager.lineage_for_certname(config, certname)
+    if lineage:
+        if domains:
+            if set(cert_manager.domains_for_certname(config, certname)) != set(domains):
+                _ask_user_to_confirm_new_names(config, domains, certname,
+                    lineage.names()) # raises if no
+                return "renew", lineage
+        # unnecessarily specified domains or no domains specified
+        return _handle_identical_cert_request(config, lineage)
+    elif domains:
+        return "newcert", None
+    raise errors.ConfigurationError("No certificate with name {0} found. "
+        "Use -d to specify domains, or run certbot certificates to see "
+        "possible certificate names.".format(certname))
 
 def _get_added_removed(after, before):
     """Get lists of items removed from `before`
@@ -1338,7 +1334,7 @@ def main(cli_args=None):
         make_or_verify_needed_dirs(config)
     except errors.Error:
         # Let plugins_cmd be run as un-privileged user.
-        if config.func != plugins_cmd:
+        if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
 
     set_displayer(config)

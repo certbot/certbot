@@ -296,5 +296,5 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
         return True
     else:
         logger.warning("Unable to properly parse OCSP output: %s\nstderr:%s",
-                       ocsp_output, ocsp_errors)
+                    ocsp_output, ocsp_errors)
         return False
