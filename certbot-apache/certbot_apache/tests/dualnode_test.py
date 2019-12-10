@@ -17,7 +17,7 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         parser_mock.get_arg.return_value = []
         self.metadata = {"augeasparser": parser_mock, "augeaspath": "/invalid", "ac_ast": None}
         self.block = dualparser.DualBlockNode(name="block",
-                                              ancestors=tuple(),
+                                              ancestors=(),
                                               filepath="/tmp/something",
                                               metadata=self.metadata)
         self.block_two = dualparser.DualBlockNode(name="block",

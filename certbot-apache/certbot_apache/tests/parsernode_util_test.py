@@ -10,7 +10,7 @@ class ParserNodeUtilTest(unittest.TestCase):
     def _setup_parsernode(self):
         """ Sets up kwargs dict for ParserNode """
         return {
-            "ancestors": tuple(),
+            "ancestors": (),
             "dirty": False,
             "filepath": "/tmp",
         }

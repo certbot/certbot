@@ -13,8 +13,8 @@ class DummyParserNode(interfaces.ParserNode):
         """
         Initializes the ParserNode instance.
         """
-        ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)
-        self.ancestor = ancestor
+        ancestors, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)
+        self.ancestors = ancestors
         self.dirty = dirty
         self.filepath = filepath
         self.metadata = metadata
@@ -108,18 +108,18 @@ class ParserNodeTest(unittest.TestCase):
         dummyblock = DummyBlockNode(
             name="None",
             parameters=(),
-            ancestor=None,
+            ancestors=(),
             dirty=False,
             filepath="/some/random/path"
         )
         dummydirective = DummyDirectiveNode(
             name="Name",
-            ancestor=None,
+            ancestors=(),
             filepath="/another/path"
         )
         dummycomment = DummyCommentNode(
             comment="Comment",
-            ancestor=dummyblock,
+            ancestors=(dummyblock,),
             filepath="/some/file"
         )
 

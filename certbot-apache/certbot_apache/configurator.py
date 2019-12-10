@@ -368,7 +368,7 @@ class ApacheConfigurator(common.Installer):
 
         return dualparser.DualBlockNode(
             name=assertions.PASS,
-            ancestors=tuple(),
+            ancestors=(),
             filepath=self.parser.loc["root"],
             metadata=metadata
         )
