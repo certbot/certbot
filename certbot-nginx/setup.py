@@ -10,7 +10,7 @@ version = '1.1.0.dev0'
 # acme/certbot version.
 install_requires = [
     'acme>=1.0.0',
-    'certbot>=1.0.0',
+    'certbot>=1.0.0.dev0',
     'mock',
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?

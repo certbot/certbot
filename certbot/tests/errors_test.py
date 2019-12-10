@@ -19,7 +19,6 @@ class FailedChallengesTest(unittest.TestCase):
                 error=messages.Error.with_code("tls", detail="detail")))})
 
     def test_str(self):
-        print(str(self.error))
         self.assertTrue(str(self.error).startswith(
             "Failed authorization procedure. example.com (dns-01): "
             "urn:ietf:params:acme:error:tls"))
