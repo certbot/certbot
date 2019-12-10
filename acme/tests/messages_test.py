@@ -46,6 +46,7 @@ class ErrorTest(unittest.TestCase):
     def test_code(self):
         from acme.messages import Error
         self.assertEqual('malformed', self.error.code)
+        self.assertEqual(None, self.error_custom.code)
         self.assertEqual(None, Error().code)
 
     def test_is_acme_error(self):
