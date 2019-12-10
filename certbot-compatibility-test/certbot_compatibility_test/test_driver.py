@@ -10,7 +10,6 @@ import tempfile
 import time
 
 import OpenSSL
-from six.moves import xrange  # pylint: disable=import-error,redefined-builtin
 from urllib3.util import connection
 
 from acme import challenges
