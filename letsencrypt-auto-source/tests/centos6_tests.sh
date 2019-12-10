@@ -92,14 +92,19 @@ unset VENV_PATH
 
 # we're going to modify env variables, so do this in a subshell
 (
-# ensure CentOS6 32bits is not supported anymore, and so certbot is not upgraded
+# ensure CentOS6 32bits is not supported anymore, and so certbot
+# is not upgraded nor reinstalled.
 export UNAME_FAKE_32BITS=true
 if ! "$LE_AUTO" 2>&1 | grep -q "Certbot will no longer receive updates."; then
   echo "On CentOS 32 bits, certbot-auto upgraded certbot."
   exit 1
 fi
+if ! "$LE_AUTO" --install-only 2>&1 | grep -q "Certbot cannot be installed."; then
+  echo "On CentOS 32 bits, certbot-auto installed again certbot."
+  exit 1
+fi
 
-echo "PASSED: On CentOS6 32 bits, certbot-auto refuses to upgrade certbot."
+echo "PASSED: On CentOS6 32 bits, certbot-auto refuses to install/upgrade certbot."
 )
 
 # test using python3
