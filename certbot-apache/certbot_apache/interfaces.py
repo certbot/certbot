@@ -199,8 +199,10 @@ class ParserNode(object):
         Traverses the ancestor tree up, searching for BlockNodes with a specific
         name.
 
-        When a node has multiple lineages (when it is included by multiple files),
-        this method should search through all possible ancestor paths.
+        .. note:: To maintain consistency with the original parser, this search
+                  function currently only traverses nodes in the same file. Due
+                  to this, we also don't run into the multiple-includes
+                  ambiguity that the `ancestors` property has, for the time being.
 
         :param str name: Name of the ancestor BlockNode to search for
 
