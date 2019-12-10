@@ -36,7 +36,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         from certbot_apache.augeasparser import AugeasBlockNode
         block = AugeasBlockNode(
             name=assertions.PASS,
-            ancestor=None,
+            ancestors=tuple(),
             filepath=assertions.PASS,
             metadata={"augeasparser": mock.Mock(), "augeaspath": "/files/anything"}
         )
@@ -109,7 +109,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
             AugeasDirectiveNode(
                 name=servernames[0].name,
                 parameters=["test", "setting", "these"],
-                ancestor=assertions.PASS,
+                ancestors=assertions.PASS,
                 metadata=servernames[0].primary.metadata
             )
             self.assertTrue(mock_set.called)
@@ -244,7 +244,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         from certbot_apache.augeasparser import AugeasBlockNode
         parameters = {
             "name": assertions.PASS,
-            "ancestor": None,
+            "ancestors": tuple(),
             "filepath": assertions.PASS,
             "metadata": {
                 "augeasparser": mock.Mock(),
@@ -261,7 +261,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         from certbot_apache.augeasparser import AugeasBlockNode
         parameters = {
             "name": assertions.PASS,
-            "ancestor": None,
+            "ancestors": tuple(),
             "filepath": assertions.PASS,
             "metadata": {
                 "augeasparser": mock.Mock(),

@@ -131,9 +131,10 @@ class ParserNode(object):
 
     ParserNode objects should have the following attributes:
 
-    # Reference to ancestor node, or None if the node is the root node of the
-    # configuration tree.
-    ancestor: Optional[ParserNode]
+    # Reference to ancestor node(s), empty if the node is the root node of the
+    # configuration tree. This node can have multiple ancestors in the case
+    # that it is the root of a file included by multiple files.
+    ancestors: Tuple[ParserNode]
 
     # True if this node has been modified since last save.
     dirty: bool
@@ -156,8 +157,8 @@ class ParserNode(object):
         instance variables. This is not meant to be used directly, but through
         specific classes implementing ParserNode interface.
 
-        :param ancestor: BlockNode ancestor for this CommentNode. Required.
-        :type ancestor: BlockNode or None
+        :param ancestors: BlockNode ancestors for this CommentNode. Required.
+        :type ancestors: tuple of BlockNodes
 
         :param filepath: Filesystem path for the file where this CommentNode
             does or should exist in the filesystem. Required.
@@ -198,6 +199,9 @@ class ParserNode(object):
         Traverses the ancestor tree up, searching for BlockNodes with a specific
         name.
 
+        When a node has multiple lineages (when it is included by multiple files),
+        this method should search through all possible ancestor paths.
+
         :param str name: Name of the ancestor BlockNode to search for
 
         :returns: A list of ancestor BlockNodes that match the name
@@ -233,8 +237,8 @@ class CommentNode(ParserNode):
         :param comment: Contents of the comment. Required.
         :type comment: str
 
-        :param ancestor: BlockNode ancestor for this CommentNode. Required.
-        :type ancestor: BlockNode or None
+        :param ancestors: BlockNode ancestors for this CommentNode. Required.
+        :type ancestors: tuple of BlockNodes
 
         :param filepath: Filesystem path for the file where this CommentNode
             does or should exist in the filesystem. Required.
@@ -244,7 +248,7 @@ class CommentNode(ParserNode):
             created or changed after the last save. Default: False.
         :type dirty: bool
         """
-        super(CommentNode, self).__init__(ancestor=kwargs['ancestor'],
+        super(CommentNode, self).__init__(ancestors=kwargs['ancestors'],
                                           dirty=kwargs.get('dirty', False),
                                           filepath=kwargs['filepath'],
                                           metadata=kwargs.get('metadata', {}))  # pragma: no cover
@@ -290,9 +294,9 @@ class DirectiveNode(ParserNode):
             Default: ().
         :type parameters: tuple
 
-        :param ancestor: BlockNode ancestor for this DirectiveNode, or None for
+        :param ancestors: BlockNode ancestors for this DirectiveNode. Empty for
             root configuration node. Required.
-        :type ancestor: BlockNode or None
+        :type ancestor: tuple of BlockNodes
 
         :param filepath: Filesystem path for the file where this DirectiveNode
             does or should exist in the filesystem, or None for directives introduced
@@ -309,7 +313,7 @@ class DirectiveNode(ParserNode):
         :type enabled: bool
 
         """
-        super(DirectiveNode, self).__init__(ancestor=kwargs['ancestor'],
+        super(DirectiveNode, self).__init__(ancestors=kwargs['ancestors'],
                                             dirty=kwargs.get('dirty', False),
                                             filepath=kwargs['filepath'],
                                             metadata=kwargs.get('metadata', {}))  # pragma: no cover

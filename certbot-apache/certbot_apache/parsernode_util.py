@@ -51,8 +51,8 @@ def parsernode_kwargs(kwargs):
     kwargs.setdefault("dirty", False)
     kwargs.setdefault("metadata", {})
 
-    kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "metadata"])
-    return kwargs["ancestor"], kwargs["dirty"], kwargs["filepath"], kwargs["metadata"]
+    kwargs = validate_kwargs(kwargs, ["ancestors", "dirty", "filepath", "metadata"])
+    return kwargs["ancestors"], kwargs["dirty"], kwargs["filepath"], kwargs["metadata"]
 
 
 def commentnode_kwargs(kwargs):
@@ -83,7 +83,7 @@ def commentnode_kwargs(kwargs):
     kwargs.setdefault("dirty", False)
     kwargs.setdefault("metadata", {})
 
-    kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "comment",
+    kwargs = validate_kwargs(kwargs, ["ancestors", "dirty", "filepath", "comment",
                                       "metadata"])
 
     comment = kwargs.pop("comment")
@@ -120,7 +120,7 @@ def directivenode_kwargs(kwargs):
     kwargs.setdefault("parameters", ())
     kwargs.setdefault("metadata", {})
 
-    kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "name",
+    kwargs = validate_kwargs(kwargs, ["ancestors", "dirty", "filepath", "name",
                                       "parameters", "enabled", "metadata"])
 
     name = kwargs.pop("name")

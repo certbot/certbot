@@ -10,7 +10,7 @@ class ParserNodeUtilTest(unittest.TestCase):
     def _setup_parsernode(self):
         """ Sets up kwargs dict for ParserNode """
         return {
-            "ancestor": None,
+            "ancestors": tuple(),
             "dirty": False,
             "filepath": "/tmp",
         }
@@ -48,8 +48,8 @@ class ParserNodeUtilTest(unittest.TestCase):
         params = self._setup_parsernode()
         ctrl = self._setup_parsernode()
 
-        ancestor, dirty, filepath, metadata = util.parsernode_kwargs(params)
-        self.assertEqual(ancestor, ctrl["ancestor"])
+        ancestors, dirty, filepath, metadata = util.parsernode_kwargs(params)
+        self.assertEqual(ancestors, ctrl["ancestors"])
         self.assertEqual(dirty, ctrl["dirty"])
         self.assertEqual(filepath, ctrl["filepath"])
         self.assertEqual(metadata, {})
@@ -103,7 +103,7 @@ class ParserNodeUtilTest(unittest.TestCase):
         self.assertRaises(TypeError, util.commentnode_kwargs, c_params)
 
         d_params = self._setup_directivenode()
-        d_params.pop("ancestor")
+        d_params.pop("ancestors")
         self.assertRaises(TypeError, util.directivenode_kwargs, d_params)
 
         p_params = self._setup_parsernode()

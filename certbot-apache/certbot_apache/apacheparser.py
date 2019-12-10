@@ -13,9 +13,9 @@ class ApacheParserNode(interfaces.ParserNode):
     """
 
     def __init__(self, **kwargs):
-        ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
+        ancestors, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
         super(ApacheParserNode, self).__init__(**kwargs)
-        self.ancestor = ancestor
+        self.ancestors = ancestors
         self.filepath = filepath
         self.dirty = dirty
         self.metadata = metadata
@@ -28,7 +28,7 @@ class ApacheParserNode(interfaces.ParserNode):
         """Find ancestor BlockNodes with a given name"""
         return [ApacheBlockNode(name=assertions.PASS,
                                 parameters=assertions.PASS,
-                                ancestor=self,
+                                ancestors=self,
                                 filepath=assertions.PASS,
                                 metadata=self.metadata)]
 
@@ -45,7 +45,7 @@ class ApacheCommentNode(ApacheParserNode):
         if isinstance(other, self.__class__):
             return (self.comment == other.comment and
                     self.dirty == other.dirty and
-                    self.ancestor == other.ancestor and
+                    self.ancestors == other.ancestors and
                     self.metadata == other.metadata and
                     self.filepath == other.filepath)
         return False
@@ -69,7 +69,7 @@ class ApacheDirectiveNode(ApacheParserNode):
                     self.parameters == other.parameters and
                     self.enabled == other.enabled and
                     self.dirty == other.dirty and
-                    self.ancestor == other.ancestor and
+                    self.ancestors == other.ancestors and
                     self.metadata == other.metadata)
         return False
 
@@ -93,7 +93,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
                     self.children == other.children and
                     self.enabled == other.enabled and
                     self.dirty == other.dirty and
-                    self.ancestor == other.ancestor and
+                    self.ancestors == other.ancestors and
                     self.metadata == other.metadata)
         return False
 
@@ -101,7 +101,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         """Adds a new BlockNode to the sequence of children"""
         new_block = ApacheBlockNode(name=assertions.PASS,
                                     parameters=assertions.PASS,
-                                    ancestor=self,
+                                    ancestors=self,
                                     filepath=assertions.PASS,
                                     metadata=self.metadata)
         self.children += (new_block,)
@@ -111,7 +111,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         """Adds a new DirectiveNode to the sequence of children"""
         new_dir = ApacheDirectiveNode(name=assertions.PASS,
                                       parameters=assertions.PASS,
-                                      ancestor=self,
+                                      ancestors=self,
                                       filepath=assertions.PASS,
                                       metadata=self.metadata)
         self.children += (new_dir,)
@@ -122,7 +122,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
 
         """Adds a new CommentNode to the sequence of children"""
         new_comment = ApacheCommentNode(comment=assertions.PASS,
-                                        ancestor=self,
+                                        ancestors=self,
                                         filepath=assertions.PASS,
                                         metadata=self.metadata)
         self.children += (new_comment,)
@@ -132,7 +132,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         """Recursive search of BlockNodes from the sequence of children"""
         return [ApacheBlockNode(name=assertions.PASS,
                                 parameters=assertions.PASS,
-                                ancestor=self,
+                                ancestors=self,
                                 filepath=assertions.PASS,
                                 metadata=self.metadata)]
 
@@ -140,14 +140,14 @@ class ApacheBlockNode(ApacheDirectiveNode):
         """Recursive search of DirectiveNodes from the sequence of children"""
         return [ApacheDirectiveNode(name=assertions.PASS,
                                     parameters=assertions.PASS,
-                                    ancestor=self,
+                                    ancestors=self,
                                     filepath=assertions.PASS,
                                     metadata=self.metadata)]
 
     def find_comments(self, comment, exact=False): # pylint: disable=unused-argument
         """Recursive search of DirectiveNodes from the sequence of children"""
         return [ApacheCommentNode(comment=assertions.PASS,
-                                  ancestor=self,
+                                  ancestors=self,
                                   filepath=assertions.PASS,
                                   metadata=self.metadata)]
 
