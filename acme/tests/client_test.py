@@ -989,7 +989,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.response.json.side_effect = ValueError
         for response_ct in [self.net.JSON_CONTENT_TYPE, 'foo']:
             self.response.headers['Content-Type'] = response_ct
-            # pylint: disable=protected-access,no-value-for-parameter
+            # pylint: disable=protected-access
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
 
@@ -1003,7 +1003,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.response.json.return_value = {}
         for response_ct in [self.net.JSON_CONTENT_TYPE, 'foo']:
             self.response.headers['Content-Type'] = response_ct
-            # pylint: disable=protected-access,no-value-for-parameter
+            # pylint: disable=protected-access
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
 
