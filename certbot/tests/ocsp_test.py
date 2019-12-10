@@ -77,7 +77,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
     @mock.patch('certbot._internal.ocsp._determine_ocsp_server')
     @mock.patch('certbot.util.run_script')
     def test_ocsp_revoked(self, mock_run, mock_determine):
-        now = pytz.UTC.fromutc(datetime.utcnow())  # pylint: disable=no-value-for-parameter
+        now = pytz.UTC.fromutc(datetime.utcnow())
         cert_obj = mock.MagicMock()
         cert_obj.cert = "x"
         cert_obj.chain = "y"
@@ -152,7 +152,7 @@ class OSCPTestCryptography(unittest.TestCase):
         self.cert_obj = mock.MagicMock()
         self.cert_obj.cert = self.cert_path
         self.cert_obj.chain = self.chain_path
-        now = pytz.UTC.fromutc(datetime.utcnow())  # pylint: disable=no-value-for-parameter
+        now = pytz.UTC.fromutc(datetime.utcnow())
         self.cert_obj.target_expiry = now + timedelta(hours=2)
 
     @mock.patch('certbot._internal.ocsp._determine_ocsp_server')

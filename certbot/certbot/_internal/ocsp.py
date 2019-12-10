@@ -77,7 +77,7 @@ class RevocationChecker(object):
         # Let's Encrypt doesn't update OCSP for expired certificates,
         # so don't check OCSP if the cert is expired.
         # https://github.com/certbot/certbot/issues/7152
-        now = pytz.UTC.fromutc(datetime.utcnow())  # pylint: disable=no-value-for-parameter
+        now = pytz.UTC.fromutc(datetime.utcnow())
         if cert.target_expiry <= now:
             return False
 

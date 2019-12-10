@@ -206,7 +206,7 @@ class CertificatesTest(BaseCertManagerTest):
         from certbot._internal import cert_manager
         import datetime
         import pytz
-        expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())  # pylint: disable=no-value-for-parameter
+        expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
 
         cert = mock.MagicMock(lineagename="nameone")
         cert.target_expiry = expiry
