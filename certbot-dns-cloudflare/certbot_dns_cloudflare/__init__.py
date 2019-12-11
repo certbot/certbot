@@ -29,20 +29,24 @@ this key can access the entire Cloudflare API for all domains in your account,
 meaning it could cause a lot of damage if leaked.
 
 Cloudflare's newer API Tokens can be restricted to specific domains and
-oparations, and are therefore now the recommended authentication option. When
-creating an API Token for Certbot, it needs "Zone DNS Edit" permissions for the
-zones(domains) you wish to obtain certificates for.
+operations, and are therefore now the recommended authentication option.
+
+When creating an API Token for Certbot, it currently needs ``Zone:Zone:Read`` and
+``Zone:DNS:Edit`` permissions for all zones in your account. Whilst this is more
+restrictive than the Global API Key's access, it's not as restrictive as it should
+be due to poor implementation of tokens on Cloudflare's side. Hopefully this will
+be improved in the future.
 
 .. code-block:: ini
    :name: certbot_cloudflare_token.ini
-   :caption: Example credentials file using restricted API token (recommended):
+   :caption: Example credentials file using restricted API Token (recommended):
 
    # Cloudflare API token used by Certbot
    dns_cloudflare_api_token = 0123456789abcdef0123456789abcdef01234567
 
 .. code-block:: ini
    :name: certbot_cloudflare_key.ini
-   :caption: Example credentials file using Global API key (not recommended):
+   :caption: Example credentials file using Global API Key (not recommended):
 
    # Cloudflare API credentials used by Certbot
    dns_cloudflare_email = cloudflare@example.com
