@@ -1,5 +1,3 @@
-#Requires -RunAsAdministrator
-
 $tasks = "Certbot Renew & Auto-Update Task", "Certbot Renew Task"
 
 foreach ($task in $tasks) {

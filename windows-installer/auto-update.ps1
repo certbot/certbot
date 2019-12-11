@@ -1,8 +1,8 @@
-#Requires -RunAsAdministrator
 [CmdletBinding()]
 param()
 begin {}
 process {
+    New-Item "C:\Certbot\log" -ItemType Directory -ErrorAction SilentlyContinue *>$Null
     Start-Transcript -Path "C:\Certbot\log\auto-update.log"
     trap { Stop-Transcript }
 
@@ -25,6 +25,7 @@ process {
 
     # Get latest remote certbot version
     try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         $result = Invoke-RestMethod -Uri https://api.github.com/repos/certbot/certbot/releases/latest
         $latestVersion = $result.tag_name -replace '^v(\d+\.\d+\.\d+).*$', '$1'
         $latestVersion = [System.Version]"$latestVersion"

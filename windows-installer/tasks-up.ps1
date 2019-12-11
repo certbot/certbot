@@ -1,5 +1,3 @@
-#Requires -RunAsAdministrator
-
 param(
     [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
     [string]
