@@ -11,6 +11,7 @@ $down = Join-Path (Get-ScriptDirectory) 'tasks-down.ps1'
 & $down
 
 $taskName = "Certbot Renew & Auto-Update Task"
+$taskDescription = "Execute twice a day the 'certbot renew' command, to renew managed certificates if needed, and upgrade Certbot is a new version is available."
 
 $actionRenew = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument '-NoProfile -WindowStyle Hidden -Command "certbot renew"'
 $actionUpgrade = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -File ""$InstallDir\auto-update.ps1"""
@@ -24,4 +25,4 @@ $triggerPM = New-ScheduledTaskTrigger -Daily -At 12pm -RandomDelay $delay
 $adminSID = New-Object System.Security.Principal.SecurityIdentifier("S-1-5-32-544")
 $adminGroupID = $adminSID.Translate([System.Security.Principal.NTAccount]).Value
 $principal = New-ScheduledTaskPrincipal -GroupId $adminGroupID -RunLevel Highest
-Register-ScheduledTask -Action $actionRenew, $actionUpgrade -Trigger $triggerAM, $triggerPM -TaskName $taskName -Description "Execute twice a day the 'certbot renew' command, to renew managed certificates if needed." -Principal $principal
+Register-ScheduledTask -Action $actionRenew, $actionUpgrade -Trigger $triggerAM, $triggerPM -TaskName $taskName -Description $taskDescription -Principal $principal
