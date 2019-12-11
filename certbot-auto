@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="1.0.0"
+LE_AUTO_VERSION="1.1.0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -758,6 +758,11 @@ elif [ -f /etc/redhat-release ]; then
 
   RPM_DIST_NAME=`(. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown"`
 
+  if [ "$PYVER" -eq 26 -a $(uname -m) != 'x86_64' ]; then
+    # 32 bits CentOS 6 and affiliates (except RHEL) are not supported anymore by certbot-auto.
+    DEPRECATED_OS=1
+  fi
+
   # Set RPM_DIST_VERSION to VERSION_ID from /etc/os-release after splitting on
   # '.' characters (e.g. "8.0" becomes "8"). If the command exits with an
   # error, RPM_DIST_VERSION is set to "unknown".
@@ -866,6 +871,13 @@ fi
 if [ "$NO_BOOTSTRAP" = 1 ]; then
   Bootstrap() {
     :
+  }
+  unset BOOTSTRAP_VERSION
+fi
+
+if [ "$DEPRECATED_OS" = 1 ]; then
+  Bootstrap() {
+    error "Skipping bootstrap because certbot-auto is deprecated on this system."
   }
   unset BOOTSTRAP_VERSION
 fi
@@ -1067,6 +1079,24 @@ if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
   shift 1  # the --le-auto-phase2 arg
+
+  if [ "$DEPRECATED_OS" = 1 ]; then
+    # Phase 2 damage control mode for deprecated OSes.
+    # In this situation, we bypass any bootstrap or certbot venv setup.
+    error "Your system is not supported by certbot-auto anymore."
+
+    if [ -f "$VENV_BIN/letsencrypt" -a "$INSTALL_ONLY" != 1 ]; then
+      error "Certbot will no longer receive updates."
+      error "Please visit https://certbot.eff.org/ to check for other alternatives."
+      "$VENV_BIN/letsencrypt" "$@"
+      exit 0
+    else
+      error "Certbot cannot be installed."
+      error "Please visit https://certbot.eff.org/ to check for other alternatives."
+      exit 1
+    fi
+  fi
+
   SetPrevBootstrapVersion
 
   if [ -z "$PHASE_1_VERSION" -a "$USE_PYTHON_3" = 1 ]; then
@@ -1372,18 +1402,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==1.0.0 \
-    --hash=sha256:8d074cff89dee002dec1c47cb0da04ea8e0ede8d68838b6d54aa41580d9262df \
-    --hash=sha256:86b82d31db19fffffb0d6b218951e2121ef514e3ff659aa042deaf92a33e302a
-acme==1.0.0 \
-    --hash=sha256:f6972e436e76f7f1e395e81e149f8713ca8462d465b14993bddc53fb18a40644 \
-    --hash=sha256:6a08f12f848ce563b50bca421ba9db653df9f82cfefeaf8aba517f046d1386c2
-certbot-apache==1.0.0 \
-    --hash=sha256:e591d0cf773ad33ee978f7adb1b69288eac2c8847c643b06e70260e707626f8e \
-    --hash=sha256:7335ab5687a0a47d9041d9e13f3a2d67d0e8372da97ab639edb31c14b787cd68
-certbot-nginx==1.0.0 \
-    --hash=sha256:ce8a2e51165da7c15bfdc059cd6572d0f368c078f1e1a77633a2773310b2f231 \
-    --hash=sha256:63b4ae09d4f1c9ef0a1a2a49c3f651d8a7cb30303ec6f954239e987c5da45dc4
+certbot==1.1.0 \
+    --hash=sha256:00f67d0c3e2ea8ebb60207d1150e2745c7508b9aa4d3cc17298e621f65116216 \
+    --hash=sha256:fda859ece415654950ceadcd2860b25c3b4f0f7012554dda1a7008d063587432
+acme==1.1.0 \
+    --hash=sha256:db0a6f21d304af8a464a422407707390c02e0ba564ba67195fb92364e60a6068 \
+    --hash=sha256:0a9b4e06ff5711f25a8a723bb8f8f1fc0ffaa8495d1a677fe8ded147343dd5d4
+certbot-apache==1.1.0 \
+    --hash=sha256:d5042aec74a9471b956595fc2ad8e60b57e53b224ee5a533d3be1a9e1c68613f \
+    --hash=sha256:5fd9b0784e064bff4f308e563ec875b59ae47ba3e357f486573e1d8045013cec
+certbot-nginx==1.1.0 \
+    --hash=sha256:abb57020ad96b3c566c3e3f9afc9d3bf26b14cc8ad06c0539b9a671b25a97dd9 \
+    --hash=sha256:8a7a13a1c67675910d8fa7618f004ecf18188b1d080d27966272ff206b4a2b63
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1617,6 +1647,9 @@ UNLIKELY_EOF
     say "Installation succeeded."
   fi
 
+  # If you're modifying any of the code after this point in this current `if` block, you
+  # may need to update the "$DEPRECATED_OS" = 1 case at the beginning of phase 2 as well.
+
   if [ "$INSTALL_ONLY" = 1 ]; then
     say "Certbot is installed."
     exit 0
@@ -1828,30 +1861,35 @@ UNLIKELY_EOF
       error "WARNING: unable to check for updates."
     fi
 
-    LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
-    if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
-      say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
-    elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
-      say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+    # If for any reason REMOTE_VERSION is not set, let's assume certbot-auto is up-to-date,
+    # and do not go into the self-upgrading process.
+    if [ -n "$REMOTE_VERSION" ]; then
+      LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
 
-      # Now we drop into Python so we don't have to install even more
-      # dependencies (curl, etc.), for better flow control, and for the option of
-      # future Windows compatibility.
-      "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+      if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
+        say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
+      elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
+        say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
-      # Install new copy of certbot-auto.
-      # TODO: Deal with quotes in pathnames.
-      say "Replacing certbot-auto..."
-      # Clone permissions with cp. chmod and chown don't have a --reference
-      # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
-      cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-      cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-      # Using mv rather than cp leaves the old file descriptor pointing to the
-      # original copy so the shell can continue to read it unmolested. mv across
-      # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
-      # cp is unlikely to fail if the rm doesn't.
-      mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
-    fi  # A newer version is available.
+        # Now we drop into Python so we don't have to install even more
+        # dependencies (curl, etc.), for better flow control, and for the option of
+        # future Windows compatibility.
+        "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+
+        # Install new copy of certbot-auto.
+        # TODO: Deal with quotes in pathnames.
+        say "Replacing certbot-auto..."
+        # Clone permissions with cp. chmod and chown don't have a --reference
+        # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
+        cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+        cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+        # Using mv rather than cp leaves the old file descriptor pointing to the
+        # original copy so the shell can continue to read it unmolested. mv across
+        # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
+        # cp is unlikely to fail if the rm doesn't.
+        mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      fi  # A newer version is available.
+    fi
   fi  # Self-upgrading is allowed.
 
   RerunWithArgs --le-auto-phase2 "$@"
