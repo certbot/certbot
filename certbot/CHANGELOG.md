@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* added nslookup command info to show if the TXT record is deployed to DNS
 
 ### Changed
 

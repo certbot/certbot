@@ -42,7 +42,12 @@ Please deploy a DNS TXT record under the name
 
 {validation}
 
-Before continuing, verify the record is deployed."""
+Before continuing, verify the DNS record is deployed.
+One way to do this is running the following command at a terminal prompt: 
+
+nslookup -type=TXT {domain}
+
+If the output contains the {domain} record you're ready to proceed."""
     _HTTP_INSTRUCTIONS = """\
 Create a file containing just this data:
 

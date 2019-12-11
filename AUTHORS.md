@@ -17,6 +17,7 @@ Authors
 * [Alex Jordan](https://github.com/strugee)
 * [Alex Zorin](https://github.com/alexzorin)
 * [Amjad Mashaal](https://github.com/TheNavigat)
+* [André Bauer](https://github.com/monotek)
 * [Andrew Murray](https://github.com/radarhere)
 * [Andrzej Górski](https://github.com/andrzej3393)
 * [Anselm Levskaya](https://github.com/levskaya)
