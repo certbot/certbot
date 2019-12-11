@@ -300,6 +300,16 @@ configuration checkpoints and rollback.
 Writing your own plugin
 ~~~~~~~~~~~~~~~~~~~~~~~
 
+.. note:: The Certbot team is not currently accepting any new DNS plugins
+    because we want to rethink our approach to the challenge and resolve some
+    issues like `#6464 <https://github.com/certbot/certbot/issues/6464>`_,
+    `#6503 <https://github.com/certbot/certbot/issues/6503>`_, and `#6504
+    <https://github.com/certbot/certbot/issues/6504>`_ first.
+
+    In the meantime, you're welcome to release it as a third-party plugin. See
+    `certbot-dns-ispconfig <https://github.com/m42e/certbot-dns-ispconfig>`_
+    for one example of that.
+
 Certbot client supports dynamic discovery of plugins through the
 `setuptools entry points`_ using the `certbot.plugins` group. This
 way you can, for example, create a custom implementation of
