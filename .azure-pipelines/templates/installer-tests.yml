@@ -1,5 +1,5 @@
 jobs:
-  - job: installer
+  - job: installer_build
     pool:
       vmImage: vs2017-win2016
     steps:
@@ -20,9 +20,27 @@ jobs:
           path: $(Build.ArtifactStagingDirectory)
           artifact: windows-installer
         displayName: Publish Windows installer
-      - script: $(Build.ArtifactStagingDirectory)\certbot-beta-installer-win32.exe /S
+  - job: installer_run
+    dependsOn: installer_build
+    strategy:
+      matrix:
+        win2016:
+          imageName: vs2017-win2016
+        win2012r2:
+          imageName: vs2015-win2012r2
+    pool:
+      vmImage: $(imageName)
+    steps:
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          artifact: windows-installer
+          path: $(Build.SourcesDirectory)/bin
+        displayName: Retrieve Windows installer
+      - script: $(Build.SourcesDirectory)\bin\certbot-beta-installer-win32.exe /S
         displayName: Install Certbot
       - script: |
+          choco install -y python3 --version=3.8.0 --no-progress
+          set PATH=C:\Python38;C:\Python38\Scripts;%PATH%
           python -m venv venv
           venv\Scripts\python tools\pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
