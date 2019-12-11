@@ -328,12 +328,6 @@ plugins. It's technically possible to install third-party plugins into
 the virtualenv used by `certbot-auto`, but they will be wiped away when
 `certbot-auto` upgrades.
 
-.. warning:: Please be aware though that as this client is still in a
-   developer-preview stage, the API may undergo a few changes. If you
-   believe the plugin will be beneficial to the community, please
-   consider submitting a pull request to the repo and we will update
-   it with any necessary API changes.
-
 .. _`setuptools entry points`:
     http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
 
