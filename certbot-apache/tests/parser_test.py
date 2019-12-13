@@ -326,6 +326,29 @@ class BasicParserTest(util.ParserTest):
         self.assertEqual(len(comm), 1)
         self.assertTrue(self.parser.loc["name"] in comm[0])
 
+    def test_find_blocks_from_include_tree(self):
+        default_ssl = None
+        for vh in self.config.vhosts:
+            if vh.path.endswith("default-ssl.conf/IfModule/VirtualHost"):
+                default_ssl = vh
+                break
+        assert default_ssl is not None
+        # Need to add this manually as apache2ctl cannot be run for tests
+        self.parser.modules.add("mod_ssl.c")
+        blocks = self.parser.find_blocks_from_include_tree("ifmodule",
+                                                           default_ssl.path)
+        self.assertEqual(len(blocks), 2)
+        self.assertTrue(blocks[0].endswith(
+            "sites-enabled/default-ssl.conf/IfModule"
+        ))
+        self.assertTrue(blocks[1].endswith(
+            "apache2.conf/IfModule"
+        ))
+
+        notfound = self.parser.find_blocks_from_include_tree("nonexistent",
+                                                           default_ssl.path)
+        self.assertEqual(notfound, [])
+
 
 class ParserInitTest(util.ApacheTest):
     def setUp(self):  # pylint: disable=arguments-differ

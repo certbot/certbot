@@ -52,6 +52,23 @@ def get_internal_aug_path(vhost_path):
     """
     return _split_aug_path(vhost_path)[1]
 
+def normalize_filepath(path, root):
+    """Attempts to normalize path to absolute path.
+
+    :param str path: The file path
+    :param str root: The working directory root
+
+    :returns: Normalized absolute path to a file
+    :rtype: str
+    """
+
+    # Expands references to user home
+    path = os.path.expanduser(path)
+    # Removes ../ etc.
+    path = os.path.normpath(path)
+    if not os.path.isabs(path):
+        path = os.path.join(root, path)
+    return path
 
 def _split_aug_path(vhost_path):
     """Splits an Augeas path into a file path and an internal path.

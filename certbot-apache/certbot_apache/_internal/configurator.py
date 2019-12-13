@@ -857,7 +857,7 @@ class ApacheConfigurator(common.Installer):
             return None
 
         macro = False
-        if "/macro/" in path.lower():
+        if self.parser.find_blocks_from_include_tree("macro", path):
             macro = True
 
         vhost_enabled = self.parser.parsed_in_original(filename)
