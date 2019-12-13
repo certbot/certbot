@@ -60,7 +60,7 @@ matrix:
       # cryptography we support cannot be compiled against the version of
       # OpenSSL in Xenial or newer.
       dist: trusty
-      env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
+      env: TOXENV='py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest'
       <<: *not-on-master
     - python: "3.4"
       env: TOXENV=py34

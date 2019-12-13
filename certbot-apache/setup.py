@@ -10,7 +10,6 @@ version = '0.40.0.dev0'
 # acme/certbot version.
 install_requires = [
     'acme>=0.29.0',
-    'apacheconfig>=0.3.0',
     'certbot>=0.39.0',
     'mock',
     'python-augeas',
@@ -24,6 +23,9 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
+dev_extras = [
+    'apacheconfig>=0.3.0',
+]
 
 class PyTest(TestCommand):
     user_options = []
@@ -77,6 +79,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         'docs': docs_extras,
+        'dev': dev_extras,
     },
     entry_points={
         'certbot.plugins': [
