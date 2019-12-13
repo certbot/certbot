@@ -3,6 +3,7 @@
 # Some dev package versions specified here may be overridden by higher level constraints
 # files during tests (eg. letsencrypt-auto-source/pieces/dependency-requirements.txt).
 alabaster==0.7.10
+apacheconfig==0.3.0
 apipkg==1.4
 appnope==0.1.0
 asn1crypto==0.22.0
@@ -52,6 +53,7 @@ pexpect==4.7.0
 pickleshare==0.7.4
 pkginfo==1.4.2
 pluggy==0.13.0
+ply==3.4
 prompt-toolkit==1.0.15
 ptyprocess==0.6.0
 py==1.8.0
