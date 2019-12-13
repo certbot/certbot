@@ -628,7 +628,8 @@ class ApacheParser(object):
         found = re.search(block, path[startidx:], flags=re.IGNORECASE)
         while found:
             if found:
-                block_paths.append(path[:found.end()])
+                # Don't include the trailing slash
+                block_paths.append(path[:found.end()-1])
                 startidx = found.end()
             found = re.search(block, path[startidx:], flags=re.IGNORECASE)
         # We want the list to be from the leaf to the root
