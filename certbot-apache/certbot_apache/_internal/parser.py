@@ -451,7 +451,7 @@ class ApacheParser(object):
         # Catch include and includeoptional
         if directive.lower().startswith("include"):
             # Refresh the list of includes
-            self.includes = self._find_all_includes()
+            self.includes = self._find_all_includes()  # pragma: no cover
 
     def get_ifmod(self, aug_conf_path, mod, beginning=False):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
