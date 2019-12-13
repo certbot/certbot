@@ -617,12 +617,13 @@ class ApacheParser(object):
         """
 
         block_paths = []  # type: List[str]
-        # Find blocks in the middle of path as well as in the end
-        block = "/{}(/|$)".format(block)
-
         # Not found
         if block.lower() not in path.lower():
             return block_paths
+
+        # Find blocks in the middle of path as well as in the end
+        block = "/{}(/|$)".format(block)
+
         startidx = 0
         found = re.search(block, path[startidx:], flags=re.IGNORECASE)
         while found:
