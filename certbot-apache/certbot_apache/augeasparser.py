@@ -115,7 +115,8 @@ class AugeasParserNode(interfaces.ParserNode):
         while True:
             # Get the path of ancestor node
             parent = parent.rpartition("/")[0]
-            if not parent:
+            # Root of the tree
+            if not parent or parent == "/files":
                 break
             anc = self._create_blocknode(parent)
             if anc.name.lower() == name.lower():
@@ -134,7 +135,13 @@ class AugeasParserNode(interfaces.ParserNode):
         name = self._aug_get_name(path)
         metadata = {"augeasparser": self.parser, "augeaspath": path}
 
+        # Check if the file was included from the root config or initial state
+        enabled = self.parser.parsed_in_original(
+            apache_util.get_file_path(path)
+        )
+
         return AugeasBlockNode(name=name,
+                               enabled=enabled,
                                ancestor=assertions.PASS,
                                filepath=apache_util.get_file_path(path),
                                metadata=metadata)
@@ -265,10 +272,15 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
         # Create the new block
         self.parser.aug.insert(insertpath, name, before)
+        # Check if the file was included from the root config or initial state
+        enabled = self.parser.parsed_in_original(
+            apache_util.get_file_path(realpath)
+        )
 
         # Parameters will be set at the initialization of the new object
         new_block = AugeasBlockNode(name=name,
                                     parameters=parameters,
+                                    enabled=enabled,
                                     ancestor=assertions.PASS,
                                     filepath=apache_util.get_file_path(realpath),
                                     metadata=new_metadata)
@@ -291,9 +303,14 @@ class AugeasBlockNode(AugeasDirectiveNode):
         self.parser.aug.insert(insertpath, "directive", before)
         # Set the directive key
         self.parser.aug.set(realpath, name)
+        # Check if the file was included from the root config or initial state
+        enabled = self.parser.parsed_in_original(
+            apache_util.get_file_path(realpath)
+        )
 
         new_dir = AugeasDirectiveNode(name=name,
                                       parameters=parameters,
+                                      enabled=enabled,
                                       ancestor=assertions.PASS,
                                       filepath=apache_util.get_file_path(realpath),
                                       metadata=new_metadata)
@@ -394,8 +411,14 @@ class AugeasBlockNode(AugeasDirectiveNode):
         :returns: list of file paths of files that have been parsed
         """
 
-        parsed_paths = self.parser.aug.match("/augeas/load/Httpd/incl")
-        return [self.parser.aug.get(path) for path in parsed_paths]
+        res_paths = []
+
+        paths = self.parser.existing_paths
+        for directory in paths:
+            for filename in paths[directory]:
+                res_paths.append(os.path.join(directory, filename))
+
+        return res_paths
 
     def _create_commentnode(self, path):
         """Helper function to create a CommentNode from Augeas path"""
@@ -416,10 +439,13 @@ class AugeasBlockNode(AugeasDirectiveNode):
         name = self.parser.get_arg(path)
         metadata = {"augeasparser": self.parser, "augeaspath": path}
 
-        # Because of the dynamic nature, and the fact that we're not populating
-        # the complete ParserNode tree, we use the search parent as ancestor
+        # Check if the file was included from the root config or initial state
+        enabled = self.parser.parsed_in_original(
+            apache_util.get_file_path(path)
+        )
         return AugeasDirectiveNode(name=name,
                                    ancestor=assertions.PASS,
+                                   enabled=enabled,
                                    filepath=apache_util.get_file_path(path),
                                    metadata=metadata)
 
