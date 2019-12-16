@@ -2,9 +2,19 @@
 param()
 begin {}
 process {
-    New-Item "C:\Certbot\log" -ItemType Directory -ErrorAction SilentlyContinue *>$Null
-    Start-Transcript -Path "C:\Certbot\log\auto-update.log"
-    trap { Stop-Transcript }
+    New-EventLog -Source "auto-update.ps1" -LogName "CertbotAutoUpdate" -ErrorAction SilentlyContinue
+
+    function Write-Message($message, $level = "Information") {
+        Write-EventLog -Source "auto-update.ps1" -LogName "CertbotAutoUpdate" -EventID 1 -EntryType $level -Message $message
+        Write-Host $message
+    }
+
+    function Write-Error($message) {
+        Write-EventLog -Source "auto-update.ps1" -LogName "CertbotAutoUpdate" -EventID 1 -EntryType Error -Message $message
+        throw $message
+    }
+
+    Write-Message "Starting auto-update workflow ..."
 
     $ErrorActionPreference = 'Stop'
 
@@ -17,26 +27,29 @@ process {
         $currentVersion = $currentVersion -replace '^certbot (\d+\.\d+\.\d+).*$', '$1'
         $currentVersion = [System.Version]"$currentVersion"
     } catch {
-        "An error occured while fetching the current local certbot version:"
-        $_.Exception
-        "Assuming Certbot is not up-to-date."
+        Write-Message @"
+An error occured while fetching the current local certbot version:
+$_
+Assuming Certbot is not up-to-date.
+"@ "Warning"
         $currentVersion = "0.0.0"
     }
 
     # Get latest remote certbot version
     try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         $result = Invoke-RestMethod -Uri https://api.github.com/repos/certbot/certbot/releases/latest
         $latestVersion = $result.tag_name -replace '^v(\d+\.\d+\.\d+).*$', '$1'
         $latestVersion = [System.Version]"$latestVersion"
     } catch {
-        "Could not get the latest remote certbot version. Error was:"
-        $_.Exception
-        throw "Aborting auto-upgrade process."
+        Write-Error @"
+Could not get the latest remote certbot version. Error was:
+$_
+Aborting auto-upgrade process.
+"@
     }
 
     if ($currentVersion -ge $latestVersion) {
-        "No upgrade is needed, Certbot is already at the latest version ($currentVersion)."
+        Write-Message "No upgrade is needed, Certbot is already at the latest version ($currentVersion)."
     } else {
         # Search for the Windows installer asset
         $installerUrl = $null
@@ -47,15 +60,15 @@ process {
         }
 
         if ($null -eq $installerUrl) {
-            throw "Could not find the URL for the latest Certbot for Windows installer."
+            Write-Error "Could not find the URL for the latest Certbot for Windows installer."
         }
 
-        "Starting Certbot auto-upgrade from $currentVersion to $latestVersion ..."
+        Write-Message "Starting Certbot auto-upgrade from $currentVersion to $latestVersion ..."
 
         $installerPath = "$env:TMP/certbot-installer-win32.exe"
         try {
             # Download the installer
-            "Downloading the installer ..."
+            Write-Message "Downloading the installer ..."
             $webClient = New-Object System.Net.WebClient
             $webClient.DownloadFile($installerUrl, $installerPath)
 
@@ -72,19 +85,19 @@ process {
 
             if (Test-Path $installDir\uninstall.exe) {
                 # Uninstall old Certbot first
-                "Running the uninstaller for old version (install dir: $installDir) ..."
+                Write-Message "Running the uninstaller for old version (install dir: $installDir) ..."
                 Start-Process -FilePath $installDir\uninstall.exe -ArgumentList "/S _?=$installDir"
             }
             # Install new version of Certbot
-            "Running the installer for new version (install dir: $installDir) ..."
+            Write-Message "Running the installer for new version (install dir: $installDir) ..."
             Start-Process -FilePath $installerPath -ArgumentList "/S /D=$installDir"
 
-            "Certbot $latestVersion is installed."
+            Write-Message "Certbot $latestVersion is installed."
         } finally {
             Remove-Item $installerPath -ErrorAction 'Ignore'
         }
     }
 
-    Stop-Transcript
+    Write-Message "Finished auto-update workflow."
 }
 end {}
