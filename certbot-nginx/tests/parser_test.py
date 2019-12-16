@@ -5,14 +5,11 @@ import shutil
 import unittest
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-
 from certbot import errors
 from certbot.compat import os
-
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
 from certbot_nginx._internal import parser
-
 import test_util as util
 
 
@@ -52,16 +49,16 @@ class NginxParserTest(util.NginxTest):
         """
         nparser = parser.NginxParser(self.config_path)
         nparser.load()
-        self.assertEqual(set([nparser.abs_path(x) for x in
-                              ['foo.conf', 'nginx.conf', 'server.conf',
-                               'sites-enabled/default',
-                               'sites-enabled/example.com',
-                               'sites-enabled/headers.com',
-                               'sites-enabled/migration.com',
-                               'sites-enabled/sslon.com',
-                               'sites-enabled/globalssl.com',
-                               'sites-enabled/ipv6.com',
-                               'sites-enabled/ipv6ssl.com']]),
+        self.assertEqual({nparser.abs_path(x) for x in
+                          ['foo.conf', 'nginx.conf', 'server.conf',
+                           'sites-enabled/default',
+                           'sites-enabled/example.com',
+                           'sites-enabled/headers.com',
+                           'sites-enabled/migration.com',
+                           'sites-enabled/sslon.com',
+                           'sites-enabled/globalssl.com',
+                           'sites-enabled/ipv6.com',
+                           'sites-enabled/ipv6ssl.com']},
                          set(nparser.parsed.keys()))
         self.assertEqual([['server_name', 'somename', 'alias', 'another.alias']],
                          nparser.parsed[nparser.abs_path('server.conf')])

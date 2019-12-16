@@ -40,7 +40,7 @@ class Signature(jose.Signature):
 class JWS(jose.JWS):
     """ACME-specific JWS. Includes none, url, and kid in protected header."""
     signature_cls = Signature
-    __slots__ = jose.JWS._orig_slots  # pylint: disable=no-member
+    __slots__ = jose.JWS._orig_slots
 
     @classmethod
     # pylint: disable=arguments-differ

@@ -3,10 +3,18 @@
 import copy
 import logging
 
-from pyparsing import (
-    Literal, White, Forward, Group, Optional, OneOrMore, QuotedString, Regex, ZeroOrMore, Combine)
-from pyparsing import stringEnd
+from pyparsing import Combine
+from pyparsing import Forward
+from pyparsing import Group
+from pyparsing import Literal
+from pyparsing import OneOrMore
+from pyparsing import Optional
+from pyparsing import QuotedString
+from pyparsing import Regex
 from pyparsing import restOfLine
+from pyparsing import stringEnd
+from pyparsing import White
+from pyparsing import ZeroOrMore
 import six
 
 logger = logging.getLogger(__name__)
@@ -178,12 +186,11 @@ class UnspacedList(list):
 
         """
         if not isinstance(inbound, list):                      # str or None
-            return (inbound, inbound)
+            return inbound, inbound
         else:
             if not hasattr(inbound, "spaced"):
                 inbound = UnspacedList(inbound)
-            return (inbound, inbound.spaced)
-
+            return inbound, inbound.spaced
 
     def insert(self, i, x):
         item, spaced_item = self._coerce(x)

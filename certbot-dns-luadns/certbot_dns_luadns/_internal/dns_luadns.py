@@ -1,8 +1,8 @@
 """DNS Authenticator for LuaDNS DNS."""
 import logging
 
-import zope.interface
 from lexicon.providers import luadns
+import zope.interface
 
 from certbot import errors
 from certbot import interfaces

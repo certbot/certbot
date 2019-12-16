@@ -1,8 +1,8 @@
 """DNS Authenticator for Gehirn Infrastracture Service DNS."""
 import logging
 
-import zope.interface
 from lexicon.providers import gehirn
+import zope.interface
 
 from certbot import interfaces
 from certbot.plugins import dns_common

@@ -1,10 +1,12 @@
 import codecs
+from distutils.version import StrictVersion
 import os
 import re
 import sys
 
-from distutils.version import StrictVersion
-from setuptools import find_packages, setup, __version__ as setuptools_version
+from setuptools import __version__ as setuptools_version
+from setuptools import find_packages
+from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
 # Workaround for http://bugs.python.org/issue8876, see
@@ -72,21 +74,21 @@ elif os.name == 'nt':
     install_requires.append(pywin32_req)
 
 dev_extras = [
-    'astroid==1.6.5',
     'coverage',
     'ipdb',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
-    'pylint==1.9.4',
     'tox',
     'twine',
     'wheel',
 ]
 
 dev3_extras = [
+    'astroid',
     'mypy',
-    'typing', # for python3.4
+    'pylint',
+    'typing',  # for python3.4
 ]
 
 docs_extras = [

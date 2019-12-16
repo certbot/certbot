@@ -1,8 +1,8 @@
 """DNS Authenticator for DNSimple DNS."""
 import logging
 
-import zope.interface
 from lexicon.providers import dnsimple
+import zope.interface
 
 from certbot import errors
 from certbot import interfaces

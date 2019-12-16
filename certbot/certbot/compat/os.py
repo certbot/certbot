@@ -2,6 +2,8 @@
 This compat modules is a wrapper of the core os module that forbids usage of specific operations
 (e.g. chown, chmod, getuid) that would be harmful to the Windows file security model of Certbot.
 This module is intended to replace standard os module throughout certbot projects (except acme).
+
+isort:skip_file
 """
 # pylint: disable=function-redefined
 from __future__ import absolute_import

@@ -1,10 +1,12 @@
 """New interface style Certbot enhancements"""
 import abc
+
 import six
 
+from acme.magic_typing import Any  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot._internal import constants
-
-from acme.magic_typing import Dict, List, Any  # pylint: disable=unused-import, no-name-in-module
 
 ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]
 """List of possible :class:`certbot.interfaces.IInstaller`

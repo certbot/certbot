@@ -11,11 +11,11 @@ import pytz
 import six
 
 import certbot
-import certbot.tests.util as test_util
 from certbot import errors
-from certbot.compat import os
-from certbot.compat import filesystem
 from certbot._internal.storage import ALL_FOUR
+from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 
 CERT = test_util.load_cert('cert_512.pem')
 
@@ -356,8 +356,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             basename = os.path.basename(path)
             if "fullchain" in basename and basename.startswith("prev"):
                 raise ValueError
-            else:
-                real_unlink(path)
+            real_unlink(path)
 
         self._write_out_ex_kinds()
         with mock.patch("certbot._internal.storage.os.unlink") as mock_unlink:
@@ -372,8 +371,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             # pylint: disable=missing-docstring
             if "fullchain" in os.path.basename(path):
                 raise ValueError
-            else:
-                real_unlink(path)
+            real_unlink(path)
 
         self._write_out_ex_kinds()
         with mock.patch("certbot._internal.storage.os.unlink") as mock_unlink:

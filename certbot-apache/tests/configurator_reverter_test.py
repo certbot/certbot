@@ -5,7 +5,6 @@ import unittest
 import mock
 
 from certbot import errors
-
 import util
 
 

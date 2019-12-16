@@ -1,10 +1,10 @@
 """Tests for new style enhancements"""
 import unittest
+
 import mock
 
-from certbot.plugins import enhancements
 from certbot._internal.plugins import null
-
+from certbot.plugins import enhancements
 import certbot.tests.util as test_util
 
 
@@ -37,12 +37,10 @@ class EnhancementTest(test_util.ConfigTestCase):
         self.assertTrue([i for i in enabled if i["name"] == "somethingelse"])
 
     def test_are_requested(self):
-        self.assertEqual(
-            len([i for i in enhancements.enabled_enhancements(self.config)]), 0)
+        self.assertEqual(len(list(enhancements.enabled_enhancements(self.config))), 0)
         self.assertFalse(enhancements.are_requested(self.config))
         self.config.auto_hsts = True
-        self.assertEqual(
-            len([i for i in enhancements.enabled_enhancements(self.config)]), 1)
+        self.assertEqual(len(list(enhancements.enabled_enhancements(self.config))), 1)
         self.assertTrue(enhancements.are_requested(self.config))
 
     def test_are_supported(self):

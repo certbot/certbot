@@ -74,7 +74,7 @@ def make_and_verify_selection(server_root, temp_dir):
         ans = six.moves.input("(Y)es/(N)o: ").lower()
         if ans.startswith("y"):
             return
-        elif ans.startswith("n"):
+        if ans.startswith("n"):
             sys.exit("Your files were not submitted")
 
 
@@ -159,7 +159,7 @@ def safe_config_file(config_file):
                     empty_or_all_comments = False
                     if line.startswith("-----BEGIN"):
                         return False
-                    elif ":" not in line:
+                    if ":" not in line:
                         possible_password_file = False
         # If file isn't empty or commented out and could be a password file,
         # don't include it in selection. It is safe to include the file if

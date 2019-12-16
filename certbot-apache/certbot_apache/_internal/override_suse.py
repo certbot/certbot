@@ -1,12 +1,11 @@
 """ Distribution specific override class for OpenSUSE """
 import pkg_resources
-
 import zope.interface
 
 from certbot import interfaces
 from certbot.compat import os
-
 from certbot_apache._internal import configurator
+
 
 @zope.interface.provider(interfaces.IPluginFactory)
 class OpenSUSEConfigurator(configurator.ApacheConfigurator):

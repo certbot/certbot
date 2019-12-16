@@ -5,12 +5,12 @@ import textwrap
 
 import zope.interface
 
-from certbot._internal import constants
 from certbot import errors
 from certbot import interfaces
+from certbot._internal import constants
+from certbot._internal.display import completer
 from certbot.compat import misc
 from certbot.compat import os
-from certbot._internal.display import completer
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +177,7 @@ class FileDisplay(object):
         message = _wrap_lines("%s (Enter 'c' to cancel):" % message) + " "
         ans = input_with_timeout(message)
 
-        if ans == "c" or ans == "C":
+        if ans in ("c", "C"):
             return CANCEL, "-1"
         return OK, ans
 
@@ -258,10 +258,9 @@ class FileDisplay(object):
                 selected_tags = self._scrub_checklist_input(indices, tags)
                 if selected_tags:
                     return code, selected_tags
-                else:
-                    self.outfile.write(
-                        "** Error - Invalid selection **%s" % os.linesep)
-                    self.outfile.flush()
+                self.outfile.write(
+                    "** Error - Invalid selection **%s" % os.linesep)
+                self.outfile.flush()
             else:
                 return code, []
 
@@ -282,18 +281,17 @@ class FileDisplay(object):
         # assert_valid_call(prompt, default, cli_flag, force_interactive)
         if self._can_interact(force_interactive):
             return False
-        elif default is None:
+        if default is None:
             msg = "Unable to get an answer for the question:\n{0}".format(prompt)
             if cli_flag:
                 msg += (
                     "\nYou can provide an answer on the "
                     "command line with the {0} flag.".format(cli_flag))
             raise errors.Error(msg)
-        else:
-            logger.debug(
-                "Falling back to default %s for the prompt:\n%s",
-                default, prompt)
-            return True
+        logger.debug(
+            "Falling back to default %s for the prompt:\n%s",
+            default, prompt)
+        return True
 
     def _can_interact(self, force_interactive):
         """Can we safely interact with the user?
@@ -308,7 +306,7 @@ class FileDisplay(object):
         if (self.force_interactive or force_interactive or
                 sys.stdin.isatty() and self.outfile.isatty()):
             return True
-        elif not self.skipped_interaction:
+        if not self.skipped_interaction:
             logger.warning(
                 "Skipped user interaction because Certbot doesn't appear to "
                 "be running in a terminal. You should probably include "
