@@ -10,7 +10,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* certbot-auto now supports only x86_64 architectures on CentOS/RHEL 6.
+* certbot-auto no longer supports architectures other than x86_64 on RHEL 6
+  based systems. Existing certbot-auto installations affected by this will
+  continue to work, but they will no longer receive updates. To install a
+  newer version of Certbot on these systems, you should update your OS.
 
 ### Fixed
 
