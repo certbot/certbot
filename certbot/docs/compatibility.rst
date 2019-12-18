@@ -8,6 +8,12 @@ Versioning <https://semver.org/>`_ both for its Python :doc:`API <api>` and for 
 application itself. This means that we will not change behavior in a backwards
 incompatible way except in a new major version of the project.
 
+.. note:: None of this applies to the behavior of Certbot distribution
+    mechanisms such as :ref:`certbot-auto <certbot-auto>` or OS packages whose
+    behavior may change at any time. Semantic versioning only applies to the
+    common Certbot components that are installed by various distribution
+    methods.
+
 For Certbot as an application, the command line interface and non-interactive
 behavior can be considered stable with two exceptions. The first is that no
 aspects of Certbot's console or log output should be considered stable and it
