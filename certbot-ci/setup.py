@@ -10,6 +10,7 @@ version = '0.32.0.dev0'
 install_requires = [
     'coverage',
     'cryptography',
+    'docker-compose',
     'pyopenssl',
     'pytest',
     'pytest-cov',
