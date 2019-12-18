@@ -16,8 +16,8 @@ import os
 import sys
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 import josepy as jose
 
 from acme import client as acme_client

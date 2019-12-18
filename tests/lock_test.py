@@ -15,15 +15,15 @@ import tempfile
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 # TODO: once mypy has cryptography types bundled, type: ignore can be removed.
-# See https://github.com/python/typeshed/tree/master/third_party/2/cryptography
-from cryptography.hazmat.primitives import serialization, hashes  # type: ignore
+# See https://github.com/pyca/cryptography/issues/4275
+from cryptography.hazmat.primitives import hashes  # type: ignore
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from certbot import lock
 from certbot import util
-
+from certbot._internal import lock
+from certbot.compat import filesystem
 from certbot.tests import util as test_util
-
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ def set_up_dirs():
     nginx_dir = os.path.join(temp_dir, 'nginx')
 
     for directory in (config_dir, logs_dir, work_dir, nginx_dir,):
-        os.mkdir(directory)
+        filesystem.mkdir(directory)
 
     test_util.make_lineage(config_dir, 'sample-renewal.conf')
     set_up_nginx_dir(nginx_dir)
@@ -173,7 +173,7 @@ def setup_certificate(workspace):
 
     key_path = os.path.join(workspace, 'cert.key')
     with open(key_path, 'wb') as file_handle:
-        file_handle.write(private_key.private_bytes(
+        file_handle.write(private_key.private_bytes(  # type: ignore
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption()

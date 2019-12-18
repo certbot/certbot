@@ -5,6 +5,7 @@ import sys
 
 import _venv_common
 
+
 def create_venv(venv_path):
     """Create a Python 2 virtual environment at venv_path.
 
@@ -25,6 +26,10 @@ def main(pip_args=None):
 
     venv_path = _venv_common.prepare_venv_path('venv')
     create_venv(venv_path)
+
+    if not pip_args:
+        pip_args = _venv_common.REQUIREMENTS
+
     _venv_common.install_packages(venv_path, pip_args)
 
 

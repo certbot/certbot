@@ -2,15 +2,16 @@
 import logging
 import unittest
 
-import OpenSSL
 import mock
+import OpenSSL
 import zope.component
 
-import certbot.tests.util as test_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import filesystem
 from certbot.compat import os
+import certbot.tests.util as test_util
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
@@ -29,6 +30,9 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
     def setUp(self):
         super(InitSaveKeyTest, self).setUp()
 
+        self.workdir = os.path.join(self.tempdir, 'workdir')
+        filesystem.mkdir(self.workdir, mode=0o700)
+
         logging.disable(logging.CRITICAL)
         zope.component.provideUtility(
             mock.Mock(strict_permissions=True), interfaces.IConfig)
@@ -46,15 +50,15 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
         mock_make.return_value = b'key_pem'
-        key = self._call(1024, self.tempdir)
+        key = self._call(1024, self.workdir)
         self.assertEqual(key.pem, b'key_pem')
         self.assertTrue('key-certbot.pem' in key.file)
-        self.assertTrue(os.path.exists(os.path.join(self.tempdir, key.file)))
+        self.assertTrue(os.path.exists(os.path.join(self.workdir, key.file)))
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_key_failure(self, mock_make):
         mock_make.side_effect = ValueError
-        self.assertRaises(ValueError, self._call, 431, self.tempdir)
+        self.assertRaises(ValueError, self._call, 431, self.workdir)
 
 
 class InitSaveCSRTest(test_util.TempDirTestCase):
@@ -160,7 +164,7 @@ class ImportCSRFileTest(unittest.TestCase):
                           test_util.load_vector('cert_512.pem'))
 
 
-class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
+class MakeKeyTest(unittest.TestCase):
     """Tests for certbot.crypto_util.make_key."""
 
     def test_it(self):  # pylint: disable=no-self-use
@@ -177,15 +181,15 @@ class VerifyCertSetup(unittest.TestCase):
         super(VerifyCertSetup, self).setUp()
 
         self.renewable_cert = mock.MagicMock()
-        self.renewable_cert.cert = SS_CERT_PATH
-        self.renewable_cert.chain = SS_CERT_PATH
-        self.renewable_cert.privkey = RSA2048_KEY_PATH
-        self.renewable_cert.fullchain = test_util.vector_path('cert_fullchain_2048.pem')
+        self.renewable_cert.cert_path = SS_CERT_PATH
+        self.renewable_cert.chain_path = SS_CERT_PATH
+        self.renewable_cert.key_path = RSA2048_KEY_PATH
+        self.renewable_cert.fullchain_path = test_util.vector_path('cert_fullchain_2048.pem')
 
         self.bad_renewable_cert = mock.MagicMock()
-        self.bad_renewable_cert.chain = SS_CERT_PATH
-        self.bad_renewable_cert.cert = SS_CERT_PATH
-        self.bad_renewable_cert.fullchain = SS_CERT_PATH
+        self.bad_renewable_cert.chain_path = SS_CERT_PATH
+        self.bad_renewable_cert.cert_path = SS_CERT_PATH
+        self.bad_renewable_cert.fullchain_path = SS_CERT_PATH
 
 
 class VerifyRenewableCertTest(VerifyCertSetup):
@@ -215,13 +219,13 @@ class VerifyRenewableCertSigTest(VerifyCertSetup):
 
     def test_cert_sig_match_ec(self):
         renewable_cert = mock.MagicMock()
-        renewable_cert.cert = P256_CERT_PATH
-        renewable_cert.chain = P256_CERT_PATH
-        renewable_cert.privkey = P256_KEY
+        renewable_cert.cert_path = P256_CERT_PATH
+        renewable_cert.chain_path = P256_CERT_PATH
+        renewable_cert.key_path = P256_KEY
         self.assertEqual(None, self._call(renewable_cert))
 
     def test_cert_sig_mismatch(self):
-        self.bad_renewable_cert.cert = test_util.vector_path('cert_512_bad.pem')
+        self.bad_renewable_cert.cert_path = test_util.vector_path('cert_512_bad.pem')
         self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
 
 
