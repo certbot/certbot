@@ -5,6 +5,10 @@ import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+
 try:
     # pylint: disable=import-error
     import ntsecuritycon
@@ -19,8 +23,6 @@ except ImportError:
     POSIX_MODE = True
 else:
     POSIX_MODE = False
-
-from acme.magic_typing import List, Union, Tuple  # pylint: disable=unused-import, no-name-in-module
 
 
 def chmod(file_path, mode):
@@ -69,6 +71,9 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
         stats = os.stat(src)
         user_id = stats.st_uid if copy_user else -1
         group_id = stats.st_gid if copy_group else -1
+        # On Windows, os.chown does not exist. This is checked through POSIX_MODE value,
+        # but MyPy/PyLint does not know it and raises an error here on Windows.
+        # We disable specifically the check to fix the issue.
         os.chown(dst, user_id, group_id)
     elif copy_user:
         # There is no group handling in Windows
@@ -103,7 +108,10 @@ def check_owner(file_path):
     :return: True if given file is owned by current user, False otherwise.
     """
     if POSIX_MODE:
-        return os.stat(file_path).st_uid == os.getuid()
+        # On Windows, os.getuid does not exist. This is checked through POSIX_MODE value,
+        # but MyPy/PyLint does not know it and raises an error here on Windows.
+        # We disable specifically the check to fix the issue.
+        return os.stat(file_path).st_uid == os.getuid()  # type: ignore
 
     # Get owner sid of the file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)

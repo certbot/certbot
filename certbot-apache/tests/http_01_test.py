@@ -1,20 +1,17 @@
 """Test for certbot_apache._internal.http_01."""
 import unittest
+
 import mock
 
 from acme import challenges
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-
 from certbot import achallenges
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import acme_util
-
 from certbot_apache._internal.parser import get_aug_path
-
 import util
-
 
 NUM_ACHALLS = 3
 

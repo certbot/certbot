@@ -24,6 +24,8 @@ jobs:
     dependsOn: installer_build
     strategy:
       matrix:
+        win2019:
+          imageName: windows-2019
         win2016:
           imageName: vs2017-win2016
         win2012r2:

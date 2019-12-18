@@ -12,13 +12,13 @@ VENV_NAME.
 
 from __future__ import print_function
 
-import os
-import shutil
 import glob
-import time
+import os
+import re
+import shutil
 import subprocess
 import sys
-import re
+import time
 
 REQUIREMENTS = [
     '-e acme[dev]',

@@ -1,8 +1,8 @@
 """DNS Authenticator for DNS Made Easy DNS."""
 import logging
 
-import zope.interface
 from lexicon.providers import dnsmadeeasy
+import zope.interface
 
 from certbot import errors
 from certbot import interfaces

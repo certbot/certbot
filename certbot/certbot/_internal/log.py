@@ -23,10 +23,9 @@ import tempfile
 import traceback
 
 from acme import messages
-
-from certbot._internal import constants
 from certbot import errors
 from certbot import util
+from certbot._internal import constants
 from certbot.compat import os
 
 # Logging format
@@ -103,9 +102,9 @@ def post_arg_parse_setup(config):
 
     root_logger.addHandler(file_handler)
     root_logger.removeHandler(memory_handler)
-    temp_handler = memory_handler.target
-    memory_handler.setTarget(file_handler)
-    memory_handler.flush(force=True)
+    temp_handler = memory_handler.target  # pylint: disable=no-member
+    memory_handler.setTarget(file_handler)  # pylint: disable=no-member
+    memory_handler.flush(force=True)  # pylint: disable=unexpected-keyword-arg
     memory_handler.close()
     temp_handler.close()
 

@@ -1,8 +1,8 @@
 """DNS Authenticator for NS1 DNS."""
 import logging
 
-import zope.interface
 from lexicon.providers import nsone
+import zope.interface
 
 from certbot import errors
 from certbot import interfaces

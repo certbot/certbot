@@ -4,10 +4,11 @@ import logging
 import signal
 import traceback
 
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Any, Callable, Dict, List, Union
-# pylint: enable=unused-import, no-name-in-module
-
+from acme.magic_typing import Any  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Callable  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.compat import os
 
@@ -92,7 +93,7 @@ class ErrorHandler(object):
         # SystemExit is ignored to properly handle forks that don't exec
         if exec_type is SystemExit:
             return retval
-        elif exec_type is None:
+        if exec_type is None:
             if not self.call_on_regular_exit:
                 return retval
         elif exec_type is errors.SignalExit:

@@ -2,6 +2,7 @@
 import importlib
 import unittest
 
+
 class JoseTest(unittest.TestCase):
     """Tests for acme.jose shim."""
 
@@ -20,11 +21,10 @@ class JoseTest(unittest.TestCase):
 
         # We use the imports below with eval, but pylint doesn't
         # understand that.
-        # pylint: disable=eval-used,unused-variable
-        import acme
-        import josepy
-        acme_jose_mod = eval(acme_jose_path)
-        josepy_mod = eval(josepy_path)
+        import acme  # pylint: disable=unused-import
+        import josepy  # pylint: disable=unused-import
+        acme_jose_mod = eval(acme_jose_path)  # pylint: disable=eval-used
+        josepy_mod = eval(josepy_path)  # pylint: disable=eval-used
         self.assertIs(acme_jose_mod, josepy_mod)
         self.assertIs(getattr(acme_jose_mod, attribute), getattr(josepy_mod, attribute))
 

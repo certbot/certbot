@@ -2,16 +2,16 @@
 import logging
 import unittest
 
-import OpenSSL
 import mock
+import OpenSSL
 import zope.component
 
-import certbot.tests.util as test_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import os
 from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')

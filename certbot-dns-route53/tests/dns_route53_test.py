@@ -2,8 +2,9 @@
 
 import unittest
 
+from botocore.exceptions import ClientError
+from botocore.exceptions import NoCredentialsError
 import mock
-from botocore.exceptions import NoCredentialsError, ClientError
 
 from certbot import errors
 from certbot.compat import os

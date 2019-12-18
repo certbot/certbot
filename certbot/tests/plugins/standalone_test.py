@@ -1,22 +1,21 @@
 """Tests for certbot._internal.plugins.standalone."""
-import socket
 # https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
+import socket
 from socket import errno as socket_errors  # type: ignore
 import unittest
 
 import josepy as jose
 import mock
-import six
-
 import OpenSSL.crypto  # pylint: disable=unused-import
+import six
 
 from acme import challenges
 from acme import standalone as acme_standalone  # pylint: disable=unused-import
-from acme.magic_typing import Dict, Tuple, Set  # pylint: disable=unused-import, no-name-in-module
-
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
-
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
@@ -38,7 +37,7 @@ class ServerManagerTest(unittest.TestCase):
 
     def _test_run_stop(self, challenge_type):
         server = self.mgr.run(port=0, challenge_type=challenge_type)
-        port = server.getsocknames()[0][1]  # pylint: disable=no-member
+        port = server.getsocknames()[0][1]
         self.assertEqual(self.mgr.running(), {port: server})
         self.mgr.stop(port=port)
         self.assertEqual(self.mgr.running(), {})
@@ -48,7 +47,7 @@ class ServerManagerTest(unittest.TestCase):
 
     def test_run_idempotent(self):
         server = self.mgr.run(port=0, challenge_type=challenges.HTTP01)
-        port = server.getsocknames()[0][1]  # pylint: disable=no-member
+        port = server.getsocknames()[0][1]
         server2 = self.mgr.run(port=port, challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {port: server})
         self.assertTrue(server is server2)

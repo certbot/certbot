@@ -6,7 +6,6 @@ import mock
 
 from certbot import errors
 from certbot.compat import os
-
 import util
 
 

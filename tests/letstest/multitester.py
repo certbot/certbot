@@ -32,17 +32,31 @@ see:
 from __future__ import print_function
 from __future__ import with_statement
 
-import sys, os, time, argparse, socket, traceback
+import argparse
 import multiprocessing as mp
 from multiprocessing import Manager
+import os
+import socket
+import sys
+import time
+import traceback
 import urllib2
-import yaml
+
 import boto3
 from botocore.exceptions import ClientError
+import yaml
+
 import fabric
-from fabric.api import run, execute, local, env, sudo, cd, lcd
-from fabric.operations import get, put
+from fabric.api import cd
+from fabric.api import env
+from fabric.api import execute
+from fabric.api import lcd
+from fabric.api import local
+from fabric.api import run
+from fabric.api import sudo
 from fabric.context_managers import shell_env
+from fabric.operations import get
+from fabric.operations import put
 
 # Command line parser
 #-------------------------------------------------------------------------------

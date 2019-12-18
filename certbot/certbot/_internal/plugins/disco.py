@@ -5,15 +5,13 @@ import logging
 
 import pkg_resources
 import six
-
 import zope.interface
 import zope.interface.verify
 
 from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from certbot._internal import constants
 from certbot import errors
 from certbot import interfaces
-
+from certbot._internal import constants
 
 logger = logging.getLogger(__name__)
 

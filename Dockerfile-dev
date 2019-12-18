@@ -6,16 +6,15 @@ EXPOSE 80 443
 
 WORKDIR /opt/certbot/src
 
-# TODO: Install Apache/Nginx for plugin development.
 COPY . .
 RUN apt-get update && \
-    apt-get install apache2 git nginx-light -y && \
-    letsencrypt-auto-source/letsencrypt-auto --os-packages-only && \
+    apt-get install apache2 git python3-dev python3-venv gcc libaugeas0 \
+                    libssl-dev libffi-dev ca-certificates openssl nginx-light -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* \
            /tmp/* \
            /var/tmp/*
 
-RUN VENV_NAME="../venv" python tools/venv.py
+RUN VENV_NAME="../venv3" python3 tools/venv3.py
 
-ENV PATH /opt/certbot/venv/bin:$PATH
+ENV PATH /opt/certbot/venv3/bin:$PATH

@@ -2,11 +2,11 @@
 import json
 import logging
 
-from acme.magic_typing import Any, Dict  # pylint: disable=unused-import, no-name-in-module
-
+from acme.magic_typing import Any  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
-from certbot.compat import os
 from certbot.compat import filesystem
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 

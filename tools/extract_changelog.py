@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import sys
+
 import os
 import re
-
+import sys
 
 CERTBOT_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 

@@ -9,7 +9,6 @@ from certbot import interfaces
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
-
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 
@@ -71,15 +70,14 @@ class DebianConfigurator(configurator.ApacheConfigurator):
                 # Already in shape
                 vhost.enabled = True
                 return None
-            else:
-                logger.warning(
-                    "Could not symlink %s to %s, got error: %s", enabled_path,
-                    vhost.filep, err.strerror)
-                errstring = ("Encountered error while trying to enable a " +
-                             "newly created VirtualHost located at {0} by " +
-                             "linking to it from {1}")
-                raise errors.NotSupportedError(errstring.format(vhost.filep,
-                                                                enabled_path))
+            logger.warning(
+                "Could not symlink %s to %s, got error: %s", enabled_path,
+                vhost.filep, err.strerror)
+            errstring = ("Encountered error while trying to enable a " +
+                         "newly created VirtualHost located at {0} by " +
+                         "linking to it from {1}")
+            raise errors.NotSupportedError(errstring.format(vhost.filep,
+                                                            enabled_path))
         vhost.enabled = True
         logger.info("Enabling available site: %s", vhost.filep)
         self.save_notes += "Enabled site %s\n" % vhost.filep
