@@ -77,7 +77,7 @@ download and run it as follows::
   sudo chmod 0755 /usr/local/bin/certbot-auto
   /usr/local/bin/certbot-auto --help
 
-To remove certbot-auto, just delete it and the files it places in /opt (aka /opt/eff.org), along with any cronjob you may have created.
+To remove certbot-auto, just delete it and the files it places under /opt/eff.org, along with any cronjob or systemd timer you may have created.
 
 To check the integrity of the ``certbot-auto`` script,
 you can use these steps::
