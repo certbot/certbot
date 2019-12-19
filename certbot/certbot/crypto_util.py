@@ -251,7 +251,8 @@ def verify_renewable_cert_sig(renewable_cert):
     try:
         with open(renewable_cert.chain_path, 'rb') as chain_file:  # type: IO[bytes]
             chain = x509.load_pem_x509_certificate(chain_file.read(), default_backend())
-        cert = load_cert(renewable_cert.cert)
+        with open(renewable_cert.cert_path, 'rb') as cert_file:  # type: IO[bytes]
+            cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
         pk = chain.public_key()
         with warnings.catch_warnings():
             verify_signed_payload(pk, cert.signature, cert.tbs_certificate_bytes,

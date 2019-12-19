@@ -13,23 +13,23 @@ from acme.magic_typing import Dict, List, Set, Union  # pylint: disable=unused-i
 from certbot import errors
 
 from certbot.compat import os
+import util
 
-from certbot_apache.tests import util
 
 
 class MockDBM(object):
     # pylint: disable=missing-docstring
     """Main mock DBM class for Py3 dbm module"""
-    def __init__(self):
-        self.ndbm = Mockdbm_impl()
+    def __init__(self, library='Berkeley DB'):
+        self.ndbm = Mockdbm_impl(library)
 
 
 class Mockdbm_impl(object):
     """Mock dbm implementation that satisfies both bsddb and dbm interfaces"""
     # pylint: disable=missing-docstring
 
-    def __init__(self):
-        self.library = 'Berkeley DB'
+    def __init__(self, library='Berkeley DB'):
+        self.library = library
         self.name = 'ndbm'
 
     def open(self, path, mode):
@@ -269,11 +269,17 @@ class OCSPPrefetchTest(util.ApacheTest):
     def test_ocsp_prefetch_preflight_check_noerror(self):
         self.call_mocked_py2(self.config._ensure_ocsp_prefetch_compatibility)
         self.call_mocked_py3(self.config._ensure_ocsp_prefetch_compatibility)
-        mockdbm_path = "certbot_apache.tests.ocsp_prefetch_test.Mockdbm_impl"
-        with mock.patch(mockdbm_path) as mock_dbm:
-            mock_dbm.library = 'Not Berkeley DB'
+
+        real_import = six.moves.builtins.__import__
+
+        def mock_import(*args, **kwargs):
+            if args[0] == "bsddb":
+                raise ImportError
+            return real_import(*args, **kwargs)
+        with mock.patch('six.moves.builtins.__import__', side_effect=mock_import):
+            sys.modules['dbm'] = MockDBM(library='Not Berkeley DB')
             self.assertRaises(errors.NotSupportedError,
-                              self.call_mocked_py3,
+                              self._call_mocked,
                               self.config._ensure_ocsp_prefetch_compatibility)
 
     def test_ocsp_prefetch_open_dbm_no_file(self):
