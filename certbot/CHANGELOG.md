@@ -6,7 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* OCSP prefetching functionality for Apache plugin that attempts to refresh the OCSP
+  response cache for managed certificates when scheduled Certbot renew is being run. 
 
 ### Changed
 
