@@ -63,26 +63,37 @@ class RevocationChecker(object):
         """
         cert_path, chain_path = cert.cert, cert.chain
 
-        if self.broken:
-            return False
-
         # Let's Encrypt doesn't update OCSP for expired certificates,
         # so don't check OCSP if the cert is expired.
         # https://github.com/certbot/certbot/issues/7152
         now = pytz.UTC.fromutc(datetime.utcnow())
         if cert.target_expiry <= now:
             return False
+        return self.revoked(cert_path, chain_path)
+
+    def revoked(self, cert_path, chain_path, response_file=None):
+        # type: (str, str, Optional[str]) -> bool
+        """Performs the OCSP revocation check
+
+        :param str cert_path: Certificate path
+        :param str chain_path: Certificate chain filepath
+
+        :returns: True if revoked; False if valid or the check failed or cert is expired.
+        :rtype: bool
+        """
+
+        if self.broken:
+            return False
 
         url, host = _determine_ocsp_server(cert_path)
         if not host or not url:
             return False
-
         if self.use_openssl_binary:
-            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url)
-        return _check_ocsp_cryptography(cert_path, chain_path, url)
+            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, response_file)
+        return _check_ocsp_cryptography(cert_path, chain_path, url, response_file)
 
-    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url):
-        # type: (str, str, str, str) -> bool
+    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, response_file=None):
+        # type: (str, str, str, str, Optional[str]) -> bool
         # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
         cmd = ["openssl", "ocsp",
                "-no_nonce",
@@ -93,6 +104,8 @@ class RevocationChecker(object):
                "-verify_other", chain_path,
                "-trust_other",
                "-header"] + self.host_args(host)
+        if response_file:
+            cmd += ["-respout", response_file]
         logger.debug("Querying OCSP for %s", cert_path)
         logger.debug(" ".join(cmd))
         try:
@@ -134,8 +147,8 @@ def _determine_ocsp_server(cert_path):
     return None, None
 
 
-def _check_ocsp_cryptography(cert_path, chain_path, url):
-    # type: (str, str, str) -> bool
+def _check_ocsp_cryptography(cert_path, chain_path, url, response_file=None):
+    # type: (str, str, str, Optional[str]) -> bool
     # Retrieve OCSP response
     with open(chain_path, 'rb') as file_handler:
         issuer = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
@@ -154,6 +167,10 @@ def _check_ocsp_cryptography(cert_path, chain_path, url):
     if response.status_code != 200:
         logger.info("OCSP check failed for %s (HTTP status: %d)", cert_path, response.status_code)
         return False
+
+    if response_file:
+        with open(response_file, 'wb') as fh:
+            fh.write(response.content)
 
     response_ocsp = ocsp.load_der_ocsp_response(response.content)
 

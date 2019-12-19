@@ -157,7 +157,8 @@ class OSCPTestCryptography(unittest.TestCase):
         mock_determine.return_value = ('http://example.com', 'example.com')
         self.checker.ocsp_revoked(self.cert_obj)
 
-        mock_revoke.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com')
+        mock_revoke.assert_called_once_with(self.cert_path, self.chain_path,
+                                            'http://example.com', None)
 
     def test_revoke(self):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):

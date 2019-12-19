@@ -1,9 +1,9 @@
 """ Utility functions for certbot-apache plugin """
 import binascii
-
-import six
 import struct
 import time
+
+import six
 
 from certbot import crypto_util
 from certbot import util

@@ -154,13 +154,58 @@ class AutoHSTSEnhancement(object):
         :type domains: str
         """
 
+
+@six.add_metaclass(abc.ABCMeta)
+class OCSPPrefetchEnhancement(object):
+    """
+    Enhancement interface that installer plugins can implement in order to
+    provide functionality that prefetches an OCSP response and stores it
+    to be served for incoming client requests.
+    The plugins implementing new style enhancements are responsible of handling
+    the saving of configuration checkpoints as well as calling possible restarts
+    of managed software themselves. For update_ocsp_prefetch method, the installer
+    may have to call prepare() to finalize the plugin initialization.
+    Methods:
+        enable_ocsp_prefetch is called when the domain is configured to
+        serve OCSP responses using mechanism called OCSP Stapling.
+        update_ocsp_prefetch is called every time when Certbot is run using 'renew'
+        verb. Certbot should proceed to make a request to the OCSP server in order
+        to fetch an OCSP response and to store the recieved response, if valid.
+    """
+
+    @abc.abstractmethod
+    def update_ocsp_prefetch(self, lineage, *args, **kwargs):
+        """
+        Gets called for each lineage every time Certbot is run with 'renew' verb.
+        Implementation of this method should fetch a fresh OCSP response and if
+        valid, store it to be served for connecting clients.
+        :param lineage: Certificate lineage object
+        :type lineage: certbot.storage.RenewableCert
+        .. note:: prepare() method inherited from `interfaces.IPlugin` might need
+            to be called manually within implementation of this interface method
+            to finalize the plugin initialization.
+        """
+
+    @abc.abstractmethod
+    def enable_ocsp_prefetch(self, lineage, domains, *args, **kwargs):
+        """
+        Enables the OCSP enhancement, enabling OCSP Stapling functionality for
+        the controlled software, and sets it up for prefetching the responses
+        over the subsequent runs of Certbot renew.
+        :param lineage: Certificate lineage object
+        :type lineage: certbot.storage.RenewableCert
+        :param domains: List of domains in certificate to enhance
+        :type domains: str
+        """
+
+
 # This is used to configure internal new style enhancements in Certbot. These
 # enhancement interfaces need to be defined in this file. Please do not modify
 # this list from plugin code.
 _INDEX = [
     {
         "name": "AutoHSTS",
-        "cli_help": "Gradually increasing max-age value for HTTP Strict Transport "+
+        "cli_help": "Gradually increasing max-age value for HTTP Strict Transport " +
                     "Security security header",
         "cli_flag": "--auto-hsts",
         "cli_flag_default": constants.CLI_DEFAULTS["auto_hsts"],
@@ -171,5 +216,19 @@ _INDEX = [
         "updater_function": "update_autohsts",
         "deployer_function": "deploy_autohsts",
         "enable_function": "enable_autohsts"
+    },
+    {
+        "name": "OCSPPrefetch",
+        "cli_help": "Prefetch OCSP responses for certificates in order to be " +
+                    "able to serve connecting clients fresh staple immediately",
+        "cli_flag": "--ocsp-prefetch",
+        "cli_flag_default": constants.CLI_DEFAULTS["ocsp_prefetch"],
+        "cli_groups": ["security", "enhance"],
+        "cli_dest": "ocsp_prefetch",
+        "cli_action": "store_true",
+        "class": OCSPPrefetchEnhancement,
+        "updater_function": "update_ocsp_prefetch",
+        "deployer_function": None,
+        "enable_function": "enable_ocsp_prefetch"
     }
 ]  # type: List[Dict[str, Any]]

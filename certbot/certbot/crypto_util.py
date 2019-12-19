@@ -17,6 +17,7 @@ from OpenSSL import crypto
 from cryptography import x509  # type: ignore
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes  # type: ignore
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
@@ -222,6 +223,23 @@ def verify_renewable_cert(renewable_cert):
     verify_cert_matches_priv_key(renewable_cert.cert, renewable_cert.privkey)
 
 
+def load_cert(cert_path):
+    """Reads the certificate PEM file and returns a cryptography.x509 object
+    :param str cert_path: Path to the certificate
+    :rtype `cryptography.x509`:
+    :returns: x509 certificate object
+    """
+    with open(cert_path, 'rb') as fh:
+        cert_pem = fh.read()
+    return x509.load_pem_x509_certificate(cert_pem, default_backend())
+
+
+def cert_sha1_fingerprint(cert_path):
+    """Get sha1 digest of the certificate fingerprint"""
+    cert = load_cert(cert_path)
+    return cert.fingerprint(hashes.SHA1())
+
+
 def verify_renewable_cert_sig(renewable_cert):
     """Verifies the signature of a `.storage.RenewableCert` object.
 
@@ -232,8 +250,7 @@ def verify_renewable_cert_sig(renewable_cert):
     try:
         with open(renewable_cert.chain, 'rb') as chain_file:  # type: IO[bytes]
             chain = x509.load_pem_x509_certificate(chain_file.read(), default_backend())
-        with open(renewable_cert.cert, 'rb') as cert_file:  # type: IO[bytes]
-            cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
+        cert = load_cert(renewable_cert.cert)
         pk = chain.public_key()
         with warnings.catch_warnings():
             verify_signed_payload(pk, cert.signature, cert.tbs_certificate_bytes,
@@ -293,7 +310,7 @@ def verify_cert_matches_priv_key(cert_path, key_path):
         error_str = "verifying the cert located at {0} matches the \
                 private key located at {1} has failed. \
                 Details: {2}".format(cert_path,
-                        key_path, e)
+                                     key_path, e)
         logger.exception(error_str)
         raise errors.Error(error_str)
 
@@ -446,7 +463,7 @@ def _notAfterBefore(cert_path, method):
     # pylint: disable=redefined-outer-name
     with open(cert_path) as f:
         x509 = crypto.load_certificate(crypto.FILETYPE_PEM,
-                                               f.read())
+                                       f.read())
     # pyopenssl always returns bytes
     timestamp = method(x509)
     reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
@@ -476,6 +493,7 @@ def sha256sum(filename):
         sha256.update(file_d.read().encode('UTF-8'))
     return sha256.hexdigest()
 
+
 def cert_and_chain_from_fullchain(fullchain_pem):
     """Split fullchain_pem into cert_pem and chain_pem
 
@@ -486,6 +504,7 @@ def cert_and_chain_from_fullchain(fullchain_pem):
 
     """
     cert = crypto.dump_certificate(crypto.FILETYPE_PEM,
-        crypto.load_certificate(crypto.FILETYPE_PEM, fullchain_pem)).decode()
+                                   crypto.load_certificate(
+                                       crypto.FILETYPE_PEM, fullchain_pem)).decode()
     chain = fullchain_pem[len(cert):].lstrip()
     return (cert, chain)

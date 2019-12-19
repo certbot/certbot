@@ -21,8 +21,9 @@ from acme.magic_typing import DefaultDict, Dict, List, Set, Union  # pylint: dis
 
 from certbot import errors
 from certbot import interfaces
-from certbot import ocsp
 from certbot import util
+
+from certbot._internal import ocsp
 
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.compat import filesystem
@@ -2209,7 +2210,19 @@ class ApacheConfigurator(common.Installer):
 
         """
         self.config_test()
+
+        if not self._ocsp_prefetch:
+            # Try to populate OCSP prefetch structure from pluginstorage
+            self._ocsp_prefetch_fetch_state()
+        if self._ocsp_prefetch:
+            # OCSP prefetching is enabled, so back up the db
+            self._ocsp_prefetch_backup_db()
+
         self._reload()
+
+        if self._ocsp_prefetch:
+            # Restore the backed up dbm database
+            self._ocsp_prefetch_restore_db()
 
     def _reload(self):
         """Reloads the Apache server.
@@ -2401,8 +2414,8 @@ class ApacheConfigurator(common.Installer):
         ocsp_save = os.path.join(self.config.config_dir, "ocsp")
         for path in [ocsp_work, ocsp_save]:
             if not os.path.isdir(path):
-                os.makedirs(path)
-                os.chmod(path, 0o755)
+                filesystem.makedirs(path)
+                filesystem.chmod(path, 0o755)
 
     def _ensure_ocsp_prefetch_compatibility(self):
         """Make sure that the operating system supports the required libraries
@@ -2423,6 +2436,7 @@ class ApacheConfigurator(common.Installer):
     def _ocsp_dbm_open(self, filepath):
         """Helper method to open an DBM file in a way that depends on the platform
         that Certbot is run on. Returns an open database structure."""
+
         if not os.path.isfile(filepath+".db"):
             raise errors.PluginError(
                 "The OCSP stapling cache DBM file wasn't created by Apache.")
@@ -2478,11 +2492,11 @@ class ApacheConfigurator(common.Installer):
         """
 
         self._ensure_ocsp_dirs()
-        handler = ocsp.OCSPResponseHandler(cert_path, chain_path)
         ocsp_workfile = os.path.join(
             self.config.work_dir, "ocsp",
             apache_util.certid_sha1_hex(cert_path))
-        if handler.ocsp_request_to_file(ocsp_workfile):
+        handler = ocsp.RevocationChecker()
+        if not handler.revoked(cert_path, chain_path, ocsp_workfile):
             # Guaranteed good response
             cache_path = os.path.join(self.config.config_dir, "ocsp", "ocsp_cache")
             # dbm.open automatically adds the file extension, it will be
@@ -2585,6 +2599,8 @@ class ApacheConfigurator(common.Installer):
             for vh in prefetch_vhosts:
                 self._enable_ocsp_stapling(vh, None, prefetch=True)
             self.restart()
+            # Ensure Apache has enough time to properly restart and create the file
+            time.sleep(2)
             try:
                 self._ocsp_refresh(lineage.cert_path, lineage.chain_path)
                 self._ocsp_prefetch_save(lineage.cert_path, lineage.chain_path)

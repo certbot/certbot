@@ -929,6 +929,8 @@ def enhance(config, plugins):
     lineage = cert_manager.lineage_for_certname(config, config.certname)
     if not config.chain_path:
         config.chain_path = lineage.chain_path
+    if not config.cert_path:
+        config.cert_path = lineage.cert_path
     if oldstyle_enh:
         le_client = _init_le_client(config, authenticator=None, installer=installer)
         le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
