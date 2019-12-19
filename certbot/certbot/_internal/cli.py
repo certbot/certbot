@@ -15,22 +15,21 @@ import zope.interface
 from zope.interface import interfaces as zope_interfaces
 
 from acme import challenges
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Any, Dict, Optional
-# pylint: enable=unused-import, no-name-in-module
-
+from acme.magic_typing import Any  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
 import certbot
-import certbot.plugins.enhancements as enhancements
-import certbot._internal.plugins.selection as plugin_selection
-from certbot._internal import constants
 from certbot import crypto_util
 from certbot import errors
-from certbot._internal import hooks
 from certbot import interfaces
 from certbot import util
+from certbot._internal import constants
+from certbot._internal import hooks
+from certbot._internal.plugins import disco as plugins_disco
+import certbot._internal.plugins.selection as plugin_selection
 from certbot.compat import os
 from certbot.display import util as display_util
-from certbot._internal.plugins import disco as plugins_disco
+import certbot.plugins.enhancements as enhancements
 
 logger = logging.getLogger(__name__)
 
@@ -288,10 +287,9 @@ def flag_default(name):
 
 def config_help(name, hidden=False):
     """Extract the help message for an `.IConfig` attribute."""
-    # pylint: disable=no-member
     if hidden:
         return argparse.SUPPRESS
-    field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute  # pylint: disable=no-value-for-parameter
+    field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute
     return field.__doc__
 
 
@@ -675,7 +673,7 @@ class HelpfulArgumentParser(object):
 
         parsed_args.actual_csr = (csr, typ)
 
-        csr_domains = set([d.lower() for d in domains])
+        csr_domains = {d.lower() for d in domains}
         config_domains = set(parsed_args.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
@@ -848,11 +846,11 @@ class HelpfulArgumentParser(object):
             chosen_topic = "run"
         if chosen_topic == "all":
             # Addition of condition closes #6209 (removal of duplicate route53 option).
-            return dict([(t, True) if t != 'certbot-route53:auth' else (t, False)
-                         for t in self.help_topics])
+            return {t: t != 'certbot-route53:auth' for t in self.help_topics}
         elif not chosen_topic:
-            return dict([(t, False) for t in self.help_topics])
-        return dict([(t, t == chosen_topic) for t in self.help_topics])
+            return {t: False for t in self.help_topics}
+        return {t: t == chosen_topic for t in self.help_topics}
+
 
 def _add_all_groups(helpful):
     helpful.add_group("automation", description="Flags for automating execution & other tweaks")

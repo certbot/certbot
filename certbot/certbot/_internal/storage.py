@@ -12,16 +12,17 @@ import pytz
 import six
 
 import certbot
+from certbot import crypto_util
+from certbot import errors
+from certbot import interfaces
+from certbot import util
 from certbot._internal import cli
 from certbot._internal import constants
-from certbot import crypto_util
 from certbot._internal import error_handler
-from certbot import errors
-from certbot import util
-from certbot.compat import os
-from certbot.compat import filesystem
-from certbot.plugins import common as plugins_common
 from certbot._internal.plugins import disco as plugins_disco
+from certbot.compat import filesystem
+from certbot.compat import os
+from certbot.plugins import common as plugins_common
 
 logger = logging.getLogger(__name__)
 
@@ -376,7 +377,7 @@ def delete_files(config, certname):
         logger.debug("Unable to remove %s", archive_path)
 
 
-class RenewableCert(object):
+class RenewableCert(interfaces.RenewableCert):
     """Renewable certificate.
 
     Represents a lineage of certificates that is under the management of
@@ -423,7 +424,7 @@ class RenewableCert(object):
 
         """
         self.cli_config = cli_config
-        self.lineagename = lineagename_for_filename(config_filename)
+        self._lineagename = lineagename_for_filename(config_filename)
 
         # self.configuration should be used to read parameters that
         # may have been chosen based on default values from the
@@ -482,6 +483,15 @@ class RenewableCert(object):
     def fullchain_path(self):
         """Duck type for self.fullchain"""
         return self.fullchain
+
+    @property
+    def lineagename(self):
+        """Name given to the certificate lineage.
+
+        :rtype: str
+
+        """
+        return self._lineagename
 
     @property
     def target_expiry(self):
@@ -858,21 +868,15 @@ class RenewableCert(object):
             for _, link in previous_links:
                 os.unlink(link)
 
-    def names(self, version=None):
+    def names(self):
         """What are the subject names of this certificate?
 
-        (If no version is specified, use the current version.)
-
-        :param int version: the desired version number
         :returns: the subject names
         :rtype: `list` of `str`
         :raises .CertStorageError: if could not find cert file.
 
         """
-        if version is None:
-            target = self.current_target("cert")
-        else:
-            target = self.version("cert", version)
+        target = self.current_target("cert")
         if target is None:
             raise errors.CertStorageError("could not find cert file")
         with open(target) as f:
@@ -1010,10 +1014,8 @@ class RenewableCert(object):
                      "directory %s created.", archive, live_dir)
 
         # Put the data into the appropriate files on disk
-        target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
-                       for kind in ALL_FOUR])
-        archive_target = dict([(kind, os.path.join(archive, kind + "1.pem"))
-                               for kind in ALL_FOUR])
+        target = {kind: os.path.join(live_dir, kind + ".pem") for kind in ALL_FOUR}
+        archive_target = {kind: os.path.join(archive, kind + "1.pem") for kind in ALL_FOUR}
         for kind in ALL_FOUR:
             os.symlink(_relpath_from_file(archive_target[kind], target[kind]), target[kind])
         with open(target["cert"], "wb") as f:
@@ -1078,10 +1080,8 @@ class RenewableCert(object):
 
         self.cli_config = cli_config
         target_version = self.next_free_version()
-        target = dict(
-            [(kind,
-              os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version)))
-             for kind in ALL_FOUR])
+        target = {kind: os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version))
+                  for kind in ALL_FOUR}
 
         old_privkey = os.path.join(
             self.archive_dir, "privkey{0}.pem".format(prior_version))

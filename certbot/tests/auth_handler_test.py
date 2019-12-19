@@ -8,14 +8,12 @@ import zope.component
 
 from acme import challenges
 from acme import client as acme_client
-from acme import messages
 from acme import errors as acme_errors
-
+from acme import messages
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
@@ -496,7 +494,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         self.authzr1.body.identifier.value = 'example.com'
         self.authzr1.body.challenges = [http_01, http_01]
 
-        kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
+        kwargs["error"] = messages.Error.with_code("dnssec", detail="detail")
         http_01_diff = messages.ChallengeBody(**kwargs)
 
         self.authzr2 = mock.MagicMock()

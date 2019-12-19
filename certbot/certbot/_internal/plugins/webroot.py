@@ -10,16 +10,16 @@ import zope.component
 import zope.interface
 
 from acme import challenges  # pylint: disable=unused-import
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict, Set, DefaultDict, List
-# pylint: enable=unused-import, no-name-in-module
-
+from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import achallenges  # pylint: disable=unused-import
-from certbot._internal import cli
 from certbot import errors
 from certbot import interfaces
-from certbot.compat import os
+from certbot._internal import cli
 from certbot.compat import filesystem
+from certbot.compat import os
 from certbot.display import ops
 from certbot.display import util as display_util
 from certbot.plugins import common
@@ -135,8 +135,7 @@ to serve all files under specified web root ({0})."""
                 raise errors.PluginError(
                     "Every requested domain must have a "
                     "webroot when using the webroot plugin.")
-            else:  # code == display_util.OK
-                return None if index == 0 else known_webroots[index - 1]
+            return None if index == 0 else known_webroots[index - 1]  # code == display_util.OK
 
     def _prompt_for_new_webroot(self, domain, allowraise=False):
         code, webroot = ops.validated_directory(
@@ -146,12 +145,10 @@ to serve all files under specified web root ({0})."""
         if code == display_util.CANCEL:
             if not allowraise:
                 return None
-            else:
-                raise errors.PluginError(
-                    "Every requested domain must have a "
-                    "webroot when using the webroot plugin.")
-        else:  # code == display_util.OK
-            return _validate_webroot(webroot)
+            raise errors.PluginError(
+                "Every requested domain must have a "
+                "webroot when using the webroot plugin.")
+        return _validate_webroot(webroot)  # code == display_util.OK
 
     def _create_challenge_dirs(self):
         path_map = self.conf("map")

@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 import contextlib
 import ctypes
+import os
+import shutil
 import struct
 import subprocess
-import os
 import sys
-import shutil
 import tempfile
 import time
 
 PYTHON_VERSION = (3, 7, 4)
 PYTHON_BITNESS = 32
-PYWIN32_VERSION = 225  # do not forget to edit pywin32 dependency accordingly in setup.py
+PYWIN32_VERSION = 227  # do not forget to edit pywin32 dependency accordingly in setup.py
 NSIS_VERSION = '3.04'
 
 

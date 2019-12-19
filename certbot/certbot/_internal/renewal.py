@@ -14,17 +14,16 @@ import six
 import zope.component
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-
-from certbot._internal import cli
 from certbot import crypto_util
 from certbot import errors
-from certbot._internal import hooks
 from certbot import interfaces
+from certbot import util
+from certbot._internal import cli
+from certbot._internal import hooks
 from certbot._internal import storage
 from certbot._internal import updater
-from certbot import util
-from certbot.compat import os
 from certbot._internal.plugins import disco as plugins_disco
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 
@@ -472,5 +471,4 @@ def handle_renewal_request(config):
     if renew_failures or parse_failures:
         raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
             len(renew_failures), len(parse_failures)))
-    else:
-        logger.debug("no renewal failures")
+    logger.debug("no renewal failures")

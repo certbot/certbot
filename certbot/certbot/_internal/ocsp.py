@@ -1,29 +1,37 @@
 """Tools for checking certificate revocation."""
+from datetime import datetime
+from datetime import timedelta
 import logging
 import re
-from datetime import datetime, timedelta
-from subprocess import Popen, PIPE
+from subprocess import PIPE
+from subprocess import Popen
+
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import UnsupportedAlgorithm
+from cryptography.hazmat.backends import default_backend
+# See https://github.com/pyca/cryptography/issues/4275
+from cryptography.hazmat.primitives import hashes  # type: ignore
+from cryptography.hazmat.primitives import serialization
+import pytz
+import requests
+
+from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
+from certbot import crypto_util
+from certbot import errors
+from certbot import util
+from certbot._internal.storage import RenewableCert  # pylint: disable=unused-import
 
 try:
     # Only cryptography>=2.5 has ocsp module
     # and signature_hash_algorithm attribute in OCSPResponse class
-    from cryptography.x509 import ocsp  # pylint: disable=import-error
+    from cryptography.x509 import ocsp  # pylint: disable=import-error, ungrouped-imports
     getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp = None  # type: ignore
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives import hashes  # type: ignore
-from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
-import pytz
-import requests
 
-from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
-from certbot import crypto_util
-from certbot import errors
-from certbot._internal.storage import RenewableCert # pylint: disable=unused-import
-from certbot import util
+
 
 logger = logging.getLogger(__name__)
 
@@ -305,5 +313,5 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
         return True
     else:
         logger.warning("Unable to properly parse OCSP output: %s\nstderr:%s",
-                       ocsp_output, ocsp_errors)
+                    ocsp_output, ocsp_errors)
         return False

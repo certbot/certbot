@@ -4,16 +4,15 @@ import shutil
 import tempfile
 import unittest
 
+from josepy import interfaces
 import mock
 
-from josepy import interfaces
-
-import certbot.tests.util as test_util
-from certbot._internal import account
 from certbot import errors
-from certbot.compat import os
-from certbot.compat import filesystem
 from certbot import util
+from certbot._internal import account
+from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 
 KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")
@@ -206,7 +205,7 @@ class RegisterTest(test_util.ConfigTestCase):
     def test_unsupported_error(self):
         from acme import messages
         msg = "Test"
-        mx_err = messages.Error(detail=msg, typ="malformed", title="title")
+        mx_err = messages.Error.with_code("malformed", detail=msg, title="title")
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().client.directory.__getitem__ = mock.Mock(
                 side_effect=self._new_acct_dir_mock

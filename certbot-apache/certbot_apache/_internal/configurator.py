@@ -1,5 +1,6 @@
 """Apache Configurator."""
 # pylint: disable=too-many-lines
+from collections import defaultdict
 import copy
 import fnmatch
 import logging
@@ -8,30 +9,28 @@ import shutil
 import socket
 import time
 
-from collections import defaultdict
-
 import pkg_resources
 import six
-
 import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import DefaultDict, Dict, List, Set, Union  # pylint: disable=unused-import, no-name-in-module
-
+from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-
 from certbot._internal import ocsp
 
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
-from certbot.plugins.util import path_surgery
 from certbot.plugins.enhancements import AutoHSTSEnhancement
-
+from certbot.plugins.util import path_surgery
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
 from certbot_apache._internal import display_ops
@@ -455,7 +454,7 @@ class ApacheConfigurator(common.Installer):
                     filtered_vhosts[name] = vhost
 
         # Only unique VHost objects
-        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
+        dialog_input = set(filtered_vhosts.values())
 
         # Ask the user which of names to enable, expect list of names back
         dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
@@ -606,9 +605,9 @@ class ApacheConfigurator(common.Installer):
                 "in the Apache config.",
                 target_name)
             raise errors.PluginError("No vhost selected")
-        elif temp:
+        if temp:
             return vhost
-        elif not vhost.ssl:
+        if not vhost.ssl:
             addrs = self._get_proposed_addrs(vhost, "443")
             # TODO: Conflicts is too conservative
             if not any(vhost.enabled and vhost.conflicts(addrs) for
@@ -957,13 +956,12 @@ class ApacheConfigurator(common.Installer):
 
         loc = parser.get_aug_path(self.parser.loc["name"])
         if addr.get_port() == "443":
-            path = self.parser.add_dir_to_ifmodssl(
+            self.parser.add_dir_to_ifmodssl(
                 loc, "NameVirtualHost", [str(addr)])
         else:
-            path = self.parser.add_dir(loc, "NameVirtualHost", [str(addr)])
+            self.parser.add_dir(loc, "NameVirtualHost", [str(addr)])
 
-        msg = ("Setting %s to be NameBasedVirtualHost\n"
-               "\tDirective added to %s\n" % (addr, path))
+        msg = "Setting {0} to be NameBasedVirtualHost\n".format(addr)
         logger.debug(msg)
         self.save_notes += msg
 
@@ -1371,12 +1369,9 @@ class ApacheConfigurator(common.Installer):
                         result.append(comment)
                         sift = True
 
-                    result.append('\n'.join(
-                        ['# ' + l for l in chunk]))
-                    continue
+                    result.append('\n'.join(['# ' + l for l in chunk]))
                 else:
                     result.append('\n'.join(chunk))
-                    continue
         return result, sift
 
     def _get_vhost_block(self, vhost):
@@ -2759,4 +2754,4 @@ class ApacheConfigurator(common.Installer):
         self._autohsts_save_state()
 
 
-AutoHSTSEnhancement.register(ApacheConfigurator)  # pylint: disable=no-member
+AutoHSTSEnhancement.register(ApacheConfigurator)

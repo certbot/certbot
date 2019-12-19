@@ -1,22 +1,20 @@
 """Test for certbot_nginx._internal.configurator."""
 import unittest
 
-import OpenSSL
 import mock
+import OpenSSL
+
 from acme import challenges
 from acme import messages
-
 from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
 from certbot.compat import os
 from certbot.tests import util as certbot_test_util
-
 from certbot_nginx._internal import obj
 from certbot_nginx._internal import parser
 from certbot_nginx._internal.configurator import _redirect_block_for_domain
 from certbot_nginx._internal.nginxparser import UnspacedList
-
 import test_util as util
 
 
@@ -1093,7 +1091,7 @@ class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
             self.assertIn("/usr/local/etc/nginx", server_root)
             self.assertIn("/etc/nginx", server_root)
         else:
-            self.assertTrue(server_root == "/etc/nginx" or server_root == "/usr/local/etc/nginx")
+            self.assertTrue(server_root in ("/etc/nginx", "/usr/local/etc/nginx"))
 
 
 if __name__ == "__main__":

@@ -1,18 +1,21 @@
 """ACME protocol messages."""
 import json
+
+import josepy as jose
 import six
+
+from acme import challenges
+from acme import errors
+from acme import fields
+from acme import jws
+from acme import util
+
 try:
     from collections.abc import Hashable  # pylint: disable=no-name-in-module
 except ImportError:  # pragma: no cover
     from collections import Hashable
 
-import josepy as jose
 
-from acme import challenges
-from acme import errors
-from acme import fields
-from acme import util
-from acme import jws
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
@@ -143,7 +146,7 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
         if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
             raise jose.DeserializationError(
                 '{0} not recognized'.format(cls.__name__))
-        return cls.POSSIBLE_NAMES[jobj]  # pylint: disable=unsubscriptable-object
+        return cls.POSSIBLE_NAMES[jobj]
 
     def __repr__(self):
         return '{0}({1})'.format(self.__class__.__name__, self.name)

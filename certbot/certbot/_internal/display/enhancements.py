@@ -7,7 +7,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
 
-
 logger = logging.getLogger(__name__)
 
 # Define a helper function to avoid verbose code

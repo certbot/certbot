@@ -3,7 +3,6 @@ import pkg_resources
 
 from certbot.compat import os
 
-
 MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
 """Name of the mod_ssl config file as saved in `IConfig.config_dir`."""
 

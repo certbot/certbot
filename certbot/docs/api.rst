@@ -3,6 +3,6 @@ API Documentation
 =================
 
 .. toctree::
-   :glob:
+   :maxdepth: 4
 
-   api/**
+   api/certbot

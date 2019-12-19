@@ -60,11 +60,10 @@ def get_email(invalid=False, optional=True):
                 raise errors.Error(
                     "An e-mail address or "
                     "--register-unsafely-without-email must be provided.")
-            else:
-                raise errors.Error("An e-mail address must be provided.")
-        elif util.safe_email(email):
+            raise errors.Error("An e-mail address must be provided.")
+        if util.safe_email(email):
             return email
-        elif suggest_unsafe:
+        if suggest_unsafe:
             msg += unsafe_suggestion
             suggest_unsafe = False  # add this message at most once
 
@@ -292,7 +291,7 @@ def _gen_ssl_lab_urls(domains):
 def _gen_https_names(domains):
     """Returns a string of the https domains.
 
-    Domains are formatted nicely with https:// prepended to each.
+    Domains are formatted nicely with ``https://`` prepended to each.
 
     :param list domains: Each domain is a 'str'
 

@@ -1,20 +1,20 @@
 """ACME AuthHandler."""
+import datetime
 import logging
 import time
-import datetime
 
 import zope.component
 
 from acme import challenges
-from acme import messages
 from acme import errors as acme_errors
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict, List, Tuple
-# pylint: enable=unused-import, no-name-in-module
+from acme import messages
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
-from certbot._internal import error_handler
 from certbot import interfaces
+from certbot._internal import error_handler
 
 logger = logging.getLogger(__name__)
 
@@ -285,9 +285,8 @@ def challb_to_achall(challb, account_key, domain):
             challb=challb, domain=domain, account_key=account_key)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, domain=domain)
-    else:
-        raise errors.Error(
-            "Received unsupported challenge of type: {0}".format(chall.typ))
+    raise errors.Error(
+        "Received unsupported challenge of type: {0}".format(chall.typ))
 
 
 def gen_challenge_path(challbs, preferences, combinations):

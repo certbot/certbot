@@ -1,13 +1,21 @@
 """Tests for ocsp.py"""
 # pylint: disable=protected-access
 import contextlib
+from datetime import datetime
+from datetime import timedelta
 import unittest
-from datetime import datetime, timedelta
 
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes  # type: ignore
-from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
-from cryptography import x509
+import mock
+import pytz
+
+from certbot import errors
+from certbot.tests import util as test_util
+
 try:
     # Only cryptography>=2.5 has ocsp module
     # and signature_hash_algorithm attribute in OCSPResponse class
@@ -15,11 +23,7 @@ try:
     getattr(ocsp_lib.OCSPResponse, 'signature_hash_algorithm')
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp_lib = None  # type: ignore
-import mock
-import pytz
 
-from certbot import errors
-from certbot.tests import util as test_util
 
 out = """Missing = in header key=value
 ocsp: Use -help for summary.

@@ -1,10 +1,12 @@
 """New interface style Certbot enhancements"""
 import abc
+
 import six
 
+from acme.magic_typing import Any  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot._internal import constants
-
-from acme.magic_typing import Dict, List, Any  # pylint: disable=unused-import, no-name-in-module
 
 ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]
 """List of possible :class:`certbot.interfaces.IInstaller`
@@ -62,7 +64,7 @@ def enable(lineage, domains, installer, config):
     Run enable method for each requested enhancement that is supported.
 
     :param lineage: Certificate lineage object
-    :type lineage: certbot._internal.storage.RenewableCert
+    :type lineage: certbot.interfaces.RenewableCert
 
     :param domains: List of domains in certificate to enhance
     :type domains: str
@@ -123,7 +125,7 @@ class AutoHSTSEnhancement(object):
         Implementation of this method should increase the max-age value.
 
         :param lineage: Certificate lineage object
-        :type lineage: certbot._internal.storage.RenewableCert
+        :type lineage: certbot.interfaces.RenewableCert
 
         .. note:: prepare() method inherited from `interfaces.IPlugin` might need
             to be called manually within implementation of this interface method
@@ -137,7 +139,7 @@ class AutoHSTSEnhancement(object):
         Long max-age value should be set in implementation of this method.
 
         :param lineage: Certificate lineage object
-        :type lineage: certbot._internal.storage.RenewableCert
+        :type lineage: certbot.interfaces.RenewableCert
         """
 
     @abc.abstractmethod
@@ -148,7 +150,7 @@ class AutoHSTSEnhancement(object):
         over the subsequent runs of Certbot renew.
 
         :param lineage: Certificate lineage object
-        :type lineage: certbot._internal.storage.RenewableCert
+        :type lineage: certbot.interfaces.RenewableCert
 
         :param domains: List of domains in certificate to enhance
         :type domains: str

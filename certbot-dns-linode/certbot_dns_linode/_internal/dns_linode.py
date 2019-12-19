@@ -2,9 +2,9 @@
 import logging
 import re
 
-import zope.interface
 from lexicon.providers import linode
 from lexicon.providers import linode4
+import zope.interface
 
 from certbot import errors
 from certbot import interfaces
