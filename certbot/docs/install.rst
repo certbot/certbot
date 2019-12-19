@@ -70,7 +70,6 @@ The ``certbot-auto`` wrapper script installs Certbot, obtaining some dependencie
 from your web server OS and putting others in a python virtual environment. You can
 download and run it as follows::
 
-  cd /tmp
   wget https://dl.eff.org/certbot-auto
   sudo mv certbot-auto /usr/local/bin/certbot-auto
   sudo chown root /usr/local/bin/certbot-auto
