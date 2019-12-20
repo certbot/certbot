@@ -14,11 +14,15 @@ echo ""
 export UNAME_FAKE_32BITS=true
 if ! "$LE_AUTO" 2>&1 | grep -q "Certbot cannot be installed."; then
   echo "On CentOS 32 bits, certbot-auto installed certbot."
+  touch .failed-test
+  exit
+fi
+)
+
+if [ -f .failed-test ]; then
   exit 1
 fi
-
 echo "PASSED: On CentOS6 32 bits, certbot-auto refuses to install certbot."
-)
 
 # we're going to modify env variables, so do this in a subshell
 (
@@ -29,7 +33,8 @@ python3 --version 2> /dev/null
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
   echo "Python3 is already installed."
-  exit 1
+  touch .failed-test
+  exit
 fi
 
 # ensure python2.7 is available
@@ -37,7 +42,8 @@ python2.7 --version 2> /dev/null
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
   echo "Python3 is not available."
-  exit 1
+  touch .failed-test
+  exit
 fi
 
 # bootstrap, but don't install python 3.
@@ -48,11 +54,15 @@ python3 --version 2> /dev/null
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
   echo "letsencrypt-auto installed Python3 even though Python2.7 is present."
+  touch .failed-test
+  exit
+fi
+)
+
+if [ -f .failed-test ]; then
   exit 1
 fi
-
 echo "PASSED: Did not upgrade to Python3 when Python2.7 is present."
-)
 
 # ensure python2.7 isn't available
 python2.7 --version 2> /dev/null
@@ -95,29 +105,50 @@ unset VENV_PATH
 # ensure CentOS6 32bits is not supported anymore, and so certbot
 # is not upgraded nor reinstalled.
 export UNAME_FAKE_32BITS=true
-if ! "$LE_AUTO" 2>&1 | grep -q "Certbot will no longer receive updates."; then
-  echo "On CentOS 32 bits, certbot-auto upgraded certbot."
-  exit 1
+if ! "$LE_AUTO" --version > /dev/null 2> /dev/null; then
+  echo "On CentOS 6 32 bits, certbot-auto failed to run installed certbot instance."
+  touch .failed-test
+  exit
+fi
+if ! "$LE_AUTO" --version 2>&1 | grep -q "Certbot will no longer receive updates."; then
+  echo "On CentOS 6 32 bits, certbot-auto upgraded installed certbot instance."
+  touch .failed-test
+  exit
 fi
 if ! "$LE_AUTO" --install-only 2>&1 | grep -q "Certbot cannot be installed."; then
-  echo "On CentOS 32 bits, certbot-auto installed certbot again."
-  exit 1
+  echo "On CentOS 6 32 bits, certbot-auto installed certbot again."
+  touch .failed-test
+  exit
 fi
-
-# Prepare a certbot installation in the old venv path
-mkdir -p ~/.local/share
-mv /opt/eff.org/certbot/venv ~/.local/share
-mv ~/.local/share/venv ~/.local/share/letsencrypt
-if ! "$LE_AUTO" 2>&1 | grep -q "Certbot will no longer receive updates."; then
-  echo "On CentOS 32 bits, certbot-auto upgraded certbot on the old venv path."
-  exit 1
-fi
-
-mv ~/.local/share/letsencrypt /opt/eff.org/certbot
-mv /opt/eff.org/certbot/letsencrypt /opt/eff.org/certbot/venv
-
-echo "PASSED: On CentOS6 32 bits, certbot-auto refuses to install/upgrade certbot."
 )
+
+if [ -f .failed-test ]; then
+  exit 1
+fi
+
+# we're going to modify env variables, so do this in a subshell
+(
+# Prepare a certbot installation in the old venv path
+export VENV_PATH=~/.local/share/letsencrypt
+"$LE_AUTO" --install-only > /dev/null 2> /dev/null
+# fake 32 bits mode
+export UNAME_FAKE_32BITS=true
+if ! "$LE_AUTO" --version > /dev/null 2> /dev/null; then
+  echo "On CentOS 6 32 bits, certbot-auto failed to run installed certbot instance in the old venv path."
+  touch .failed-test
+  exit
+fi
+if ! "$LE_AUTO" 2>&1 | grep -q "Certbot will no longer receive updates."; then
+  echo "On CentOS 6 32 bits, certbot-auto upgraded installed certbot in the old venv path."
+  touch .failed-test
+  exit
+fi
+)
+
+if [ -f .failed-test ]; then
+  exit 1
+fi
+echo "PASSED: On CentOS 6 32 bits, certbot-auto refused to install/upgrade certbot."
 
 # test using python3
 pytest -v -s certbot/letsencrypt-auto-source/tests
