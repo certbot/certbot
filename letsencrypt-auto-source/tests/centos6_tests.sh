@@ -104,6 +104,18 @@ if ! "$LE_AUTO" --install-only 2>&1 | grep -q "Certbot cannot be installed."; th
   exit 1
 fi
 
+# Prepare certbot installation in the old venv path
+# (copy installation in old path + forget about previous installation)
+mkdir -p ~/.local/share
+cp -ra "$VENV_PATH" ~/.local/share/letsencrypt
+unset VENV_PATH
+if ! "$LE_AUTO" 2>&1 | grep -q "Certbot will no longer receive updates."; then
+  echo "On CentOS 32 bits, certbot-auto upgraded certbot on the old venv path."
+  exit 1
+fi
+
+rm -rf ~/.local/share/letsencrypt
+
 echo "PASSED: On CentOS6 32 bits, certbot-auto refuses to install/upgrade certbot."
 )
 

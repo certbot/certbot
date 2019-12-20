@@ -552,6 +552,10 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # In this situation, we bypass any bootstrap or certbot venv setup.
     error "Your system is not supported by certbot-auto anymore."
 
+    if OldVenvExists; then
+      VENV_BIN="$OLD_VENV_PATH/bin"
+    fi
+
     if [ -f "$VENV_BIN/letsencrypt" -a "$INSTALL_ONLY" != 1 ]; then
       error "Certbot will no longer receive updates."
       error "Please visit https://certbot.eff.org/ to check for other alternatives."
