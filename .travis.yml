@@ -175,7 +175,7 @@ matrix:
     - python: "3.7"
       env: TOXENV=py37
       <<: *extended-test-suite
-    - python: "3.8-dev"
+    - python: "3.8"
       env: TOXENV=py38
       <<: *extended-test-suite
     - python: "3.4"
@@ -218,10 +218,10 @@ matrix:
       sudo: required
       services: docker
       <<: *extended-test-suite
-    - python: "3.8-dev"
+    - python: "3.8"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
       <<: *extended-test-suite
-    - python: "3.8-dev"
+    - python: "3.8"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
       <<: *extended-test-suite
     - sudo: required
