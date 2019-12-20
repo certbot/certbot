@@ -112,7 +112,7 @@ class RevocationChecker(object):
                "-verify_other", chain_path,
                "-trust_other",
                "-header"] + self.host_args(host)
-        if response_file:
+        if response_file:  # pragma: no cover
             cmd += ["-respout", response_file]
         logger.debug("Querying OCSP for %s", cert_path)
         logger.debug(" ".join(cmd))
@@ -176,7 +176,7 @@ def _check_ocsp_cryptography(cert_path, chain_path, url, response_file=None):
         logger.info("OCSP check failed for %s (HTTP status: %d)", cert_path, response.status_code)
         return False
 
-    if response_file:
+    if response_file:  # pragma: no cover
         with open(response_file, 'wb') as fh:
             fh.write(response.content)
 

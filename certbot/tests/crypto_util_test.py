@@ -25,6 +25,7 @@ P256_KEY = test_util.load_vector('nistp256_key.pem')
 P256_CERT_PATH = test_util.vector_path('cert-nosans_nistp256.pem')
 P256_CERT = test_util.load_vector('cert-nosans_nistp256.pem')
 
+
 class InitSaveKeyTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_key."""
     def setUp(self):
@@ -369,8 +370,10 @@ class Sha256sumTest(unittest.TestCase):
     """Tests for certbot.crypto_util.notAfter"""
     def test_sha256sum(self):
         from certbot.crypto_util import sha256sum
-        self.assertEqual(sha256sum(CERT_PATH),
-            '914ffed8daf9e2c99d90ac95c77d54f32cbd556672facac380f0c063498df84e')
+        self.assertEqual(
+            sha256sum(CERT_PATH),
+            '914ffed8daf9e2c99d90ac95c77d54f32cbd556672facac380f0c063498df84e'
+        )
 
 
 class CertAndChainFromFullchainTest(unittest.TestCase):
@@ -386,6 +389,17 @@ class CertAndChainFromFullchainTest(unittest.TestCase):
             cert_out, chain_out = cert_and_chain_from_fullchain(fullchain)
             self.assertEqual(cert_out, cert_pem)
             self.assertEqual(chain_out, chain_pem)
+
+
+class CertFingerprintTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.cert_sha1_fingerprint"""
+
+    def test_cert_sha1_fingerprint(self):
+        from certbot.crypto_util import cert_sha1_fingerprint
+        self.assertEqual(
+            cert_sha1_fingerprint(CERT_PATH),
+            b'\t\xf8\xce\x01E\r(\x84g\xc32j\xc0E~5\x199\xc7.'
+        )
 
 
 if __name__ == '__main__':

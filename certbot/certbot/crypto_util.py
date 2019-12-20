@@ -225,7 +225,9 @@ def verify_renewable_cert(renewable_cert):
 
 def load_cert(cert_path):
     """Reads the certificate PEM file and returns a cryptography.x509 object
+
     :param str cert_path: Path to the certificate
+
     :rtype `cryptography.x509`:
     :returns: x509 certificate object
     """
