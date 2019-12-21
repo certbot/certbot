@@ -1,2 +1,4 @@
-acme[dev]==0.21.1
-certbot[dev]==0.21.1
+# Remember to update setup.py to match the package versions below.
+acme[dev]==0.31.0
+-e certbot[dev]
+dns-lexicon==2.2.3

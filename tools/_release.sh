@@ -30,7 +30,6 @@ SUBPKGS_NOT_IN_AUTO="certbot-dns-cloudflare certbot-dns-cloudxns certbot-dns-dig
 SUBPKGS_IN_AUTO="certbot $SUBPKGS_IN_AUTO_NO_CERTBOT"
 SUBPKGS_NO_CERTBOT="$SUBPKGS_IN_AUTO_NO_CERTBOT $SUBPKGS_NOT_IN_AUTO"
 SUBPKGS="$SUBPKGS_IN_AUTO $SUBPKGS_NOT_IN_AUTO"
-subpkgs_modules="$(echo $SUBPKGS | sed s/-/_/g)"
 # certbot_compatibility_test is not packaged because:
 # - it is not meant to be used by anyone else than Certbot devs
 # - it causes problems when running pytest - the latter tries to
@@ -42,7 +41,7 @@ mv "dist.$version" "dist.$version.$(date +%s).bak" || true
 git tag --delete "$tag" || true
 
 tmpvenv=$(mktemp -d)
-virtualenv --no-site-packages -p python2 $tmpvenv
+VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages -p python2 $tmpvenv
 . $tmpvenv/bin/activate
 # update setuptools/pip just like in other places in the repo
 pip install -U setuptools
@@ -66,17 +65,24 @@ fi
 git checkout "$RELEASE_BRANCH"
 
 # Update changelog
-sed -i "s/master/$(date +'%Y-%m-%d')/" CHANGELOG.md
-git add CHANGELOG.md
+sed -i "s/master/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
+git add certbot/CHANGELOG.md
 git diff --cached
 git commit -m "Update changelog for $version release"
 
-for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
+for pkg_dir in $SUBPKGS certbot-compatibility-test
 do
   sed -i 's/\.dev0//' "$pkg_dir/setup.py"
   git add "$pkg_dir/setup.py"
-done
 
+  if [ -f "$pkg_dir/local-oldest-requirements.txt" ]; then
+    sed -i "s/-e acme\[dev\]/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    sed -i "s/-e acme/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    sed -i "s/-e certbot\[dev\]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    sed -i "s/-e certbot/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    git add "$pkg_dir/local-oldest-requirements.txt"
+  fi
+done
 
 SetVersion() {
     ver="$1"
@@ -90,7 +96,7 @@ SetVersion() {
       fi
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
-    init_file="certbot/__init__.py"
+    init_file="certbot/certbot/__init__.py"
     if [ $(grep -c '^__version' "$init_file") != 1 ]; then
       echo "Unexpected count of __version variables in $init_file"
       exit 1
@@ -102,8 +108,11 @@ SetVersion() {
 
 SetVersion "$version"
 
+# Unset CERTBOT_OLDEST to prevent wheels from being built improperly due to
+# conditionals like the one found in certbot-dns-dnsimple's setup.py file.
+unset CERTBOT_OLDEST
 echo "Preparing sdists and wheels"
-for pkg_dir in . $SUBPKGS_NO_CERTBOT
+for pkg_dir in $SUBPKGS
 do
   cd $pkg_dir
 
@@ -123,8 +132,7 @@ done
 
 
 mkdir "dist.$version"
-mv dist "dist.$version/certbot"
-for pkg_dir in $SUBPKGS_NO_CERTBOT
+for pkg_dir in $SUBPKGS
 do
   mv $pkg_dir/dist "dist.$version/$pkg_dir/"
 done
@@ -135,7 +143,7 @@ cd "dist.$version"
 python -m SimpleHTTPServer $PORT &
 # cd .. is NOT done on purpose: we make sure that all subpackages are
 # installed from local PyPI rather than current directory (repo root)
-virtualenv --no-site-packages ../venv
+VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip
@@ -143,7 +151,7 @@ pip install -U pip
 # (or our dependencies) have conditional dependencies implemented with if
 # statements in setup.py and we have cached wheels lying around that would
 # cause those ifs to not be evaluated.
-pip install \
+python ../tools/pip_install.py \
   --no-cache-dir \
   --extra-index-url http://localhost:$PORT \
   $SUBPKGS
@@ -153,7 +161,7 @@ cd ~-
 
 # get a snapshot of the CLI help for the docs
 # We set CERTBOT_DOCS to use dummy values in example user-agent string.
-CERTBOT_DOCS=1 certbot --help all > docs/cli-help.txt
+CERTBOT_DOCS=1 certbot --help all > certbot/docs/cli-help.txt
 jws --help > acme/docs/jws-help.txt
 
 cd ..
@@ -166,12 +174,13 @@ fi
 mkdir kgs
 kgs="kgs/$version"
 pip freeze | tee $kgs
-pip install pytest
-for module in $subpkgs_modules ; do
-    echo testing $module
-    pytest --pyargs $module
-done
+python ../tools/pip_install.py pytest
 cd ~-
+for module in $SUBPKGS ; do
+    echo testing $module
+    # use an empty configuration file rather than the one in the repo root
+    pytest -c <(echo '') $module
+done
 
 # pin pip hashes of the things we just built
 for pkg in $SUBPKGS_IN_AUTO ; do
@@ -220,7 +229,7 @@ mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-
 cp -p letsencrypt-auto-source/letsencrypt-auto certbot-auto
 cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
 
-git add certbot-auto letsencrypt-auto letsencrypt-auto-source docs/cli-help.txt
+git add certbot-auto letsencrypt-auto letsencrypt-auto-source certbot/docs/cli-help.txt
 git diff --cached
 while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
     echo "Unable to sign the release commit using git."
@@ -240,17 +249,17 @@ echo gpg2 -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
 cd ~-
 
 # Add master section to CHANGELOG.md
-header=$(head -n 4 CHANGELOG.md)
+header=$(head -n 4 certbot/CHANGELOG.md)
 body=$(sed s/nextversion/$nextversion/ tools/_changelog_top.txt)
-footer=$(tail -n +5 CHANGELOG.md)
+footer=$(tail -n +5 certbot/CHANGELOG.md)
 echo "$header
 
 $body
 
-$footer" > CHANGELOG.md
-git add CHANGELOG.md
+$footer" > certbot/CHANGELOG.md
+git add certbot/CHANGELOG.md
 git diff --cached
-git commit -m "Add contents to CHANGELOG.md for next version"
+git commit -m "Add contents to certbot/CHANGELOG.md for next version"
 
 echo "New root: $root"
 echo "Test commands (in the letstest repo):"

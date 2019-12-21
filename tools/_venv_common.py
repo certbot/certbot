@@ -12,14 +12,37 @@ VENV_NAME.
 
 from __future__ import print_function
 
-import os
-import shutil
 import glob
-import time
+import os
+import re
+import shutil
 import subprocess
 import sys
-import re
-import shlex
+import time
+
+REQUIREMENTS = [
+    '-e acme[dev]',
+    '-e certbot[dev,docs]',
+    '-e certbot-apache',
+    '-e certbot-dns-cloudflare',
+    '-e certbot-dns-cloudxns',
+    '-e certbot-dns-digitalocean',
+    '-e certbot-dns-dnsimple',
+    '-e certbot-dns-dnsmadeeasy',
+    '-e certbot-dns-gehirn',
+    '-e certbot-dns-google',
+    '-e certbot-dns-linode',
+    '-e certbot-dns-luadns',
+    '-e certbot-dns-nsone',
+    '-e certbot-dns-ovh',
+    '-e certbot-dns-rfc2136',
+    '-e certbot-dns-route53',
+    '-e certbot-dns-sakuracloud',
+    '-e certbot-nginx',
+    '-e letshelp-certbot',
+    '-e certbot-compatibility-test',
+    '-e certbot-ci',
+]
 
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
 
@@ -107,29 +130,35 @@ def subprocess_with_print(cmd, env=os.environ, shell=False):
     subprocess.check_call(cmd, env=env, shell=shell)
 
 
-def get_venv_bin_path(venv_path):
+def get_venv_python_path(venv_path):
     python_linux = os.path.join(venv_path, 'bin/python')
     if os.path.isfile(python_linux):
-        return os.path.abspath(os.path.dirname(python_linux))
+        return os.path.abspath(python_linux)
     python_windows = os.path.join(venv_path, 'Scripts\\python.exe')
     if os.path.isfile(python_windows):
-        return os.path.abspath(os.path.dirname(python_windows))
+        return os.path.abspath(python_windows)
 
     raise ValueError((
         'Error, could not find python executable in venv path {0}: is it a valid venv ?'
         .format(venv_path)))
 
 
-def main(venv_name, venv_args, args):
-    """Creates a virtual environment and installs packages.
+def prepare_venv_path(venv_name):
+    """Determines the venv path and prepares it for use.
+
+    This function cleans up any Python eggs in the current working directory
+    and ensures the venv path is available for use. The path used is the
+    VENV_NAME environment variable if it is set and venv_name otherwise. If
+    there is already a directory at the desired path, the existing directory is
+    renamed by appending a timestamp to the directory name.
 
     :param str venv_name: The name or path at where the virtual
-        environment should be created.
-    :param str venv_args: Command line arguments for virtualenv
-    :param str args: Command line arguments that should be given to pip
-        to install packages
-    """
+        environment should be created if VENV_NAME isn't set.
 
+    :returns: path where the virtual environment should be created
+    :rtype: str
+
+    """
     for path in glob.glob('*.egg-info'):
         if os.path.isdir(path):
             shutil.rmtree(path)
@@ -145,21 +174,25 @@ def main(venv_name, venv_args, args):
     if os.path.isdir(venv_name):
         os.rename(venv_name, '{0}.{1}.bak'.format(venv_name, int(time.time())))
 
-    command = [sys.executable, '-m', 'virtualenv', '--no-site-packages', '--setuptools', venv_name]
-    command.extend(shlex.split(venv_args))
-    subprocess_with_print(command)
+    return venv_name
 
-    # We execute the following commands in the context of the virtual environment, to install
-    # the packages in it. To do so, we append the venv binary to the PATH that will be used for
-    # these commands. With this trick, correct python executable will be selected.
-    new_environ = os.environ.copy()
-    new_environ['PATH'] = os.pathsep.join([get_venv_bin_path(venv_name), new_environ['PATH']])
-    subprocess_with_print('python {0}'.format('./letsencrypt-auto-source/pieces/pipstrap.py'),
-                          env=new_environ, shell=True)
-    subprocess_with_print("python -m pip install --upgrade 'setuptools>=30.3'",
-                          env=new_environ, shell=True)
-    subprocess_with_print('python {0} {1}'.format('./tools/pip_install.py', ' '.join(args)),
-                          env=new_environ, shell=True)
+
+def install_packages(venv_name, pip_args):
+    """Installs packages in the given venv.
+
+    :param str venv_name: The name or path at where the virtual
+        environment should be created.
+    :param pip_args: Command line arguments that should be given to
+        pip to install packages
+    :type pip_args: `list` of `str`
+
+    """
+    # Using the python executable from venv, we ensure to execute following commands in this venv.
+    py_venv = get_venv_python_path(venv_name)
+    subprocess_with_print([py_venv, os.path.abspath('letsencrypt-auto-source/pieces/pipstrap.py')])
+    command = [py_venv, os.path.abspath('tools/pip_install.py')]
+    command.extend(pip_args)
+    subprocess_with_print(command)
 
     if os.path.isdir(os.path.join(venv_name, 'bin')):
         # Linux/OSX specific
@@ -176,9 +209,3 @@ def main(venv_name, venv_args, args):
         print('---------------------------------------------------------------------------')
     else:
         raise ValueError('Error, directory {0} is not a valid venv.'.format(venv_name))
-
-
-if __name__ == '__main__':
-    main('venv',
-         '',
-         sys.argv[1:])

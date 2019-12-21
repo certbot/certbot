@@ -5,23 +5,19 @@ import subprocess
 
 import zope.interface
 
-from certbot import configuration
-from certbot_nginx import configurator
-from certbot_nginx import constants
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from certbot._internal import configuration
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util
 from certbot_compatibility_test.configurators import common as configurators_common
+from certbot_nginx._internal import configurator
+from certbot_nginx._internal import constants
 
 
 @zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(configurators_common.Proxy):
-    # pylint: disable=too-many-instance-attributes
     """A common base for Nginx test configurators"""
-
-    def __init__(self, args):
-        """Initializes the plugin with the given command line args"""
-        super(Proxy, self).__init__(args)
 
     def load_config(self):
         """Loads the next configuration for the plugin to test"""
@@ -48,7 +44,7 @@ class Proxy(configurators_common.Proxy):
 
     def _prepare_configurator(self):
         """Prepares the Nginx plugin for testing"""
-        for k in constants.CLI_DEFAULTS.keys():
+        for k in constants.CLI_DEFAULTS:
             setattr(self.le_config, "nginx_" + k, constants.os_constant(k))
 
         conf = configuration.NamespaceConfig(self.le_config)
@@ -72,15 +68,23 @@ def _get_server_root(config):
 
 def _get_names(config):
     """Returns all and testable domain names in config"""
-    all_names = set()
+    all_names = set()  # type: Set[str]
     for root, _dirs, files in os.walk(config):
         for this_file in files:
-            for line in open(os.path.join(root, this_file)):
-                if line.strip().startswith("server_name"):
-                    names = line.partition("server_name")[2].rpartition(";")[0]
-                    for n in names.split():
-                        # Filter out wildcards in both all_names and test_names
-                        if not n.startswith("*."):
-                            all_names.add(n)
+            update_names = _get_server_names(root, this_file)
+            all_names.update(update_names)
     non_ip_names = set(n for n in all_names if not util.IP_REGEX.match(n))
     return all_names, non_ip_names
+
+
+def _get_server_names(root, filename):
+    """Returns all names in a config file path"""
+    all_names = set()
+    for line in open(os.path.join(root, filename)):
+        if line.strip().startswith("server_name"):
+            names = line.partition("server_name")[2].rpartition(";")[0]
+            for n in names.split():
+                # Filter out wildcards in both all_names and test_names
+                if not n.startswith("*."):
+                    all_names.add(n)
+    return all_names

@@ -1,17 +1,17 @@
 import sys
 
-from setuptools import setup
 from setuptools import find_packages
+from setuptools import setup
+from setuptools.command.test import test as TestCommand
 
-
-version = '0.29.0.dev0'
+version = '1.1.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'acme>=0.21.1',
-    'certbot>=0.21.1',
-    'dns-lexicon>=2.7.14', # Correct proxy use on OVH provider
+    'acme>=0.31.0',
+    'certbot>=1.0.0.dev0',
+    'dns-lexicon>=2.7.14',  # Correct proxy use on OVH provider
     'mock',
     'setuptools',
     'zope.interface',
@@ -21,6 +21,20 @@ docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
 ]
+
+class PyTest(TestCommand):
+    user_options = []
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = ''
+
+    def run_tests(self):
+        import shlex
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(shlex.split(self.pytest_args))
+        sys.exit(errno)
 
 setup(
     name='certbot-dns-ovh',
@@ -32,7 +46,7 @@ setup(
     license='Apache License 2.0',
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: Apache Software License',
@@ -44,6 +58,8 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',
@@ -60,8 +76,10 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-ovh = certbot_dns_ovh.dns_ovh:Authenticator',
+            'dns-ovh = certbot_dns_ovh._internal.dns_ovh:Authenticator',
         ],
     },
+    tests_require=["pytest"],
     test_suite='certbot_dns_ovh',
+    cmdclass={"test": PyTest},
 )

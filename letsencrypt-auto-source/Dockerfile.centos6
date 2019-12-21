@@ -7,9 +7,9 @@ RUN yum install -y epel-release
 
 # Install pip and sudo:
 RUN yum install -y python-pip sudo
-# Use pipstrap to update to a stable and tested version of pip
-COPY ./pieces/pipstrap.py /opt
-RUN /opt/pipstrap.py
+# Update to a stable and tested version of pip.
+# We do not use pipstrap here because it no longer supports Python 2.6.
+RUN pip install pip==9.0.1 setuptools==29.0.1 wheel==0.29.0
 # Pin pytest version for increased stability
 RUN pip install pytest==3.2.5 six==1.10.0
 

@@ -1,20 +1,33 @@
 #!/bin/sh -xe
 
 cd letsencrypt
-./certbot-auto --os-packages-only -n --debug
+letsencrypt-auto-source/letsencrypt-auto --install-only -n --debug
 
 PLUGINS="certbot-apache certbot-nginx"
-PYTHON=$(command -v python2.7 || command -v python27 || command -v python2 || command -v python)
+PYTHON_MAJOR_VERSION=$(/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1)
 TEMP_DIR=$(mktemp -d)
-VERSION=$(letsencrypt-auto-source/version.py)
-export VENV_ARGS="-p $PYTHON"
+
+if [ "$PYTHON_MAJOR_VERSION" = "3" ]; then
+    # Some distros like Fedora may only have an executable named python3 installed.
+    PYTHON_NAME="python3"
+    VENV_PATH="venv3"
+    VENV_SCRIPT="tools/venv3.py"
+else
+    PYTHON_NAME="python"
+    VENV_SCRIPT="tools/venv.py"
+    VENV_PATH="venv"
+fi
+
+VERSION=$("$PYTHON_NAME" letsencrypt-auto-source/version.py)
 
 # setup venv
-tools/_venv_common.py --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
-. ./venv/bin/activate
+"$VENV_SCRIPT" --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
+. "$VENV_PATH/bin/activate"
+# pytest is needed to run tests on some of our packages so we install a pinned version here.
+tools/pip_install.py pytest
 
 # build sdists
-for pkg_dir in acme . $PLUGINS; do
+for pkg_dir in acme certbot $PLUGINS; do
     cd $pkg_dir
     python setup.py clean
     rm -rf build dist

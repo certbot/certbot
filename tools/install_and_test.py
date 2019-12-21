@@ -8,25 +8,21 @@
 from __future__ import print_function
 
 import os
-import sys
-import tempfile
-import shutil
-import subprocess
 import re
+import subprocess
+import sys
 
-SKIP_PROJECTS_ON_WINDOWS = [
-    'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
+SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache', 'letshelp-certbot']
 
-def call_with_print(command, cwd=None):
+
+def call_with_print(command):
     print(command)
-    subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
+    subprocess.check_call(command, shell=True)
+
 
 def main(args):
-    if os.environ.get('CERTBOT_NO_PIN') == '1':
-        command = [sys.executable, '-m', 'pip', '-q', '-e']
-    else:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        command = [sys.executable, os.path.join(script_dir, 'pip_install_editable.py')]
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    command = [sys.executable, os.path.join(script_dir, 'pip_install_editable.py')]
 
     new_args = []
     for arg in args:
@@ -43,16 +39,8 @@ def main(args):
         call_with_print(' '.join(current_command))
         pkg = re.sub(r'\[\w+\]', '', requirement)
 
-        if pkg == '.':
-            pkg = 'certbot'
-
-        temp_cwd = tempfile.mkdtemp()
-        shutil.copy2("pytest.ini", temp_cwd)
-        try:
-            call_with_print(' '.join([
-                sys.executable, '-m', 'pytest', '--quiet', pkg.replace('-', '_')]), cwd=temp_cwd)
-        finally:
-            shutil.rmtree(temp_cwd)
+        call_with_print(' '.join([
+            sys.executable, '-m', 'pytest', pkg]))
 
 if __name__ == '__main__':
     main(sys.argv[1:])
