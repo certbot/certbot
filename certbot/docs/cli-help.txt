@@ -268,8 +268,6 @@ manage:
                         name)
   revoke                Revoke a certificate specified with --cert-path or
                         --cert-name
-  update_symlinks       Recreate symlinks in your /etc/letsencrypt/live/
-                        directory
 
 run:
   Options for obtaining & installing certificates
@@ -405,10 +403,6 @@ plugins:
   --prepare             Initialize and prepare plugins. (default: False)
   --authenticators      Limit to authenticator plugins only. (default: None)
   --installers          Limit to installer plugins only. (default: None)
-
-update_symlinks:
-  Recreates certificate and key symlinks in /etc/letsencrypt/live, if you
-  changed them by hand or edited a renewal configuration file
 
 enhance:
   Helps to harden the TLS configuration by adding security enhancements to

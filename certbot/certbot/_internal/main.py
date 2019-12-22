@@ -949,24 +949,6 @@ def rollback(config, plugins):
     """
     client.rollback(config.installer, config.checkpoints, config, plugins)
 
-def update_symlinks(config, unused_plugins):
-    """Update the certificate file family symlinks
-
-    Use the information in the config file to make symlinks point to
-    the correct archive directory.
-
-    :param config: Configuration object
-    :type config: interfaces.IConfig
-
-    :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
-
-    :returns: `None`
-    :rtype: None
-
-    """
-    cert_manager.update_live_symlinks(config)
-
 def rename(config, unused_plugins):
     """Rename a certificate
 

@@ -621,32 +621,6 @@ For most tasks, it is safest to limit yourself to pointing symlinks at the files
 (for instance, combining certificates and keys in different way, or having copies of things with different
 specific permissions that are demanded by other programs).
 
-If the contents of ``/etc/letsencrypt/archive/CERTNAME`` are moved to a new folder, first specify
-the new folder's name in the renewal configuration file, then run ``certbot update_symlinks`` to
-point the symlinks in ``/etc/letsencrypt/live/CERTNAME`` to the new folder.
-
-If you would like the live certificate files whose symlink location Certbot updates on each run to
-reside in a different location, first move them to that location, then specify the full path of
-each of the four files in the renewal configuration file. Since the symlinks are relative links,
-you must follow this with an invocation of ``certbot update_symlinks``.
-
-For example, say that a certificate's renewal configuration file previously contained the following
-directives::
-
-  archive_dir = /etc/letsencrypt/archive/example.com
-  cert = /etc/letsencrypt/live/example.com/cert.pem
-  privkey = /etc/letsencrypt/live/example.com/privkey.pem
-  chain = /etc/letsencrypt/live/example.com/chain.pem
-  fullchain = /etc/letsencrypt/live/example.com/fullchain.pem
-
-The following commands could be used to specify where these files are located::
-
-  mv /etc/letsencrypt/archive/example.com /home/user/me/certbot/example_archive
-  sed -i 's,/etc/letsencrypt/archive/example.com,/home/user/me/certbot/example_archive,' /etc/letsencrypt/renewal/example.com.conf
-  mv /etc/letsencrypt/live/example.com/*.pem /home/user/me/certbot/
-  sed -i 's,/etc/letsencrypt/live/example.com,/home/user/me/certbot,g' /etc/letsencrypt/renewal/example.com.conf
-  certbot update_symlinks
-
 Automated Renewals
 ------------------
 

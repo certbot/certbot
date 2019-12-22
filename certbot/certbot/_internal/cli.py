@@ -406,13 +406,6 @@ VERB_HELP = [
         "opts": 'Options for the "plugins" subcommand',
         "usage": "\n\n  certbot plugins [options]\n\n"
     }),
-    ("update_symlinks", {
-        "short": "Recreate symlinks in your /etc/letsencrypt/live/ directory",
-        "opts": ("Recreates certificate and key symlinks in {0}, if you changed them by hand "
-                 "or edited a renewal configuration file".format(
-                  os.path.join(flag_default("config_dir"), "live"))),
-        "usage": "\n\n  certbot update_symlinks [options]\n\n"
-    }),
     ("enhance", {
         "short": "Add security enhancements to your existing configuration",
         "opts": ("Helps to harden the TLS configuration by adding security enhancements "
@@ -450,7 +443,6 @@ class HelpfulArgumentParser(object):
             "revoke": main.revoke,
             "rollback": main.rollback,
             "everything": main.run,
-            "update_symlinks": main.update_symlinks,
             "certificates": main.certificates,
             "delete": main.delete,
             "enhance": main.enhance,
@@ -860,7 +852,7 @@ def _add_all_groups(helpful):
     helpful.add_group("paths", description="Flags for changing execution paths & servers")
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
-        verbs=["certificates", "delete", "renew", "revoke", "update_symlinks"])
+        verbs=["certificates", "delete", "renew", "revoke"])
 
     # VERBS
     for verb, docs in VERB_HELP:

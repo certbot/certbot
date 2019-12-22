@@ -74,6 +74,7 @@ Authors
 * [Eric Rescorla](https://github.com/ekr)
 * [Eric Wustrow](https://github.com/ewust)
 * [Erik Rose](https://github.com/erikrose)
+* [Erik Hansen](https://github.com/suckatrash)
 * [Eugene Kazakov](https://github.com/xgin)
 * [Fabian](https://github.com/faerbit)
 * [Faidon Liambotis](https://github.com/paravoid)
