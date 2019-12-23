@@ -85,7 +85,8 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
         config_path, vhost_path,
         config_dir, work_dir, version=(2, 4, 7),
         os_info="generic",
-        conf_vhost_path=None):
+        conf_vhost_path=None,
+        use_parsernode=False):
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -118,7 +119,7 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
                     except KeyError:
                         config_class = configurator.ApacheConfigurator
                     config = config_class(config=mock_le_config, name="apache",
-                                          version=version)
+                                          version=version, use_parsernode=use_parsernode)
                     if not conf_vhost_path:
                         config_class.OS_DEFAULTS["vhost_root"] = vhost_path
                     else:
