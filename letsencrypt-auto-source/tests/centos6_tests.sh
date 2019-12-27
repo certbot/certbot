@@ -22,7 +22,7 @@ fi
 if [ -f .failed-test ]; then
   exit 1
 fi
-echo "PASSED: On CentOS6 32 bits, certbot-auto refuses to install certbot."
+echo "PASSED: On CentOS 6 32 bits, certbot-auto refused to install certbot."
 
 # we're going to modify env variables, so do this in a subshell
 (
