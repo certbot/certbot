@@ -412,7 +412,7 @@ class RenewableCert(interfaces.RenewableCert):
         renewal configuration file and/or systemwide defaults.
 
     """
-    def __init__(self, config_filename, cli_config, update_symlinks=False):
+    def __init__(self, config_filename, cli_config):
         """Instantiate a RenewableCert object from an existing lineage.
 
         :param str config_filename: the path to the renewal config file
@@ -460,8 +460,6 @@ class RenewableCert(interfaces.RenewableCert):
         self.live_dir = os.path.dirname(self.cert)
 
         self._fix_symlinks()
-        if update_symlinks:
-            self._update_symlinks()
         self._check_symlinks()
 
     @property
@@ -534,17 +532,6 @@ class RenewableCert(interfaces.RenewableCert):
             if not os.path.exists(target):
                 raise errors.CertStorageError("target {0} of symlink {1} does "
                                               "not exist".format(target, link))
-
-    def _update_symlinks(self):
-        """Updates symlinks to use archive_dir"""
-        for kind in ALL_FOUR:
-            link = getattr(self, kind)
-            previous_link = get_link_target(link)
-            new_link = os.path.join(self.relative_archive_dir(link),
-                os.path.basename(previous_link))
-
-            os.unlink(link)
-            os.symlink(new_link, link)
 
     def _consistent(self):
         """Are the files associated with this lineage self-consistent?
