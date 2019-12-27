@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Removed the `update_symlinks` subcommand
 
 ### Fixed
 
