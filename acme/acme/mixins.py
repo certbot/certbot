@@ -1,3 +1,13 @@
+from josepy import JSONObjectWithFields
+
+from acme.magic_typing import TYPE_CHECKING  # pylint: disable=unused-import, no-name-in-module
+
+if TYPE_CHECKING:
+    _Base = JSONObjectWithFields
+else:
+    _Base = object
+
+
 class VersionedLEACMEMixin(object):
     @property
     def le_auto_version(self):
@@ -18,12 +28,23 @@ class VersionedLEACMEMixin(object):
             super(VersionedLEACMEMixin, self).__setattr__(key, value)
 
 
-class ResourceMixin(VersionedLEACMEMixin):
-    def fields_to_partial_json(self):
-        if hasattr(super(ResourceMixin, self), 'fields_to_partial_json'):
-            jobj = super(ResourceMixin, self).fields_to_partial_json()
+class ResourceMixin(VersionedLEACMEMixin, _Base):
+    def to_partial_json(self):
+        if hasattr(super(ResourceMixin, self), 'to_partial_json'):
+            jobj = super(ResourceMixin, self).to_partial_json()
             if self.le_auto_version == 2:
                 jobj.pop('resource', None)
             return jobj
 
-        raise AttributeError('This class does not implement method fields_to_partial_json().')
+        raise AttributeError('This class does not implement method to_partial_json().')
+
+
+class TypeMixin(VersionedLEACMEMixin, _Base):
+    def to_partial_json(self):
+        if hasattr(super(TypeMixin, self), 'to_partial_json'):
+            jobj = super(TypeMixin, self).to_partial_json()
+            if self.le_auto_version == 2:
+                jobj.pop('type', None)
+            return jobj
+
+        raise AttributeError('This class does not implement method to_partial_json().')

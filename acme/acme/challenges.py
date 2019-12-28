@@ -10,7 +10,7 @@ import requests
 import six
 
 from acme import fields
-from acme.mixins import ResourceMixin
+from acme.mixins import ResourceMixin, TypeMixin
 
 logger = logging.getLogger(__name__)
 
@@ -29,18 +29,12 @@ class Challenge(jose.TypedJSONObjectWithFields):
             return UnrecognizedChallenge.from_json(jobj)
 
 
-class ChallengeResponse(ResourceMixin, jose.TypedJSONObjectWithFields):
+class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
     TYPES = {}  # type: dict
     resource_type = 'challenge'
     resource = fields.Resource(resource_type)
-
-    def to_partial_json(self):
-        jobj = super(ChallengeResponse, self).to_partial_json()
-        if self.le_auto_version == 2:
-            jobj.pop('type', None)
-        return jobj
 
 
 class UnrecognizedChallenge(Challenge):
