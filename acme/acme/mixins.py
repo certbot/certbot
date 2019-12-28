@@ -36,7 +36,7 @@ class ResourceMixin(VersionedLEACMEMixin):
                 jobj.pop('resource', None)
             return jobj
 
-        raise AttributeError('This class does not implement method to_partial_json().')  # pragma: no cover
+        raise AttributeError('Method to_partial_json() is not implemented.')  # pragma: no cover
 
 
 class TypeMixin(VersionedLEACMEMixin):
@@ -52,4 +52,4 @@ class TypeMixin(VersionedLEACMEMixin):
                 jobj.pop('type', None)
             return jobj
 
-        raise AttributeError('This class does not implement method to_partial_json().')  # pragma: no cover
+        raise AttributeError('Method to_partial_json() is not implemented.')  # pragma: no cover
