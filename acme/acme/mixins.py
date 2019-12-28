@@ -20,7 +20,7 @@ class VersionedLEACMEMixin(object):
             # Required for @property to operate properly. See comment above.
             object.__setattr__(self, key, value)
         else:
-            super(VersionedLEACMEMixin, self).__setattr__(key, value)
+            super(VersionedLEACMEMixin, self).__setattr__(key, value)  # pragma: no cover
 
 
 class ResourceMixin(VersionedLEACMEMixin):
@@ -36,7 +36,7 @@ class ResourceMixin(VersionedLEACMEMixin):
                 jobj.pop('resource', None)
             return jobj
 
-        raise AttributeError('This class does not implement method to_partial_json().')
+        raise AttributeError('This class does not implement method to_partial_json().')  # pragma: no cover
 
 
 class TypeMixin(VersionedLEACMEMixin):
@@ -52,4 +52,4 @@ class TypeMixin(VersionedLEACMEMixin):
                 jobj.pop('type', None)
             return jobj
 
-        raise AttributeError('This class does not implement method to_partial_json().')
+        raise AttributeError('This class does not implement method to_partial_json().')  # pragma: no cover
