@@ -4,11 +4,7 @@ The JWS implementation in josepy only implements the base JOSE standard. In
 order to support the new header fields defined in ACME, this module defines some
 ACME-specific classes that layer on top of josepy.
 """
-import json
-
 import josepy as jose
-
-from acme.challenges import ChallengeResponse
 
 
 class Header(jose.Header):

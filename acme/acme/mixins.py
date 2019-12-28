@@ -1,16 +1,11 @@
-from josepy import JSONObjectWithFields
-
-from acme.magic_typing import TYPE_CHECKING  # pylint: disable=unused-import, no-name-in-module
-
-if TYPE_CHECKING:
-    _Base = JSONObjectWithFields
-else:
-    _Base = object
+"""Useful mixins for Challenge and Resource objects"""
 
 
 class VersionedLEACMEMixin(object):
+    """This mixin allows to store the current ACME version as a property"""
     @property
     def le_auto_version(self):
+        """Define the version of ACME protocol to use"""
         return getattr(self, '_le_auto_version', 1)
 
     @le_auto_version.setter
@@ -22,16 +17,21 @@ class VersionedLEACMEMixin(object):
 
     def __setattr__(self, key, value):
         if key == 'le_auto_version':
-            # Needed to allow @property to operate properly. See comment above.
+            # Required for @property to operate properly. See comment above.
             object.__setattr__(self, key, value)
         else:
             super(VersionedLEACMEMixin, self).__setattr__(key, value)
 
 
-class ResourceMixin(VersionedLEACMEMixin, _Base):
+class ResourceMixin(VersionedLEACMEMixin):
+    """
+    This mixin allows to generate a RFC8555 compliant JWS payload
+    by removing the `resource` field if needed (eg. ACME v2 protocol).
+    """
     def to_partial_json(self):
+        """See josepy.JSONDeserializable.to_partial_json()"""
         if hasattr(super(ResourceMixin, self), 'to_partial_json'):
-            jobj = super(ResourceMixin, self).to_partial_json()
+            jobj = super(ResourceMixin, self).to_partial_json()  # type: ignore
             if self.le_auto_version == 2:
                 jobj.pop('resource', None)
             return jobj
@@ -39,10 +39,15 @@ class ResourceMixin(VersionedLEACMEMixin, _Base):
         raise AttributeError('This class does not implement method to_partial_json().')
 
 
-class TypeMixin(VersionedLEACMEMixin, _Base):
+class TypeMixin(VersionedLEACMEMixin):
+    """
+    This mixin allows to generate a RFC8555 compliant JWS payload
+    by removing the `type` field if needed (eg. ACME v2 protocol).
+    """
     def to_partial_json(self):
+        """See josepy.JSONDeserializable.to_partial_json()"""
         if hasattr(super(TypeMixin, self), 'to_partial_json'):
-            jobj = super(TypeMixin, self).to_partial_json()
+            jobj = super(TypeMixin, self).to_partial_json()  # type: ignore
             if self.le_auto_version == 2:
                 jobj.pop('type', None)
             return jobj
