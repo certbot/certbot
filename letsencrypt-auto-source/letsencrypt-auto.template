@@ -330,13 +330,33 @@ elif [ -f /etc/redhat-release ]; then
   prev_le_python="$LE_PYTHON"
   unset LE_PYTHON
   DeterminePythonVersion "NOCRASH"
-  # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
+
   RPM_DIST_NAME=`(. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown"`
-  RPM_DIST_VERSION=0
-  if [ "$RPM_DIST_NAME" = "fedora" ]; then
-    RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) || echo "0"`
+
+  # Set RPM_DIST_VERSION to VERSION_ID from /etc/os-release after splitting on
+  # '.' characters (e.g. "8.0" becomes "8"). If the command exits with an
+  # error, RPM_DIST_VERSION is set to "unknown".
+  RPM_DIST_VERSION=$( (. /etc/os-release 2> /dev/null && echo "$VERSION_ID") | cut -d '.' -f1 || echo "unknown")
+
+  # If RPM_DIST_VERSION is an empty string or it contains any nonnumeric
+  # characters, the value is unexpected so we set RPM_DIST_VERSION to 0.
+  if [ -z "$RPM_DIST_VERSION" ] || [ -n "$(echo "$RPM_DIST_VERSION" | tr -d '[0-9]')" ]; then
+     RPM_DIST_VERSION=0
   fi
+
+  # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
+  # RHEL 8 also uses python3 by default.
   if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
+    RPM_USE_PYTHON_3=1
+  elif [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
+    RPM_USE_PYTHON_3=1
+  elif [ "$RPM_DIST_NAME" = "centos" -a "$RPM_DIST_VERSION" -ge 8 ]; then
+    RPM_USE_PYTHON_3=1
+  else
+    RPM_USE_PYTHON_3=0
+  fi
+
+  if [ "$RPM_USE_PYTHON_3" = 1 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
       BootstrapRpmPython3
@@ -350,6 +370,7 @@ elif [ -f /etc/redhat-release ]; then
     }
     BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
   fi
+
   LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {

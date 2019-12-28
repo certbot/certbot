@@ -1,18 +1,21 @@
 """ACME protocol messages."""
 import json
+
+import josepy as jose
 import six
+
+from acme import challenges
+from acme import errors
+from acme import fields
+from acme import jws
+from acme import util
+
 try:
     from collections.abc import Hashable  # pylint: disable=no-name-in-module
 except ImportError:  # pragma: no cover
     from collections import Hashable
 
-import josepy as jose
 
-from acme import challenges
-from acme import errors
-from acme import fields
-from acme import util
-from acme import jws
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
@@ -143,7 +146,7 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
         if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
             raise jose.DeserializationError(
                 '{0} not recognized'.format(cls.__name__))
-        return cls.POSSIBLE_NAMES[jobj]  # pylint: disable=unsubscriptable-object
+        return cls.POSSIBLE_NAMES[jobj]
 
     def __repr__(self):
         return '{0}({1})'.format(self.__class__.__name__, self.name)
@@ -168,6 +171,7 @@ STATUS_VALID = Status('valid')
 STATUS_INVALID = Status('invalid')
 STATUS_REVOKED = Status('revoked')
 STATUS_READY = Status('ready')
+STATUS_DEACTIVATED = Status('deactivated')
 
 
 class IdentifierType(_Constant):
@@ -471,7 +475,7 @@ class Authorization(ResourceBody):
     :ivar datetime.datetime expires:
 
     """
-    identifier = jose.Field('identifier', decoder=Identifier.from_json)
+    identifier = jose.Field('identifier', decoder=Identifier.from_json, omitempty=True)
     challenges = jose.Field('challenges', omitempty=True)
     combinations = jose.Field('combinations', omitempty=True)
 
@@ -498,6 +502,12 @@ class Authorization(ResourceBody):
 class NewAuthorization(Authorization):
     """New authorization."""
     resource_type = 'new-authz'
+    resource = fields.Resource(resource_type)
+
+
+class UpdateAuthorization(Authorization):
+    """Update authorization."""
+    resource_type = 'authz'
     resource = fields.Resource(resource_type)
 
 

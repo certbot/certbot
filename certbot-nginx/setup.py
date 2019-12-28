@@ -1,26 +1,21 @@
-from setuptools import setup
-from setuptools import find_packages
-from setuptools.command.test import test as TestCommand
 import sys
 
+from setuptools import find_packages
+from setuptools import setup
+from setuptools.command.test import test as TestCommand
 
-version = '0.36.0.dev0'
+version = '1.1.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'acme>=0.29.0',
-    'certbot>=0.34.0',
+    'acme>=1.0.0',
+    'certbot>=1.0.0.dev0',
     'mock',
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
     'setuptools',
     'zope.interface',
-]
-
-docs_extras = [
-    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
-    'sphinx_rtd_theme',
 ]
 
 
@@ -62,6 +57,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',
@@ -73,12 +69,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
-    extras_require={
-        'docs': docs_extras,
-    },
     entry_points={
         'certbot.plugins': [
-            'nginx = certbot_nginx.configurator:NginxConfigurator',
+            'nginx = certbot_nginx._internal.configurator:NginxConfigurator',
         ],
     },
     test_suite='certbot_nginx',

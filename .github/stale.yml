@@ -5,7 +5,8 @@ daysUntilStale: 365
 
 # Number of days of inactivity before an Issue or Pull Request with the stale label is closed.
 # Set to false to disable. If disabled, issues still need to be closed manually, but will remain marked as stale.
-daysUntilClose: 7
+# When changing this value, be sure to also update markComment below.
+daysUntilClose: 30
 
 # Ignore issues with an assignee (defaults to false)
 exemptAssignees: true
@@ -18,8 +19,8 @@ markComment: >
   We've made a lot of changes to Certbot since this issue was opened. If you
   still have this issue with an up-to-date version of Certbot, can you please
   add a comment letting us know? This helps us to better see what issues are
-  still affecting our users. If there is no further activity, this issue will
-  be automatically closed.
+  still affecting our users. If there is no activity in the next 30 days, this
+  issue will be automatically closed.
 
 # Comment to post when closing a stale Issue or Pull Request.
 closeComment: >

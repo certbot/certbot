@@ -1,7 +1,7 @@
 #!/bin/sh -xe
 
 cd letsencrypt
-./certbot-auto --install-only -n --debug
+letsencrypt-auto-source/letsencrypt-auto --install-only -n --debug
 
 PLUGINS="certbot-apache certbot-nginx"
 PYTHON_MAJOR_VERSION=$(/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1)
@@ -27,7 +27,7 @@ VERSION=$("$PYTHON_NAME" letsencrypt-auto-source/version.py)
 tools/pip_install.py pytest
 
 # build sdists
-for pkg_dir in acme . $PLUGINS; do
+for pkg_dir in acme certbot $PLUGINS; do
     cd $pkg_dir
     python setup.py clean
     rm -rf build dist

@@ -1,19 +1,19 @@
-from setuptools import setup
+import sys
+
 from setuptools import find_packages
+from setuptools import setup
+from setuptools.command.test import test as TestCommand
 
-
-version = '0.36.0.dev0'
+version = '1.1.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
     'acme>=0.29.0',
-    'certbot>=0.34.0',
-    # 1.5 is the first version that supports oauth2client>=2.0
-    'google-api-python-client>=1.5',
+    'certbot>=1.0.0.dev0',
+    'google-api-python-client>=1.5.5',
     'mock',
-    # for oauth2client.service_account.ServiceAccountCredentials
-    'oauth2client>=2.0',
+    'oauth2client>=4.0',
     'setuptools',
     'zope.interface',
     # already a dependency of google-api-python-client, but added for consistency
@@ -25,6 +25,20 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
+class PyTest(TestCommand):
+    user_options = []
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = ''
+
+    def run_tests(self):
+        import shlex
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(shlex.split(self.pytest_args))
+        sys.exit(errno)
+
 setup(
     name='certbot-dns-google',
     version=version,
@@ -35,7 +49,7 @@ setup(
     license='Apache License 2.0',
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: Apache Software License',
@@ -48,6 +62,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',
@@ -64,8 +79,10 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-google = certbot_dns_google.dns_google:Authenticator',
+            'dns-google = certbot_dns_google._internal.dns_google:Authenticator',
         ],
     },
+    tests_require=["pytest"],
     test_suite='certbot_dns_google',
+    cmdclass={"test": PyTest},
 )

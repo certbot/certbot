@@ -32,17 +32,31 @@ see:
 from __future__ import print_function
 from __future__ import with_statement
 
-import sys, os, time, argparse, socket, traceback
+import argparse
 import multiprocessing as mp
 from multiprocessing import Manager
+import os
+import socket
+import sys
+import time
+import traceback
 import urllib2
-import yaml
+
 import boto3
 from botocore.exceptions import ClientError
+import yaml
+
 import fabric
-from fabric.api import run, execute, local, env, sudo, cd, lcd
-from fabric.operations import get, put
+from fabric.api import cd
+from fabric.api import env
+from fabric.api import execute
+from fabric.api import lcd
+from fabric.api import local
+from fabric.api import run
+from fabric.api import sudo
 from fabric.context_managers import shell_env
+from fabric.operations import get
+from fabric.operations import put
 
 # Command line parser
 #-------------------------------------------------------------------------------
@@ -84,9 +98,6 @@ parser.add_argument('--killboulder',
 parser.add_argument('--boulderonly',
                     action='store_true',
                     help="only make a boulder server")
-parser.add_argument('--fast',
-                    action='store_true',
-                    help="use larger instance types to run faster (saves about a minute, probably not worth it)")
 cl_args = parser.parse_args()
 
 # Credential Variables
@@ -307,11 +318,13 @@ def grab_certbot_log():
 
 def create_client_instance(ec2_client, target, security_group_id, subnet_id):
     """Create a single client instance for running tests."""
-    if target['virt'] == 'hvm':
-        machine_type = 't2.medium' if cl_args.fast else 't2.micro'
+    if 'machine_type' in target:
+        machine_type = target['machine_type']
+    elif target['virt'] == 'hvm':
+        machine_type = 't2.medium'
     else:
         # 32 bit systems
-        machine_type = 'c1.medium' if cl_args.fast else 't1.micro'
+        machine_type = 'c1.medium'
     if 'userdata' in target.keys():
         userdata = target['userdata']
     else:
@@ -373,7 +386,7 @@ def cleanup(cl_args, instances, targetlist):
     # If lengths of instances and targetlist aren't equal, instances failed to
     # start before running tests so leaving instances running for debugging
     # isn't very useful. Let's cleanup after ourselves instead.
-    if len(instances) == len(targetlist) or not cl_args.saveinstances:
+    if len(instances) != len(targetlist) or not cl_args.saveinstances:
         print('Terminating EC2 Instances')
         if cl_args.killboulder:
             boulder_server.terminate()
