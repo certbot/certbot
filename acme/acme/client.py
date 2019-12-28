@@ -25,6 +25,7 @@ from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Text  # pylint: disable=unused-import, no-name-in-module
+from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
 
@@ -1003,7 +1004,9 @@ class ClientNetwork(object):
         :rtype: `josepy.JWS`
 
         """
-        jobj = jws.compliant_rfc8555_payload(obj, acme_version)
+        if isinstance(obj, VersionedLEACMEMixin):
+            obj.le_auto_version = acme_version
+        jobj = obj.json_dumps(indent=2).encode() if obj else b''
         logger.debug('JWS payload:\n%s', jobj)
         kwargs = {
             "alg": self.alg,
