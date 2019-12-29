@@ -6,15 +6,14 @@ import os
 import re
 import socket
 
-from OpenSSL import crypto
-from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
 import josepy as jose
+from OpenSSL import crypto
+from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 
 from acme import errors
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Callable, Union, Tuple, Optional
-# pylint: enable=unused-import, no-name-in-module
-
+from acme.magic_typing import Callable  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +96,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     class FakeConnection(object):
         """Fake OpenSSL.SSL.Connection."""
 
-        # pylint: disable=too-few-public-methods,missing-docstring
+        # pylint: disable=missing-docstring
 
         def __init__(self, connection):
             self._wrapped = connection

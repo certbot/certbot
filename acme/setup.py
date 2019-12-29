@@ -1,9 +1,10 @@
-from setuptools import setup
-from setuptools import find_packages
-from setuptools.command.test import test as TestCommand
 import sys
 
-version = '0.40.0.dev0'
+from setuptools import find_packages
+from setuptools import setup
+from setuptools.command.test import test as TestCommand
+
+version = '1.1.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -14,8 +15,8 @@ install_requires = [
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
-    # Connection.set_tlsext_host_name (>=0.13)
     'mock',
+    # Connection.set_tlsext_host_name (>=0.13)
     'PyOpenSSL>=0.13.1',
     'pyrfc3339',
     'pytz',

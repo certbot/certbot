@@ -11,6 +11,7 @@ from __future__ import print_function
 import os
 import sys
 
+
 def main(link):
     return os.path.realpath(link)
 

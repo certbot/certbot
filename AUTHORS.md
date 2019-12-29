@@ -167,6 +167,7 @@ Authors
 * [Michael Watters](https://github.com/blackknight36)
 * [Michal Moravec](https://github.com/https://github.com/Majkl578)
 * [Michal Papis](https://github.com/mpapis)
+* [Mickaël Schoentgen](https://github.com/BoboTiG)
 * [Minn Soe](https://github.com/MinnSoe)
 * [Min RK](https://github.com/minrk)
 * [Miquel Ruiz](https://github.com/miquelruiz)

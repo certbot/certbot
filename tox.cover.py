@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import argparse
-import subprocess
 import os
+import subprocess
 import sys
 
 DEFAULT_PACKAGES = [
@@ -16,7 +16,7 @@ COVER_THRESHOLDS = {
     'acme': {'linux': 100, 'windows': 99},
     'certbot_apache': {'linux': 100, 'windows': 100},
     'certbot_dns_cloudflare': {'linux': 98, 'windows': 98},
-    'certbot_dns_cloudxns': {'linux': 99, 'windows': 99},
+    'certbot_dns_cloudxns': {'linux': 98, 'windows': 98},
     'certbot_dns_digitalocean': {'linux': 98, 'windows': 98},
     'certbot_dns_dnsimple': {'linux': 98, 'windows': 98},
     'certbot_dns_dnsmadeeasy': {'linux': 99, 'windows': 99},
@@ -47,8 +47,8 @@ def cover(package):
             .format(pkg_dir)))
         return
 
-    subprocess.check_call([sys.executable, '-m', 'pytest', '--pyargs',
-                           '--cov', pkg_dir, '--cov-append', '--cov-report=', package])
+    subprocess.check_call([sys.executable, '-m', 'pytest',
+                           '--cov', pkg_dir, '--cov-append', '--cov-report=', pkg_dir])
     subprocess.check_call([
         sys.executable, '-m', 'coverage', 'report', '--fail-under', str(threshold), '--include',
         '{0}/*'.format(pkg_dir), '--show-missing'])
