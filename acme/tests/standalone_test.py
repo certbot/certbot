@@ -194,7 +194,6 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
 class HTTP01DualNetworkedServersTest(unittest.TestCase):
     """Tests for acme.standalone.HTTP01DualNetworkedServers."""
 
-
     def setUp(self):
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))

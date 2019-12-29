@@ -2,9 +2,12 @@
 import unittest
 
 import josepy as jose
+import OpenSSL
 import mock
 import requests
 from six.moves.urllib import parse as urllib_parse
+
+from acme import errors
 
 import test_util
 
