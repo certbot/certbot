@@ -1,16 +1,17 @@
 """Tests for certbot.util."""
 import argparse
 import errno
+import sys
 import unittest
 
 import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
-import certbot.tests.util as test_util
 from certbot import errors
-from certbot.compat import misc
+from certbot.compat import filesystem
 from certbot.compat import os
+import certbot.tests.util as test_util
 
 
 class RunScriptTest(unittest.TestCase):
@@ -52,26 +53,13 @@ class ExeExistsTest(unittest.TestCase):
         from certbot.util import exe_exists
         return exe_exists(exe)
 
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_full_path(self, mock_access, mock_isfile):
-        mock_access.return_value = True
-        mock_isfile.return_value = True
-        self.assertTrue(self._call("/path/to/exe"))
+    def test_exe_exists(self):
+        with mock.patch("certbot.util.filesystem.is_executable", return_value=True):
+            self.assertTrue(self._call("/path/to/exe"))
 
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_on_path(self, mock_access, mock_isfile):
-        mock_access.return_value = True
-        mock_isfile.return_value = True
-        self.assertTrue(self._call("exe"))
-
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_not_found(self, mock_access, mock_isfile):
-        mock_access.return_value = False
-        mock_isfile.return_value = True
-        self.assertFalse(self._call("exe"))
+    def test_exe_not_exists(self):
+        with mock.patch("certbot.util.filesystem.is_executable", return_value=False):
+            self.assertFalse(self._call("/path/to/exe"))
 
 
 class LockDirUntilExit(test_util.TempDirTestCase):
@@ -91,7 +79,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
     @mock.patch('certbot.util.atexit_register')
     def test_it(self, mock_register, mock_logger):
         subdir = os.path.join(self.tempdir, 'subdir')
-        os.mkdir(subdir)
+        filesystem.mkdir(subdir)
         self._call(self.tempdir)
         self._call(subdir)
         self._call(subdir)
@@ -119,15 +107,14 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
     @mock.patch('certbot.util.lock_dir_until_exit')
     def test_success(self, mock_lock):
         new_dir = os.path.join(self.tempdir, 'new')
-        self._call(new_dir, 0o700, misc.os_geteuid(), False)
+        self._call(new_dir, 0o700, False)
         self.assertTrue(os.path.exists(new_dir))
         self.assertEqual(mock_lock.call_count, 1)
 
     @mock.patch('certbot.util.make_or_verify_dir')
     def test_failure(self, mock_make_or_verify):
         mock_make_or_verify.side_effect = OSError
-        self.assertRaises(errors.Error, self._call,
-                          self.tempdir, 0o700, misc.os_geteuid(), False)
+        self.assertRaises(errors.Error, self._call, self.tempdir, 0o700, False)
 
 
 class MakeOrVerifyDirTest(test_util.TempDirTestCase):
@@ -142,63 +129,29 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         super(MakeOrVerifyDirTest, self).setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
-        os.mkdir(self.path, 0o600)
-
-        self.uid = misc.os_geteuid()
+        filesystem.mkdir(self.path, 0o600)
 
     def _call(self, directory, mode):
         from certbot.util import make_or_verify_dir
-        return make_or_verify_dir(directory, mode, self.uid, strict=True)
+        return make_or_verify_dir(directory, mode, strict=True)
 
     def test_creates_dir_when_missing(self):
         path = os.path.join(self.tempdir, "bar")
         self._call(path, 0o650)
         self.assertTrue(os.path.isdir(path))
-        self.assertTrue(misc.compare_file_modes(os.stat(path).st_mode, 0o650))
+        self.assertTrue(filesystem.check_mode(path, 0o650))
 
     def test_existing_correct_mode_does_not_fail(self):
         self._call(self.path, 0o600)
-        self.assertTrue(misc.compare_file_modes(os.stat(self.path).st_mode, 0o600))
+        self.assertTrue(filesystem.check_mode(self.path, 0o600))
 
-    @test_util.skip_on_windows('Umask modes are mostly ignored on Windows.')
     def test_existing_wrong_mode_fails(self):
         self.assertRaises(errors.Error, self._call, self.path, 0o400)
 
     def test_reraises_os_error(self):
-        with mock.patch.object(os, "makedirs") as makedirs:
+        with mock.patch.object(filesystem, "makedirs") as makedirs:
             makedirs.side_effect = OSError()
             self.assertRaises(OSError, self._call, "bar", 12312312)
-
-
-class CheckPermissionsTest(test_util.TempDirTestCase):
-    """Tests for certbot.util.check_permissions.
-
-    Note that it is not possible to test for a wrong file owner,
-    as this testing script would have to be run as root.
-
-    """
-
-    def setUp(self):
-        super(CheckPermissionsTest, self).setUp()
-
-        self.uid = misc.os_geteuid()
-
-    def _call(self, mode):
-        from certbot.util import check_permissions
-        return check_permissions(self.tempdir, mode, self.uid)
-
-    def test_ok_mode(self):
-        os.chmod(self.tempdir, 0o600)
-        self.assertTrue(self._call(0o600))
-
-    def test_wrong_mode(self):
-        os.chmod(self.tempdir, 0o400)
-        try:
-            self.assertFalse(self._call(0o600))
-        finally:
-            # Without proper write permissions, Windows is unable to delete a folder,
-            # even with admin permissions. Write access must be explicitly set first.
-            os.chmod(self.tempdir, 0o700)
 
 
 class UniqueFileTest(test_util.TempDirTestCase):
@@ -223,8 +176,8 @@ class UniqueFileTest(test_util.TempDirTestCase):
     def test_right_mode(self):
         fd1, name1 = self._call(0o700)
         fd2, name2 = self._call(0o600)
-        self.assertTrue(misc.compare_file_modes(0o700, os.stat(name1).st_mode))
-        self.assertTrue(misc.compare_file_modes(0o600, os.stat(name2).st_mode))
+        self.assertTrue(filesystem.check_mode(name1, 0o700))
+        self.assertTrue(filesystem.check_mode(name2, 0o600))
         fd1.close()
         fd2.close()
 
@@ -285,7 +238,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
             f.close()
 
     def test_failure(self):
-        with mock.patch("certbot.util.os.open", side_effect=OSError(errno.EIO)):
+        with mock.patch("certbot.compat.filesystem.open", side_effect=OSError(errno.EIO)):
             self.assertRaises(OSError, self._call, "wow")
 
 
@@ -521,71 +474,84 @@ class IsWildcardDomainTest(unittest.TestCase):
 class OsInfoTest(unittest.TestCase):
     """Test OS / distribution detection"""
 
-    def test_systemd_os_release(self):
-        from certbot.util import (get_os_info, get_systemd_os_info,
-                                  get_os_info_ua)
+    @mock.patch("certbot.util.distro")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
+    def test_systemd_os_release_like(self, m_distro):
+        import certbot.util as cbutil
+        m_distro.like.return_value = "first debian third"
+        id_likes = cbutil.get_systemd_os_like()
+        self.assertEqual(len(id_likes), 3)
+        self.assertTrue("debian" in id_likes)
 
-        with mock.patch('os.path.isfile', return_value=True):
-            self.assertEqual(get_os_info(
-                test_util.vector_path("os-release"))[0], 'systemdos')
-            self.assertEqual(get_os_info(
-                test_util.vector_path("os-release"))[1], '42')
-            self.assertEqual(get_systemd_os_info(os.devnull), ("", ""))
-            self.assertEqual(get_os_info_ua(
-                test_util.vector_path("os-release")), "SystemdOS")
-        with mock.patch('os.path.isfile', return_value=False):
-            self.assertEqual(get_systemd_os_info(), ("", ""))
+    @mock.patch("certbot.util.distro")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
+    def test_get_os_info_ua(self, m_distro):
+        import certbot.util as cbutil
+        with mock.patch('platform.system_alias',
+                        return_value=('linux', '42', '42')):
+            m_distro.name.return_value = ""
+            m_distro.linux_distribution.return_value = ("something", "1.0", "codename")
+            cbutil.get_python_os_info(pretty=True)
+            self.assertEqual(cbutil.get_os_info_ua(),
+                            " ".join(cbutil.get_python_os_info(pretty=True)))
 
-    def test_systemd_os_release_like(self):
-        from certbot.util import get_systemd_os_like
+        m_distro.name.return_value = "whatever"
+        self.assertEqual(cbutil.get_os_info_ua(), "whatever")
 
-        with mock.patch('os.path.isfile', return_value=True):
-            id_likes = get_systemd_os_like(test_util.vector_path(
-                "os-release"))
-            self.assertEqual(len(id_likes), 3)
-            self.assertTrue("debian" in id_likes)
+    @mock.patch("certbot.util.distro")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
+    def test_get_os_info(self, m_distro):
+        import certbot.util as cbutil
+        with mock.patch("platform.system") as mock_platform:
+            m_distro.linux_distribution.return_value = ("name", "version", 'x')
+            mock_platform.return_value = "linux"
+            self.assertEqual(cbutil.get_os_info(), ("name", "version"))
+
+            m_distro.linux_distribution.return_value = ("something", "else")
+            self.assertEqual(cbutil.get_os_info(), ("something", "else"))
 
     @mock.patch("certbot.util.subprocess.Popen")
     def test_non_systemd_os_info(self, popen_mock):
-        from certbot.util import (get_os_info, get_python_os_info,
-                                     get_os_info_ua)
-        with mock.patch('os.path.isfile', return_value=False):
+        import certbot.util as cbutil
+        with mock.patch('certbot.util._USE_DISTRO', False):
             with mock.patch('platform.system_alias',
                             return_value=('NonSystemD', '42', '42')):
-                self.assertEqual(get_os_info()[0], 'nonsystemd')
-                self.assertEqual(get_os_info_ua(),
-                                 " ".join(get_python_os_info()))
+                self.assertEqual(cbutil.get_python_os_info()[0], 'nonsystemd')
 
             with mock.patch('platform.system_alias',
                             return_value=('darwin', '', '')):
                 comm_mock = mock.Mock()
                 comm_attrs = {'communicate.return_value':
-                              ('42.42.42', 'error')}
+                            ('42.42.42', 'error')}
                 comm_mock.configure_mock(**comm_attrs)
                 popen_mock.return_value = comm_mock
-                self.assertEqual(get_os_info()[0], 'darwin')
-                self.assertEqual(get_os_info()[1], '42.42.42')
-
-            with mock.patch('platform.system_alias',
-                            return_value=('linux', '', '')):
-                with mock.patch('platform.linux_distribution',
-                                return_value=('', '', '')):
-                    self.assertEqual(get_python_os_info(), ("linux", ""))
-
-                with mock.patch('platform.linux_distribution',
-                                return_value=('testdist', '42', '')):
-                    self.assertEqual(get_python_os_info(), ("testdist", "42"))
+                self.assertEqual(cbutil.get_python_os_info()[0], 'darwin')
+                self.assertEqual(cbutil.get_python_os_info()[1], '42.42.42')
 
             with mock.patch('platform.system_alias',
                             return_value=('freebsd', '9.3-RC3-p1', '')):
-                self.assertEqual(get_python_os_info(), ("freebsd", "9"))
+                self.assertEqual(cbutil.get_python_os_info(), ("freebsd", "9"))
 
             with mock.patch('platform.system_alias',
                             return_value=('windows', '', '')):
                 with mock.patch('platform.win32_ver',
                                 return_value=('4242', '95', '2', '')):
-                    self.assertEqual(get_python_os_info(),
-                                     ("windows", "95"))
+                    self.assertEqual(cbutil.get_python_os_info(),
+                                    ("windows", "95"))
+
+    @mock.patch("certbot.util.distro")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
+    def test_python_os_info_notfound(self, m_distro):
+        import certbot.util as cbutil
+        m_distro.linux_distribution.return_value = ('', '', '')
+        self.assertEqual(cbutil.get_python_os_info()[0], "linux")
+
+    @mock.patch("certbot.util.distro")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
+    def test_python_os_info_custom(self, m_distro):
+        import certbot.util as cbutil
+        m_distro.linux_distribution.return_value = ('testdist', '42', '')
+        self.assertEqual(cbutil.get_python_os_info(), ("testdist", "42"))
 
 
 class AtexitRegisterTest(unittest.TestCase):

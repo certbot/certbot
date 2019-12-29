@@ -330,13 +330,33 @@ elif [ -f /etc/redhat-release ]; then
   prev_le_python="$LE_PYTHON"
   unset LE_PYTHON
   DeterminePythonVersion "NOCRASH"
-  # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
+
   RPM_DIST_NAME=`(. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown"`
-  RPM_DIST_VERSION=0
-  if [ "$RPM_DIST_NAME" = "fedora" ]; then
-    RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) || echo "0"`
+
+  # Set RPM_DIST_VERSION to VERSION_ID from /etc/os-release after splitting on
+  # '.' characters (e.g. "8.0" becomes "8"). If the command exits with an
+  # error, RPM_DIST_VERSION is set to "unknown".
+  RPM_DIST_VERSION=$( (. /etc/os-release 2> /dev/null && echo "$VERSION_ID") | cut -d '.' -f1 || echo "unknown")
+
+  # If RPM_DIST_VERSION is an empty string or it contains any nonnumeric
+  # characters, the value is unexpected so we set RPM_DIST_VERSION to 0.
+  if [ -z "$RPM_DIST_VERSION" ] || [ -n "$(echo "$RPM_DIST_VERSION" | tr -d '[0-9]')" ]; then
+     RPM_DIST_VERSION=0
   fi
+
+  # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
+  # RHEL 8 also uses python3 by default.
   if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
+    RPM_USE_PYTHON_3=1
+  elif [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
+    RPM_USE_PYTHON_3=1
+  elif [ "$RPM_DIST_NAME" = "centos" -a "$RPM_DIST_VERSION" -ge 8 ]; then
+    RPM_USE_PYTHON_3=1
+  else
+    RPM_USE_PYTHON_3=0
+  fi
+
+  if [ "$RPM_USE_PYTHON_3" = 1 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
       BootstrapRpmPython3
@@ -350,6 +370,7 @@ elif [ -f /etc/redhat-release ]; then
     }
     BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
   fi
+
   LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {
@@ -498,6 +519,14 @@ UNLIKELY_EOF
 CreateVenv() {
     "$1" - "$2" "$3" "$4" << "UNLIKELY_EOF"
 {{ create_venv.py }}
+UNLIKELY_EOF
+}
+
+# Check that the given PATH_TO_CHECK has secured permissions.
+# Parameters: LE_PYTHON, PATH_TO_CHECK
+CheckPathPermissions() {
+    "$1" - "$2" << "UNLIKELY_EOF"
+{{ check_permissions.py }}
 UNLIKELY_EOF
 }
 
@@ -663,19 +692,16 @@ else
   # Don't warn about file permissions if the user disabled the check or we
   # can't find an up-to-date Python.
   if [ "$PYVER" -ge "$MIN_PYVER" -a "$NO_PERMISSIONS_CHECK" != 1 ]; then
-    # ---------------------------------------------------------------------------
-    cat << "UNLIKELY_EOF" > "$TEMP_DIR/check_permissions.py"
-{{ check_permissions.py }}
-UNLIKELY_EOF
-    # ---------------------------------------------------------------------------
     # If the script fails for some reason, don't break certbot-auto.
     set +e
-    # Suppress unexpected error output and only print the script's output if it
-    # ran successfully.
-    CHECK_PERM_OUT=$("$LE_PYTHON" "$TEMP_DIR/check_permissions.py" "$0" 2>/dev/null)
+    # Suppress unexpected error output.
+    CHECK_PERM_OUT=$(CheckPathPermissions "$LE_PYTHON" "$0" 2>/dev/null)
     CHECK_PERM_STATUS="$?"
     set -e
-    if [ "$CHECK_PERM_STATUS" = 0 ]; then
+    # Only print output if the script ran successfully and it actually produced
+    # output. The latter check resolves
+    # https://github.com/certbot/certbot/issues/7012.
+    if [ "$CHECK_PERM_STATUS" = 0 -a -n "$CHECK_PERM_OUT" ]; then
       error "$CHECK_PERM_OUT"
     fi
   fi

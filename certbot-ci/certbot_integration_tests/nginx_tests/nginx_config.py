@@ -21,9 +21,9 @@ def construct_nginx_config(nginx_root, nginx_webroot, http_port, https_port, oth
     :rtype: str
     """
     key_path = key_path if key_path \
-        else pkg_resources.resource_filename('certbot_integration_tests', 'assets/nginx_key.pem')
+        else pkg_resources.resource_filename('certbot_integration_tests', 'assets/key.pem')
     cert_path = cert_path if cert_path \
-        else pkg_resources.resource_filename('certbot_integration_tests', 'assets/nginx_cert.pem')
+        else pkg_resources.resource_filename('certbot_integration_tests', 'assets/cert.pem')
     return '''\
 # This error log will be written regardless of server scope error_log
 # definitions, so we have to set this here in the main scope.

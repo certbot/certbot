@@ -1,7 +1,6 @@
-"""Tests for certbot.cli."""
+"""Tests for certbot._internal.cli."""
 import argparse
 import copy
-import sys
 import tempfile
 import unittest
 
@@ -10,47 +9,57 @@ import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import challenges
-
-import certbot.tests.util as test_util
-from certbot import cli
-from certbot import constants
 from certbot import errors
+from certbot._internal import cli
+from certbot._internal import constants
+from certbot._internal.plugins import disco
+from certbot.compat import filesystem
 from certbot.compat import os
-from certbot.plugins import disco
+import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
 
 PLUGINS = disco.PluginsRegistry.find_all()
 
 
 class TestReadFile(TempDirTestCase):
-    '''Test cli.read_file'''
-
-
+    """Test cli.read_file"""
     def test_read_file(self):
-        rel_test_path = os.path.relpath(os.path.join(self.tempdir, 'foo'))
-        self.assertRaises(
-            argparse.ArgumentTypeError, cli.read_file, rel_test_path)
+        curr_dir = os.getcwd()
+        try:
+            # On Windows current directory may be on a different drive than self.tempdir.
+            # However a relative path between two different drives is invalid. So we move to
+            # self.tempdir to ensure that we stay on the same drive.
+            os.chdir(self.tempdir)
+            rel_test_path = os.path.relpath(os.path.join(self.tempdir, 'foo'))
+            self.assertRaises(
+                argparse.ArgumentTypeError, cli.read_file, rel_test_path)
 
-        test_contents = b'bar\n'
-        with open(rel_test_path, 'wb') as f:
-            f.write(test_contents)
+            test_contents = b'bar\n'
+            with open(rel_test_path, 'wb') as f:
+                f.write(test_contents)
 
-        path, contents = cli.read_file(rel_test_path)
-        self.assertEqual(path, os.path.abspath(path))
-        self.assertEqual(contents, test_contents)
+            path, contents = cli.read_file(rel_test_path)
+            self.assertEqual(path, os.path.abspath(path))
+            self.assertEqual(contents, test_contents)
+        finally:
+            os.chdir(curr_dir)
 
 
 class FlagDefaultTest(unittest.TestCase):
     """Tests cli.flag_default"""
 
-    def test_linux_directories(self):
-        if 'fcntl' in sys.modules:
+    def test_default_directories(self):
+        if os.name != 'nt':
             self.assertEqual(cli.flag_default('config_dir'), '/etc/letsencrypt')
             self.assertEqual(cli.flag_default('work_dir'), '/var/lib/letsencrypt')
             self.assertEqual(cli.flag_default('logs_dir'), '/var/log/letsencrypt')
+        else:
+            self.assertEqual(cli.flag_default('config_dir'), 'C:\\Certbot')
+            self.assertEqual(cli.flag_default('work_dir'), 'C:\\Certbot\\lib')
+            self.assertEqual(cli.flag_default('logs_dir'), 'C:\\Certbot\\log')
 
 
-class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
 
@@ -76,15 +85,15 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         def write_msg(message, *args, **kwargs): # pylint: disable=missing-docstring,unused-argument
             output.write(message)
 
-        with mock.patch('certbot.main.sys.stdout', new=output):
+        with mock.patch('certbot._internal.main.sys.stdout', new=output):
             with test_util.patch_get_utility() as mock_get_utility:
                 mock_get_utility().notification.side_effect = write_msg
-                with mock.patch('certbot.main.sys.stderr'):
+                with mock.patch('certbot._internal.main.sys.stderr'):
                     self.assertRaises(SystemExit, self._unmocked_parse, args, output)
 
         return output.getvalue()
 
-    @mock.patch("certbot.cli.flag_default")
+    @mock.patch("certbot._internal.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
         with tempfile.NamedTemporaryFile() as tmp_config:
             tmp_config.close()  # close now because of compatibility issues on Windows
@@ -116,7 +125,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         chain = 'chain'
         fullchain = 'fullchain'
 
-        with mock.patch('certbot.main.install'):
+        with mock.patch('certbot._internal.main.install'):
             namespace = self.parse(['install', '--cert-path', cert,
                                     '--key-path', 'key', '--chain-path',
                                     'chain', '--fullchain-path', 'fullchain'])
@@ -176,7 +185,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--delete-after-revoke" in out)
         self.assertTrue("--no-delete-after-revoke" in out)
 
-        out = self._help_output(['-h', 'config_changes'])
+        out = self._help_output(['-h', 'register'])
         self.assertTrue("--cert-path" not in out)
         self.assertTrue("--key-path" not in out)
 
@@ -239,13 +248,6 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         expected = [challenges.HTTP01.typ, challenges.DNS01.typ]
         self.assertEqual(namespace.pref_challs, expected)
 
-        # TODO: to be removed once tls-sni deprecation logic is removed
-        with mock.patch('certbot.cli.logger.warning') as mock_warn:
-            self.assertEqual(self.parse(['--preferred-challenges', 'http, tls-sni']).pref_challs,
-                             [challenges.HTTP01.typ])
-        self.assertEqual(mock_warn.call_count, 1)
-        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
-
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
         # argparse.ArgumentError makes argparse print more information
         # to stderr and call sys.exit()
@@ -261,16 +263,6 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = self.parse(short_args)
         self.assertTrue(namespace.must_staple)
         self.assertTrue(namespace.staple)
-
-    def test_no_gui(self):
-        args = ['renew', '--dialog']
-        with mock.patch("certbot.util.logger.warning") as mock_warn:
-            namespace = self.parse(args)
-
-        self.assertTrue(namespace.noninteractive_mode)
-        self.assertEqual(mock_warn.call_count, 1)
-        self.assertTrue("is deprecated" in mock_warn.call_args[0][0])
-        self.assertEqual("--dialog", mock_warn.call_args[0][1])
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:
@@ -318,21 +310,31 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.parse(short_args + ['renew']), False)
 
         account_dir = os.path.join(config_dir, constants.ACCOUNTS_DIR)
-        os.mkdir(account_dir)
-        os.mkdir(os.path.join(account_dir, 'fake_account_dir'))
+        filesystem.mkdir(account_dir)
+        filesystem.mkdir(os.path.join(account_dir, 'fake_account_dir'))
 
         self._assert_dry_run_flag_worked(self.parse(short_args + ['auth']), True)
         self._assert_dry_run_flag_worked(self.parse(short_args + ['renew']), True)
+        self._assert_dry_run_flag_worked(self.parse(short_args + ['certonly']), True)
+
         short_args += ['certonly']
-        self._assert_dry_run_flag_worked(self.parse(short_args), True)
 
-        short_args += '--server example.com'.split()
-        conflicts = ['--dry-run']
-        self._check_server_conflict_message(short_args, '--dry-run')
+        # `--dry-run --server example.com` should emit example.com
+        self.assertEqual(self.parse(short_args + ['--server', 'example.com']).server,
+                         'example.com')
 
-        short_args += ['--staging']
-        conflicts += ['--staging']
-        self._check_server_conflict_message(short_args, conflicts)
+        # `--dry-run --server STAGING_URI` should emit STAGING_URI
+        self.assertEqual(self.parse(short_args + ['--server', constants.STAGING_URI]).server,
+                         constants.STAGING_URI)
+
+        # `--dry-run --server LIVE` should emit STAGING_URI
+        self.assertEqual(self.parse(short_args + ['--server', cli.flag_default("server")]).server,
+                         constants.STAGING_URI)
+
+        # `--dry-run --server example.com --staging` should emit an error
+        conflicts = ['--staging']
+        self._check_server_conflict_message(short_args + ['--server', 'example.com', '--staging'],
+                                            conflicts)
 
     def test_option_was_set(self):
         key_size_option = 'rsa_key_size'
@@ -363,7 +365,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             errors.Error, self.parse, "-n --force-interactive".split())
 
     def test_deploy_hook_conflict(self):
-        with mock.patch("certbot.cli.sys.stderr"):
+        with mock.patch("certbot._internal.cli.sys.stderr"):
             self.assertRaises(SystemExit, self.parse,
                               "--renew-hook foo --deploy-hook bar".split())
 
@@ -383,7 +385,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.renew_hook, value)
 
     def test_renew_hook_conflict(self):
-        with mock.patch("certbot.cli.sys.stderr"):
+        with mock.patch("certbot._internal.cli.sys.stderr"):
             self.assertRaises(SystemExit, self.parse,
                               "--deploy-hook foo --renew-hook bar".split())
 
@@ -403,7 +405,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.renew_hook, value)
 
     def test_max_log_backups_error(self):
-        with mock.patch('certbot.cli.sys.stderr'):
+        with mock.patch('certbot._internal.cli.sys.stderr'):
             self.assertRaises(
                 SystemExit, self.parse, "--max-log-backups foo".split())
             self.assertRaises(
@@ -459,7 +461,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
 
 class DefaultTest(unittest.TestCase):
-    """Tests for certbot.cli._Default."""
+    """Tests for certbot._internal.cli._Default."""
 
 
     def setUp(self):
@@ -533,7 +535,7 @@ class SetByCliTest(unittest.TestCase):
 
 
 def _call_set_by_cli(var, args, verb):
-    with mock.patch('certbot.cli.helpful_parser') as mock_parser:
+    with mock.patch('certbot._internal.cli.helpful_parser') as mock_parser:
         with test_util.patch_get_utility():
             mock_parser.args = args
             mock_parser.verb = verb

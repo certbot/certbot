@@ -15,22 +15,37 @@ if ! command -v git ; then
         exit 1
     fi
 fi
-# 0.18.0 is the oldest version of letsencrypt-auto that works on Fedora 26+.
-INITIAL_VERSION="0.18.0"
+# If we're on a RHEL 6 based system, we can be confident Python is already
+# installed because the package manager is written in Python.
+if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
+    # 0.20.0 is the latest version of letsencrypt-auto that doesn't install
+    # Python 3 on RHEL 6.
+    INITIAL_VERSION="0.20.0"
+    RUN_RHEL6_TESTS=1
+else
+    # 0.37.x is the oldest version of letsencrypt-auto that works on RHEL 8.
+    INITIAL_VERSION="0.37.1"
+fi
+
 git checkout -f "v$INITIAL_VERSION" letsencrypt-auto
 if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
     echo initial installation appeared to fail
     exit 1
 fi
 
+# This script sets the environment variables PYTHON_NAME, VENV_PATH, and
+# VENV_SCRIPT based on the version of Python available on the system. For
+# instance, Fedora uses Python 3 and Python 2 is not installed.
+. tests/letstest/scripts/set_python_envvars.sh
+
 # Now that python and openssl have been installed, we can set up a fake server
 # to provide a new version of letsencrypt-auto. First, we start the server and
 # directory to be served.
 MY_TEMP_DIR=$(mktemp -d)
 PORT_FILE="$MY_TEMP_DIR/port"
-SERVER_PATH=$(tools/readlink.py tools/simple_http_server.py)
+SERVER_PATH=$("$PYTHON_NAME" tools/readlink.py tools/simple_http_server.py)
 cd "$MY_TEMP_DIR"
-"$SERVER_PATH" 0 > $PORT_FILE &
+"$PYTHON_NAME" "$SERVER_PATH" 0 > $PORT_FILE &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" && rm -rf "$MY_TEMP_DIR"' EXIT
 cd ~-
@@ -63,8 +78,7 @@ iQIDAQAB
 -----END PUBLIC KEY-----
 "
 
-if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
-    RUN_PYTHON3_TESTS=1
+if [ "$RUN_RHEL6_TESTS" = 1 ]; then
     if command -v python3; then
         echo "Didn't expect Python 3 to be installed!"
         exit 1
@@ -102,7 +116,7 @@ if ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
     exit 1
 fi
 
-if [ "$RUN_PYTHON3_TESTS" = 1 ]; then
+if [ "$RUN_RHEL6_TESTS" = 1 ]; then
     if ! command -v python3; then
         echo "Python3 wasn't properly installed"
         exit 1
@@ -112,7 +126,7 @@ if [ "$RUN_PYTHON3_TESTS" = 1 ]; then
         exit 1
     fi
 
-    if [ "$(tools/readlink.py $OLD_VENV_PATH)" != "/opt/eff.org/certbot/venv" ]; then
+    if [ "$("$PYTHON_NAME" tools/readlink.py $OLD_VENV_PATH)" != "/opt/eff.org/certbot/venv" ]; then
         echo symlink from old venv path not properly created!
         exit 1
     fi
