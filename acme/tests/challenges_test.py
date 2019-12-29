@@ -317,7 +317,7 @@ class TLSALPN01ResponseTest(unittest.TestCase):
                 self.chall, self.domain, KEY.public_key(),
                 cert=mock.sentinel.cert))
         mock_verify_cert.assert_called_once_with(
-            self.response, mock.sentinel.cert, self.domain)
+            self.response, self.domain, mock.sentinel.cert)
 
     @mock.patch('acme.challenges.socket.gethostbyname')
     @mock.patch('acme.challenges.crypto_util.probe_sni')
