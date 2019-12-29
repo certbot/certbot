@@ -133,7 +133,6 @@ class BaseDualNetworkedServers(object):
 
 class BadALPNProtos(Exception):
     """Error raised when cannot negotiate ALPN protocol."""
-    pass
 
 
 class TLSALPN01Server(TLSServer, ACMEServerMixin):

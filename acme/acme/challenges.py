@@ -487,7 +487,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
                 logger.debug(str(error), exc_info=True)
                 return False
 
-        return self.verify_cert(cert, domain)
+        return self.verify_cert(domain, cert)
 
 
 @Challenge.register  # pylint: disable=too-many-ancestors
