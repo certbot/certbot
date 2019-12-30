@@ -18,7 +18,7 @@ import mock
 import OpenSSL
 import pkg_resources
 import six
-from six.moves import reload_module  # pylint: disable=import-error
+from six.moves import reload_module
 
 from certbot import interfaces
 from certbot import util

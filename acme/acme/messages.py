@@ -11,7 +11,7 @@ from acme import jws
 from acme import util
 
 try:
-    from collections.abc import Hashable  # pylint: disable=no-name-in-module
+    from collections.abc import Hashable
 except ImportError:  # pragma: no cover
     from collections import Hashable
 
@@ -460,7 +460,6 @@ class ChallengeResource(Resource):
     @property
     def uri(self):
         """The URL of the challenge body."""
-        # pylint: disable=function-redefined,no-member
         return self.body.uri
 
 
@@ -488,7 +487,7 @@ class Authorization(ResourceBody):
     wildcard = jose.Field('wildcard', omitempty=True)
 
     @challenges.decoder
-    def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
+    def challenges(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
     @property
@@ -585,7 +584,7 @@ class Order(ResourceBody):
     error = jose.Field('error', omitempty=True, decoder=Error.from_json)
 
     @identifiers.decoder
-    def identifiers(value):  # pylint: disable=missing-docstring,no-self-argument
+    def identifiers(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(Identifier.from_json(identifier) for identifier in value)
 
 class OrderResource(ResourceWithURI):

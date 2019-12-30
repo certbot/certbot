@@ -3,9 +3,9 @@ import abc
 
 import six
 
-from acme.magic_typing import Any  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any
+from acme.magic_typing import Dict
+from acme.magic_typing import List
 from certbot._internal import constants
 
 ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]

@@ -35,7 +35,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             add, default_propagation_seconds=90)
         add('credentials', help='Sakura Cloud credentials file.')
 
-    def more_info(self):  # pylint: disable=missing-docstring,no-self-use
+    def more_info(self):  # pylint: disable=missing-function-docstring
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'the Sakura Cloud API.'
 

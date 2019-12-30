@@ -15,9 +15,9 @@ import zope.interface
 from zope.interface import interfaces as zope_interfaces
 
 from acme import challenges
-from acme.magic_typing import Any  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any
+from acme.magic_typing import Dict
+from acme.magic_typing import Optional
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -505,7 +505,7 @@ class HelpfulArgumentParser(object):
                 " and ".join(flag_default("config_files"))))
 
         # This is the only way to turn off overly verbose config flag documentation
-        self.parser._add_config_file_help = False  # pylint: disable=protected-access
+        self.parser._add_config_file_help = False
 
     # Help that are synonyms for --help subcommands
     COMMANDS_TOPICS = ["command", "commands", "subcommand", "subcommands", "verbs"]

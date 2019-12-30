@@ -195,7 +195,7 @@ class Reverter(object):
         with open(os.path.join(cp_dir, "CHANGES_SINCE"), "a") as notes_fd:
             notes_fd.write(save_notes)
 
-    def _read_and_append(self, filepath):  # pylint: disable=no-self-use
+    def _read_and_append(self, filepath):
         """Reads the file lines and returns a file obj.
 
         Read the file returning the lines, and a pointer to the end of the file.
@@ -250,7 +250,7 @@ class Reverter(object):
             raise errors.ReverterError(
                 "Unable to remove directory: %s" % cp_dir)
 
-    def _run_undo_commands(self, filepath):  # pylint: disable=no-self-use
+    def _run_undo_commands(self, filepath):
         """Run all commands in a file."""
         # NOTE: csv module uses native strings. That is, bytes on Python 2 and
         # unicode on Python 3
@@ -413,7 +413,7 @@ class Reverter(object):
                     "Incomplete or failed recovery for IN_PROGRESS checkpoint "
                     "- %s" % self.config.in_progress_dir)
 
-    def _remove_contained_files(self, file_list):  # pylint: disable=no-self-use
+    def _remove_contained_files(self, file_list):
         """Erase all files contained within file_list.
 
         :param str file_list: file containing list of file paths to be deleted
