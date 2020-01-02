@@ -10,7 +10,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Removed the fallback introduced with 0.34.0 in `acme` to retry a POST-as-GET
+  request as a GET request when the targeted ACME CA server seems to not support
+  POST-as-GET requests.
 
 ### Fixed
 
