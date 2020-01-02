@@ -9,5 +9,5 @@ This is one of the Docker repository for the Certbot DNS plugins.
 
 ## Sources:
 
-* [docker](https://www.github.com/certbot/certbot-docker.git)
+* [docker](https://www.github.com/certbot-docker/certbot-docker.git)
 * [certbot](https://www.github.com/certbot/certbot.git)
