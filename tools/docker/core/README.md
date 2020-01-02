@@ -22,5 +22,5 @@ This is the Docker repository for Certbot Core.
 
 ## Sources:
 
-* [docker](https://www.github.com/certbot/certbot-docker.git)
+* [docker](https://www.github.com/certbot-docker/certbot-docker.git)
 * [certbot](https://www.github.com/certbot/certbot.git)
