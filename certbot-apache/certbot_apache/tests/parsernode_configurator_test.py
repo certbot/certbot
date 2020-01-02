@@ -13,7 +13,8 @@ class ConfiguratorParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-p
         super(ConfiguratorParserNodeTest, self).setUp()
 
         self.config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+            self.config_path, self.vhost_path, self.config_dir,
+            self.work_dir, use_parsernode=True)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 

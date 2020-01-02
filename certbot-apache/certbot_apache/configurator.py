@@ -187,6 +187,7 @@ class ApacheConfigurator(common.Installer):
 
         """
         version = kwargs.pop("version", None)
+        use_parsernode = kwargs.pop("use_parsernode", False)
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Add name_server association dict
@@ -203,7 +204,7 @@ class ApacheConfigurator(common.Installer):
         # Reverter save notes
         self.save_notes = ""
         # Should we use ParserNode implementation instead of the old behavior
-        self.USE_PARSERNODE = False
+        self.USE_PARSERNODE = use_parsernode
         # Saves the list of file paths that were parsed initially, and
         # not added to parser tree by self.conf("vhost-root") for example.
         self.parsed_paths = []  # type: List[str]
@@ -264,8 +265,9 @@ class ApacheConfigurator(common.Installer):
         pn_meta = {"augeasparser": self.parser,
                    "augeaspath": self.parser.get_root_augpath(),
                    "ac_ast": None}
-        self.parser_root = self.get_parsernode_root(pn_meta)
-        self.parsed_paths = self.parser_root.parsed_paths()
+        if self.USE_PARSERNODE:
+            self.parser_root = self.get_parsernode_root(pn_meta)
+            self.parsed_paths = self.parser_root.parsed_paths()
 
         # Check for errors in parsing files with Augeas
         self.parser.check_parsing_errors("httpd.aug")
@@ -909,18 +911,18 @@ class ApacheConfigurator(common.Installer):
         """
 
         v1_vhosts = self.get_virtual_hosts_v1()
-        v2_vhosts = self.get_virtual_hosts_v2()
-
-        for v1_vh in v1_vhosts:
-            found = False
-            for v2_vh in v2_vhosts:
-                if assertions.isEqualVirtualHost(v1_vh, v2_vh):
-                    found = True
-                    break
-            if not found:
-                raise AssertionError("Equivalent for {} was not found".format(v1_vh.path))
-
         if self.USE_PARSERNODE:
+            v2_vhosts = self.get_virtual_hosts_v2()
+
+            for v1_vh in v1_vhosts:
+                found = False
+                for v2_vh in v2_vhosts:
+                    if assertions.isEqualVirtualHost(v1_vh, v2_vh):
+                        found = True
+                        break
+                if not found:
+                    raise AssertionError("Equivalent for {} was not found".format(v1_vh.path))
+
             return v2_vhosts
         return v1_vhosts
 
@@ -1003,7 +1005,8 @@ class ApacheConfigurator(common.Installer):
             addrs.add(obj.Addr.fromstring(param))
 
         is_ssl = False
-        sslengine = node.find_directives("SSLEngine")
+        # Exclusion to match the behavior in get_virtual_hosts_v2
+        sslengine = node.find_directives("SSLEngine", exclude=False)
         if sslengine:
             for directive in sslengine:
                 if directive.parameters[0].lower() == "on":
