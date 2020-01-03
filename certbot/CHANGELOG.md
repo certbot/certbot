@@ -10,6 +10,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* Removed the fallback introduced with 0.34.0 in `acme` to retry a POST-as-GET
+  request as a GET request when the targeted ACME CA server seems to not support
+  POST-as-GET requests.
 * certbot-auto no longer supports architectures other than x86_64 on RHEL 6
   based systems. Existing certbot-auto installations affected by this will
   continue to work, but they will no longer receive updates. To install a

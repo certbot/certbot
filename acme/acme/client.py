@@ -776,29 +776,13 @@ class ClientV2(ClientBase):
 
     def _post_as_get(self, *args, **kwargs):
         """
-        Send GET request using the POST-as-GET protocol if needed.
-        The request will be first issued using POST-as-GET for ACME v2. If the ACME CA servers do
-        not support this yet and return an error, request will be retried using GET.
-        For ACME v1, only GET request will be tried, as POST-as-GET is not supported.
+        Send GET request using the POST-as-GET protocol.
         :param args:
         :param kwargs:
         :return:
         """
-        if self.acme_version >= 2:
-            # We add an empty payload for POST-as-GET requests
-            new_args = args[:1] + (None,) + args[1:]
-            try:
-                return self._post(*new_args, **kwargs)
-            except messages.Error as error:
-                if error.code == 'malformed':
-                    logger.debug('Error during a POST-as-GET request, '
-                                 'your ACME CA server may not support it:\n%s', error)
-                    logger.debug('Retrying request with GET.')
-                else:  # pragma: no cover
-                    raise
-
-        # If POST-as-GET is not supported yet, we use a GET instead.
-        return self.net.get(*args, **kwargs)
+        new_args = args[:1] + (None,) + args[1:]
+        return self._post(*new_args, **kwargs)
 
 
 class BackwardsCompatibleClientV2(object):
