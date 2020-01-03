@@ -552,7 +552,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # In this situation, we bypass any bootstrap or certbot venv setup.
     error "Your system is not supported by certbot-auto anymore."
 
-    if OldVenvExists; then
+    if [ ! -d "$VENV_PATH" ] && OldVenvExists; then
       VENV_BIN="$OLD_VENV_PATH/bin"
     fi
 
