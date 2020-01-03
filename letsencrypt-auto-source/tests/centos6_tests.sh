@@ -25,7 +25,7 @@ echo "PASSED: On CentOS 6 32 bits, certbot-auto refused to install certbot."
 
 # we're going to modify env variables, so do this in a subshell
 (
-  . scl_source enable python27
+  . /opt/rh/python27/enable
 
   # ensure python 3 isn't installed
   if python3 --version 2> /dev/null; then
@@ -64,12 +64,10 @@ if ! "$LE_AUTO" 2>&1 | grep -q "WARNING: couldn't find Python"; then
 fi
 
 # bootstrap from the old letsencrypt-auto, this time installing python3.4
-"$LE_AUTO_PY_34" --no-self-upgrade -n >/dev/null 2>/dev/null
+"$LE_AUTO_PY_34" --no-self-upgrade -n --version >/dev/null 2>/dev/null
 
 # ensure python 3.4 is installed
-python3.4 --version >/dev/null 2>/dev/null
-RESULT=$?
-if [ $RESULT -ne 0 ]; then
+if ! python3.4 --version >/dev/null 2>/dev/null; then
   echo "ERROR: letsencrypt-auto failed to install Python3.4 using letsencrypt-auto < 0.37.0 when only Python2.6 is present."
   exit 1
 fi
@@ -100,16 +98,14 @@ fi
 echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell with --non-interactive flag not set."
 
 # now bootstrap from current letsencrypt-auto, that will install python3.6 from SCL
-"$LE_AUTO" --no-self-upgrade -n >/dev/null 2>/dev/null
+"$LE_AUTO" --no-self-upgrade -n --version >/dev/null 2>/dev/null
 
 # Following test is exectued in a subshell, to not leak any environment variable
 (
   # enable SCL rh-python36
-  . scl_source enable rh-python36
+  . /opt/rh/rh-python36/enable
 
   # ensure python 3.6 is installed
-  python3.6 --version >/dev/null 2>/dev/null
-  RESULT=$?
   if ! python3.6 --version >/dev/null 2>/dev/null; then
     echo "ERROR: letsencrypt-auto failed to install Python3.6 using current letsencrypt-auto when only Python2.6/Python3.4 are present."
     exit 1
@@ -131,7 +127,7 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
 # Following test is exectued in a subshell, to not leak any environment variable
 (
   # enable SCL rh-python36
-  . scl_source enable rh-python36
+  . /opt/rh/rh-python36/enable
 
   # ensure everything works fine with certbot-auto bootstrap when python 3.6 is already enabled
   export VENV_PATH=$(mktemp -d)
@@ -146,12 +142,11 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
   # ensure CentOS6 32bits is not supported anymore, and so certbot
   # is not upgraded nor reinstalled.
   export UNAME_FAKE_32BITS=true
-  set -o pipefail
-  if ! "$LE_AUTO" --version 2>&1 | grep -q "Certbot will no longer receive updates."; then
+  OUTPUT=$("$LE_AUTO" --version 2>&1)
+  if ! echo "$OUTPUT" | grep -q "Certbot will no longer receive updates."; then
     echo "ERROR: On CentOS 6 32 bits, certbot-auto failed or upgraded installed certbot instance."
     exit 1
   fi
-  set +o pipefail
   if ! "$LE_AUTO" --install-only 2>&1 | grep -q "Certbot cannot be installed."; then
     echo "ERROR: On CentOS 6 32 bits, certbot-auto installed certbot again."
     exit 1
@@ -165,12 +160,11 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
   VENV_PATH=~/.local/share/letsencrypt "$LE_AUTO" --install-only > /dev/null 2> /dev/null
   # fake 32 bits mode
   export UNAME_FAKE_32BITS=true
-  set -o pipefail
-  if ! "$LE_AUTO" --version 2>&1 | grep -q "Certbot will no longer receive updates."; then
+  OUTPUT=$("$LE_AUTO" --version 2>&1)
+  if ! echo "$OUTPUT" | grep -q "Certbot will no longer receive updates."; then
     echo "ERROR: On CentOS 6 32 bits, certbot-auto failed or upgraded installed certbot in the old venv path."
     exit 1
   fi
-  set +o pipefail
 )
 
 echo "PASSED: On CentOS 6 32 bits, certbot-auto refused to install/upgrade certbot."
