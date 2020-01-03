@@ -234,6 +234,7 @@ matrix:
     - sudo: required
       env: TOXENV=le_auto_centos6
       services: docker
+      <<: *extended-test-suite
     - sudo: required
       env: TOXENV=le_auto_oraclelinux6
       services: docker
