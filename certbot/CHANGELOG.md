@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Warn on renewal attempt if certificate is valid for less than 25 days.
 
 ### Changed
 
