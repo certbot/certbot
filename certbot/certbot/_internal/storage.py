@@ -927,6 +927,8 @@ class RenewableCert(interfaces.RenewableCert):
         Note that this examines the numerically most recent cert version,
         not the currently deployed version.
 
+        Will log warning if certificate is valid for less than 25 days.
+
         :returns: whether an attempt should now be made to autorenew the
             most current cert version in this lineage
         :rtype: bool
