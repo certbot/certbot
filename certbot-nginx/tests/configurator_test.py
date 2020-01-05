@@ -557,7 +557,7 @@ class NginxConfiguratorTest(util.NginxTest):
                [], []]],
              [['server'], [
                [['if', '($host', '=', 'www.example.com)'], [
-                 ['return', '301', 'https://$host$request_uri']]],
+                 ['return', '308', 'https://$host$request_uri']]],
                ['#', ' managed by Certbot'], [],
                ['listen', '69.50.225.155:9000'],
                ['listen', '127.0.0.1'],

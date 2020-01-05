@@ -1150,7 +1150,7 @@ def _redirect_block_for_domain(domain):
         updated_domain = '^' + updated_domain + '$'
     redirect_block = [[
         ['\n    ', 'if', ' ', '($host', ' ', match_symbol, ' ', '%s)' % updated_domain, ' '],
-        [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
+        [['\n        ', 'return', ' ', '308', ' ', 'https://$host$request_uri'],
         '\n    ']],
         ['\n']]
     return redirect_block
