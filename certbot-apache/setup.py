@@ -24,7 +24,7 @@ docs_extras = [
 ]
 
 dev_extras = [
-    'apacheconfig>=0.3.0',
+    'apacheconfig>=0.3.1',
 ]
 
 class PyTest(TestCommand):
