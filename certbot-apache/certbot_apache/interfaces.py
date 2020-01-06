@@ -132,8 +132,8 @@ class ParserNode(object):
     ParserNode objects should have the following attributes:
 
     # Reference to ancestor node(s), empty if the node is the root node of the
-    # configuration tree. This node can have multiple ancestors in the case
-    # that it is the root of a file included by multiple files.
+    # configuration tree. This node can have multiple ancestors if it is in
+    # a file included by multiple files.
     ancestors: Tuple[ParserNode]
 
     # True if this node has been modified since last save.
