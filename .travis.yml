@@ -46,11 +46,8 @@ matrix:
     - python: "2.7"
       env: TOXENV=py27-cover FYI="py27 tests + code coverage"
 
-    - python: "2.7"
+    - python: "3.7"
       env: TOXENV=lint
-      <<: *not-on-master
-    - python: "3.4"
-      env: TOXENV=mypy
       <<: *not-on-master
     - python: "3.5"
       env: TOXENV=mypy
@@ -68,7 +65,7 @@ matrix:
     - python: "3.7"
       env: TOXENV=py37
       <<: *not-on-master
-    - python: "3.8-dev"
+    - python: "3.8"
       env: TOXENV=py38
       <<: *not-on-master
     - sudo: required
@@ -178,7 +175,7 @@ matrix:
     - python: "3.7"
       env: TOXENV=py37
       <<: *extended-test-suite
-    - python: "3.8-dev"
+    - python: "3.8"
       env: TOXENV=py38
       <<: *extended-test-suite
     - python: "3.4"
@@ -221,10 +218,10 @@ matrix:
       sudo: required
       services: docker
       <<: *extended-test-suite
-    - python: "3.8-dev"
+    - python: "3.8"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
       <<: *extended-test-suite
-    - python: "3.8-dev"
+    - python: "3.8"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
       <<: *extended-test-suite
     - sudo: required

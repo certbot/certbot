@@ -46,9 +46,12 @@ AUTHORITATIVE_CONSTRAINTS = {
     # certbot-auto failures on Python 3.6+ which enum34 doesn't support. See #5456.
     # TODO: hashin seems to overwrite environment markers in dependencies. This needs to be fixed.
     'enum34': '1.1.6 ; python_version < \'3.4\'',
-    # Newer versions of requests dropped support for python 3.4. Once Certbot does as well,
-    # we should unpin the dependency.
+    # Newer versions of the packages below dropped support for python 3.4. Once
+    # Certbot does as well, we should unpin these dependencies.
     'requests': '2.21.0',
+    'ConfigArgParse': '0.14.0',
+    'zope.hookable': '4.2.0',
+    'zope.interface': '4.6.0',
 }
 
 
@@ -62,8 +65,7 @@ CERTBOT_REPO_PATH = dirname(dirname(abspath(__file__)))
 #     without pinned dependencies, and respecting input authoritative requirements
 #   - `certbot plugins` is called to check we have an healthy environment
 #   - finally current set of dependencies is extracted out of the docker using pip freeze
-SCRIPT = """\
-#!/bin/sh
+SCRIPT = r"""#!/bin/sh
 set -e
 
 cd /tmp/certbot
@@ -73,7 +75,7 @@ PYVER=`/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cu
 /opt/eff.org/certbot/venv/bin/python letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "$PYVER" 1
 
 /tmp/venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
-/tmp/venv/bin/pip install -e acme -e . -e certbot-apache -e certbot-nginx -c /tmp/constraints.txt
+/tmp/venv/bin/pip install -e acme -e certbot -e certbot-apache -e certbot-nginx -c /tmp/constraints.txt
 /tmp/venv/bin/certbot plugins
 /tmp/venv/bin/pip freeze >> /tmp/workspace/requirements.txt
 """
