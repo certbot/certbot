@@ -2,8 +2,8 @@
 
 import unittest
 
-from certbot_apache import interfaces
-from certbot_apache import parsernode_util as util
+from certbot_apache._internal import interfaces
+from certbot_apache._internal import parsernode_util as util
 
 
 class DummyParserNode(interfaces.ParserNode):

@@ -1,7 +1,7 @@
 """ Tests for ParserNode utils """
 import unittest
 
-from certbot_apache import parsernode_util as util
+from certbot_apache._internal import parsernode_util as util
 
 
 class ParserNodeUtilTest(unittest.TestCase):

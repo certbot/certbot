@@ -68,11 +68,11 @@ from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-m
 from certbot import errors
 from certbot.compat import os
 
-from certbot_apache import apache_util
-from certbot_apache import assertions
-from certbot_apache import interfaces
-from certbot_apache import parser
-from certbot_apache import parsernode_util as util
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import assertions
+from certbot_apache._internal import interfaces
+from certbot_apache._internal import parser
+from certbot_apache._internal import parsernode_util as util
 
 
 class AugeasParserNode(interfaces.ParserNode):

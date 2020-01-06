@@ -1,8 +1,8 @@
 """ apacheconfig implementation of the ParserNode interfaces """
 
-from certbot_apache import assertions
-from certbot_apache import interfaces
-from certbot_apache import parsernode_util as util
+from certbot_apache._internal import assertions
+from certbot_apache._internal import interfaces
+from certbot_apache._internal import parsernode_util as util
 
 
 class ApacheParserNode(interfaces.ParserNode):
@@ -73,9 +73,9 @@ class ApacheDirectiveNode(ApacheParserNode):
                     self.metadata == other.metadata)
         return False
 
-    def set_parameters(self, parameters):
+    def set_parameters(self, _parameters):
         """Sets the parameters for DirectiveNode"""
-        pass
+        return
 
 
 class ApacheBlockNode(ApacheDirectiveNode):
@@ -153,7 +153,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
 
     def delete_child(self, child):  # pragma: no cover
         """Deletes a ParserNode from the sequence of children"""
-        pass
+        return
 
     def unsaved_files(self):  # pragma: no cover
         """Returns a list of unsaved filepaths"""

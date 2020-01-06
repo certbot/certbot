@@ -1,7 +1,7 @@
 """Dual parser node assertions"""
 import fnmatch
 
-from certbot_apache import interfaces
+from certbot_apache._internal import interfaces
 
 
 PASS = "CERTBOT_PASS_ASSERT"
@@ -36,8 +36,8 @@ def assertEqualComment(first, second): # pragma: no cover
     assert isinstance(first, interfaces.CommentNode)
     assert isinstance(second, interfaces.CommentNode)
 
-    if not isPass(first.comment) and not isPass(second.comment):
-        assert first.comment == second.comment
+    if not isPass(first.comment) and not isPass(second.comment):  # type: ignore
+        assert first.comment == second.comment  # type: ignore
 
 def _assertEqualDirectiveComponents(first, second): # pragma: no cover
     """ Handles assertion for instance variables for DirectiveNode and BlockNode"""

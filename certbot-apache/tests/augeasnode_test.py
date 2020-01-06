@@ -1,12 +1,13 @@
 """Tests for AugeasParserNode classes"""
 import mock
 
+import util
+
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 
-from certbot_apache import assertions
+from certbot_apache._internal import assertions
 
-from certbot_apache.tests import util
 
 
 class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-methods
@@ -21,19 +22,19 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
     def test_save(self):
-        with mock.patch('certbot_apache.parser.ApacheParser.save') as mock_save:
+        with mock.patch('certbot_apache._internal.parser.ApacheParser.save') as mock_save:
             self.config.parser_root.save("A save message")
         self.assertTrue(mock_save.called)
         self.assertEqual(mock_save.call_args[0][0], "A save message")
 
     def test_unsaved_files(self):
-        with mock.patch('certbot_apache.parser.ApacheParser.unsaved_files') as mock_uf:
+        with mock.patch('certbot_apache._internal.parser.ApacheParser.unsaved_files') as mock_uf:
             mock_uf.return_value = ["first", "second"]
             files = self.config.parser_root.unsaved_files()
         self.assertEqual(files, ["first", "second"])
 
     def test_get_block_node_name(self):
-        from certbot_apache.augeasparser import AugeasBlockNode
+        from certbot_apache._internal.augeasparser import AugeasBlockNode
         block = AugeasBlockNode(
             name=assertions.PASS,
             ancestor=None,
@@ -102,9 +103,9 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         self.assertTrue("going_to_set_this" in names)
 
     def test_set_parameters_atinit(self):
-        from certbot_apache.augeasparser import AugeasDirectiveNode
+        from certbot_apache._internal.augeasparser import AugeasDirectiveNode
         servernames = self.config.parser_root.find_directives("servername")
-        setparam = "certbot_apache.augeasparser.AugeasDirectiveNode.set_parameters"
+        setparam = "certbot_apache._internal.augeasparser.AugeasDirectiveNode.set_parameters"
         with mock.patch(setparam) as mock_set:
             AugeasDirectiveNode(
                 name=servernames[0].name,
@@ -241,7 +242,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         self.assertTrue(vh.primary.metadata["augeaspath"].endswith("VirtualHost[2]"))
 
     def test_node_init_error_bad_augeaspath(self):
-        from certbot_apache.augeasparser import AugeasBlockNode
+        from certbot_apache._internal.augeasparser import AugeasBlockNode
         parameters = {
             "name": assertions.PASS,
             "ancestor": None,
@@ -258,7 +259,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         )
 
     def test_node_init_error_missing_augeaspath(self):
-        from certbot_apache.augeasparser import AugeasBlockNode
+        from certbot_apache._internal.augeasparser import AugeasBlockNode
         parameters = {
             "name": assertions.PASS,
             "ancestor": None,

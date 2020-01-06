@@ -3,7 +3,7 @@ import unittest
 
 import mock
 
-from certbot_apache.tests import util
+import util
 
 
 class ConfiguratorParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-methods

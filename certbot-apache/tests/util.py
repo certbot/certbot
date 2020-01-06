@@ -111,7 +111,7 @@ def get_apache_configurator(
             mock_exe_exists.return_value = True
             with mock.patch("certbot_apache._internal.parser.ApacheParser."
                             "update_runtime_variables"):
-                with mock.patch("certbot_apache.apache_util.parse_from_subprocess") as mock_sp:
+                with mock.patch("certbot_apache._internal.apache_util.parse_from_subprocess") as mock_sp:
                     mock_sp.return_value = []
                     try:
                         config_class = entrypoint.OVERRIDE_CLASSES[os_info]
