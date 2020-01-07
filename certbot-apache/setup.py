@@ -18,6 +18,9 @@ install_requires = [
     'zope.interface',
 ]
 
+dev_extras = [
+    'apacheconfig>=0.3.1',
+]
 
 class PyTest(TestCommand):
     user_options = []
@@ -69,6 +72,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
+    extras_require={
+        'dev': dev_extras,
+    },
     entry_points={
         'certbot.plugins': [
             'apache = certbot_apache._internal.entrypoint:ENTRYPOINT',
