@@ -16,5 +16,4 @@ schedules:
 jobs:
   # Any addition here should be reflected in the release pipeline.
   # It is advised to declare all jobs here as templates to improve maintainability.
-  - template: templates/tests-suite.yml
   - template: templates/installer-tests.yml
