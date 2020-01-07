@@ -1,9 +1,9 @@
 """Tests for certbot_compatibility_test.validator."""
 import unittest
-import requests
 
 import mock
 import OpenSSL
+import requests
 
 from acme import errors as acme_errors
 from certbot_compatibility_test import validator

@@ -5,6 +5,13 @@ import unittest
 
 import mock
 
+from certbot import util
+from certbot._internal import lock
+from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
+from certbot.tests.util import TempDirTestCase
+
 try:
     # pylint: disable=import-error
     import win32api
@@ -15,12 +22,6 @@ try:
 except ImportError:
     POSIX_MODE = True
 
-import certbot.tests.util as test_util
-from certbot import lock
-from certbot import util
-from certbot.compat import os
-from certbot.compat import filesystem
-from certbot.tests.util import TempDirTestCase
 
 
 EVERYBODY_SID = 'S-1-1-0'
@@ -362,6 +363,8 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         self.assertTrue(filesystem.check_owner(self.probe_path))
 
         import os as std_os  # pylint: disable=os-module-forbidden
+        # See related inline comment in certbot.compat.filesystem.check_owner method
+        # that explains why MyPy/PyLint check disable is needed here.
         uid = std_os.getuid()
 
         with mock.patch('os.getuid') as mock_uid:
