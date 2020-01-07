@@ -1,5 +1,6 @@
 """This module contains advanced assertions for the certbot integration tests."""
 import os
+
 try:
     import grp
     POSIX_MODE = True
