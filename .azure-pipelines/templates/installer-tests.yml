@@ -11,4 +11,4 @@ jobs:
     pool:
       vmImage: $(imageName)
     steps:
-      - script: powershell --version
+      - script: powershell -Command "$PSVersionTable.PSVersion"
