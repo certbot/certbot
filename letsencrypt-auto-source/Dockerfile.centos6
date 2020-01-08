@@ -30,6 +30,12 @@ RUN update-ca-trust
 # Copy code:
 COPY . /home/lea/certbot/letsencrypt-auto-source
 
+# Tweak uname binary for tests on fake 32bits
+COPY tests/uname_wrapper.sh /bin
+RUN mv /bin/uname /bin/uname_orig \
+ && mv /bin/uname_wrapper.sh /bin/uname \
+ && chmod +x /bin/uname
+
 USER lea
 WORKDIR /home/lea
 
