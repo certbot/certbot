@@ -1,4 +1,8 @@
-"""This compat module wraps os.path to forbid some functions."""
+"""
+This compat module wraps os.path to forbid some functions.
+
+isort:skip_file
+"""
 # pylint: disable=function-redefined
 from __future__ import absolute_import
 

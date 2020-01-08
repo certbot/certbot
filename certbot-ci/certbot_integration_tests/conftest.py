@@ -6,9 +6,10 @@ for a directory a specific configuration using built-in pytest hooks.
 
 See https://docs.pytest.org/en/latest/reference.html#hook-reference
 """
+from __future__ import print_function
 import contextlib
-import sys
 import subprocess
+import sys
 
 from certbot_integration_tests.utils import acme_server as acme_lib
 

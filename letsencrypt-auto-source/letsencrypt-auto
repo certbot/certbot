@@ -820,6 +820,11 @@ elif [ -f /etc/redhat-release ]; then
 
   RPM_DIST_NAME=`(. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown"`
 
+  if [ "$PYVER" -eq 26 -a $(uname -m) != 'x86_64' ]; then
+    # 32 bits CentOS 6 and affiliates are not supported anymore by certbot-auto.
+    DEPRECATED_OS=1
+  fi
+
   # Set RPM_DIST_VERSION to VERSION_ID from /etc/os-release after splitting on
   # '.' characters (e.g. "8.0" becomes "8"). If the command exits with an
   # error, RPM_DIST_VERSION is set to "unknown".
@@ -947,6 +952,13 @@ fi
 if [ "$NO_BOOTSTRAP" = 1 ]; then
   Bootstrap() {
     :
+  }
+  unset BOOTSTRAP_VERSION
+fi
+
+if [ "$DEPRECATED_OS" = 1 ]; then
+  Bootstrap() {
+    error "Skipping bootstrap because certbot-auto is deprecated on this system."
   }
   unset BOOTSTRAP_VERSION
 fi
@@ -1148,6 +1160,28 @@ if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
   shift 1  # the --le-auto-phase2 arg
+
+  if [ "$DEPRECATED_OS" = 1 ]; then
+    # Phase 2 damage control mode for deprecated OSes.
+    # In this situation, we bypass any bootstrap or certbot venv setup.
+    error "Your system is not supported by certbot-auto anymore."
+
+    if [ ! -d "$VENV_PATH" ] && OldVenvExists; then
+      VENV_BIN="$OLD_VENV_PATH/bin"
+    fi
+
+    if [ -f "$VENV_BIN/letsencrypt" -a "$INSTALL_ONLY" != 1 ]; then
+      error "Certbot will no longer receive updates."
+      error "Please visit https://certbot.eff.org/ to check for other alternatives."
+      "$VENV_BIN/letsencrypt" "$@"
+      exit 0
+    else
+      error "Certbot cannot be installed."
+      error "Please visit https://certbot.eff.org/ to check for other alternatives."
+      exit 1
+    fi
+  fi
+
   SetPrevBootstrapVersion
 
   if [ -z "$PHASE_1_VERSION" -a "$USE_PYTHON_3" = 1 ]; then
@@ -1713,6 +1747,9 @@ UNLIKELY_EOF
 
     say "Installation succeeded."
   fi
+
+  # If you're modifying any of the code after this point in this current `if` block, you
+  # may need to update the "$DEPRECATED_OS" = 1 case at the beginning of phase 2 as well.
 
   if [ "$INSTALL_ONLY" = 1 ]; then
     say "Certbot is installed."

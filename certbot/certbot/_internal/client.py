@@ -3,36 +3,35 @@ import datetime
 import logging
 import platform
 
-import OpenSSL
-import josepy as jose
-import zope.component
 from cryptography.hazmat.backends import default_backend
-# https://github.com/python/typeshed/blob/master/third_party/
-# 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
+# See https://github.com/pyca/cryptography/issues/4275
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
+import josepy as jose
+import OpenSSL
+import zope.component
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import Optional, List  # pylint: disable=unused-import,no-name-in-module
-
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
 import certbot
+from certbot import crypto_util
+from certbot import errors
+from certbot import interfaces
+from certbot import util
 from certbot._internal import account
 from certbot._internal import auth_handler
 from certbot._internal import cli
 from certbot._internal import constants
-from certbot import crypto_util
 from certbot._internal import eff
 from certbot._internal import error_handler
-from certbot import errors
-from certbot import interfaces
 from certbot._internal import storage
-from certbot import util
-from certbot.compat import os
 from certbot._internal.display import enhancements
-from certbot.display import ops as display_ops
 from certbot._internal.plugins import selection as plugin_selection
+from certbot.compat import os
+from certbot.display import ops as display_ops
 
 logger = logging.getLogger(__name__)
 
@@ -225,11 +224,9 @@ def perform_registration(acme, config, tos_cb):
                        "Please ensure it is a valid email and attempt "
                        "registration again." % config.email)
                 raise errors.Error(msg)
-            else:
-                config.email = display_ops.get_email(invalid=True)
-                return perform_registration(acme, config, tos_cb)
-        else:
-            raise
+            config.email = display_ops.get_email(invalid=True)
+            return perform_registration(acme, config, tos_cb)
+        raise
 
 
 class Client(object):
@@ -361,7 +358,6 @@ class Client(object):
             return self.obtain_certificate(successful_domains)
         else:
             cert, chain = self.obtain_certificate_from_csr(csr, orderr)
-
             return cert, chain, key, csr
 
     def _get_order_and_authorizations(self, csr_pem, best_effort):
@@ -394,8 +390,6 @@ class Client(object):
 
         authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
         return orderr.update(authorizations=authzr)
-
-    # pylint: disable=no-member
     def obtain_and_enroll_certificate(self, domains, certname):
         """Obtain and enroll certificate.
 

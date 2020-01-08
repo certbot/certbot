@@ -5,19 +5,17 @@ import datetime
 import json
 import unittest
 
-from six.moves import http_client  # pylint: disable=import-error
-
 import josepy as jose
 import mock
 import OpenSSL
 import requests
+from six.moves import http_client  # pylint: disable=import-error
 
 from acme import challenges
 from acme import errors
 from acme import jws as acme_jws
 from acme import messages
-from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
-
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 import messages_test
 import test_util
 
@@ -63,7 +61,7 @@ class ClientTestBase(unittest.TestCase):
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key())
-        the_arg = dict(reg) # type: Dict
+        the_arg = dict(reg)  # type: Dict
         self.new_reg = messages.NewRegistration(**the_arg)
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')
@@ -887,19 +885,6 @@ class ClientV2Test(ClientTestBase):
                 new_nonce_url='https://www.letsencrypt-demo.org/acme/new-nonce')
             self.client.net.get.assert_not_called()
 
-            class FakeError(messages.Error):
-                """Fake error to reproduce a malformed request ACME error"""
-                def __init__(self):  # pylint: disable=super-init-not-called
-                    pass
-                @property
-                def code(self):
-                    return 'malformed'
-            self.client.net.post.side_effect = FakeError()
-
-            self.client.poll(self.authzr2)  # pylint: disable=protected-access
-
-            self.client.net.get.assert_called_once_with(self.authzr2.uri)
-
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):
     # pylint: disable=missing-docstring
@@ -965,8 +950,8 @@ class ClientNetworkTest(unittest.TestCase):
 
     def test_check_response_not_ok_jobj_error(self):
         self.response.ok = False
-        self.response.json.return_value = messages.Error(
-            detail='foo', typ='serverInternal', title='some title').to_json()
+        self.response.json.return_value = messages.Error.with_code(
+            'serverInternal', detail='foo', title='some title').to_json()
         # pylint: disable=protected-access
         self.assertRaises(
             messages.Error, self.net._check_response, self.response)
@@ -991,7 +976,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.response.json.side_effect = ValueError
         for response_ct in [self.net.JSON_CONTENT_TYPE, 'foo']:
             self.response.headers['Content-Type'] = response_ct
-            # pylint: disable=protected-access,no-value-for-parameter
+            # pylint: disable=protected-access
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
 
@@ -1005,7 +990,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.response.json.return_value = {}
         for response_ct in [self.net.JSON_CONTENT_TYPE, 'foo']:
             self.response.headers['Content-Type'] = response_ct
-            # pylint: disable=protected-access,no-value-for-parameter
+            # pylint: disable=protected-access
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
 
@@ -1130,8 +1115,8 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.response.headers = {}
         self.response.links = {}
         self.response.checked = False
-        self.acmev1_nonce_response = mock.MagicMock(ok=False,
-            status_code=http_client.METHOD_NOT_ALLOWED)
+        self.acmev1_nonce_response = mock.MagicMock(
+            ok=False, status_code=http_client.METHOD_NOT_ALLOWED)
         self.acmev1_nonce_response.headers = {}
         self.obj = mock.MagicMock()
         self.wrapped_obj = mock.MagicMock()

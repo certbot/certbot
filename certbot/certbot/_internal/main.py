@@ -12,32 +12,32 @@ import zope.component
 
 from acme import errors as acme_errors
 from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
-
 import certbot
+from certbot import crypto_util
+from certbot import errors
+from certbot import interfaces
+from certbot import util
 from certbot._internal import account
 from certbot._internal import cert_manager
 from certbot._internal import cli
 from certbot._internal import client
 from certbot._internal import configuration
 from certbot._internal import constants
-from certbot import crypto_util
 from certbot._internal import eff
-from certbot import errors
 from certbot._internal import hooks
-from certbot import interfaces
 from certbot._internal import log
 from certbot._internal import renewal
 from certbot._internal import reporter
 from certbot._internal import storage
 from certbot._internal import updater
-from certbot import util
+from certbot._internal.plugins import disco as plugins_disco
+from certbot._internal.plugins import selection as plug_sel
 from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
-from certbot.display import util as display_util, ops as display_ops
-from certbot._internal.plugins import disco as plugins_disco
+from certbot.display import ops as display_ops
+from certbot.display import util as display_util
 from certbot.plugins import enhancements
-from certbot._internal.plugins import selection as plug_sel
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
@@ -121,7 +121,7 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
-            elif lineage is not None:
+            if lineage is not None:
                 hooks.deploy_hook(config, lineage.names(), lineage.live_dir)
     finally:
         hooks.post_hook(config)
@@ -162,19 +162,18 @@ def _handle_subset_cert_request(config, domains, cert):
                                        cli_flag="--expand",
                                        force_interactive=True):
         return "renew", cert
-    else:
-        reporter_util = zope.component.getUtility(interfaces.IReporter)
-        reporter_util.add_message(
-            "To obtain a new certificate that contains these names without "
-            "replacing your existing certificate for {0}, you must use the "
-            "--duplicate option.{br}{br}"
-            "For example:{br}{br}{1} --duplicate {2}".format(
-                existing,
-                sys.argv[0], " ".join(sys.argv[1:]),
-                br=os.linesep
-            ),
-            reporter_util.HIGH_PRIORITY)
-        raise errors.Error(USER_CANCELLED)
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    reporter_util.add_message(
+        "To obtain a new certificate that contains these names without "
+        "replacing your existing certificate for {0}, you must use the "
+        "--duplicate option.{br}{br}"
+        "For example:{br}{br}{1} --duplicate {2}".format(
+            existing,
+            sys.argv[0], " ".join(sys.argv[1:]),
+            br=os.linesep
+        ),
+        reporter_util.HIGH_PRIORITY)
+    raise errors.Error(USER_CANCELLED)
 
 
 def _handle_identical_cert_request(config, lineage):
@@ -220,7 +219,7 @@ def _handle_identical_cert_request(config, lineage):
         #       skipping the menu for this case.
         raise errors.Error(
             "Operation canceled. You may re-run the client.")
-    elif response[1] == 0:
+    if response[1] == 0:
         return "reinstall", lineage
     elif response[1] == 1:
         return "renew", lineage
@@ -312,23 +311,20 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
     """
     if not certname:
         return _find_lineage_for_domains(config, domains)
-    else:
-        lineage = cert_manager.lineage_for_certname(config, certname)
-        if lineage:
-            if domains:
-                if set(cert_manager.domains_for_certname(config, certname)) != set(domains):
-                    _ask_user_to_confirm_new_names(config, domains, certname,
-                        lineage.names()) # raises if no
-                    return "renew", lineage
-            # unnecessarily specified domains or no domains specified
-            return _handle_identical_cert_request(config, lineage)
-        else:
-            if domains:
-                return "newcert", None
-            else:
-                raise errors.ConfigurationError("No certificate with name {0} found. "
-                    "Use -d to specify domains, or run certbot certificates to see "
-                    "possible certificate names.".format(certname))
+    lineage = cert_manager.lineage_for_certname(config, certname)
+    if lineage:
+        if domains:
+            if set(cert_manager.domains_for_certname(config, certname)) != set(domains):
+                _ask_user_to_confirm_new_names(config, domains, certname,
+                    lineage.names()) # raises if no
+                return "renew", lineage
+        # unnecessarily specified domains or no domains specified
+        return _handle_identical_cert_request(config, lineage)
+    elif domains:
+        return "newcert", None
+    raise errors.ConfigurationError("No certificate with name {0} found. "
+        "Use -d to specify domains, or run certbot certificates to see "
+        "possible certificate names.".format(certname))
 
 def _get_added_removed(after, before):
     """Get lists of items removed from `before`
@@ -1338,7 +1334,7 @@ def main(cli_args=None):
         make_or_verify_needed_dirs(config)
     except errors.Error:
         # Let plugins_cmd be run as un-privileged user.
-        if config.func != plugins_cmd:
+        if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
 
     if sys.version_info[:2] == (3, 4):

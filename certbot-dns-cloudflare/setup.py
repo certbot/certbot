@@ -1,8 +1,8 @@
-from setuptools import setup
-from setuptools import find_packages
-from setuptools.command.test import test as TestCommand
 import sys
 
+from setuptools import find_packages
+from setuptools import setup
+from setuptools.command.test import test as TestCommand
 
 version = '1.1.0.dev0'
 
@@ -10,7 +10,7 @@ version = '1.1.0.dev0'
 # acme/certbot version.
 install_requires = [
     'acme>=0.29.0',
-    'certbot>=0.39.0',
+    'certbot>=1.0.0.dev0',
     'cloudflare>=1.5.1',
     'mock',
     'setuptools',

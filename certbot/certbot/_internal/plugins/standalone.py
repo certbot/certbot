@@ -11,13 +11,14 @@ import zope.interface
 
 from acme import challenges
 from acme import standalone as acme_standalone
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import DefaultDict, Dict, Set, Tuple, List, Type, TYPE_CHECKING
-
+from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import TYPE_CHECKING  # pylint: disable=unused-import, no-name-in-module
 from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
-
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,6 @@ class ServerManager(object):
         servers.serve_forever()
 
         # if port == 0, then random free port on OS is taken
-        # pylint: disable=no-member
         # both servers, if they exist, have the same port
         real_port = servers.getsocknames()[0][1]
         self._instances[real_port] = servers
@@ -195,7 +195,7 @@ def _handle_perform_error(error):
             "the appropriate permissions (for example, you "
             "aren't running this program as "
             "root).".format(error.port))
-    elif error.socket_error.errno == socket_errors.EADDRINUSE:
+    if error.socket_error.errno == socket_errors.EADDRINUSE:
         display = zope.component.getUtility(interfaces.IDisplay)
         msg = (
             "Could not bind TCP port {0} because it is already in "

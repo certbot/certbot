@@ -4,12 +4,12 @@
 
 """
 import os
-import pkg_resources
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
 from OpenSSL import crypto
+import pkg_resources
 
 
 def load_vector(*names):
@@ -25,8 +25,7 @@ def _guess_loader(filename, loader_pem, loader_der):
         return loader_pem
     elif ext.lower() == '.der':
         return loader_der
-    else:  # pragma: no cover
-        raise ValueError("Loader could not be recognized based on extension")
+    raise ValueError("Loader could not be recognized based on extension")  # pragma: no cover
 
 
 def load_cert(*names):

@@ -2,11 +2,11 @@
 
 import unittest
 
-import mock
 from googleapiclient import discovery
 from googleapiclient.errors import Error
 from googleapiclient.http import HttpMock
 from httplib2 import ServerNotFoundError
+import mock
 
 from certbot import errors
 from certbot.compat import os
@@ -288,7 +288,6 @@ class GoogleClientTest(unittest.TestCase):
     def test_get_existing_fallback(self, unused_credential_mock):
         client, unused_changes = self._setUp_client_with_mock(
             [{'managedZones': [{'id': self.zone}]}])
-        # pylint: disable=no-member
         mock_execute = client.dns.resourceRecordSets.return_value.list.return_value.execute
         mock_execute.side_effect = API_ERROR
 

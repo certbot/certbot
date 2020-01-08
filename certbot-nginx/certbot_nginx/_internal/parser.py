@@ -4,16 +4,19 @@ import functools
 import glob
 import logging
 import re
-import pyparsing
 
+import pyparsing
 import six
 
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.compat import os
-
-from certbot_nginx._internal import obj
 from certbot_nginx._internal import nginxparser
-from acme.magic_typing import Union, Dict, Set, Any, List, Tuple # pylint: disable=unused-import, no-name-in-module
+from certbot_nginx._internal import obj
 
 logger = logging.getLogger(__name__)
 
@@ -272,7 +275,7 @@ class NginxParser(object):
         for directive in server:
             if not directive:
                 continue
-            elif _is_ssl_on_directive(directive):
+            if _is_ssl_on_directive(directive):
                 return True
 
         return False
@@ -486,7 +489,7 @@ def get_best_match(target_name, names):
 
 
 def _exact_match(target_name, name):
-    return target_name == name or '.' + target_name == name
+    return name in (target_name, '.' + target_name)
 
 
 def _wildcard_match(target_name, name, start):
@@ -504,7 +507,7 @@ def _wildcard_match(target_name, name, start):
 
     # The first part must be a wildcard or blank, e.g. '.eff.org'
     first = match_parts.pop(0)
-    if first != '*' and first != '':
+    if first not in ('*', ''):
         return False
 
     target_name = '.'.join(parts)
@@ -582,7 +585,7 @@ def comment_directive(block, location):
     if isinstance(next_entry, list) and next_entry:
         if len(next_entry) >= 2 and next_entry[-2] == "#" and COMMENT in next_entry[-1]:
             return
-        elif isinstance(next_entry, nginxparser.UnspacedList):
+        if isinstance(next_entry, nginxparser.UnspacedList):
             next_entry = next_entry.spaced[0]
         else:
             next_entry = next_entry[0]
@@ -658,13 +661,12 @@ def _add_directive(block, directive, insert_at_top):
         for included_directive in included_directives:
             included_dir_loc = _find_location(block, included_directive[0])
             included_dir_name = included_directive[0]
-            if not _is_whitespace_or_comment(included_directive) \
-                and not can_append(included_dir_loc, included_dir_name):
+            if (not _is_whitespace_or_comment(included_directive)
+                    and not can_append(included_dir_loc, included_dir_name)):
                 if block[included_dir_loc] != included_directive:
                     raise errors.MisconfigurationError(err_fmt.format(included_directive,
                         block[included_dir_loc]))
-                else:
-                    _comment_out_directive(block, included_dir_loc, directive[1])
+                _comment_out_directive(block, included_dir_loc, directive[1])
 
     if can_append(location, directive_name):
         if insert_at_top:

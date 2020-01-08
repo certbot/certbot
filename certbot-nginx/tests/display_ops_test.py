@@ -2,13 +2,9 @@
 import unittest
 
 from certbot.display import util as display_util
-
 from certbot.tests import util as certbot_util
-
 from certbot_nginx._internal import parser
-
 from certbot_nginx._internal.display_ops import select_vhost_multiple
-
 import test_util as util
 
 

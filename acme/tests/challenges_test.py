@@ -4,8 +4,7 @@ import unittest
 import josepy as jose
 import mock
 import requests
-
-from six.moves.urllib import parse as urllib_parse  # pylint: disable=relative-import
+from six.moves.urllib import parse as urllib_parse
 
 import test_util
 
@@ -19,7 +18,6 @@ class ChallengeTest(unittest.TestCase):
         from acme.challenges import Challenge
         from acme.challenges import UnrecognizedChallenge
         chall = UnrecognizedChallenge({"type": "foo"})
-        # pylint: disable=no-member
         self.assertEqual(chall, Challenge.from_json(chall.jobj))
 
 

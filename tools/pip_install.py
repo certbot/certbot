@@ -8,13 +8,14 @@
 # CERTBOT_OLDEST is set, this script must be run with `-e <package-name>` and
 # no other arguments.
 
-from __future__ import print_function, absolute_import
+from __future__ import absolute_import
+from __future__ import print_function
 
-import subprocess
 import os
-import sys
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 
 import merge_requirements as merge_module

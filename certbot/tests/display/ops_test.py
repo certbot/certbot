@@ -8,14 +8,13 @@ import mock
 import zope.component
 
 from acme import messages
-
-import certbot.tests.util as test_util
-from certbot._internal import account
 from certbot import errors
-from certbot.compat import os
+from certbot._internal import account
 from certbot.compat import filesystem
+from certbot.compat import os
 from certbot.display import ops
 from certbot.display import util as display_util
+import certbot.tests.util as test_util
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 

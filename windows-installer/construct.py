@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import contextlib
 import ctypes
+import os
+import shutil
 import struct
 import subprocess
-import os
 import sys
-import shutil
 import tempfile
 import time
 

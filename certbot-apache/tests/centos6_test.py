@@ -3,11 +3,9 @@ import unittest
 
 from certbot.compat import os
 from certbot.errors import MisconfigurationError
-
 from certbot_apache._internal import obj
 from certbot_apache._internal import override_centos
 from certbot_apache._internal import parser
-
 import util
 
 

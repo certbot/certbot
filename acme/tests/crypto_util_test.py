@@ -5,16 +5,15 @@ import threading
 import time
 import unittest
 
-import six
-from six.moves import socketserver  #type: ignore  # pylint: disable=import-error
-
 import josepy as jose
 import OpenSSL
+import six
+from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
 from acme import errors
-from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
-
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 import test_util
+
 
 class SSLSocketAndProbeSNITest(unittest.TestCase):
     """Tests for acme.crypto_util.SSLSocket/probe_sni."""
@@ -39,7 +38,6 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
         self.server = _TestServer(('', 0), socketserver.BaseRequestHandler)
         self.port = self.server.socket.getsockname()[1]
         self.server_thread = threading.Thread(
-            # pylint: disable=no-member
             target=self.server.handle_request)
 
     def tearDown(self):
@@ -66,7 +64,7 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
 
     def test_probe_connection_error(self):
         # pylint has a hard time with six
-        self.server.server_close()  # pylint: disable=no-member
+        self.server.server_close()
         original_timeout = socket.getdefaulttimeout()
         try:
             socket.setdefaulttimeout(1)

@@ -1,15 +1,14 @@
 """Tests for certbot._internal.plugins.manual"""
-import unittest
 import sys
+import unittest
 
 import mock
 import six
 
 from acme import challenges
-
 from certbot import errors
-from certbot.compat import os
 from certbot.compat import filesystem
+from certbot.compat import os
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 

@@ -4,15 +4,10 @@ import unittest
 import mock
 
 from certbot import errors
-
 from certbot.display import util as display_util
-
 from certbot.tests import util as certbot_util
-
 from certbot_apache._internal import obj
-
 from certbot_apache._internal.display_ops import select_vhost_multiple
-
 import util
 
 
