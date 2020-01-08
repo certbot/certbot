@@ -12,5 +12,4 @@ jobs:
       vmImage: $(imageName)
     steps:
       - script: wusa /uninstall /kb:3134758
-        condition: eq('${{ imageName }}', false)
       - script: powershell -Command "$PSVersionTable.PSVersion"
