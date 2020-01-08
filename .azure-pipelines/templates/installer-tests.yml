@@ -11,5 +11,5 @@ jobs:
     pool:
       vmImage: $(imageName)
     steps:
-      - script: wusa /uninstall /kb:3134758 /quiet /norestart
+      - script: wusa /uninstall /kb:3134758 /quiet /norestart & exit 0
       - script: powershell -Command "$PSVersionTable.PSVersion"
