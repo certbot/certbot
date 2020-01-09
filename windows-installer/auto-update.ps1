@@ -19,7 +19,17 @@ process {
     $ErrorActionPreference = 'Stop'
 
     $installDir = $PSScriptRoot
-    $installerAuthenticodeCertificateThumbprint = "CHANGEME"
+    $certbotPublicKey = '
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
+OzQb2eyW15YFjDDEMI0ZOzt8f504obNs920lDnpPD2/KqgsfjOgw2K7xWDJIj/18
+xUvWPk3LDkrnokNiRkA3KOx3W6fHycKL+zID7zy+xZYBuh2fLyQtWV1VGQ45iNRp
+9+Zo7rH86cdfgkdnWTlNSHyTLW9NbXvyv/E12bppPcEvgCTAQXgnDVJ0/sqmeiij
+n9tTFh03aM+R2V/21h8aTraAS24qiPCz6gkmYGC8yr6mglcnNoYbsLNYZ69zF1XH
+cXPduCPdPdfLlzVlKK1/U7hkA28eG3BIAMh6uJYBRJTpiGgaGdPd7YekUB8S6cy+
+CQIDAQAB
+-----END PUBLIC KEY-----
+'
 
     # Get current local certbot version
     try {
@@ -76,12 +86,16 @@ Aborting auto-upgrade process.
             $signature = Get-AuthenticodeSignature $installerPath
 
             # Uncomment the following lines of code once the Certbot installer is correctly signed.
-    #       if ($signature.Status -ne 'Valid') {
-    #           throw "Downloaded installer has no or invalid Authenticode signature."
-    #       }
-    #       if ($signature.SignerCertificate.Thumbprint -ne $installerAuthenticodeCertificateThumbprint) {
-    #           throw "Downloaded installer has not been signed by Certbot development team."
-    #       }
+            # if ($signature.Status -ne 'Valid') {
+            #     throw "Downloaded installer has no or invalid Authenticode signature."
+            # }
+            # $publicKey = $certbotPublicKey -replace '-+.*-+' -replace "`n" -replace "`r"
+            # $refBinaryPublicKey = [System.Convert]::FromBase64String($publicKey)
+            # $curBinaryPublicKey = $signature.SignerCertificate.PublicKey.EncodedKeyValue.RawData
+            # $diff = Compare-Object -ReferenceObject $refBinaryPublicKey -DifferenceObject $curBinaryPublicKey
+            # if ($diff) {
+            #     throw "Downloaded installer has not been signed by Certbot development team."
+            # }
 
             if (Test-Path $installDir\uninstall.exe) {
                 # Uninstall old Certbot first
