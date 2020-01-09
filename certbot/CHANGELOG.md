@@ -21,7 +21,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   removed in the next release of Certbot. certbot-auto users on RHEL 6 based x86_64
   systems will be asked to enable Software Collections (SCL) repository so Python 3.6
   can be installed. certbot-auto can enable the SCL repo for you on CentOS 6 while
-  users on other RHEL 6 based systems will be asked to do this manually
+  users on other RHEL 6 based systems will be asked to do this manually.
 
 ### Fixed
 
