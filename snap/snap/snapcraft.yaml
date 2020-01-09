@@ -38,19 +38,19 @@ apps:
 
 parts:
   python-augeas:
-    plugin: python
+    plugin: x-python
     source: git://github.com/basak/python-augeas
     source-branch: snap
     python-version: python3
     build-packages: [libaugeas-dev]
   acme:
-    plugin: python
+    plugin: x-python
     source: certbot
     source-subdir: acme
     constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     python-version: python3
   certbot:
-    plugin: python
+    plugin: x-python
     source: certbot
     constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     python-version: python3
@@ -58,20 +58,30 @@ parts:
     override-pull: |
         snapcraftctl pull
         snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC && git describe|sed s/^v//`
+    # Workaround for lack of site-packages leading to empty sitecustomize.py
+    stage:
+      - -usr/lib/python3.6/sitecustomize.py
   certbot-apache:
-    plugin: python
+    plugin: x-python
     source: certbot
     source-subdir: certbot-apache
     constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     python-version: python3
     after: [python-augeas, certbot]
     stage-packages: [libaugeas0]
-    python-packages: ['git+https://github.com/certbot/certbot.git']  # workaround for #12
+    stage:
+      # Prefer cffi
+      - -lib/python3.6/site-packages/augeas.py
   certbot-nginx:
-    plugin: python
+    plugin: x-python
     source: certbot
     source-subdir: certbot-nginx
     constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     python-version: python3
-    after: [certbot]
-    python-packages: ['git+https://github.com/certbot/certbot.git']  # workaround for #12
+    # This is the last step, compile pycache now as there should be no conflicts.
+    override-prime: |
+      snapcraftctl prime
+      ./usr/bin/python3 -m compileall -q .
+    # After certbot-apache to not rebuild duplicates (essentially sharing what was already staged,
+    # like zope)
+    after: [certbot-apache]
