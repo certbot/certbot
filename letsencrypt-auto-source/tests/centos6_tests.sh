@@ -148,7 +148,7 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
     exit 1
   fi
   if ! "$LE_AUTO" --install-only 2>&1 | grep -q "Certbot cannot be installed."; then
-    echo "ERROR: On CentOS 6 32 bits, certbot-auto installed certbot again."
+    echo "ERROR: certbot-auto reinstalled Certbot on 32-bit CentOS 6."
     exit 1
   fi
 )
