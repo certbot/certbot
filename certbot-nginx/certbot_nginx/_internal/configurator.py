@@ -719,8 +719,8 @@ class NginxConfigurator(common.Installer):
 
     def _has_certbot_redirect(self, vhost, domain):
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
-        redirect_block_for_server = [['\n    ', 'return', '301', 'https://$host$request_uri']]
-        test_custom_redirect_block = _test_block_from_block(redirect_block_for_server)
+        return_301_directive = [['return', '301', 'https://$host$request_uri']]
+        test_custom_redirect_block = nginxparser.UnspacedList(return_301_directive)
         return (
             vhost.contains_list(test_redirect_block) or
             vhost.contains_list(test_custom_redirect_block))
