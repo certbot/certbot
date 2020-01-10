@@ -18,7 +18,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   continue to work, but they will no longer receive updates. To install a
   newer version of Certbot on these systems, you should update your OS.
 * Support for Python 3.4 in Certbot and its ACME library is deprecated and will be
-  removed in the next release of Certbot. certbot-auto users on RHEL 6 based x86_64
+  removed in the next release of Certbot. certbot-auto users on x86_64 based RHEL 6
   systems will be asked to enable Software Collections (SCL) repository so Python 3.6
   can be installed. certbot-auto can enable the SCL repo for you on CentOS 6 while
   users on other RHEL 6 based systems will be asked to do this manually.
