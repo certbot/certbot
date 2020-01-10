@@ -162,7 +162,7 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
   export UNAME_FAKE_32BITS=true
   OUTPUT=$("$LE_AUTO" --version 2>&1)
   if ! echo "$OUTPUT" | grep -q "Certbot will no longer receive updates."; then
-    echo "ERROR: On CentOS 6 32 bits, certbot-auto failed or upgraded installed certbot in the old venv path."
+    echo "ERROR: certbot-auto failed or upgraded pre-existing Certbot instance in the old venv path on 32-bit CentOS 6."
     exit 1
   fi
 )
