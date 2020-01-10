@@ -16,7 +16,7 @@ INITIAL_CERTBOT_VERSION_PY34="certbot 0.38.0"
 # ensure CentOS6 32bits is not supported anymore, and so certbot is not installed
 export UNAME_FAKE_32BITS=true
 if ! "$LE_AUTO" 2>&1 | grep -q "Certbot cannot be installed."; then
-  echo "ERROR: On CentOS 32 bits, certbot-auto installed certbot."
+  echo "ERROR: certbot-auto installed certbot on 32-bit CentOS."
   exit 1
 fi
 )
