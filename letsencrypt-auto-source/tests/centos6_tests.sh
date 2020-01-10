@@ -167,7 +167,7 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
   fi
 )
 
-echo "PASSED: On CentOS 6 32 bits, certbot-auto refused to install/upgrade certbot."
+echo "PASSED: certbot-auto refused to install/upgrade certbot on 32-bit CentOS 6."
 
 # test using python3
 pytest -v -s certbot/letsencrypt-auto-source/tests
