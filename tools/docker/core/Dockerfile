@@ -1,6 +1,6 @@
 # Docker Arch (amd64, arm32v6, ...)
 ARG TARGET_ARCH
-FROM ${TARGET_ARCH}/python:3.7-alpine3.10
+FROM ${TARGET_ARCH}/python:3.7-alpine3.11
 
 # Qemu Arch (x86_64, arm, ...)
 ARG QEMU_ARCH
