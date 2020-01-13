@@ -1337,6 +1337,10 @@ def main(cli_args=None):
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
 
+    if sys.version_info[:2] == (3, 4):
+        logger.warning("Python 3.4 support will be dropped in the next release "
+                       "of Certbot - please upgrade your Python version to 3.5+.")
+
     set_displayer(config)
 
     # Reporter

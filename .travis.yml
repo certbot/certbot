@@ -233,6 +233,10 @@ matrix:
       services: docker
       <<: *extended-test-suite
     - sudo: required
+      env: TOXENV=le_auto_oraclelinux6
+      services: docker
+      <<: *extended-test-suite
+    - sudo: required
       env: TOXENV=docker_dev
       services: docker
       addons:
