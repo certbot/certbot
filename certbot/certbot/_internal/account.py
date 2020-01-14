@@ -56,7 +56,7 @@ class Account(object):
                 tz=pytz.UTC).replace(microsecond=0),
             creation_host=socket.getfqdn()) if meta is None else meta
 
-        self.id = hashlib.md5(
+        self.id = hashlib.sha256(
             self.key.key.public_key().public_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo)
