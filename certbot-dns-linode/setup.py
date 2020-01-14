@@ -4,12 +4,12 @@ from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-version = '1.1.0.dev0'
+version = '1.1.0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'acme>=0.31.0',
-    'certbot>=1.0.0.dev0',
+    'certbot>=1.0.0',
     'dns-lexicon>=2.2.3',
     'mock',
     'setuptools',
