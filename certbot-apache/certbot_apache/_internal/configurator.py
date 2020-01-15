@@ -12,6 +12,11 @@ import pkg_resources
 import six
 import zope.component
 import zope.interface
+try:
+    import apacheconfig
+    HAS_APACHECONFIG = True
+except ImportError:  # pragma: no cover
+    HAS_APACHECONFIG = False
 
 from acme import challenges
 from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
@@ -261,7 +266,7 @@ class ApacheConfigurator(common.Installer):
         pn_meta = {"augeasparser": self.parser,
                    "augeaspath": self.parser.get_root_augpath(),
                    "ac_ast": None}
-        if self.USE_PARSERNODE:
+        if self.USE_PARSERNODE and HAS_APACHECONFIG:
             self.parser_root = self.get_parsernode_root(pn_meta)
             self.parsed_paths = self.parser_root.parsed_paths()
 
@@ -368,6 +373,11 @@ class ApacheConfigurator(common.Installer):
         apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
         apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
         metadata["apache_vars"] = apache_vars
+
+        with open(self.parser.loc["root"]) as f:
+            with apacheconfig.make_loader(writable=True,
+                  **apacheconfig.flavors.NATIVE_APACHE) as loader:
+                metadata["ac_ast"] = loader.loads(f.read())
 
         return dualparser.DualBlockNode(
             name=assertions.PASS,
@@ -907,7 +917,7 @@ class ApacheConfigurator(common.Installer):
         """
 
         v1_vhosts = self.get_virtual_hosts_v1()
-        if self.USE_PARSERNODE:
+        if self.USE_PARSERNODE and HAS_APACHECONFIG:
             v2_vhosts = self.get_virtual_hosts_v2()
 
             for v1_vh in v1_vhosts:

@@ -1,7 +1,14 @@
 """Tests for AugeasParserNode classes"""
 import mock
 
+import unittest
 import util
+
+try:
+    import apacheconfig  # pylint: disable=import-error,unused-import
+    HAS_APACHECONFIG = True
+except ImportError:  # pragma: no cover
+    HAS_APACHECONFIG = False
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
@@ -10,6 +17,7 @@ from certbot_apache._internal import assertions
 
 
 
+@unittest.skipIf(not HAS_APACHECONFIG, reason='Tests require apacheconfig dependency')
 class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-methods
     """Test AugeasParserNode using available test configurations"""
 
