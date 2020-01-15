@@ -175,8 +175,9 @@ class _CloudflareClient(object):
 
                 if code == 6003:
                     hint = ('Did you copy your entire API token/key? To use Cloudflare tokens, '
-                            'you\'ll need python-cloudflare>=2.3.1. You have python-cloudflare {}'
-                            .format(CloudFlare.__version__))
+                            'you\'ll need the python package cloudflare>=2.3.1.{}'
+                            .format(' You have cloudflare ' + str(CloudFlare.__version__)
+                            if hasattr(CloudFlare, '__version__') else ''))
                 elif code == 9103:
                     hint = 'Did you enter the correct email address?'
                 elif code == 9109:

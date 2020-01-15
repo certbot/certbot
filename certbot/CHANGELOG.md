@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added support for Cloudflare's limited-scope API Tokens
 
 ### Changed
 
@@ -33,7 +33,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* Added support for Cloudflare's limited-scope API Tokens(certbot#7252)
+*
 
 ### Removed
 

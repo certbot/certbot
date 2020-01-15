@@ -39,8 +39,7 @@ Hopefully Cloudflare will improve this in the future.
 
 Using Cloudflare Tokens also requires at least version 2.3.1 of the ``cloudflare``
 python module. If the version that automatically installed with this plugin is
-older than that, and you can't manually upgrade it on your system (with something
-like ``sudo pip3 install --upgrade cloudflare>=2.3.1``), you'll have to stick to
+older than that, and you can't upgrade it on your system, you'll have to stick to
 the Global key.
 
 .. code-block:: ini
