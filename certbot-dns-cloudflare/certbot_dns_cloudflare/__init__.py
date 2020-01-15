@@ -31,11 +31,17 @@ meaning it could cause a lot of damage if leaked.
 Cloudflare's newer API Tokens can be restricted to specific domains and
 operations, and are therefore now the recommended authentication option.
 
-When creating an API Token for Certbot, it currently needs ``Zone:Zone:Read`` and
-``Zone:DNS:Edit`` permissions for all zones in your account. Whilst this is more
-restrictive than the Global API Key's access, it's not as restrictive as it should
-be due to poor implementation of tokens on Cloudflare's side. Hopefully this will
-be improved in the future.
+However, due to some shortcomings in Cloudflare's implementation of Tokens,
+Tokens created for Certbot currently require ``Zone:Zone:Read`` and ``Zone:DNS:Edit``
+permissions for **all** zones in your account. While this is not ideal, your Token
+will still have fewer permission than the Global key, so it's still worth doing.
+Hopefully Cloudflare will improve this in the future.
+
+Using Cloudflare Tokens also requires at least version 2.3.1 of the ``cloudflare``
+python module. If the version that automatically installed with this plugin is
+older than that, and you can't manually upgrade it on your system (with something
+like ``sudo pip3 install --upgrade cloudflare>=2.3.1``), you'll have to stick to
+the Global key.
 
 .. code-block:: ini
    :name: certbot_cloudflare_token.ini
@@ -50,7 +56,7 @@ be improved in the future.
 
    # Cloudflare API credentials used by Certbot
    dns_cloudflare_email = cloudflare@example.com
-   dns_cloudflare_api_key = 0123456789abcdef0123456789abcdef01234567
+   dns_cloudflare_api_key = 0123456789abcdef0123456789abcdef01234
 
 The path to this file can be provided interactively or using the
 ``--dns-cloudflare-credentials`` command-line argument. Certbot records the path
