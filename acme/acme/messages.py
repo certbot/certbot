@@ -251,7 +251,7 @@ class Directory(jose.JSONDeSerializable):
         try:
             return self._jobj[self._canon_key(name)]
         except KeyError:
-            raise KeyError('Directory field not found')
+            raise KeyError('Directory field "' + self._canon_key(name) + '" not found')
 
     def to_partial_json(self):
         return self._jobj
