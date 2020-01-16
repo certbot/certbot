@@ -1,4 +1,4 @@
-"""Tests for certbot.error_handler."""
+"""Tests for certbot._internal.error_handler."""
 import contextlib
 import signal
 import sys
@@ -6,10 +6,9 @@ import unittest
 
 import mock
 
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Callable, Dict, Union
-# pylint: enable=unused-import, no-name-in-module
-
+from acme.magic_typing import Callable  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot.compat import os
 
 
@@ -40,10 +39,10 @@ def send_signal(signum):
 
 
 class ErrorHandlerTest(unittest.TestCase):
-    """Tests for certbot.error_handler.ErrorHandler."""
+    """Tests for certbot._internal.error_handler.ErrorHandler."""
 
     def setUp(self):
-        from certbot import error_handler
+        from certbot._internal import error_handler
 
         self.init_func = mock.MagicMock()
         self.init_args = set((42,))
@@ -132,10 +131,10 @@ class ErrorHandlerTest(unittest.TestCase):
 
 
 class ExitHandlerTest(ErrorHandlerTest):
-    """Tests for certbot.error_handler.ExitHandler."""
+    """Tests for certbot._internal.error_handler.ExitHandler."""
 
     def setUp(self):
-        from certbot import error_handler
+        from certbot._internal import error_handler
         super(ExitHandlerTest, self).setUp()
         self.handler = error_handler.ExitHandler(self.init_func,
                                                  *self.init_args,

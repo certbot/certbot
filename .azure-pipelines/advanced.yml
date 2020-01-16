@@ -4,7 +4,6 @@ trigger:
   - '*.x'
 pr:
   - test-*
-  - '*.x'
 # This pipeline is also nightly run on master
 schedules:
   - cron: "0 4 * * *"
