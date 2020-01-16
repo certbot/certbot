@@ -1,19 +1,22 @@
 #!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
+
 import errno
 import json
+import os
+from os.path import join
+import shutil
+import subprocess
+import sys
 import tempfile
 import time
-import os
-import subprocess
-import shutil
-import sys
-from os.path import join
 
 import requests
 
-from certbot_integration_tests.utils import misc, proxy, pebble_artifacts
+from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils import pebble_artifacts
+from certbot_integration_tests.utils import proxy
 from certbot_integration_tests.utils.constants import *
 
 
@@ -125,6 +128,7 @@ class ACMEServer(object):
         environ = os.environ.copy()
         environ['PEBBLE_VA_NOSLEEP'] = '1'
         environ['PEBBLE_WFE_NONCEREJECT'] = '0'
+        environ['PEBBLE_AUTHZREUSE'] = '100'
 
         self._launch_process(
             [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053'],

@@ -1,15 +1,17 @@
 import os
-from setuptools import setup
+import sys
+
 from setuptools import find_packages
+from setuptools import setup
+from setuptools.command.test import test as TestCommand
 
-
-version = '0.40.0.dev0'
+version = '1.1.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
     'acme>=0.31.0',
-    'certbot>=0.39.0',
+    'certbot>=1.0.0.dev0',
     'mock',
     'setuptools',
     'zope.interface',
@@ -32,6 +34,20 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
+class PyTest(TestCommand):
+    user_options = []
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = ''
+
+    def run_tests(self):
+        import shlex
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(shlex.split(self.pytest_args))
+        sys.exit(errno)
+
 setup(
     name='certbot-dns-dnsimple',
     version=version,
@@ -42,7 +58,7 @@ setup(
     license='Apache License 2.0',
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: Apache Software License',
@@ -72,8 +88,10 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-dnsimple = certbot_dns_dnsimple.dns_dnsimple:Authenticator',
+            'dns-dnsimple = certbot_dns_dnsimple._internal.dns_dnsimple:Authenticator',
         ],
     },
+    tests_require=["pytest"],
     test_suite='certbot_dns_dnsimple',
+    cmdclass={"test": PyTest},
 )

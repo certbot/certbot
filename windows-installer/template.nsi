@@ -60,7 +60,10 @@ SetCompressor lzma
 !insertmacro MUI_LANGUAGE "English"
 [% endblock modernui %]
 
-Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
+; CERTBOT CUSTOM BEGIN
+Name "${PRODUCT_NAME} (beta) ${PRODUCT_VERSION}"
+;Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
+; CERTBOT CUSTOM END
 OutFile "${INSTALLER_NAME}"
 ShowInstDetails show
 
