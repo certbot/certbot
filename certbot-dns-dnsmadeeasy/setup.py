@@ -4,13 +4,13 @@ from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-version = '1.1.0.dev0'
+version = '1.2.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
     'acme>=0.31.0',
-    'certbot>=1.0.0.dev0',
+    'certbot>=1.0.0',
     'dns-lexicon>=2.2.1',  # Support for >1 TXT record per name
     'mock',
     'setuptools',
