@@ -41,15 +41,6 @@ class ApacheCommentNode(ApacheParserNode):
         super(ApacheCommentNode, self).__init__(**kwargs)
         self.comment = comment
 
-    def __eq__(self, other):  # pragma: no cover
-        if isinstance(other, self.__class__):
-            return (self.comment == other.comment and
-                    self.dirty == other.dirty and
-                    self.ancestors == other.ancestors and
-                    self.metadata == other.metadata and
-                    self.filepath == other.filepath)
-        return False
-
 
 class ApacheDirectiveNode(ApacheParserNode):
     """ apacheconfig implementation of DirectiveNode interface """
@@ -62,17 +53,6 @@ class ApacheDirectiveNode(ApacheParserNode):
         self.enabled = enabled
         self.include = None
 
-    def __eq__(self, other):  # pragma: no cover
-        if isinstance(other, self.__class__):
-            return (self.name == other.name and
-                    self.filepath == other.filepath and
-                    self.parameters == other.parameters and
-                    self.enabled == other.enabled and
-                    self.dirty == other.dirty and
-                    self.ancestors == other.ancestors and
-                    self.metadata == other.metadata)
-        return False
-
     def set_parameters(self, _parameters):
         """Sets the parameters for DirectiveNode"""
         return
@@ -84,18 +64,6 @@ class ApacheBlockNode(ApacheDirectiveNode):
     def __init__(self, **kwargs):
         super(ApacheBlockNode, self).__init__(**kwargs)
         self.children = ()
-
-    def __eq__(self, other):  # pragma: no cover
-        if isinstance(other, self.__class__):
-            return (self.name == other.name and
-                    self.filepath == other.filepath and
-                    self.parameters == other.parameters and
-                    self.children == other.children and
-                    self.enabled == other.enabled and
-                    self.dirty == other.dirty and
-                    self.ancestors == other.ancestors and
-                    self.metadata == other.metadata)
-        return False
 
     def add_child_block(self, name, parameters=None, position=None):  # pylint: disable=unused-argument
         """Adds a new BlockNode to the sequence of children"""

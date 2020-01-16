@@ -173,15 +173,6 @@ class AugeasCommentNode(AugeasParserNode):
         # self.comment = comment
         self.comment = comment
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return (self.comment == other.comment and
-                    self.filepath == other.filepath and
-                    self.dirty == other.dirty and
-                    self.ancestors == other.ancestors and
-                    self.metadata == other.metadata)
-        return False
-
 
 class AugeasDirectiveNode(AugeasParserNode):
     """ Augeas implementation of DirectiveNode interface """
@@ -193,17 +184,6 @@ class AugeasDirectiveNode(AugeasParserNode):
         self.enabled = enabled
         if parameters:
             self.set_parameters(parameters)
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return (self.name == other.name and
-                    self.filepath == other.filepath and
-                    self.parameters == other.parameters and
-                    self.enabled == other.enabled and
-                    self.dirty == other.dirty and
-                    self.ancestors == other.ancestors and
-                    self.metadata == other.metadata)
-        return False
 
     def set_parameters(self, parameters):
         """
@@ -247,18 +227,6 @@ class AugeasBlockNode(AugeasDirectiveNode):
     def __init__(self, **kwargs):
         super(AugeasBlockNode, self).__init__(**kwargs)
         self.children = ()
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return (self.name == other.name and
-                    self.filepath == other.filepath and
-                    self.parameters == other.parameters and
-                    self.children == other.children and
-                    self.enabled == other.enabled and
-                    self.dirty == other.dirty and
-                    self.ancestors == other.ancestors and
-                    self.metadata == other.metadata)
-        return False
 
     # pylint: disable=unused-argument
     def add_child_block(self, name, parameters=None, position=None):  # pragma: no cover
