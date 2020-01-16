@@ -4,7 +4,6 @@ import logging
 import josepy as jose
 import pyrfc3339
 
-
 logger = logging.getLogger(__name__)
 
 

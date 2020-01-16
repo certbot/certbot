@@ -17,6 +17,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
@@ -37,7 +38,7 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.viewcode']
 
 autodoc_member_order = 'bysource'
-autodoc_default_flags = ['show-inheritance', 'private-members']
+autodoc_default_flags = ['show-inheritance']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

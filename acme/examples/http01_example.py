@@ -26,8 +26,10 @@ Workflow:
     - Deactivate Account
 """
 from contextlib import contextmanager
+
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
+import josepy as jose
 import OpenSSL
 
 from acme import challenges
@@ -36,7 +38,6 @@ from acme import crypto_util
 from acme import errors
 from acme import messages
 from acme import standalone
-import josepy as jose
 
 # Constants:
 

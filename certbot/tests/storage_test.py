@@ -11,11 +11,11 @@ import pytz
 import six
 
 import certbot
-import certbot.tests.util as test_util
 from certbot import errors
-from certbot.compat import os
-from certbot.compat import filesystem
 from certbot._internal.storage import ALL_FOUR
+from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 
 CERT = test_util.load_cert('cert_512.pem')
 
@@ -43,7 +43,7 @@ class RelevantValuesTest(unittest.TestCase):
         from certbot._internal.storage import relevant_values
         return relevant_values(*args, **kwargs)
 
-    @mock.patch("certbot.cli.option_was_set")
+    @mock.patch("certbot._internal.cli.option_was_set")
     @mock.patch("certbot._internal.plugins.disco.PluginsRegistry.find_all")
     def test_namespace(self, mock_find_all, mock_option_was_set):
         mock_find_all.return_value = ["certbot-foo:bar"]
@@ -53,7 +53,7 @@ class RelevantValuesTest(unittest.TestCase):
         self.assertEqual(
             self._call(self.values.copy()), self.values)
 
-    @mock.patch("certbot.cli.option_was_set")
+    @mock.patch("certbot._internal.cli.option_was_set")
     def test_option_set(self, mock_option_was_set):
         mock_option_was_set.return_value = True
 
@@ -65,7 +65,7 @@ class RelevantValuesTest(unittest.TestCase):
 
         self.assertEqual(self._call(self.values), expected_relevant_values)
 
-    @mock.patch("certbot.cli.option_was_set")
+    @mock.patch("certbot._internal.cli.option_was_set")
     def test_option_unset(self, mock_option_was_set):
         mock_option_was_set.return_value = False
 
@@ -140,7 +140,6 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
 
 
 class RenewableCertTests(BaseRenewableCertTest):
-    # pylint: disable=too-many-public-methods
     """Tests for certbot._internal.storage."""
 
     def test_initialization(self):
@@ -202,7 +201,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue("version" in mock_logger.info.call_args[0][0])
 
     def test_consistent(self):
-        # pylint: disable=too-many-statements,protected-access
+        # pylint: disable=protected-access
         oldcert = self.test_rc.cert
         self.test_rc.cert = "relative/path"
         # Absolute path for item requirement
@@ -357,8 +356,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             basename = os.path.basename(path)
             if "fullchain" in basename and basename.startswith("prev"):
                 raise ValueError
-            else:
-                real_unlink(path)
+            real_unlink(path)
 
         self._write_out_ex_kinds()
         with mock.patch("certbot._internal.storage.os.unlink") as mock_unlink:
@@ -373,8 +371,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             # pylint: disable=missing-docstring
             if "fullchain" in os.path.basename(path):
                 raise ValueError
-            else:
-                real_unlink(path)
+            real_unlink(path)
 
         self._write_out_ex_kinds()
         with mock.patch("certbot._internal.storage.os.unlink") as mock_unlink:
@@ -404,20 +401,6 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         self.assertEqual(self.test_rc.names(),
                          ["example.com", "www.example.com"])
-
-        # Trying a non-current version
-        self._write_out_kind("cert", 15, test_util.load_vector("cert_512.pem"))
-
-        self.assertEqual(self.test_rc.names(12),
-                         ["example.com", "www.example.com"])
-
-        # Testing common name is listed first
-        self._write_out_kind(
-            "cert", 12, test_util.load_vector("cert-5sans_512.pem"))
-
-        self.assertEqual(
-            self.test_rc.names(12),
-            ["example.com"] + ["{0}.example.com".format(c) for c in "abcd"])
 
         # Trying missing cert
         os.unlink(self.test_rc.cert)
@@ -483,7 +466,6 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_should_autorenew(self, mock_ocsp, mock_cli):
         """Test should_autorenew on the basis of reasons other than
         expiry time window."""
-        # pylint: disable=too-many-statements
         mock_cli.set_by_cli.return_value = False
         # Autorenewal turned off
         self.test_rc.configuration["renewalparams"] = {"autorenew": "False"}

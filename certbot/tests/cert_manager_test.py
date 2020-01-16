@@ -9,14 +9,14 @@ import unittest
 import configobj
 import mock
 
-from certbot import configuration
 from certbot import errors
-from certbot.compat import os
-from certbot.compat import filesystem
-from certbot.display import util as display_util
+from certbot._internal import configuration
 from certbot._internal.storage import ALL_FOUR
-from certbot.tests import storage_test
+from certbot.compat import filesystem
+from certbot.compat import os
+from certbot.display import util as display_util
 from certbot.tests import util as test_util
+import storage_test
 
 
 class BaseCertManagerTest(test_util.ConfigTestCase):
@@ -68,7 +68,6 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
     """
     def test_update_live_symlinks(self):
         """Test update_live_symlinks"""
-        # pylint: disable=too-many-statements
         # create files with incorrect symlinks
         from certbot._internal import cert_manager
         archive_paths = {}
@@ -179,7 +178,7 @@ class CertificatesTest(BaseCertManagerTest):
         mock_verifier.return_value = None
         mock_report.return_value = ""
         self._certificates(self.config)
-        self.assertFalse(mock_logger.warning.called) #pylint: disable=no-member
+        self.assertFalse(mock_logger.warning.called)
         self.assertTrue(mock_report.called)
         self.assertTrue(mock_utility.called)
         self.assertTrue(mock_renewable_cert.called)
@@ -197,12 +196,12 @@ class CertificatesTest(BaseCertManagerTest):
 
         filesystem.makedirs(empty_config.renewal_configs_dir)
         self._certificates(empty_config)
-        self.assertFalse(mock_logger.warning.called) #pylint: disable=no-member
+        self.assertFalse(mock_logger.warning.called)
         self.assertTrue(mock_utility.called)
         shutil.rmtree(empty_tempdir)
 
     @mock.patch('certbot._internal.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
-    def test_report_human_readable(self, mock_revoked): #pylint: disable=too-many-statements
+    def test_report_human_readable(self, mock_revoked):
         mock_revoked.return_value = None
         from certbot._internal import cert_manager
         import datetime
@@ -241,7 +240,7 @@ class CertificatesTest(BaseCertManagerTest):
         # pylint: disable=protected-access
         out = get_report()
         self.assertTrue('3 days' in out)
-        self.assertTrue('VALID' in out and 'INVALID'  not in out)
+        self.assertTrue('VALID' in out and 'INVALID' not in out)
 
         cert.is_test_cert = True
         mock_revoked.return_value = True

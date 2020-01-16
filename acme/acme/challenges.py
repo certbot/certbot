@@ -54,8 +54,7 @@ class UnrecognizedChallenge(Challenge):
         object.__setattr__(self, "jobj", jobj)
 
     def to_partial_json(self):
-        # pylint: disable=no-member
-        return self.jobj
+        return self.jobj  # pylint: disable=no-member
 
     @classmethod
     def from_json(cls, jobj):
@@ -113,7 +112,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         :rtype: bool
 
         """
-        parts = self.key_authorization.split('.')  # pylint: disable=no-member
+        parts = self.key_authorization.split('.')
         if len(parts) != 2:
             logger.debug("Key authorization (%r) is not well formed",
                          self.key_authorization)
@@ -231,7 +230,7 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
         return verified
 
 
-@Challenge.register  # pylint: disable=too-many-ancestors
+@Challenge.register
 class DNS01(KeyAuthorizationChallenge):
     """ACME dns-01 challenge."""
     response_cls = DNS01Response
@@ -321,7 +320,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         return True
 
 
-@Challenge.register  # pylint: disable=too-many-ancestors
+@Challenge.register
 class HTTP01(KeyAuthorizationChallenge):
     """ACME http-01 challenge."""
     response_cls = HTTP01Response
@@ -372,7 +371,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
     typ = "tls-alpn-01"
 
 
-@Challenge.register  # pylint: disable=too-many-ancestors
+@Challenge.register
 class TLSALPN01(KeyAuthorizationChallenge):
     """ACME tls-alpn-01 challenge.
 

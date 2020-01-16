@@ -14,7 +14,6 @@ from certbot.tests import util as test_util
 
 
 class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
-    # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Test the Reverter Class."""
     def setUp(self):
         super(ReverterCheckpointLocalTest, self).setUp()
@@ -277,7 +276,6 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
 
 
 class TestFullCheckpointsReverter(test_util.ConfigTestCase):
-    # pylint: disable=too-many-instance-attributes
     """Tests functions having to deal with full checkpoints."""
     def setUp(self):
         super(TestFullCheckpointsReverter, self).setUp()

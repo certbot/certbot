@@ -1,18 +1,17 @@
 """Tests for certbot._internal.renewal"""
 import unittest
+
 import mock
 
 from acme import challenges
-
-from certbot import configuration
 from certbot import errors
+from certbot._internal import configuration
 from certbot._internal import storage
-
 import certbot.tests.util as test_util
 
 
 class RenewalTest(test_util.ConfigTestCase):
-    @mock.patch('certbot.cli.set_by_cli')
+    @mock.patch('certbot._internal.cli.set_by_cli')
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         rc_path = test_util.make_lineage(

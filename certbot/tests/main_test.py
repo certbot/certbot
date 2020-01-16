@@ -19,24 +19,23 @@ import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-
-import certbot.tests.util as test_util
-from certbot._internal import account
-from certbot import cli
-from certbot import configuration
-from certbot._internal import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces  # pylint: disable=unused-import
+from certbot import util
+from certbot._internal import account
+from certbot._internal import cli
+from certbot._internal import configuration
+from certbot._internal import constants
 from certbot._internal import main
 from certbot._internal import updater
-from certbot import util
-from certbot.compat import os
-from certbot.compat import filesystem
 from certbot._internal.plugins import disco
-from certbot.plugins import enhancements
 from certbot._internal.plugins import manual
 from certbot._internal.plugins import null
+from certbot.compat import filesystem
+from certbot.compat import os
+from certbot.plugins import enhancements
+import certbot.tests.util as test_util
 
 CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.vector_path('cert_512.pem')
@@ -356,7 +355,6 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         util_mock.yesno.return_value = False
         self._test_delete_opt_out_common(mock_get_utility)
 
-    # pylint: disable=too-many-arguments
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.delete')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
@@ -376,7 +374,6 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         self._call(config)
         mock_delete.assert_not_called()
 
-    # pylint: disable=too-many-arguments
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot._internal.storage.full_archive_path')
@@ -395,7 +392,6 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         self._call(config)
         self.assertEqual(mock_delete.call_count, 1)
 
-    # pylint: disable=too-many-arguments
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot._internal.storage.full_archive_path')
@@ -416,7 +412,6 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         self._call(config)
         self.assertEqual(mock_delete.call_count, 1)
 
-    # pylint: disable=too-many-arguments
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot._internal.storage.full_archive_path')
@@ -507,7 +502,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.assertEqual('other email', self.config.email)
 
 
-class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-methods
+class MainTest(test_util.ConfigTestCase):
     """Tests for different commands."""
 
     def setUp(self):
@@ -715,7 +710,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         # This needed two calls to find_all(), which we're avoiding for now
         # because of possible side effects:
         # https://github.com/letsencrypt/letsencrypt/commit/51ed2b681f87b1eb29088dd48718a54f401e4855
-        #with mock.patch('certbot.cli.plugins_testable') as plugins:
+        #with mock.patch('certbot._internal.cli.plugins_testable') as plugins:
         #    plugins.return_value = {"apache": True, "nginx": True}
         #    ret, _, _, _ = self._call(args)
         #    self.assertTrue("Too many flags setting" in ret)
@@ -970,7 +965,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                              args=None, should_renew=True, error_expected=False,
                              quiet_mode=False, expiry_date=datetime.datetime.now(),
                              reuse_key=False):
-        # pylint: disable=too-many-locals,too-many-arguments,too-many-branches
         cert_path = test_util.vector_path('cert_512.pem')
         chain_path = os.path.normpath(os.path.join(self.config.config_dir,
                                                    'live/foo.bar/fullchain.pem'))
@@ -1145,7 +1139,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
                 "--disable-hook-validation"]
-        with mock.patch("certbot.hooks.post_hook"):
+        with mock.patch("certbot._internal.hooks.post_hook"):
             self._test_renewal_common(True, [], args=args, should_renew=True,
                                       error_expected=False)
 
@@ -1400,33 +1394,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                  "user@example.org"])
             self.assertTrue("Could not find an existing account" in x[0])
 
-    # TODO: When `certbot register --update-registration` is fully deprecated,
-    # delete the following test
-    def test_update_registration_no_existing_accounts_deprecated(self):
-        # with mock.patch('certbot._internal.main.client') as mocked_client:
-        with mock.patch('certbot._internal.main.account') as mocked_account:
-            mocked_storage = mock.MagicMock()
-            mocked_account.AccountFileStorage.return_value = mocked_storage
-            mocked_storage.find_all.return_value = []
-            x = self._call_no_clientmock(
-                ["register", "--update-registration", "--email",
-                 "user@example.org"])
-            self.assertTrue("Could not find an existing account" in x[0])
-
-    # TODO: When `certbot register --update-registration` is fully deprecated,
-    # delete the following test
-    def test_update_registration_unsafely_deprecated(self):
-        # This test will become obsolete when register --update-registration
-        # supports removing an e-mail address from the account
-        with mock.patch('certbot._internal.main.account') as mocked_account:
-            mocked_storage = mock.MagicMock()
-            mocked_account.AccountFileStorage.return_value = mocked_storage
-            mocked_storage.find_all.return_value = ["an account"]
-            x = self._call_no_clientmock(
-                "register --update-registration "
-                "--register-unsafely-without-email".split())
-            self.assertTrue("--register-unsafely-without-email" in x[0])
-
     @mock.patch('certbot._internal.main.display_ops.get_email')
     @test_util.patch_get_utility()
     def test_update_account_with_email(self, mock_utility, mock_email):
@@ -1451,42 +1418,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                         # the server
                         self.assertTrue(
                             cb_client.acme.update_registration.called)
-                        # and we saved the updated registration on disk
-                        self.assertTrue(mocked_storage.save_regr.called)
-                        self.assertTrue(
-                            email in mock_utility().add_message.call_args[0][0])
-                        self.assertTrue(mock_handle.called)
-
-    # TODO: When `certbot register --update-registration` is fully deprecated,
-    # delete the following test
-    @mock.patch('certbot._internal.main.display_ops.get_email')
-    @test_util.patch_get_utility()
-    def test_update_registration_with_email_deprecated(self, mock_utility, mock_email):
-        email = "user@example.com"
-        mock_email.return_value = email
-        with mock.patch('certbot._internal.eff.handle_subscription') as mock_handle:
-            with mock.patch('certbot._internal.main._determine_account') as mocked_det:
-                with mock.patch('certbot._internal.main.account') as mocked_account:
-                    with mock.patch('certbot._internal.main.client') as mocked_client:
-                        mocked_storage = mock.MagicMock()
-                        mocked_account.AccountFileStorage.return_value = mocked_storage
-                        mocked_storage.find_all.return_value = ["an account"]
-                        mock_acc = mock.MagicMock()
-                        mock_regr = mock_acc.regr
-                        mocked_det.return_value = (mock_acc, "foo")
-                        cb_client = mock.MagicMock()
-                        mocked_client.Client.return_value = cb_client
-                        x = self._call_no_clientmock(
-                            ["register", "--update-registration"])
-                        # When registration change succeeds, the return value
-                        # of register() is None
-                        self.assertTrue(x[0] is None)
-                        # and we got supposedly did update the registration from
-                        # the server
-                        reg_arg = cb_client.acme.update_registration.call_args[0][0]
-                        # Test the return value of .update() was used because
-                        # the regr is immutable.
-                        self.assertEqual(reg_arg, mock_regr.update())
                         # and we saved the updated registration on disk
                         self.assertTrue(mocked_storage.save_regr.called)
                         self.assertTrue(

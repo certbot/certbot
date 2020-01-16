@@ -1,0 +1,54 @@
+# For running tests, build a docker image with a passwordless sudo and a trust
+# store we can manipulate.
+
+ARG REDHAT_DIST_FLAVOR
+FROM ${REDHAT_DIST_FLAVOR}:6
+
+ARG REDHAT_DIST_FLAVOR
+
+RUN curl -O https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm \
+ && rpm -ivh epel-release-latest-6.noarch.rpm
+
+# Install pip and sudo:
+RUN yum install -y python-pip sudo
+# Update to a stable and tested version of pip.
+# We do not use pipstrap here because it no longer supports Python 2.6.
+RUN pip install pip==9.0.1 setuptools==29.0.1 wheel==0.29.0
+# Pin pytest version for increased stability
+RUN pip install pytest==3.2.5 six==1.10.0
+
+# Add an unprivileged user:
+RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups wheel --uid 1000 lea
+
+# Let that user sudo:
+RUN sed -i.bkp -e \
+      's/# %wheel\(NOPASSWD: ALL\)\?/%wheel/g' \
+      /etc/sudoers
+
+RUN mkdir -p /home/lea/certbot
+
+# Install fake testing CA:
+COPY ./tests/certs/ca/my-root-ca.crt.pem /usr/local/share/ca-certificates/
+RUN update-ca-trust
+
+# Copy current letsencrypt-auto:
+COPY . /home/lea/certbot/letsencrypt-auto-source
+
+# Tweak uname binary for tests on fake 32bits
+COPY tests/uname_wrapper.sh /bin
+RUN mv /bin/uname /bin/uname_orig \
+ && mv /bin/uname_wrapper.sh /bin/uname \
+ && chmod +x /bin/uname
+
+# Fetch previous letsencrypt-auto that was installing python 3.4
+RUN curl https://raw.githubusercontent.com/certbot/certbot/v0.38.0/letsencrypt-auto-source/letsencrypt-auto \
+    -o /home/lea/certbot/letsencrypt-auto-source/letsencrypt-auto_py_34 \
+ && chmod +x /home/lea/certbot/letsencrypt-auto-source/letsencrypt-auto_py_34
+
+RUN cp /home/lea/certbot/letsencrypt-auto-source/tests/${REDHAT_DIST_FLAVOR}6_tests.sh /home/lea/certbot/letsencrypt-auto-source/tests/redhat6_tests.sh \
+ && chmod +x /home/lea/certbot/letsencrypt-auto-source/tests/redhat6_tests.sh
+
+USER lea
+WORKDIR /home/lea
+
+CMD ["sudo", "certbot/letsencrypt-auto-source/tests/redhat6_tests.sh"]

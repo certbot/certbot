@@ -1,13 +1,12 @@
 """Tests for renewal updater interfaces"""
 import unittest
+
 import mock
 
 from certbot import interfaces
 from certbot._internal import main
 from certbot._internal import updater
-
 from certbot.plugins import enhancements
-
 import certbot.tests.util as test_util
 
 
