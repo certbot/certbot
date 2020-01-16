@@ -10,7 +10,7 @@ version = '1.1.0'
 # acme/certbot version.
 install_requires = [
     'acme>=0.29.0',
-    'certbot>=1.0.0',
+    'certbot>=1.1.0',
     'dnspython',
     'mock',
     'setuptools',
