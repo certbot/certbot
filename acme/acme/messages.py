@@ -245,7 +245,7 @@ class Directory(jose.JSONDeSerializable):
         try:
             return self[name.replace('_', '-')]
         except KeyError as error:
-            raise AttributeError(str(error) + ': ' + name)
+            raise AttributeError(str(error))
 
     def __getitem__(self, name):
         try:
