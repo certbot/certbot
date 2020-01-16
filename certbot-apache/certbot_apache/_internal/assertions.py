@@ -123,8 +123,7 @@ def isEqualVirtualHost(first, second):
         first.addrs == second.addrs and
         first.ssl == second.ssl and
         first.enabled == second.enabled and
-        first.modmacro == second.modmacro and
-        first.ancestor == second.ancestor
+        first.modmacro == second.modmacro
     )
 
 def assertEqualPathsList(first, second):  # pragma: no cover

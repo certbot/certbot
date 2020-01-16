@@ -298,7 +298,7 @@ class DirectiveNode(ParserNode):
 
         :param ancestors: BlockNode ancestors for this DirectiveNode. Empty for
             root configuration node. Required.
-        :type ancestor: tuple of BlockNodes
+        :type ancestors: tuple of BlockNodes
 
         :param filepath: Filesystem path for the file where this DirectiveNode
             does or should exist in the filesystem, or None for directives introduced
