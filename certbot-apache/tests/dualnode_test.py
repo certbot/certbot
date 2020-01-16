@@ -338,7 +338,7 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
 
         blocks = self.block.find_blocks("anything")
         for block in blocks:
-            self.assertEqual(block.primary, block.secondary)
+            assertions.assertEqual(block.primary, block.secondary)
             self.assertTrue(block.primary is not block.secondary)
 
     def test_find_dirs_no_pass_equal(self):
@@ -357,7 +357,7 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
 
         directives = self.block.find_directives("anything")
         for directive in directives:
-            self.assertEqual(directive.primary, directive.secondary)
+            assertions.assertEqual(directive.primary, directive.secondary)
             self.assertTrue(directive.primary is not directive.secondary)
 
     def test_find_comments_no_pass_equal(self):
@@ -376,7 +376,7 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
 
         comments = self.block.find_comments("anything")
         for comment in comments:
-            self.assertEqual(comment.primary, comment.secondary)
+            assertions.assertEqual(comment.primary, comment.secondary)
             self.assertTrue(comment.primary is not comment.secondary)
 
     def test_find_blocks_no_pass_notequal(self):
