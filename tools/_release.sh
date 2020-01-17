@@ -7,6 +7,24 @@ if [ "$RELEASE_DIR" = "" ]; then
     exit 1
 fi
 
+ExitWarning() {
+    exit_status="$?"
+    if [ "$exit_status" != 0 ]; then
+        # Don't print each command before executing it because it will disrupt
+        # the desired output.
+        set +x
+        echo '******************************'
+        echo '*                            *'
+        echo '* THE RELEASE SCRIPT FAILED! *'
+        echo '*                            *'
+        echo '******************************'
+        set -x
+    fi
+    exit "$exit_status"
+}
+
+trap ExitWarning EXIT
+
 version="$1"
 echo Releasing production version "$version"...
 nextversion="$2"
