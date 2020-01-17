@@ -67,7 +67,6 @@ git checkout "$RELEASE_BRANCH"
 # Update changelog
 sed -i "s/master/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
 git add certbot/CHANGELOG.md
-git diff --cached
 git commit -m "Update changelog for $version release"
 
 for pkg_dir in $SUBPKGS certbot-compatibility-test
@@ -230,7 +229,6 @@ cp -p letsencrypt-auto-source/letsencrypt-auto certbot-auto
 cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
 
 git add certbot-auto letsencrypt-auto letsencrypt-auto-source certbot/docs/cli-help.txt
-git diff --cached
 while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
     echo "Unable to sign the release commit using git."
     echo "You may have to configure git to use gpg2 by running:"
@@ -258,7 +256,6 @@ $body
 
 $footer" > certbot/CHANGELOG.md
 git add certbot/CHANGELOG.md
-git diff --cached
 git commit -m "Add contents to certbot/CHANGELOG.md for next version"
 
 echo "New root: $root"
@@ -273,6 +270,5 @@ if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
     letsencrypt-auto-source/build.py
     git add letsencrypt-auto-source/letsencrypt-auto
-    git diff
     git commit -m "Bump version to $nextversion"
 fi
