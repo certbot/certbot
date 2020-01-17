@@ -100,7 +100,7 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
 # now bootstrap from current letsencrypt-auto, that will install python3.6 from SCL
 "$LE_AUTO" --no-self-upgrade -n --version >/dev/null 2>/dev/null
 
-# Following test is exectued in a subshell, to not leak any environment variable
+# Following test is executed in a subshell, to not leak any environment variable
 (
   # enable SCL rh-python36
   . /opt/rh/rh-python36/enable
@@ -124,7 +124,7 @@ echo "PASSED: certbot-auto did not install Python3.6 in a non-interactive shell 
   fi
 )
 
-# Following test is exectued in a subshell, to not leak any environment variable
+# Following test is executed in a subshell, to not leak any environment variable
 (
   # enable SCL rh-python36
   . /opt/rh/rh-python36/enable

@@ -36,7 +36,7 @@ ERROR_CODES = {
                    ' domain'),
     'dns': 'There was a problem with a DNS query during identifier validation',
     'dnssec': 'The server could not validate a DNSSEC signed domain',
-    'incorrectResponse': 'Response recieved didn\'t match the challenge\'s requirements',
+    'incorrectResponse': 'Response received didn\'t match the challenge\'s requirements',
     # deprecate invalidEmail
     'invalidEmail': 'The provided email for a registration was invalid',
     'invalidContact': 'The provided contact URI was invalid',

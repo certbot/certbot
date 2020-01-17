@@ -942,7 +942,7 @@ class ClientNetwork(object):
     :param messages.RegistrationResource account: Account object. Required if you are
             planning to use .post() with acme_version=2 for anything other than
             creating a new account; may be set later after registering.
-    :param josepy.JWASignature alg: Algoritm to use in signing JWS.
+    :param josepy.JWASignature alg: Algorithm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
     :param float timeout: Timeout for requests.

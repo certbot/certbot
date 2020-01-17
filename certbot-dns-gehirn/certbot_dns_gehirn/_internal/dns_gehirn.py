@@ -1,4 +1,4 @@
-"""DNS Authenticator for Gehirn Infrastracture Service DNS."""
+"""DNS Authenticator for Gehirn Infrastructure Service DNS."""
 import logging
 
 from lexicon.providers import gehirn
@@ -15,14 +15,14 @@ DASHBOARD_URL = "https://gis.gehirn.jp/"
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
-    """DNS Authenticator for Gehirn Infrastracture Service DNS
+    """DNS Authenticator for Gehirn Infrastructure Service DNS
 
-    This Authenticator uses the Gehirn Infrastracture Service API to fulfill
+    This Authenticator uses the Gehirn Infrastructure Service API to fulfill
     a dns-01 challenge.
     """
 
     description = 'Obtain certificates using a DNS TXT record ' + \
-                  '(if you are using Gehirn Infrastracture Service for DNS).'
+                  '(if you are using Gehirn Infrastructure Service for DNS).'
     ttl = 60
 
     def __init__(self, *args, **kwargs):
@@ -32,20 +32,20 @@ class Authenticator(dns_common.DNSAuthenticator):
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
         super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=30)
-        add('credentials', help='Gehirn Infrastracture Service credentials file.')
+        add('credentials', help='Gehirn Infrastructure Service credentials file.')
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
-               'the Gehirn Infrastracture Service API.'
+               'the Gehirn Infrastructure Service API.'
 
     def _setup_credentials(self):
         self.credentials = self._configure_credentials(
             'credentials',
-            'Gehirn Infrastracture Service credentials file',
+            'Gehirn Infrastructure Service credentials file',
             {
-                'api-token': 'API token for Gehirn Infrastracture Service ' + \
+                'api-token': 'API token for Gehirn Infrastructure Service ' + \
                              'API obtained from {0}'.format(DASHBOARD_URL),
-                'api-secret': 'API secret for Gehirn Infrastracture Service ' + \
+                'api-secret': 'API secret for Gehirn Infrastructure Service ' + \
                               'API obtained from {0}'.format(DASHBOARD_URL),
             }
         )
@@ -66,7 +66,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
 class _GehirnLexiconClient(dns_common_lexicon.LexiconClient):
     """
-    Encapsulates all communication with the Gehirn Infrastracture Service via Lexicon.
+    Encapsulates all communication with the Gehirn Infrastructure Service via Lexicon.
     """
 
     def __init__(self, api_token, api_secret, ttl):

@@ -38,7 +38,7 @@ class PyTest(TestCommand):
 setup(
     name='certbot-dns-gehirn',
     version=version,
-    description="Gehirn Infrastracture Service DNS Authenticator plugin for Certbot",
+    description="Gehirn Infrastructure Service DNS Authenticator plugin for Certbot",
     url='https://github.com/certbot/certbot',
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',

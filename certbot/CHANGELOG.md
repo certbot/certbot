@@ -248,7 +248,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* dns_rfc2136 plugin now supports explicitly specifing an authorative
+* dns_rfc2136 plugin now supports explicitly specifying an authoritative
   base domain for cases when the automatic method does not work (e.g.
   Split horizon DNS)
 
@@ -632,7 +632,7 @@ https://github.com/certbot/certbot/milestone/62?closed=1
 * Log warning about TLS-SNI deprecation in Certbot
 * Stop preferring TLS-SNI in the Apache, Nginx, and standalone plugins
 * OVH DNS plugin now relies on Lexicon>=2.7.14 to support HTTP proxies
-* Default time the Linode plugin waits for DNS changes to propogate is now 1200 seconds.
+* Default time the Linode plugin waits for DNS changes to propagate is now 1200 seconds.
 
 ### Fixed
 
@@ -751,7 +751,7 @@ https://github.com/certbot/certbot/milestone/58?closed=1
   increased over time. The max-age value is not increased to a large value
   until you've successfully managed to renew your certificate. This enhancement
   can be requested with the --auto-hsts flag.
-* New official DNS plugins have been created for Gehirn Infrastracture Service,
+* New official DNS plugins have been created for Gehirn Infrastructure Service,
   Linode, OVH, and Sakura Cloud. These plugins can be found on our Docker Hub
   page at https://hub.docker.com/u/certbot and on PyPI.
 * The ability to reuse ACME accounts from Let's Encrypt's ACMEv1 endpoint on
