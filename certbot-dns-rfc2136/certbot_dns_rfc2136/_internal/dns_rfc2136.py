@@ -129,7 +129,7 @@ class _RFC2136Client(object):
         rcode = response.rcode()
 
         if rcode == dns.rcode.NOERROR:
-            logger.debug('Successfully added TXT record')
+            logger.debug('Successfully added TXT record %s', record_name)
         else:
             raise errors.PluginError('Received response from server: {0}'
                                      .format(dns.rcode.to_text(rcode)))
@@ -164,7 +164,7 @@ class _RFC2136Client(object):
         rcode = response.rcode()
 
         if rcode == dns.rcode.NOERROR:
-            logger.debug('Successfully deleted TXT record')
+            logger.debug('Successfully deleted TXT record %s', record_name)
         else:
             raise errors.PluginError('Received response from server: {0}'
                                      .format(dns.rcode.to_text(rcode)))
