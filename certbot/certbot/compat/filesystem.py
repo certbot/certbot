@@ -541,7 +541,7 @@ def _generate_windows_flags(rights_desc):
     # write access on Linux: for Windows, FILE_GENERIC_WRITE does not include delete, move or
     # rename. This is something that requires ntsecuritycon.FILE_ALL_ACCESS.
     # So to reproduce the write right as POSIX, we will apply ntsecuritycon.FILE_ALL_ACCESS
-    # substracted of the rights corresponding to POSIX read and POSIX execute.
+    # subtracted of the rights corresponding to POSIX read and POSIX execute.
     #
     # Finally, having read + write + execute gives a ntsecuritycon.FILE_ALL_ACCESS,
     # so a "Full Control" on the file.
