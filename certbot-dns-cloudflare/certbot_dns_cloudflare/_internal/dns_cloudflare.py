@@ -111,8 +111,15 @@ class _CloudflareClient(object):
             logger.debug('Attempting to add record to zone %s: %s', zone_id, data)
             self.cf.zones.dns_records.post(zone_id, data=data)  # zones | pylint: disable=no-member
         except CloudFlare.exceptions.CloudFlareAPIError as e:
+            code = int(e)
+            hint = None
+
+            if code == 9109:
+                hint = 'Does your API token have "Zone:DNS:Edit" permissions?'
+
             logger.error('Encountered CloudFlareAPIError adding TXT record: %d %s', e, e)
-            raise errors.PluginError('Error communicating with the Cloudflare API: {0}'.format(e))
+            raise errors.PluginError('Error communicating with the Cloudflare API: {0}{1}'
+                                     .format(e, ' ({0})'.format(hint) if hint else ''))
 
         record_id = self._find_txt_record_id(zone_id, record_name, record_content)
         logger.debug('Successfully added TXT record with record_id: %s', record_id)
@@ -180,13 +187,11 @@ class _CloudflareClient(object):
                             if hasattr(CloudFlare, '__version__') else ''))
                 elif code == 9103:
                     hint = 'Did you enter the correct email address?'
-                elif code == 9109:
-                    hint = ('Does your API token have "Zone:Zone:Read" and "Zone:DNS:Edit" '
-                            'permissions for all zones?')
 
-                raise errors.PluginError('Error determining zone_id: {0} {1}. Please confirm that '
-                                         'you have supplied valid Cloudflare API credentials.{2}'
-                                         .format(code, e, ' ({0})'.format(hint) if hint else ''))
+                if 'com.cloudflare.api.account.zone.list' not in str(e):
+                    raise errors.PluginError('Error determining zone_id: {0} {1}. Please confirm '
+                                     'that you have supplied valid Cloudflare API credentials.{2}'
+                                          .format(code, e, ' ({0})'.format(hint) if hint else ''))
 
             if zones:
                 zone_id = zones[0]['id']
@@ -195,7 +200,10 @@ class _CloudflareClient(object):
 
         raise errors.PluginError('Unable to determine zone_id for {0} using zone names: {1}. '
                                  'Please confirm that the domain name has been entered correctly '
-                                 'and is already associated with the supplied Cloudflare account.'
+                                 'and is already associated with the supplied Cloudflare account. '
+                                 'If you\'re using Cloudflare Tokens, your Token needs '
+                                 '"Zone:DNS:Edit" and "Zone:Zone:Read" permissions for all zones '
+                                 'in your account.'
                                  .format(domain, zone_name_guesses))
 
     def _find_txt_record_id(self, zone_id, record_name, record_content):
