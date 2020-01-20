@@ -177,18 +177,20 @@ class _CloudflareClient(object):
             try:
                 zones = self.cf.zones.get(params=params)  # zones | pylint: disable=no-member
             except CloudFlare.exceptions.CloudFlareAPIError as e:
-                code = int(e)
-                hint = None
-
-                if code == 6003:
-                    hint = ('Did you copy your entire API token/key? To use Cloudflare tokens, '
-                            'you\'ll need the python package cloudflare>=2.3.1.{}'
-                            .format(' You have cloudflare ' + str(CloudFlare.__version__)
-                            if hasattr(CloudFlare, '__version__') else ''))
-                elif code == 9103:
-                    hint = 'Did you enter the correct email address?'
-
                 if 'com.cloudflare.api.account.zone.list' not in str(e):
+                    code = int(e)
+                    hint = None
+
+                    if code == 6003:
+                        hint = ('Did you copy your entire API token/key? To use Cloudflare tokens, '
+                        'you\'ll need the python package cloudflare>=2.3.1.{}'
+                        .format(' This certbot is running cloudflare ' + str(CloudFlare.__version__)
+                        if hasattr(CloudFlare, '__version__') else ''))
+                    elif code == 9103:
+                        hint = 'Did you enter the correct email address and Global key?'
+                    elif code == 9109:
+                        hint = 'Did you enter a valid Cloudflare Token?'
+
                     raise errors.PluginError('Error determining zone_id: {0} {1}. Please confirm '
                                      'that you have supplied valid Cloudflare API credentials.{2}'
                                           .format(code, e, ' ({0})'.format(hint) if hint else ''))
