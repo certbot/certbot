@@ -8,10 +8,10 @@ import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
-import certbot.tests.util as test_util
 from certbot import errors
-from certbot.compat import os
 from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 
 
 class RunScriptTest(unittest.TestCase):
@@ -510,14 +510,6 @@ class OsInfoTest(unittest.TestCase):
             m_distro.linux_distribution.return_value = ("something", "else")
             self.assertEqual(cbutil.get_os_info(), ("something", "else"))
 
-    @mock.patch("warnings.warn")
-    @mock.patch("certbot.util.distro")
-    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
-    def test_get_systemd_os_info_deprecation(self, _, mock_warn):
-        import certbot.util as cbutil
-        cbutil.get_systemd_os_info()
-        self.assertTrue(mock_warn.called)
-
     @mock.patch("certbot.util.subprocess.Popen")
     def test_non_systemd_os_info(self, popen_mock):
         import certbot.util as cbutil
@@ -587,7 +579,7 @@ class AtexitRegisterTest(unittest.TestCase):
             with mock.patch('certbot.util.atexit') as mock_atexit:
                 self._call(self.func, *self.args, **self.kwargs)
 
-            # _INITAL_PID must be mocked when calling atexit_func
+            # _INITIAL_PID must be mocked when calling atexit_func
             self.assertTrue(mock_atexit.register.called)
             args, kwargs = mock_atexit.register.call_args
             atexit_func = args[0]

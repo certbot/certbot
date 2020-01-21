@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """A version of Python's SimpleHTTPServer that flushes its output."""
 import sys
+
 try:
     from http.server import HTTPServer, SimpleHTTPRequestHandler
 except ImportError:
