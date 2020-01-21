@@ -160,9 +160,6 @@ matrix:
       sudo: required
       services: docker
       <<: *extended-test-suite
-    - python: "3.5"
-      env: TOXENV=py35
-      <<: *extended-test-suite
     - python: "3.6"
       env: TOXENV=py36
       <<: *extended-test-suite
