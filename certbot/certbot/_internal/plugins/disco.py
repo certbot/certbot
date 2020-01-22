@@ -15,7 +15,7 @@ from certbot._internal import constants
 
 try:
     # Python 3.3+
-    from collections.abc import Mapping  # pylint: disable=no-name-in-module
+    from collections.abc import Mapping
 except ImportError:  # pragma: no cover
     from collections import Mapping
 
