@@ -11,6 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Add directory field to error message when field is missing.
+* Disable old SSL versions and ciphersuites to follow Mozilla recommendations in Apache.
 
 ### Fixed
 
