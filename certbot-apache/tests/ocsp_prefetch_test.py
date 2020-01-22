@@ -111,7 +111,7 @@ class OCSPPrefetchTest(util.ApacheTest):
             open(db_fullpath, 'a').close()
 
         ver_path = "certbot_apache._internal.configurator.ApacheConfigurator.get_version"
-        res_path = "certbot_apache._internal.configurator.ApacheConfigurator.restart"
+        res_path = "certbot_apache._internal.override_debian.DebianConfigurator.restart"
         cry_path = "certbot.crypto_util.cert_sha1_fingerprint"
 
         with mock.patch(ver_path) as mock_ver:
@@ -151,7 +151,7 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.config.parser.modules.discard("headers_module")
         self.config.parser.modules.discard("mod_header.c")
 
-        ref_path = "certbot_apache._internal.configurator.ApacheConfigurator._ocsp_refresh"
+        ref_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh"
         with mock.patch(ref_path):
             self.call_mocked_py2(self.config.enable_ocsp_prefetch,
                                  self.lineage, ["ocspvhost.com"])
@@ -160,7 +160,7 @@ class OCSPPrefetchTest(util.ApacheTest):
 
     @mock.patch("certbot_apache._internal.override_debian.DebianConfigurator.enable_mod")
     def test_ocsp_prefetch_enable_error(self, _mock_enable):
-        ref_path = "certbot_apache._internal.configurator.ApacheConfigurator._ocsp_refresh"
+        ref_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh"
         self.config.recovery_routine = mock.MagicMock()
         with mock.patch(ref_path, side_effect=errors.PluginError("failed")):
             self.assertRaises(errors.PluginError,
@@ -204,7 +204,7 @@ class OCSPPrefetchTest(util.ApacheTest):
             self.call_mocked_py2(self.config.enable_ocsp_prefetch,
                                  self.lineage, ["ocspvhost.com"])
         self.assertEqual(len(self.config._ocsp_prefetch), 1)
-        refresh_path = "certbot_apache._internal.configurator.ApacheConfigurator._ocsp_refresh"
+        refresh_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh"
         with mock.patch(refresh_path) as mock_refresh:
             self.call_mocked_py2(self.config.update_ocsp_prefetch, None)
             self.assertFalse(mock_refresh.called)
@@ -236,7 +236,7 @@ class OCSPPrefetchTest(util.ApacheTest):
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.config_test")
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator._reload")
     def test_ocsp_prefetch_backup_db_error(self, _mock_reload, _mock_test):
-        log_path = "certbot_apache._internal.configurator.logger.debug"
+        log_path = "certbot_apache._internal.prefetch_ocsp.logger.debug"
         log_string = "Encountered an issue while trying to backup OCSP dbm file"
         log_string2 = "Encountered an issue when trying to restore OCSP dbm file"
         self.config._ocsp_prefetch = {"mock": "value"}
@@ -251,7 +251,7 @@ class OCSPPrefetchTest(util.ApacheTest):
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
     def test_ocsp_prefetch_refresh_fail(self, _mock_restart):
         ocsp_path = "certbot._internal.ocsp.RevocationChecker.revoked"
-        log_path = "certbot_apache._internal.configurator.logger.warning"
+        log_path = "certbot_apache._internal.prefetch_ocsp.logger.warning"
         with mock.patch(ocsp_path) as mock_ocsp:
             mock_ocsp.return_value = True
             with mock.patch(log_path) as mock_log:
@@ -261,7 +261,7 @@ class OCSPPrefetchTest(util.ApacheTest):
                 self.assertTrue(
                     "trying to prefetch OCSP" in mock_log.call_args[0][0])
 
-    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator._ocsp_refresh_if_needed")
+    @mock.patch("certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh_if_needed")
     def test_ocsp_prefetch_update_noop(self, mock_refresh):
         self.config.update_ocsp_prefetch(None)
         self.assertFalse(mock_refresh.called)
@@ -327,6 +327,24 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.call_mocked_py3(self.config._ocsp_dbm_close, db)
         db2 = self.call_mocked_py3(self.config._ocsp_dbm_open, self.db_path)
         self.assertEqual(db2[b'key'], expected_val)
+
+    @mock.patch("certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin._ocsp_prefetch_fetch_state")
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.config_test")
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator._reload")
+    def test_restart_load_state_call(self, _rl, _ct, mock_fch):
+        self.assertFalse(self.config._ocsp_prefetch)
+        self.config.restart()
+        self.assertTrue(mock_fch.called)
+
+    @mock.patch("certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin._ocsp_prefetch_backup_db")
+    @mock.patch("certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin._ocsp_prefetch_restore_db")
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.config_test")
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator._reload")
+    def test_restart_backupdb_call(self, _rl, _ctest, mock_rest, mock_bck):
+        self.config._ocsp_prefetch = True
+        self.config.restart()
+        self.assertTrue(mock_rest.called)
+        self.assertTrue(mock_bck.called)
 
 
 if __name__ == "__main__":
