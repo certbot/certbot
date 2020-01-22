@@ -885,19 +885,6 @@ class ClientV2Test(ClientTestBase):
                 new_nonce_url='https://www.letsencrypt-demo.org/acme/new-nonce')
             self.client.net.get.assert_not_called()
 
-            class FakeError(messages.Error):
-                """Fake error to reproduce a malformed request ACME error"""
-                def __init__(self):  # pylint: disable=super-init-not-called
-                    pass
-                @property
-                def code(self):
-                    return 'malformed'
-            self.client.net.post.side_effect = FakeError()
-
-            self.client.poll(self.authzr2)  # pylint: disable=protected-access
-
-            self.client.net.get.assert_called_once_with(self.authzr2.uri)
-
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):
     # pylint: disable=missing-docstring

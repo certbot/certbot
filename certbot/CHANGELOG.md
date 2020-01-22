@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.1.0 - master
+## 1.2.0 - master
 
 ### Added
 
@@ -11,7 +11,34 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* Add directory field to error message when field is missing.
+
+### Fixed
+
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.1.0 - 2020-01-14
+
+### Added
+
+*
+
+### Changed
+
+* Removed the fallback introduced with 0.34.0 in `acme` to retry a POST-as-GET
+  request as a GET request when the targeted ACME CA server seems to not support
+  POST-as-GET requests.
+* certbot-auto no longer supports architectures other than x86_64 on RHEL 6
+  based systems. Existing certbot-auto installations affected by this will
+  continue to work, but they will no longer receive updates. To install a
+  newer version of Certbot on these systems, you should update your OS.
+* Support for Python 3.4 in Certbot and its ACME library is deprecated and will be
+  removed in the next release of Certbot. certbot-auto users on x86_64 systems running
+  RHEL 6 or derivatives will be asked to enable Software Collections (SCL) repository
+  so Python 3.6 can be installed. certbot-auto can enable the SCL repo for you on CentOS 6
+  while users on other RHEL 6 based systems will be asked to do this manually.
 
 ### Fixed
 
@@ -222,7 +249,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* dns_rfc2136 plugin now supports explicitly specifing an authorative
+* dns_rfc2136 plugin now supports explicitly specifying an authoritative
   base domain for cases when the automatic method does not work (e.g.
   Split horizon DNS)
 
@@ -606,7 +633,7 @@ https://github.com/certbot/certbot/milestone/62?closed=1
 * Log warning about TLS-SNI deprecation in Certbot
 * Stop preferring TLS-SNI in the Apache, Nginx, and standalone plugins
 * OVH DNS plugin now relies on Lexicon>=2.7.14 to support HTTP proxies
-* Default time the Linode plugin waits for DNS changes to propogate is now 1200 seconds.
+* Default time the Linode plugin waits for DNS changes to propagate is now 1200 seconds.
 
 ### Fixed
 
@@ -725,7 +752,7 @@ https://github.com/certbot/certbot/milestone/58?closed=1
   increased over time. The max-age value is not increased to a large value
   until you've successfully managed to renew your certificate. This enhancement
   can be requested with the --auto-hsts flag.
-* New official DNS plugins have been created for Gehirn Infrastracture Service,
+* New official DNS plugins have been created for Gehirn Infrastructure Service,
   Linode, OVH, and Sakura Cloud. These plugins can be found on our Docker Hub
   page at https://hub.docker.com/u/certbot and on PyPI.
 * The ability to reuse ACME accounts from Let's Encrypt's ACMEv1 endpoint on

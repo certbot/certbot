@@ -92,8 +92,8 @@ obtain, install, and renew certificates:
 
 manage certificates:
     certificates    Display information about certificates you have from Certbot
-    revoke          Revoke a certificate (supply --cert-path or --cert-name)
-    delete          Delete a certificate
+    revoke          Revoke a certificate (supply --cert-name or --cert-path)
+    delete          Delete a certificate (supply --cert-name)
 
 manage your account:
     register        Create an ACME account
@@ -1414,7 +1414,7 @@ def _plugins_parsing(helpful, plugins):
     helpful.add(["plugins", "certonly"], "--dns-gehirn", action="store_true",
                 default=flag_default("dns_gehirn"),
                 help=("Obtain certificates using a DNS TXT record "
-                     "(if you are using Gehirn Infrastracture Service for DNS)."))
+                     "(if you are using Gehirn Infrastructure Service for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
                 default=flag_default("dns_google"),
                 help=("Obtain certificates using a DNS TXT record (if you are "

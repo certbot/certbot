@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="1.0.0"
+LE_AUTO_VERSION="1.1.0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -256,20 +256,28 @@ DeprecationBootstrap() {
   fi
 }
 
-MIN_PYTHON_VERSION="2.7"
-MIN_PYVER=$(echo "$MIN_PYTHON_VERSION" | sed 's/\.//')
+MIN_PYTHON_2_VERSION="2.7"
+MIN_PYVER2=$(echo "$MIN_PYTHON_2_VERSION" | sed 's/\.//')
+MIN_PYTHON_3_VERSION="3.5"
+MIN_PYVER3=$(echo "$MIN_PYTHON_3_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
-# digits of the python version
+# digits of the python version.
+# MIN_PYVER and MIN_PYTHON_VERSION are also set by this function, and their
+# values depend on if we try to use Python 3 or Python 2.
 DeterminePythonVersion() {
   # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
   #
   # If no Python is found, PYVER is set to 0.
   if [ "$USE_PYTHON_3" = 1 ]; then
+    MIN_PYVER=$MIN_PYVER3
+    MIN_PYTHON_VERSION=$MIN_PYTHON_3_VERSION
     for LE_PYTHON in "$LE_PYTHON" python3; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
     done
   else
+    MIN_PYVER=$MIN_PYVER2
+    MIN_PYTHON_VERSION=$MIN_PYTHON_2_VERSION
     for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
@@ -285,7 +293,7 @@ DeterminePythonVersion() {
     fi
   fi
 
-  PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+  PYVER=$("$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//')
   if [ "$PYVER" -lt "$MIN_PYVER" ]; then
     if [ "$1" != "NOCRASH" ]; then
       error "You have an ancient version of Python entombed in your operating system..."
@@ -368,7 +376,9 @@ BootstrapDebCommon() {
 
 # Sets TOOL to the name of the package manager
 # Sets appropriate values for YES_FLAG and QUIET_FLAG based on $ASSUME_YES and $QUIET_FLAG.
-# Enables EPEL if applicable and possible.
+# Note: this function is called both while selecting the bootstrap scripts and
+# during the actual bootstrap. Some things like prompting to user can be done in the latter
+# case, but not in the former one.
 InitializeRPMCommonBase() {
   if type dnf 2>/dev/null
   then
@@ -387,26 +397,6 @@ InitializeRPMCommonBase() {
   fi
   if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='--quiet'
-  fi
-
-  if ! $TOOL list *virtualenv >/dev/null 2>&1; then
-    echo "To use Certbot, packages from the EPEL repository need to be installed."
-    if ! $TOOL list epel-release >/dev/null 2>&1; then
-      error "Enable the EPEL repository and try running Certbot again."
-      exit 1
-    fi
-    if [ "$ASSUME_YES" = 1 ]; then
-      /bin/echo -n "Enabling the EPEL repository in 3 seconds..."
-      sleep 1s
-      /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
-      sleep 1s
-      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 second..."
-      sleep 1s
-    fi
-    if ! $TOOL install $YES_FLAG $QUIET_FLAG epel-release; then
-      error "Could not enable EPEL. Aborting bootstrap!"
-      exit 1
-    fi
   fi
 }
 
@@ -490,11 +480,89 @@ BootstrapRpmCommon() {
 
 # If new packages are installed by BootstrapRpmPython3 below, this version
 # number must be increased.
+BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION=1
+
+# Checks if rh-python36 can be installed.
+Python36SclIsAvailable() {
+  InitializeRPMCommonBase >/dev/null 2>&1;
+
+  if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
+    return 0
+  fi
+  if "${TOOL}" list centos-release-scl >/dev/null 2>&1; then
+    return 0
+  fi
+  return 1
+}
+
+# Try to enable rh-python36 from SCL if it is necessary and possible.
+EnablePython36SCL() {
+  if "$EXISTS" python3.6 > /dev/null 2> /dev/null; then
+      return 0
+  fi
+  if [ ! -f /opt/rh/rh-python36/enable ]; then
+      return 0
+  fi
+  set +e
+  if ! . /opt/rh/rh-python36/enable; then
+    error 'Unable to enable rh-python36!'
+    exit 1
+  fi
+  set -e
+}
+
+# This bootstrap concerns old RedHat-based distributions that do not ship by default
+# with Python 2.7, but only Python 2.6. We bootstrap them by enabling SCL and installing
+# Python 3.6. Some of these distributions are: CentOS/RHEL/OL/SL 6.
+BootstrapRpmPython3Legacy() {
+  # Tested with:
+  #   - CentOS 6
+
+  InitializeRPMCommonBase
+
+  if ! "${TOOL}" list rh-python36 >/dev/null 2>&1; then
+    echo "To use Certbot on this operating system, packages from the SCL repository need to be installed."
+    if ! "${TOOL}" list centos-release-scl >/dev/null 2>&1; then
+      error "Enable the SCL repository and try running Certbot again."
+      exit 1
+    fi
+    if [ "${ASSUME_YES}" = 1 ]; then
+      /bin/echo -n "Enabling the SCL repository in 3 seconds... (Press Ctrl-C to cancel)"
+      sleep 1s
+      /bin/echo -ne "\e[0K\rEnabling the SCL repository in 2 seconds... (Press Ctrl-C to cancel)"
+      sleep 1s
+      /bin/echo -e "\e[0K\rEnabling the SCL repository in 1 second... (Press Ctrl-C to cancel)"
+      sleep 1s
+    fi
+    if ! "${TOOL}" install "${YES_FLAG}" "${QUIET_FLAG}" centos-release-scl; then
+      error "Could not enable SCL. Aborting bootstrap!"
+      exit 1
+    fi
+  fi
+
+  # CentOS 6 must use rh-python36 from SCL
+  if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
+    python_pkgs="rh-python36-python
+      rh-python36-python-virtualenv
+      rh-python36-python-devel
+    "
+  else
+    error "No supported Python package available to install. Aborting bootstrap!"
+    exit 1
+  fi
+
+  BootstrapRpmCommonBase "${python_pkgs}"
+
+  # Enable SCL rh-python36 after bootstrapping.
+  EnablePython36SCL
+}
+
+# If new packages are installed by BootstrapRpmPython3 below, this version
+# number must be increased.
 BOOTSTRAP_RPM_PYTHON3_VERSION=1
 
 BootstrapRpmPython3() {
   # Tested with:
-  #   - CentOS 6
   #   - Fedora 29
 
   InitializeRPMCommonBase
@@ -504,12 +572,6 @@ BootstrapRpmPython3() {
     python_pkgs="python3
       python3-virtualenv
       python3-devel
-    "
-  # EPEL uses python34
-  elif $TOOL list python34 >/dev/null 2>&1; then
-    python_pkgs="python34
-      python34-devel
-      python34-tools
     "
   else
     error "No supported Python package available to install. Aborting bootstrap!"
@@ -758,6 +820,11 @@ elif [ -f /etc/redhat-release ]; then
 
   RPM_DIST_NAME=`(. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown"`
 
+  if [ "$PYVER" -eq 26 -a $(uname -m) != 'x86_64' ]; then
+    # 32 bits CentOS 6 and affiliates are not supported anymore by certbot-auto.
+    DEPRECATED_OS=1
+  fi
+
   # Set RPM_DIST_VERSION to VERSION_ID from /etc/os-release after splitting on
   # '.' characters (e.g. "8.0" becomes "8"). If the command exits with an
   # error, RPM_DIST_VERSION is set to "unknown".
@@ -769,31 +836,50 @@ elif [ -f /etc/redhat-release ]; then
      RPM_DIST_VERSION=0
   fi
 
-  # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
-  # RHEL 8 also uses python3 by default.
-  if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
-    RPM_USE_PYTHON_3=1
-  elif [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
-    RPM_USE_PYTHON_3=1
-  elif [ "$RPM_DIST_NAME" = "centos" -a "$RPM_DIST_VERSION" -ge 8 ]; then
-    RPM_USE_PYTHON_3=1
-  else
-    RPM_USE_PYTHON_3=0
-  fi
+  # Handle legacy RPM distributions
+  if [ "$PYVER" -eq 26 ]; then
+    # Check if an automated bootstrap can be achieved on this system.
+    if ! Python36SclIsAvailable; then
+      INTERACTIVE_BOOTSTRAP=1
+    fi
 
-  if [ "$RPM_USE_PYTHON_3" = 1 ]; then
     Bootstrap() {
-      BootstrapMessage "RedHat-based OSes that will use Python3"
-      BootstrapRpmPython3
+      BootstrapMessage "Legacy RedHat-based OSes that will use Python3"
+      BootstrapRpmPython3Legacy
     }
     USE_PYTHON_3=1
-    BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
+    BOOTSTRAP_VERSION="BootstrapRpmPython3Legacy $BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION"
+
+    # Try now to enable SCL rh-python36 for systems already bootstrapped
+    # NB: EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
+    EnablePython36SCL
   else
-    Bootstrap() {
-      BootstrapMessage "RedHat-based OSes"
-      BootstrapRpmCommon
-    }
-    BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+    # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
+    # RHEL 8 also uses python3 by default.
+    if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 ]; then
+      RPM_USE_PYTHON_3=1
+    elif [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
+      RPM_USE_PYTHON_3=1
+    elif [ "$RPM_DIST_NAME" = "centos" -a "$RPM_DIST_VERSION" -ge 8 ]; then
+      RPM_USE_PYTHON_3=1
+    else
+      RPM_USE_PYTHON_3=0
+    fi
+
+    if [ "$RPM_USE_PYTHON_3" = 1 ]; then
+      Bootstrap() {
+        BootstrapMessage "RedHat-based OSes that will use Python3"
+        BootstrapRpmPython3
+      }
+      USE_PYTHON_3=1
+      BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
+    else
+      Bootstrap() {
+        BootstrapMessage "RedHat-based OSes"
+        BootstrapRpmCommon
+      }
+      BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+    fi
   fi
 
   LE_PYTHON="$prev_le_python"
@@ -866,6 +952,13 @@ fi
 if [ "$NO_BOOTSTRAP" = 1 ]; then
   Bootstrap() {
     :
+  }
+  unset BOOTSTRAP_VERSION
+fi
+
+if [ "$DEPRECATED_OS" = 1 ]; then
+  Bootstrap() {
+    error "Skipping bootstrap because certbot-auto is deprecated on this system."
   }
   unset BOOTSTRAP_VERSION
 fi
@@ -1067,6 +1160,28 @@ if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
   shift 1  # the --le-auto-phase2 arg
+
+  if [ "$DEPRECATED_OS" = 1 ]; then
+    # Phase 2 damage control mode for deprecated OSes.
+    # In this situation, we bypass any bootstrap or certbot venv setup.
+    error "Your system is not supported by certbot-auto anymore."
+
+    if [ ! -d "$VENV_PATH" ] && OldVenvExists; then
+      VENV_BIN="$OLD_VENV_PATH/bin"
+    fi
+
+    if [ -f "$VENV_BIN/letsencrypt" -a "$INSTALL_ONLY" != 1 ]; then
+      error "Certbot will no longer receive updates."
+      error "Please visit https://certbot.eff.org/ to check for other alternatives."
+      "$VENV_BIN/letsencrypt" "$@"
+      exit 0
+    else
+      error "Certbot cannot be installed."
+      error "Please visit https://certbot.eff.org/ to check for other alternatives."
+      exit 1
+    fi
+  fi
+
   SetPrevBootstrapVersion
 
   if [ -z "$PHASE_1_VERSION" -a "$USE_PYTHON_3" = 1 ]; then
@@ -1078,8 +1193,15 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # If the selected Bootstrap function isn't a noop and it differs from the
     # previously used version
     if [ -n "$BOOTSTRAP_VERSION" -a "$BOOTSTRAP_VERSION" != "$PREV_BOOTSTRAP_VERSION" ]; then
-      # if non-interactive mode or stdin and stdout are connected to a terminal
-      if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
+      # Check if we can rebootstrap without manual user intervention: this requires that
+      # certbot-auto is in non-interactive mode AND selected bootstrap does not claim to
+      # require a manual user intervention.
+      if [ "$NONINTERACTIVE" = 1 -a "$INTERACTIVE_BOOTSTRAP" != 1 ]; then
+        CAN_REBOOTSTRAP=1
+      fi
+      # Check if rebootstrap can be done non-interactively and current shell is non-interactive
+      # (true if stdin and stdout are not attached to a terminal).
+      if [ \( "$CAN_REBOOTSTRAP" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
         if [ -d "$VENV_PATH" ]; then
           rm -rf "$VENV_PATH"
         fi
@@ -1090,12 +1212,21 @@ if [ "$1" = "--le-auto-phase2" ]; then
           ln -s "$VENV_PATH" "$OLD_VENV_PATH"
         fi
         RerunWithArgs "$@"
+      # Otherwise bootstrap needs to be done manually by the user.
       else
-        error "Skipping upgrade because new OS dependencies may need to be installed."
-        error
-        error "To upgrade to a newer version, please run this script again manually so you can"
-        error "approve changes or with --non-interactive on the command line to automatically"
-        error "install any required packages."
+        # If it is because bootstrapping is interactive, --non-interactive will be of no use.
+        if [ "$INTERACTIVE_BOOTSTRAP" = 1 ]; then
+          error "Skipping upgrade because new OS dependencies may need to be installed."
+          error "This requires manual user intervention: please run this script again manually."
+        # If this is because of the environment (eg. non interactive shell without
+        # --non-interactive flag set), help the user in that direction.
+        else
+          error "Skipping upgrade because new OS dependencies may need to be installed."
+          error
+          error "To upgrade to a newer version, please run this script again manually so you can"
+          error "approve changes or with --non-interactive on the command line to automatically"
+          error "install any required packages."
+        fi
         # Set INSTALLED_VERSION to be the same so we don't update the venv
         INSTALLED_VERSION="$LE_AUTO_VERSION"
         # Continue to use OLD_VENV_PATH if the new venv doesn't exist
@@ -1372,18 +1503,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==1.0.0 \
-    --hash=sha256:8d074cff89dee002dec1c47cb0da04ea8e0ede8d68838b6d54aa41580d9262df \
-    --hash=sha256:86b82d31db19fffffb0d6b218951e2121ef514e3ff659aa042deaf92a33e302a
-acme==1.0.0 \
-    --hash=sha256:f6972e436e76f7f1e395e81e149f8713ca8462d465b14993bddc53fb18a40644 \
-    --hash=sha256:6a08f12f848ce563b50bca421ba9db653df9f82cfefeaf8aba517f046d1386c2
-certbot-apache==1.0.0 \
-    --hash=sha256:e591d0cf773ad33ee978f7adb1b69288eac2c8847c643b06e70260e707626f8e \
-    --hash=sha256:7335ab5687a0a47d9041d9e13f3a2d67d0e8372da97ab639edb31c14b787cd68
-certbot-nginx==1.0.0 \
-    --hash=sha256:ce8a2e51165da7c15bfdc059cd6572d0f368c078f1e1a77633a2773310b2f231 \
-    --hash=sha256:63b4ae09d4f1c9ef0a1a2a49c3f651d8a7cb30303ec6f954239e987c5da45dc4
+certbot==1.1.0 \
+    --hash=sha256:66a5cab9267349941604c2c98082bfef85877653c023fc324b1c3869fb16add6 \
+    --hash=sha256:46e93661a0db53f416c0f5476d8d2e62bc7259b7660dd983453b85df9ef6e8b8
+acme==1.1.0 \
+    --hash=sha256:11b9beba706fb8f652c8910d46dd1939d670cac8169f3c66c18c080ed3353e71 \
+    --hash=sha256:c305a20eeb9cb02240347703d497891c13d43a47c794fa100d4dbb479a5370d9
+certbot-apache==1.1.0 \
+    --hash=sha256:9c847ff223c2e465e241c78d22f97cee77d5e551df608bed06c55f8627f4cbd2 \
+    --hash=sha256:05e84dfe96b72582cde97c490977d8e2d33d440c927a320debb4cf287f6fadcc
+certbot-nginx==1.1.0 \
+    --hash=sha256:bf06fa2f5059f0fdb7d352c8739e1ed0830db4f0d89e812dab4f081bda6ec7d6 \
+    --hash=sha256:0a80ecbd2a30f3757c7652cabfff854ca07873b1cf02ebbe1892786c3b3a5874
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1617,6 +1748,9 @@ UNLIKELY_EOF
     say "Installation succeeded."
   fi
 
+  # If you're modifying any of the code after this point in this current `if` block, you
+  # may need to update the "$DEPRECATED_OS" = 1 case at the beginning of phase 2 as well.
+
   if [ "$INSTALL_ONLY" = 1 ]; then
     say "Certbot is installed."
     exit 0
@@ -1828,30 +1962,35 @@ UNLIKELY_EOF
       error "WARNING: unable to check for updates."
     fi
 
-    LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
-    if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
-      say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
-    elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
-      say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+    # If for any reason REMOTE_VERSION is not set, let's assume certbot-auto is up-to-date,
+    # and do not go into the self-upgrading process.
+    if [ -n "$REMOTE_VERSION" ]; then
+      LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
 
-      # Now we drop into Python so we don't have to install even more
-      # dependencies (curl, etc.), for better flow control, and for the option of
-      # future Windows compatibility.
-      "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+      if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
+        say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
+      elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
+        say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
-      # Install new copy of certbot-auto.
-      # TODO: Deal with quotes in pathnames.
-      say "Replacing certbot-auto..."
-      # Clone permissions with cp. chmod and chown don't have a --reference
-      # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
-      cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-      cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-      # Using mv rather than cp leaves the old file descriptor pointing to the
-      # original copy so the shell can continue to read it unmolested. mv across
-      # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
-      # cp is unlikely to fail if the rm doesn't.
-      mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
-    fi  # A newer version is available.
+        # Now we drop into Python so we don't have to install even more
+        # dependencies (curl, etc.), for better flow control, and for the option of
+        # future Windows compatibility.
+        "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+
+        # Install new copy of certbot-auto.
+        # TODO: Deal with quotes in pathnames.
+        say "Replacing certbot-auto..."
+        # Clone permissions with cp. chmod and chown don't have a --reference
+        # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
+        cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+        cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+        # Using mv rather than cp leaves the old file descriptor pointing to the
+        # original copy so the shell can continue to read it unmolested. mv across
+        # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
+        # cp is unlikely to fail if the rm doesn't.
+        mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      fi  # A newer version is available.
+    fi
   fi  # Self-upgrading is allowed.
 
   RerunWithArgs --le-auto-phase2 "$@"

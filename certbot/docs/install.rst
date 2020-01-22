@@ -70,11 +70,13 @@ The ``certbot-auto`` wrapper script installs Certbot, obtaining some dependencie
 from your web server OS and putting others in a python virtual environment. You can
 download and run it as follows::
 
-  user@webserver:~$ wget https://dl.eff.org/certbot-auto
-  user@webserver:~$ sudo mv certbot-auto /usr/local/bin/certbot-auto
-  user@webserver:~$ sudo chown root /usr/local/bin/certbot-auto
-  user@webserver:~$ chmod 0755 /usr/local/bin/certbot-auto
-  user@webserver:~$ /usr/local/bin/certbot-auto --help
+  wget https://dl.eff.org/certbot-auto
+  sudo mv certbot-auto /usr/local/bin/certbot-auto
+  sudo chown root /usr/local/bin/certbot-auto
+  sudo chmod 0755 /usr/local/bin/certbot-auto
+  /usr/local/bin/certbot-auto --help
+
+To remove certbot-auto, just delete it and the files it places under /opt/eff.org, along with any cronjob or systemd timer you may have created.
 
 To check the integrity of the ``certbot-auto`` script,
 you can use these steps::

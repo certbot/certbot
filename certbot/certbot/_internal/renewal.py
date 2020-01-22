@@ -192,7 +192,7 @@ def _restore_pref_challs(unused_name, value):
     :returns: converted option value to be stored in the runtime config
     :rtype: `list` of `str`
 
-    :raises errors.Error: if value can't be converted to an bool
+    :raises errors.Error: if value can't be converted to a bool
 
     """
     # If pref_challs has only one element, configobj saves the value
@@ -203,7 +203,7 @@ def _restore_pref_challs(unused_name, value):
 
 
 def _restore_bool(name, value):
-    """Restores an boolean key-value pair from a renewal config file.
+    """Restores a boolean key-value pair from a renewal config file.
 
     :param str name: option name
     :param str value: option value
@@ -211,7 +211,7 @@ def _restore_bool(name, value):
     :returns: converted option value to be stored in the runtime config
     :rtype: bool
 
-    :raises errors.Error: if value can't be converted to an bool
+    :raises errors.Error: if value can't be converted to a bool
 
     """
     lowercase_value = value.lower()
@@ -244,7 +244,7 @@ def _restore_int(name, value):
 
 
 def _restore_str(unused_name, value):
-    """Restores an string key-value pair from a renewal config file.
+    """Restores a string key-value pair from a renewal config file.
 
     :param str unused_name: option name
     :param str value: option value

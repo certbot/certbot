@@ -764,7 +764,7 @@ class ApacheParser(object):
         split_arg = arg.split("/")
         for idx, split in enumerate(split_arg):
             if any(char in ApacheParser.fnmatch_chars for char in split):
-                # Turn it into a augeas regex
+                # Turn it into an augeas regex
                 # TODO: Can this instead be an augeas glob instead of regex
                 split_arg[idx] = ("* [label()=~regexp('%s')]" %
                                   self.fnmatch_to_re(split))
