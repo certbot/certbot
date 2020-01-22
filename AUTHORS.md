@@ -100,6 +100,7 @@ Authors
 * [Harlan Lieberman-Berg](https://github.com/hlieberman)
 * [Henri Salo](https://github.com/fgeek)
 * [Henry Chen](https://github.com/henrychen95)
+* [Hugo van Kemenade](https://github.com/hugovk)
 * [Ingolf Becker](https://github.com/watercrossing)
 * [Jaap Eldering](https://github.com/eldering)
 * [Jacob Hoffman-Andrews](https://github.com/jsha)
