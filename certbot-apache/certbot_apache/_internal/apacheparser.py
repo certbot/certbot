@@ -2,6 +2,8 @@
 
 from functools import partial
 
+from certbot import errors
+
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
 from certbot_apache._internal import parsernode_util as util
@@ -167,15 +169,18 @@ class ApacheBlockNode(ApacheDirectiveNode):
         parameters_str = " " + " ".join(parameters) if parameters else ""
         if not parameters:
             parameters = []
-        partial_block = partial(ApacheBlockNode, name=name, parameters=tuple(parameters), enabled=self.enabled)
-        return self._add_child_thing("\n<%s%s>\n</%s>" % (name, parameters_str, name), partial_block, position)
+        partial_block = partial(ApacheBlockNode, name=name,
+                                parameters=tuple(parameters), enabled=self.enabled)
+        return self._add_child_thing("\n<%s%s>\n</%s>" % (name, parameters_str, name),
+                                                         partial_block, position)
 
     def add_child_directive(self, name, parameters=None, position=None):
         """Adds a new DirectiveNode to the sequence of children"""
         parameters_str = " " + " ".join(parameters) if parameters else ""
-        if not parameters:
-            parameters = []
-        partial_block = partial(ApacheDirectiveNode, name=name, parameters=tuple(parameters), enabled=self.enabled)
+        if not parameters:  # TODO (mona): test
+            parameters = []  # pragma: no cover
+        partial_block = partial(ApacheDirectiveNode, name=name,
+                                parameters=tuple(parameters), enabled=self.enabled)
         return self._add_child_thing("\n%s%s" % (name, parameters_str), partial_block, position)
 
     def add_child_comment(self, comment="", position=None):
@@ -206,7 +211,8 @@ class ApacheBlockNode(ApacheDirectiveNode):
                                   filepath=assertions.PASS,
                                   metadata=self.metadata)]
 
-    def delete_child(self, child):
+    # TODO (mona): test
+    def delete_child(self, child):  # pragma: no cover
         """Deletes a ParserNode from the sequence of children"""
         index = -1
         i = None
