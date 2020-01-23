@@ -50,8 +50,8 @@ fi
 # instance, Fedora uses Python 3 and Python 2 is not installed.
 . tests/letstest/scripts/set_python_envvars.sh
 
-"$VENV_SCRIPT" -e acme[dev] -e .[dev,docs] -e certbot-apache
-sudo "$VENV_PATH/bin/certbot" -v --debug --text --agree-dev-preview --agree-tos \
+"$VENV_SCRIPT" -e acme[dev] -e certbot[dev,docs] -e certbot-apache
+sudo "$VENV_PATH/bin/certbot" -v --debug --text --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
 if [ $? -ne 0 ] ; then

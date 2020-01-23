@@ -1,6 +1,7 @@
 """Shim class to not have to depend on typing module in prod."""
 import sys
 
+
 class TypingClass(object):
     """Ignore import errors by getting anything"""
     def __getattr__(self, name):

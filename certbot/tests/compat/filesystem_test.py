@@ -5,6 +5,13 @@ import unittest
 
 import mock
 
+from certbot import util
+from certbot._internal import lock
+from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
+from certbot.tests.util import TempDirTestCase
+
 try:
     # pylint: disable=import-error
     import win32api
@@ -15,12 +22,6 @@ try:
 except ImportError:
     POSIX_MODE = True
 
-import certbot.tests.util as test_util
-from certbot import lock
-from certbot import util
-from certbot.compat import os
-from certbot.compat import filesystem
-from certbot.tests.util import TempDirTestCase
 
 
 EVERYBODY_SID = 'S-1-1-0'
@@ -89,8 +90,8 @@ class WindowsChmodTests(TempDirTestCase):
         self.assertEqual(len(system_aces), 1)
         self.assertEqual(len(admin_aces), 1)
 
-        self.assertEqual(system_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS ^ 512)
-        self.assertEqual(admin_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS ^ 512)
+        self.assertEqual(system_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS)
+        self.assertEqual(admin_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS)
 
     def test_read_flag(self):
         self._test_flag(4, ntsecuritycon.FILE_GENERIC_READ)
@@ -101,12 +102,10 @@ class WindowsChmodTests(TempDirTestCase):
     def test_write_flag(self):
         self._test_flag(2, (ntsecuritycon.FILE_ALL_ACCESS
                             ^ ntsecuritycon.FILE_GENERIC_READ
-                            ^ ntsecuritycon.FILE_GENERIC_EXECUTE
-                            ^ 512))
+                            ^ ntsecuritycon.FILE_GENERIC_EXECUTE))
 
     def test_full_flag(self):
-        self._test_flag(7, (ntsecuritycon.FILE_ALL_ACCESS
-                            ^ 512))
+        self._test_flag(7, ntsecuritycon.FILE_ALL_ACCESS)
 
     def _test_flag(self, everyone_mode, windows_flag):
         # Note that flag is tested against `everyone`, not `user`, because practically these unit
@@ -364,6 +363,8 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         self.assertTrue(filesystem.check_owner(self.probe_path))
 
         import os as std_os  # pylint: disable=os-module-forbidden
+        # See related inline comment in certbot.compat.filesystem.check_owner method
+        # that explains why MyPy/PyLint check disable is needed here.
         uid = std_os.getuid()
 
         with mock.patch('os.getuid') as mock_uid:

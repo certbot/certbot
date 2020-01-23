@@ -1,12 +1,13 @@
-"""Certbot PyLint plugin.
-http://docs.pylint.org/plugins.html
 """
-# The built-in ImportChecker of Pylint does a similar job to ForbidStandardOsModule to detect
-# deprecated modules. You can check its behavior as a reference to what is coded here.
-# See https://github.com/PyCQA/pylint/blob/b20a2984c94e2946669d727dbda78735882bf50a/pylint/checkers/imports.py#L287
+Certbot PyLint plugin.
+
+The built-in ImportChecker of Pylint does a similar job to ForbidStandardOsModule to detect
+deprecated modules. You can check its behavior as a reference to what is coded here.
+See https://github.com/PyCQA/pylint/blob/b20a2984c94e2946669d727dbda78735882bf50a/pylint/checkers/imports.py#L287
+See http://docs.pylint.org/plugins.html
+"""
 from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
-
 
 # Modules in theses packages can import the os module.
 WHITELIST_PACKAGES = ['acme', 'certbot_compatibility_test', 'letshelp_certbot', 'lock_test']
@@ -15,7 +16,7 @@ WHITELIST_PACKAGES = ['acme', 'certbot_compatibility_test', 'letshelp_certbot', 
 class ForbidStandardOsModule(BaseChecker):
     """
     This checker ensures that standard os module (and submodules) is not imported by certbot
-    modules. Otherwise a 'os-module-forbidden' error will be registered for the faulty lines.
+    modules. Otherwise an 'os-module-forbidden' error will be registered for the faulty lines.
     """
     __implements__ = IAstroidChecker
 

@@ -1,18 +1,21 @@
 """ACME protocol messages."""
 import json
+
+import josepy as jose
 import six
+
+from acme import challenges
+from acme import errors
+from acme import fields
+from acme import jws
+from acme import util
+
 try:
     from collections.abc import Hashable  # pylint: disable=no-name-in-module
 except ImportError:  # pragma: no cover
     from collections import Hashable
 
-import josepy as jose
 
-from acme import challenges
-from acme import errors
-from acme import fields
-from acme import util
-from acme import jws
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
@@ -33,7 +36,7 @@ ERROR_CODES = {
                    ' domain'),
     'dns': 'There was a problem with a DNS query during identifier validation',
     'dnssec': 'The server could not validate a DNSSEC signed domain',
-    'incorrectResponse': 'Response recieved didn\'t match the challenge\'s requirements',
+    'incorrectResponse': 'Response received didn\'t match the challenge\'s requirements',
     # deprecate invalidEmail
     'invalidEmail': 'The provided email for a registration was invalid',
     'invalidContact': 'The provided contact URI was invalid',
@@ -143,7 +146,7 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
         if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
             raise jose.DeserializationError(
                 '{0} not recognized'.format(cls.__name__))
-        return cls.POSSIBLE_NAMES[jobj]  # pylint: disable=unsubscriptable-object
+        return cls.POSSIBLE_NAMES[jobj]
 
     def __repr__(self):
         return '{0}({1})'.format(self.__class__.__name__, self.name)
@@ -242,13 +245,13 @@ class Directory(jose.JSONDeSerializable):
         try:
             return self[name.replace('_', '-')]
         except KeyError as error:
-            raise AttributeError(str(error) + ': ' + name)
+            raise AttributeError(str(error))
 
     def __getitem__(self, name):
         try:
             return self._jobj[self._canon_key(name)]
         except KeyError:
-            raise KeyError('Directory field not found')
+            raise KeyError('Directory field "' + self._canon_key(name) + '" not found')
 
     def to_partial_json(self):
         return self._jobj

@@ -1,7 +1,20 @@
 #!/bin/sh -xe
 
 cd letsencrypt
+
+# If we're on a RHEL 6 based system, we can be confident Python is already
+# installed because the package manager is written in Python.
+if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
+    # RHEL/CentOS 6 will need a special treatment, so we need to detect that environment
+    RUN_RHEL6_TESTS=1
+fi
+
 letsencrypt-auto-source/letsencrypt-auto --install-only -n --debug
+
+if [ "$RUN_RHEL6_TESTS" = 1 ]; then
+  # Enable the SCL Python 3.6 installed by letsencrypt-auto bootstrap
+  PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
+fi
 
 PLUGINS="certbot-apache certbot-nginx"
 PYTHON_MAJOR_VERSION=$(/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1)
@@ -27,7 +40,7 @@ VERSION=$("$PYTHON_NAME" letsencrypt-auto-source/version.py)
 tools/pip_install.py pytest
 
 # build sdists
-for pkg_dir in acme . $PLUGINS; do
+for pkg_dir in acme certbot $PLUGINS; do
     cd $pkg_dir
     python setup.py clean
     rm -rf build dist

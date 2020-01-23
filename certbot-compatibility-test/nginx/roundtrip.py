@@ -3,7 +3,8 @@
 import os
 import sys
 
-from certbot_nginx import nginxparser
+from certbot_nginx._internal import nginxparser
+
 
 def roundtrip(stuff):
     success = True
