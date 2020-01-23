@@ -194,9 +194,6 @@ class CloudflareClientTest(unittest.TestCase):
         self.cf.zones.get.side_effect = API_ERROR
 
         self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
-        expected = [mock.call.zones.get(params=mock.ANY)]
-
-        self.assertEqual(expected, self.cf.mock_calls)
 
     def test_del_txt_record_error_during_delete(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]

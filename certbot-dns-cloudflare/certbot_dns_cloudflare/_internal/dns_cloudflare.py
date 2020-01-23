@@ -169,6 +169,8 @@ class _CloudflareClient(object):
         """
 
         zone_name_guesses = dns_common.base_domain_name_guesses(domain)
+        zones = []
+        code = msg = None
 
         for zone_name in zone_name_guesses:
             params = {'name': zone_name,
@@ -177,23 +179,27 @@ class _CloudflareClient(object):
             try:
                 zones = self.cf.zones.get(params=params)  # zones | pylint: disable=no-member
             except CloudFlare.exceptions.CloudFlareAPIError as e:
-                if 'com.cloudflare.api.account.zone.list' not in str(e):
-                    code = int(e)
-                    hint = None
+                code = int(e)
+                msg = str(e)
+                hint = None
 
-                    if code == 6003:
-                        hint = ('Did you copy your entire API token/key? To use Cloudflare tokens, '
-                        'you\'ll need the python package cloudflare>=2.3.1.{}'
-                        .format(' This certbot is running cloudflare ' + str(CloudFlare.__version__)
-                        if hasattr(CloudFlare, '__version__') else ''))
-                    elif code == 9103:
-                        hint = 'Did you enter the correct email address and Global key?'
-                    elif code == 9109:
-                        hint = 'Did you enter a valid Cloudflare Token?'
+                if code == 6003:
+                    hint = ('Did you copy your entire API token/key? To use Cloudflare tokens, '
+                            'you\'ll need the python package cloudflare>=2.3.1.{}'
+                    .format(' This certbot is running cloudflare ' + str(CloudFlare.__version__)
+                    if hasattr(CloudFlare, '__version__') else ''))
+                elif code == 9103:
+                    hint = 'Did you enter the correct email address and Global key?'
+                elif code == 9109:
+                    hint = 'Did you enter a valid Cloudflare Token?'
 
+                if hint:
                     raise errors.PluginError('Error determining zone_id: {0} {1}. Please confirm '
-                                     'that you have supplied valid Cloudflare API credentials.{2}'
-                                          .format(code, e, ' ({0})'.format(hint) if hint else ''))
+                                  'that you have supplied valid Cloudflare API credentials. ({2})'
+                                                                         .format(code, msg, hint))
+                else:
+                    logger.debug('Unrecognised CloudFlareAPIError while finding zone_id: %d %s. '
+                                 'Continuing with next zone guess...', e, e)
 
             if zones:
                 zone_id = zones[0]['id']
@@ -201,12 +207,10 @@ class _CloudflareClient(object):
                 return zone_id
 
         raise errors.PluginError('Unable to determine zone_id for {0} using zone names: {1}. '
-                                 'Please confirm that the domain name has been entered correctly '
-                                 'and is already associated with the supplied Cloudflare account. '
-                                 'If you\'re using Cloudflare Tokens, your Token needs '
-                                 '"Zone:DNS:Edit" and "Zone:Zone:Read" permissions for all zones '
-                                 'in your account.'
-                                 .format(domain, zone_name_guesses))
+                                'Please confirm that the domain name has been entered correctly '
+                                'and is already associated with the supplied Cloudflare account.{2}'
+                                .format(domain, zone_name_guesses, ' The error from Cloudflare was:'
+                                ' {0} {1}'.format(code, msg) if code != None else ''))
 
     def _find_txt_record_id(self, zone_id, record_name, record_content):
         """
