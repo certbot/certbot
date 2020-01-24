@@ -15,7 +15,7 @@ def test_it(request):
 
     try:
         # Install certbot
-        subprocess.check_call([request.config.installer_path, '/S'])
+        subprocess.check_call([request.config.option.installer_path, '/S'])
 
         # Assert certbot is installed and runnable
         output = subprocess.check_output(['certbot', '--version'], universal_newlines=True)
