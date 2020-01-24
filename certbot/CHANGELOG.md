@@ -12,6 +12,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Add directory field to error message when field is missing.
 * If MD5 hasher is not available, try it in non-security mode (fix for FIPS systems) -- [#1948](https://github.com/certbot/certbot/issues/1948)
+* Remove ECDHE-RSA-AES128-SHA from NGINX ciphers list now that Windows 2008 R2 is deprecated
 
 ### Fixed
 
