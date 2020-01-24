@@ -7,6 +7,7 @@ from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-
 
 from certbot import errors
 from certbot._internal import ocsp
+from certbot.plugins.enhancements import OCSPPrefetchEnhancement
 
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -244,3 +245,28 @@ class OCSPPrefetchMixin(object):
             if self._ocsp_refresh_if_needed(pf):
                 # Save the status to pluginstorage
                 self._ocsp_prefetch_save(pf["cert_path"], pf["chain_path"])
+
+    def restart(self):
+        """Runs a config test and reloads the Apache server.
+
+        :raises .errors.MisconfigurationError: If either the config test
+            or reload fails.
+
+        """
+        self.config_test()
+
+        if not self._ocsp_prefetch:
+            # Try to populate OCSP prefetch structure from pluginstorage
+            self._ocsp_prefetch_fetch_state()
+        if self._ocsp_prefetch:
+            # OCSP prefetching is enabled, so back up the db
+            self._ocsp_prefetch_backup_db()
+
+        self._reload()
+
+        if self._ocsp_prefetch:
+            # Restore the backed up dbm database
+            self._ocsp_prefetch_restore_db()
+
+
+OCSPPrefetchEnhancement.register(OCSPPrefetchMixin)  # pylint: disable=no-member

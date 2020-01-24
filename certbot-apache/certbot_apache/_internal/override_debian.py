@@ -9,7 +9,6 @@ from certbot import interfaces
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
-from certbot.plugins.enhancements import OCSPPrefetchEnhancement
 
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
@@ -145,28 +144,3 @@ class DebianConfigurator(prefetch_ocsp.OCSPPrefetchMixin, configurator.ApacheCon
         self.reverter.register_undo_command(
             temp, [self.option("dismod"), "-f", mod_name])
         util.run_script([self.option("enmod"), mod_name])
-
-    def restart(self):
-        """Runs a config test and reloads the Apache server.
-
-        :raises .errors.MisconfigurationError: If either the config test
-            or reload fails.
-
-        """
-        self.config_test()
-
-        if not self._ocsp_prefetch:
-            # Try to populate OCSP prefetch structure from pluginstorage
-            self._ocsp_prefetch_fetch_state()
-        if self._ocsp_prefetch:
-            # OCSP prefetching is enabled, so back up the db
-            self._ocsp_prefetch_backup_db()
-
-        self._reload()
-
-        if self._ocsp_prefetch:
-            # Restore the backed up dbm database
-            self._ocsp_prefetch_restore_db()
-
-
-OCSPPrefetchEnhancement.register(DebianConfigurator)  # pylint: disable=no-member

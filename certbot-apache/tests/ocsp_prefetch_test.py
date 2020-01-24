@@ -111,7 +111,7 @@ class OCSPPrefetchTest(util.ApacheTest):
             open(db_fullpath, 'a').close()
 
         ver_path = "certbot_apache._internal.configurator.ApacheConfigurator.get_version"
-        res_path = "certbot_apache._internal.override_debian.DebianConfigurator.restart"
+        res_path = "certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin.restart"
         cry_path = "certbot.crypto_util.cert_sha1_fingerprint"
 
         with mock.patch(ver_path) as mock_ver:
@@ -248,7 +248,7 @@ class OCSPPrefetchTest(util.ApacheTest):
                 self.assertTrue(log_string in mock_log.call_args_list[0][0][0])
                 self.assertTrue(log_string2 in mock_log.call_args_list[1][0][0])
 
-    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
+    @mock.patch("certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin.restart")
     def test_ocsp_prefetch_refresh_fail(self, _mock_restart):
         ocsp_path = "certbot._internal.ocsp.RevocationChecker.revoked"
         log_path = "certbot_apache._internal.prefetch_ocsp.logger.warning"
