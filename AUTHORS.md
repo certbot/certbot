@@ -124,6 +124,7 @@ Authors
 * [Jonathan Herlin](https://github.com/Jonher937)
 * [Jon Walsh](https://github.com/code-tree)
 * [Joona Hoikkala](https://github.com/joohoi)
+* [Josh McCullough](https://github.com/JoshMcCullough)
 * [Josh Soref](https://github.com/jsoref)
 * [Joubin Jabbari](https://github.com/joubin)
 * [Juho Juopperi](https://github.com/jkjuopperi)

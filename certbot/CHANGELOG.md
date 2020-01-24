@@ -11,6 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Add directory field to error message when field is missing.
+* If MD5 hasher is not available, try it in non-security mode (fix for FIPS systems) -- [#1948](https://github.com/certbot/certbot/issues/1948)
 * Disable old SSL versions and ciphersuites to follow Mozilla recommendations in Apache.
 
 ### Fixed
