@@ -88,7 +88,6 @@ dev3_extras = [
     'astroid',
     'mypy',
     'pylint',
-    'typing',  # for python3.4
 ]
 
 docs_extras = [
