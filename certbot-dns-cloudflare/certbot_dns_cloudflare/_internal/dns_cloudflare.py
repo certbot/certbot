@@ -61,7 +61,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                                          'Global API Key. (see {})'
                                          .format(credentials.confobj.filename, ACCOUNT_URL))
         else:
-            raise errors.PluginError('{}: Either dns_cloudflare_api_token(recommended), or '
+            raise errors.PluginError('{}: Either dns_cloudflare_api_token (recommended), or '
                                      'dns_cloudflare_email and dns_cloudflare_api_key are required.'
                                      ' (see {})'.format(credentials.confobj.filename, ACCOUNT_URL))
 
