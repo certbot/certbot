@@ -346,6 +346,17 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.assertTrue(mock_rest.called)
         self.assertTrue(mock_bck.called)
 
+    @mock.patch("certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin._ocsp_prefetch_backup_db")
+    @mock.patch("certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin._ocsp_prefetch_restore_db")
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.config_test")
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator._reload")
+    def test_restart_recover_error(self, mock_reload, _ctest, mock_rest, mock_bck):
+        self.config._ocsp_prefetch = True
+        mock_reload.side_effect = errors.MisconfigurationError
+        self.assertRaises(errors.MisconfigurationError, self.config.restart)
+        self.assertTrue(mock_bck.called)
+        self.assertTrue(mock_rest.called)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
