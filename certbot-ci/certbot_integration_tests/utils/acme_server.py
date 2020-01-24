@@ -209,9 +209,10 @@ class ACMEServer(object):
 def main():
     parser = argparse.ArgumentParser(
         description='CLI tool to start a local instance of Pebble or Boulder CA server.')
-    parser.add_argument('server_type', choices=['pebble', 'boulder-v1', 'boulder-v2'],
+    parser.add_argument('--server-type', '-s',
+                        choices=['pebble', 'boulder-v1', 'boulder-v2'], default='pebble',
                         help='type of CA server to start: can be Pebble or Boulder '
-                             '(in ACMEv1 or ACMEv2 mode)')
+                             '(in ACMEv1 or ACMEv2 mode), Pebble is used if not set.')
     parser.add_argument('--dns-server', '-d',
                         help='(Pebble specific) specify the DNS server as `IP:PORT` to use by '
                              'Pebble; if not specified, a local mock DNS server will be used to '
@@ -219,7 +220,7 @@ def main():
     args = parser.parse_args()
 
     if args.server_type != 'pebble' and args.dns_server:
-        raise RuntimeError('Error, `--dns-server`/`-d` flags can be used only with'
+        raise RuntimeError('Error, `--dns-server`/`-d` flags can be used only with '
                            '`pebble` server type.')
 
     acme_server = ACMEServer(args.server_type, [], http_proxy=False, stdout=True, dns_server=args.dns_server)
