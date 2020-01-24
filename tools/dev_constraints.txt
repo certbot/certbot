@@ -22,7 +22,7 @@ configparser==3.7.4
 contextlib2==0.6.0.post1
 coverage==4.5.4
 decorator==4.4.1
-dns-lexicon==3.2.1
+dns-lexicon==3.3.17
 dnspython==1.15.0
 docker==3.7.2
 docker-compose==1.25.0
