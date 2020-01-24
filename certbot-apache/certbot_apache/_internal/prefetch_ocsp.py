@@ -262,7 +262,11 @@ class OCSPPrefetchMixin(object):
             # OCSP prefetching is enabled, so back up the db
             self._ocsp_prefetch_backup_db()
 
-        self._reload()
+        try:
+            self._reload()
+        except  errors.MisconfigurationError:
+            self._ocsp_prefetch_restore_db()
+            raise
 
         if self._ocsp_prefetch:
             # Restore the backed up dbm database
