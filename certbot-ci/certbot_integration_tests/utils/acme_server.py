@@ -2,10 +2,12 @@
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
 
+import argparse
 import errno
 import json
 import os
 from os.path import join
+import re
 import shutil
 import subprocess
 import sys
@@ -32,13 +34,14 @@ class ACMEServer(object):
     ACMEServer is also a context manager, and so can be used to ensure ACME server is started/stopped
     upon context enter/exit.
     """
-    def __init__(self, acme_server, nodes, http_proxy=True, stdout=False):
+    def __init__(self, acme_server, nodes, http_proxy=True, stdout=False, dns_server=None):
         """
         Create an ACMEServer instance.
         :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
         :param list nodes: list of node names that will be setup by pytest xdist
         :param bool http_proxy: if False do not start the HTTP proxy
         :param bool stdout: if True stream subprocesses stdout to standard stdout
+        :param str dns_server: if set, Pebble/Boulder will use it to resolve domains
         """
         self._construct_acme_xdist(acme_server, nodes)
 
@@ -47,6 +50,7 @@ class ACMEServer(object):
         self._workspace = tempfile.mkdtemp()
         self._processes = []
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w')
+        self._dns_server = dns_server
 
     def start(self):
         """Start the test stack"""
@@ -130,13 +134,18 @@ class ACMEServer(object):
         environ['PEBBLE_WFE_NONCEREJECT'] = '0'
         environ['PEBBLE_AUTHZREUSE'] = '100'
 
-        self._launch_process(
-            [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053'],
-            env=environ)
+        if self._dns_server:
+            dns_server = self._dns_server
+        else:
+            dns_server = '127.0.0.1:8053'
+            self._launch_process(
+                [challtestsrv_path, '-management', ':{0}'.format(CHALLTESTSRV_PORT),
+                 '-defaultIPv6', '""', '-defaultIPv4', '127.0.0.1', '-http01', '""',
+                 '-tlsalpn01', '""', '-https01', '""'])
 
         self._launch_process(
-            [challtestsrv_path, '-management', ':{0}'.format(CHALLTESTSRV_PORT), '-defaultIPv6', '""',
-             '-defaultIPv4', '127.0.0.1', '-http01', '""', '-tlsalpn01', '""', '-https01', '""'])
+            [pebble_path, '-config', pebble_config_path, '-dnsserver', dns_server],
+            env=environ)
 
         # pebble_ocsp_server is imported here and not at the top of module in order to avoid a useless
         # ImportError, in the case where cryptography dependency is too old to support ocsp, but
@@ -198,14 +207,22 @@ class ACMEServer(object):
 
 
 def main():
-    args = sys.argv[1:]
-    server_type = args[0] if args else 'pebble'
-    possible_values = ('pebble', 'boulder-v1', 'boulder-v2')
-    if server_type not in possible_values:
-        raise ValueError('Invalid server value {0}, should be one of {1}'
-                         .format(server_type, possible_values))
+    parser = argparse.ArgumentParser(
+        description='CLI tool to start a local instance of Pebble or Boulder CA server.')
+    parser.add_argument('server_type', choices=['pebble', 'boulder-v1', 'boulder-v2'],
+                        help='type of CA server to start: can be Pebble or Boulder '
+                             '(in ACMEv1 or ACMEv2 mode)')
+    parser.add_argument('--dns-server', '-d',
+                        help='(Pebble specific) specify the DNS server as `IP:PORT` to use by '
+                             'Pebble; if not specified, a local mock DNS server will be used to '
+                             'resolve domains to localhost.')
+    args = parser.parse_args()
 
-    acme_server = ACMEServer(server_type, [], http_proxy=False, stdout=True)
+    if args.server_type != 'pebble' and args.dns_server:
+        raise RuntimeError('Error, `--dns-server`/`-d` flags can be used only with'
+                           '`pebble` server type.')
+
+    acme_server = ACMEServer(args.server_type, [], http_proxy=False, stdout=True, dns_server=args.dns_server)
 
     try:
         with acme_server as acme_xdist:
