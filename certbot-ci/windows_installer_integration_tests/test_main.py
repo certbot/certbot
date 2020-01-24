@@ -2,11 +2,10 @@ import os
 import time
 import unittest
 import subprocess
-import sys
 
 
 @unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
-def test_it():
+def test_it(request):
     try:
         subprocess.check_call(['certbot', '--version'])
     except (subprocess.CalledProcessError, OSError):
@@ -14,14 +13,9 @@ def test_it():
     else:
         raise AssertionError('Expect certbot to not be available in the PATH.')
 
-    root_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-
     try:
-        # Build the installer
-        subprocess.check_call([sys.executable, os.path.join(root_path, 'windows-installer', 'construct.py')])
-
         # Install certbot
-        subprocess.check_call([os.path.join(root_path, 'windows-installer', 'build', 'nsis', 'certbot-beta-installer-win32.exe'), '/S'])
+        subprocess.check_call([request.config.installer_path, '/S'])
 
         # Assert certbot is installed and runnable
         output = subprocess.check_output(['certbot', '--version'], universal_newlines=True)
