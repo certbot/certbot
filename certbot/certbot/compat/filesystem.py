@@ -263,7 +263,7 @@ def replace(src, dst):
     :param str dst: The new file path.
     """
     if hasattr(os, 'replace'):
-        # Use replace if possible. On Windows, only Python >= 3.4 is supported
+        # Use replace if possible. On Windows, only Python >= 3.5 is supported
         # so we can assume that os.replace() is always available for this platform.
         getattr(os, 'replace')(src, dst)
     else:
