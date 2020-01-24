@@ -389,8 +389,8 @@ class AugeasBlockNode(AugeasDirectiveNode):
         exception if it's unable to do so.
         :param AugeasParserNode: child: A node to delete.
         """
-        if not self.parser.aug.remove(child.metadata["augeaspath"]):
 
+        if not self.parser.aug.remove(child.metadata["augeaspath"]):
             raise errors.PluginError(
                 ("Could not delete child node, the Augeas path: {} doesn't " +
                  "seem to exist.").format(child.metadata["augeaspath"])

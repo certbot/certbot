@@ -127,3 +127,27 @@ def directivenode_kwargs(kwargs):
     parameters = kwargs.pop("parameters")
     enabled = kwargs.pop("enabled")
     return name, parameters, enabled, kwargs
+
+
+def parameters_from_string(text):
+    # TODO (mona) document this function
+    text = text.strip()
+    words = []
+    word = ""
+    quote = None
+    for c in text:
+        if c.isspace() and not quote:
+            if word:
+                words.append(word)
+            word = ""
+        else:
+            word += c
+        if not quote and c in "\"\'":
+            quote = c
+        elif c == quote:
+            words.append(word[1:-1])
+            word = ""
+            quote = None
+    if word:
+        words.append(word)
+    return tuple(words)

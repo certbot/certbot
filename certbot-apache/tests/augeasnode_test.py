@@ -155,11 +155,11 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
 
     def test_add_child_comment(self):
         newc = self.config.parser_root.primary.add_child_comment("The content")
-        comments = self.config.parser_root.find_comments("The content")
+        comments = self.config.parser_root.primary.find_comments("The content")
         self.assertEqual(len(comments), 1)
         self.assertEqual(
             newc.metadata["augeaspath"],
-            comments[0].primary.metadata["augeaspath"]
+            comments[0].metadata["augeaspath"]
         )
         self.assertEqual(newc.comment, comments[0].comment)
 
@@ -288,11 +288,11 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
             ["with", "parameters"],
             position=0
         )
-        dirs = self.config.parser_root.find_directives("ThisWasAdded")
+        dirs = self.config.parser_root.primary.find_directives("ThisWasAdded")
         self.assertEqual(len(dirs), 1)
         self.assertEqual(dirs[0].parameters, ("with", "parameters"))
         # The new directive was added to the very first line of the config
-        self.assertTrue(dirs[0].primary.metadata["augeaspath"].endswith("[1]"))
+        self.assertTrue(dirs[0].metadata["augeaspath"].endswith("[1]"))
 
     def test_add_child_directive_exception(self):
         self.assertRaises(
