@@ -69,12 +69,12 @@ Access can be defined for all or only selected repositories, which is nice.
 ```
 
 - Redirected to Azure DevOps, select the account created in _Having an Azure DevOps account_ section.
-- Select the organization, and click "Create a new project" (let's name it the same than the targetted github repo)
+- Select the organization, and click "Create a new project" (let's name it the same than the targeted github repo)
 - The Visibility is public, to profit from 10 parallel jobs
 
 ```
 !!! ACCESS !!!
-Azure Pipelines needs access to the GitHub account (in term of beeing able to check it is valid), and the Resources shared between the GitHub account and Azure Pipelines.
+Azure Pipelines needs access to the GitHub account (in term of being able to check it is valid), and the Resources shared between the GitHub account and Azure Pipelines.
 ```
 
 _Done. We can move to pipelines configuration._

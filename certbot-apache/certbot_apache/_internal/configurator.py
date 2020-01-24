@@ -1817,7 +1817,7 @@ class ApacheConfigurator(common.Installer):
                     ssl_vhost.filep)
 
     def _verify_no_matching_http_header(self, ssl_vhost, header_substring):
-        """Checks to see if an there is an existing Header directive that
+        """Checks to see if there is an existing Header directive that
         contains the string header_substring.
 
         :param ssl_vhost: vhost to check

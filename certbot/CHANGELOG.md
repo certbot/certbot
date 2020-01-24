@@ -2,7 +2,24 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.1.0 - master
+## 1.2.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* Add directory field to error message when field is missing.
+* If MD5 hasher is not available, try it in non-security mode (fix for FIPS systems) -- [#1948](https://github.com/certbot/certbot/issues/1948)
+
+### Fixed
+
+* Fix collections.abc imports for Python 3.9.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.1.0 - 2020-01-14
 
 ### Added
 
@@ -232,7 +249,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* dns_rfc2136 plugin now supports explicitly specifing an authorative
+* dns_rfc2136 plugin now supports explicitly specifying an authoritative
   base domain for cases when the automatic method does not work (e.g.
   Split horizon DNS)
 
@@ -616,7 +633,7 @@ https://github.com/certbot/certbot/milestone/62?closed=1
 * Log warning about TLS-SNI deprecation in Certbot
 * Stop preferring TLS-SNI in the Apache, Nginx, and standalone plugins
 * OVH DNS plugin now relies on Lexicon>=2.7.14 to support HTTP proxies
-* Default time the Linode plugin waits for DNS changes to propogate is now 1200 seconds.
+* Default time the Linode plugin waits for DNS changes to propagate is now 1200 seconds.
 
 ### Fixed
 
@@ -735,7 +752,7 @@ https://github.com/certbot/certbot/milestone/58?closed=1
   increased over time. The max-age value is not increased to a large value
   until you've successfully managed to renew your certificate. This enhancement
   can be requested with the --auto-hsts flag.
-* New official DNS plugins have been created for Gehirn Infrastracture Service,
+* New official DNS plugins have been created for Gehirn Infrastructure Service,
   Linode, OVH, and Sakura Cloud. These plugins can be found on our Docker Hub
   page at https://hub.docker.com/u/certbot and on PyPI.
 * The ability to reuse ACME accounts from Let's Encrypt's ACMEv1 endpoint on

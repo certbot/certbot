@@ -113,7 +113,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.0.0 (certbot(-auto);
+                        "". (default: CertbotACMEClient/1.1.0 (certbot(-auto);
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -451,7 +451,7 @@ plugins:
   --dns-dnsmadeeasy     Obtain certificates using a DNS TXT record (if you are
                         using DNS Made Easy for DNS). (default: False)
   --dns-gehirn          Obtain certificates using a DNS TXT record (if you are
-                        using Gehirn Infrastracture Service for DNS).
+                        using Gehirn Infrastructure Service for DNS).
                         (default: False)
   --dns-google          Obtain certificates using a DNS TXT record (if you are
                         using Google Cloud DNS). (default: False)
@@ -560,14 +560,14 @@ dns-dnsmadeeasy:
 
 dns-gehirn:
   Obtain certificates using a DNS TXT record (if you are using Gehirn
-  Infrastracture Service for DNS).
+  Infrastructure Service for DNS).
 
   --dns-gehirn-propagation-seconds DNS_GEHIRN_PROPAGATION_SECONDS
                         The number of seconds to wait for DNS to propagate
                         before asking the ACME server to verify the DNS
                         record. (default: 30)
   --dns-gehirn-credentials DNS_GEHIRN_CREDENTIALS
-                        Gehirn Infrastracture Service credentials file.
+                        Gehirn Infrastructure Service credentials file.
                         (default: None)
 
 dns-google:

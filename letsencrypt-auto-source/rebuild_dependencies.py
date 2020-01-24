@@ -63,7 +63,7 @@ CERTBOT_REPO_PATH = dirname(dirname(abspath(__file__)))
 #   - then this venv is used to consistently construct an empty new venv
 #   - once pipstraped, this new venv pip-installs certbot runtime (including apache/nginx),
 #     without pinned dependencies, and respecting input authoritative requirements
-#   - `certbot plugins` is called to check we have an healthy environment
+#   - `certbot plugins` is called to check we have a healthy environment
 #   - finally current set of dependencies is extracted out of the docker using pip freeze
 SCRIPT = r"""#!/bin/sh
 set -e

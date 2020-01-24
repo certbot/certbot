@@ -59,11 +59,8 @@ matrix:
       dist: trusty
       env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
       <<: *not-on-master
-    - python: "3.4"
-      env: TOXENV=py34
-      <<: *not-on-master
-    - python: "3.7"
-      env: TOXENV=py37
+    - python: "3.5"
+      env: TOXENV=py35
       <<: *not-on-master
     - python: "3.8"
       env: TOXENV=py38
@@ -163,30 +160,11 @@ matrix:
       sudo: required
       services: docker
       <<: *extended-test-suite
-    - python: "3.4"
-      env: TOXENV=py34
-      <<: *extended-test-suite
-    - python: "3.5"
-      env: TOXENV=py35
-      <<: *extended-test-suite
     - python: "3.6"
       env: TOXENV=py36
       <<: *extended-test-suite
     - python: "3.7"
       env: TOXENV=py37
-      <<: *extended-test-suite
-    - python: "3.8"
-      env: TOXENV=py38
-      <<: *extended-test-suite
-    - python: "3.4"
-      env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
-      services: docker
-      <<: *extended-test-suite
-    - python: "3.4"
-      env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
-      services: docker
       <<: *extended-test-suite
     - python: "3.5"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
@@ -247,9 +225,6 @@ matrix:
     - language: generic
       env: TOXENV=py27
       os: osx
-      # Using this osx_image is a workaround for
-      # https://travis-ci.community/t/xcode-8-3-homebrew-outdated-error/3798.
-      osx_image: xcode10.2
       addons:
         homebrew:
           packages:
@@ -259,9 +234,6 @@ matrix:
     - language: generic
       env: TOXENV=py3
       os: osx
-      # Using this osx_image is a workaround for
-      # https://travis-ci.community/t/xcode-8-3-homebrew-outdated-error/3798.
-      osx_image: xcode10.2
       addons:
         homebrew:
           packages:
