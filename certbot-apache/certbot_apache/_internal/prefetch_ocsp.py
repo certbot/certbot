@@ -263,8 +263,10 @@ class OCSPPrefetchMixin(object):
             self._ocsp_prefetch_backup_db()
 
         try:
-            self._reload()
-        except  errors.MisconfigurationError:
+            # Ignored because of issues with multiple class inheritance method
+            # resolution https://github.com/python/mypy/issues/4335
+            super(OCSPPrefetchMixin, self).restart()  # type: ignore
+        except errors.MisconfigurationError:
             self._ocsp_prefetch_restore_db()
             raise
 
