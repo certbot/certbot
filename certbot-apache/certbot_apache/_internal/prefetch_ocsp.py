@@ -22,9 +22,9 @@ class OCSPPrefetchMixin(object):
     def __init__(self, *args, **kwargs):
         self._ocsp_prefetch = {}  # type: Dict[str, str]
         self._ocsp_dbm_bsddb = False
-        # This is required because of python super() call chain
-        # mypy isn't able to figure the chain out and needs to be
-        # disabled for this line.
+        # This is required because of python super() call chain.
+        # Additionally, mypy isn't able to figure the chain out and needs to be
+        # disabled for this line. See https://github.com/python/mypy/issues/5887
         super(OCSPPrefetchMixin, self).__init__(*args, **kwargs)  # type: ignore
 
     def _ensure_ocsp_dirs(self):
