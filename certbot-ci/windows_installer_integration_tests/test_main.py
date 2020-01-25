@@ -22,16 +22,16 @@ def test_it(request):
         assert 'certbot 1.' in output, 'Flag --version does not output a version.'
 
         # Assert renew task is installed and ready
-        output = _ps('(Get-ScheduledTask -TaskName "Certbot Renew & Auto-Update Task").State', capture_stdout=True)
+        output = _ps('(Get-ScheduledTask -TaskName "Certbot Renew Task").State', capture_stdout=True)
         assert output.strip() == 'Ready'
 
         # Assert renew task is working
         now = time.time()
-        _ps('Start-ScheduledTask -TaskName "Certbot Renew & Auto-Update Task"')
+        _ps('Start-ScheduledTask -TaskName "Certbot Renew Task"')
 
         status = 'Running'
         while status != 'Ready':
-            status = _ps('(Get-ScheduledTask -TaskName "Certbot Renew & Auto-Update Task").State', capture_stdout=True).strip()
+            status = _ps('(Get-ScheduledTask -TaskName "Certbot Renew Task").State', capture_stdout=True).strip()
             time.sleep(1)
 
         log_path = os.path.join('C:\\', 'Certbot', 'log', 'letsencrypt.log')
