@@ -115,7 +115,7 @@ class OCSPPrefetchMixin(object):
             self.config.work_dir, "ocsp",
             apache_util.certid_sha1_hex(cert_path))
         handler = ocsp.RevocationChecker()
-        if not handler.revoked(cert_path, chain_path, ocsp_workfile):
+        if not handler.ocsp_revoked_cert(cert_path, chain_path, ocsp_workfile):
             # Guaranteed good response
             cache_path = os.path.join(self.config.config_dir, "ocsp", "ocsp_cache")
             # dbm.open automatically adds the file extension, it will be

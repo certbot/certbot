@@ -65,21 +65,14 @@ class RevocationChecker(object):
         .. todo:: Make this a non-blocking call
 
         :param `.storage.RenewableCert` cert: Certificate object
+
         :returns: True if revoked; False if valid or the check failed or cert is expired.
         :rtype: bool
 
         """
-        cert_path, chain_path = cert.cert, cert.chain
+        return self.ocsp_revoked_cert(cert.cert, cert.chain)
 
-        # Let's Encrypt doesn't update OCSP for expired certificates,
-        # so don't check OCSP if the cert is expired.
-        # https://github.com/certbot/certbot/issues/7152
-        now = pytz.UTC.fromutc(datetime.utcnow())
-        if cert.target_expiry <= now:
-            return False
-        return self.revoked(cert_path, chain_path)
-
-    def revoked(self, cert_path, chain_path, response_file=None):
+    def ocsp_revoked_cert(self, cert_path, chain_path, response_file=None):
         # type: (str, str, Optional[str]) -> bool
         """Performs the OCSP revocation check
 
@@ -89,6 +82,13 @@ class RevocationChecker(object):
         :returns: True if revoked; False if valid or the check failed or cert is expired.
         :rtype: bool
         """
+
+        # Let's Encrypt doesn't update OCSP for expired certificates,
+        # so don't check OCSP if the cert is expired.
+        # https://github.com/certbot/certbot/issues/7152
+        now = pytz.UTC.fromutc(datetime.utcnow())
+        if crypto_util.notAfter(cert_path) <= now:
+            return False
 
         if self.broken:
             return False
