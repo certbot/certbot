@@ -171,8 +171,16 @@ class ACMEServer(object):
         process.wait()
 
         # Allow Boulder to ignore usual limit rate policies, useful for tests.
-        os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
-                  join(instance_path, 'test/rate-limit-policies.yml'))
+        # os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
+        #           join(instance_path, 'test/rate-limit-policies.yml'))
+
+        if self._dns_server:
+            # Change Boulder config to use the provided DNS server
+            with open(join(instance_path, 'test/config/va.json'), 'r') as file_h:
+                config = json.loads(file_h.read())
+            config['va']['dnsResolvers'] = [self._dns_server]
+            with open(join(instance_path, 'test/config/va.json'), 'w') as file_h:
+                file_h.write(json.dumps(config, indent=2, separators=(',', ': ')))
 
         # Launch the Boulder server
         self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
@@ -181,10 +189,11 @@ class ACMEServer(object):
         print('=> Waiting for boulder instance to respond...')
         misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=240)
 
-        # Configure challtestsrv to answer any A record request with ip of the docker host.
-        response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),
-                                 json={'ip': '10.77.77.1'})
-        response.raise_for_status()
+        if not self._dns_server:
+            # Configure challtestsrv to answer any A record request with ip of the docker host.
+            response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),
+                                     json={'ip': '10.77.77.1'})
+            response.raise_for_status()
 
         print('=> Finished boulder instance deployment.')
 
@@ -218,10 +227,6 @@ def main():
                              'Pebble; if not specified, a local mock DNS server will be used to '
                              'resolve domains to localhost.')
     args = parser.parse_args()
-
-    if args.server_type != 'pebble' and args.dns_server:
-        raise RuntimeError('Error, `--dns-server`/`-d` flags can be used only with '
-                           '`pebble` server type.')
 
     acme_server = ACMEServer(args.server_type, [], http_proxy=False, stdout=True, dns_server=args.dns_server)
 
