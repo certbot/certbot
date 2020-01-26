@@ -5,6 +5,7 @@ import logging
 import re
 import shutil
 import stat
+import sys
 
 import configobj
 import parsedatetime
@@ -948,13 +949,13 @@ class RenewableCert(interfaces.RenewableCert):
             expiry = crypto_util.notAfter(self.version(
                 "cert", self.latest_common_version()))
             now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-            if expiry < add_time_interval(now, "30 days"):
+            interactive_renewal = sys.stdin.isatty()
+            if interactive_renewal:
                 logger.warning("Consider automating certificate renewal. "
                                "If you already have renewal automated, "
                                "it may be misconfigured as Certbot attempts "
                                "to renew a certificate when it is valid for "
-                               "less than 30 more days and this certificate "
-                               "is valid for less than 30 more days.")
+                               "less than 30 by default.")
             if expiry < add_time_interval(now, interval):
                 logger.debug("Should renew, less than %s before certificate "
                              "expiry %s.", interval,
