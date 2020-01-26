@@ -127,6 +127,29 @@ class OCSPPrefetchMixin(object):
             logger.warning("Encountered an issue while trying to prefetch OCSP "
                            "response for certificate: %s", cert_path)
 
+    def _ocsp_ttl(self, next_update):
+        """Calculates Apache internal TTL for the next OCSP staple
+        update.
+
+        The resulting TTL is half of the time between now
+        and the time noted by nextUpdate field in OCSP response.
+
+        If nextUpdate value is None, a default value will be
+        used instead.
+
+        :param next_update: datetime value for nextUpdate or None
+
+        :returns: TTL in seconds.
+        :rtype: int
+        """
+
+        if next_update:
+            now = time.time()
+            res_ttl = int(next_update.total_seconds() - now)
+            if res_ttl > 0:
+                return res_ttl/2
+        return constants.OCSP_APACHE_TTL
+
     def _ocsp_response_dbm(self, workfile):
         """Creates a dbm entry for OCSP response data
 
@@ -137,9 +160,12 @@ class OCSPPrefetchMixin(object):
 
         """
 
+        handler = ocsp.RevocationChecker()
+        _, _, next_update = handler.ocsp_times(workfile)
+        ttl = self._ocsp_ttl(next_update)
+
         with open(workfile, 'rb') as fh:
             response = fh.read()
-        ttl = constants.OCSP_APACHE_TTL
         return apache_util.get_apache_ocsp_struct(ttl, response)
 
     def _ocsp_prefetch_save(self, cert_path, chain_path):

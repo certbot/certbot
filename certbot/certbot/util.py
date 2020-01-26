@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 import configargparse
+from dateutil import parser
 import six
 
 from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
@@ -598,3 +599,18 @@ def atexit_register(func, *args, **kwargs):
 def _atexit_call(func, *args, **kwargs):
     if _INITIAL_PID == os.getpid():
         func(*args, **kwargs)
+
+
+def parse_datetime(dt_string):
+    """
+    Parses a string to datetime, ignoring timezone.
+
+    :param str dt_string: String representation of date and time
+
+    :returns: datetime representation of time
+    :rtype: datetime.datetime or None
+    """
+    try:
+        return parser.parse(dt_string, ignoretz=True)
+    except ValueError:
+        return None

@@ -100,6 +100,46 @@ class RevocationChecker(object):
             return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, response_file)
         return _check_ocsp_cryptography(cert_path, chain_path, url, response_file)
 
+    def ocsp_times(self, response_file):
+        """
+        Reads OCSP response file and returns producedAt, thisUpdate
+        and nextUpdate values in datetime format.
+
+        :param str response_file: File path to OCSP response
+
+        :returns: tuple of producedAt, thisUpdate and nextUpdate values
+        :rtype: tuple of datetime
+        """
+
+        if self.use_openssl_binary:
+            return self._ocsp_times_openssl_bin(response_file)
+        return _ocsp_times_cryptography(response_file)
+
+    def _ocsp_times_openssl_bin(self, response_file):
+        """
+        Reads OCSP response file using OpenSSL binary and returns
+        producedAt, thisUpdate and nextUpdate values in datetime format.
+
+        :param str response_file: File path to OCSP response
+
+        :returns: tuple of producedAt, thisUpdate and nextUpdate values
+        :rtype: tuple of datetime
+        """
+        cmd = ["openssl", "ocsp", "-resp_text", "-noverify", "-respin", response_file]
+        logger.debug("Reading OCSP response from temp file: %s", response_file)
+        logger.debug(" ".join(cmd))
+        try:
+            output, err = util.run_script(cmd, log=logger.debug)
+        except errors.SubprocessError:
+            logger.info("Reading OCSP response from file failed.")
+            return None, None, None
+
+        prod_str, this_str, next_str = _translate_ocsp_response_times(output)
+        prod_dt = util.parse_datetime(prod_str)
+        this_dt = util.parse_datetime(this_str)
+        next_dt = util.parse_datetime(next_str)
+        return prod_dt, this_dt, next_dt
+
     def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, response_file=None):
         # type: (str, str, str, str, Optional[str]) -> bool
         # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
@@ -153,6 +193,24 @@ def _determine_ocsp_server(cert_path):
         return url, host
     logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
     return None, None
+
+
+def _ocsp_times_cryptography(response_file):
+    """
+    Reads OCSP response using cryptography and returns producedAt,
+    thisUpdate and nextUpdate values in datetime format.
+
+    :param str response_file: File path to OCSP response
+
+    :returns: tuple of producedAt, thisUpdate and nextUpdate values
+    :rtype: tuple of datetime
+    """
+
+    with open(response_file, 'rb') as fh:
+        raw_response = fh.read()
+
+    response = ocsp.load_der_ocsp_response(raw_response)
+    return response.produced_at, response.this_update, response.next_update
 
 
 def _check_ocsp_cryptography(cert_path, chain_path, url, response_file=None):
@@ -315,3 +373,37 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
         logger.warning("Unable to properly parse OCSP output: %s\nstderr:%s",
                     ocsp_output, ocsp_errors)
         return False
+
+
+def _translate_ocsp_response_times(response):
+    """
+    Parse openssl OCSP response output and return producedAt,
+    thisUpdate and nextUpdate values.
+
+    :param str response: OpenSSL OCSP response output
+
+    :returns: tuple of producedAt, thisUpdate and nextUpdate values
+    :rtype: tuple of str
+    """
+
+    prod_pattern = "Produced At: (.+)$"
+    this_pattern = "This Update: (.+)$"
+    next_pattern = "Next Update: (.+)$"
+
+    prod_date = ""
+    this_date = ""
+    next_date = ""
+
+    prod_match = re.search(prod_pattern, response, flags=re.MULTILINE)
+    if prod_match:
+        prod_date = prod_match.group(1)
+
+    this_match = re.search(this_pattern, response, flags=re.MULTILINE)
+    if this_match:
+        this_date = this_match.group(1)
+
+    next_match = re.search(next_pattern, response, flags=re.MULTILINE)
+    if next_match:
+        next_date = next_match.group(1)
+
+    return prod_date, this_date, next_date
