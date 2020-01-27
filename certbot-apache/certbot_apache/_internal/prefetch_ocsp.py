@@ -145,7 +145,7 @@ class OCSPPrefetchMixin(object):
 
         if next_update:
             now = time.time()
-            res_ttl = int(next_update.total_seconds() - now)
+            res_ttl = int(time.mktime(next_update.timetuple()) - now)
             if res_ttl > 0:
                 return res_ttl/2
         return constants.OCSP_APACHE_TTL

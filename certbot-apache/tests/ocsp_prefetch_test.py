@@ -1,5 +1,7 @@
 """Test for certbot_apache._internal.configurator OCSP Prefetching functionality"""
 import base64
+from datetime import datetime
+from datetime import timedelta
 import json
 import unittest
 import sys
@@ -14,7 +16,6 @@ from certbot import errors
 
 from certbot.compat import os
 import util
-
 
 
 class MockDBM(object):
@@ -178,10 +179,15 @@ class OCSPPrefetchTest(util.ApacheTest):
                 fh.write("MOCKRESPONSE")
             return False
 
-        ocsp_path = "certbot._internal.ocsp.RevocationChecker.revoked"
+        ocsp_path = "certbot._internal.ocsp.RevocationChecker.ocsp_revoked_cert"
         with mock.patch(ocsp_path, side_effect=ocsp_req_mock):
-            self.call_mocked_py2(self.config.enable_ocsp_prefetch,
-                                 self.lineage, ["ocspvhost.com"])
+            with mock.patch('certbot._internal.ocsp.RevocationChecker.ocsp_times') as mock_times:
+                produced_at = datetime.today() - timedelta(days=1)
+                this_update = datetime.today() - timedelta(days=2)
+                next_update = datetime.today() + timedelta(days=2)
+                mock_times.return_value = produced_at, this_update, next_update
+                self.call_mocked_py2(self.config.enable_ocsp_prefetch,
+                                     self.lineage, ["ocspvhost.com"])
         odbm = self.config._ocsp_dbm_open(self.db_path)
         self.assertEqual(len(odbm.keys()), 1)
         # The actual response data is prepended by Apache timestamp
@@ -189,8 +195,13 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.config._ocsp_dbm_close(odbm)
 
         with mock.patch(ocsp_path, side_effect=ocsp_req_mock) as mock_ocsp:
-            self.call_mocked_py2(self.config.update_ocsp_prefetch, None)
-            self.assertTrue(mock_ocsp.called)
+            with mock.patch('certbot._internal.ocsp.RevocationChecker.ocsp_times') as mock_times:
+                produced_at = datetime.today() - timedelta(days=1)
+                this_update = datetime.today() - timedelta(days=2)
+                next_update = datetime.today() + timedelta(days=2)
+                mock_times.return_value = produced_at, this_update, next_update
+                self.call_mocked_py2(self.config.update_ocsp_prefetch, None)
+                self.assertTrue(mock_ocsp.called)
 
     def test_ocsp_prefetch_refresh_noop(self):
         def ocsp_req_mock(_cert, _chain, workfile):
@@ -199,7 +210,7 @@ class OCSPPrefetchTest(util.ApacheTest):
                 fh.write("MOCKRESPONSE")
             return True
 
-        ocsp_path = "certbot._internal.ocsp.RevocationChecker.revoked"
+        ocsp_path = "certbot._internal.ocsp.RevocationChecker.ocsp_revoked_cert"
         with mock.patch(ocsp_path, side_effect=ocsp_req_mock):
             self.call_mocked_py2(self.config.enable_ocsp_prefetch,
                                  self.lineage, ["ocspvhost.com"])
@@ -250,7 +261,7 @@ class OCSPPrefetchTest(util.ApacheTest):
 
     @mock.patch("certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin.restart")
     def test_ocsp_prefetch_refresh_fail(self, _mock_restart):
-        ocsp_path = "certbot._internal.ocsp.RevocationChecker.revoked"
+        ocsp_path = "certbot._internal.ocsp.RevocationChecker.ocsp_revoked_cert"
         log_path = "certbot_apache._internal.prefetch_ocsp.logger.warning"
         with mock.patch(ocsp_path) as mock_ocsp:
             mock_ocsp.return_value = True
@@ -327,6 +338,15 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.call_mocked_py3(self.config._ocsp_dbm_close, db)
         db2 = self.call_mocked_py3(self.config._ocsp_dbm_open, self.db_path)
         self.assertEqual(db2[b'key'], expected_val)
+
+    @mock.patch("certbot_apache._internal.constants.OCSP_APACHE_TTL", 1234)
+    def test_ttl(self):
+        self.assertEqual(self.config._ocsp_ttl(None), 1234)
+        next_update = datetime.today() + timedelta(days=6)
+        ttl = self.config._ocsp_ttl(next_update)
+        # ttl should be roughly 3 days
+        self.assertTrue(ttl > 86400*2)
+        self.assertTrue(ttl < 86400*4)
 
     @mock.patch("certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin._ocsp_prefetch_fetch_state")
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.config_test")

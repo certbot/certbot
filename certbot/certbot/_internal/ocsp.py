@@ -21,6 +21,7 @@ from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
+from certbot._internal.storage import RenewableCert  # pylint: disable=unused-import
 
 try:
     # Only cryptography>=2.5 has ocsp module
@@ -99,14 +100,16 @@ class RevocationChecker(object):
         return _check_ocsp_cryptography(cert_path, chain_path, url, response_file)
 
     def ocsp_times(self, response_file):
+        # type: (str) -> Tuple[Optional[datetime], Optional[datetime], Optional[datetime]]
         """
         Reads OCSP response file and returns producedAt, thisUpdate
-        and nextUpdate values in datetime format.
+        and nextUpdate values in datetime format, or None if an error
+        occures.
 
         :param str response_file: File path to OCSP response
 
         :returns: tuple of producedAt, thisUpdate and nextUpdate values
-        :rtype: tuple of datetime
+        :rtype: tuple of datetime or None
         """
 
         if self.use_openssl_binary:
@@ -169,6 +172,7 @@ def _determine_ocsp_server(cert_path):
 
 
 def _ocsp_times_openssl_bin(response_file):
+    # type: (str) -> Tuple[Optional[datetime], Optional[datetime], Optional[datetime]]
     """
     Reads OCSP response file using OpenSSL binary and returns
     producedAt, thisUpdate and nextUpdate values in datetime format.
@@ -182,7 +186,7 @@ def _ocsp_times_openssl_bin(response_file):
     logger.debug("Reading OCSP response from temp file: %s", response_file)
     logger.debug(" ".join(cmd))
     try:
-        output, err = util.run_script(cmd, log=logger.debug)
+        output, _ = util.run_script(cmd, log=logger.debug)
     except errors.SubprocessError:
         logger.info("Reading OCSP response from file failed.")
         return None, None, None
@@ -195,6 +199,7 @@ def _ocsp_times_openssl_bin(response_file):
 
 
 def _ocsp_times_cryptography(response_file):
+    # type: (str) -> Tuple[Optional[datetime], Optional[datetime], Optional[datetime]]
     """
     Reads OCSP response using cryptography and returns producedAt,
     thisUpdate and nextUpdate values in datetime format, or None
@@ -379,6 +384,7 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
 
 
 def _translate_ocsp_response_times(response):
+    # type: (str) -> Tuple[str, str, str]
     """
     Parse openssl OCSP response output and return producedAt,
     thisUpdate and nextUpdate values.
