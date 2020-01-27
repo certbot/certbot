@@ -78,6 +78,7 @@ class DigitalOceanClientTest(unittest.TestCase):
         self.digitalocean_client.add_txt_record(DOMAIN, self.record_name, self.record_content)
 
         domain_mock.create_new_domain_record.assert_called_with(type='TXT',
+                                                                ttl=30,
                                                                 name=self.record_prefix,
                                                                 data=self.record_content)
 

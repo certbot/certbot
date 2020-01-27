@@ -70,6 +70,7 @@ Authors
 * [Dominic Cleal](https://github.com/domcleal)
 * [Dominic Lüchinger](https://github.com/dol)
 * [Douglas José](https://github.com/douglasjose)
+* [D. Scott Boggs](https://github.com/dscottboggs)
 * [Erica Portnoy](https://github.com/ohemorange)
 * [Eric Engestrom](https://github.com/1ace)
 * [Eric Rescorla](https://github.com/ekr)

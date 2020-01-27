@@ -7,6 +7,7 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
+from certbot.compat.os import environ
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,10 @@ class _DigitalOceanClient(object):
     Encapsulates all communication with the DigitalOcean API.
     """
 
+    # https://developers.digitalocean.com/documentation/changelog/api-v2/update-domain-record-ttl/
+    MINIUMUM_ALLOWED_TTL = 30
+    TTL = environ.get("DIGITALOCEAN_TTL", MINIUMUM_ALLOWED_TTL)
+
     def __init__(self, token):
         self.manager = digitalocean.Manager(token=token)
 
@@ -88,6 +93,7 @@ class _DigitalOceanClient(object):
             result = domain.create_new_domain_record(
                 type='TXT',
                 name=self._compute_record_name(domain, record_name),
+                ttl=self.TTL,
                 data=record_content)
 
             record_id = result['domain_record']['id']
