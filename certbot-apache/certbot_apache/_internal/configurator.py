@@ -371,9 +371,9 @@ class ApacheConfigurator(common.Installer):
         """Initializes the ParserNode parser root instance."""
 
         apache_vars = dict()
-        apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
-        apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
-        apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
+        apache_vars["defines"] = set(apache_util.parse_defines(self.option("ctl")))
+        apache_vars["includes"] = set(apache_util.parse_includes(self.option("ctl")))
+        apache_vars["modules"] = set(apache_util.parse_modules(self.option("ctl")))
         metadata["apache_vars"] = apache_vars
 
         with apacheconfig.make_loader(writable=True,
