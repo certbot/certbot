@@ -18,7 +18,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         ast_mock = mock.MagicMock()
         ast_mock.__iter__.return_value = iter([])
         self.metadata = {"augeasparser": parser_mock,
-                         "augeaspath": "/invalid", "ac_ast": ast_mock}
+                         "augeaspath": "/invalid", "ac_ast": ast_mock,
+                         "apache_vars": { "modules": set(), "defines": set(), "includes": set(), }}
         self.block = dualparser.DualBlockNode(name="block",
                                               ancestor=None,
                                               filepath="/tmp/something",

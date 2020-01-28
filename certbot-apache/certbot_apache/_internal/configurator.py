@@ -265,7 +265,6 @@ class ApacheConfigurator(common.Installer):
         # Set up ParserNode root
         pn_meta = {"augeasparser": self.parser,
                    "augeaspath": self.parser.get_root_augpath(),
-                   # TODO (mona): audit the use of serverroot here
                    "serverroot": self.option("server_root"),
                    "ac_ast": None}
         if self.USE_PARSERNODE and HAS_APACHECONFIG:

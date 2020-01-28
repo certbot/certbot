@@ -110,6 +110,31 @@ class ParserNodeUtilTest(unittest.TestCase):
         p_params.pop("filepath")
         self.assertRaises(TypeError, util.parsernode_kwargs, p_params)
 
+    def test_parameters_from_string(self):
+        test_cases = [
+            # Whitespace between tokens is usually ignored
+            ("one two", ("one", "two")),
+            ("\t\none \n\ntwo \t", ("one", "two")),
+            # Quotes preserve whitespace
+            ("one 'param\ttwo'", ("one", "param\ttwo")),
+            ("\t  one \t\n ' param\t2\t'\n", ("one", " param\t2\t")),
+            # Empty/edge cases
+            ("one '' ", ("one", "")),
+            ("one", ("one",)),
+            ("\t\n ", ()),
+            ("", ()),
+            # End-quote can be escaped
+            ("one ' \\'two'", ("one", " 'two")),
+            ("one \" \\\"two\"", ("one", " \"two")),
+            # Escapes are escaped within quotes
+            ("one 'two\\\\ '", ("one", "two\\ ")),
+            # Unmatched quotations
+            ("one 'two ", ("one", "'two ")),
+            ("one 'two\" ", ("one", "'two\" ")),
+        ]
+        for text, expected in test_cases:
+            self.assertEqual(util.parameters_from_string(text), expected)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

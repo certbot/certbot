@@ -130,10 +130,26 @@ def directivenode_kwargs(kwargs):
 
 
 def parameters_from_string(text):
-    # TODO (mona) document this function
-    text = text.strip()
+    """Transforms a whitespace-separated string of parameters into a tuple of strings.
+
+    Ignores all whitespace outside quotations (matched single quotes or double quotes)
+    e.g. "parameter1 'parameter two'" => ("parameter1", "parameter two")
+    Mirrors parsing code in apache/httpd.
+
+    ap_getword_conf procedure for retrieving next token from a line:
+    https://github.com/apache/httpd/blob/5515e790adba6414c35ac19f8b6ffa0d7fc0051d/server/util.c#L787
+
+    substring_conf procedure for retrieving text between quotes:
+    https://github.com/apache/httpd/blob/5515e790adba6414c35ac19f8b6ffa0d7fc0051d/server/util.c#L759
+
+    :param str text: whitespace-separated string of apache arguments
+
+    :returns Tuple of strings extracted as parameters from text
+    """
+    text = text.lstrip()
     words = []
     word = ""
+    escape = False
     quote = None
     for c in text:
         if c.isspace() and not quote:
@@ -144,10 +160,12 @@ def parameters_from_string(text):
             word += c
         if not quote and c in "\"\'":
             quote = c
-        elif c == quote:
-            words.append(word[1:-1])
+        elif c == quote and not escape:
+            words.append(word[1:-1].replace("\\\\", "\\")
+                                   .replace("\\" + quote, quote))
             word = ""
             quote = None
+        escape = not escape and c == "\\"
     if word:
         words.append(word)
     return tuple(words)

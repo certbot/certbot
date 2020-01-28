@@ -2,23 +2,13 @@
 
 import glob
 
-from certbot import errors
+from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
+
 from certbot.compat import os
 
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
 from certbot_apache._internal import parsernode_util as util
-
-
-def _load_file(filename, metadata):
-    with open(filename) as f:
-        ast = metadata['loader'].loads(f.read())
-    metadata = metadata.copy()
-    metadata['ac_ast'] = ast
-    return ApacheBlockNode(name=assertions.PASS,
-                           ancestor=None,
-                           filepath=filename,
-                           metadata=metadata)
 
 
 class ApacheParserNode(interfaces.ParserNode):
@@ -66,6 +56,18 @@ class ApacheCommentNode(ApacheParserNode):
                     self.filepath == other.filepath)
         return False
 
+
+def _load_included_file(filename, metadata):
+    with open(filename) as f:
+        ast = metadata['loader'].loads(f.read())
+    metadata = metadata.copy()
+    metadata['ac_ast'] = ast
+    return ApacheBlockNode(name=assertions.PASS,
+                           ancestor=None,
+                           filepath=filename,
+                           metadata=metadata)
+
+
 class ApacheDirectiveNode(ApacheParserNode):
     """ apacheconfig implementation of DirectiveNode interface """
 
@@ -77,7 +79,7 @@ class ApacheDirectiveNode(ApacheParserNode):
         self.enabled = enabled
         self.include = None
 
-        # Loadmodule processing
+        # LoadModule processing
         if self.name and self.name.lower() in ["loadmodule"]:
             mod_name, mod_filename = self.parameters
             self.metadata["apache_vars"]["modules"].add(mod_name)
@@ -88,12 +90,10 @@ class ApacheDirectiveNode(ApacheParserNode):
         if self.name and self.name.lower() in ["include", "includeoptional"]:
             value = self.parameters[0]
             path = os.path.join(self.metadata['serverroot'], value)
-            if os.path.isdir(path):
-                path += "/*"                    # TODO (mona): test
             filepaths = glob.glob(path)
             for filepath in filepaths:
                 if filepath not in self.metadata['parsed_files']:
-                    node = _load_file(filepath, self.metadata)
+                    node = _load_included_file(filepath, self.metadata)
                     self.metadata['parsed_files'][filepath] = node
             self.include = set(filepaths)
 
@@ -114,7 +114,42 @@ class ApacheDirectiveNode(ApacheParserNode):
         self._raw.value = tuple(" ".join(_parameters))
 
 
-def _pass_filter(block_node, apache_vars):
+def _recursive_generator(node, exclude=True, files_visited=None):
+    """Recursive generator over all children of given block node, expanding includes.
+
+    :param ApacheBlockNode node: node whose children will be yielded by this generator
+    :param bool exclude: If True, excludes nodes disabled by conditional blocks like
+        IfDefine and IfModule.
+    :param dict files_visited: bookkeeping dict for recursion to ensure we don't visit
+        the same file twice (to avoid double-counting nodes)
+    """
+    if not files_visited:
+        files_visited = set([node.filepath])
+    for child in node.children:
+        yield child
+        if isinstance(child, ApacheBlockNode):
+            if not exclude or child.enabled:
+                for subchild in _recursive_generator(child, exclude, files_visited):
+                    yield subchild
+        if isinstance(child, ApacheDirectiveNode) and child.include:
+            for filename in child.include:
+                if filename not in files_visited:
+                    files_visited.add(filename)
+                    file_ast = node.metadata['parsed_files'][filename]
+                    for subchild in _recursive_generator(file_ast, exclude, files_visited):
+                        yield subchild
+
+
+def _is_enabled(block_node, apache_vars):
+    """Returns False if this block disables its children given loaded Apache data.
+
+    Checks to see whether this block_node is a conditional IfDefine or IfModule,
+    and returns what its argument evaluates to.
+
+    :param ApacheBlockNode block_node: block node to check.
+    :param dict apache_vars: dict that includes set of loaded modules and variables, under keys
+        "modules" and "defines", respectively.
+    """
     filters = {
         "ifdefine": apache_vars["defines"],
         "ifmodule": apache_vars["modules"]
@@ -128,25 +163,6 @@ def _pass_filter(block_node, apache_vars):
     loaded = (name in loaded_set)
     return expect_loaded == loaded
 
-def _recursive_generator(node, apache_vars, exclude=True, files_visited=None):
-    # iterator through children, and recursively expands through blocks and includes
-    if not files_visited:
-        files_visited = set([node.filepath])
-    for child in node.children:
-        yield child
-        if isinstance(child, ApacheBlockNode):
-            if not exclude or _pass_filter(child, apache_vars):
-                for subchild in _recursive_generator(child, apache_vars, exclude, files_visited):
-                    yield subchild
-        if isinstance(child, ApacheDirectiveNode) and child.include:
-            for filename in child.include:
-                if filename not in files_visited:
-                    files_visited.add(filename)
-                    file_ast = node.metadata['parsed_files'][filename]
-                    for subchild in _recursive_generator(file_ast, apache_vars,
-                                                         exclude, files_visited):
-                        yield subchild
-
 
 class ApacheBlockNode(ApacheDirectiveNode):
     """ apacheconfig implementation of BlockNode interface """
@@ -156,28 +172,23 @@ class ApacheBlockNode(ApacheDirectiveNode):
         self._raw_children = self._raw
         children = []
 
-        if self.name and self.name.lower() == "ifmodule":
-            module_name = self.parameters[0]
-            expect_loaded = not module_name.startswith("!")
-            module_name = module_name.lstrip("!")
-            loaded = (module_name in self.metadata["apache_vars"]["modules"])
-            self.enabled = self.enabled and expect_loaded == loaded
-
+        self.enabled = self.enabled and _is_enabled(self, self.metadata["apache_vars"])
         for raw_node in self._raw_children:
+            node = None  # type: Optional[ApacheParserNode]
             metadata = self.metadata.copy()
             metadata['ac_ast'] = raw_node
             if raw_node.typestring == "comment":
                 node = ApacheCommentNode(comment=raw_node.name[2:],
                                          metadata=metadata, ancestor=self,
                                          filepath=self.filepath)
-            elif raw_node.typestring == "block":  # TODO (mona) mypy annotations
+            elif raw_node.typestring == "block":
                 parameters = util.parameters_from_string(raw_node.arguments)
                 node = ApacheBlockNode(name=raw_node.tag, parameters=parameters,
                                        metadata=metadata, ancestor=self,
                                        filepath=self.filepath, enabled=self.enabled)
             else:
                 parameters = ()
-                if raw_node.value:  # TODO (mona) mypy annotations
+                if raw_node.value:
                     parameters = util.parameters_from_string(raw_node.value)
                 node = ApacheDirectiveNode(name=raw_node.name, parameters=parameters,
                                            metadata=metadata, ancestor=self,
@@ -185,7 +196,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
             children.append(node)
         self.children = tuple(children)
 
-    def __eq__(self, other):  # TODO (mona): test
+    def __eq__(self, other):  # pragma: no cover
         if isinstance(other, self.__class__):
             return (self.name == other.name and
                     self.filepath == other.filepath and
@@ -228,11 +239,10 @@ class ApacheBlockNode(ApacheDirectiveNode):
         self.children += (new_comment,)
         return new_comment
 
-    # TODO: Implement exclude
     def find_blocks(self, name, exclude=True): # pylint: disable=unused-argument
         """Recursive search of BlockNodes from the sequence of children"""
         blocks = []
-        for child in _recursive_generator(self, self.metadata["apache_vars"], exclude=exclude):
+        for child in _recursive_generator(self, exclude=exclude):
             if isinstance(child, ApacheBlockNode) and child.name.lower() == name.lower():
                 blocks.append(child)
         return blocks
@@ -240,16 +250,15 @@ class ApacheBlockNode(ApacheDirectiveNode):
     def find_directives(self, name, exclude=True): # pylint: disable=unused-argument
         """Recursive search of DirectiveNodes from the sequence of children"""
         directives = []
-        for child in _recursive_generator(self, self.metadata["apache_vars"], exclude=exclude):
+        for child in _recursive_generator(self, exclude=exclude):
             if isinstance(child, ApacheDirectiveNode) and child.name.lower() == name.lower():
                 directives.append(child)
         return directives
 
-    def find_comments(self, comment, exact=True): # pylint: disable=unused-argument
+    def find_comments(self, comment): # pylint: disable=unused-argument
         """Recursive search of DirectiveNodes from the sequence of children"""
         comments = []
-        for child in _recursive_generator(self, self.metadata["apache_vars"]):
-            # TODO: Is this the correct metric for matching comments?
+        for child in _recursive_generator(self):
             if isinstance(child, ApacheCommentNode) and comment in child.comment:
                 comments.append(child)
         return comments
