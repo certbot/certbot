@@ -677,7 +677,6 @@ class ApacheParser(object):
             and their values.
         """
 
-
         includes = self.find_dir("Include", start="/files")
         includes += self.find_dir("IncludeOptional", start="/files")
         inc_dict = dict()
