@@ -1008,7 +1008,7 @@ class NginxConfigurator(common.Installer):
             matches = re.findall(r"built with OpenSSL ([^ ]+) ", text)
             if not matches:
                 logger.warning("NGINX configured with OpenSSL alternatives is not officially"
-                    "supported by Certbot.")
+                    " supported by Certbot.")
                 return ""
         return matches[0]
 
