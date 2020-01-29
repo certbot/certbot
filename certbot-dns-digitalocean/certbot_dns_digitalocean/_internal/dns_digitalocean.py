@@ -73,7 +73,7 @@ class _DigitalOceanClient(object):
         """
 
         try:
-            domain = self._find_domain(domain_name)
+            domain = self._find_domain(record_name)
         except digitalocean.Error as e:
             hint = None
 
@@ -113,7 +113,7 @@ class _DigitalOceanClient(object):
         """
 
         try:
-            domain = self._find_domain(domain_name)
+            domain = self._find_domain(record_name)
         except digitalocean.Error as e:
             logger.debug('Error finding domain using the DigitalOcean API: %s', e)
             return
@@ -165,4 +165,4 @@ class _DigitalOceanClient(object):
     @staticmethod
     def _compute_record_name(domain, full_record_name):
         # The domain, from DigitalOcean's point of view, is automatically appended.
-        return full_record_name.rpartition("." + domain.name)[0]
+        return full_record_name.rpartition("." + domain.name)[0] or "@"

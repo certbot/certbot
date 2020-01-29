@@ -10,6 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   determine the OCSP status of certificates.
 * Don't verify the existing certificate in HTTP01Response.simple_verify, for 
   compatibility with the real-world ACME challenge checks.
+* Added support for \_acme-challenge as a DNS zone apex.
 
 ### Changed
 

@@ -110,7 +110,7 @@ class _GoogleClient(object):
         :raises certbot.errors.PluginError: if an error occurs communicating with the Google API
         """
 
-        zone_id = self._find_managed_zone_id(domain)
+        zone_id = self._find_managed_zone_id(record_name)
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
         if record_contents is None:
@@ -177,7 +177,7 @@ class _GoogleClient(object):
         """
 
         try:
-            zone_id = self._find_managed_zone_id(domain)
+            zone_id = self._find_managed_zone_id(record_name)
         except errors.PluginError as e:
             logger.warning('Error finding zone. Skipping cleanup.')
             return

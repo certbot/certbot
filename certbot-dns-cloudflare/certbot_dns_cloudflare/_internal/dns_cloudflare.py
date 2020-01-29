@@ -104,7 +104,7 @@ class _CloudflareClient(object):
         :raises certbot.errors.PluginError: if an error occurs communicating with the Cloudflare API
         """
 
-        zone_id = self._find_zone_id(domain)
+        zone_id = self._find_zone_id(record_name)
 
         data = {'type': 'TXT',
                 'name': record_name,
@@ -143,7 +143,7 @@ class _CloudflareClient(object):
         """
 
         try:
-            zone_id = self._find_zone_id(domain)
+            zone_id = self._find_zone_id(record_name)
         except errors.PluginError as e:
             logger.debug('Encountered error finding zone_id during deletion: %s', e)
             return

@@ -40,7 +40,7 @@ class LexiconClient(object):
         :param str record_content: The record content (typically the challenge validation).
         :raises errors.PluginError: if an error occurs communicating with the DNS Provider API
         """
-        self._find_domain_id(domain)
+        self._find_domain_id(record_name)
 
         try:
             self.provider.create_record(type='TXT', name=record_name, content=record_content)
@@ -58,7 +58,7 @@ class LexiconClient(object):
         :raises errors.PluginError: if an error occurs communicating with the DNS Provider  API
         """
         try:
-            self._find_domain_id(domain)
+            self._find_domain_id(record_name)
         except errors.PluginError as e:
             logger.debug('Encountered error finding domain_id during deletion: %s', e,
                          exc_info=True)
