@@ -39,8 +39,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 
 
 class GehirnLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
-    DOMAIN_NOT_FOUND = HTTPError('404 Client Error: Not Found for url: {0}.'.format(DOMAIN))
-    LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: {0}.'.format(DOMAIN))
+    DOMAIN_NOT_FOUND = HTTPError('404 Client Error: Not Found for url: _acme-challenge.{0}.'.format(DOMAIN))
+    LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: _acme-challenge.{0}.'.format(DOMAIN))
 
     def setUp(self):
         from certbot_dns_gehirn._internal.dns_gehirn import _GehirnLexiconClient
