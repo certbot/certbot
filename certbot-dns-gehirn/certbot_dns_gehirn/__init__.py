@@ -1,14 +1,14 @@
 """
 The `~certbot_dns_gehirn.dns_gehirn` plugin automates the process of completing
 a ``dns-01`` challenge (`~acme.challenges.DNS01`) by creating, and subsequently
-removing, TXT records using the Gehirn Infrastracture Service DNS API.
+removing, TXT records using the Gehirn Infrastructure Service DNS API.
 
 
 Named Arguments
 ---------------
 
 ========================================  =====================================
-``--dns-gehirn-credentials``              Gehirn Infrastracture Service
+``--dns-gehirn-credentials``              Gehirn Infrastructure Service
                                           credentials_ INI file.
                                           (Required)
 ``--dns-gehirn-propagation-seconds``      The number of seconds to wait for DNS
@@ -22,15 +22,15 @@ Credentials
 -----------
 
 Use of this plugin requires a configuration file containing
-Gehirn Infrastracture Service DNS API credentials,
-obtained from your Gehirn Infrastracture Service
+Gehirn Infrastructure Service DNS API credentials,
+obtained from your Gehirn Infrastructure Service
 `dashboard <https://gis.gehirn.jp/>`_.
 
 .. code-block:: ini
    :name: credentials.ini
    :caption: Example credentials file:
 
-   # Gehirn Infrastracture Service API credentials used by Certbot
+   # Gehirn Infrastructure Service API credentials used by Certbot
    dns_gehirn_api_token  = 00000000-0000-0000-0000-000000000000
    dns_gehirn_api_secret = MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw
 
@@ -40,7 +40,7 @@ to this file for use during renewal, but does not store the file's contents.
 
 .. caution::
    You should protect these API credentials as you would the password to your
-   Gehirn Infrastracture Service account. Users who can read this file can use
+   Gehirn Infrastructure Service account. Users who can read this file can use
    these credentials to issue arbitrary API calls on your behalf. Users who can
    cause Certbot to run using these credentials can complete a ``dns-01``
    challenge to acquire new certificates or revoke existing certificates for

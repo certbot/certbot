@@ -4,13 +4,13 @@ from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-version = '1.1.0.dev0'
+version = '1.2.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
     'acme>=0.29.0',
-    'certbot>=1.0.0.dev0',
+    'certbot>=1.1.0',
     'google-api-python-client>=1.5.5',
     'mock',
     'oauth2client>=4.0',
@@ -47,7 +47,7 @@ setup(
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
@@ -58,7 +58,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',

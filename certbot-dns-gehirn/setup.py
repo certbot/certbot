@@ -4,12 +4,12 @@ from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-version = '1.1.0.dev0'
+version = '1.2.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'acme>=0.31.0',
-    'certbot>=1.0.0.dev0',
+    'certbot>=1.1.0',
     'dns-lexicon>=2.1.22',
     'mock',
     'setuptools',
@@ -38,12 +38,12 @@ class PyTest(TestCommand):
 setup(
     name='certbot-dns-gehirn',
     version=version,
-    description="Gehirn Infrastracture Service DNS Authenticator plugin for Certbot",
+    description="Gehirn Infrastructure Service DNS Authenticator plugin for Certbot",
     url='https://github.com/certbot/certbot',
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
@@ -54,7 +54,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
