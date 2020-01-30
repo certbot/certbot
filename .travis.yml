@@ -274,6 +274,7 @@ after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 notifications:
   email: false
   irc:
+    if: NOT branch =~ ^test-.*$
     channels:
       # This is set to a secure variable to prevent forks from sending
       # notifications. This value was created by installing
