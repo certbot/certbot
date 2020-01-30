@@ -77,6 +77,7 @@ class RevocationChecker(object):
 
         :param str cert_path: Certificate path
         :param str chain_path: Certificate chain filepath
+        :param str response_file: File path to a file containing a raw OCSP response.
 
         :returns: True if revoked; False if valid or the check failed or cert is expired.
         :rtype: bool

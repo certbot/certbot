@@ -237,7 +237,15 @@ def load_cert(cert_path):
 
 
 def cert_sha1_fingerprint(cert_path):
-    """Get sha1 digest of the certificate fingerprint"""
+    """Read fingerprint of a certificate pointed by its file path
+    and returns sha1 digest of said fingerprint.
+
+    :param str cert_path: File path to the x509 certificate file
+
+    :returns: SHA-1 fingerprint of the certificate
+    :rtype: bytes
+    """
+
     cert = load_cert(cert_path)
     return cert.fingerprint(hashes.SHA1())
 

@@ -170,6 +170,7 @@ class OCSPPrefetchEnhancement(object):
     Methods:
         enable_ocsp_prefetch is called when the domain is configured to
         serve OCSP responses using mechanism called OCSP Stapling.
+
         update_ocsp_prefetch is called every time when Certbot is run using 'renew'
         verb. Certbot should proceed to make a request to the OCSP server in order
         to fetch an OCSP response and to store the recieved response, if valid.

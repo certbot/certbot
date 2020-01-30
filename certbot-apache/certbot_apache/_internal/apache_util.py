@@ -3,8 +3,6 @@ import binascii
 import struct
 import time
 
-import six
-
 from certbot import crypto_util
 from certbot import util
 from certbot.compat import os
@@ -25,6 +23,7 @@ def get_apache_ocsp_struct(ttl, ocsp_response):
     ttl_struct = struct.pack('l', int(ttl*1000000))
     return b'\x01'.join([ttl_struct, ocsp_response])
 
+
 def certid_sha1_hex(cert_path):
     """Hex representation of certificate SHA1 fingerprint
 
@@ -35,9 +34,7 @@ def certid_sha1_hex(cert_path):
 
     """
     sha1_hex = binascii.hexlify(certid_sha1(cert_path))
-    if isinstance(sha1_hex, six.binary_type):
-        return sha1_hex.decode('utf-8')  # pragma: no cover
-    return sha1_hex  # pragma: no cover
+    return sha1_hex.decode('utf-8')
 
 
 def certid_sha1(cert_path):
@@ -50,6 +47,7 @@ def certid_sha1(cert_path):
 
     """
     return crypto_util.cert_sha1_fingerprint(cert_path)
+
 
 def get_mod_deps(mod_name):
     """Get known module dependencies.

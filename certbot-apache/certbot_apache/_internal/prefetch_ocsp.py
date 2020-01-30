@@ -143,7 +143,7 @@ class OCSPPrefetchMixin(object):
         :rtype: int
         """
 
-        if next_update:
+        if next_update is not None:
             now = time.time()
             res_ttl = int(time.mktime(next_update.timetuple()) - now)
             if res_ttl > 0:
