@@ -13,9 +13,9 @@ class ApacheParserNode(interfaces.ParserNode):
     """
 
     def __init__(self, **kwargs):
-        ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
+        ancestors, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
         super(ApacheParserNode, self).__init__(**kwargs)
-        self.ancestor = ancestor
+        self.ancestors = ancestors
         self.filepath = filepath
         self.dirty = dirty
         self.metadata = metadata
@@ -28,7 +28,7 @@ class ApacheParserNode(interfaces.ParserNode):
         """Find ancestor BlockNodes with a given name"""
         return [ApacheBlockNode(name=assertions.PASS,
                                 parameters=assertions.PASS,
-                                ancestor=self,
+                                ancestors=(self,),
                                 filepath=assertions.PASS,
                                 metadata=self.metadata)]
 
@@ -40,15 +40,6 @@ class ApacheCommentNode(ApacheParserNode):
         comment, kwargs = util.commentnode_kwargs(kwargs)  # pylint: disable=unused-variable
         super(ApacheCommentNode, self).__init__(**kwargs)
         self.comment = comment
-
-    def __eq__(self, other):  # pragma: no cover
-        if isinstance(other, self.__class__):
-            return (self.comment == other.comment and
-                    self.dirty == other.dirty and
-                    self.ancestor == other.ancestor and
-                    self.metadata == other.metadata and
-                    self.filepath == other.filepath)
-        return False
 
 
 class ApacheDirectiveNode(ApacheParserNode):
@@ -62,17 +53,6 @@ class ApacheDirectiveNode(ApacheParserNode):
         self.enabled = enabled
         self.include = None
 
-    def __eq__(self, other):  # pragma: no cover
-        if isinstance(other, self.__class__):
-            return (self.name == other.name and
-                    self.filepath == other.filepath and
-                    self.parameters == other.parameters and
-                    self.enabled == other.enabled and
-                    self.dirty == other.dirty and
-                    self.ancestor == other.ancestor and
-                    self.metadata == other.metadata)
-        return False
-
     def set_parameters(self, _parameters):
         """Sets the parameters for DirectiveNode"""
         return
@@ -85,23 +65,11 @@ class ApacheBlockNode(ApacheDirectiveNode):
         super(ApacheBlockNode, self).__init__(**kwargs)
         self.children = ()
 
-    def __eq__(self, other):  # pragma: no cover
-        if isinstance(other, self.__class__):
-            return (self.name == other.name and
-                    self.filepath == other.filepath and
-                    self.parameters == other.parameters and
-                    self.children == other.children and
-                    self.enabled == other.enabled and
-                    self.dirty == other.dirty and
-                    self.ancestor == other.ancestor and
-                    self.metadata == other.metadata)
-        return False
-
     def add_child_block(self, name, parameters=None, position=None):  # pylint: disable=unused-argument
         """Adds a new BlockNode to the sequence of children"""
         new_block = ApacheBlockNode(name=assertions.PASS,
                                     parameters=assertions.PASS,
-                                    ancestor=self,
+                                    ancestors=(self,),
                                     filepath=assertions.PASS,
                                     metadata=self.metadata)
         self.children += (new_block,)
@@ -111,7 +79,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         """Adds a new DirectiveNode to the sequence of children"""
         new_dir = ApacheDirectiveNode(name=assertions.PASS,
                                       parameters=assertions.PASS,
-                                      ancestor=self,
+                                      ancestors=(self,),
                                       filepath=assertions.PASS,
                                       metadata=self.metadata)
         self.children += (new_dir,)
@@ -122,7 +90,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
 
         """Adds a new CommentNode to the sequence of children"""
         new_comment = ApacheCommentNode(comment=assertions.PASS,
-                                        ancestor=self,
+                                        ancestors=(self,),
                                         filepath=assertions.PASS,
                                         metadata=self.metadata)
         self.children += (new_comment,)
@@ -132,7 +100,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         """Recursive search of BlockNodes from the sequence of children"""
         return [ApacheBlockNode(name=assertions.PASS,
                                 parameters=assertions.PASS,
-                                ancestor=self,
+                                ancestors=(self,),
                                 filepath=assertions.PASS,
                                 metadata=self.metadata)]
 
@@ -140,14 +108,14 @@ class ApacheBlockNode(ApacheDirectiveNode):
         """Recursive search of DirectiveNodes from the sequence of children"""
         return [ApacheDirectiveNode(name=assertions.PASS,
                                     parameters=assertions.PASS,
-                                    ancestor=self,
+                                    ancestors=(self,),
                                     filepath=assertions.PASS,
                                     metadata=self.metadata)]
 
     def find_comments(self, comment, exact=False): # pylint: disable=unused-argument
         """Recursive search of DirectiveNodes from the sequence of children"""
         return [ApacheCommentNode(comment=assertions.PASS,
-                                  ancestor=self,
+                                  ancestors=(self,),
                                   filepath=assertions.PASS,
                                   metadata=self.metadata)]
 

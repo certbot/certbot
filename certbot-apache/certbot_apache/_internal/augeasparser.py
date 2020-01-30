@@ -79,9 +79,9 @@ class AugeasParserNode(interfaces.ParserNode):
     """ Augeas implementation of ParserNode interface """
 
     def __init__(self, **kwargs):
-        ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
+        ancestors, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
         super(AugeasParserNode, self).__init__(**kwargs)
-        self.ancestor = ancestor
+        self.ancestors = ancestors
         self.filepath = filepath
         self.dirty = dirty
         self.metadata = metadata
@@ -142,7 +142,7 @@ class AugeasParserNode(interfaces.ParserNode):
 
         return AugeasBlockNode(name=name,
                                enabled=enabled,
-                               ancestor=assertions.PASS,
+                               ancestors=assertions.PASS,
                                filepath=apache_util.get_file_path(path),
                                metadata=metadata)
 
@@ -173,15 +173,6 @@ class AugeasCommentNode(AugeasParserNode):
         # self.comment = comment
         self.comment = comment
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return (self.comment == other.comment and
-                    self.filepath == other.filepath and
-                    self.dirty == other.dirty and
-                    self.ancestor == other.ancestor and
-                    self.metadata == other.metadata)
-        return False
-
 
 class AugeasDirectiveNode(AugeasParserNode):
     """ Augeas implementation of DirectiveNode interface """
@@ -193,17 +184,6 @@ class AugeasDirectiveNode(AugeasParserNode):
         self.enabled = enabled
         if parameters:
             self.set_parameters(parameters)
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return (self.name == other.name and
-                    self.filepath == other.filepath and
-                    self.parameters == other.parameters and
-                    self.enabled == other.enabled and
-                    self.dirty == other.dirty and
-                    self.ancestor == other.ancestor and
-                    self.metadata == other.metadata)
-        return False
 
     def set_parameters(self, parameters):
         """
@@ -248,18 +228,6 @@ class AugeasBlockNode(AugeasDirectiveNode):
         super(AugeasBlockNode, self).__init__(**kwargs)
         self.children = ()
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return (self.name == other.name and
-                    self.filepath == other.filepath and
-                    self.parameters == other.parameters and
-                    self.children == other.children and
-                    self.enabled == other.enabled and
-                    self.dirty == other.dirty and
-                    self.ancestor == other.ancestor and
-                    self.metadata == other.metadata)
-        return False
-
     # pylint: disable=unused-argument
     def add_child_block(self, name, parameters=None, position=None):  # pragma: no cover
         """Adds a new BlockNode to the sequence of children"""
@@ -281,7 +249,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         new_block = AugeasBlockNode(name=name,
                                     parameters=parameters,
                                     enabled=enabled,
-                                    ancestor=assertions.PASS,
+                                    ancestors=assertions.PASS,
                                     filepath=apache_util.get_file_path(realpath),
                                     metadata=new_metadata)
         return new_block
@@ -311,7 +279,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         new_dir = AugeasDirectiveNode(name=name,
                                       parameters=parameters,
                                       enabled=enabled,
-                                      ancestor=assertions.PASS,
+                                      ancestors=assertions.PASS,
                                       filepath=apache_util.get_file_path(realpath),
                                       metadata=new_metadata)
         return new_dir
@@ -331,7 +299,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         self.parser.aug.set(realpath, comment)
 
         new_comment = AugeasCommentNode(comment=comment,
-                                        ancestor=assertions.PASS,
+                                        ancestors=assertions.PASS,
                                         filepath=apache_util.get_file_path(realpath),
                                         metadata=new_metadata)
         return new_comment
@@ -429,7 +397,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # Because of the dynamic nature of AugeasParser and the fact that we're
         # not populating the complete node tree, the ancestor has a dummy value
         return AugeasCommentNode(comment=comment,
-                                 ancestor=assertions.PASS,
+                                 ancestors=assertions.PASS,
                                  filepath=apache_util.get_file_path(path),
                                  metadata=metadata)
 
@@ -444,7 +412,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
             apache_util.get_file_path(path)
         )
         return AugeasDirectiveNode(name=name,
-                                   ancestor=assertions.PASS,
+                                   ancestors=assertions.PASS,
                                    enabled=enabled,
                                    filepath=apache_util.get_file_path(path),
                                    metadata=metadata)
