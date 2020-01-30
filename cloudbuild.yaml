@@ -6,14 +6,40 @@ steps:
   dir: .
   waitFor: ['-']
 
-- name: 'gcr.io/cloud-builders/docker'
+- id: certbot-dns
+  name: 'gcr.io/cloud-builders/docker'
   args: ["build", "-t", "gcr.io/$PROJECT_ID/certbot-dns-google:latest", "."]
   dir: certbot-dns-google
   waitFor:
     - certbot
 
+- id: us-certbot
+  name: 'gcr.io/cloud-builders/docker'
+  args: [
+    "build",
+    "-t", "us.gcr.io/$PROJECT_ID/certbot:latest",
+    "--cache-from", "gcr.io/$PROJECT_ID/certbot:latest",
+    "."]
+  dir: .
+  waitFor:
+    - certbot
+
+- id: us-certbot-dns
+  name: 'gcr.io/cloud-builders/docker'
+  args: [
+    "build",
+    "-t", "us.gcr.io/$PROJECT_ID/certbot-dns-google:latest",
+    "--cache-from", "gcr.io/$PROJECT_ID/certbot-dns-google:latest",
+    "."]
+  dir: certbot-dns-google
+  waitFor:
+    - certbot-dns
+    - us-certbot
+
 images:
   - gcr.io/$PROJECT_ID/certbot
   - gcr.io/$PROJECT_ID/certbot-dns-google
+  - us.gcr.io/$PROJECT_ID/certbot
+  - us.gcr.io/$PROJECT_ID/certbot-dns-google
 
 logsBucket: fathom-containers-cloud-build-logs-36tugmiz
