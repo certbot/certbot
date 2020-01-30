@@ -192,7 +192,7 @@ def _check_ocsp_cryptography(cert_path, chain_path, url):
 
 
 def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
-    """Verify that the OCSP is valid for serveral criterias"""
+    """Verify that the OCSP is valid for serveral criteria"""
     # Assert OCSP response corresponds to the certificate we are talking about
     if response_ocsp.serial_number != request_ocsp.serial_number:
         raise AssertionError('the certificate in response does not correspond '

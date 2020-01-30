@@ -56,11 +56,18 @@ class Account(object):
                 tz=pytz.UTC).replace(microsecond=0),
             creation_host=socket.getfqdn()) if meta is None else meta
 
-        self.id = hashlib.md5(
-            self.key.key.public_key().public_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo)
-        ).hexdigest()
+        # try MD5, else use MD5 in non-security mode (e.g. for FIPS systems / RHEL)
+        try:
+            hasher = hashlib.md5()
+        except ValueError:
+            hasher = hashlib.new('md5', usedforsecurity=False) # type: ignore
+
+        hasher.update(self.key.key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        )
+
+        self.id = hasher.hexdigest()
         # Implementation note: Email? Multiple accounts can have the
         # same email address. Registration URI? Assigned by the
         # server, not guaranteed to be stable over time, nor
