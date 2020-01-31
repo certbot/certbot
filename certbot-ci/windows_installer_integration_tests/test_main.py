@@ -2,6 +2,7 @@ import os
 import time
 import unittest
 import subprocess
+import re
 
 
 @unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
@@ -19,7 +20,7 @@ def test_it(request):
 
         # Assert certbot is installed and runnable
         output = subprocess.check_output(['certbot', '--version'], universal_newlines=True)
-        assert 'certbot 1.' in output, 'Flag --version does not output a version.'
+        assert re.match(r'^certbot \d+\.\d+\.\d+.*$', output), 'Flag --version does not output a version.'
 
         # Assert renew task is installed and ready
         output = _ps('(Get-ScheduledTask -TaskName "Certbot Renew Task").State', capture_stdout=True)
