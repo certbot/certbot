@@ -5,6 +5,7 @@ import argparse
 import atexit
 import collections
 from collections import OrderedDict
+from datetime import datetime
 import distutils.version  # pylint: disable=import-error,no-name-in-module
 import errno
 import logging
@@ -15,7 +16,6 @@ import subprocess
 import sys
 
 import configargparse
-from dateutil import parser
 import six
 
 from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
@@ -611,6 +611,7 @@ def parse_datetime(dt_string):
     :rtype: datetime.datetime or None
     """
     try:
-        return parser.parse(dt_string, ignoretz=True)
+        dateformat = "%b %d %H:%M:%S %Y %Z"
+        return datetime.strptime(dt_string, dateformat)
     except ValueError:
         return None

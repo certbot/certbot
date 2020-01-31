@@ -180,10 +180,12 @@ class OCSPPrefetchEnhancement(object):
     def update_ocsp_prefetch(self, lineage, *args, **kwargs):
         """
         Gets called for each lineage every time Certbot is run with 'renew' verb.
-        Implementation of this method should fetch a fresh OCSP response and if
-        valid, store it to be served for connecting clients.
+        Implementation of this method should fetch a fresh OCSP response if it's
+        needed and if valid, store it to be served for connecting clients.
+
         :param lineage: Certificate lineage object
         :type lineage: certbot.storage.RenewableCert
+
         .. note:: prepare() method inherited from `interfaces.IPlugin` might need
             to be called manually within implementation of this interface method
             to finalize the plugin initialization.
@@ -195,6 +197,7 @@ class OCSPPrefetchEnhancement(object):
         Enables the OCSP enhancement, enabling OCSP Stapling functionality for
         the controlled software, and sets it up for prefetching the responses
         over the subsequent runs of Certbot renew.
+
         :param lineage: Certificate lineage object
         :type lineage: certbot.storage.RenewableCert
         :param domains: List of domains in certificate to enhance
@@ -224,7 +227,7 @@ _INDEX = [
         "name": "OCSPPrefetch",
         "cli_help": "Prefetch OCSP responses for certificates in order to be " +
                     "able to serve connecting clients fresh staple immediately",
-        "cli_flag": "--ocsp-prefetch",
+        "cli_flag": "--prefetch-ocsp",
         "cli_flag_default": constants.CLI_DEFAULTS["ocsp_prefetch"],
         "cli_groups": ["security", "enhance"],
         "cli_dest": "ocsp_prefetch",

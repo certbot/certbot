@@ -16,6 +16,7 @@ from certbot_apache._internal import constants
 
 logger = logging.getLogger(__name__)
 
+
 class OCSPPrefetchMixin(object):
     """OCSPPrefetchMixin implements OCSP response prefetching"""
 
@@ -115,7 +116,7 @@ class OCSPPrefetchMixin(object):
             self.config.work_dir, "ocsp",
             apache_util.certid_sha1_hex(cert_path))
         handler = ocsp.RevocationChecker()
-        if not handler.ocsp_revoked_cert(cert_path, chain_path, ocsp_workfile):
+        if not handler.ocsp_revoked_by_paths(cert_path, chain_path, ocsp_workfile):
             # Guaranteed good response
             cache_path = os.path.join(self.config.config_dir, "ocsp", "ocsp_cache")
             # dbm.open automatically adds the file extension, it will be
@@ -145,7 +146,7 @@ class OCSPPrefetchMixin(object):
 
         if next_update is not None:
             now = time.time()
-            res_ttl = int(time.mktime(next_update.timetuple()) - now)
+            res_ttl = int(next_update.timestamp() - now)
             if res_ttl > 0:
                 return res_ttl/2
         return constants.OCSP_APACHE_TTL
@@ -279,8 +280,6 @@ class OCSPPrefetchMixin(object):
             or reload fails.
 
         """
-        self.config_test()
-
         if not self._ocsp_prefetch:
             # Try to populate OCSP prefetch structure from pluginstorage
             self._ocsp_prefetch_fetch_state()
@@ -289,16 +288,13 @@ class OCSPPrefetchMixin(object):
             self._ocsp_prefetch_backup_db()
 
         try:
-            # Ignored because of issues with multiple class inheritance method
-            # resolution https://github.com/python/mypy/issues/4335
+            # Ignored because mypy doesn't know that this class is used as
+            # a mixin and fails because object has no restart method.
             super(OCSPPrefetchMixin, self).restart()  # type: ignore
-        except errors.MisconfigurationError:
-            self._ocsp_prefetch_restore_db()
-            raise
-
-        if self._ocsp_prefetch:
-            # Restore the backed up dbm database
-            self._ocsp_prefetch_restore_db()
+        finally:
+            if self._ocsp_prefetch:
+                # Restore the backed up dbm database
+                self._ocsp_prefetch_restore_db()
 
 
 OCSPPrefetchEnhancement.register(OCSPPrefetchMixin)  # pylint: disable=no-member

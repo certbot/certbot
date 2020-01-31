@@ -146,6 +146,14 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(nextUpdate, datetime(2020, 1, 31, 11, 0))
 
     @mock.patch('certbot.util.run_script')
+    def test_ocsp_response_get_times_no_nextupdate(self, mock_run):
+        mock_run.return_value = ocsp_times_example_nonext
+        producedAt, thisUpdate, nextUpdate = self.checker.ocsp_times("mocked")
+        self.assertEqual(producedAt, datetime(2020, 1, 24, 11, 10))
+        self.assertEqual(thisUpdate, datetime(2020, 1, 24, 11, 0))
+        self.assertEqual(nextUpdate, None)
+
+    @mock.patch('certbot.util.run_script')
     def test_ocsp_response_get_times_badoutput(self, mock_run):
         mock_run.return_value = ("Something unparsable", "")
         producedAt, thisUpdate, nextUpdate = self.checker.ocsp_times("mocked")
@@ -318,6 +326,20 @@ class OSCPTestCryptography(unittest.TestCase):
                 self.assertEqual(this_update, datetime(2020, 1, 2, 8, 8))
                 self.assertEqual(next_update, datetime(2020, 1, 3, 4, 4))
 
+    def test_ocsp_times_cryptography_no_nextupdate(self):
+        with mock.patch('certbot._internal.ocsp.open', mock.mock_open(read_data="")):
+            with mock.patch('cryptography.x509.ocsp.load_der_ocsp_response') as mock_load:
+                resp = mock.MagicMock()
+                resp.produced_at = datetime(2020, 1, 2, 9, 9)
+                resp.this_update = datetime(2020, 1, 2, 8, 8)
+                resp.next_update = None
+                mock_load.return_value = resp
+
+                produced_at, this_update, next_update = self.checker.ocsp_times("mocked")
+                self.assertEqual(produced_at, datetime(2020, 1, 2, 9, 9))
+                self.assertEqual(this_update, datetime(2020, 1, 2, 8, 8))
+                self.assertEqual(next_update, None)
+
     def test_ocsp_times_cryptography_error(self):
         with mock.patch('certbot._internal.ocsp.open', mock.mock_open(read_data="")) as mock_open:
             mock_open.side_effect = OSError
@@ -427,6 +449,11 @@ ocsp_times_example = ("""
     Produced At: Jan 24 11:10:00 2020 GMT
     This Update: Jan 24 11:00:00 2020 GMT
     Next Update: Jan 31 11:00:00 2020 GMT
+""", "")
+
+ocsp_times_example_nonext = ("""
+    Produced At: Jan 24 11:10:00 2020 GMT
+    This Update: Jan 24 11:00:00 2020 GMT
 """, "")
 
 

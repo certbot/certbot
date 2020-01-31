@@ -69,9 +69,9 @@ class RevocationChecker(object):
         :rtype: bool
 
         """
-        return self.ocsp_revoked_cert(cert.cert, cert.chain)
+        return self.ocsp_revoked_by_paths(cert.cert, cert.chain)
 
-    def ocsp_revoked_cert(self, cert_path, chain_path, response_file=None):
+    def ocsp_revoked_by_paths(self, cert_path, chain_path, response_file=None):
         # type: (str, str, Optional[str]) -> bool
         """Performs the OCSP revocation check
 

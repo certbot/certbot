@@ -805,6 +805,11 @@ def install(config, plugins):
             "If your certificate is managed by Certbot, please use --cert-name "
             "to define which certificate you would like to install.")
 
+    # It's important that the old style enhancements get enabled before
+    # the new style ones, as some of the new enhancements can modify the
+    # same configuration directives. _install_cert() in the above block
+    # handles the old style enhancements here.
+
     if enhancements.are_requested(config):
         # In the case where we don't have certname, we have errored out already
         lineage = cert_manager.lineage_for_certname(config, config.certname)
@@ -930,6 +935,9 @@ def enhance(config, plugins):
     if oldstyle_enh:
         le_client = _init_le_client(config, authenticator=None, installer=installer)
         le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
+    # It's important that the old style enhancements get enabled before
+    # the new style ones, as some of the new enhancements can modify the
+    # same configuration directives.
     if enhancements.are_requested(config):
         enhancements.enable(lineage, domains, installer, config)
 
@@ -1108,7 +1116,10 @@ def run(config, plugins):
     _report_new_cert(config, cert_path, fullchain_path, key_path)
 
     _install_cert(config, le_client, domains, new_lineage)
-
+    # It's important that the old style enhancements get enabled before
+    # the new style ones, as some of the new enhancements can modify the
+    # same configuration directives. _install_cert() handles the old
+    # style enhancements here.
     if enhancements.are_requested(config) and new_lineage:
         enhancements.enable(new_lineage, domains, installer, config)
 
