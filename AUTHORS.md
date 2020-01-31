@@ -36,6 +36,7 @@ Authors
 * [Brad Warren](https://github.com/bmw)
 * [Brandon Kraft](https://github.com/kraftbj)
 * [Brandon Kreisel](https://github.com/kraftbj)
+* [Cameron Steel](https://github.com/Tugzrida)
 * [Ceesjan Luiten](https://github.com/quinox)
 * [Chad Whitacre](https://github.com/whit537)
 * [Chhatoi Pritam Baral](https://github.com/pritambaral)

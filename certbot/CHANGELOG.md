@@ -6,12 +6,15 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added support for Cloudflare's limited-scope API Tokens
 
 ### Changed
 
 * Add directory field to error message when field is missing.
 * If MD5 hasher is not available, try it in non-security mode (fix for FIPS systems) -- [#1948](https://github.com/certbot/certbot/issues/1948)
+* Disable old SSL versions and ciphersuites and remove `SSLCompression off` setting to follow Mozilla recommendations in Apache.
+* Remove ECDHE-RSA-AES128-SHA from NGINX ciphers list now that Windows 2008 R2 and Windows 7 are EOLed
+* Support for Python 3.4 has been removed.
 
 ### Fixed
 

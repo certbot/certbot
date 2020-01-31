@@ -524,19 +524,22 @@ during the next release.
 Updating the documentation
 ==========================
 
-In order to generate the Sphinx documentation, run the following
-commands:
+Many of the packages in the Certbot repository have documentation in a
+``docs/`` directory. This directory is located under the top level directory
+for the package. For instance, Certbot's documentation is under
+``certbot/docs``.
+
+To build the documentation of a package, make sure you have followed the
+instructions to set up a `local copy`_ of Certbot including activating the
+virtual environment. After that, ``cd`` to the docs directory you want to build
+and run the command:
 
 .. code-block:: shell
 
-   make -C docs clean html man
+   make clean html
 
-This should generate documentation in the ``docs/_build/html``
-directory.
-
-.. note:: If you skipped the "Getting Started" instructions above,
-  run ``pip install -e "certbot[docs]"`` to install Certbot's docs extras modules.
-
+This would generate the HTML documentation in ``_build/html`` in your current
+``docs/`` directory.
 
 .. _docker-dev:
 
