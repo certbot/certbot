@@ -3,6 +3,8 @@
 # See: https://github.com/PyCQA/pylint/issues/73
 from distutils.version import LooseVersion  # pylint: disable=no-name-in-module,import-error
 
+import logging
+
 from certbot import util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import override_arch
