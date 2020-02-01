@@ -58,7 +58,7 @@ def get_configurator():
         logger.info("Configuration for the OS successfully identified")
     except KeyError:
         # OS not found in the list
-        logger.warn("OS not found in the list, beggining to try to find a similar OS")
+        logger.warning("OS not found in the list, beginning to try to find a similar OS")
         os_like = util.get_systemd_os_like()
         if os_like:
             for os_name in os_like:
@@ -68,7 +68,7 @@ def get_configurator():
         if not override_class:
             # No override class found, return the generic configurator
             override_class = configurator.ApacheConfigurator
-            logger.warn("Similar OS not found, default configurator returned. You may need to inspect the defaults")
+            logger.warning("Similar OS not found, default configurator returned. You may need to inspect the defaults")
     return override_class
 
 
