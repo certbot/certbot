@@ -43,8 +43,8 @@ OVERRIDE_CLASSES = {
 
 
 def get_configurator():
-    logger = logging.getLogger(__name__)
     """ Get correct configurator class based on the OS fingerprint """
+    logger = logging.getLogger(__name__)
     os_name, os_version = util.get_os_info()
     os_name = os_name.lower()
     override_class = None
@@ -64,11 +64,12 @@ def get_configurator():
             for os_name in os_like:
                 if os_name in OVERRIDE_CLASSES.keys():
                     override_class = OVERRIDE_CLASSES[os_name]
-                    logger.info("OS Identified as: %s, configuration for the OS found", os_name )
+                    logger.info("OS Identified as: %s, configuration for the OS found", os_name)
         if not override_class:
             # No override class found, return the generic configurator
             override_class = configurator.ApacheConfigurator
-            logger.warning("Similar OS not found, default configurator returned. You may need to inspect the defaults")
+            logger.warning("Similar OS not found, default configurator returned."
+                "You may need to inspect the defaults")
     return override_class
 
 
