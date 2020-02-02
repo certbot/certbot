@@ -598,6 +598,13 @@ class NginxConfigurator(common.Installer):
         all_names = set()  # type: Set[str]
 
         for vhost in self.parser.get_vhosts():
+            try:
+                vhost.names.remove("$hostname")
+                vhost.names.add(socket.gethostname())
+                breakpoint()
+            except KeyError:
+                pass
+
             all_names.update(vhost.names)
 
             for addr in vhost.addrs:
