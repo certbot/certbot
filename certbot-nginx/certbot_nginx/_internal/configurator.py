@@ -601,7 +601,6 @@ class NginxConfigurator(common.Installer):
             try:
                 vhost.names.remove("$hostname")
                 vhost.names.add(socket.gethostname())
-                breakpoint()
             except KeyError:
                 pass
 
