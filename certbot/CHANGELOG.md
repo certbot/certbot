@@ -7,6 +7,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 * Added support for Cloudflare's limited-scope API Tokens
+* Added support for `$hostname` in nginx `server_name` directive
 
 ### Changed
 
