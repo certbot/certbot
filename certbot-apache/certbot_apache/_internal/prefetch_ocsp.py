@@ -1,4 +1,5 @@
 """A mixin class for OCSP response prefetching for Apache plugin"""
+from datetime import datetime
 import logging
 import shutil
 import time
@@ -30,12 +31,11 @@ class OCSPPrefetchMixin(object):
 
     def _ensure_ocsp_dirs(self):
         """Makes sure that the OCSP directory paths exist."""
-        ocsp_work = os.path.join(self.config.work_dir, "ocsp")
-        ocsp_save = os.path.join(self.config.config_dir, "ocsp")
+        ocsp_work = os.path.join(self.config.work_dir, "ocsp_work")
+        ocsp_save = os.path.join(self.config.work_dir, "ocsp")
         for path in [ocsp_work, ocsp_save]:
             if not os.path.isdir(path):
-                filesystem.makedirs(path)
-                filesystem.chmod(path, 0o755)
+                filesystem.makedirs(path, 0o755)
 
     def _ensure_ocsp_prefetch_compatibility(self):
         """Make sure that the operating system supports the required libraries
@@ -87,7 +87,7 @@ class OCSPPrefetchMixin(object):
         else:
             database.close()
 
-    def _ocsp_refresh_if_needed(self, pf_obj):
+    def _ocsp_refresh_needed(self, pf_obj):
         """Refreshes OCSP response for a certiifcate if it's due
 
         :param dict pf_obj: OCSP prefetch object from pluginstorage
@@ -113,12 +113,12 @@ class OCSPPrefetchMixin(object):
 
         self._ensure_ocsp_dirs()
         ocsp_workfile = os.path.join(
-            self.config.work_dir, "ocsp",
+            self.config.work_dir, "ocsp_work",
             apache_util.certid_sha1_hex(cert_path))
         handler = ocsp.RevocationChecker()
         if not handler.ocsp_revoked_by_paths(cert_path, chain_path, ocsp_workfile):
             # Guaranteed good response
-            cache_path = os.path.join(self.config.config_dir, "ocsp", "ocsp_cache")
+            cache_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache")
             # dbm.open automatically adds the file extension, it will be
             db = self._ocsp_dbm_open(cache_path)
             cert_sha = apache_util.certid_sha1(cert_path)
@@ -127,6 +127,12 @@ class OCSPPrefetchMixin(object):
         else:
             logger.warning("Encountered an issue while trying to prefetch OCSP "
                            "response for certificate: %s", cert_path)
+        # Clean up
+        try:
+            os.remove(ocsp_workfile)
+        except OSError:
+            # The OCSP workfile did not exist because of an OCSP response fetching error
+            return
 
     def _ocsp_ttl(self, next_update):
         """Calculates Apache internal TTL for the next OCSP staple
@@ -145,8 +151,8 @@ class OCSPPrefetchMixin(object):
         """
 
         if next_update is not None:
-            now = time.time()
-            res_ttl = int(next_update.timestamp() - now)
+            now = datetime.fromtimestamp(time.time())
+            res_ttl = int((next_update - now).total_seconds())
             if res_ttl > 0:
                 return res_ttl/2
         return constants.OCSP_APACHE_TTL
@@ -198,22 +204,29 @@ class OCSPPrefetchMixin(object):
 
     def _ocsp_prefetch_backup_db(self):
         """
-        Copies the active dbm file to work directory.
+        Copies the active dbm file to work directory. Logs a debug error
+        message if unable to copy, but does not error out as it would
+        prevent other critical functions that need to be carried out for
+        Apache httpd.
         """
         self._ensure_ocsp_dirs()
-        cache_path = os.path.join(self.config.config_dir, "ocsp", "ocsp_cache.db")
+        cache_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache.db")
         try:
-            shutil.copy2(cache_path, os.path.join(self.config.work_dir, "ocsp"))
+            shutil.copy2(cache_path, os.path.join(self.config.work_dir, "ocsp_work"))
         except IOError:
             logger.debug("Encountered an issue while trying to backup OCSP dbm file")
 
     def _ocsp_prefetch_restore_db(self):
         """
-        Restores the active dbm file from work directory.
+        Restores the active dbm file from work directory. Logs a debug error
+        message if unable to restore, but does not error out as it would
+        prevent other critical functions that need to be carried out for
+        Apache httpd.
+
         """
         self._ensure_ocsp_dirs()
-        cache_path = os.path.join(self.config.config_dir, "ocsp", "ocsp_cache.db")
-        work_file_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache.db")
+        cache_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache.db")
+        work_file_path = os.path.join(self.config.work_dir, "ocsp_work", "ocsp_cache.db")
         try:
             shutil.copy2(work_file_path, cache_path)
         except IOError:
@@ -241,23 +254,30 @@ class OCSPPrefetchMixin(object):
                 if vh.ssl:
                     prefetch_vhosts.add(vh)
 
-        if prefetch_vhosts:
+        if not prefetch_vhosts:
+            raise errors.MisconfigurationError(
+                "Could not find VirtualHost to enable OCSP prefetching on."
+            )
+
+        try:
+            # The try - block is huge, but required for handling rollback properly.
             for vh in prefetch_vhosts:
                 self._enable_ocsp_stapling(vh, None, prefetch=True)
+
+            self._ensure_ocsp_dirs()
             self.restart()
             # Ensure Apache has enough time to properly restart and create the file
             time.sleep(2)
-            try:
-                self._ocsp_refresh(lineage.cert_path, lineage.chain_path)
-                self._ocsp_prefetch_save(lineage.cert_path, lineage.chain_path)
-                self.save("Enabled OCSP prefetching")
-            except errors.PluginError as err:
-                # Revert the OCSP prefetch configuration
-                self.recovery_routine()
-                self.restart()
-                msg = ("Encountered an error while trying to enable OCSP prefetch "
-                       "enhancement: %s.\nOCSP prefetch was not enabled.")
-                raise errors.PluginError(msg % str(err))
+            self._ocsp_refresh(lineage.cert_path, lineage.chain_path)
+            self._ocsp_prefetch_save(lineage.cert_path, lineage.chain_path)
+            self.save("Enabled OCSP prefetching")
+        except errors.PluginError as err:
+            # Revert the OCSP prefetch configuration
+            self.recovery_routine()
+            self.restart()
+            msg = ("Encountered an error while trying to enable OCSP prefetch "
+                "enhancement: %s\nOCSP prefetch was not enabled.")
+            raise errors.PluginError(msg % str(err))
 
     def update_ocsp_prefetch(self, _unused_lineage):
         """Checks all certificates that are managed by OCSP prefetch, and
@@ -269,12 +289,17 @@ class OCSPPrefetchMixin(object):
             return
 
         for _, pf in self._ocsp_prefetch.items():
-            if self._ocsp_refresh_if_needed(pf):
-                # Save the status to pluginstorage
-                self._ocsp_prefetch_save(pf["cert_path"], pf["chain_path"])
+            if not self._ocsp_refresh_needed(pf):
+                continue
+            # Save the status to pluginstorage
+            self._ocsp_prefetch_save(pf["cert_path"], pf["chain_path"])
 
     def restart(self):
-        """Runs a config test and reloads the Apache server.
+        """Reloads the Apache server. When restarting, Apache deletes
+        the DBM cache file used to store OCSP staples. In this override
+        function, Certbot checks the pluginstorage if we're supposed to
+        manage OCSP prefetching. If needed, Certbot will backup the DBM
+        file, restoring it after calling restart.
 
         :raises .errors.MisconfigurationError: If either the config test
             or reload fails.

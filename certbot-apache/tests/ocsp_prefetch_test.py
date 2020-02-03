@@ -98,7 +98,7 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
         self.config._ensure_ocsp_dirs()
-        self.db_path = os.path.join(self.config_dir, "ocsp", "ocsp_cache")
+        self.db_path = os.path.join(self.work_dir, "ocsp", "ocsp_cache")
         self.db_fullpath = self.db_path + ".db"
 
     def _call_mocked(self, func, *args, **kwargs):
@@ -170,6 +170,16 @@ class OCSPPrefetchTest(util.ApacheTest):
                               self.lineage,
                               ["ocspvhost.com"])
         self.assertTrue(self.config.recovery_routine.called)
+
+    def test_ocsp_prefetch_vhost_not_found_error(self):
+        choose_path = "certbot_apache._internal.override_debian.DebianConfigurator.choose_vhosts"
+        with mock.patch(choose_path) as mock_choose:
+            mock_choose.return_value = []
+            self.assertRaises(errors.MisconfigurationError,
+                              self.call_mocked_py2,
+                              self.config.enable_ocsp_prefetch,
+                              self.lineage,
+                              ["domainnotfound"])
 
     @mock.patch("certbot_apache._internal.constants.OCSP_INTERNAL_TTL", 0)
     def test_ocsp_prefetch_refresh(self):
@@ -272,7 +282,7 @@ class OCSPPrefetchTest(util.ApacheTest):
                 self.assertTrue(
                     "trying to prefetch OCSP" in mock_log.call_args[0][0])
 
-    @mock.patch("certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh_if_needed")
+    @mock.patch("certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh_needed")
     def test_ocsp_prefetch_update_noop(self, mock_refresh):
         self.config.update_ocsp_prefetch(None)
         self.assertFalse(mock_refresh.called)
