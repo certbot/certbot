@@ -1111,9 +1111,23 @@ class NginxConfigurator(common.Installer):
             http_doer.add_chall(achall, i)
 
         http_response = http_doer.perform()
+
+        # Store old workers.
+        worker_pids = list(map(int, subprocess.check_output(["pidof", "nginx: worker process"]).split()))
+
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
         self.restart()
+
+        # Wait for old workers to terminate.
+        timeout = time.time() + 120
+        while time.time() < timeout:
+            for worker_pid in reversed(worker_pids):
+                if subprocess.call(["kill", "-0", str(worker_pid)], stderr=subprocess.DEVNULL) != 0:
+                    worker_pids.remove(worker_pid)
+            if len(worker_pids) == 0:
+                break
+            time.sleep(1)
 
         # Go through all of the challenges and assign them to the proper place
         # in the responses return value. All responses must be in the same order
@@ -1186,10 +1200,6 @@ def nginx_restart(nginx_ctl, nginx_conf):
 
     except (OSError, ValueError):
         raise errors.MisconfigurationError("nginx restart failed")
-    # Nginx can take a moment to recognize a newly added TLS SNI servername, so sleep
-    # for a second. TODO: Check for expected servername and loop until it
-    # appears or return an error if looping too long.
-    time.sleep(1)
 
 
 def _determine_default_server_root():
