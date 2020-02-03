@@ -2,43 +2,18 @@ timeout: 3600s
 steps:
 - id: certbot
   name: 'gcr.io/cloud-builders/docker'
-  args: ["build", "-t", "gcr.io/$PROJECT_ID/certbot:latest", "."]
+  args: ["build", "-t", "us.gcr.io/$PROJECT_ID/certbot:latest", "."]
   dir: .
   waitFor: ['-']
 
 - id: certbot-dns
   name: 'gcr.io/cloud-builders/docker'
-  args: ["build", "-t", "gcr.io/$PROJECT_ID/certbot-dns-google:latest", "."]
+  args: ["build", "-t", "us.gcr.io/$PROJECT_ID/certbot-dns-google:latest", "."]
   dir: certbot-dns-google
   waitFor:
     - certbot
-
-- id: us-certbot
-  name: 'gcr.io/cloud-builders/docker'
-  args: [
-    "build",
-    "-t", "us.gcr.io/$PROJECT_ID/certbot:latest",
-    "--cache-from", "gcr.io/$PROJECT_ID/certbot:latest",
-    "."]
-  dir: .
-  waitFor:
-    - certbot
-
-- id: us-certbot-dns
-  name: 'gcr.io/cloud-builders/docker'
-  args: [
-    "build",
-    "-t", "us.gcr.io/$PROJECT_ID/certbot-dns-google:latest",
-    "--cache-from", "gcr.io/$PROJECT_ID/certbot-dns-google:latest",
-    "."]
-  dir: certbot-dns-google
-  waitFor:
-    - certbot-dns
-    - us-certbot
 
 images:
-  - gcr.io/$PROJECT_ID/certbot
-  - gcr.io/$PROJECT_ID/certbot-dns-google
   - us.gcr.io/$PROJECT_ID/certbot
   - us.gcr.io/$PROJECT_ID/certbot-dns-google
 
