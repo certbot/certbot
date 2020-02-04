@@ -1123,7 +1123,7 @@ class NginxConfigurator(common.Installer):
         timeout = time.time() + 120
         while time.time() < timeout:
             for worker_pid in reversed(worker_pids):
-                if subprocess.call(["kill", "-0", str(worker_pid)], stderr=subprocess.DEVNULL) != 0:
+                if subprocess.call(["kill", "-0", str(worker_pid)], stderr=open(os.devnull, "w")) != 0:
                     worker_pids.remove(worker_pid)
             if len(worker_pids) == 0:
                 break
