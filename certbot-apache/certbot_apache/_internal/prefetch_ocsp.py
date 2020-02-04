@@ -30,20 +30,18 @@ class DBMHandler(object):
     def __enter__(self):
         """Open the DBM file and return the filehandle"""
 
-        if not os.path.isfile(self.filename + ".db"):
-            raise errors.PluginError(
-                "The OCSP stapling cache DBM file wasn't created by Apache.")
         try:
             import bsddb
             self.bsddb = True
-            cache_path = self.filename + ".db"
             try:
-                self.database = bsddb.hashopen(cache_path, self.filemode)
+                self.database = bsddb.hashopen(self.filename, self.filemode)
             except Exception:
                 raise errors.PluginError("Unable to open dbm database file.")
         except ImportError:
             # Python3 doesn't have bsddb module, so we use dbm.ndbm instead
             import dbm
+            if self.filename.endswith(".db"):
+                self.filename = self.filename[:-3]
             try:
                 self.database = dbm.ndbm.open(self.filename, self.filemode)  # pylint: disable=no-member
             except Exception:
@@ -63,7 +61,6 @@ class OCSPPrefetchMixin(object):
 
     def __init__(self, *args, **kwargs):
         self._ocsp_prefetch = {}  # type: Dict[str, str]
-        self._ocsp_dbm_bsddb = False
         # This is required because of python super() call chain.
         # Additionally, mypy isn't able to figure the chain out and needs to be
         # disabled for this line. See https://github.com/python/mypy/issues/5887
@@ -124,7 +121,7 @@ class OCSPPrefetchMixin(object):
         handler = ocsp.RevocationChecker()
         if not handler.ocsp_revoked_by_paths(cert_path, chain_path, ocsp_workfile):
             # Guaranteed good response
-            cache_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache")
+            cache_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache.db")
             cert_sha = apache_util.certid_sha1(cert_path)
             # dbm.open automatically adds the file extension
             self._write_to_dbm(cache_path, cert_sha, self._ocsp_response_dbm(ocsp_workfile))
@@ -139,15 +136,25 @@ class OCSPPrefetchMixin(object):
             return
 
     def _write_to_dbm(self, filename, key, value):
-        """Helper method to write an OCSP response cache value to DBM
+        """Helper method to write an OCSP response cache value to DBM.
 
         :param filename: DBM database filename
         :param bytes key: Database key name
         :param bytes value: Database entry value
         """
+        tmp_file = os.path.join(
+            self.config.work_dir,
+            "ocsp_work",
+            "tmp_" + os.path.basename(filename)
+        )
 
-        with DBMHandler(filename, 'w') as db:
+        apache_util.safe_copy(filename, tmp_file)
+
+        with DBMHandler(tmp_file, 'w') as db:
             db[key] = value
+
+        shutil.copy2(tmp_file, filename)
+        os.remove(tmp_file)
 
     def _read_dbm(self, filename):
         """Helper method for reading the dbm using context manager.

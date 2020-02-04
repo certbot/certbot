@@ -3,8 +3,8 @@ import base64
 from datetime import datetime
 from datetime import timedelta
 import json
-import unittest
 import sys
+import unittest
 
 import mock
 # six is used in mock.patch()
@@ -98,18 +98,15 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
         self.config._ensure_ocsp_dirs()
-        self.db_path = os.path.join(self.work_dir, "ocsp", "ocsp_cache")
-        self.db_fullpath = self.db_path + ".db"
+        self.db_path = os.path.join(self.work_dir, "ocsp", "ocsp_cache") + ".db"
 
     def _call_mocked(self, func, *args, **kwargs):
         """Helper method to call functins with mock stack"""
 
-        db_fullpath = self.db_path + ".db"
-
         def mock_restart():
             """Mock ApacheConfigurator.restart that creates the dbm file"""
             # Mock the Apache dbm file creation
-            open(db_fullpath, 'a').close()
+            open(self.db_path, 'a').close()
 
         ver_path = "certbot_apache._internal.configurator.ApacheConfigurator.get_version"
         res_path = "certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin.restart"
@@ -234,11 +231,11 @@ class OCSPPrefetchTest(util.ApacheTest):
         def ocsp_del_db():
             """Side effect of _reload() that deletes the DBM file, like Apache
             does when restarting"""
-            os.remove(self.db_fullpath)
-            self.assertFalse(os.path.isfile(self.db_fullpath))
+            os.remove(self.db_path)
+            self.assertFalse(os.path.isfile(self.db_path))
 
         # Make sure that the db file exists
-        open(self.db_fullpath, 'a').close()
+        open(self.db_path, 'a').close()
         self.call_mocked_py2(self.config._write_to_dbm, self.db_path, b'mock_key', b'mock_value')
 
         # Mock OCSP prefetch dict to signify that there should be a db
@@ -300,7 +297,7 @@ class OCSPPrefetchTest(util.ApacheTest):
                               self.config._ensure_ocsp_prefetch_compatibility)
 
     def test_ocsp_prefetch_open_dbm_no_file(self):
-        open(self.db_fullpath, 'a').close()
+        open(self.db_path, 'a').close()
         db_not_exists = self.db_path+"nonsense"
         self.call_mocked_py2(self.config._write_to_dbm, self.db_path, b'k', b'v')
         self.assertRaises(errors.PluginError,
@@ -310,7 +307,7 @@ class OCSPPrefetchTest(util.ApacheTest):
                           b'k', b'v')
 
     def test_ocsp_prefetch_py2_open_file_error(self):
-        open(self.db_fullpath, 'a').close()
+        open(self.db_path, 'a').close()
         mock_db = mock.MagicMock()
         mock_db.hashopen.side_effect = Exception("error")
         sys.modules["bsddb"] = mock_db
@@ -320,7 +317,7 @@ class OCSPPrefetchTest(util.ApacheTest):
                           b'k', b'v')
 
     def test_ocsp_prefetch_py3_open_file_error(self):
-        open(self.db_fullpath, 'a').close()
+        open(self.db_path, 'a').close()
         mock_db = mock.MagicMock()
         mock_db.ndbm.open.side_effect = Exception("error")
         sys.modules["dbm"] = mock_db
@@ -332,7 +329,7 @@ class OCSPPrefetchTest(util.ApacheTest):
 
     def test_ocsp_prefetch_open_close_py2_noerror(self):
         expected_val = b'whatever_value'
-        open(self.db_fullpath, 'a').close()
+        open(self.db_path, 'a').close()
         self.call_mocked_py2(
             self.config._write_to_dbm, self.db_path,
             b'key', expected_val
@@ -342,13 +339,38 @@ class OCSPPrefetchTest(util.ApacheTest):
 
     def test_ocsp_prefetch_open_close_py3_noerror(self):
         expected_val = b'whatever_value'
-        open(self.db_fullpath, 'a').close()
+        open(self.db_path, 'a').close()
         self.call_mocked_py3(
             self.config._write_to_dbm, self.db_path,
             b'key', expected_val
         )
         db2 = self.call_mocked_py3(self.config._read_dbm, self.db_path)
         self.assertEqual(db2[b'key'], expected_val)
+
+    def test_ocsp_prefetch_safe_open_hash_mismatch(self):
+        import random
+        def mock_hash(_filepath):
+            # shound not be the same value twice
+            return str(random.getrandbits(1024))
+
+        open(self.db_path, 'a').close()
+        with mock.patch("certbot_apache._internal.apache_util._file_hash", side_effect=mock_hash):
+            self.assertRaises(
+                errors.PluginError,
+                self.call_mocked_py3,
+                self.config._write_to_dbm, self.db_path,
+                b'anything', b'irrelevant'
+            )
+
+    def test_ocsp_prefetch_safe_open_hash_fail_open(self):
+        open(self.db_path, 'a').close()
+        with mock.patch("certbot_apache._internal.apache_util._file_hash", side_effect=IOError):
+            self.assertRaises(
+                errors.PluginError,
+                self.call_mocked_py3,
+                self.config._write_to_dbm, self.db_path,
+                b'anything', b'irrelevant'
+            )
 
     @mock.patch("certbot_apache._internal.constants.OCSP_APACHE_TTL", 1234)
     def test_ttl(self):

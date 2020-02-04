@@ -1,9 +1,12 @@
 """ Utility functions for certbot-apache plugin """
 import binascii
+import hashlib
 import struct
+import shutil
 import time
 
 from certbot import crypto_util
+from certbot import errors
 from certbot import util
 from certbot.compat import os
 
@@ -47,6 +50,53 @@ def certid_sha1(cert_path):
 
     """
     return crypto_util.cert_sha1_fingerprint(cert_path)
+
+
+def safe_copy(source, target):
+    """Copies a file, while verifying the target integrity
+    with the source. Retries twice if the initial
+    copy fails.
+
+    :param str source: File path of the source file
+    :param str target: File path of the target file
+
+    :raises: .errors.PluginError: If file cannot be
+        copied or the target file hash does not match
+        with the source file.
+    """
+    for _ in range(3):
+        try:
+            shutil.copy2(source, target)
+        except IOError as e:
+            emsg = "Could not copy {} to {}: {}".format(
+                source, target, e
+            )
+            raise errors.PluginError(emsg)
+        try:
+            source_hash = _file_hash(source)
+            target_hash = _file_hash(target)
+        except IOError:
+            continue
+        if source_hash == target_hash:
+            return
+    raise errors.PluginError(
+        "Safe copy failed. The file integrity does not match"
+    )
+
+
+def _file_hash(filepath):
+    """Helper function for safe_copy that calculates a
+    sha-256 hash of file.
+
+    :param str filepath: Path of file to calculate hash for
+
+    :returns: File sha-256 hash
+    :rtype: str
+    """
+    fhash = hashlib.sha256()
+    with open(filepath, 'rb') as fh:
+        fhash.update(fh.read())
+    return fhash.hexdigest()
 
 
 def get_mod_deps(mod_name):

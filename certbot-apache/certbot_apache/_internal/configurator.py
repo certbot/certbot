@@ -1752,7 +1752,7 @@ class ApacheConfigurator(common.Installer):
         if prefetch:
             if "socache_dbm_module" not in self.parser.modules:
                 self.enable_mod("socache_dbm")
-            cache_path = os.path.join(self.config.config_dir, "ocsp", "ocsp_cache.db")
+            cache_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache.db")
             cache_dir = ["dbm:"+cache_path]
         else:
             if "socache_shmcb_module" not in self.parser.modules:
