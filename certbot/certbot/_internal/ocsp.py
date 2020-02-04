@@ -209,7 +209,7 @@ def _ocsp_times_cryptography(response_file):
     :param str response_file: File path to OCSP response
 
     :returns: tuple of producedAt, thisUpdate and nextUpdate values
-    :rtype: tuple of datetime
+    :rtype: tuple of datetime or None
     """
 
     try:
