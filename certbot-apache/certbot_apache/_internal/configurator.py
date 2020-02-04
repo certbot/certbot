@@ -1736,7 +1736,7 @@ class ApacheConfigurator(common.Installer):
         :param unused_options: Not currently used
         :type unused_options: Not Available
 
-        :param: prefetch: Use OCSP prefetching
+        :param prefetch: Use OCSP prefetching
         :type prefetch: bool
 
         :returns: Success, general_vhost (HTTP vhost)
