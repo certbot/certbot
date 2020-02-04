@@ -14,7 +14,7 @@ from certbot.compat import os
 def get_apache_ocsp_struct(ttl, ocsp_response):
     """Create Apache OCSP response structure to be used in response cache
 
-    :param int ttl: Time-To-Live in seocnds
+    :param int ttl: Time-To-Live in seconds
     :param str ocsp_response: OCSP response data
 
     :returns: Apache OCSP structure
