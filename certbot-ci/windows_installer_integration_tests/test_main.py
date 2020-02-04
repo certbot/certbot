@@ -42,7 +42,7 @@ def test_it(request):
 
         with open(log_path) as file_h:
             data = file_h.read()
-        assert 'DEBUG:certbot._internal.renewal:no renewal failures' in data, 'Renew task did not execute properly.'
+        assert 'no renewal failures' in data, 'Renew task did not execute properly.'
 
     finally:
         # Sadly this command cannot work in non interactive mode: uninstaller will ask explicitly permission in an UAC prompt
