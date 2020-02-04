@@ -168,7 +168,9 @@ class ApacheHttp01(common.ChallengePerformer):
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
+            old_umask = os.umask(0o022)
             filesystem.makedirs(self.challenge_dir, 0o755)
+            os.umask(old_umask)
 
         responses = []
         for achall in self.achalls:
