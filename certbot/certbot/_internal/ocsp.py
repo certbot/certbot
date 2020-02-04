@@ -184,7 +184,7 @@ def _ocsp_times_openssl_bin(response_file):
     :rtype: tuple of datetime or None
     """
     cmd = ["openssl", "ocsp", "-resp_text", "-noverify", "-respin", response_file]
-    logger.debug("Reading OCSP response from temp file: %s", response_file)
+    logger.debug("Reading OCSP response from file: %s", response_file)
     logger.debug(" ".join(cmd))
     try:
         output, _ = util.run_script(cmd, log=logger.debug)
