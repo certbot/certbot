@@ -34,16 +34,5 @@ def pytest_configure(config):
     :param config: the current pytest configuration
     """
     if not config.option.confirm:
-        capture_manager = config.pluginmanager.getplugin('capturemanager')
-        try:
-            capture_manager.suspendcapture(in_=True)
-
-            print('++ WARNING ++')
-            print('-------------')
-            print('This integration test will install Certbot on your machine.')
-            print('At the end of the test you will need to manually uninstall it.')
-            print('-------------')
-
-            input('Please press ENTER to continue, or CTRL+C to cancel.')
-        finally:
-            capture_manager.resumecapture()
+        raise RuntimeError('This integration test would install Certbot on your machine. '
+                           'Please run it again with the `--confirm` flag set to acknowledge.')
