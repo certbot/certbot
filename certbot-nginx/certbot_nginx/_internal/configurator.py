@@ -7,6 +7,7 @@ import socket
 import subprocess
 import tempfile
 import time
+import psutil
 
 import OpenSSL
 import pkg_resources
@@ -1113,8 +1114,11 @@ class NginxConfigurator(common.Installer):
         http_response = http_doer.perform()
 
         # Store old workers.
-        output = subprocess.check_output(["pidof", "nginx: worker process"])
-        worker_pids = list(map(int, output.split()))
+        worker_pids = []
+        for proc in psutil.process_iter():
+            cmdline = proc.cmdline()
+            if cmdline and cmdline[0] == "nginx: worker process":
+                worker_pids.append(proc.pid)
 
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
@@ -1122,14 +1126,13 @@ class NginxConfigurator(common.Installer):
 
         # Wait for old workers to terminate.
         timeout = time.time() + 120
-        with open(os.devnull, "w") as devnull:
-            while time.time() < timeout:
-                for worker_pid in reversed(worker_pids):
-                    if subprocess.call(["kill", "-0", str(worker_pid)], stderr=devnull) != 0:
-                        worker_pids.remove(worker_pid)
-                if len(worker_pids) == 0:
-                    break
-                time.sleep(1)
+        while time.time() < timeout:
+            for worker_pid in reversed(worker_pids):
+                if not psutil.pid_exists(worker_pid):
+                    worker_pids.remove(worker_pid)
+            if len(worker_pids) == 0:
+                break
+            time.sleep(1)
 
         # Go through all of the challenges and assign them to the proper place
         # in the responses return value. All responses must be in the same order
