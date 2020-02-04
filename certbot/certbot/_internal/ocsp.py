@@ -105,7 +105,7 @@ class RevocationChecker(object):
         """
         Reads OCSP response file and returns producedAt, thisUpdate
         and nextUpdate values in datetime format, or None if an error
-        occures.
+        occurs.
 
         :param str response_file: File path to OCSP response
 
