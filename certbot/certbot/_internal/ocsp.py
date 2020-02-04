@@ -181,7 +181,7 @@ def _ocsp_times_openssl_bin(response_file):
     :param str response_file: File path to OCSP response
 
     :returns: tuple of producedAt, thisUpdate and nextUpdate values
-    :rtype: tuple of datetime
+    :rtype: tuple of datetime or None
     """
     cmd = ["openssl", "ocsp", "-resp_text", "-noverify", "-respin", response_file]
     logger.debug("Reading OCSP response from temp file: %s", response_file)
