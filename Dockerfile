@@ -1,4 +1,4 @@
-FROM gcr.io/fathom-containers/debian-python2
+FROM us.gcr.io/fathom-containers/debian-python2
 
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
