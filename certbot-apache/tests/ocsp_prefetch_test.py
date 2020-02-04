@@ -198,11 +198,10 @@ class OCSPPrefetchTest(util.ApacheTest):
                 mock_times.return_value = produced_at, this_update, next_update
                 self.call_mocked_py2(self.config.enable_ocsp_prefetch,
                                      self.lineage, ["ocspvhost.com"])
-        odbm = self.config._ocsp_dbm_open(self.db_path)
+        odbm = self.config._read_dbm(self.db_path)
         self.assertEqual(len(odbm.keys()), 1)
         # The actual response data is prepended by Apache timestamp
         self.assertTrue(odbm[list(odbm.keys())[0]].endswith(b'MOCKRESPONSE'))
-        self.config._ocsp_dbm_close(odbm)
 
         with mock.patch(ocsp_path, side_effect=ocsp_req_mock) as mock_ocsp:
             with mock.patch('certbot._internal.ocsp.RevocationChecker.ocsp_times') as mock_times:
@@ -240,9 +239,7 @@ class OCSPPrefetchTest(util.ApacheTest):
 
         # Make sure that the db file exists
         open(self.db_fullpath, 'a').close()
-        odbm = self.call_mocked_py2(self.config._ocsp_dbm_open, self.db_path)
-        odbm[b'mock_key'] = b'mock_value'
-        self.config._ocsp_dbm_close(odbm)
+        self.call_mocked_py2(self.config._write_to_dbm, self.db_path, b'mock_key', b'mock_value')
 
         # Mock OCSP prefetch dict to signify that there should be a db
         self.config._ocsp_prefetch = {"mock": "value"}
@@ -250,9 +247,8 @@ class OCSPPrefetchTest(util.ApacheTest):
         with mock.patch(rel_path, side_effect=ocsp_del_db):
             self.config.restart()
 
-        odbm = self.config._ocsp_dbm_open(self.db_path)
+        odbm = self.config._read_dbm(self.db_path)
         self.assertEqual(odbm[b'mock_key'], b'mock_value')
-        self.config._ocsp_dbm_close(odbm)
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.config_test")
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator._reload")
@@ -306,9 +302,12 @@ class OCSPPrefetchTest(util.ApacheTest):
     def test_ocsp_prefetch_open_dbm_no_file(self):
         open(self.db_fullpath, 'a').close()
         db_not_exists = self.db_path+"nonsense"
-        self.call_mocked_py2(self.config._ocsp_dbm_open, self.db_path)
+        self.call_mocked_py2(self.config._write_to_dbm, self.db_path, b'k', b'v')
         self.assertRaises(errors.PluginError,
-                          self.call_mocked_py2, self.config._ocsp_dbm_open, db_not_exists)
+                          self.call_mocked_py2,
+                          self.config._write_to_dbm,
+                          db_not_exists,
+                          b'k', b'v')
 
     def test_ocsp_prefetch_py2_open_file_error(self):
         open(self.db_fullpath, 'a').close()
@@ -316,8 +315,9 @@ class OCSPPrefetchTest(util.ApacheTest):
         mock_db.hashopen.side_effect = Exception("error")
         sys.modules["bsddb"] = mock_db
         self.assertRaises(errors.PluginError,
-                          self.config._ocsp_dbm_open,
-                          self.db_path)
+                          self.config._write_to_dbm,
+                          self.db_path,
+                          b'k', b'v')
 
     def test_ocsp_prefetch_py3_open_file_error(self):
         open(self.db_fullpath, 'a').close()
@@ -326,27 +326,28 @@ class OCSPPrefetchTest(util.ApacheTest):
         sys.modules["dbm"] = mock_db
         sys.modules["bsddb"] = None
         self.assertRaises(errors.PluginError,
-                          self.config._ocsp_dbm_open,
-                          self.db_path)
+                          self.config._write_to_dbm,
+                          self.db_path,
+                          b'k', b'v')
 
     def test_ocsp_prefetch_open_close_py2_noerror(self):
         expected_val = b'whatever_value'
         open(self.db_fullpath, 'a').close()
-        db = self.call_mocked_py2(
-            self.config._ocsp_dbm_open, self.db_path)
-        db[b'key'] = expected_val
-        self.call_mocked_py2(self.config._ocsp_dbm_close, db)
-        db2 = self.call_mocked_py2(self.config._ocsp_dbm_open, self.db_path)
+        self.call_mocked_py2(
+            self.config._write_to_dbm, self.db_path,
+            b'key', expected_val
+        )
+        db2 = self.call_mocked_py2(self.config._read_dbm, self.db_path)
         self.assertEqual(db2[b'key'], expected_val)
 
     def test_ocsp_prefetch_open_close_py3_noerror(self):
         expected_val = b'whatever_value'
         open(self.db_fullpath, 'a').close()
-        db = self.call_mocked_py3(
-            self.config._ocsp_dbm_open, self.db_path)
-        db[b'key'] = expected_val
-        self.call_mocked_py3(self.config._ocsp_dbm_close, db)
-        db2 = self.call_mocked_py3(self.config._ocsp_dbm_open, self.db_path)
+        self.call_mocked_py3(
+            self.config._write_to_dbm, self.db_path,
+            b'key', expected_val
+        )
+        db2 = self.call_mocked_py3(self.config._read_dbm, self.db_path)
         self.assertEqual(db2[b'key'], expected_val)
 
     @mock.patch("certbot_apache._internal.constants.OCSP_APACHE_TTL", 1234)

@@ -18,6 +18,46 @@ from certbot_apache._internal import constants
 logger = logging.getLogger(__name__)
 
 
+class DBMHandler(object):
+    """Context manager to handle DBM file reads and writes"""
+
+    def __init__(self, filename, mode):
+        self.filename = filename
+        self.filemode = mode
+        self.bsddb = False
+        self.database = None
+
+    def __enter__(self):
+        """Open the DBM file and return the filehandle"""
+
+        if not os.path.isfile(self.filename + ".db"):
+            raise errors.PluginError(
+                "The OCSP stapling cache DBM file wasn't created by Apache.")
+        try:
+            import bsddb
+            self.bsddb = True
+            cache_path = self.filename + ".db"
+            try:
+                self.database = bsddb.hashopen(cache_path, self.filemode)
+            except Exception:
+                raise errors.PluginError("Unable to open dbm database file.")
+        except ImportError:
+            # Python3 doesn't have bsddb module, so we use dbm.ndbm instead
+            import dbm
+            try:
+                self.database = dbm.ndbm.open(self.filename, self.filemode)  # pylint: disable=no-member
+            except Exception:
+                # This is raised if a file cannot be found
+                raise errors.PluginError("Unable to open dbm database file.")
+        return self.database
+
+    def __exit__(self, *args):
+        """Close the DBM file"""
+        if self.bsddb:
+            self.database.sync()
+        self.database.close()
+
+
 class OCSPPrefetchMixin(object):
     """OCSPPrefetchMixin implements OCSP response prefetching"""
 
@@ -53,40 +93,6 @@ class OCSPPrefetchMixin(object):
                        "Apache OCSP stapling cache database.")
                 raise errors.NotSupportedError(msg)
 
-    def _ocsp_dbm_open(self, filepath):
-        """Helper method to open an DBM file in a way that depends on the platform
-        that Certbot is run on. Returns an open database structure."""
-
-        if not os.path.isfile(filepath+".db"):
-            raise errors.PluginError(
-                "The OCSP stapling cache DBM file wasn't created by Apache.")
-        try:
-            import bsddb
-            self._ocsp_dbm_bsddb = True
-            cache_path = filepath + ".db"
-            try:
-                database = bsddb.hashopen(cache_path, 'w')
-            except Exception:
-                raise errors.PluginError("Unable to open dbm database file.")
-        except ImportError:
-            # Python3 doesn't have bsddb module, so we use dbm.ndbm instead
-            import dbm
-            try:
-                database = dbm.ndbm.open(filepath, 'w')  # pylint: disable=no-member
-            except Exception:
-                # This is raised if a file cannot be found
-                raise errors.PluginError("Unable to open dbm database file.")
-        return database
-
-    def _ocsp_dbm_close(self, database):
-        """Helper method to sync and close a DBM file, in a way required by the
-        used dbm implementation."""
-        if self._ocsp_dbm_bsddb:
-            database.sync()
-            database.close()
-        else:
-            database.close()
-
     def _ocsp_refresh_needed(self, pf_obj):
         """Refreshes OCSP response for a certiifcate if it's due
 
@@ -119,11 +125,9 @@ class OCSPPrefetchMixin(object):
         if not handler.ocsp_revoked_by_paths(cert_path, chain_path, ocsp_workfile):
             # Guaranteed good response
             cache_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache")
-            # dbm.open automatically adds the file extension, it will be
-            db = self._ocsp_dbm_open(cache_path)
             cert_sha = apache_util.certid_sha1(cert_path)
-            db[cert_sha] = self._ocsp_response_dbm(ocsp_workfile)
-            self._ocsp_dbm_close(db)
+            # dbm.open automatically adds the file extension
+            self._write_to_dbm(cache_path, cert_sha, self._ocsp_response_dbm(ocsp_workfile))
         else:
             logger.warning("Encountered an issue while trying to prefetch OCSP "
                            "response for certificate: %s", cert_path)
@@ -133,6 +137,33 @@ class OCSPPrefetchMixin(object):
         except OSError:
             # The OCSP workfile did not exist because of an OCSP response fetching error
             return
+
+    def _write_to_dbm(self, filename, key, value):
+        """Helper method to write an OCSP response cache value to DBM
+
+        :param filename: DBM database filename
+        :param bytes key: Database key name
+        :param bytes value: Database entry value
+        """
+
+        with DBMHandler(filename, 'w') as db:
+            db[key] = value
+
+    def _read_dbm(self, filename):
+        """Helper method for reading the dbm using context manager.
+        Used for tests.
+
+        :param str filename: DBM database filename
+
+        :returns: Dictionary of database keys and values
+        :rtype: dict
+        """
+
+        ret = dict()
+        with DBMHandler(filename, 'r') as db:
+            for k in db.keys():
+                ret[k] = db[k]
+        return ret
 
     def _ocsp_ttl(self, next_update):
         """Calculates Apache internal TTL for the next OCSP staple
