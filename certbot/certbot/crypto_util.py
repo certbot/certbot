@@ -228,7 +228,7 @@ def load_cert(cert_path):
 
     :param str cert_path: Path to the certificate
 
-    :rtype `cryptography.x509`:
+    :rtype: `cryptography.x509.Certificate`
     :returns: x509 certificate object
     """
     with open(cert_path, 'rb') as fh:
