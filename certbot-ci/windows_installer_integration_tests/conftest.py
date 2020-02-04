@@ -24,8 +24,8 @@ def pytest_addoption(parser):
                                           'nsis', 'certbot-beta-installer-win32.exe'),
                      help='set the path of the windows installer to use, default to '
                           'CERTBOT_ROOT_PATH\\windows-installer\\build\\nsis\\certbot-beta-installer-win32.exe')
-    parser.addoption('--confirm', action='store_true',
-                     help='if set, this test will not ask for user confirmation before running')
+    parser.addoption('--allow-persistent-changes', action='store_true',
+                     help='needs to be set, and confirm that the test will make persistent changes on this machine')
 
 
 def pytest_configure(config):
@@ -33,6 +33,6 @@ def pytest_configure(config):
     Standard pytest hook used to add a configuration logic for each node of a pytest run.
     :param config: the current pytest configuration
     """
-    if not config.option.confirm:
+    if not config.option.allow_persistent_changes:
         raise RuntimeError('This integration test would install Certbot on your machine. '
-                           'Please run it again with the `--confirm` flag set to acknowledge.')
+                           'Please run it again with the `--allow-persistent-changes` flag set to acknowledge.')

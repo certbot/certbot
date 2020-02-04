@@ -48,7 +48,7 @@ jobs:
         displayName: Prepare Certbot-CI
       - script: |
           set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
-          venv\Scripts\python -m pytest certbot-ci\windows_installer_integration_tests --confirm --installer-path $(Build.SourcesDirectory)\bin\certbot-beta-installer-win32.exe
+          venv\Scripts\python -m pytest certbot-ci\windows_installer_integration_tests --allow-persistent-changes --installer-path $(Build.SourcesDirectory)\bin\certbot-beta-installer-win32.exe
         displayName: Run windows installer integration tests
       - script: |
           set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
