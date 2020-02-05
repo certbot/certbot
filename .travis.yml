@@ -14,17 +14,19 @@ before_script:
   - export TOX_TESTENV_PASSENV=TRAVIS
 
 # Only build pushes to the master branch, PRs, and branches beginning with
-# `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
-# simultaneous Travis runs, which speeds turnaround time on review since there
-# is a cap of on the number of simultaneous runs.
+# `test-`, `travis-test-`, or of the form `digit(s).digit(s).x`. This reduces
+# the number of simultaneous Travis runs, which speeds turnaround time on
+# review since there is a cap of on the number of simultaneous runs.
 branches:
+  # When changing these branches, please ensure the documentation under
+  # "Running tests in CI" is still correct.
   only:
     # apache-parser-v2 is a temporary branch for doing work related to
     # rewriting the parser in the Apache plugin.
     - apache-parser-v2
     - master
     - /^\d+\.\d+\.x$/
-    - /^test-.*$/
+    - /^(travis-)?test-.*$/
 
 # Jobs for the main test suite are always executed (including on PRs) except for pushes on master.
 not-on-master: &not-on-master
@@ -274,7 +276,7 @@ after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 notifications:
   email: false
   irc:
-    if: NOT branch =~ ^test-.*$
+    if: NOT branch =~ ^(travis-)?test-.*$
     channels:
       # This is set to a secure variable to prevent forks from sending
       # notifications. This value was created by installing
