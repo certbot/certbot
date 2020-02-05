@@ -18,6 +18,8 @@ before_script:
 # the number of simultaneous Travis runs, which speeds turnaround time on
 # review since there is a cap of on the number of simultaneous runs.
 branches:
+  # When changing these branches, please ensure the documentation under
+  # "Running tests in CI" is still correct.
   only:
     # apache-parser-v2 is a temporary branch for doing work related to
     # rewriting the parser in the Apache plugin.
