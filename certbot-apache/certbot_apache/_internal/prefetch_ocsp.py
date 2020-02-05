@@ -1,4 +1,35 @@
-"""A mixin class for OCSP response prefetching for Apache plugin"""
+"""A mixin class for OCSP response prefetching for Apache plugin.
+
+The OCSP prefetching functionality solves multiple issues in Apache httpd
+that make using OCSP must-staple error prone.
+
+The prefetching functionality works by storing a value to PluginStorage,
+noting certificates that Certbot should keep OCSP staples (OCSP responses)
+updated for alongside of the information when the last response was
+updated by Certbot.
+
+When Certbot is invoked, typically by scheduled "certbot renew" and the
+TTL from "lastupdate" value in PluginStorage entry has expired,
+Certbot then proceeds to fetch a new OCSP response from the OCSP servers
+pointed by the certificate.
+
+The OCSP response is validated and if valid, stored to Apache DBM
+cache. A high internal cache expiry value is set for Apache in order
+to make it to not to discard the stored response and try to renew
+the staple itself letting Certbot to renew it on its subsequent run
+instead.
+
+The DBM cache file used by Apache is a lightweight key-value storage.
+For OCSP response caching, the sha1 hash of certificate fingerprint
+is used as a key. The value consists of expiry time as timestamp
+in microseconds, \x01 delimiter and the raw OCSP response.
+
+When restarting Apache, Certbot backups the current OCSP response
+cache, and restores it after the restart has happened. This is
+done because Apache deletes and then recreates the file upon
+restart.
+"""
+
 from datetime import datetime
 import logging
 import shutil
