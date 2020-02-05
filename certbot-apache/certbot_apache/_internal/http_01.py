@@ -1,5 +1,6 @@
 """A class that performs HTTP-01 challenges for Apache"""
 import logging
+import errno
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
