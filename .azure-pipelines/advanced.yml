@@ -1,5 +1,6 @@
 # Advanced pipeline for isolated checks and release purpose
 trigger:
+  - azure-test-*
   - test-*
   - '*.x'
 pr:
