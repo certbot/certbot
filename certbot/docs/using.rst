@@ -959,6 +959,30 @@ changed by passing the desired number to the command line flag
    want to alter the log rotation, check `/etc/logrotate.d/` for a
    certbot rotation script.
 
+.. _prefetch-ocsp:
+
+Prefetching OCSP responses
+==========================
+
+Certbot users on Debian and Ubuntu based operating systems have the option to 
+configure certbot to handle prefetching and management of OCSP staples in behalf
+of Apache process. This mitigates multiple issues that exist with Apache OCSP 
+staple handling in cases where there are issues with either network connectivity
+or OCSP service availability.
+
+Normally when configuring Apache to handle OCSP stapling, it proceeds to fetch
+the initial response from the OCSP server only during the handshake of next
+incoming request after the restart. Upon requesting a new OCSP response from the
+OCSP server pointed by the certificate, Apache overwrites the already existing
+cached response regardless of the validity of the received response.
+
+Certbot tries to fix these issues by configuring the internal expiry of the
+Apache OCSP staple cache close to the expiry of the actual OCSP staple as well 
+as by backing up and restoring the existing OCSP staple cache file when restarting 
+Apache process.
+
+The OCSP prefetching can be enabled with command line flag `--prefetch-ocsp`.
+
 .. _command-line:
 
 Certbot command-line options
