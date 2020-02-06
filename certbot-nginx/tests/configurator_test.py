@@ -36,7 +36,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(11, len(self.config.parser.parsed))
+        self.assertEqual(12, len(self.config.parser.parsed))
 
     @mock.patch("certbot_nginx._internal.configurator.util.exe_exists")
     @mock.patch("certbot_nginx._internal.configurator.subprocess.Popen")
@@ -926,7 +926,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                                 prefer_ssl=False,
                                                 no_ssl_filter_port='80')
             # Check that the dialog was called with only port 80 vhosts
-            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 5)
+            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 6)
 
 
 class InstallSslOptionsConfTest(util.NginxTest):
