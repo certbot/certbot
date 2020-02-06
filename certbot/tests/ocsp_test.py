@@ -32,7 +32,7 @@ ocsp: Use -help for summary.
 
 class OCSPTestOpenSSL(unittest.TestCase):
     """
-    OCSP revokation tests using OpenSSL binary.
+    OCSP revocation tests using OpenSSL binary.
     """
 
     def setUp(self):
@@ -75,13 +75,14 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(checker.broken, True)
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
+    @mock.patch('certbot.ocsp.crypto_util.notAfter')
     @mock.patch('certbot.util.run_script')
-    def test_ocsp_revoked(self, mock_run, mock_determine):
+    def test_ocsp_revoked(self, mock_run, mock_na, mock_determine):
         now = pytz.UTC.fromutc(datetime.utcnow())
         cert_obj = mock.MagicMock()
-        cert_obj.cert = "x"
-        cert_obj.chain = "y"
-        cert_obj.target_expiry = now + timedelta(hours=2)
+        cert_obj.cert_path = "x"
+        cert_obj.chain_path = "y"
+        mock_na.return_value = now + timedelta(hours=2)
 
         self.checker.broken = True
         mock_determine.return_value = ("", "")
@@ -99,7 +100,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(mock_run.call_count, 2)
 
         # cert expired
-        cert_obj.target_expiry = now
+        mock_na.return_value = now
         mock_determine.return_value = ("", "")
         count_before = mock_determine.call_count
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
@@ -150,22 +151,27 @@ class OSCPTestCryptography(unittest.TestCase):
         self.cert_path = test_util.vector_path('ocsp_certificate.pem')
         self.chain_path = test_util.vector_path('ocsp_issuer_certificate.pem')
         self.cert_obj = mock.MagicMock()
-        self.cert_obj.cert = self.cert_path
-        self.cert_obj.chain = self.chain_path
+        self.cert_obj.cert_path = self.cert_path
+        self.cert_obj.chain_path = self.chain_path
+
+    def _call_expirymock(self, func, *args, **kwargs):
+        """Call function with mocked certificate expiry time"""
         now = pytz.UTC.fromutc(datetime.utcnow())
-        self.cert_obj.target_expiry = now + timedelta(hours=2)
+        with mock.patch('certbot.ocsp.crypto_util.notAfter') as mock_na:
+            mock_na.return_value = now + timedelta(hours=2)
+            return func(*args, **kwargs)
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.ocsp._check_ocsp_cryptography')
     def test_ensure_cryptography_toggled(self, mock_revoke, mock_determine):
         mock_determine.return_value = ('http://example.com', 'example.com')
-        self.checker.ocsp_revoked(self.cert_obj)
+        self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
 
         mock_revoke.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com')
 
     def test_revoke(self):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
-            revoked = self.checker.ocsp_revoked(self.cert_obj)
+            revoked = self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
         self.assertTrue(revoked)
 
     def test_responder_is_issuer(self):
@@ -175,7 +181,7 @@ class OSCPTestCryptography(unittest.TestCase):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED,
                         ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
             mocks['mock_response'].return_value.responder_name = issuer.subject
-            self.checker.ocsp_revoked(self.cert_obj)
+            self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
         # Here responder and issuer are the same. So only the signature of the OCSP
         # response is checked (using the issuer/responder public key).
         self.assertEqual(mocks['mock_check'].call_count, 1)
@@ -190,7 +196,7 @@ class OSCPTestCryptography(unittest.TestCase):
 
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED,
                         ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
-            self.checker.ocsp_revoked(self.cert_obj)
+            self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
         # Here responder and issuer are not the same. Two signatures will be checked then,
         # first to verify the responder cert (using the issuer public key), second to
         # to verify the OCSP response itself (using the responder public key).
