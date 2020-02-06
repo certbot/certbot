@@ -24,6 +24,7 @@ More details about these changes can be found on our GitHub repo.
 ### Added
 
 * Added support for Cloudflare's limited-scope API Tokens
+* Added support for `$hostname` in nginx `server_name` directive
 
 ### Changed
 
