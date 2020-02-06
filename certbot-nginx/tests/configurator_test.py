@@ -76,15 +76,17 @@ class NginxConfiguratorTest(util.NginxTest):
         else:  # pragma: no cover
             self.fail("Exception wasn't raised!")
 
+    @mock.patch("certbot_nginx._internal.configurator.socket.gethostname")
     @mock.patch("certbot_nginx._internal.configurator.socket.gethostbyaddr")
-    def test_get_all_names(self, mock_gethostbyaddr):
+    def test_get_all_names(self, mock_gethostbyaddr, mock_gethostname):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
+        mock_gethostname.return_value = ('example.net')
         names = self.config.get_all_names()
         self.assertEqual(names, {
             "155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
              "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com",
-             "headers.com"})
+             "headers.com", "example.net"})
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'ensure-http-header', 'staple-ocsp'],
