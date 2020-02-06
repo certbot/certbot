@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* certbot.\_internal.ocsp moved to public API, and is now available in package certbot.ocsp
 
 ### Fixed
 
