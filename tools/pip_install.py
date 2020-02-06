@@ -8,17 +8,19 @@
 # CERTBOT_OLDEST is set, this script must be run with `-e <package-name>` and
 # no other arguments.
 
-from __future__ import print_function, absolute_import
+from __future__ import absolute_import
+from __future__ import print_function
 
-import subprocess
 import os
-import sys
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 
 import merge_requirements as merge_module
 import readlink
+import strip_hashes
 
 
 def find_tools_path():
@@ -47,10 +49,8 @@ def certbot_normal_processing(tools_path, test_constraints):
     with open(certbot_requirements, 'r') as fd:
         data = fd.readlines()
     with open(test_constraints, 'w') as fd:
-        for line in data:
-            search = re.search(r'^(\S*==\S*).*$', line)
-            if search:
-                fd.write('{0}{1}'.format(search.group(1), os.linesep))
+        data = "\n".join(strip_hashes.process_entries(data))
+        fd.write(data)
 
 
 def merge_requirements(tools_path, requirements, test_constraints, all_constraints):
@@ -70,9 +70,15 @@ def merge_requirements(tools_path, requirements, test_constraints, all_constrain
         fd.write(merged_requirements)
 
 
-def call_with_print(command, cwd=None):
+def call_with_print(command):
     print(command)
-    subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
+    subprocess.check_call(command, shell=True)
+
+
+def pip_install_with_print(args_str):
+    command = '"{0}" -m pip install --disable-pip-version-check {1}'.format(sys.executable,
+                                                                            args_str)
+    call_with_print(command)
 
 
 def main(args):
@@ -90,8 +96,7 @@ def main(args):
 
         if os.environ.get('CERTBOT_NO_PIN') == '1':
             # With unpinned dependencies, there is no constraint
-            call_with_print('"{0}" -m pip install {1}'
-                            .format(sys.executable, ' '.join(args)))
+            pip_install_with_print(' '.join(args))
         else:
             # Otherwise, we merge requirements to build the constraints and pin dependencies
             requirements = None
@@ -101,12 +106,19 @@ def main(args):
                 certbot_normal_processing(tools_path, test_constraints)
 
             merge_requirements(tools_path, requirements, test_constraints, all_constraints)
-            if requirements:
-                call_with_print('"{0}" -m pip install --constraint "{1}" --requirement "{2}"'
-                                .format(sys.executable, all_constraints, requirements))
+            if requirements:  # This branch is executed during the oldest tests
+                # First step, install the transitive dependencies of oldest requirements
+                # in respect with oldest constraints.
+                pip_install_with_print('--constraint "{0}" --requirement "{1}"'
+                                       .format(all_constraints, requirements))
+                # Second step, ensure that oldest requirements themselves are effectively
+                # installed using --force-reinstall, and avoid corner cases like the one described
+                # in https://github.com/certbot/certbot/issues/7014.
+                pip_install_with_print('--force-reinstall --no-deps --requirement "{0}"'
+                                       .format(requirements))
 
-            call_with_print('"{0}" -m pip install --constraint "{1}" {2}'
-                            .format(sys.executable, all_constraints, ' '.join(args)))
+            pip_install_with_print('--constraint "{0}" {1}'.format(
+                all_constraints, ' '.join(args)))
     finally:
         if os.environ.get('TRAVIS'):
             print('travis_fold:end:install_certbot_deps')

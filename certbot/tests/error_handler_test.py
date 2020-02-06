@@ -1,16 +1,16 @@
-"""Tests for certbot.error_handler."""
+"""Tests for certbot._internal.error_handler."""
 import contextlib
-import os
 import signal
 import sys
 import unittest
 
 import mock
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Callable, Dict, Union
-# pylint: enable=unused-import, no-name-in-module
 
-import certbot.tests.util as test_util
+from acme.magic_typing import Callable  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from certbot.compat import os
+
 
 def get_signals(signums):
     """Get the handlers for an iterable of signums."""
@@ -39,10 +39,10 @@ def send_signal(signum):
 
 
 class ErrorHandlerTest(unittest.TestCase):
-    """Tests for certbot.error_handler.ErrorHandler."""
+    """Tests for certbot._internal.error_handler.ErrorHandler."""
 
     def setUp(self):
-        from certbot import error_handler
+        from certbot._internal import error_handler
 
         self.init_func = mock.MagicMock()
         self.init_args = set((42,))
@@ -66,9 +66,9 @@ class ErrorHandlerTest(unittest.TestCase):
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
 
-    # On Windows, this test kills pytest itself !
-    @test_util.broken_on_windows
     def test_context_manager_with_signal(self):
+        if not self.signals:
+            self.skipTest(reason='Signals cannot be handled on Windows.')
         init_signals = get_signals(self.signals)
         with signal_receiver(self.signals) as signals_received:
             with self.handler:
@@ -98,9 +98,9 @@ class ErrorHandlerTest(unittest.TestCase):
                                                **self.init_kwargs)
         bad_func.assert_called_once_with()
 
-    # On Windows, this test kills pytest itself !
-    @test_util.broken_on_windows
     def test_bad_recovery_with_signal(self):
+        if not self.signals:
+            self.skipTest(reason='Signals cannot be handled on Windows.')
         sig1 = self.signals[0]
         sig2 = self.signals[-1]
         bad_func = mock.MagicMock(side_effect=lambda: send_signal(sig1))
@@ -131,10 +131,10 @@ class ErrorHandlerTest(unittest.TestCase):
 
 
 class ExitHandlerTest(ErrorHandlerTest):
-    """Tests for certbot.error_handler.ExitHandler."""
+    """Tests for certbot._internal.error_handler.ExitHandler."""
 
     def setUp(self):
-        from certbot import error_handler
+        from certbot._internal import error_handler
         super(ExitHandlerTest, self).setUp()
         self.handler = error_handler.ExitHandler(self.init_func,
                                                  *self.init_args,
@@ -149,10 +149,6 @@ class ExitHandlerTest(ErrorHandlerTest):
                                                **self.init_kwargs)
         func.assert_called_once_with()
 
-    # On Windows, this test kills pytest itself !
-    @test_util.broken_on_windows
-    def test_bad_recovery_with_signal(self):
-        super(ExitHandlerTest, self).test_bad_recovery_with_signal()
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

@@ -1,2 +1,3 @@
-acme[dev]==0.26.0
-certbot[dev]==0.22.0
+# Remember to update setup.py to match the package versions below.
+acme[dev]==1.0.0
+certbot[dev]==1.1.0

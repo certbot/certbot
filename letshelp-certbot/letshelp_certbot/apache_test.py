@@ -2,18 +2,17 @@
 import argparse
 import functools
 import os
-import pkg_resources
 import subprocess
 import tarfile
 import tempfile
 import unittest
 
-import mock
 # six is used in mock.patch()
+import mock
+import pkg_resources
 import six  # pylint: disable=unused-import
 
 import letshelp_certbot.apache as letshelp_le_apache
-
 
 _PARTIAL_CONF_PATH = os.path.join("mods-available", "ssl.load")
 _PARTIAL_LINK_PATH = os.path.join("mods-enabled", "ssl.load")

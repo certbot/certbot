@@ -15,6 +15,7 @@ def certbot_version(build_script_dir):
     return re.search('''^__version__ = ['"](.+)['"].*''',
                      file_contents(join(dirname(build_script_dir),
                                         'certbot',
+                                        'certbot',
                                         '__init__.py')),
                      re.M).group(1)
 

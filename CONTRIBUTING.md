@@ -33,3 +33,5 @@ started. In particular, we recommend you read these sections
  - [Finding issues to work on](https://certbot.eff.org/docs/contributing.html#find-issues-to-work-on)
  - [Coding style](https://certbot.eff.org/docs/contributing.html#coding-style)
  - [Submitting a pull request](https://certbot.eff.org/docs/contributing.html#submitting-a-pull-request)
+ - [EFF's Public Projects Code of Conduct](https://www.eff.org/pages/eppcode)
+

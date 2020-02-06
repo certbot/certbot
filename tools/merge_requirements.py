@@ -10,27 +10,36 @@ from __future__ import print_function
 import sys
 
 
-def read_file(file_path):
-    """Reads in a Python requirements file.
+def process_entries(entries):
+    """
     Ignore empty lines, comments and editable requirements
 
-    :param str file_path: path to requirements file
+    :param list entries: List of entries
 
     :returns: mapping from a project to its pinned version
     :rtype: dict
-
     """
     data = {}
-    with open(file_path) as file_h:
-        for line in file_h:
-            line = line.strip()
-            if line and not line.startswith('#') and not line.startswith('-e'):
-                project, version = line.split('==')
-                if not version:
-                    raise ValueError("Unexpected syntax '{0}'".format(line))
-                data[project] = version
+    for e in entries:
+        e = e.strip()
+        if e and not e.startswith('#') and not e.startswith('-e'):
+            project, version = e.split('==')
+            if not version:
+                raise ValueError("Unexpected syntax '{0}'".format(e))
+            data[project] = version
     return data
 
+def read_file(file_path):
+    """Reads in a Python requirements file.
+
+    :param str file_path: path to requirements file
+
+    :returns: list of entries in the file
+    :rtype: list
+
+    """
+    with open(file_path) as file_h:
+        return file_h.readlines()
 
 def output_requirements(requirements):
     """Prepare print requirements to stdout.
@@ -46,14 +55,25 @@ def main(*paths):
     """Merges multiple requirements files together and prints the result.
 
     Requirement files specified later in the list take precedence over earlier
-    files.
+    files. Files are read from file paths passed from the command line arguments.
 
-    :param tuple paths: paths to requirements files
+    If no command line arguments are defined, data is read from stdin instead.
+
+    :param tuple paths: paths to requirements files provided on command line
 
     """
     data = {}
-    for path in paths:
-        data.update(read_file(path))
+    if paths:
+        for path in paths:
+            data.update(process_entries(read_file(path)))
+    else:
+        # Need to check if interactive to avoid blocking if nothing is piped
+        if not sys.stdin.isatty():
+            stdin_data = []
+            for line in sys.stdin:
+                stdin_data.append(line)
+            data.update(process_entries(stdin_data))
+
     return output_requirements(data)
 
 

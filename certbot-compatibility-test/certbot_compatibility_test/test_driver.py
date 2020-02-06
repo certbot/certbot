@@ -1,32 +1,30 @@
 """Tests Certbot plugins against different server configurations."""
 import argparse
+import contextlib
 import filecmp
 import logging
 import os
 import shutil
+import sys
 import tempfile
 import time
-import sys
 
 import OpenSSL
-
-from six.moves import xrange  # pylint: disable=import-error,redefined-builtin
+from urllib3.util import connection
 
 from acme import challenges
 from acme import crypto_util
 from acme import messages
-from acme.magic_typing import List, Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors as le_errors
 from certbot.tests import acme_util
-
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 from certbot_compatibility_test import validator
-
 from certbot_compatibility_test.configurators.apache import common as a_common
 from certbot_compatibility_test.configurators.nginx import common as n_common
-
 
 DESCRIPTION = """
 Tests Certbot plugins against different server configurations. It is
@@ -58,25 +56,27 @@ def test_authenticator(plugin, config, temp_dir):
         return False
 
     success = True
-    for i in xrange(len(responses)):
-        if not responses[i]:
+    for i, response in enumerate(responses):
+        achall = achalls[i]
+        if not response:
             logger.error(
                 "Plugin failed to complete %s for %s in %s",
-                type(achalls[i]), achalls[i].domain, config)
+                type(achall), achall.domain, config)
             success = False
-        elif isinstance(responses[i], challenges.TLSSNI01Response):
-            verified = responses[i].simple_verify(achalls[i].chall,
-                                                  achalls[i].domain,
-                                                  util.JWK.public_key(),
-                                                  host="127.0.0.1",
-                                                  port=plugin.https_port)
+        elif isinstance(response, challenges.HTTP01Response):
+            # We fake the DNS resolution to ensure that any domain is resolved
+            # to the local HTTP server setup for the compatibility tests
+            with _fake_dns_resolution("127.0.0.1"):
+                verified = response.simple_verify(
+                    achall.chall, achall.domain,
+                    util.JWK.public_key(), port=plugin.http_port)
             if verified:
                 logger.info(
-                    "tls-sni-01 verification for %s succeeded", achalls[i].domain)
+                    "http-01 verification for %s succeeded", achall.domain)
             else:
                 logger.error(
-                    "**** tls-sni-01 verification for %s in %s failed",
-                    achalls[i].domain, config)
+                    "**** http-01 verification for %s in %s failed",
+                    achall.domain, config)
                 success = False
 
     if success:
@@ -89,8 +89,7 @@ def test_authenticator(plugin, config, temp_dir):
         if _dirs_are_unequal(config, backup):
             logger.error("Challenge cleanup failed for %s", config)
             return False
-        else:
-            logger.info("Challenge cleanup succeeded")
+        logger.info("Challenge cleanup succeeded")
 
     return success
 
@@ -102,9 +101,9 @@ def _create_achalls(plugin):
     for domain in names:
         prefs = plugin.get_chall_pref(domain)
         for chall_type in prefs:
-            if chall_type == challenges.TLSSNI01:
-                chall = challenges.TLSSNI01(
-                    token=os.urandom(challenges.TLSSNI01.TOKEN_SIZE))
+            if chall_type == challenges.HTTP01:
+                chall = challenges.HTTP01(
+                    token=os.urandom(challenges.HTTP01.TOKEN_SIZE))
                 challb = acme_util.chall_to_challb(
                     chall, messages.STATUS_PENDING)
                 achall = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -235,9 +234,8 @@ def test_rollback(plugin, config, backup):
     if _dirs_are_unequal(config, backup):
         logger.error("*** Rollback failed for config `%s`", config)
         return False
-    else:
-        logger.info("Rollback succeeded")
-        return True
+    logger.info("Rollback succeeded")
+    return True
 
 
 def _create_backup(config, temp_dir):
@@ -252,7 +250,7 @@ def _create_backup(config, temp_dir):
 def _dirs_are_unequal(dir1, dir2):
     """Returns True if dir1 and dir2 are unequal"""
     dircmps = [filecmp.dircmp(dir1, dir2)]
-    while len(dircmps):
+    while dircmps:
         dircmp = dircmps.pop()
         if dircmp.left_only or dircmp.right_only:
             logger.error("The following files and directories are only "
@@ -306,7 +304,7 @@ def get_args():
         "-e", "--enhance", action="store_true", help="tests the enhancements "
         "the plugin supports (implicitly includes installer tests)")
 
-    for plugin in PLUGINS.itervalues():
+    for plugin in PLUGINS.values():
         plugin.add_parser_arguments(parser)
 
     args = parser.parse_args()
@@ -367,6 +365,22 @@ def main():
     else:
         logger.warning("One or more compatibility tests failed")
         sys.exit(1)
+
+
+@contextlib.contextmanager
+def _fake_dns_resolution(resolved_ip):
+    """Monkey patch urllib3 to make any hostname be resolved to the provided IP"""
+    _original_create_connection = connection.create_connection
+
+    def _patched_create_connection(address, *args, **kwargs):
+        _, port = address
+        return _original_create_connection((resolved_ip, port), *args, **kwargs)
+
+    try:
+        connection.create_connection = _patched_create_connection
+        yield
+    finally:
+        connection.create_connection = _original_create_connection
 
 
 if __name__ == "__main__":

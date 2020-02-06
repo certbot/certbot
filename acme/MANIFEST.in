@@ -3,4 +3,6 @@ include README.rst
 include pytest.ini
 recursive-include docs *
 recursive-include examples *
-recursive-include acme/testdata *
+recursive-include tests *
+global-exclude __pycache__
+global-exclude *.py[cod]

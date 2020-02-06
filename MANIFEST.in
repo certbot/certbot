@@ -1,9 +1,0 @@
-include README.rst
-include CHANGELOG.md
-include CONTRIBUTING.md
-include LICENSE.txt
-include linter_plugin.py
-recursive-include docs *
-recursive-include examples *
-recursive-include certbot/tests/testdata *
-include certbot/ssl-dhparams.pem

@@ -1,9 +1,8 @@
-"""Test certbot.display.completer."""
-import os
+"""Test certbot._internal.display.completer."""
 try:
-    import readline # pylint: disable=import-error
+    import readline  # pylint: disable=import-error
 except ImportError:
-    import certbot.display.dummy_readline as readline # type: ignore
+    import certbot._internal.display.dummy_readline as readline  # type: ignore
 import string
 import sys
 import unittest
@@ -12,10 +11,13 @@ import mock
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-import certbot.tests.util as test_util
+from certbot.compat import filesystem  # pylint: disable=ungrouped-imports
+from certbot.compat import os  # pylint: disable=ungrouped-imports
+import certbot.tests.util as test_util  # pylint: disable=ungrouped-imports
+
 
 class CompleterTest(test_util.TempDirTestCase):
-    """Test certbot.display.completer.Completer."""
+    """Test certbot._internal.display.completer.Completer."""
 
     def setUp(self):
         super(CompleterTest, self).setUp()
@@ -31,13 +33,13 @@ class CompleterTest(test_util.TempDirTestCase):
             path = os.path.join(self.tempdir, c)
             self.paths.append(path)
             if ord(c) % 2:
-                os.mkdir(path)
+                filesystem.mkdir(path)
             else:
                 with open(path, 'w'):
                     pass
 
     def test_complete(self):
-        from certbot.display import completer
+        from certbot._internal.display import completer
         my_completer = completer.Completer()
         num_paths = len(self.paths)
 
@@ -61,7 +63,7 @@ class CompleterTest(test_util.TempDirTestCase):
         sys.modules['readline'] = original_readline
 
     def test_context_manager_with_unmocked_readline(self):
-        from certbot.display import completer
+        from certbot._internal.display import completer
         reload_module(completer)
 
         original_completer = readline.get_completer()
@@ -73,18 +75,18 @@ class CompleterTest(test_util.TempDirTestCase):
         self.assertEqual(readline.get_completer(), original_completer)
         self.assertEqual(readline.get_completer_delims(), original_delims)
 
-    @mock.patch('certbot.display.completer.readline', autospec=True)
+    @mock.patch('certbot._internal.display.completer.readline', autospec=True)
     def test_context_manager_libedit(self, mock_readline):
         mock_readline.__doc__ = 'libedit'
         self._test_context_manager_with_mock_readline(mock_readline)
 
-    @mock.patch('certbot.display.completer.readline', autospec=True)
+    @mock.patch('certbot._internal.display.completer.readline', autospec=True)
     def test_context_manager_readline(self, mock_readline):
         mock_readline.__doc__ = 'GNU readline'
         self._test_context_manager_with_mock_readline(mock_readline)
 
     def _test_context_manager_with_mock_readline(self, mock_readline):
-        from certbot.display import completer
+        from certbot._internal.display import completer
 
         mock_readline.parse_and_bind.side_effect = enable_tab_completion
 
@@ -99,6 +101,7 @@ def enable_tab_completion(unused_command):
     libedit = readline.__doc__ is not None and 'libedit' in readline.__doc__
     command = 'bind ^I rl_complete' if libedit else 'tab: complete'
     readline.parse_and_bind(command)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
