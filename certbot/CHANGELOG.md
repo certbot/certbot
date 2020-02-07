@@ -6,11 +6,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added certbot.ocsp Certbot's API. The certbot.ocsp can be used to determine the OCSP status of certificates.
 
 ### Changed
 
-* certbot.\_internal.ocsp moved to public API, and is now available in package certbot.ocsp
+*
 
 ### Fixed
 
