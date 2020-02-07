@@ -1121,7 +1121,7 @@ class NginxConfigurator(common.Installer):
         achalls_to_validate = achalls[:]
         while time.time() < timeout:
             for achall in achalls_to_validate:
-                url = 'http://127.0.0.1' + http_doer._get_validation_path(achall)
+                url = 'http://127.0.0.1/' + http_doer.get_validation_path(achall)
                 headers = {'Host': achall.domain}
                 response = requests.get(url, headers=headers)
                 if response.status_code == 200:

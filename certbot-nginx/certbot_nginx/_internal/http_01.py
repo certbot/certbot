@@ -58,6 +58,9 @@ class NginxHttp01(common.ChallengePerformer):
 
         return responses
 
+    def get_validation_path(self, achall):
+        return os.sep + os.path.join(challenges.HTTP01.URI_ROOT_PATH, achall.chall.encode("token"))
+
     def _mod_config(self):
         """Modifies Nginx config to include server_names_hash_bucket_size directive
            and server challenge blocks.
@@ -134,9 +137,6 @@ class NginxHttp01(common.ChallengePerformer):
                         default_addr)
         return addresses
 
-    def _get_validation_path(self, achall):
-        return os.sep + os.path.join(challenges.HTTP01.URI_ROOT_PATH, achall.chall.encode("token"))
-
     def _make_server_block(self, achall):
         """Creates a server block for a challenge.
         :param achall: Annotated HTTP-01 challenge
@@ -163,7 +163,7 @@ class NginxHttp01(common.ChallengePerformer):
 
     def _location_directive_for_achall(self, achall):
         validation = achall.validation(achall.account_key)
-        validation_path = self._get_validation_path(achall)
+        validation_path = self.get_validation_path(achall)
 
         location_directive = [['location', ' ', '=', ' ', validation_path],
                               [['default_type', ' ', 'text/plain'],
