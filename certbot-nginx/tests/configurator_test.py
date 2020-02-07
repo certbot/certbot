@@ -36,7 +36,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(11, len(self.config.parser.parsed))
+        self.assertEqual(12, len(self.config.parser.parsed))
 
     @mock.patch("certbot_nginx._internal.configurator.util.exe_exists")
     @mock.patch("certbot_nginx._internal.configurator.subprocess.Popen")
@@ -76,15 +76,17 @@ class NginxConfiguratorTest(util.NginxTest):
         else:  # pragma: no cover
             self.fail("Exception wasn't raised!")
 
+    @mock.patch("certbot_nginx._internal.configurator.socket.gethostname")
     @mock.patch("certbot_nginx._internal.configurator.socket.gethostbyaddr")
-    def test_get_all_names(self, mock_gethostbyaddr):
+    def test_get_all_names(self, mock_gethostbyaddr, mock_gethostname):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
+        mock_gethostname.return_value = ('example.net')
         names = self.config.get_all_names()
         self.assertEqual(names, {
             "155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
              "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com",
-             "headers.com"})
+             "headers.com", "example.net"})
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'ensure-http-header', 'staple-ocsp'],
@@ -924,7 +926,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                                 prefer_ssl=False,
                                                 no_ssl_filter_port='80')
             # Check that the dialog was called with only port 80 vhosts
-            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 5)
+            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 6)
 
 
 class InstallSslOptionsConfTest(util.NginxTest):

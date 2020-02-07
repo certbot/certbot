@@ -16,6 +16,8 @@ sed -i -e "s|intersphinx_mapping = {'https://docs.python.org/': None}|intersphin
 sed -i -e "s|html_theme = 'alabaster'|\n# http://docs.readthedocs.org/en/latest/theme.html#how-do-i-use-this-locally-and-on-read-the-docs\n# on_rtd is whether we are on readthedocs.org\non_rtd = os.environ.get('READTHEDOCS', None) == 'True'\nif not on_rtd:  # only import and set the theme if we're building docs locally\n    import sphinx_rtd_theme\n    html_theme = 'sphinx_rtd_theme'\n    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]\n# otherwise, readthedocs.org uses their theme by default, so no need to specify it|" conf.py
 sed -i -e "s|# Add any paths that contain templates here, relative to this directory.|autodoc_member_order = 'bysource'\nautodoc_default_flags = ['show-inheritance']\n\n# Add any paths that contain templates here, relative to this directory.|" conf.py
 sed -i -e "s|# The name of the Pygments (syntax highlighting) style to use.|default_role = 'py:obj'\n\n# The name of the Pygments (syntax highlighting) style to use.|" conf.py
+# If the --ext-todo flag is removed from sphinx-quickstart, the line below can be removed.
+sed -i -e "s|todo_include_todos = True|todo_include_todos = False|" conf.py
 echo "/_build/" >> .gitignore
 echo "=================
 API Documentation
