@@ -6,7 +6,10 @@ import json
 import unittest
 
 import josepy as jose
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 import OpenSSL
 import requests
 from six.moves import http_client  # pylint: disable=import-error

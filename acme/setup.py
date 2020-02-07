@@ -1,5 +1,7 @@
+from distutils.version import StrictVersion
 import sys
 
+from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
@@ -26,9 +28,13 @@ install_requires = [
 ]
 
 tests_require = [
-    'mock',
     'pytest',
 ]
+setuptools_known_environemnt_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
+if setuptools_known_environemnt_markers:
+    tests_require.append('mock ; python_version < "3.3"')
+elif sys.version_info  < (3,3):
+    tests_require.append('mock')
 
 dev_extras = [
     'pytest',

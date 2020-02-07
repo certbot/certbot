@@ -4,7 +4,10 @@ import threading
 import unittest
 
 import josepy as jose
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 import requests
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error

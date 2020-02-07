@@ -2,7 +2,10 @@
 import unittest
 
 import josepy as jose
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from acme import challenges
 from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module

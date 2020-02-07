@@ -1,7 +1,10 @@
 """Tests for acme.errors."""
 import unittest
 
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 
 class BadNonceTest(unittest.TestCase):
