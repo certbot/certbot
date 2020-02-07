@@ -15,7 +15,6 @@ install_requires = [
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
-    'mock',
     # Connection.set_tlsext_host_name (>=0.13)
     'PyOpenSSL>=0.13.1',
     'pyrfc3339',
@@ -24,6 +23,11 @@ install_requires = [
     'requests-toolbelt>=0.3.0',
     'setuptools',
     'six>=1.9.0',  # needed for python_2_unicode_compatible
+]
+
+tests_require = [
+    'mock',
+    'pytest',
 ]
 
 dev_extras = [
@@ -86,6 +90,6 @@ setup(
         'docs': docs_extras,
     },
     test_suite='acme',
-    tests_require=["pytest"],
+    tests_require=tests_require,
     cmdclass={"test": PyTest},
 )
