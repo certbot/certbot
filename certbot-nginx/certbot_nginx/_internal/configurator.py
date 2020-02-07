@@ -1123,7 +1123,7 @@ class NginxConfigurator(common.Installer):
             for achall in achalls_to_validate:
                 url = 'http://127.0.0.1' + http_doer._get_validation_path(achall)
                 headers = {'Host': achall.domain}
-                response = requests.get(url, headers=headers, allow_redirects=False)
+                response = requests.get(url, headers=headers)
                 if response.status_code == 200:
                     achalls_to_validate.remove(achall)
             if len(achalls_to_validate) == 0:
