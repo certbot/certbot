@@ -1,8 +1,4 @@
-"""Test utilities.
-
-.. warning:: This module is not part of the public API.
-
-"""
+"""Test utilities."""
 import logging
 from multiprocessing import Event
 from multiprocessing import Process
