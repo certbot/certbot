@@ -71,7 +71,7 @@ ACME spec: http://ietf-wg-acme.github.io/acme/
 
 ACME working area in github: https://github.com/ietf-wg-acme/acme
 
-|build-status| |coverage| |docs| |container|
+|build-status| |coverage| |container|
 
 .. |build-status| image:: https://travis-ci.com/certbot/certbot.svg?branch=master
    :target: https://travis-ci.com/certbot/certbot
