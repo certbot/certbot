@@ -81,10 +81,6 @@ ACME working area in github: https://github.com/ietf-wg-acme/acme
    :target: https://codecov.io/gh/certbot/certbot
    :alt: Coverage status
 
-.. |docs| image:: https://readthedocs.org/projects/letsencrypt/badge/
-   :target: https://readthedocs.org/projects/letsencrypt/
-   :alt: Documentation status
-
 .. |container| image:: https://quay.io/repository/letsencrypt/letsencrypt/status
    :target: https://quay.io/repository/letsencrypt/letsencrypt
    :alt: Docker Repository on Quay.io
