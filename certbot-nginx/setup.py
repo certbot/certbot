@@ -16,7 +16,6 @@ install_requires = [
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
     'setuptools',
     'zope.interface',
-    'psutil',
 ]
 
 

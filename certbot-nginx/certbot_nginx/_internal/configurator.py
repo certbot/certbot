@@ -7,7 +7,8 @@ import socket
 import subprocess
 import tempfile
 import time
-import psutil
+import requests
+
 
 import OpenSSL
 import pkg_resources
@@ -1112,25 +1113,21 @@ class NginxConfigurator(common.Installer):
             http_doer.add_chall(achall, i)
 
         http_response = http_doer.perform()
-
-        # Store old workers.
-        worker_pids = []
-        for proc in psutil.process_iter():
-            cmdline = proc.cmdline()
-            if cmdline and cmdline[0] == "nginx: worker process":
-                worker_pids.append(proc.pid)
-
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
         self.restart()
 
-        # Wait for old workers to terminate.
+        # Wait for responses to be valid.
         timeout = time.time() + 120
+        achalls_to_validate = achalls[:]
         while time.time() < timeout:
-            for worker_pid in reversed(worker_pids):
-                if not psutil.pid_exists(worker_pid):
-                    worker_pids.remove(worker_pid)
-            if len(worker_pids) == 0:
+            for achall in achalls_to_validate:
+                url = 'http://127.0.0.1' + http_doer._get_validation_path(achall)
+                headers = {'Host': achall.domain}
+                response = requests.get(url, headers=headers, allow_redirects=False)
+                if response.status_code == 200:
+                    achalls_to_validate.remove(achall)
+            if len(achalls_to_validate) == 0:
                 break
             time.sleep(1)
 
