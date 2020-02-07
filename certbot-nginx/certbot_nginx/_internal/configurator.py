@@ -9,7 +9,6 @@ import tempfile
 import time
 import requests
 
-
 import OpenSSL
 import pkg_resources
 import zope.interface
