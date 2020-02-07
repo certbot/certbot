@@ -153,25 +153,24 @@ class OSCPTestCryptography(unittest.TestCase):
         self.cert_obj = mock.MagicMock()
         self.cert_obj.cert_path = self.cert_path
         self.cert_obj.chain_path = self.chain_path
-
-    def _call_expirymock(self, func, *args, **kwargs):
-        """Call function with mocked certificate expiry time"""
         now = pytz.UTC.fromutc(datetime.utcnow())
-        with mock.patch('certbot.ocsp.crypto_util.notAfter') as mock_na:
-            mock_na.return_value = now + timedelta(hours=2)
-            return func(*args, **kwargs)
+        self.mock_notAfter = mock.patch('certbot.ocsp.crypto_util.notAfter',
+                                        return_value=now + timedelta(hours=2))
+        self.mock_notAfter.start()
+        # Ensure the mock.patch is stopped even if test raises an exception
+        self.addCleanup(self.mock_notAfter.stop)
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.ocsp._check_ocsp_cryptography')
     def test_ensure_cryptography_toggled(self, mock_revoke, mock_determine):
         mock_determine.return_value = ('http://example.com', 'example.com')
-        self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
+        self.checker.ocsp_revoked(self.cert_obj)
 
         mock_revoke.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com')
 
     def test_revoke(self):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
-            revoked = self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
+            revoked = self.checker.ocsp_revoked(self.cert_obj)
         self.assertTrue(revoked)
 
     def test_responder_is_issuer(self):
@@ -181,7 +180,7 @@ class OSCPTestCryptography(unittest.TestCase):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED,
                         ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
             mocks['mock_response'].return_value.responder_name = issuer.subject
-            self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
+            self.checker.ocsp_revoked(self.cert_obj)
         # Here responder and issuer are the same. So only the signature of the OCSP
         # response is checked (using the issuer/responder public key).
         self.assertEqual(mocks['mock_check'].call_count, 1)
@@ -196,7 +195,7 @@ class OSCPTestCryptography(unittest.TestCase):
 
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED,
                         ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
-            self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
+            self.checker.ocsp_revoked(self.cert_obj)
         # Here responder and issuer are not the same. Two signatures will be checked then,
         # first to verify the responder cert (using the issuer public key), second to
         # to verify the OCSP response itself (using the responder public key).
