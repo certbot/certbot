@@ -19,7 +19,11 @@ process {
     $ErrorActionPreference = 'Stop'
 
     $installDir = $PSScriptRoot
-    $certbotPublicKey = '
+
+    if (Test-Path env:CERTBOT_PUBLIC_KEY) {
+        $certbotPublicKey = $env:CERTBOT_PUBLIC_KEY
+    } else {
+        $certbotPublicKey = '
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
 OzQb2eyW15YFjDDEMI0ZOzt8f504obNs920lDnpPD2/KqgsfjOgw2K7xWDJIj/18
@@ -30,6 +34,13 @@ cXPduCPdPdfLlzVlKK1/U7hkA28eG3BIAMh6uJYBRJTpiGgaGdPd7YekUB8S6cy+
 CQIDAQAB
 -----END PUBLIC KEY-----
 '
+    }
+
+    if (Test-Path env:CERTBOT_UPGRADE_API) {
+        $certbotUpgradeApi = $env:CERTBOT_UPGRADE_API
+    } else {
+        $certbotUpgradeApi = 'https://api.github.com/repos/certbot/certbot/releases/latest'
+    }
 
     # Get current local certbot version
     try {
@@ -47,7 +58,8 @@ Assuming Certbot is not up-to-date.
 
     # Get latest remote certbot version
     try {
-        $result = Invoke-RestMethod -Uri https://api.github.com/repos/certbot/certbot/releases/latest
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $result = Invoke-RestMethod -Uri $certbotUpgradeApi
         $latestVersion = $result.tag_name -replace '^v(\d+\.\d+\.\d+).*$', '$1'
         $latestVersion = [System.Version]"$latestVersion"
     } catch {
@@ -100,15 +112,15 @@ Aborting auto-upgrade process.
             if (Test-Path $installDir\uninstall.exe) {
                 # Uninstall old Certbot first
                 Write-Message "Running the uninstaller for old version (install dir: $installDir) ..."
-                Start-Process -FilePath $installDir\uninstall.exe -ArgumentList "/S _?=$installDir"
+                # Start-Process -FilePath $installDir\uninstall.exe -ArgumentList "/S _?=$installDir"
             }
             # Install new version of Certbot
             Write-Message "Running the installer for new version (install dir: $installDir) ..."
-            Start-Process -FilePath $installerPath -ArgumentList "/S /D=$installDir"
+            # Start-Process -FilePath $installerPath -ArgumentList "/S /D=$installDir"
 
             Write-Message "Certbot $latestVersion is installed."
         } finally {
-            Remove-Item $installerPath -ErrorAction 'Ignore'
+            # Remove-Item $installerPath -ErrorAction 'Ignore'
         }
     }
 
