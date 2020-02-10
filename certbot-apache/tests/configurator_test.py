@@ -75,7 +75,8 @@ class MultipleVhostsTest(util.ApacheTest):
 
     @mock.patch("certbot_apache._internal.parser.ApacheParser")
     @mock.patch("certbot_apache._internal.configurator.util.exe_exists")
-    def _test_prepare_locked(self, unused_parser, unused_exe_exists):
+    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.get_parsernode_root")
+    def _test_prepare_locked(self, _node, _exists, _parser):
         try:
             self.config.prepare()
         except errors.PluginError as err:
@@ -799,7 +800,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(mock_restart.call_count, 1)
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot_apache._internal.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
     def test_cleanup(self, mock_cfg, mock_restart):
         mock_cfg.return_value = ""
         _, achalls = self.get_key_and_achalls()
@@ -815,7 +816,7 @@ class MultipleVhostsTest(util.ApacheTest):
                 self.assertFalse(mock_restart.called)
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot_apache._internal.parser.ApacheParser._get_runtime_cfg")
+    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
     def test_cleanup_no_errors(self, mock_cfg, mock_restart):
         mock_cfg.return_value = ""
         _, achalls = self.get_key_and_achalls()

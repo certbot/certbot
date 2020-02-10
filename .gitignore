@@ -26,6 +26,7 @@ tags
 \#*#
 .idea
 .ropeproject
+.vscode
 
 # auth --cert-path --chain-path
 /*.pem

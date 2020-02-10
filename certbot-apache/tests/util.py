@@ -84,7 +84,8 @@ def get_apache_configurator(
         config_path, vhost_path,
         config_dir, work_dir, version=(2, 4, 7),
         os_info="generic",
-        conf_vhost_path=None):
+        conf_vhost_path=None,
+        use_parsernode=False):
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -110,19 +111,21 @@ def get_apache_configurator(
             mock_exe_exists.return_value = True
             with mock.patch("certbot_apache._internal.parser.ApacheParser."
                             "update_runtime_variables"):
-                try:
-                    config_class = entrypoint.OVERRIDE_CLASSES[os_info]
-                except KeyError:
-                    config_class = configurator.ApacheConfigurator
-                config = config_class(config=mock_le_config, name="apache",
-                    version=version)
-                if not conf_vhost_path:
-                    config_class.OS_DEFAULTS["vhost_root"] = vhost_path
-                else:
-                    # Custom virtualhost path was requested
-                    config.config.apache_vhost_root = conf_vhost_path
-                config.config.apache_ctl = config_class.OS_DEFAULTS["ctl"]
-                config.prepare()
+                with mock.patch("certbot_apache._internal.apache_util.parse_from_subprocess") as mock_sp:
+                    mock_sp.return_value = []
+                    try:
+                        config_class = entrypoint.OVERRIDE_CLASSES[os_info]
+                    except KeyError:
+                        config_class = configurator.ApacheConfigurator
+                    config = config_class(config=mock_le_config, name="apache",
+                                          version=version, use_parsernode=use_parsernode)
+                    if not conf_vhost_path:
+                        config_class.OS_DEFAULTS["vhost_root"] = vhost_path
+                    else:
+                        # Custom virtualhost path was requested
+                        config.config.apache_vhost_root = conf_vhost_path
+                    config.config.apache_ctl = config_class.OS_DEFAULTS["ctl"]
+                    config.prepare()
     return config
 
 

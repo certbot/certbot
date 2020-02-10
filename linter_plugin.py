@@ -16,7 +16,7 @@ WHITELIST_PACKAGES = ['acme', 'certbot_compatibility_test', 'letshelp_certbot', 
 class ForbidStandardOsModule(BaseChecker):
     """
     This checker ensures that standard os module (and submodules) is not imported by certbot
-    modules. Otherwise a 'os-module-forbidden' error will be registered for the faulty lines.
+    modules. Otherwise an 'os-module-forbidden' error will be registered for the faulty lines.
     """
     __implements__ = IAstroidChecker
 

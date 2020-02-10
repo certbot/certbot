@@ -14,17 +14,19 @@ before_script:
   - export TOX_TESTENV_PASSENV=TRAVIS
 
 # Only build pushes to the master branch, PRs, and branches beginning with
-# `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
-# simultaneous Travis runs, which speeds turnaround time on review since there
-# is a cap of on the number of simultaneous runs.
+# `test-`, `travis-test-`, or of the form `digit(s).digit(s).x`. This reduces
+# the number of simultaneous Travis runs, which speeds turnaround time on
+# review since there is a cap of on the number of simultaneous runs.
 branches:
+  # When changing these branches, please ensure the documentation under
+  # "Running tests in CI" is still correct.
   only:
     # apache-parser-v2 is a temporary branch for doing work related to
     # rewriting the parser in the Apache plugin.
     - apache-parser-v2
     - master
     - /^\d+\.\d+\.x$/
-    - /^test-.*$/
+    - /^(travis-)?test-.*$/
 
 # Jobs for the main test suite are always executed (including on PRs) except for pushes on master.
 not-on-master: &not-on-master
@@ -57,13 +59,10 @@ matrix:
       # cryptography we support cannot be compiled against the version of
       # OpenSSL in Xenial or newer.
       dist: trusty
-      env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
+      env: TOXENV='py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest'
       <<: *not-on-master
-    - python: "3.4"
-      env: TOXENV=py34
-      <<: *not-on-master
-    - python: "3.7"
-      env: TOXENV=py37
+    - python: "3.5"
+      env: TOXENV=py35
       <<: *not-on-master
     - python: "3.8"
       env: TOXENV=py38
@@ -163,31 +162,12 @@ matrix:
       sudo: required
       services: docker
       <<: *extended-test-suite
-    - python: "3.4"
-      env: TOXENV=py34
-      <<: *extended-test-suite
-    - python: "3.5"
-      env: TOXENV=py35
-      <<: *extended-test-suite
     - python: "3.6"
       env: TOXENV=py36
       <<: *extended-test-suite
     - python: "3.7"
       env: TOXENV=py37
       <<: *extended-test-suite
-    - python: "3.8-dev"
-      env: TOXENV=py38
-      <<: *extended-test-suite
-    - python: "3.4"
-      env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
-      services: docker
-      <<: *extended-test-suite
-    - python: "3.4"
-      env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
-      services: docker
-      <<: *extended-test-suite
     - python: "3.5"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
@@ -218,10 +198,10 @@ matrix:
       sudo: required
       services: docker
       <<: *extended-test-suite
-    - python: "3.8-dev"
+    - python: "3.8"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
       <<: *extended-test-suite
-    - python: "3.8-dev"
+    - python: "3.8"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
       <<: *extended-test-suite
     - sudo: required
@@ -230,6 +210,10 @@ matrix:
       <<: *extended-test-suite
     - sudo: required
       env: TOXENV=le_auto_centos6
+      services: docker
+      <<: *extended-test-suite
+    - sudo: required
+      env: TOXENV=le_auto_oraclelinux6
       services: docker
       <<: *extended-test-suite
     - sudo: required
@@ -243,9 +227,6 @@ matrix:
     - language: generic
       env: TOXENV=py27
       os: osx
-      # Using this osx_image is a workaround for
-      # https://travis-ci.community/t/xcode-8-3-homebrew-outdated-error/3798.
-      osx_image: xcode10.2
       addons:
         homebrew:
           packages:
@@ -255,9 +236,6 @@ matrix:
     - language: generic
       env: TOXENV=py3
       os: osx
-      # Using this osx_image is a workaround for
-      # https://travis-ci.community/t/xcode-8-3-homebrew-outdated-error/3798.
-      osx_image: xcode10.2
       addons:
         homebrew:
           packages:
@@ -298,6 +276,7 @@ after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 notifications:
   email: false
   irc:
+    if: NOT branch =~ ^(travis-)?test-.*$
     channels:
       # This is set to a secure variable to prevent forks from sending
       # notifications. This value was created by installing
