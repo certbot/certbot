@@ -16,12 +16,35 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import pkg_resources
 
+SCHEDULED_TASK_NAME = 'Certbot Renew & Auto-Update Task'
+
 
 @pytest.fixture
-def installer(request):
+def signing_cert():
+    cert_thumbprint = None
+    try:
+        pfx_file = pkg_resources.resource_filename('windows_installer_integration_tests', 'assets/test-signing.pfx')
+        output = _ps('(Import-PfxCertificate -FilePath {0} -CertStoreLocation Cert:\\LocalMachine\\Root).Thumbprint'
+                     .format(pfx_file), capture_stdout=True)
+        cert_thumbprint = output.strip()
+        if not cert_thumbprint:
+            raise RuntimeError('Error, test signing certificate could not be installed.')
+
+        yield pfx_file
+    finally:
+        if cert_thumbprint:
+            _ps('Get-ChildItem Cert:\\LocalMachine\\Root\\{0} | Remove-Item'.format(cert_thumbprint))
+
+
+@pytest.fixture
+def installer(request, signing_cert):
     with tempfile.TemporaryDirectory() as temp_dir:
         shutil.copy(request.config.option.installer_path, temp_dir)
-        yield os.path.join(temp_dir, os.path.basename(request.config.option.installer_path))
+        installer_path = os.path.join(temp_dir, os.path.basename(request.config.option.installer_path))
+        _ps('Set-AuthenticodeSignature -FilePath {0} -Certificate (Get-PfxCertificate -FilePath {1}) | Out-Null'
+            .format(installer_path, signing_cert))
+
+        yield installer_path
 
 
 @pytest.fixture
@@ -32,16 +55,20 @@ def github_mock(installer):
             pass
 
         class GitHubMock(BaseHTTPRequestHandler):
+            # def log_message(self, log_format, *args):
+            #     pass
+
             def do_GET(self):
-                if re.match(r'^.*/release/latest$', self.path):
+                if re.match(r'^.*/releases/latest$', self.path):
                     self.send_response(200)
                     self.send_header('Content-type', 'application/json')
                     self.end_headers()
                     self.wfile.write(json.dumps(
                         {
+                            'tag_name': 'v99.9.9',
                             'assets': [{
                                 'name': os.path.basename(installer),
-                                'browser_download_url': 'https://localhost/{0}'.format(os.path.basename(installer))
+                                'browser_download_url': 'http://localhost:8009/{0}'.format(os.path.basename(installer))
                             }]
                         }
                     ).encode())
@@ -61,36 +88,33 @@ def github_mock(installer):
         thread.daemon = True
         thread.start()
 
-        yield True
+        yield 'http://localhost:8009/releases/latest'
     finally:
         if server:
             server.shutdown()
             server.server_close()
 
 
-@pytest.fixture
-def signing_cert():
-    cert_thumbprint = None
+@pytest.fixture(autouse=True)
+def registry_config(signing_cert, github_mock):
     try:
-        pfx_file = pkg_resources.resource_filename('windows_installer_integration_tests', 'assets/test-signing.pfx')
-        output = _ps('(Import-PfxCertificate -FilePath {0} -CertStoreLocation Cert:\\LocalMachine\\Root).Thumbprint'
-                     .format(pfx_file), capture_stdout=True)
-        cert_thumbprint = output.strip()
-        if not cert_thumbprint:
-            raise RuntimeError('Error, test signing certificate could not be installed.')
-        yield pfx_file
+        _ps('New-Item -Path HKLM:\\Software -Name Certbot -ErrorAction SilentlyContinue | Out-Null; exit 0')
+        _ps('New-ItemProperty -Path HKLM:\\Software\\Certbot -Name CertbotUpgradeApiURL -Value {} '
+            '| Out-Null'.format(github_mock))
+        _ps('New-ItemProperty -Path HKLM:\\Software\\Certbot -Name CertbotSigningPubKey -Value '
+            '([Convert]::ToBase64String((Get-PfxCertificate -FilePath {0}).GetPublicKey())) '
+            '| Out-Null'.format(signing_cert))
+
+        yield
     finally:
-        if cert_thumbprint:
-            _ps('Get-ChildItem Cert:\\LocalMachine\\Root\\{0} | Remove-Item'.format(cert_thumbprint))
+        _ps('Remove-ItemProperty -Path HKLM:\\Software\\Certbot -Name CertbotUpgradeApiURL')
+        _ps('Remove-ItemProperty -Path HKLM:\\Software\\Certbot -Name CertbotSigningPubKey')
 
 
 @unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
-def test_it(github_mock, installer, signing_cert):
-    assert github_mock
-    assert signing_cert
-
+def test_it(installer):
     try:
-        subprocess.check_call(['certbot', '--version'])
+        subprocess.check_call('certbot --version', shell=True)
     except (subprocess.CalledProcessError, OSError):
         pass
     else:
@@ -101,20 +125,21 @@ def test_it(github_mock, installer, signing_cert):
         subprocess.check_call([installer, '/S'])
 
         # Assert certbot is installed and runnable
-        output = subprocess.check_output(['certbot', '--version'], universal_newlines=True)
+        output = subprocess.check_output('certbot --version', shell=True, universal_newlines=True)
         assert re.match(r'^certbot \d+\.\d+\.\d+.*$', output), 'Flag --version does not output a version.'
 
         # Assert renew task is installed and ready
-        output = _ps('(Get-ScheduledTask -TaskName "Certbot Renew Task").State', capture_stdout=True)
+        output = _ps('(Get-ScheduledTask -TaskName "{}").State'.format(SCHEDULED_TASK_NAME), capture_stdout=True)
         assert output.strip() == 'Ready'
 
         # Assert renew task is working
         now = time.time()
-        _ps('Start-ScheduledTask -TaskName "Certbot Renew Task"')
+        _ps('Start-ScheduledTask -TaskName "{}"'.format(SCHEDULED_TASK_NAME))
 
         status = 'Running'
         while status != 'Ready':
-            status = _ps('(Get-ScheduledTask -TaskName "Certbot Renew Task").State', capture_stdout=True).strip()
+            status = _ps('(Get-ScheduledTask -TaskName "{}").State'
+                         .format(SCHEDULED_TASK_NAME), capture_stdout=True).strip()
             time.sleep(1)
 
         log_path = os.path.join('C:\\', 'Certbot', 'log', 'letsencrypt.log')

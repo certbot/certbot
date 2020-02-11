@@ -20,10 +20,10 @@ process {
 
     $installDir = $PSScriptRoot
 
-    if (Test-Path env:CERTBOT_PUBLIC_KEY) {
-        $certbotPublicKey = $env:CERTBOT_PUBLIC_KEY
+    if ((Test-Path HKLM:\Software\Certbot) -And ((Get-ItemProperty -Path HKLM:\Software\Certbot).PSObject.Properties.Name -Contains "CertbotSigningPubKey")) {
+        $certbotSigningPubKey = (Get-ItemProperty -Path HKLM:\Software\Certbot).CertbotSigningPubKey
     } else {
-        $certbotPublicKey = '
+        $certbotSigningPubKey = '
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
 OzQb2eyW15YFjDDEMI0ZOzt8f504obNs920lDnpPD2/KqgsfjOgw2K7xWDJIj/18
@@ -36,10 +36,10 @@ CQIDAQAB
 '
     }
 
-    if (Test-Path env:CERTBOT_UPGRADE_API) {
-        $certbotUpgradeApi = $env:CERTBOT_UPGRADE_API
+    if ((Test-Path HKLM:\Software\Certbot) -And ((Get-ItemProperty -Path HKLM:\Software\Certbot).PSObject.Properties.Name -Contains "CertbotUpgradeApiURL")) {
+        $certbotUpgradeApiURL = (Get-ItemProperty -Path HKLM:\Software\Certbot).CertbotUpgradeApiURL
     } else {
-        $certbotUpgradeApi = 'https://api.github.com/repos/certbot/certbot/releases/latest'
+        $certbotUpgradeApiURL = 'https://api.github.com/repos/certbot/certbot/releases/latest'
     }
 
     # Get current local certbot version
@@ -59,7 +59,7 @@ Assuming Certbot is not up-to-date.
     # Get latest remote certbot version
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        $result = Invoke-RestMethod -Uri $certbotUpgradeApi
+        $result = Invoke-RestMethod -Uri $certbotUpgradeApiURL
         $latestVersion = $result.tag_name -replace '^v(\d+\.\d+\.\d+).*$', '$1'
         $latestVersion = [System.Version]"$latestVersion"
     } catch {
@@ -97,30 +97,36 @@ Aborting auto-upgrade process.
             # Check installer has a valid signature from the Certbot release team
             $signature = Get-AuthenticodeSignature $installerPath
 
-            # Uncomment the following lines of code once the Certbot installer is correctly signed.
-            # if ($signature.Status -ne 'Valid') {
-            #     throw "Downloaded installer has no or invalid Authenticode signature."
-            # }
-            # $publicKey = $certbotPublicKey -replace '-+.*-+' -replace "`n" -replace "`r"
-            # $refBinaryPublicKey = [System.Convert]::FromBase64String($publicKey)
-            # $curBinaryPublicKey = $signature.SignerCertificate.PublicKey.EncodedKeyValue.RawData
-            # $diff = Compare-Object -ReferenceObject $refBinaryPublicKey -DifferenceObject $curBinaryPublicKey
-            # if ($diff) {
-            #     throw "Downloaded installer has not been signed by Certbot development team."
-            # }
+#            # Uncomment the following lines of code once the Certbot installer is correctly signed.
+#            if ($signature.Status -ne 'Valid') {
+#                throw "Downloaded installer has no or invalid Authenticode signature."
+#            }
+#            $publicKey = $certbotSigningPubKey -replace '-+.*-+' -replace "`n" -replace "`r"
+#            $refBinaryPublicKey = [System.Convert]::FromBase64String($publicKey)
+#            $curBinaryPublicKey = $signature.SignerCertificate.PublicKey.EncodedKeyValue.RawData
+#            $diff = Compare-Object -ReferenceObject $refBinaryPublicKey -DifferenceObject $curBinaryPublicKey
+#            if ($diff) {
+#                throw "Downloaded installer has not been signed by Certbot development team."
+#            }
 
             if (Test-Path $installDir\uninstall.exe) {
                 # Uninstall old Certbot first
                 Write-Message "Running the uninstaller for old version (install dir: $installDir) ..."
-                # Start-Process -FilePath $installDir\uninstall.exe -ArgumentList "/S _?=$installDir"
+                Start-Process -FilePath $installDir\uninstall.exe -ArgumentList "/S _?=$installDir"
             }
             # Install new version of Certbot
             Write-Message "Running the installer for new version (install dir: $installDir) ..."
-            # Start-Process -FilePath $installerPath -ArgumentList "/S /D=$installDir"
+            Start-Process -FilePath $installerPath -ArgumentList "/S /D=$installDir"
 
             Write-Message "Certbot $latestVersion is installed."
+        } catch {
+            Write-Error @"
+Could not update to the latest remote certbot version. Error was:
+$_
+Aborting auto-upgrade process.
+"@
         } finally {
-            # Remove-Item $installerPath -ErrorAction 'Ignore'
+            Remove-Item $installerPath -ErrorAction 'Ignore'
         }
     }
 
