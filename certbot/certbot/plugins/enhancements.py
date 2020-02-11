@@ -153,7 +153,7 @@ class AutoHSTSEnhancement(object):
         :type lineage: certbot.interfaces.RenewableCert
 
         :param domains: List of domains in certificate to enhance
-        :type domains: str
+        :type domains: `list` of `str`
         """
 
 # This is used to configure internal new style enhancements in Certbot. These
