@@ -33,6 +33,10 @@ example: `v0.11.1`.
 
 .. _`Semantic Versioning`: http://semver.org/
 
+Our packages are cryptographically signed and their signature can be verified
+using the PGP key ``A2CFB51FA275A7286234E7B24D17C995CD9775F2``. This key can be
+found on major key servers and at https://dl.eff.org/certbot.pub.
+
 Notes for package maintainers
 =============================
 
