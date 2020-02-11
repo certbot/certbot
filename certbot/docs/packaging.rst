@@ -38,7 +38,7 @@ Notes for package maintainers
 
 0. Please use our tagged releases, not ``master``!
 
-1. Do not package ``certbot-compatibility-test`` or ``letshelp-certbot`` - it's only used internally.
+1. Do not package ``certbot-compatibility-test`` as it's only used internally.
 
 2. To run tests on our packages, you should use ``python setup.py test``. Doing things like running ``pytest`` directly on our package files may not work because Certbot relies on setuptools to register and find its plugins.
 
