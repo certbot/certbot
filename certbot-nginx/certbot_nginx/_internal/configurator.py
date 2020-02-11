@@ -7,7 +7,6 @@ import socket
 import subprocess
 import tempfile
 import time
-import requests
 
 import OpenSSL
 import pkg_resources
@@ -1111,23 +1110,35 @@ class NginxConfigurator(common.Installer):
             # when they are all complete.
             http_doer.add_chall(achall, i)
 
+        # Add sentinel vhost used to detect successful nginx restart.
+        sentinel_socket_path = "/var/lib/letsencrypt/nginx-sentinel.sock"
+        sentinel_vhost = [["server"],
+                             [["listen", " ", "unix:", sentinel_socket_path],
+                             [["location", " ", "/"],
+                                 [["return", " ", "200", " ", "letsencrypt-sentinel"]]]]]
+        root = self.parser.config_root
+        main = self.parser.parsed[root]
+        for line in main:
+            if line[0] == ["http"]:
+                body = line[1]
+                body.append(sentinel_vhost)
+
         http_response = http_doer.perform()
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
         self.restart()
 
-        # Wait for responses to be valid.
+        # Wait for valid sentinel response to know nginx restart is complete.
         timeout = time.time() + 120
-        achalls_to_validate = achalls[:]
         while time.time() < timeout:
-            for achall in achalls_to_validate:
-                url = "http://127.0.0.1/" + http_doer.get_validation_path(achall)
-                headers = {"Host": achall.domain}
-                response = requests.get(url, headers=headers)
-                if response.status_code == 200:
-                    achalls_to_validate.remove(achall)
-            if len(achalls_to_validate) == 0:
-                break
+            if os.path.exists(sentinel_socket_path):
+                client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                client.connect(sentinel_socket_path)
+                request = "GET / HTTP/1.1\r\nHost: letsencrypt-sentinel\r\n\r\n"
+                client.send(request.encode('utf-8'))
+                response = client.recv(1024).decode('utf-8').split(' ', 2)
+                if int(response[1]) == 200:
+                    break
             time.sleep(1)
 
         # Go through all of the challenges and assign them to the proper place

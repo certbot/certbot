@@ -58,11 +58,6 @@ class NginxHttp01(common.ChallengePerformer):
 
         return responses
 
-    def get_validation_path(self, achall):
-        """Exposes _get_validation_path() publically.
-        """
-        return self._get_validation_path(achall)
-
     def _mod_config(self):
         """Modifies Nginx config to include server_names_hash_bucket_size directive
            and server challenge blocks.
