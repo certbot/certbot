@@ -38,7 +38,7 @@ import time
 from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
-from certbot._internal import ocsp
+from certbot import ocsp
 from certbot.plugins.enhancements import OCSPPrefetchEnhancement
 
 from certbot.compat import filesystem

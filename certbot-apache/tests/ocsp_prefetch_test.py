@@ -186,9 +186,9 @@ class OCSPPrefetchTest(util.ApacheTest):
                 fh.write("MOCKRESPONSE")
             return False
 
-        ocsp_path = "certbot._internal.ocsp.RevocationChecker.ocsp_revoked_by_paths"
+        ocsp_path = "certbot.ocsp.RevocationChecker.ocsp_revoked_by_paths"
         with mock.patch(ocsp_path, side_effect=ocsp_req_mock):
-            with mock.patch('certbot._internal.ocsp.RevocationChecker.ocsp_times') as mock_times:
+            with mock.patch('certbot.ocsp.RevocationChecker.ocsp_times') as mock_times:
                 produced_at = datetime.today() - timedelta(days=1)
                 this_update = datetime.today() - timedelta(days=2)
                 next_update = datetime.today() + timedelta(days=2)
@@ -201,7 +201,7 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.assertTrue(odbm[list(odbm.keys())[0]].endswith(b'MOCKRESPONSE'))
 
         with mock.patch(ocsp_path, side_effect=ocsp_req_mock) as mock_ocsp:
-            with mock.patch('certbot._internal.ocsp.RevocationChecker.ocsp_times') as mock_times:
+            with mock.patch('certbot.ocsp.RevocationChecker.ocsp_times') as mock_times:
                 produced_at = datetime.today() - timedelta(days=1)
                 this_update = datetime.today() - timedelta(days=2)
                 next_update = datetime.today() + timedelta(days=2)
@@ -216,7 +216,7 @@ class OCSPPrefetchTest(util.ApacheTest):
                 fh.write("MOCKRESPONSE")
             return True
 
-        ocsp_path = "certbot._internal.ocsp.RevocationChecker.ocsp_revoked_by_paths"
+        ocsp_path = "certbot.ocsp.RevocationChecker.ocsp_revoked_by_paths"
         with mock.patch(ocsp_path, side_effect=ocsp_req_mock):
             self.call_mocked_py2(self.config.enable_ocsp_prefetch,
                                  self.lineage, ["ocspvhost.com"])
@@ -264,7 +264,7 @@ class OCSPPrefetchTest(util.ApacheTest):
 
     @mock.patch("certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin.restart")
     def test_ocsp_prefetch_refresh_fail(self, _mock_restart):
-        ocsp_path = "certbot._internal.ocsp.RevocationChecker.ocsp_revoked_by_paths"
+        ocsp_path = "certbot.ocsp.RevocationChecker.ocsp_revoked_by_paths"
         log_path = "certbot_apache._internal.prefetch_ocsp.logger.warning"
         with mock.patch(ocsp_path) as mock_ocsp:
             mock_ocsp.return_value = True

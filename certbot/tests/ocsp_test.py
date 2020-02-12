@@ -198,14 +198,14 @@ class OSCPTestCryptography(unittest.TestCase):
     @mock.patch('certbot.ocsp._check_ocsp_cryptography')
     def test_ensure_cryptography_toggled(self, mock_revoke, mock_determine):
         mock_determine.return_value = ('http://example.com', 'example.com')
-        self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
+        self.checker.ocsp_revoked(self.cert_obj)
 
         mock_revoke.assert_called_once_with(self.cert_path, self.chain_path,
                                             'http://example.com', None)
 
     def test_revoke(self):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
-            revoked = self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
+            revoked = self.checker.ocsp_revoked(self.cert_obj)
         self.assertTrue(revoked)
 
     def test_responder_is_issuer(self):
@@ -215,7 +215,7 @@ class OSCPTestCryptography(unittest.TestCase):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED,
                         ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
             mocks['mock_response'].return_value.responder_name = issuer.subject
-            self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
+            self.checker.ocsp_revoked(self.cert_obj)
         # Here responder and issuer are the same. So only the signature of the OCSP
         # response is checked (using the issuer/responder public key).
         self.assertEqual(mocks['mock_check'].call_count, 1)
@@ -230,7 +230,7 @@ class OSCPTestCryptography(unittest.TestCase):
 
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED,
                         ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
-            self._call_expirymock(self.checker.ocsp_revoked, self.cert_obj)
+            self.checker.ocsp_revoked(self.cert_obj)
         # Here responder and issuer are not the same. Two signatures will be checked then,
         # first to verify the responder cert (using the issuer public key), second to
         # to verify the OCSP response itself (using the responder public key).
@@ -326,7 +326,7 @@ class OSCPTestCryptography(unittest.TestCase):
                 self.assertEqual(next_update, datetime(2020, 1, 3, 4, 4))
 
     def test_ocsp_times_cryptography_no_nextupdate(self):
-        with mock.patch('certbot..ocsp.open', mock.mock_open(read_data="")):
+        with mock.patch('certbot.ocsp.open', mock.mock_open(read_data="")):
             with mock.patch('cryptography.x509.ocsp.load_der_ocsp_response') as mock_load:
                 resp = mock.MagicMock()
                 resp.produced_at = datetime(2020, 1, 2, 9, 9)
