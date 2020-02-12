@@ -177,7 +177,7 @@ class InstallerTest(test_util.ConfigTestCase):
 
 
 class AddrTest(unittest.TestCase):
-    """Tests for certbot._internal.plugins.common.Addr."""
+    """Tests for certbot.plugins.common.Addr."""
 
     def setUp(self):
         from certbot.plugins.common import Addr
