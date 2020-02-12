@@ -41,6 +41,11 @@ class Authenticator(dns_common.DNSAuthenticator):
         self.r53 = boto3.client("route53")
         self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
 
+    @classmethod
+    def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
+        super(Authenticator, cls).add_parser_arguments(add)
+        add('base-domain', default=None, help='Base domain containing the DNS TXT records, defaults to none.')
+
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
 
@@ -56,7 +61,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         try:
             change_ids = [
                 self._change_txt_record("UPSERT",
-                  achall.validation_domain_name(achall.domain),
+                  self._domain_to_update(achall.validation_domain_name(achall.domain)),
                   achall.validation(achall.account_key))
                 for achall in achalls
             ]
@@ -68,9 +73,14 @@ class Authenticator(dns_common.DNSAuthenticator):
             raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
         return [achall.response(achall.account_key) for achall in achalls]
 
+    def _domain_to_update(self, domain):
+        if self.conf('base-domain'):
+            return domain + '.' + self.conf('base-domain') + '.'
+        return domain
+
     def _cleanup(self, domain, validation_name, validation):
         try:
-            self._change_txt_record("DELETE", validation_name, validation)
+            self._change_txt_record("DELETE", self._domain_to_update(validation_name), validation)
         except (NoCredentialsError, ClientError) as e:
             logger.debug('Encountered error during cleanup: %s', e, exc_info=True)
 

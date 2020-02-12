@@ -20,7 +20,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         super(AuthenticatorTest, self).setUp()
 
-        self.config = mock.MagicMock()
+        self.config = mock.MagicMock(route53_base_domain=None)
 
         # Set up dummy credentials for testing
         os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"
@@ -42,6 +42,19 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         self.auth._change_txt_record.assert_called_once_with("UPSERT",
                                                              '_acme-challenge.' + DOMAIN,
+                                                             mock.ANY)
+        self.assertEqual(self.auth._wait_for_change.call_count, 1)
+
+    def test_perform_base_domain(self):
+        self.config.route53_base_domain = "base.com"
+
+        self.auth._change_txt_record = mock.MagicMock()
+        self.auth._wait_for_change = mock.MagicMock()
+
+        self.auth.perform([self.achall])
+
+        self.auth._change_txt_record.assert_called_once_with("UPSERT",
+                                                             '_acme-challenge.'+DOMAIN+".base.com.",
                                                              mock.ANY)
         self.assertEqual(self.auth._wait_for_change.call_count, 1)
 
@@ -69,6 +82,19 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         self.auth._change_txt_record.assert_called_once_with("DELETE",
                                                              '_acme-challenge.'+DOMAIN,
+                                                             mock.ANY)
+
+    def test_cleanup_base_domain(self):
+        self.config.route53_base_domain = "base.com"
+
+        self.auth._attempt_cleanup = True
+
+        self.auth._change_txt_record = mock.MagicMock()
+
+        self.auth.cleanup([self.achall])
+
+        self.auth._change_txt_record.assert_called_once_with("DELETE",
+                                                             '_acme-challenge.'+DOMAIN+".base.com.",
                                                              mock.ANY)
 
     def test_cleanup_no_credentials_error(self):
