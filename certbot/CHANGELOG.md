@@ -2,20 +2,46 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.2.0 - master
+## 1.3.0 - master
 
 ### Added
 
 * OCSP prefetching functionality for Apache plugin that attempts to refresh the OCSP
   response cache for managed certificates when scheduled Certbot renew is being run. 
+* Added certbot.ocsp Certbot's API. The certbot.ocsp module can be used to 
+  determine the OCSP status of certificates.
+* Don't verify the existing certificate in HTTP01Response.simple_verify, for 
+  compatibility with the real-world ACME challenge checks.
 
 ### Changed
 
-* Add directory field to error message when field is missing.
+*
 
 ### Fixed
 
 *
+>>>>>>> origin/master
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.2.0 - 2020-02-04
+
+### Added
+
+* Added support for Cloudflare's limited-scope API Tokens
+* Added support for `$hostname` in nginx `server_name` directive
+
+### Changed
+
+* Add directory field to error message when field is missing.
+* If MD5 hasher is not available, try it in non-security mode (fix for FIPS systems) -- [#1948](https://github.com/certbot/certbot/issues/1948)
+* Disable old SSL versions and ciphersuites and remove `SSLCompression off` setting to follow Mozilla recommendations in Apache.
+* Remove ECDHE-RSA-AES128-SHA from NGINX ciphers list now that Windows 2008 R2 and Windows 7 are EOLed
+* Support for Python 3.4 has been removed.
+
+### Fixed
+
+* Fix collections.abc imports for Python 3.9.
 
 More details about these changes can be found on our GitHub repo.
 

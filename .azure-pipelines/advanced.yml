@@ -1,5 +1,8 @@
 # Advanced pipeline for isolated checks and release purpose
 trigger:
+  # When changing these triggers, please ensure the documentation under
+  # "Running tests in CI" is still correct.
+  - azure-test-*
   - test-*
   - '*.x'
 pr:

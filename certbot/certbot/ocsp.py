@@ -21,7 +21,7 @@ from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
-from certbot._internal.storage import RenewableCert  # pylint: disable=unused-import
+from certbot.interfaces import RenewableCert  # pylint: disable=unused-import
 
 try:
     # Only cryptography>=2.5 has ocsp module
@@ -63,13 +63,14 @@ class RevocationChecker(object):
 
         .. todo:: Make this a non-blocking call
 
-        :param `.storage.RenewableCert` cert: Certificate object
+        :param `.interfaces.RenewableCert` cert: Certificate object
 
         :returns: True if revoked; False if valid or the check failed or cert is expired.
         :rtype: bool
 
         """
-        return self.ocsp_revoked_by_paths(cert.cert, cert.chain)
+
+        return self.ocsp_revoked_by_paths(cert.cert_path, cert.chain_path)
 
     def ocsp_revoked_by_paths(self, cert_path, chain_path, response_file=None):
         # type: (str, str, Optional[str]) -> bool
