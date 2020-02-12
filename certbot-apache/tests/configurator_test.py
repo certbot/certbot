@@ -1700,7 +1700,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                                              self.config.updated_mod_ssl_conf_digest)
 
     def _current_ssl_options_hash(self):
-        return crypto_util.sha256sum(self.config.option("MOD_SSL_CONF_SRC"))
+        return crypto_util.sha256sum(self.config.pick_apache_config())
 
     def _assert_current_file(self):
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
@@ -1736,7 +1736,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
         self.assertEqual(crypto_util.sha256sum(
-            self.config.option("MOD_SSL_CONF_SRC")),
+            self.config.pick_apache_config()),
             self._current_ssl_options_hash())
         self.assertNotEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
             self._current_ssl_options_hash())
@@ -1752,18 +1752,32 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                 "%s has been manually modified; updated file "
                 "saved to %s. We recommend updating %s for security purposes.")
         self.assertEqual(crypto_util.sha256sum(
-            self.config.option("MOD_SSL_CONF_SRC")),
+            self.config.pick_apache_config()),
             self._current_ssl_options_hash())
         # only print warning once
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
             self.assertFalse(mock_logger.warning.called)
 
-    def test_current_file_hash_in_all_hashes(self):
-        from certbot_apache._internal.constants import ALL_SSL_OPTIONS_HASHES
-        self.assertTrue(self._current_ssl_options_hash() in ALL_SSL_OPTIONS_HASHES,
-            "Constants.ALL_SSL_OPTIONS_HASHES must be appended"
-            " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
+    def test_ssl_config_files_hash_in_all_hashes(self):
+        """
+        It is really critical that all TLS Apache config files have their SHA256 hash registered in
+        constants.ALL_SSL_OPTIONS_HASHES. Otherwise Certbot will mistakenly assume that the config
+        file has been manually edited by the user, and will refuse to update it.
+        This test ensures that all necessary hashes are present.
+        """
+        from certbot_apache.constants import ALL_SSL_OPTIONS_HASHES
+        import pkg_resources
+
+        tls_configs_dir = pkg_resources.resource_filename("certbot_apache", "tls_configs")
+        all_files = [os.path.join(tls_configs_dir, name) for name in os.listdir(tls_configs_dir)
+                     if name.endswith('options-ssl-apache.conf')]
+        self.assertTrue(all_files)
+        for one_file in all_files:
+            file_hash = crypto_util.sha256sum(one_file)
+            self.assertTrue(file_hash in ALL_SSL_OPTIONS_HASHES,
+                            "Constants.ALL_SSL_OPTIONS_HASHES must be appended with the sha256 "
+                            "hash of {0} when it is updated.".format(one_file))
 
 
 if __name__ == "__main__":

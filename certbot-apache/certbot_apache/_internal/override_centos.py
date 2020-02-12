@@ -1,7 +1,6 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
 import logging
 
-import pkg_resources
 import zope.interface
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
@@ -37,8 +36,6 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/httpd/conf.d",
-        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", os.path.join("_internal", "options-ssl-apache.conf"))
     )
 
     def config_test(self):

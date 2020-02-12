@@ -8,7 +8,6 @@ import re
 import socket
 import time
 
-import pkg_resources
 import six
 import zope.component
 import zope.interface
@@ -110,13 +109,23 @@ class ApacheConfigurator(common.Installer):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2",
-        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", os.path.join("_internal", "options-ssl-apache.conf"))
     )
 
     def option(self, key):
         """Get a value from options"""
         return self.options.get(key)
+
+    def pick_apache_config(self):
+        """
+        Pick the appropriate TLS Apache configuration file for current version of Apache and OS.
+        :return: the path to the TLS Apache configuration file to use
+        :rtype: str
+        """
+        # Disabling TLS session tickets is supported by Apache 2.4.11+.
+        # So for old versions of Apache we pick a configuration without this option.
+        if self.version < (2, 4, 11):
+            return apache_util.find_ssl_apache_conf("old")
+        return apache_util.find_ssl_apache_conf("current")
 
     def _prepare_options(self):
         """
@@ -2460,8 +2469,10 @@ class ApacheConfigurator(common.Installer):
         # XXX if we ever try to enforce a local privilege boundary (eg, running
         # certbot for unprivileged users via setuid), this function will need
         # to be modified.
-        return common.install_version_controlled_file(options_ssl, options_ssl_digest,
-            self.option("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
+        apache_config_path = self.pick_apache_config()
+
+        return common.install_version_controlled_file(
+            options_ssl, options_ssl_digest, apache_config_path, constants.ALL_SSL_OPTIONS_HASHES)
 
     def enable_autohsts(self, _unused_lineage, domains):
         """
