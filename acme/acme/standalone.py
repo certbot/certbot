@@ -15,8 +15,6 @@ from acme.magic_typing import List
 
 logger = logging.getLogger(__name__)
 
-# six.moves.*
-
 
 class TLSServer(socketserver.TCPServer):
     """Generic TLS Server."""

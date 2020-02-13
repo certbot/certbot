@@ -148,7 +148,7 @@ class _GoogleClient(object):
                 },
             ]
 
-        changes = self.dns.changes()  # changes
+        changes = self.dns.changes()
 
         try:
             request = changes.create(project=self.project_id, managedZone=zone_id, body=data)
@@ -213,7 +213,7 @@ class _GoogleClient(object):
                 },
             ]
 
-        changes = self.dns.changes()  # changes
+        changes = self.dns.changes()
 
         try:
             request = changes.create(project=self.project_id, managedZone=zone_id, body=data)
@@ -264,7 +264,7 @@ class _GoogleClient(object):
 
         zone_dns_name_guesses = dns_common.base_domain_name_guesses(domain)
 
-        mz = self.dns.managedZones()  # managedZones
+        mz = self.dns.managedZones()
         for zone_name in zone_dns_name_guesses:
             try:
                 request = mz.list(project=self.project_id, dnsName=zone_name + '.')

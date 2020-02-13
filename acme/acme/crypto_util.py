@@ -12,7 +12,6 @@ from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/iss
 
 from acme import errors
 from acme.magic_typing import Callable
-from acme.magic_typing import Optional  # pylint: disable=unused-import
 from acme.magic_typing import Tuple
 from acme.magic_typing import Union
 

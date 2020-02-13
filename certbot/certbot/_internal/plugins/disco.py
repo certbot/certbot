@@ -210,7 +210,6 @@ class PluginsRegistry(Mapping):
             plugin_ep = PluginEntryPoint(entry_point)
             assert plugin_ep.name not in plugins, (
                 "PREFIX_FREE_DISTRIBUTIONS messed up")
-            # providedBy
             if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
                 plugins[plugin_ep.name] = plugin_ep
             else:  # pragma: no cover
