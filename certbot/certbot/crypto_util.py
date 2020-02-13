@@ -23,7 +23,7 @@ import six
 import zope.component
 
 from acme import crypto_util as acme_crypto_util
-from acme.magic_typing import IO  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import IO  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot import util

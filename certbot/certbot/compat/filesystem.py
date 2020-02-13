@@ -5,12 +5,11 @@ import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List
+from acme.magic_typing import Tuple  # pylint: disable=unused-import
+from acme.magic_typing import Union  # pylint: disable=unused-import
 
 try:
-    # pylint: disable=import-error
     import ntsecuritycon
     import win32security
     import win32con

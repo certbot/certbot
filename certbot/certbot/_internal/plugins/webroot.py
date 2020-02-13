@@ -9,11 +9,11 @@ import six
 import zope.component
 import zope.interface
 
-from acme import challenges  # pylint: disable=unused-import
-from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme import challenges
+from acme.magic_typing import DefaultDict
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
 from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
@@ -42,7 +42,7 @@ necessary validation resources to appropriate paths on the file
 system. It expects that there is some other HTTP server configured
 to serve all files under specified web root ({0})."""
 
-    def more_info(self):  # pylint: disable=missing-docstring,no-self-use
+    def more_info(self):  # pylint: disable=missing-function-docstring
         return self.MORE_INFO.format(self.conf("path"))
 
     @classmethod
@@ -64,7 +64,7 @@ to serve all files under specified web root ({0})."""
                  '{"example.com":"/var/www"}.')
 
     def get_chall_pref(self, domain):  # pragma: no cover
-        # pylint: disable=missing-docstring,no-self-use,unused-argument
+        # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01]
 
     def __init__(self, *args, **kwargs):
@@ -75,10 +75,10 @@ to serve all files under specified web root ({0})."""
         # stack of dirs successfully created by this authenticator
         self._created_dirs = []  # type: List[str]
 
-    def prepare(self):  # pylint: disable=missing-docstring
+    def prepare(self):  # pylint: disable=missing-function-docstring
         pass
 
-    def perform(self, achalls):  # pylint: disable=missing-docstring
+    def perform(self, achalls):  # pylint: disable=missing-function-docstring
         self._set_webroots(achalls)
 
         self._create_challenge_dirs()
@@ -213,7 +213,7 @@ to serve all files under specified web root ({0})."""
         self.performed[root_path].add(achall)
         return response
 
-    def cleanup(self, achalls):  # pylint: disable=missing-docstring
+    def cleanup(self, achalls):  # pylint: disable=missing-function-docstring
         for achall in achalls:
             root_path = self.full_roots.get(achall.domain, None)
             if root_path is not None:

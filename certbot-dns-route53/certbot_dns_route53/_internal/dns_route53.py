@@ -8,9 +8,9 @@ from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
 import zope.interface
 
-from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import DefaultDict
+from acme.magic_typing import Dict
+from acme.magic_typing import List
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
@@ -41,13 +41,13 @@ class Authenticator(dns_common.DNSAuthenticator):
         self.r53 = boto3.client("route53")
         self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
 
-    def more_info(self):  # pylint: disable=missing-docstring,no-self-use
+    def more_info(self):  # pylint: disable=missing-function-docstring
         return "Solve a DNS01 challenge using AWS Route53"
 
     def _setup_credentials(self):
         pass
 
-    def _perform(self, domain, validation_name, validation): # pylint: disable=missing-docstring
+    def _perform(self, domain, validation_name, validation):
         pass
 
     def perform(self, achalls):

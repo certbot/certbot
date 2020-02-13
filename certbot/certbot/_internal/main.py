@@ -11,7 +11,7 @@ import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union
 import certbot
 from certbot import crypto_util
 from certbot import errors
