@@ -21,6 +21,12 @@ SCHEDULED_TASK_NAME = 'Certbot Renew & Auto-Update Task'
 
 @pytest.fixture
 def signing_cert():
+    """
+    This fixture returns the path of a test signing certificate that is loaded into the
+    Trusted Root Certification Authorities group of the Windows certificate store, in order
+    to make Windows accept any executable signed with this certificate.
+    Fixture cleanup is included.
+    """
     cert_thumbprint = None
     try:
         pfx_file = pkg_resources.resource_filename('windows_installer_integration_tests', 'assets/test-signing.pfx')
@@ -38,6 +44,12 @@ def signing_cert():
 
 @pytest.fixture
 def installer(request, signing_cert):
+    """
+    This fixture returns the path of the Certbot Windows installer to use during the tests.
+    It is signed with a test signing certificate that is accepted by the current system and
+    thus the installer has a valid Authenticode status.
+    Fixture cleanup is included.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         shutil.copy(request.config.option.installer_path, temp_dir)
         installer_path = os.path.join(temp_dir, os.path.basename(request.config.option.installer_path))
@@ -49,6 +61,12 @@ def installer(request, signing_cert):
 
 @pytest.fixture
 def github_mock(installer):
+    """
+    This fixture starts a GitHub release API mock on localhost:9001. This mock returns a
+    compliant GitHub release payload declaring that Certbot v99.9.9 is available.
+    The assets path associated allows to download on localhost the signed Certbot installer
+    used during the tests.
+    """
     server = None
     try:
         class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -97,6 +115,13 @@ def github_mock(installer):
 
 @pytest.fixture
 def upgrade_env(signing_cert, github_mock):
+    """
+    This fixture prepares the current Windows system Registry for a proper blackbox testing
+    of the auto-upgrade mechanism. GitHub release API is set to use the local GitHub release
+    API mock. And the public key used to validate the installer is set to be the one from
+    the test signing certificate used in the tests.
+    Fixture cleanup is included.
+    """
     try:
         _ps('New-Item -Path HKLM:\\Software -Name Certbot -ErrorAction SilentlyContinue | Out-Null; exit 0')
         _ps('New-ItemProperty -Path HKLM:\\Software\\Certbot -Name CertbotUpgradeApiURL -Value {} '
@@ -113,6 +138,10 @@ def upgrade_env(signing_cert, github_mock):
 
 @unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
 def test_base(installer):
+    """
+    This test checks that the Certbot installer installs correctly Certbot, including a fully
+    functional automated renewal mechanism through a Windows scheduled task.
+    """
     _assert_certbot_is_broken()
 
     # Install certbot
@@ -141,14 +170,18 @@ def test_base(installer):
     assert 'no renewal failures' in data, 'Renew task did not execute properly.'
 
 
-# NB: This test must sit after test_base, because it needs to have
-# a working installation of Certbot, and test_base does that.
+# NB: This test must be declared after test_base, and so will be started after test_base,
+# because it requires a working installation of Certbot, and test_base provides that.
 @unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
 def test_upgrade(upgrade_env):
+    """
+    This tests checks that Certbot installed with the current tested installer can upgrade
+    or repair itself through a Windows scheduled task.
+    """
     assert upgrade_env
     subprocess.check_output(['certbot', '--version'])
 
-    # Break on purpose certbot
+    # Break Certbot on purpose
     _ps('Remove-Item "${env:ProgramFiles(x86)}\\Certbot\\bin\\certbot.exe" -Confirm:$false')
     _assert_certbot_is_broken()
 
