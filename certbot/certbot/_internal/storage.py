@@ -986,7 +986,7 @@ class RenewableCert(interfaces.RenewableCert):
         for i in (cli_config.renewal_configs_dir, cli_config.default_archive_dir,
                   cli_config.live_dir):
             if not os.path.exists(i):
-                filesystem.makedirs(i, 0o700)
+                filesystem.makedirs(i, 0o755)
                 logger.debug("Creating directory %s.", i)
         config_file, config_filename = util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
