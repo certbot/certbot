@@ -112,11 +112,11 @@ Aborting auto-upgrade process.
             if (Test-Path $installDir\uninstall.exe) {
                 # Uninstall old Certbot first
                 Write-Message "Running the uninstaller for old version (install dir: $installDir) ..."
-                Start-Process -FilePath $installDir\uninstall.exe -ArgumentList "/S _?=$installDir"
+                Start-Process -FilePath $installDir\uninstall.exe -ArgumentList "/S" -Wait
             }
             # Install new version of Certbot
             Write-Message "Running the installer for new version (install dir: $installDir) ..."
-            Start-Process -FilePath $installerPath -ArgumentList "/S /D=$installDir"
+            Start-Process -FilePath $installerPath -ArgumentList "/S /D=$installDir" -Wait
 
             Write-Message "Certbot $latestVersion is installed."
         } catch {

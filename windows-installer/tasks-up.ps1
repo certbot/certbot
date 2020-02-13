@@ -11,7 +11,7 @@ $down = Join-Path (Get-ScriptDirectory) 'tasks-down.ps1'
 $taskName = "Certbot Renew & Auto-Update Task"
 $taskDescription = "Execute twice a day the 'certbot renew' command, to renew managed certificates if needed, and upgrade Certbot is a new version is available."
 
-$actionRenew = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument '-NoProfile -WindowStyle Hidden -Command "certbot renew"'
+$actionRenew = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -Command ""& '$InstallDir\bin\certbot.exe' renew"""
 $actionUpgrade = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -File ""$InstallDir\auto-update.ps1"""
 
 $delay = New-TimeSpan -Hours 12

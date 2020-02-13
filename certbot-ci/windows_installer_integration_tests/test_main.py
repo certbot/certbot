@@ -55,8 +55,8 @@ def github_mock(installer):
             pass
 
         class GitHubMock(BaseHTTPRequestHandler):
-            # def log_message(self, log_format, *args):
-            #     pass
+            def log_message(self, log_format, *args):
+                pass
 
             def do_GET(self):
                 if re.match(r'^.*/releases/latest$', self.path):
@@ -95,8 +95,8 @@ def github_mock(installer):
             server.server_close()
 
 
-@pytest.fixture(autouse=True)
-def registry_config(signing_cert, github_mock):
+@pytest.fixture
+def upgrade_env(signing_cert, github_mock):
     try:
         _ps('New-Item -Path HKLM:\\Software -Name Certbot -ErrorAction SilentlyContinue | Out-Null; exit 0')
         _ps('New-ItemProperty -Path HKLM:\\Software\\Certbot -Name CertbotUpgradeApiURL -Value {} '
@@ -105,62 +105,76 @@ def registry_config(signing_cert, github_mock):
             '([Convert]::ToBase64String((Get-PfxCertificate -FilePath {0}).GetPublicKey())) '
             '| Out-Null'.format(signing_cert))
 
-        yield
+        yield True
     finally:
         _ps('Remove-ItemProperty -Path HKLM:\\Software\\Certbot -Name CertbotUpgradeApiURL')
         _ps('Remove-ItemProperty -Path HKLM:\\Software\\Certbot -Name CertbotSigningPubKey')
 
 
 @unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
-def test_it(installer):
+def test_base(installer):
+    _assert_certbot_is_broken()
+
+    # Install certbot
+    subprocess.check_output([installer, '/S'])
+
+    # Assert certbot is installed and runnable
+    output = subprocess.check_output('certbot --version', shell=True, universal_newlines=True)
+    assert re.match(r'^certbot \d+\.\d+\.\d+.*$', output), 'Flag --version does not output a version.'
+
+    # Assert the renew + auto-upgrade task is installed and ready
+    output = _ps('(Get-ScheduledTask -TaskName "{}").State'.format(SCHEDULED_TASK_NAME), capture_stdout=True)
+    assert output.strip() == 'Ready'
+
+    # Trigger the renew + auto-upgrade task, expecting Certbot to check for certificate renewals.
+    now = time.time()
+    _ps('Start-ScheduledTask -TaskName "{}"'.format(SCHEDULED_TASK_NAME))
+    _wait_for_task_completion()
+
+    log_path = os.path.join('C:\\', 'Certbot', 'log', 'letsencrypt.log')
+
+    modification_time = os.path.getmtime(log_path)
+    assert now < modification_time, 'Certbot log file has not been modified by the renew task.'
+
+    with open(log_path) as file_h:
+        data = file_h.read()
+    assert 'no renewal failures' in data, 'Renew task did not execute properly.'
+
+
+# NB: This test must sit after test_base, because it needs to have
+# a working installation of Certbot, and test_base does that.
+@unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
+def test_upgrade(upgrade_env):
+    assert upgrade_env
+    subprocess.check_output(['certbot', '--version'])
+
+    # Break on purpose certbot
+    _ps('Remove-Item "${env:ProgramFiles(x86)}\\Certbot\\bin\\certbot.exe" -Confirm:$false')
+    _assert_certbot_is_broken()
+
+    # Trigger the renew + auto-upgrade task, expecting Certbot to be reinstalled and functional again.
+    now = time.time()
+    _ps('Start-ScheduledTask -TaskName "{}"'.format(SCHEDULED_TASK_NAME))
+    _wait_for_task_completion()
+
+    subprocess.check_output(['certbot', '--version'])
+
+
+def _assert_certbot_is_broken():
     try:
-        subprocess.check_call('certbot --version', shell=True)
+        subprocess.check_output(['certbot', '--version'])
     except (subprocess.CalledProcessError, OSError):
         pass
     else:
         raise AssertionError('Expect certbot to not be available in the PATH.')
 
-    try:
-        # Install certbot
-        subprocess.check_call([installer, '/S'])
 
-        # Assert certbot is installed and runnable
-        output = subprocess.check_output('certbot --version', shell=True, universal_newlines=True)
-        assert re.match(r'^certbot \d+\.\d+\.\d+.*$', output), 'Flag --version does not output a version.'
-
-        # Assert renew task is installed and ready
-        output = _ps('(Get-ScheduledTask -TaskName "{}").State'.format(SCHEDULED_TASK_NAME), capture_stdout=True)
-        assert output.strip() == 'Ready'
-
-        # Assert renew task is working
-        now = time.time()
-        _ps('Start-ScheduledTask -TaskName "{}"'.format(SCHEDULED_TASK_NAME))
-
-        status = 'Running'
-        while status != 'Ready':
-            status = _ps('(Get-ScheduledTask -TaskName "{}").State'
-                         .format(SCHEDULED_TASK_NAME), capture_stdout=True).strip()
-            time.sleep(1)
-
-        log_path = os.path.join('C:\\', 'Certbot', 'log', 'letsencrypt.log')
-
-        modification_time = os.path.getmtime(log_path)
-        assert now < modification_time, 'Certbot log file has not been modified by the renew task.'
-
-        with open(log_path) as file_h:
-            data = file_h.read()
-        assert 'no renewal failures' in data, 'Renew task did not execute properly.'
-
-    finally:
-        # Sadly this command cannot work in non interactive mode: uninstaller will ask explicitly permission in an UAC prompt
-        # print('Uninstalling Certbot ...')
-        # uninstall_path = _ps('(gci "HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"'
-        #                      ' | foreach { gp $_.PSPath }'
-        #                      ' | ? { $_ -match "Certbot" }'
-        #                      ' | select UninstallString)'
-        #                      '.UninstallString', capture_stdout=True)
-        # subprocess.check_call([uninstall_path, '/S'])
-        pass
+def _wait_for_task_completion():
+    status = 'Running'
+    while status != 'Ready':
+        status = _ps('(Get-ScheduledTask -TaskName "{}").State'
+                     .format(SCHEDULED_TASK_NAME), capture_stdout=True).strip()
+        time.sleep(1)
 
 
 def _ps(powershell_str, capture_stdout=False):
