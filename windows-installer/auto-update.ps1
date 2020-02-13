@@ -2,15 +2,15 @@
 param()
 begin {}
 process {
-    New-EventLog -Source "auto-update.ps1" -LogName "CertbotAutoUpdate" -ErrorAction SilentlyContinue
+    New-EventLog -Source "certbot/auto-update.ps1" -LogName "CertbotAutoUpdate" -ErrorAction SilentlyContinue
 
     function Write-Message($message, $level = "Information") {
-        Write-EventLog -Source "auto-update.ps1" -LogName "CertbotAutoUpdate" -EventID 1 -EntryType $level -Message $message
+        Write-EventLog -Source "certbot/auto-update.ps1" -LogName "CertbotAutoUpdate" -EventID 1 -EntryType $level -Message $message
         Write-Host $message
     }
 
     function Write-Error($message) {
-        Write-EventLog -Source "auto-update.ps1" -LogName "CertbotAutoUpdate" -EventID 1 -EntryType Error -Message $message
+        Write-EventLog -Source "certbot/auto-update.ps1" -LogName "CertbotAutoUpdate" -EventID 1 -EntryType Error -Message $message
         throw $message
     }
 
@@ -97,17 +97,16 @@ Aborting auto-upgrade process.
             # Check installer has a valid signature from the Certbot release team
             $signature = Get-AuthenticodeSignature $installerPath
 
-#            # Uncomment the following lines of code once the Certbot installer is correctly signed.
-#            if ($signature.Status -ne 'Valid') {
-#                throw "Downloaded installer has no or invalid Authenticode signature."
-#            }
-#            $publicKey = $certbotSigningPubKey -replace '-+.*-+' -replace "`n" -replace "`r"
-#            $refBinaryPublicKey = [System.Convert]::FromBase64String($publicKey)
-#            $curBinaryPublicKey = $signature.SignerCertificate.PublicKey.EncodedKeyValue.RawData
-#            $diff = Compare-Object -ReferenceObject $refBinaryPublicKey -DifferenceObject $curBinaryPublicKey
-#            if ($diff) {
-#                throw "Downloaded installer has not been signed by Certbot development team."
-#            }
+            if ($signature.Status -ne 'Valid') {
+                throw "Downloaded installer has no or invalid Authenticode signature."
+            }
+            $publicKey = $certbotSigningPubKey -replace '-+.*-+' -replace "`n" -replace "`r"
+            $refBinaryPublicKey = [System.Convert]::FromBase64String($publicKey)
+            $curBinaryPublicKey = $signature.SignerCertificate.PublicKey.EncodedKeyValue.RawData
+            $diff = Compare-Object -ReferenceObject $refBinaryPublicKey -DifferenceObject $curBinaryPublicKey
+            if ($diff) {
+                throw "Downloaded installer has not been signed by Certbot development team."
+            }
 
             if (Test-Path $installDir\uninstall.exe) {
                 # Uninstall old Certbot first

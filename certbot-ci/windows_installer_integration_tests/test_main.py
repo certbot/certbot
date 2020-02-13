@@ -142,7 +142,7 @@ def test_base(installer):
     This test checks that the Certbot installer installs correctly Certbot, including a fully
     functional automated renewal mechanism through a Windows scheduled task.
     """
-    _assert_certbot_is_broken()
+    _assert_certbot_is_missing()
 
     # Install certbot
     subprocess.check_output([installer, '/S'])
@@ -183,7 +183,7 @@ def test_upgrade(upgrade_env):
 
     # Break Certbot on purpose
     _ps('Remove-Item "${env:ProgramFiles(x86)}\\Certbot\\bin\\certbot.exe" -Confirm:$false')
-    _assert_certbot_is_broken()
+    _assert_certbot_is_missing()
 
     # Trigger the renew + auto-upgrade task, expecting Certbot to be reinstalled and functional again.
     now = time.time()
@@ -193,7 +193,7 @@ def test_upgrade(upgrade_env):
     subprocess.check_output(['certbot', '--version'])
 
 
-def _assert_certbot_is_broken():
+def _assert_certbot_is_missing():
     try:
         subprocess.check_output(['certbot', '--version'])
     except (subprocess.CalledProcessError, OSError):
