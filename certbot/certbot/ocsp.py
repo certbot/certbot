@@ -21,7 +21,7 @@ from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
-from certbot._internal.storage import RenewableCert  # pylint: disable=unused-import
+from certbot.interfaces import RenewableCert  # pylint: disable=unused-import
 
 try:
     # Only cryptography>=2.5 has ocsp module
@@ -30,7 +30,6 @@ try:
     getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp = None  # type: ignore
-
 
 
 logger = logging.getLogger(__name__)
@@ -64,12 +63,12 @@ class RevocationChecker(object):
 
         .. todo:: Make this a non-blocking call
 
-        :param `.storage.RenewableCert` cert: Certificate object
+        :param `.interfaces.RenewableCert` cert: Certificate object
         :returns: True if revoked; False if valid or the check failed or cert is expired.
         :rtype: bool
 
         """
-        cert_path, chain_path = cert.cert, cert.chain
+        cert_path, chain_path = cert.cert_path, cert.chain_path
 
         if self.broken:
             return False
@@ -78,7 +77,7 @@ class RevocationChecker(object):
         # so don't check OCSP if the cert is expired.
         # https://github.com/certbot/certbot/issues/7152
         now = pytz.UTC.fromutc(datetime.utcnow())
-        if cert.target_expiry <= now:
+        if crypto_util.notAfter(cert_path) <= now:
             return False
 
         url, host = _determine_ocsp_server(cert_path)
@@ -296,5 +295,5 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
         return True
     else:
         logger.warning("Unable to properly parse OCSP output: %s\nstderr:%s",
-                    ocsp_output, ocsp_errors)
+                       ocsp_output, ocsp_errors)
         return False
