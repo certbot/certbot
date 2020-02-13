@@ -253,4 +253,4 @@ def find_ssl_apache_conf(prefix):
     """
     return pkg_resources.resource_filename(
         "certbot_apache",
-        os.path.join("tls_configs", "{0}-options-ssl-apache.conf".format(prefix)))
+        os.path.join("_internal", "tls_configs", "{0}-options-ssl-apache.conf".format(prefix)))

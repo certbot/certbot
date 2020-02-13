@@ -1,11 +1,14 @@
 """Apache Configurator."""
 # pylint: disable=too-many-lines
 from collections import defaultdict
+# https://github.com/PyCQA/pylint/issues/73
+from distutils.version import LooseVersion  # pylint: disable=no-name-in-module, import-error
 import copy
 import fnmatch
 import logging
 import re
 import socket
+import subprocess
 import time
 
 import six
@@ -121,9 +124,10 @@ class ApacheConfigurator(common.Installer):
         :return: the path to the TLS Apache configuration file to use
         :rtype: str
         """
-        # Disabling TLS session tickets is supported by Apache 2.4.11+.
+        # Disabling TLS session tickets is supported by Apache 2.4.11+ and OpenSSL 1.0.2l+.
         # So for old versions of Apache we pick a configuration without this option.
-        if self.version < (2, 4, 11):
+        if self.version < (2, 4, 11) or not self.openssl_version or\
+            LooseVersion(self.openssl_version) < LooseVersion('1.0.2l'):
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 
@@ -189,9 +193,12 @@ class ApacheConfigurator(common.Installer):
 
         :param tup version: version of Apache as a tuple (2, 4, 7)
             (used mostly for unittesting)
+        :param tup openssl_version: version of OpenSSL compiled in mod_ssl as a tuple (1, 0, 2, 'l')
+            (used mostly for unittesting)
 
         """
         version = kwargs.pop("version", None)
+        openssl_version = kwargs.pop("openssl_version", None)
         use_parsernode = kwargs.pop("use_parsernode", False)
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
@@ -218,6 +225,7 @@ class ApacheConfigurator(common.Installer):
         self.parser = None
         self.parser_root = None
         self.version = version
+        self._openssl_version = openssl_version
         self.vhosts = None
         self.options = copy.deepcopy(self.OS_DEFAULTS)
         self._enhance_func = {"redirect": self._enable_redirect,
@@ -233,6 +241,39 @@ class ApacheConfigurator(common.Installer):
     def updated_mod_ssl_conf_digest(self):
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
+
+    @property
+    def openssl_version(self):
+        """Lazily retrieve openssl version"""
+        if self._openssl_version:
+            return self._openssl_version
+        # Attempt to set openssl version
+        # Check for LoadModule directive
+        try:
+            ssl_module_location = self.parser.modules['ssl_module']
+        except KeyError:
+            return None
+        if not ssl_module_location:
+            return None
+        # Grep in the .so for openssl version
+        try:
+            proc = subprocess.Popen(
+                ["strings", ssl_module_location],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True)
+            strings = proc.communicate()[0]  # strings prints output to stdout
+        except (OSError, ValueError) as error:
+            logger.debug(str(error), exc_info=True)
+            raise errors.PluginError(
+                "Unable to run strings")
+        # looks like: OpenSSL 1.0.2s  28 May 2019
+        matches = re.findall(r"OpenSSL ([0-9]\.[^ ]+) ", strings)
+        if not matches:
+            logger.warning("Could not find OpenSSL version; not disabling session tickets.")
+            return None
+        self._openssl_version = matches[0]
+        return self._openssl_version
 
     def prepare(self):
         """Prepare the authenticator/installer.
