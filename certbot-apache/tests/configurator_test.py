@@ -1766,10 +1766,11 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         file has been manually edited by the user, and will refuse to update it.
         This test ensures that all necessary hashes are present.
         """
-        from certbot_apache.constants import ALL_SSL_OPTIONS_HASHES
+        from certbot_apache._internal.constants import ALL_SSL_OPTIONS_HASHES
         import pkg_resources
 
-        tls_configs_dir = pkg_resources.resource_filename("certbot_apache", "tls_configs")
+        tls_configs_dir = pkg_resources.resource_filename(
+            "certbot_apache", os.path.join("_internal", "tls_configs"))
         all_files = [os.path.join(tls_configs_dir, name) for name in os.listdir(tls_configs_dir)
                      if name.endswith('options-ssl-apache.conf')]
         self.assertTrue(all_files)

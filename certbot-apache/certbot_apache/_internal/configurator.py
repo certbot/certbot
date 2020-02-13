@@ -123,7 +123,7 @@ class ApacheConfigurator(common.Installer):
         """
         # Disabling TLS session tickets is supported by Apache 2.4.11+.
         # So for old versions of Apache we pick a configuration without this option.
-        if self.version < (2, 4, 11):
+        if self.version < (2, 4, 11) :#or self.openssl_version < (1, 0, 2, 'l'):
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 
@@ -189,9 +189,12 @@ class ApacheConfigurator(common.Installer):
 
         :param tup version: version of Apache as a tuple (2, 4, 7)
             (used mostly for unittesting)
+        :param tup openssl_version: version of OpenSSL compiled in mod_ssl as a tuple (1, 0, 2, 'l')
+            (used mostly for unittesting)
 
         """
         version = kwargs.pop("version", None)
+        openssl_version = kwargs.pop("openssl_version", None)
         use_parsernode = kwargs.pop("use_parsernode", False)
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
@@ -218,6 +221,7 @@ class ApacheConfigurator(common.Installer):
         self.parser = None
         self.parser_root = None
         self.version = version
+        self._openssl_version = openssl_version
         self.vhosts = None
         self.options = copy.deepcopy(self.OS_DEFAULTS)
         self._enhance_func = {"redirect": self._enable_redirect,
@@ -233,6 +237,23 @@ class ApacheConfigurator(common.Installer):
     def updated_mod_ssl_conf_digest(self):
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
+
+    @property
+    def openssl_version(self):
+        """Lazily retrieve openssl version"""
+        if self._openssl_version:
+            return self._openssl_version
+        # Attempt to set openssl version
+        # Check for LoadModule directive
+        try:
+            ssl_module_location = self.parser.modules['ssl_module']
+        except KeyError:
+            return None
+        # Grep in the .so for openssl version
+        # TODO
+          # strings mod_ssl.so | egrep '^OpenSSL [0-9]'
+          # OpenSSL 1.0.2s  28 May 2019
+
 
     def prepare(self):
         """Prepare the authenticator/installer.

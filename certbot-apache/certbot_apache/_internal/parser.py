@@ -52,7 +52,7 @@ class ApacheParser(object):
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
-        self.modules = set()  # type: Set[str]
+        self.modules = {}  # type: Dict[str, str]
         self.parser_paths = {}  # type: Dict[str, List[str]]
         self.variables = {}  # type: Dict[str, str]
 
@@ -256,7 +256,7 @@ class ApacheParser(object):
     def reset_modules(self):
         """Reset the loaded modules list. This is called from cleanup to clear
         temporarily loaded modules."""
-        self.modules = set()
+        self.modules = {}
         self.update_modules()
         self.parse_modules()
 
@@ -267,7 +267,7 @@ class ApacheParser(object):
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
-        mods = set()  # type: Set[str]
+        mods = {}  # type: Dict[str, str]
         matches = self.find_dir("LoadModule")
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
@@ -281,8 +281,8 @@ class ApacheParser(object):
                 mod_name = self.get_arg(match_name)
                 mod_filename = self.get_arg(match_filename)
                 if mod_name and mod_filename:
-                    mods.add(mod_name)
-                    mods.add(os.path.basename(mod_filename)[:-2] + "c")
+                    mods[mod_name] = mod_filename
+                    mods[os.path.basename(mod_filename)[:-2] + "c"] = mod_filename
                 else:
                     logger.debug("Could not read LoadModule directive from Augeas path: %s",
                                  match_name[6:])
@@ -621,7 +621,7 @@ class ApacheParser(object):
 
     def exclude_dirs(self, matches):
         """Exclude directives that are not loaded into the configuration."""
-        filters = [("ifmodule", self.modules), ("ifdefine", self.variables)]
+        filters = [("ifmodule", self.modules.keys()), ("ifdefine", self.variables)]
 
         valid_matches = []
 
