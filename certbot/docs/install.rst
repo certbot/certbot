@@ -28,7 +28,7 @@ your system.
 System Requirements
 ===================
 
-Certbot currently requires Python 2.7 or 3.4+ running on a UNIX-like operating
+Certbot currently requires Python 2.7 or 3.5+ running on a UNIX-like operating
 system. By default, it requires root access in order to write to
 ``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
 bind to port 80 (if you use the ``standalone`` plugin) and to read and

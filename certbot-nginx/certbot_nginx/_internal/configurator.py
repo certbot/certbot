@@ -313,9 +313,6 @@ class NginxConfigurator(common.Installer):
         .. todo:: This should maybe return list if no obvious answer
             is presented.
 
-        .. todo:: The special name "$hostname" corresponds to the machine's
-            hostname. Currently we just ignore this.
-
         :param str target_name: domain name
         :param bool create_if_no_match: If we should create a new vhost from default
             when there is no match found. If we can't choose a default, raise a
@@ -598,6 +595,12 @@ class NginxConfigurator(common.Installer):
         all_names = set()  # type: Set[str]
 
         for vhost in self.parser.get_vhosts():
+            try:
+                vhost.names.remove("$hostname")
+                vhost.names.add(socket.gethostname())
+            except KeyError:
+                pass
+
             all_names.update(vhost.names)
 
             for addr in vhost.addrs:
@@ -1008,7 +1011,7 @@ class NginxConfigurator(common.Installer):
             matches = re.findall(r"built with OpenSSL ([^ ]+) ", text)
             if not matches:
                 logger.warning("NGINX configured with OpenSSL alternatives is not officially"
-                    "supported by Certbot.")
+                    " supported by Certbot.")
                 return ""
         return matches[0]
 

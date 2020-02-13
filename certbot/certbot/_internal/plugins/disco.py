@@ -13,6 +13,12 @@ from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
 
+try:
+    # Python 3.3+
+    from collections.abc import Mapping
+except ImportError:  # pragma: no cover
+    from collections import Mapping
+
 logger = logging.getLogger(__name__)
 
 
@@ -178,7 +184,7 @@ class PluginEntryPoint(object):
         return "\n".join(lines)
 
 
-class PluginsRegistry(collections.Mapping):
+class PluginsRegistry(Mapping):
     """Plugins registry."""
 
     def __init__(self, plugins):

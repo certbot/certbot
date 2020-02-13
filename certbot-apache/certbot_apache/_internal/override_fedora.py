@@ -33,7 +33,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         challenge_location="/etc/httpd/conf.d",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
             # TODO: eventually newest version of Fedora will need their own config
-            "certbot_apache", os.path.join("_internal", "centos-options-ssl-apache.conf"))
+            "certbot_apache", os.path.join("_internal", "options-ssl-apache.conf"))
     )
 
     def config_test(self):

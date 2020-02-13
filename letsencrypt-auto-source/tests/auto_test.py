@@ -167,6 +167,10 @@ def out_and_err(command, input=None, shell=False, env=None):
     if status:
         error = CalledProcessError(status, command)
         error.output = out
+        print('stdout output was:')
+        print(out)
+        print('stderr output was:')
+        print(err)
         raise error
     return out, err
 
