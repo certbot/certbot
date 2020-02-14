@@ -2,7 +2,6 @@
 import zope.interface
 
 from certbot import interfaces
-from certbot.compat import os
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
