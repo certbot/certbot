@@ -125,8 +125,8 @@ class ApacheConfigurator(common.Installer):
         """
         # Disabling TLS session tickets is supported by Apache 2.4.11+ and OpenSSL 1.0.2l+.
         # So for old versions of Apache we pick a configuration without this option.
-        if self.version < (2, 4, 11) or not self.openssl_version or\
-            LooseVersion(self.openssl_version) < LooseVersion('1.0.2l'):
+        if self.version < (2, 4, 11) or not self.openssl_version() or\
+            LooseVersion(self.openssl_version()) < LooseVersion('1.0.2l'):
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 
@@ -238,7 +238,6 @@ class ApacheConfigurator(common.Installer):
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
 
-    @property
     def openssl_version(self):
         """Lazily retrieve openssl version"""
         if self._openssl_version:
@@ -247,8 +246,6 @@ class ApacheConfigurator(common.Installer):
         try:
             ssl_module_location = self.parser.modules['ssl_module']
         except KeyError:
-            return None
-        if not ssl_module_location:
             return None
         # Step 2. Grep in the .so for openssl version
         try:

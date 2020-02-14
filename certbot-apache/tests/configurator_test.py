@@ -1802,10 +1802,38 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             AH02556: "SSLOpenSSLConfCmd %s %s" applied to %s
             OpenSSL 1.0.2g  1 Mar 2016
             """
+        self.config.parser.modules['ssl_module'] = '/fake/path'
         with mock.patch("%s.open" % six.moves.builtins.__name__,
             mock.mock_open(read_data=some_string_contents)) as mock_file:
-            self.config.parser.modules['ssl_module'] = '/fake/path'
-            self.assertEqual(self.config.openssl_version, "1.0.2g")
+            self.assertEqual(self.config.openssl_version(), "1.0.2g")
+
+    def test_current_version(self):
+        self.config.version = (2, 4, 10)
+        self.config._openssl_version = '1.0.2m'
+        self.assertTrue('old' in self.config.pick_apache_config())
+
+        self.config.version = (2, 4, 11)
+        self.config._openssl_version = '1.0.2m'
+        self.assertTrue('current' in self.config.pick_apache_config())
+
+        self.config._openssl_version = '1.0.2a'
+        self.assertTrue('old' in self.config.pick_apache_config())
+
+    def test_openssl_version_errors(self):
+        self.config._openssl_version = '1.0.2a'
+        self.assertEqual(self.config.openssl_version(), '1.0.2a')
+
+        self.config._openssl_version = None
+        self.config.parser.modules['ssl_module'] = "/fake/path"
+        self.assertRaises(errors.PluginError, self.config.openssl_version)
+
+        contents_missing_openssl = "these contents won't match the regex"
+        with mock.patch("%s.open" % six.moves.builtins.__name__,
+            mock.mock_open(read_data=contents_missing_openssl)) as mock_file:
+            with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
+                # Check that correct logger.warning was printed
+                self.assertEqual(self.config.openssl_version(), None)
+                self.assertTrue("Could not find" in mock_log.call_args[0][0])
 
 
 if __name__ == "__main__":
