@@ -40,8 +40,8 @@ class ApacheHttp01Test(util.ApacheTest):
 
         modules = ["ssl", "rewrite", "authz_core", "authz_host"]
         for mod in modules:
-            self.config.parser.modules.add("mod_{0}.c".format(mod))
-            self.config.parser.modules.add(mod + "_module")
+            self.config.parser.modules["mod_{0}.c".format(mod)] = None
+            self.config.parser.modules[mod + "_module"] = None
 
         from certbot_apache._internal.http_01 import ApacheHttp01
         self.http = ApacheHttp01(self.config)

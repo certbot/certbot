@@ -20,10 +20,10 @@ class AutoHSTSTest(util.ApacheTest):
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
-        self.config.parser.modules.add("headers_module")
-        self.config.parser.modules.add("mod_headers.c")
-        self.config.parser.modules.add("ssl_module")
-        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules["headers_module"] = None
+        self.config.parser.modules["mod_headers.c"] = None
+        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["mod_ssl.c"] = None
 
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
