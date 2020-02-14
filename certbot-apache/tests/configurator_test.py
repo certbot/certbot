@@ -544,7 +544,9 @@ class MultipleVhostsTest(util.ApacheTest):
                 call_found = True
         self.assertTrue(call_found)
 
-    def test_prepare_server_https(self):
+    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
+    def test_prepare_server_https(self, mock_cfg):
+        mock_cfg.return_value = ""
         mock_enable = mock.Mock()
         self.config.enable_mod = mock_enable
 
@@ -570,7 +572,9 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.assertEqual(mock_add_dir.call_count, 2)
 
-    def test_prepare_server_https_named_listen(self):
+    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
+    def test_prepare_server_https_named_listen(self, mock_cfg):
+        mock_cfg.return_value = ""
         mock_find = mock.Mock()
         mock_find.return_value = ["test1", "test2", "test3"]
         mock_get = mock.Mock()
@@ -582,6 +586,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.get_arg = mock_get
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
         self.config.enable_mod = mock_enable
+        self.config.parser.parse_modules = mock.Mock()
 
         # Test Listen statements with specific ip listeed
         self.config.prepare_server_https("443")
@@ -608,7 +613,9 @@ class MultipleVhostsTest(util.ApacheTest):
         # self.config.prepare_server_https("8080", temp=True)
         # self.assertEqual(self.listens, 0)
 
-    def test_prepare_server_https_needed_listen(self):
+    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
+    def test_prepare_server_https_needed_listen(self, mock_cfg):
+        mock_cfg.return_value = ""
         mock_find = mock.Mock()
         mock_find.return_value = ["test1", "test2"]
         mock_get = mock.Mock()
@@ -620,12 +627,14 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.get_arg = mock_get
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
         self.config.enable_mod = mock_enable
+        self.config.parser.parse_modules = mock.Mock()
 
         self.config.prepare_server_https("443")
         self.assertEqual(mock_add_dir.call_count, 1)
 
-    def test_prepare_server_https_mixed_listen(self):
-
+    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
+    def test_prepare_server_https_mixed_listen(self, mock_cfg):
+        mock_cfg.return_value = ""
         mock_find = mock.Mock()
         mock_find.return_value = ["test1", "test2"]
         mock_get = mock.Mock()
@@ -637,6 +646,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.get_arg = mock_get
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
         self.config.enable_mod = mock_enable
+        self.config.parser.parse_modules = mock.Mock()
 
         # Test Listen statements with specific ip listeed
         self.config.prepare_server_https("443")
