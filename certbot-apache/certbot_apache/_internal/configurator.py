@@ -257,18 +257,13 @@ class ApacheConfigurator(common.Installer):
             return None
         # Grep in the .so for openssl version
         try:
-            proc = subprocess.Popen(
-                ["strings", ssl_module_location],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True)
-            strings = proc.communicate()[0]  # strings prints output to stdout
-        except (OSError, ValueError) as error:
+            with open(ssl_module_location) as f:
+                contents = f.read()
+        except IOError as error:
             logger.debug(str(error), exc_info=True)
-            raise errors.PluginError(
-                "Unable to run strings")
+            raise errors.PluginError("Unable to open ssl_module file")
         # looks like: OpenSSL 1.0.2s  28 May 2019
-        matches = re.findall(r"OpenSSL ([0-9]\.[^ ]+) ", strings)
+        matches = re.findall(r"OpenSSL ([0-9]\.[^ ]+) ", contents)
         if not matches:
             logger.warning("Could not find OpenSSL version; not disabling session tickets.")
             return None

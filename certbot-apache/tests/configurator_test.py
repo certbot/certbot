@@ -1782,9 +1782,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
 
     @mock.patch("certbot_apache._internal.configurator.subprocess.Popen")
     def test_openssl_version(self, mock_popen):
-        # pylint: disable=protected-access
-        mock_popen().communicate.return_value = (
-            """
+        some_string_contents = """
             SSLOpenSSLConfCmd
             OpenSSL configuration command
             SSLv3 not supported by this version of OpenSSL
@@ -1794,9 +1792,11 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             AH02407: "SSLOpenSSLConfCmd %s %s" failed for %s
             AH02556: "SSLOpenSSLConfCmd %s %s" applied to %s
             OpenSSL 1.0.2g  1 Mar 2016
-            """, "")
-        self.config.parser.modules['ssl_module'] = '/fake/path'
-        self.assertEqual(self.config.openssl_version, "1.0.2g")
+            """
+        with mock.patch("%s.open" % six.moves.builtins.__name__,
+            mock.mock_open(read_data=some_string_contents)) as mock_file:
+            self.config.parser.modules['ssl_module'] = '/fake/path'
+            self.assertEqual(self.config.openssl_version, "1.0.2g")
 
 
 if __name__ == "__main__":
