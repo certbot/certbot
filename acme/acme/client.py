@@ -15,16 +15,16 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests_toolbelt.adapters.source import SourceAddressAdapter
 import six
-from six.moves import http_client  # pylint: disable=import-error
+from six.moves import http_client
 
 from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Text  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
+from acme.magic_typing import Text
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ if sys.version_info < (2, 7, 9):  # pragma: no cover
     try:
         requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
     except AttributeError:
-        import urllib3.contrib.pyopenssl  # pylint: disable=import-error
+        import urllib3.contrib.pyopenssl
         urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 DEFAULT_NETWORK_TIMEOUT = 45
@@ -666,7 +666,7 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
-        for url in body.authorizations:  # pylint: disable=not-an-iterable
+        for url in body.authorizations:
             authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,

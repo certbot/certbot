@@ -27,7 +27,7 @@ def gen_combos(challbs):
     return tuple((i,) for i, _ in enumerate(challbs))
 
 
-def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
+def chall_to_challb(chall, status):
     """Return ChallengeBody from Challenge."""
     kwargs = {
         "chall": chall,
@@ -67,7 +67,6 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     :param bool combos: Whether or not to add combinations
 
     """
-    # pylint: disable=redefined-outer-name
     challbs = tuple(
         chall_to_challb(chall, status)
         for chall, status in six.moves.zip(challs, statuses)

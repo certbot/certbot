@@ -7,8 +7,8 @@ import sys
 
 import six
 
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict
+from acme.magic_typing import List
 from certbot import errors
 from certbot.compat import os
 from certbot_apache._internal import apache_util
@@ -320,7 +320,7 @@ class ApacheParser(object):
         for mod in matches:
             self.add_mod(mod.strip())
 
-    def filter_args_num(self, matches, args):  # pylint: disable=no-self-use
+    def filter_args_num(self, matches, args):
         """Filter out directives with specific number of arguments.
 
         This function makes the assumption that all related arguments are given
@@ -714,7 +714,7 @@ class ApacheParser(object):
 
         return get_aug_path(arg)
 
-    def fnmatch_to_re(self, clean_fn_match):  # pylint: disable=no-self-use
+    def fnmatch_to_re(self, clean_fn_match):
         """Method converts Apache's basic fnmatch to regular expression.
 
         Assumption - Configs are assumed to be well-formed and only writable by

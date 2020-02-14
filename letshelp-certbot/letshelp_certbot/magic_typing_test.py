@@ -18,7 +18,7 @@ class MagicTypingTest(unittest.TestCase):
         sys.modules['typing'] = typing_class_mock
         if 'letshelp_certbot.magic_typing' in sys.modules:
             del sys.modules['letshelp_certbot.magic_typing'] # pragma: no cover
-        from letshelp_certbot.magic_typing import Text # pylint: disable=no-name-in-module
+        from letshelp_certbot.magic_typing import Text
         self.assertEqual(Text, text_mock)
         del sys.modules['letshelp_certbot.magic_typing']
         sys.modules['typing'] = temp_typing
@@ -31,7 +31,7 @@ class MagicTypingTest(unittest.TestCase):
         sys.modules['typing'] = None
         if 'letshelp_certbot.magic_typing' in sys.modules:
             del sys.modules['letshelp_certbot.magic_typing'] # pragma: no cover
-        from letshelp_certbot.magic_typing import Text # pylint: disable=no-name-in-module
+        from letshelp_certbot.magic_typing import Text
         self.assertTrue(Text is None)
         del sys.modules['letshelp_certbot.magic_typing']
         sys.modules['typing'] = temp_typing

@@ -20,7 +20,6 @@ import six
 logger = logging.getLogger(__name__)
 
 class RawNginxParser(object):
-    # pylint: disable=expression-not-assigned
     # pylint: disable=pointless-statement
     """A class that parses nginx configuration with pyparsing."""
 

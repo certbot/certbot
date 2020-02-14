@@ -13,7 +13,7 @@ import OpenSSL
 import six
 import zope.component
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
