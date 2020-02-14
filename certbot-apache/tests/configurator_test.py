@@ -1790,8 +1790,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                             "Constants.ALL_SSL_OPTIONS_HASHES must be appended with the sha256 "
                             "hash of {0} when it is updated.".format(one_file))
 
-    @mock.patch("certbot_apache._internal.configurator.subprocess.Popen")
-    def test_openssl_version(self, mock_popen):
+    def test_openssl_version(self):
         some_string_contents = """
             SSLOpenSSLConfCmd
             OpenSSL configuration command
