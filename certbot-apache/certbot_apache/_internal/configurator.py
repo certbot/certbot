@@ -193,12 +193,9 @@ class ApacheConfigurator(common.Installer):
 
         :param tup version: version of Apache as a tuple (2, 4, 7)
             (used mostly for unittesting)
-        :param tup openssl_version: version of OpenSSL compiled in mod_ssl as a tuple (1, 0, 2, 'l')
-            (used mostly for unittesting)
 
         """
         version = kwargs.pop("version", None)
-        openssl_version = kwargs.pop("openssl_version", None)
         use_parsernode = kwargs.pop("use_parsernode", False)
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
@@ -225,7 +222,7 @@ class ApacheConfigurator(common.Installer):
         self.parser = None
         self.parser_root = None
         self.version = version
-        self._openssl_version = openssl_version
+        self._openssl_version = None
         self.vhosts = None
         self.options = copy.deepcopy(self.OS_DEFAULTS)
         self._enhance_func = {"redirect": self._enable_redirect,
@@ -247,15 +244,14 @@ class ApacheConfigurator(common.Installer):
         """Lazily retrieve openssl version"""
         if self._openssl_version:
             return self._openssl_version
-        # Attempt to set openssl version
-        # Check for LoadModule directive
+        # Step 1. Check for LoadModule directive
         try:
             ssl_module_location = self.parser.modules['ssl_module']
         except KeyError:
             return None
         if not ssl_module_location:
             return None
-        # Grep in the .so for openssl version
+        # Step 2. Grep in the .so for openssl version
         try:
             with open(ssl_module_location) as f:
                 contents = f.read()
@@ -1286,6 +1282,10 @@ class ApacheConfigurator(common.Installer):
                 self.enable_mod("socache_shmcb", temp=temp)
             if "ssl_module" not in self.parser.modules:
                 self.enable_mod("ssl", temp=temp)
+                self.parser.reset_modules() # Reset to load the new ssl_module path
+                # Call again because now we can gate on openssl version
+                self.install_ssl_options_conf(self.mod_ssl_conf,
+                                              self.updated_mod_ssl_conf_digest)
 
     def make_vhost_ssl(self, nonssl_vhost):
         """Makes an ssl_vhost version of a nonssl_vhost.
