@@ -247,6 +247,8 @@ class ApacheConfigurator(common.Installer):
             ssl_module_location = self.parser.modules['ssl_module']
         except KeyError:
             return None
+        if not ssl_module_location:
+            return None
         # Step 2. Grep in the .so for openssl version
         try:
             with open(ssl_module_location) as f:

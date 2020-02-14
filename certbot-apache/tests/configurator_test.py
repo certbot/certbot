@@ -1824,6 +1824,9 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         self.assertEqual(self.config.openssl_version(), '1.0.2a')
 
         self.config._openssl_version = None
+        self.config.parser.modules['ssl_module'] = None
+        self.assertEqual(self.config.openssl_version(), None)
+
         self.config.parser.modules['ssl_module'] = "/fake/path"
         self.assertRaises(errors.PluginError, self.config.openssl_version)
 
