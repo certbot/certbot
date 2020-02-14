@@ -52,24 +52,24 @@ class ApacheHttp01Test(util.ApacheTest):
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_2(self, mock_enmod):
         self.config.version = (2, 2)
-        self.config.parser.modules.remove("authz_host_module")
-        self.config.parser.modules.remove("mod_authz_host.c")
+        del self.config.parser.modules["authz_host_module"]
+        del self.config.parser.modules["mod_authz_host.c"]
 
         enmod_calls = self.common_enable_modules_test(mock_enmod)
         self.assertEqual(enmod_calls[0][0][0], "authz_host")
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_4(self, mock_enmod):
-        self.config.parser.modules.remove("authz_core_module")
-        self.config.parser.modules.remove("mod_authz_core.c")
+        del self.config.parser.modules["authz_core_module"]
+        del self.config.parser.modules["mod_authz_host.c"]
 
         enmod_calls = self.common_enable_modules_test(mock_enmod)
         self.assertEqual(enmod_calls[0][0][0], "authz_core")
 
     def common_enable_modules_test(self, mock_enmod):
         """Tests enabling mod_rewrite and other modules."""
-        self.config.parser.modules.remove("rewrite_module")
-        self.config.parser.modules.remove("mod_rewrite.c")
+        del self.config.parser.modules["rewrite_module"]
+        del self.config.parser.modules["mod_rewrite.c"]
 
         self.http.prepare_http01_modules()
 
