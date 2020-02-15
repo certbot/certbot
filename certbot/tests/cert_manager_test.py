@@ -564,13 +564,11 @@ class GetCertnameTest(unittest.TestCase):
     """Tests for certbot._internal.cert_manager."""
 
     def setUp(self):
-        self.get_utility_patch = test_util.patch_get_utility()
-        self.mock_get_utility = self.get_utility_patch.start()
+        get_utility_patch = test_util.patch_get_utility()
+        self.mock_get_utility = get_utility_patch.start()
+        self.addCleanup(get_utility_patch.stop)
         self.config = mock.MagicMock()
         self.config.certname = None
-
-    def tearDown(self):
-        self.get_utility_patch.stop()
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')

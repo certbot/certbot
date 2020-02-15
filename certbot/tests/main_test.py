@@ -62,7 +62,7 @@ class RunTest(test_util.ConfigTestCase):
     def setUp(self):
         super(RunTest, self).setUp()
         self.domain = 'example.org'
-        self.patches = [
+        patches = [
             mock.patch('certbot._internal.main._get_and_save_cert'),
             mock.patch('certbot._internal.main.display_ops.success_installation'),
             mock.patch('certbot._internal.main.display_ops.success_renewal'),
@@ -71,17 +71,15 @@ class RunTest(test_util.ConfigTestCase):
             mock.patch('certbot._internal.main._report_new_cert'),
             mock.patch('certbot._internal.main._find_cert')]
 
-        self.mock_auth = self.patches[0].start()
-        self.mock_success_installation = self.patches[1].start()
-        self.mock_success_renewal = self.patches[2].start()
-        self.mock_init = self.patches[3].start()
-        self.mock_suggest_donation = self.patches[4].start()
-        self.mock_report_cert = self.patches[5].start()
-        self.mock_find_cert = self.patches[6].start()
-
-    def tearDown(self):
-        for patch in self.patches:
-            patch.stop()
+        self.mock_auth = patches[0].start()
+        self.mock_success_installation = patches[1].start()
+        self.mock_success_renewal = patches[2].start()
+        self.mock_init = patches[3].start()
+        self.mock_suggest_donation = patches[4].start()
+        self.mock_report_cert = patches[5].start()
+        self.mock_find_cert = patches[6].start()
+        for patch in patches:
+            self.addCleanup(patch.stop)
 
     def _call(self):
         args = '-a webroot -i null -d {0}'.format(self.domain).split()
@@ -243,16 +241,18 @@ class RevokeTest(test_util.TempDirTestCase):
         with open(self.tmp_cert_path, 'r') as f:
             self.tmp_cert = (self.tmp_cert_path, f.read())
 
-        self.patches = [
+        patches = [
             mock.patch('acme.client.BackwardsCompatibleClientV2'),
             mock.patch('certbot._internal.client.Client'),
             mock.patch('certbot._internal.main._determine_account'),
             mock.patch('certbot._internal.main.display_ops.success_revocation')
         ]
-        self.mock_acme_client = self.patches[0].start()
-        self.patches[1].start()
-        self.mock_determine_account = self.patches[2].start()
-        self.mock_success_revoke = self.patches[3].start()
+        self.mock_acme_client = patches[0].start()
+        patches[1].start()
+        self.mock_determine_account = patches[2].start()
+        self.mock_success_revoke = patches[3].start()
+        for patch in patches:
+            self.addCleanup(patch.stop)
 
         from certbot._internal.account import Account
 
@@ -264,12 +264,6 @@ class RevokeTest(test_util.TempDirTestCase):
         self.acc = Account(self.regr, JWK, self.meta)
 
         self.mock_determine_account.return_value = (self.acc, None)
-
-    def tearDown(self):
-        super(RevokeTest, self).tearDown()
-
-        for patch in self.patches:
-            patch.stop()
 
     def _call(self, args=None):
         if not args:
