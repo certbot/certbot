@@ -15,7 +15,7 @@ class Header(jose.Header):
     url = jose.Field('url', omitempty=True)
 
     @nonce.decoder
-    def nonce(value):  # pylint: disable=missing-docstring,no-self-argument
+    def nonce(value):  # pylint: disable=no-self-argument,missing-function-docstring
         try:
             return jose.decode_b64jose(value)
         except jose.DeserializationError as error:
@@ -25,7 +25,7 @@ class Header(jose.Header):
 
 class Signature(jose.Signature):
     """ACME-specific Signature. Uses ACME-specific Header for customer fields."""
-    __slots__ = jose.Signature._orig_slots  # pylint: disable=no-member
+    __slots__ = jose.Signature._orig_slots
 
     # TODO: decoder/encoder should accept cls? Otherwise, subclassing
     # JSONObjectWithFields is tricky...

@@ -16,8 +16,8 @@ from cryptography.hazmat.primitives import serialization
 import pytz
 import requests
 
-from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Optional
+from acme.magic_typing import Tuple
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
@@ -26,7 +26,7 @@ from certbot.interfaces import RenewableCert  # pylint: disable=unused-import
 try:
     # Only cryptography>=2.5 has ocsp module
     # and signature_hash_algorithm attribute in OCSPResponse class
-    from cryptography.x509 import ocsp  # pylint: disable=import-error, ungrouped-imports
+    from cryptography.x509 import ocsp  # pylint: disable=ungrouped-imports
     getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp = None  # type: ignore

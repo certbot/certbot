@@ -13,7 +13,7 @@ install_requires = [
     'certbot>=1.1.0',
     'mock',
     'PyOpenSSL',
-    'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
+    'pyparsing>=1.5.5',  # Python3 support
     'setuptools',
     'zope.interface',
 ]

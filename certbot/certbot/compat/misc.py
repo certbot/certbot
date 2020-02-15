@@ -11,7 +11,7 @@ from certbot import errors
 from certbot.compat import os
 
 try:
-    from win32com.shell import shell as shellwin32  # pylint: disable=import-error
+    from win32com.shell import shell as shellwin32
     POSIX_MODE = False
 except ImportError:  # pragma: no cover
     POSIX_MODE = True
