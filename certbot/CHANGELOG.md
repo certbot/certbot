@@ -281,7 +281,8 @@ More details about these changes can be found on our GitHub repo.
 
 ### Changed
 
-*
+* The `domain` parameter of `LexiconClient.{add,del}_txt_record()` is now
+  deprecated, and is ignored if passed.
 
 ### Fixed
 

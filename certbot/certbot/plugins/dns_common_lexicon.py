@@ -1,5 +1,7 @@
 """Common code for DNS Authenticator Plugins built on Lexicon."""
+import functools
 import logging
+import warnings
 
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
@@ -22,6 +24,22 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+def _accept_obsolete_domain_parameter(f):
+    """
+    Allows a method to accept an optional unused domain parameter as the first argument.
+    """
+    message = ('The `domain` parameter is obsolete and unused. Remove it. ' +
+               'Domain is now auto-determined from `record_name`.')
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        if 'domain' in kwargs:
+            del kwargs['domain']
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
+        elif len(args) + len(kwargs) == 4:
+            args = args[0:1] + args[2:]
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
+        return f(*args, **kwargs)
+    return wrapper
 
 class LexiconClient(object):
     """
@@ -31,14 +49,19 @@ class LexiconClient(object):
     def __init__(self):
         self.provider = None
 
-    def add_txt_record(self, domain, record_name, record_content):
+    @_accept_obsolete_domain_parameter
+    def add_txt_record(self, record_name, record_content):
         """
         Add a TXT record using the supplied information.
 
-        :param str domain: The domain to use to look up the managed zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :raises errors.PluginError: if an error occurs communicating with the DNS Provider API
+
+        This method previously had a positional parameter "domain" before record_name. This
+        parameter held the domain to use to look up the managed zone. Now record_name is always
+        used for this lookup. However, external plugins still want to pass something here,
+        that's why this deprecated usage is still supported (the "domain" parameter is ignored).
         """
         self._find_domain_id(record_name)
 
@@ -48,14 +71,19 @@ class LexiconClient(object):
             logger.debug('Encountered error adding TXT record: %s', e, exc_info=True)
             raise errors.PluginError('Error adding TXT record: {0}'.format(e))
 
-    def del_txt_record(self, domain, record_name, record_content):
+    @_accept_obsolete_domain_parameter
+    def del_txt_record(self, record_name, record_content):
         """
         Delete a TXT record using the supplied information.
 
-        :param str domain: The domain to use to look up the managed zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :raises errors.PluginError: if an error occurs communicating with the DNS Provider  API
+
+        This method previously had a positional parameter "domain" before record_name. This
+        parameter held the domain to use to look up the managed zone. Now record_name is always
+        used for this lookup. However, external plugins still want to pass something here,
+        that's why this deprecated usage is still supported (the "domain" parameter is ignored).
         """
         try:
             self._find_domain_id(record_name)

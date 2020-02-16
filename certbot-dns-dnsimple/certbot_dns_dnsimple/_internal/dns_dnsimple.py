@@ -48,10 +48,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
 
     def _perform(self, domain, validation_name, validation):
-        self._get_dnsimple_client().add_txt_record(domain, validation_name, validation)
+        self._get_dnsimple_client().add_txt_record(validation_name, validation)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_dnsimple_client().del_txt_record(domain, validation_name, validation)
+        self._get_dnsimple_client().del_txt_record(validation_name, validation)
 
     def _get_dnsimple_client(self):
         return _DNSimpleLexiconClient(self.credentials.conf('token'), self.ttl)

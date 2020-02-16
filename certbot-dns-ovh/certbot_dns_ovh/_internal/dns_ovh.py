@@ -54,10 +54,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
 
     def _perform(self, domain, validation_name, validation):
-        self._get_ovh_client().add_txt_record(domain, validation_name, validation)
+        self._get_ovh_client().add_txt_record(validation_name, validation)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_ovh_client().del_txt_record(domain, validation_name, validation)
+        self._get_ovh_client().del_txt_record(validation_name, validation)
 
     def _get_ovh_client(self):
         return _OVHLexiconClient(
