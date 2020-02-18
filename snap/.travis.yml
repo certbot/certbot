@@ -27,7 +27,8 @@ notifications:
 addons:
   snaps:
     - name: snapcraft
-      channel: stable
+      # TODO: move back to stable channel once snapcraft 3.10 has been pushed to it.
+      channel: candidate
       classic: true
     - name: lxd
       channel: stable

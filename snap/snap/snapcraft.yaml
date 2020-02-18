@@ -38,20 +38,21 @@ apps:
 
 parts:
   python-augeas:
-    plugin: x-python
+    plugin: python
     source: git://github.com/basak/python-augeas
     source-branch: snap
     python-version: python3
     build-packages: [libaugeas-dev]
   acme:
-    plugin: x-python
+    plugin: python
     source: certbot
     source-subdir: acme
     constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     python-version: python3
   certbot:
-    plugin: x-python
+    plugin: python
     source: certbot
+    source-subdir: certbot
     constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     python-version: python3
     after: [acme]
@@ -62,7 +63,7 @@ parts:
     stage:
       - -usr/lib/python3.6/sitecustomize.py
   certbot-apache:
-    plugin: x-python
+    plugin: python
     source: certbot
     source-subdir: certbot-apache
     constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
@@ -73,7 +74,7 @@ parts:
       # Prefer cffi
       - -lib/python3.6/site-packages/augeas.py
   certbot-nginx:
-    plugin: x-python
+    plugin: python
     source: certbot
     source-subdir: certbot-nginx
     constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
