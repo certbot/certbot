@@ -132,7 +132,6 @@ class OCSPPrefetchMixin(object):
         """
         ttl = pf_obj["lastupdate"] + constants.OCSP_INTERNAL_TTL
         if ttl < time.time():
-            self._ocsp_refresh(pf_obj["cert_path"], pf_obj["chain_path"])
             return True
         return False
 
@@ -187,22 +186,6 @@ class OCSPPrefetchMixin(object):
         shutil.copy2(tmp_file, filename)
         os.remove(tmp_file)
 
-    def _read_dbm(self, filename):
-        """Helper method for reading the dbm using context manager.
-        Used for tests.
-
-        :param str filename: DBM database filename
-
-        :returns: Dictionary of database keys and values
-        :rtype: dict
-        """
-
-        ret = dict()
-        with DBMHandler(filename, 'r') as db:
-            for k in db.keys():
-                ret[k] = db[k]
-        return ret
-
     def _ocsp_ttl(self, next_update):
         """Calculates Apache internal TTL for the next OCSP staple
         update.
@@ -220,7 +203,7 @@ class OCSPPrefetchMixin(object):
         """
 
         if next_update is not None:
-            now = datetime.fromtimestamp(time.time())
+            now = datetime.utcnow()
             res_ttl = int((next_update - now).total_seconds())
             if res_ttl > 0:
                 return res_ttl/2
@@ -283,7 +266,8 @@ class OCSPPrefetchMixin(object):
         self._ensure_ocsp_dirs()
         cache_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache.db")
         try:
-            shutil.copy2(cache_path, os.path.join(self.config.work_dir, "ocsp_work"))
+            apache_util.safe_copy(cache_path,
+                                  os.path.join(self.config.work_dir, "ocsp_work"))
         except IOError:
             logger.debug("Encountered an issue while trying to backup OCSP dbm file")
 
@@ -368,10 +352,10 @@ class OCSPPrefetchMixin(object):
             return
 
         for pf in self._ocsp_prefetch.values():
-            if not self._ocsp_refresh_needed(pf):
-                continue
-            # Save the status to pluginstorage
-            self._ocsp_prefetch_save(pf["cert_path"], pf["chain_path"])
+            if self._ocsp_refresh_needed(pf):
+                self._ocsp_refresh(pf["cert_path"], pf["chain_path"])
+                # Save the status to pluginstorage
+                self._ocsp_prefetch_save(pf["cert_path"], pf["chain_path"])
 
     def restart(self):
         """Reloads the Apache server. When restarting, Apache deletes

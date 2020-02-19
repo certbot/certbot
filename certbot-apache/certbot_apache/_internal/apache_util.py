@@ -79,6 +79,7 @@ def safe_copy(source, target):
                 source, target, e
             )
             raise errors.PluginError(emsg)
+        time.sleep(1)
         try:
             source_hash = _file_hash(source)
             target_hash = _file_hash(target)

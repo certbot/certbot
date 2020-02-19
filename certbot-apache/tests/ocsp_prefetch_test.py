@@ -17,6 +17,8 @@ from certbot import errors
 from certbot.compat import os
 import util
 
+from certbot_apache._internal.prefetch_ocsp import DBMHandler
+
 
 class MockDBM(object):
     # pylint: disable=missing-docstring
@@ -409,6 +411,24 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
         self.assertTrue(mock_bck.called)
         self.assertTrue(mock_rest.called)
+
+
+def _read_dbm(self, filename):
+
+    """Helper method for reading the dbm using context manager.
+    Used for tests.
+
+    :param str filename: DBM database filename
+
+    :returns: Dictionary of database keys and values
+    :rtype: dict
+    """
+
+    ret = dict()
+    with DBMHandler(filename, 'r') as db:
+        for k in db.keys():
+            ret[k] = db[k]
+    return ret
 
 
 if __name__ == "__main__":
