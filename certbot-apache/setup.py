@@ -10,7 +10,7 @@ version = '1.3.0.dev0'
 # acme/certbot version.
 install_requires = [
     'acme>=0.29.0',
-    'certbot>=1.2.0.dev0',
+    'certbot>=1.3.0.dev0',
     'mock',
     'python-augeas',
     'setuptools',
