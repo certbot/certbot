@@ -966,7 +966,7 @@ Prefetching OCSP responses
 
 Certbot users on Debian and Ubuntu based operating systems have the option to 
 configure certbot to handle prefetching and management of OCSP staples in behalf
-of Apache process. This mitigates multiple issues that exist with Apache OCSP 
+of the Apache process. This mitigates multiple issues that exist with Apache OCSP 
 staple handling in cases where there are issues with either network connectivity
 or OCSP service availability.
 
