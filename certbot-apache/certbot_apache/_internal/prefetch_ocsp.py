@@ -367,7 +367,7 @@ class OCSPPrefetchMixin(object):
             # No OCSP prefetching enabled for any certificate
             return
 
-        for _, pf in self._ocsp_prefetch.items():
+        for pf in self._ocsp_prefetch.values():
             if not self._ocsp_refresh_needed(pf):
                 continue
             # Save the status to pluginstorage
