@@ -184,7 +184,7 @@ class OCSPPrefetchEnhancement(object):
         needed and if valid, store it to be served for connecting clients.
 
         :param lineage: Certificate lineage object
-        :type lineage: certbot.storage.RenewableCert
+        :type lineage: certbot.interfaces.RenewableCert
 
         .. note:: prepare() method inherited from `interfaces.IPlugin` might need
             to be called manually within implementation of this interface method
@@ -199,7 +199,7 @@ class OCSPPrefetchEnhancement(object):
         over the subsequent runs of Certbot renew.
 
         :param lineage: Certificate lineage object
-        :type lineage: certbot.storage.RenewableCert
+        :type lineage: certbot.interfaces.RenewableCert
         :param domains: List of domains in certificate to enhance
         :type domains: `list` of `str`
         """

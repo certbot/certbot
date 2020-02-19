@@ -599,19 +599,3 @@ def atexit_register(func, *args, **kwargs):
 def _atexit_call(func, *args, **kwargs):
     if _INITIAL_PID == os.getpid():
         func(*args, **kwargs)
-
-
-def parse_datetime(dt_string):
-    """
-    Parses a string to datetime, ignoring timezone.
-
-    :param str dt_string: String representation of date and time
-
-    :returns: datetime representation of time
-    :rtype: datetime.datetime or None
-    """
-    try:
-        dateformat = "%b %d %H:%M:%S %Y %Z"
-        return datetime.strptime(dt_string, dateformat)
-    except ValueError:
-        return None

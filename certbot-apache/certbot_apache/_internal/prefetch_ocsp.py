@@ -277,6 +277,8 @@ class OCSPPrefetchMixin(object):
         message if unable to copy, but does not error out as it would
         prevent other critical functions that need to be carried out for
         Apache httpd.
+
+        Erroring out here would prevent any restarts done by Apache plugin.
         """
         self._ensure_ocsp_dirs()
         cache_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache.db")
@@ -307,10 +309,18 @@ class OCSPPrefetchMixin(object):
         In OCSP, each client (e.g. browser) would have to query the
         OCSP Responder to validate that the site certificate was not revoked.
 
-        Enabling OCSP Stapling, would allow the web-server to query the OCSP
+        Enabling OCSP Stapling would allow the web-server to query the OCSP
         Responder, and staple its response to the offered certificate during
         TLS. i.e. clients would not have to query the OCSP responder.
 
+        OCSP prefetching functionality addresses some of the pain points in
+        the implementation that's currently preset in Apache httpd. The
+        mitigation provided by Certbot are:
+          * OCSP staples get backed up before, and restored after httpd restart
+          * Valid OCSP staples do not get overwritten with errors in case of
+            network connectivity or OCSP responder issues
+          * The staples get updated asynchronically in the background instead
+            of blocking a incoming request.
         """
 
         # Fail early if we are not able to support this

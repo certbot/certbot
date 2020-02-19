@@ -78,7 +78,7 @@ class RevocationChecker(object):
 
         :param str cert_path: Certificate path
         :param str chain_path: Certificate chain filepath
-        :param str response_file: File path to a file containing a raw OCSP response.
+        :param str response_file: File path where the raw OCSP response should be written
 
         :returns: True if revoked; False if valid or the check failed or cert is expired.
         :rtype: bool
@@ -194,9 +194,9 @@ def _ocsp_times_openssl_bin(response_file):
         return None, None, None
 
     prod_str, this_str, next_str = _translate_ocsp_response_times(output)
-    prod_dt = util.parse_datetime(prod_str)
-    this_dt = util.parse_datetime(this_str)
-    next_dt = util.parse_datetime(next_str)
+    prod_dt = _parse_datetime(prod_str)
+    this_dt = _parse_datetime(this_str)
+    next_dt = _parse_datetime(next_str)
     return prod_dt, this_dt, next_dt
 
 
@@ -418,3 +418,19 @@ def _translate_ocsp_response_times(response):
         next_date = next_match.group(1)
 
     return prod_date, this_date, next_date
+
+
+def _parse_datetime(dt_string):
+    """
+    Parses a string to datetime, ignoring timezone.
+
+    :param str dt_string: String representation of date and time
+
+    :returns: datetime representation of time
+    :rtype: datetime.datetime or None
+    """
+    try:
+        dateformat = "%b %d %H:%M:%S %Y %Z"
+        return datetime.strptime(dt_string, dateformat)
+    except ValueError:
+        return None
