@@ -10,7 +10,8 @@ from certbot._internal.plugins import disco as plugins_disco
 
 from acme.magic_typing import Optional
 
-import certbot  # pylint: disable=ungrouped-imports
+# pylint: disable=ungrouped-imports
+import certbot
 from certbot._internal import constants
 
 import certbot.plugins.enhancements as enhancements
@@ -59,6 +60,7 @@ from certbot._internal.cli.plugins_parsing import _plugins_parsing
 
 # These imports depend on some or all of the submodules for cli.
 from certbot._internal.cli.helpful import HelpfulArgumentParser
+# pylint: enable=ungrouped-imports
 
 
 logger = logging.getLogger(__name__)
