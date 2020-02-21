@@ -26,10 +26,12 @@ from certbot import util
 from certbot._internal import constants
 from certbot._internal import hooks
 from certbot._internal.plugins import disco as plugins_disco
+from certbot._internal.plugins import dns_lexicon
 import certbot._internal.plugins.selection as plugin_selection
 from certbot.compat import os
 from certbot.display import util as display_util
 import certbot.plugins.enhancements as enhancements
+
 
 logger = logging.getLogger(__name__)
 
@@ -1446,6 +1448,9 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_sakuracloud"),
                 help=("Obtain certificates using a DNS TXT record "
                      "(if you are using Sakura Cloud for DNS)."))
+
+    # Add lexicon provider plugins
+    dns_lexicon.LexiconProvider.cli_plugins(helpful)
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin
