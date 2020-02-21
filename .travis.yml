@@ -232,6 +232,7 @@ matrix:
           packages:
             - augeas
             - python2
+          update: true
       <<: *extended-test-suite
     - language: generic
       env: TOXENV=py3
@@ -241,6 +242,7 @@ matrix:
           packages:
             - augeas
             - python3
+          update: true
       <<: *extended-test-suite
 
 # container-based infrastructure
