@@ -3,11 +3,11 @@ jobs:
     strategy:
       matrix:
         macos-py27:
-          IMAGE_NAME: macOS-10.15
+          IMAGE_NAME: macOS-10.14
           PYTHON_VERSION: 2.7
           TOXENV: py27
         macos-py38:
-          IMAGE_NAME: macOS-10.15
+          IMAGE_NAME: macOS-10.14
           PYTHON_VERSION: 3.8
           TOXENV: py38
         windows-py35:
