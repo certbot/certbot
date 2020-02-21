@@ -30,15 +30,21 @@ class TestReadFile(TempDirTestCase):
             # However a relative path between two different drives is invalid. So we move to
             # self.tempdir to ensure that we stay on the same drive.
             os.chdir(self.tempdir)
-            rel_test_path = os.path.relpath(os.path.join(self.tempdir, 'foo'))
+            # The read-only filesystem introduced with macOS Catalina can break
+            # code using relative paths below. See
+            # https://bugs.python.org/issue38295 for another example of this.
+            # Eliminating any possible symlinks in self.tempdir before passing
+            # it to os.path.relpath solves the problem.
+            real_path = filesystem.realpath(os.path.join(self.tempdir, 'foo'))
+            relative_path = os.path.relpath(real_path)
             self.assertRaises(
-                argparse.ArgumentTypeError, cli.read_file, rel_test_path)
+                argparse.ArgumentTypeError, cli.read_file, relative_path)
 
             test_contents = b'bar\n'
-            with open(rel_test_path, 'wb') as f:
+            with open(relative_path, 'wb') as f:
                 f.write(test_contents)
 
-            path, contents = cli.read_file(rel_test_path)
+            path, contents = cli.read_file(relative_path)
             self.assertEqual(path, os.path.abspath(path))
             self.assertEqual(contents, test_contents)
         finally:
