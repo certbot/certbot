@@ -1,18 +1,15 @@
 """Certbot command line util function"""
 import argparse
 import copy
-import os
+
+import zope.interface.interface
 
 from acme import challenges
 from certbot import interfaces
 from certbot import util
 from certbot import errors
+from certbot.compat import os
 from certbot._internal import constants
-
-# pylint: disable=unused-import, no-name-in-module
-import zope.interface.interface
-from acme.magic_typing import Any, Dict, Optional
-# pylint: enable=unused-import, no-name-in-module
 
 
 class _Default(object):

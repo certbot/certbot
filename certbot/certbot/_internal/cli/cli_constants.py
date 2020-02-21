@@ -1,6 +1,7 @@
 """Certbot command line constants"""
 import sys
-import os
+
+from certbot.compat import os
 
 # For help strings, figure out how the user ran us.
 # When invoked from letsencrypt-auto, sys.argv[0] is something like:

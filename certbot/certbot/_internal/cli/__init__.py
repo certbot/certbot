@@ -10,7 +10,7 @@ from certbot._internal.plugins import disco as plugins_disco
 
 from acme.magic_typing import Optional
 
-import certbot
+import certbot  # pylint: disable=ungrouped-imports
 from certbot._internal import constants
 
 import certbot.plugins.enhancements as enhancements

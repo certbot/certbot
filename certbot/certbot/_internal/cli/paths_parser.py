@@ -1,7 +1,6 @@
 """This is a module that adds configuration to the argument parser regarding
 paths for certificates"""
-import os
-
+from certbot.compat import os
 from certbot._internal.cli import (
     read_file,
     flag_default,

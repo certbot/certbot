@@ -1,6 +1,5 @@
 """This module contain help information for verbs supported by certbot"""
-import os
-
+from certbot.compat import os
 from certbot._internal.cli import (
     SHORT_USAGE,
     flag_default

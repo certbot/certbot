@@ -3,7 +3,6 @@ from __future__ import print_function
 import argparse
 import copy
 import glob
-import os
 import sys
 import configargparse
 import six
@@ -20,6 +19,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import os
 from certbot._internal import constants
 from certbot._internal import hooks
 
