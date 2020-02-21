@@ -6,7 +6,6 @@ cache:
         - $HOME/.cache/pip
 
 before_script:
-  - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ulimit -n 1024 ; fi'
   # On Travis, the fastest parallelization for integration tests has proved to be 4.
   - 'if [[ "$TOXENV" == *"integration"* ]]; then export PYTEST_ADDOPTS="--numprocesses 4"; fi'
   # Use Travis retry feature for farm tests since they are flaky
@@ -223,24 +222,6 @@ matrix:
         apt:
           packages:  # don't install nginx and apache
             - libaugeas0
-      <<: *extended-test-suite
-    - language: generic
-      env: TOXENV=py27
-      os: osx
-      addons:
-        homebrew:
-          packages:
-            - augeas
-            - python2
-      <<: *extended-test-suite
-    - language: generic
-      env: TOXENV=py3
-      os: osx
-      addons:
-        homebrew:
-          packages:
-            - augeas
-            - python3
       <<: *extended-test-suite
 
 # container-based infrastructure
