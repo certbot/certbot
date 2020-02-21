@@ -1,4 +1,4 @@
-$tasks = "Certbot Renew & Auto-Update Task", "Certbot Renew Task"
+$tasks = "Certbot Renew and Auto-Update Task", "Certbot Renew Task"
 
 foreach ($task in $tasks) {
     $exists = Get-ScheduledTask | Where-Object { $_.TaskName -like $task }

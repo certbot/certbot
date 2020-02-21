@@ -16,7 +16,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import pkg_resources
 
-SCHEDULED_TASK_NAME = 'Certbot Renew & Auto-Update Task'
+SCHEDULED_TASK_NAME = 'Certbot Renew and Auto-Update Task'
 
 
 @pytest.fixture
