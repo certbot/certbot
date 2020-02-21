@@ -1,10 +1,10 @@
 """Tests for certbot.helpful_parser"""
 import unittest
 
-from certbot.cli import HelpfulArgumentParser
-from certbot.cli import _DomainsAction
 from certbot import errors
-from certbot import constants
+from certbot._internal.cli import HelpfulArgumentParser
+from certbot._internal.cli import _DomainsAction
+from certbot._internal import constants
 
 
 class TestScanningFlags(unittest.TestCase):
@@ -190,4 +190,4 @@ class TestParseArgsErrors(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main() # pragma: no cover
+    unittest.main()  # pragma: no cover

@@ -1,6 +1,5 @@
 # coding=utf-8
 """Test certbot.display.ops."""
-import os
 import sys
 import unittest
 
@@ -9,15 +8,13 @@ import mock
 import zope.component
 
 from acme import messages
-
-from certbot import account
 from certbot import errors
-
-from certbot.display import util as display_util
+from certbot._internal import account
+from certbot.compat import filesystem
+from certbot.compat import os
 from certbot.display import ops
-
+from certbot.display import util as display_util
 import certbot.tests.util as test_util
-
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
@@ -43,7 +40,7 @@ class GetEmailTest(unittest.TestCase):
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
-            self.assertTrue(self._call() is "foo@bar.baz")
+            self.assertTrue(self._call() == "foo@bar.baz")
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_ok_not_safe(self, mock_get_utility):
@@ -51,7 +48,7 @@ class GetEmailTest(unittest.TestCase):
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.side_effect = [False, True]
-            self.assertTrue(self._call() is "foo@bar.baz")
+            self.assertTrue(self._call() == "foo@bar.baz")
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_invalid_flag(self, mock_get_utility):
@@ -96,7 +93,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
                                                                False))
 
         self.account_keys_dir = os.path.join(self.tempdir, "keys")
-        os.makedirs(self.account_keys_dir, 0o700)
+        filesystem.makedirs(self.account_keys_dir, 0o700)
 
         self.config = mock.MagicMock(
             accounts_dir=self.tempdir,
@@ -356,7 +353,6 @@ class ChooseNamesTest(unittest.TestCase):
 
 
 class SuccessInstallationTest(unittest.TestCase):
-    # pylint: disable=too-few-public-methods
     """Test the success installation message."""
     @classmethod
     def _call(cls, names):
@@ -378,7 +374,6 @@ class SuccessInstallationTest(unittest.TestCase):
 
 
 class SuccessRenewalTest(unittest.TestCase):
-    # pylint: disable=too-few-public-methods
     """Test the success renewal message."""
     @classmethod
     def _call(cls, names):
@@ -399,7 +394,6 @@ class SuccessRenewalTest(unittest.TestCase):
             self.assertTrue(name in arg)
 
 class SuccessRevocationTest(unittest.TestCase):
-    # pylint: disable=too-few-public-methods
     """Test the success revocation message."""
     @classmethod
     def _call(cls, path):

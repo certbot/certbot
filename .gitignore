@@ -26,6 +26,7 @@ tags
 \#*#
 .idea
 .ropeproject
+.vscode
 
 # auth --cert-path --chain-path
 /*.pem
@@ -44,3 +45,8 @@ tests/letstest/venv/
 
 # docker files
 .docker
+
+# certbot tests
+.certbot_test_workspace
+**/assets/pebble*
+**/assets/challtestsrv*

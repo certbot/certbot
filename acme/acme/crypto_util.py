@@ -6,32 +6,28 @@ import os
 import re
 import socket
 
-from OpenSSL import crypto
-from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
 import josepy as jose
+from OpenSSL import crypto
+from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 
 from acme import errors
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Callable, Union, Tuple, Optional
-# pylint: enable=unused-import, no-name-in-module
-
+from acme.magic_typing import Callable
+from acme.magic_typing import Tuple
+from acme.magic_typing import Union
 
 logger = logging.getLogger(__name__)
 
-# TLSSNI01 certificate serving and probing is not affected by SSL
-# vulnerabilities: prober needs to check certificate for expected
-# contents anyway. Working SNI is the only thing that's necessary for
-# the challenge and thus scoping down SSL/TLS method (version) would
-# cause interoperability issues: TLSv1_METHOD is only compatible with
+# Default SSL method selected here is the most compatible, while secure
+# SSL method: TLSv1_METHOD is only compatible with
 # TLSv1_METHOD, while SSLv23_METHOD is compatible with all other
 # methods, including TLSv2_METHOD (read more at
 # https://www.openssl.org/docs/ssl/SSLv23_method.html). _serve_sni
 # should be changed to use "set_options" to disable SSLv2 and SSLv3,
 # in case it's used for things other than probing/serving!
-_DEFAULT_TLSSNI01_SSL_METHOD = SSL.SSLv23_METHOD  # type: ignore
+_DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD  # type: ignore
 
 
-class SSLSocket(object):  # pylint: disable=too-few-public-methods
+class SSLSocket(object):
     """SSL wrapper for sockets.
 
     :ivar socket sock: Original wrapped socket.
@@ -40,7 +36,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     :ivar method: See `OpenSSL.SSL.Context` for allowed values.
 
     """
-    def __init__(self, sock, certs, method=_DEFAULT_TLSSNI01_SSL_METHOD):
+    def __init__(self, sock, certs, method=_DEFAULT_SSL_METHOD):
         self.sock = sock
         self.certs = certs
         self.method = method
@@ -77,7 +73,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     class FakeConnection(object):
         """Fake OpenSSL.SSL.Connection."""
 
-        # pylint: disable=too-few-public-methods,missing-docstring
+        # pylint: disable=missing-function-docstring
 
         def __init__(self, connection):
             self._wrapped = connection
@@ -89,7 +85,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
             # OpenSSL.SSL.Connection.shutdown doesn't accept any args
             return self._wrapped.shutdown()
 
-    def accept(self):  # pylint: disable=missing-docstring
+    def accept(self):  # pylint: disable=missing-function-docstring
         sock, addr = self.sock.accept()
 
         context = SSL.Context(self.method)
@@ -112,7 +108,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
 
 
 def probe_sni(name, host, port=443, timeout=300,
-              method=_DEFAULT_TLSSNI01_SSL_METHOD, source_address=('', 0)):
+              method=_DEFAULT_SSL_METHOD, source_address=('', 0)):
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the
@@ -137,7 +133,6 @@ def probe_sni(name, host, port=443, timeout=300,
     socket_kwargs = {'source_address': source_address}
 
     try:
-        # pylint: disable=star-args
         logger.debug(
             "Attempting to connect to %s:%d%s.", host, port,
             " from {0}:{1}".format(
@@ -198,8 +193,7 @@ def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
 
     if common_name is None:
         return sans
-    else:
-        return [common_name] + [d for d in sans if d != common_name]
+    return [common_name] + [d for d in sans if d != common_name]
 
 def _pyopenssl_cert_or_req_san(cert_or_req):
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
@@ -303,7 +297,6 @@ def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
 
     def _dump_cert(cert):
         if isinstance(cert, jose.ComparableX509):
-            # pylint: disable=protected-access
             cert = cert.wrapped
         return crypto.dump_certificate(filetype, cert)
 

@@ -1,1 +1,1 @@
-Gehirn Infrastracture Service DNS Authenticator plugin for Certbot
+Gehirn Infrastructure Service DNS Authenticator plugin for Certbot

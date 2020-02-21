@@ -1,13 +1,16 @@
-from setuptools import setup
-from setuptools import find_packages
+import sys
 
-version = '0.32.0.dev0'
+from setuptools import find_packages
+from setuptools import setup
+from setuptools.command.test import test as TestCommand
+
+version = '1.3.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'acme>=0.31.0',
-    'certbot>=0.31.0',
-    'dns-lexicon>=2.2.1',
+    'certbot>=1.1.0',
+    'dns-lexicon>=2.2.3',
     'mock',
     'setuptools',
     'zope.interface',
@@ -18,6 +21,20 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
+class PyTest(TestCommand):
+    user_options = []
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = ''
+
+    def run_tests(self):
+        import shlex
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(shlex.split(self.pytest_args))
+        sys.exit(errno)
+
 setup(
     name='certbot-dns-linode',
     version=version,
@@ -26,9 +43,9 @@ setup(
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: Apache Software License',
@@ -37,10 +54,10 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',
@@ -57,8 +74,10 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-linode = certbot_dns_linode.dns_linode:Authenticator',
+            'dns-linode = certbot_dns_linode._internal.dns_linode:Authenticator',
         ],
     },
+    tests_require=["pytest"],
     test_suite='certbot_dns_linode',
+    cmdclass={"test": PyTest},
 )

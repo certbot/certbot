@@ -4,16 +4,14 @@ import os
 import shutil
 import tempfile
 
-from certbot import constants
+from certbot._internal import constants
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
-
 
 logger = logging.getLogger(__name__)
 
 
 class Proxy(object):
-    # pylint: disable=too-many-instance-attributes
     """A common base for compatibility test configurators"""
 
     @classmethod
@@ -23,6 +21,9 @@ class Proxy(object):
     def __init__(self, args):
         """Initializes the plugin with the given command line args"""
         self._temp_dir = tempfile.mkdtemp()
+        # tempfile.mkdtemp() creates folders with too restrictive permissions to be accessible
+        # to an Apache worker, leading to HTTP challenge failures. Let's fix that.
+        os.chmod(self._temp_dir, 0o755)
         self.le_config = util.create_le_config(self._temp_dir)
         config_dir = util.extract_configs(args.configs, self._temp_dir)
         self._configs = [
@@ -42,8 +43,7 @@ class Proxy(object):
         method = getattr(self._configurator, name, None)
         if callable(method):
             return method
-        else:
-            raise AttributeError()
+        raise AttributeError()
 
     def has_more_configs(self):
         """Returns true if there are more configs to test"""
@@ -81,15 +81,13 @@ class Proxy(object):
         """Returns the set of domain names that the plugin should find"""
         if self._all_names:
             return self._all_names
-        else:
-            raise errors.Error("No configuration file loaded")
+        raise errors.Error("No configuration file loaded")
 
     def get_testable_domain_names(self):
         """Returns the set of domain names that can be tested against"""
         if self._test_names:
             return self._test_names
-        else:
-            return {"example.com"}
+        return {"example.com"}
 
     def deploy_cert(self, domain, cert_path, key_path, chain_path=None,
                     fullchain_path=None):

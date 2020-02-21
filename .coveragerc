@@ -1,2 +1,5 @@
+[run]
+omit = */setup.py
+
 [report]
 omit = */setup.py

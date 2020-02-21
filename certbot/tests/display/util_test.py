@@ -4,13 +4,12 @@ import socket
 import tempfile
 import unittest
 
-import six
 import mock
+import six
 
 from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
-
 
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
@@ -32,7 +31,7 @@ class InputWithTimeoutTest(unittest.TestCase):
     def test_input(self, prompt=None):
         expected = "foo bar"
         stdin = six.StringIO(expected + "\n")
-        with mock.patch("certbot.compat.select.select") as mock_select:
+        with mock.patch("certbot.compat.misc.select.select") as mock_select:
             mock_select.return_value = ([stdin], [], [],)
             self.assertEqual(self._call(prompt), expected)
 
@@ -59,7 +58,6 @@ class FileOutputDisplayTest(unittest.TestCase):
     functions look to a user, uncomment the test_visual function.
 
     """
-    # pylint:disable=too-many-public-methods
     def setUp(self):
         super(FileOutputDisplayTest, self).setUp()
         self.mock_stdout = mock.MagicMock()
@@ -225,7 +223,6 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     @mock.patch("certbot.display.util.input_with_timeout")
     def test_directory_select(self, mock_input):
-        # pylint: disable=star-args
         args = ["msg", "/var/www/html", "--flag", True]
         user_input = "/var/www/html"
         mock_input.return_value = user_input
@@ -314,12 +311,12 @@ class FileOutputDisplayTest(unittest.TestCase):
     def test_methods_take_force_interactive(self):
         # Every IDisplay method implemented by FileDisplay must take
         # force_interactive to prevent workflow regressions.
-        for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+        for name in interfaces.IDisplay.names():
             if six.PY2:
-                getargspec = inspect.getargspec # pylint: disable=no-member
+                getargspec = inspect.getargspec
             else:
-                getargspec = inspect.getfullargspec # pylint: disable=no-member
-            arg_spec = getargspec(getattr(self.displayer, name))
+                getargspec = inspect.getfullargspec
+            arg_spec = getargspec(getattr(self.displayer, name))  # pylint: disable=deprecated-method
             self.assertTrue("force_interactive" in arg_spec.args)
 
 
@@ -373,14 +370,16 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         # should take **kwargs because every method of FileDisplay must
         # take force_interactive which doesn't apply to
         # NoninteractiveDisplay.
-        for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+
+        # Use pylint code for disable to keep on single line under line length limit
+        for name in interfaces.IDisplay.names():  # pylint: disable=E1120
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
             if six.PY2:
-                result = inspect.getargspec(method).keywords # pylint: disable=no-member
+                result = inspect.getargspec(method).keywords  # pylint:deprecated-method
                 self.assertFalse(result is None)
             else:
-                result = inspect.getfullargspec(method).varkw # pylint: disable=no-member
+                result = inspect.getfullargspec(method).varkw
                 self.assertFalse(result is None)
 
 

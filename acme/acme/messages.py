@@ -1,37 +1,55 @@
 """ACME protocol messages."""
-import six
 import json
-try:
-    from collections.abc import Hashable  # pylint: disable=no-name-in-module
-except ImportError:
-    from collections import Hashable
 
 import josepy as jose
+import six
 
 from acme import challenges
 from acme import errors
 from acme import fields
-from acme import util
 from acme import jws
+from acme import util
+
+try:
+    from collections.abc import Hashable
+except ImportError:  # pragma: no cover
+    from collections import Hashable
+
+
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
 
 ERROR_CODES = {
+    'accountDoesNotExist': 'The request specified an account that does not exist',
+    'alreadyRevoked': 'The request specified a certificate to be revoked that has' \
+    ' already been revoked',
     'badCSR': 'The CSR is unacceptable (e.g., due to a short key)',
     'badNonce': 'The client sent an unacceptable anti-replay nonce',
+    'badPublicKey': 'The JWS was signed by a public key the server does not support',
+    'badRevocationReason': 'The revocation reason provided is not allowed by the server',
+    'badSignatureAlgorithm': 'The JWS was signed with an algorithm the server does not support',
+    'caa': 'Certification Authority Authorization (CAA) records forbid the CA from issuing' \
+    ' a certificate',
+    'compound': 'Specific error conditions are indicated in the "subproblems" array',
     'connection': ('The server could not connect to the client to verify the'
                    ' domain'),
+    'dns': 'There was a problem with a DNS query during identifier validation',
     'dnssec': 'The server could not validate a DNSSEC signed domain',
+    'incorrectResponse': 'Response received didn\'t match the challenge\'s requirements',
     # deprecate invalidEmail
     'invalidEmail': 'The provided email for a registration was invalid',
     'invalidContact': 'The provided contact URI was invalid',
     'malformed': 'The request message was malformed',
+    'rejectedIdentifier': 'The server will not issue certificates for the identifier',
+    'orderNotReady': 'The request attempted to finalize an order that is not ready to be finalized',
     'rateLimited': 'There were too many requests of a given type',
     'serverInternal': 'The server experienced an internal error',
     'tls': 'The server experienced a TLS error during domain verification',
     'unauthorized': 'The client lacks sufficient authorization',
+    'unsupportedContact': 'A contact URL for an account used an unsupported protocol scheme',
     'unknownHost': 'The server could not resolve a domain name',
+    'unsupportedIdentifier': 'An identifier is of an unsupported type',
     'externalAccountRequired': 'The server requires external account binding',
 }
 
@@ -46,8 +64,7 @@ def is_acme_error(err):
     """Check if argument is an ACME error."""
     if isinstance(err, Error) and (err.typ is not None):
         return (ERROR_PREFIX in err.typ) or (OLD_ERROR_PREFIX in err.typ)
-    else:
-        return False
+    return False
 
 
 @six.python_2_unicode_compatible
@@ -102,6 +119,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         code = str(self.typ).split(':')[-1]
         if code in ERROR_CODES:
             return code
+        return None
 
     def __str__(self):
         return b' :: '.join(
@@ -116,18 +134,19 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
     POSSIBLE_NAMES = NotImplemented
 
     def __init__(self, name):
-        self.POSSIBLE_NAMES[name] = self
+        super(_Constant, self).__init__()
+        self.POSSIBLE_NAMES[name] = self  # pylint: disable=unsupported-assignment-operation
         self.name = name
 
     def to_partial_json(self):
         return self.name
 
     @classmethod
-    def from_json(cls, value):
-        if value not in cls.POSSIBLE_NAMES:
+    def from_json(cls, jobj):
+        if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
             raise jose.DeserializationError(
                 '{0} not recognized'.format(cls.__name__))
-        return cls.POSSIBLE_NAMES[value]
+        return cls.POSSIBLE_NAMES[jobj]
 
     def __repr__(self):
         return '{0}({1})'.format(self.__class__.__name__, self.name)
@@ -152,6 +171,7 @@ STATUS_VALID = Status('valid')
 STATUS_INVALID = Status('invalid')
 STATUS_REVOKED = Status('revoked')
 STATUS_READY = Status('ready')
+STATUS_DEACTIVATED = Status('deactivated')
 
 
 class IdentifierType(_Constant):
@@ -186,7 +206,6 @@ class Directory(jose.JSONDeSerializable):
 
         def __init__(self, **kwargs):
             kwargs = dict((self._internal_name(k), v) for k, v in kwargs.items())
-            # pylint: disable=star-args
             super(Directory.Meta, self).__init__(**kwargs)
 
         @property
@@ -226,13 +245,13 @@ class Directory(jose.JSONDeSerializable):
         try:
             return self[name.replace('_', '-')]
         except KeyError as error:
-            raise AttributeError(str(error) + ': ' + name)
+            raise AttributeError(str(error))
 
     def __getitem__(self, name):
         try:
             return self._jobj[self._canon_key(name)]
         except KeyError:
-            raise KeyError('Directory field not found')
+            raise KeyError('Directory field "' + self._canon_key(name) + '" not found')
 
     def to_partial_json(self):
         return self._jobj
@@ -322,7 +341,7 @@ class Registration(ResourceBody):
 
     def _filter_contact(self, prefix):
         return tuple(
-            detail[len(prefix):] for detail in self.contact
+            detail[len(prefix):] for detail in self.contact  # pylint: disable=not-an-iterable
             if detail.startswith(prefix))
 
     @property
@@ -394,7 +413,6 @@ class ChallengeBody(ResourceBody):
 
     def __init__(self, **kwargs):
         kwargs = dict((self._internal_name(k), v) for k, v in kwargs.items())
-        # pylint: disable=star-args
         super(ChallengeBody, self).__init__(**kwargs)
 
     def encode(self, name):
@@ -442,7 +460,6 @@ class ChallengeResource(Resource):
     @property
     def uri(self):
         """The URL of the challenge body."""
-        # pylint: disable=function-redefined,no-member
         return self.body.uri
 
 
@@ -457,7 +474,7 @@ class Authorization(ResourceBody):
     :ivar datetime.datetime expires:
 
     """
-    identifier = jose.Field('identifier', decoder=Identifier.from_json)
+    identifier = jose.Field('identifier', decoder=Identifier.from_json, omitempty=True)
     challenges = jose.Field('challenges', omitempty=True)
     combinations = jose.Field('combinations', omitempty=True)
 
@@ -470,20 +487,26 @@ class Authorization(ResourceBody):
     wildcard = jose.Field('wildcard', omitempty=True)
 
     @challenges.decoder
-    def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
+    def challenges(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
     @property
     def resolved_combinations(self):
         """Combinations with challenges instead of indices."""
         return tuple(tuple(self.challenges[idx] for idx in combo)
-                     for combo in self.combinations)
+                     for combo in self.combinations)  # pylint: disable=not-an-iterable
 
 
 @Directory.register
 class NewAuthorization(Authorization):
     """New authorization."""
     resource_type = 'new-authz'
+    resource = fields.Resource(resource_type)
+
+
+class UpdateAuthorization(Authorization):
+    """Update authorization."""
+    resource_type = 'authz'
     resource = fields.Resource(resource_type)
 
 
@@ -561,7 +584,7 @@ class Order(ResourceBody):
     error = jose.Field('error', omitempty=True, decoder=Error.from_json)
 
     @identifiers.decoder
-    def identifiers(value):  # pylint: disable=missing-docstring,no-self-argument
+    def identifiers(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(Identifier.from_json(identifier) for identifier in value)
 
 class OrderResource(ResourceWithURI):
