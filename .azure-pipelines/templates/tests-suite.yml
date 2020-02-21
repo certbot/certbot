@@ -30,6 +30,7 @@ jobs:
     steps:
     - bash: brew install augeas
       condition: startswith(variables['IMAGE_NAME'], 'macOS')
+      displayName: Install Augeas
     - task: UsePythonVersion@0
       inputs:
         versionSpec: $(PYTHON_VERSION)
