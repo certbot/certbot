@@ -13,7 +13,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* certbot._internal.cli is now a package split in submodules instead of a whole module.
 
 ### Fixed
 
