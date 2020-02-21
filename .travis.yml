@@ -44,20 +44,20 @@ matrix:
       os: osx
       addons:
         homebrew:
+          update: true
           packages:
             - augeas
             - python2
-          update: true
       <<: *extended-test-suite
     - language: generic
       env: TOXENV=py3
       os: osx
       addons:
         homebrew:
+          update: true
           packages:
             - augeas
             - python3
-          update: true
       <<: *extended-test-suite
 
 # container-based infrastructure
