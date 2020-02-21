@@ -1,22 +1,35 @@
 jobs:
   - job: test
-    pool:
-      vmImage: vs2017-win2016
     strategy:
       matrix:
-        py35:
+        macos-py27:
+          IMAGE_NAME: macOS-10.15
+          PYTHON_VERSION: 2.7
+          TOXENV: py27
+        macos-py38:
+          IMAGE_NAME: macOS-10.15
+          PYTHON_VERSION: 3.8
+          TOXENV: py38
+        windows-py35:
+          IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.5
           TOXENV: py35
-        py37-cover:
+        windows-py37-cover:
+          IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.7
           TOXENV: py37-cover
-        integration-certbot:
+        windows-integration-certbot:
+          IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.7
           TOXENV: integration-certbot
           PYTEST_ADDOPTS: --numprocesses 4
+    pool:
+      vmImage: $(IMAGE_NAME)
     variables:
     - group: certbot-common
     steps:
+    - bash: brew install augeas
+      condition: startswith(variables['IMAGE_NAME'], 'macOS')
     - task: UsePythonVersion@0
       inputs:
         versionSpec: $(PYTHON_VERSION)
