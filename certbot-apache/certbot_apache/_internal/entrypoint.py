@@ -1,7 +1,7 @@
 """ Entry point for Apache Plugin """
 # Pylint does not like disutils.version when running inside a venv.
 # See: https://github.com/PyCQA/pylint/issues/73
-from distutils.version import LooseVersion  # pylint: disable=no-name-in-module,import-error
+from distutils.version import LooseVersion
 
 from certbot import util
 from certbot_apache._internal import configurator

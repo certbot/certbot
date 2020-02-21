@@ -5,7 +5,7 @@ import subprocess
 
 import zope.interface
 
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set
 from certbot._internal import configuration
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
