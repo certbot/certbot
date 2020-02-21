@@ -1,7 +1,7 @@
 """This module contain help information for verbs supported by certbot"""
 import os
 
-from certbot.cli import (
+from certbot._internal.cli import (
     SHORT_USAGE,
     flag_default
 )
@@ -77,11 +77,6 @@ VERB_HELP = [
         "usage": "\n\n  certbot install --cert-path /path/to/fullchain.pem "
         " --key-path /path/to/private-key [options]\n\n"
     }),
-    ("config_changes", {
-        "short": "Show changes that Certbot has made to server configurations",
-        "opts": "Options for controlling which changes are displayed",
-        "usage": "\n\n  certbot config_changes --num NUM [options]\n\n"
-    }),
     ("rollback", {
         "short": "Roll back server conf changes made during certificate installation",
         "opts": "Options for rolling back server configuration changes",
@@ -89,7 +84,7 @@ VERB_HELP = [
     }),
     ("plugins", {
         "short": "List plugins that are installed and available on your system",
-        "opts": 'Options for for the "plugins" subcommand',
+        "opts": 'Options for the "plugins" subcommand',
         "usage": "\n\n  certbot plugins [options]\n\n"
     }),
     ("update_symlinks", {

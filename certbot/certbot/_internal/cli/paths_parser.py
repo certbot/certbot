@@ -2,7 +2,7 @@
 paths for certificates"""
 import os
 
-from certbot.cli import (
+from certbot._internal.cli import (
     read_file,
     flag_default,
     config_help

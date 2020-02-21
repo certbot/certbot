@@ -1,6 +1,6 @@
 """This module contains a function to add the groups of arguments for the help
 display"""
-from certbot.cli import VERB_HELP
+from certbot._internal.cli import VERB_HELP
 
 
 def _add_all_groups(helpful):

@@ -5,20 +5,18 @@ import logging
 import logging.handlers
 import argparse
 import sys
-import certbot.plugins.selection as plugin_selection
-from certbot.plugins import disco as plugins_disco
+import certbot._internal.plugins.selection as plugin_selection
+from certbot._internal.plugins import disco as plugins_disco
 
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Any, Dict, Optional
-# pylint: enable=unused-import, no-name-in-module
+from acme.magic_typing import Optional
 
 import certbot
-from certbot import constants
+from certbot._internal import constants
 
 import certbot.plugins.enhancements as enhancements
 
 
-from certbot.cli.cli_constants import (
+from certbot._internal.cli.cli_constants import (
     LEAUTO,
     old_path_fragment,
     new_path_prefix,
@@ -32,7 +30,7 @@ from certbot.cli.cli_constants import (
     VAR_MODIFIERS
 )
 
-from certbot.cli.cli_utils import (
+from certbot._internal.cli.cli_utils import (
     _Default,
     read_file,
     flag_default,
@@ -52,16 +50,15 @@ from certbot.cli.cli_utils import (
 )
 
 # These imports depend on cli_constants and cli_utils.
-from certbot.cli.report_config_interaction import report_config_interaction
-from certbot.cli.warning import possible_deprecation_warning
-from certbot.cli.verb_help import VERB_HELP, VERB_HELP_MAP
-from certbot.cli.group_adder import _add_all_groups
-from certbot.cli.subparsers import _create_subparsers
-from certbot.cli.paths_parser import _paths_parser
-from certbot.cli.plugins_parsing import _plugins_parsing
+from certbot._internal.cli.report_config_interaction import report_config_interaction
+from certbot._internal.cli.verb_help import VERB_HELP, VERB_HELP_MAP
+from certbot._internal.cli.group_adder import _add_all_groups
+from certbot._internal.cli.subparsers import _create_subparsers
+from certbot._internal.cli.paths_parser import _paths_parser
+from certbot._internal.cli.plugins_parsing import _plugins_parsing
 
 # These imports depend on some or all of the submodules for cli.
-from certbot.cli.helpful import HelpfulArgumentParser
+from certbot._internal.cli.helpful import HelpfulArgumentParser
 
 
 logger = logging.getLogger(__name__)
@@ -71,7 +68,7 @@ logger = logging.getLogger(__name__)
 helpful_parser = None  # type: Optional[HelpfulArgumentParser]
 
 
-def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: disable=too-many-statements
+def prepare_and_parse_args(plugins, args, detect_defaults=False):
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -81,8 +78,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     :rtype: argparse.Namespace
 
     """
-
-    # pylint: disable=too-many-statements
 
     helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
     _add_all_groups(helpful)
@@ -181,12 +176,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "certificates. Updates to the Subscriber Agreement will still "
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
-    # TODO: When `certbot register --update-registration` is fully deprecated,
-    # delete following helpful.add
-    helpful.add(
-        "register", "--update-registration", action="store_true",
-        default=flag_default("update_registration"), dest="update_registration",
-        help=argparse.SUPPRESS)
     helpful.add(
         ["register", "update_account", "unregister", "automation"], "-m", "--email",
         default=flag_default("email"),
@@ -273,6 +262,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " installing OS-level dependencies (default: Prompt to install "
              " OS-wide dependencies, but exit if the user says 'No')")
     helpful.add(
+        "automation", "--no-permissions-check", action="store_true",
+        default=flag_default("no_permissions_check"),
+        help="(certbot-auto only) skip the check on the file system"
+             " permissions of the certbot-auto script")
+    helpful.add(
         ["automation", "renew", "certonly", "run"],
         "-q", "--quiet", dest="quiet", action="store_true",
         default=flag_default("quiet"),
@@ -297,14 +291,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
     helpful.add(
-        ["testing", "standalone", "apache", "nginx"], "--tls-sni-01-port", type=int,
-        default=flag_default("tls_sni_01_port"),
-        help=config_help("tls_sni_01_port"))
-    helpful.add(
-        ["testing", "standalone"], "--tls-sni-01-address",
-        default=flag_default("tls_sni_01_address"),
-        help=config_help("tls_sni_01_address"))
-    helpful.add(
         ["testing", "standalone", "manual"], "--http-01-port", type=int,
         dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
@@ -312,6 +298,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         ["testing", "standalone"], "--http-01-address",
         dest="http01_address",
         default=flag_default("http01_address"), help=config_help("http01_address"))
+    helpful.add(
+        ["testing", "nginx"], "--https-port", type=int,
+        default=flag_default("https_port"),
+        help=config_help("https_port"))
     helpful.add(
         "testing", "--break-my-certs", action="store_true",
         default=flag_default("break_my_certs"),
@@ -372,7 +362,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         action=_PrefChallAction, default=flag_default("pref_challs"),
         help='A sorted, comma delimited list of the preferred challenge to '
              'use during authorization with the most preferred challenge '
-             'listed first (Eg, "dns" or "tls-sni-01,http,dns"). '
+             'listed first (Eg, "dns" or "http,dns"). '
              'Not all plugins support all challenges. See '
              'https://certbot.eff.org/docs/using.html#plugins for details. '
              'ACME Challenges are versioned, but if you pick "http" rather '
@@ -439,9 +429,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "renew", "--no-autorenew", action="store_false",
         default=flag_default("autorenew"), dest="autorenew",
         help="Disable auto renewal of certificates.")
-
-    helpful.add_deprecated_argument("--agree-dev-preview", 0)
-    helpful.add_deprecated_argument("--dialog", 0)
 
     # Populate the command line parameters for new style enhancements
     enhancements.populate_cli(helpful.add)

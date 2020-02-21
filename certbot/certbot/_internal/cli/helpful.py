@@ -16,16 +16,16 @@ from zope.interface import interfaces as zope_interfaces
 from acme.magic_typing import Any, Dict, Optional
 # pylint: enable=unused-import, no-name-in-module
 
-from certbot import constants
 from certbot import crypto_util
 from certbot import errors
-from certbot import hooks
 from certbot import interfaces
 from certbot import util
+from certbot._internal import constants
+from certbot._internal import hooks
 
 from certbot.display import util as display_util
 
-from certbot.cli import (
+from certbot._internal.cli import (
     SHORT_USAGE,
     CustomHelpFormatter,
     flag_default,
@@ -34,7 +34,6 @@ from certbot.cli import (
     COMMAND_OVERVIEW,
     HELP_AND_VERSION_USAGE,
     _Default,
-    possible_deprecation_warning,
     add_domains,
     EXIT_ACTIONS,
     ZERO_ARG_ACTIONS,
@@ -51,14 +50,11 @@ class HelpfulArgumentParser(object):
     'certbot --help security' for security options.
 
     """
-
-
     def __init__(self, args, plugins, detect_defaults=False):
-        from certbot import main
+        from certbot._internal import main
         self.VERBS = {
             "auth": main.certonly,
             "certonly": main.certonly,
-            "config_changes": main.config_changes,
             "run": main.run,
             "install": main.install,
             "plugins": main.plugins_cmd,
@@ -124,12 +120,13 @@ class HelpfulArgumentParser(object):
                 " and ".join(flag_default("config_files"))))
 
         # This is the only way to turn off overly verbose config flag documentation
-        self.parser._add_config_file_help = False  # pylint: disable=protected-access
+        self.parser._add_config_file_help = False
 
     # Help that are synonyms for --help subcommands
     COMMANDS_TOPICS = ["command", "commands", "subcommand", "subcommands", "verbs"]
+
     def _list_subcommands(self):
-        longest = max(len(v) for v in VERB_HELP_MAP.keys())
+        longest = max(len(v) for v in VERB_HELP_MAP)
 
         text = "The full list of available SUBCOMMANDS is:\n\n"
         for verb, props in sorted(VERB_HELP):
@@ -157,7 +154,7 @@ class HelpfulArgumentParser(object):
             apache_doc = "(the certbot apache plugin is not installed)"
 
         usage = SHORT_USAGE
-        if help_arg == True:
+        if help_arg is True:
             self.notify(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_AND_VERSION_USAGE)
             sys.exit(0)
         elif help_arg in self.COMMANDS_TOPICS:
@@ -235,20 +232,25 @@ class HelpfulArgumentParser(object):
             raise errors.Error(
                 "Parameters --hsts and --auto-hsts cannot be used simultaneously.")
 
-        possible_deprecation_warning(parsed_args)
-
         return parsed_args
 
     def set_test_server(self, parsed_args):
         """We have --staging/--dry-run; perform sanity check and set config.server"""
 
-        if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
-            conflicts = ["--staging"] if parsed_args.staging else []
-            conflicts += ["--dry-run"] if parsed_args.dry_run else []
-            raise errors.Error("--server value conflicts with {0}".format(
-                " and ".join(conflicts)))
+        # Flag combinations should produce these results:
+        #                             | --staging      | --dry-run   |
+        # ------------------------------------------------------------
+        # | --server acme-v02         | Use staging    | Use staging |
+        # | --server acme-staging-v02 | Use staging    | Use staging |
+        # | --server <other>          | Conflict error | Use <other> |
 
-        parsed_args.server = constants.STAGING_URI
+        default_servers = (flag_default("server"), constants.STAGING_URI)
+
+        if parsed_args.staging and parsed_args.server not in default_servers:
+            raise errors.Error("--server value conflicts with --staging")
+
+        if parsed_args.server in default_servers:
+            parsed_args.server = constants.STAGING_URI
 
         if parsed_args.dry_run:
             if self.verb not in ["certonly", "renew"]:
@@ -287,7 +289,7 @@ class HelpfulArgumentParser(object):
 
         parsed_args.actual_csr = (csr, typ)
 
-        csr_domains = set([d.lower() for d in domains])
+        csr_domains = {d.lower() for d in domains}
         config_domains = set(parsed_args.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
@@ -344,9 +346,10 @@ class HelpfulArgumentParser(object):
         """Add a new command line argument.
 
         :param topics: str or [str] help topic(s) this should be listed under,
-                       or None for "always documented". The first entry
-                       determines where the flag lives in the "--help all"
-                       output (None -> "optional arguments").
+                       or None for options that don't fit under a specific
+                       topic which will only be shown in "--help all" output.
+                       The first entry determines where the flag lives in the
+                       "--help all" output (None -> "optional arguments").
         :param list *args: the names of this argument flag
         :param dict **kwargs: various argparse settings for this argument
 
@@ -459,9 +462,7 @@ class HelpfulArgumentParser(object):
             chosen_topic = "run"
         if chosen_topic == "all":
             # Addition of condition closes #6209 (removal of duplicate route53 option).
-            return dict([(t, True) if t != 'certbot-route53:auth' else (t, False)
-                         for t in self.help_topics])
+            return {t: t != 'certbot-route53:auth' for t in self.help_topics}
         elif not chosen_topic:
-            return dict([(t, False) for t in self.help_topics])
-        else:
-            return dict([(t, t == chosen_topic) for t in self.help_topics])
+            return {t: False for t in self.help_topics}
+        return {t: t == chosen_topic for t in self.help_topics}

@@ -1,5 +1,5 @@
 """This is a module that handles parsing of plugins for the argument parser"""
-from certbot.cli import flag_default
+from certbot._internal.cli import flag_default
 
 
 def _plugins_parsing(helpful, plugins):
@@ -19,10 +19,10 @@ def _plugins_parsing(helpful, plugins):
                 help="Authenticator plugin name.")
     helpful.add("plugins", "-i", "--installer", default=flag_default("installer"),
                 help="Installer plugin name (also used to find domains).")
-    helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
+    helpful.add(["plugins", "certonly", "run", "install"],
                 "--apache", action="store_true", default=flag_default("apache"),
                 help="Obtain and install certificates using Apache")
-    helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
+    helpful.add(["plugins", "certonly", "run", "install"],
                 "--nginx", action="store_true", default=flag_default("nginx"),
                 help="Obtain and install certificates using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
@@ -52,12 +52,12 @@ def _plugins_parsing(helpful, plugins):
                       "using DNSimple for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-dnsmadeeasy", action="store_true",
                 default=flag_default("dns_dnsmadeeasy"),
-                help=("Obtain certificates using a DNS TXT record (if you are"
+                help=("Obtain certificates using a DNS TXT record (if you are "
                       "using DNS Made Easy for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-gehirn", action="store_true",
                 default=flag_default("dns_gehirn"),
                 help=("Obtain certificates using a DNS TXT record "
-                     "(if you are using Gehirn Infrastracture Service for DNS)."))
+                      "(if you are using Gehirn Infrastructure Service for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
                 default=flag_default("dns_google"),
                 help=("Obtain certificates using a DNS TXT record (if you are "

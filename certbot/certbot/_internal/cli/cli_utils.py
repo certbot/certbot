@@ -4,10 +4,10 @@ import copy
 import os
 
 from acme import challenges
-from certbot import constants
 from certbot import interfaces
 from certbot import util
 from certbot import errors
+from certbot._internal import constants
 
 # pylint: disable=unused-import, no-name-in-module
 import zope.interface.interface
@@ -63,12 +63,10 @@ def flag_default(name):
 
 def config_help(name, hidden=False):
     """Extract the help message for an `.IConfig` attribute."""
-    # pylint: disable=no-member
     if hidden:
         return argparse.SUPPRESS
-    else:
-        field = interfaces.IConfig.__getitem__(name) # type: zope.interface.interface.Attribute
-        return field.__doc__
+    field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute
+    return field.__doc__
 
 
 class HelpfulArgumentGroup(object):
@@ -175,9 +173,10 @@ def parse_preferred_challenges(pref_challs):
     :raises errors.Error: if pref_challs is invalid
 
     """
-    aliases = {"dns": "dns-01", "http": "http-01", "tls-sni": "tls-sni-01"}
+    aliases = {"dns": "dns-01", "http": "http-01"}
     challs = [c.strip() for c in pref_challs]
     challs = [aliases.get(c, c) for c in challs]
+
     unrecognized = ", ".join(name for name in challs
                              if name not in challenges.Challenge.TYPES)
     if unrecognized:

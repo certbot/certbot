@@ -1,8 +1,8 @@
 """This module creates subparsers for the argument parser"""
-from certbot import constants
 from certbot import interfaces
+from certbot._internal import constants
 
-from certbot.cli import (
+from certbot._internal.cli import (
     flag_default,
     read_file,
     CaseInsensitiveList,
@@ -12,10 +12,7 @@ from certbot.cli import (
 
 
 def _create_subparsers(helpful):
-    helpful.add("config_changes", "--num", type=int, default=flag_default("num"),
-                help="How many past revisions you want to be displayed")
-
-    from certbot.client import sample_user_agent # avoid import loops
+    from certbot._internal.client import sample_user_agent  # avoid import loops
     helpful.add(
         None, "--user-agent", default=flag_default("user_agent"),
         help='Set a custom user agent string for the client. User agent strings allow '
