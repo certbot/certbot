@@ -3,27 +3,27 @@ Misc module contains stateless functions that could be used during pytest execut
 or outside during setup/teardown of the integration tests environment.
 """
 import contextlib
-import logging
 import errno
 import multiprocessing
 import os
 import re
 import shutil
 import stat
-import subprocess
 import sys
 import tempfile
 import time
 import warnings
-from distutils.version import LooseVersion
 
-import pkg_resources
-import requests
-from OpenSSL import crypto
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
-from six.moves import socketserver, SimpleHTTPServer
+from cryptography.hazmat.primitives.serialization import Encoding
+from cryptography.hazmat.primitives.serialization import NoEncryption
+from cryptography.hazmat.primitives.serialization import PrivateFormat
+from OpenSSL import crypto
+import pkg_resources
+import requests
+from six.moves import SimpleHTTPServer
+from six.moves import socketserver
 
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
@@ -207,18 +207,6 @@ shutil.rmtree(well_known)
                '{0} {1}'.format(sys.executable, cleanup_script_path))
     finally:
         shutil.rmtree(tempdir)
-
-
-def get_certbot_version():
-    """
-    Find the version of the certbot available in PATH.
-    :return str: the certbot version
-    """
-    output = subprocess.check_output(['certbot', '--version'],
-                                     universal_newlines=True, stderr=subprocess.STDOUT)
-    # Typical response is: output = 'certbot 0.31.0.dev0'
-    version_str = output.split(' ')[1].strip()
-    return LooseVersion(version_str)
 
 
 def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):

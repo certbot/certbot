@@ -23,18 +23,8 @@ if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | se
     INITIAL_VERSION="0.20.0"
     RUN_RHEL6_TESTS=1
 else
-    # 0.33.x is the oldest version of letsencrypt-auto that works on Fedora 29+.
-    INITIAL_VERSION="0.33.1"
-fi
-
-# If we're on RHEL 8, the initial version of certbot-auto will fail until we do
-# a release including https://github.com/certbot/certbot/pull/7240 and update
-# INITIAL_VERSION above to use a version containing this fix. This works around
-# the problem for now so we can successfully run tests on RHEL 8.
-RPM_DIST_NAME=`(. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown"`
-RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) | cut -d '.' -f1 || echo "0"`
-if [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
-    sudo yum install python3-virtualenv -y
+    # 0.37.x is the oldest version of letsencrypt-auto that works on RHEL 8.
+    INITIAL_VERSION="0.37.1"
 fi
 
 git checkout -f "v$INITIAL_VERSION" letsencrypt-auto
@@ -127,6 +117,8 @@ if ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
 fi
 
 if [ "$RUN_RHEL6_TESTS" = 1 ]; then
+    # Add the SCL python release to PATH in order to resolve python3 command
+    PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
     if ! command -v python3; then
         echo "Python3 wasn't properly installed"
         exit 1
