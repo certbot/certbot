@@ -485,7 +485,7 @@ class NginxParserTest(util.NginxTest):
     def test_valid_unicode_characters(self):
         nparser = parser.NginxParser(self.config_path)
         # pylint: disable=protected-access
-        path = nparser.abs_path('unicode_support/valid_unicode_comments.conf')
+        path = nparser.abs_path('valid_unicode_comments.conf')
         parsed = nparser._parse_files(path)
         self.assertEqual(['server'], parsed[0][2][0])
         self.assertEqual(['listen', '80'], parsed[0][2][1][3])
@@ -493,7 +493,7 @@ class NginxParserTest(util.NginxTest):
     def test_invalid_unicode_characters(self):
         nparser = parser.NginxParser(self.config_path)
         # pylint: disable=protected-access
-        path = nparser.abs_path('unicode_support/invalid_unicode_comments.conf')
+        path = nparser.abs_path('invalid_unicode_comments.conf')
         parsed = nparser._parse_files(path)
         self.assertEqual([], parsed)
 
