@@ -268,3 +268,4 @@ Authors
 * [YourDaddyIsHere](https://github.com/YourDaddyIsHere)
 * [Zach Shepherd](https://github.com/zjs)
 * [陈三](https://github.com/chenxsan)
+* [Yuseong Cho](https://github.com/g6123)
