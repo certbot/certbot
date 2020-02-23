@@ -980,6 +980,35 @@ class ClientNetworkTest(unittest.TestCase):
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
 
+    @mock.patch('acme.client.logger')
+    def test_check_response_ok_ct_with_charset(self, mock_logger):
+        self.response.json.return_value = {}
+        self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        # pylint: disable=protected-access
+        self.assertEqual(self.response, self.net._check_response(
+            self.response, content_type='application/json'))
+        try:
+            mock_logger.debug.assert_called_with(
+                'Ignoring wrong Content-Type (%r) for JSON decodable response',
+                'application/json; charset=utf-8'
+            )
+        except AssertionError:
+            return
+        raise AssertionError('Expected Content-Type warning ' #pragma: no cover
+            'to not have been logged')
+
+    @mock.patch('acme.client.logger')
+    def test_check_response_ok_bad_ct(self, mock_logger):
+        self.response.json.return_value = {}
+        self.response.headers['Content-Type'] = 'text/plain'
+        # pylint: disable=protected-access
+        self.assertEqual(self.response, self.net._check_response(
+            self.response, content_type='application/json'))
+        mock_logger.debug.assert_called_with(
+            'Ignoring wrong Content-Type (%r) for JSON decodable response',
+            'text/plain'
+        )
+
     def test_check_response_conflict(self):
         self.response.ok = False
         self.response.status_code = 409

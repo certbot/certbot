@@ -1022,6 +1022,9 @@ class ClientNetwork(object):
 
         """
         response_ct = response.headers.get('Content-Type')
+        # Strip parameters from the media-type (rfc2616#section-3.7)
+        if response_ct:
+            response_ct = response_ct.split(';')[0].strip()
         try:
             # TODO: response.json() is called twice, once here, and
             # once in _get and _post clients
