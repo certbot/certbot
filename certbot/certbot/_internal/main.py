@@ -1089,11 +1089,16 @@ def run(config, plugins):
         raise errors.NotSupportedError("One ore more of the requested enhancements "
                                        "are not supported by the selected installer")
 
-    # TODO: Handle errors from _init_le_client?
-    le_client = _init_le_client(config, authenticator, installer)
-
+    #TODO(dmw) clean-up post test, get lineage w/ merged config *before* creating le_client
     domains, certname = _find_domains_or_certname(config, installer)
     should_get_cert, lineage = _find_cert(config, domains, certname)
+    if lineage:
+        passconfig = lineage.cli_config
+    else:
+        passconfig = config
+
+    # TODO: Handle errors from _init_le_client?
+    le_client = _init_le_client(passconfig, authenticator, installer)
 
     new_lineage = lineage
     if should_get_cert:
@@ -1171,9 +1176,12 @@ def renew_cert(config, plugins, lineage):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
-    le_client = _init_le_client(config, auth, installer)
+    # TODO(dmw) quiet down
+    logger.debug("CLI Config: %s", config)
+    logger.debug("RenewableCertificate Config: %s", lineage.cli_config)
+    le_client = _init_le_client(lineage.cli_config, auth, installer)
 
-    renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
+    renewed_lineage = _get_and_save_cert(le_client, lineage.cli_config, lineage=lineage)
 
     notify = zope.component.getUtility(interfaces.IDisplay).notification
     if installer is None:
@@ -1214,16 +1222,24 @@ def certonly(config, plugins):
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
 
-    le_client = _init_le_client(config, auth, installer)
+    # TODO(dmw) clean-up
+    # get config via lineage from cli + renewal *before* creating le_client
+    domains, certname = _find_domains_or_certname(config, installer)
+    should_get_cert, lineage = _find_cert(config, domains, certname)
+    logger.info("CLI Config: %s", config)
+    if lineage:
+        passconfig = lineage.cli_config
+        logger.info("RenewableCertificate Config: %s", lineage.cli_config)
+    else:
+        passconfig = config
+
+    le_client = _init_le_client(passconfig, auth, installer)
 
     if config.csr:
         cert_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
         _report_new_cert(config, cert_path, fullchain_path)
         _suggest_donation_if_appropriate(config)
         return
-
-    domains, certname = _find_domains_or_certname(config, installer)
-    should_get_cert, lineage = _find_cert(config, domains, certname)
 
     if not should_get_cert:
         notify = zope.component.getUtility(interfaces.IDisplay).notification

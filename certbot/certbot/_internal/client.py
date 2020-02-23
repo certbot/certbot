@@ -390,6 +390,7 @@ class Client(object):
 
         authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
         return orderr.update(authorizations=authzr)
+
     def obtain_and_enroll_certificate(self, domains, certname):
         """Obtain and enroll certificate.
 

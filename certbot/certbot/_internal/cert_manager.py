@@ -13,6 +13,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import ocsp
 from certbot import util
+from certbot._internal import renewal
 from certbot._internal import storage
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -110,7 +111,8 @@ def lineage_for_certname(cli_config, certname):
     except errors.CertStorageError:
         return None
     try:
-        return storage.RenewableCert(renewal_file, cli_config)
+        # TODO(dmw) fix by making public/building into __init__ etc
+        return renewal._reconstitute(cli_config, renewal_file)
     except (errors.CertStorageError, IOError):
         logger.debug("Renewal conf file %s is broken.", renewal_file)
         logger.debug("Traceback was:\n%s", traceback.format_exc())
@@ -378,7 +380,8 @@ def _search_lineages(cli_config, func, initial_rv, *args):
     rv = initial_rv
     for renewal_file in storage.renewal_conf_files(cli_config):
         try:
-            candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
+            # TODO(dmw) fix by making public/building into __init__ etc
+            candidate_lineage = renewal._reconstitute(cli_config, renewal_file)
         except (errors.CertStorageError, IOError):
             logger.debug("Renewal conf file %s is broken. Skipping.", renewal_file)
             logger.debug("Traceback was:\n%s", traceback.format_exc())

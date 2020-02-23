@@ -79,6 +79,7 @@ def _reconstitute(config, full_path):
     # those elements are present.
     try:
         restore_required_config_elements(config, renewalparams)
+        logger.debug("Config after restoring renewal config: %s", config)
         _restore_plugin_configs(config, renewalparams)
     except (ValueError, errors.Error) as error:
         logger.warning(
@@ -96,6 +97,8 @@ def _reconstitute(config, full_path):
                        "was: %s. Skipping.", full_path, error)
         return None
 
+    # TODO(dmw) figure out cleaner way to do this test
+    renewal_candidate.cli_config = config
     return renewal_candidate
 
 
@@ -168,7 +171,6 @@ def restore_required_config_elements(config, renewalparams):
         configuration file that defines this lineage
 
     """
-
     required_items = itertools.chain(
         (("pref_challs", _restore_pref_challs),),
         six.moves.zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
@@ -177,6 +179,7 @@ def restore_required_config_elements(config, renewalparams):
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])
+            logger.debug("Restoring config setting '%s' to '%s'", item_name, value)
             setattr(config, item_name, value)
 
 
