@@ -2,8 +2,9 @@ import os
 import subprocess
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
-from certbot_integration_tests.utils import misc, certbot_call
 from certbot_integration_tests.nginx_tests import nginx_config as config
+from certbot_integration_tests.utils import certbot_call
+from certbot_integration_tests.utils import misc
 
 
 class IntegrationTestsContext(certbot_context.IntegrationTestsContext):

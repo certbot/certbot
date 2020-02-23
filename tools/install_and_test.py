@@ -8,18 +8,16 @@
 from __future__ import print_function
 
 import os
-import sys
-import tempfile
-import shutil
-import subprocess
 import re
+import subprocess
+import sys
 
-SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache', 'letshelp-certbot']
+SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache']
 
 
-def call_with_print(command, cwd=None):
+def call_with_print(command):
     print(command)
-    subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
+    subprocess.check_call(command, shell=True)
 
 
 def main(args):
@@ -41,16 +39,8 @@ def main(args):
         call_with_print(' '.join(current_command))
         pkg = re.sub(r'\[\w+\]', '', requirement)
 
-        if pkg == '.':
-            pkg = 'certbot'
-
-        temp_cwd = tempfile.mkdtemp()
-        shutil.copy2("pytest.ini", temp_cwd)
-        try:
-            call_with_print(' '.join([
-                sys.executable, '-m', 'pytest', '--pyargs', pkg.replace('-', '_')]), cwd=temp_cwd)
-        finally:
-            shutil.rmtree(temp_cwd)
+        call_with_print(' '.join([
+            sys.executable, '-m', 'pytest', pkg]))
 
 if __name__ == '__main__':
     main(sys.argv[1:])

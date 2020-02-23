@@ -54,8 +54,7 @@ class UnrecognizedChallenge(Challenge):
         object.__setattr__(self, "jobj", jobj)
 
     def to_partial_json(self):
-        # pylint: disable=no-member
-        return self.jobj
+        return self.jobj  # pylint: disable=no-member
 
     @classmethod
     def from_json(cls, jobj):
@@ -113,7 +112,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         :rtype: bool
 
         """
-        parts = self.key_authorization.split('.')  # pylint: disable=no-member
+        parts = self.key_authorization.split('.')
         if len(parts) != 2:
             logger.debug("Key authorization (%r) is not well formed",
                          self.key_authorization)
@@ -304,7 +303,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         uri = chall.uri(domain)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
-            http_response = requests.get(uri)
+            http_response = requests.get(uri, verify=False)
         except requests.exceptions.RequestException as error:
             logger.error("Unable to reach %s: %s", uri, error)
             return False

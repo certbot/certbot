@@ -9,14 +9,13 @@ import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import challenges
-
-import certbot.tests.util as test_util
+from certbot import errors
 from certbot._internal import cli
 from certbot._internal import constants
-from certbot import errors
-from certbot.compat import os
-from certbot.compat import filesystem
 from certbot._internal.plugins import disco
+from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
 
 PLUGINS = disco.PluginsRegistry.find_all()
@@ -94,7 +93,7 @@ class ParseTest(unittest.TestCase):
 
         return output.getvalue()
 
-    @mock.patch("certbot._internal.cli.flag_default")
+    @mock.patch("certbot._internal.cli.helpful.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
         with tempfile.NamedTemporaryFile() as tmp_config:
             tmp_config.close()  # close now because of compatibility issues on Windows

@@ -24,6 +24,11 @@ persistent=yes
 # usually to register additional checkers.
 load-plugins=linter_plugin
 
+# A comma-separated list of package or module names from where C extensions may
+# be loaded. Extensions are loading into the active Python interpreter and may
+# run arbitrary code.
+extension-pkg-whitelist=pywintypes,win32api,win32file,win32security
+
 
 [MESSAGES CONTROL]
 
@@ -41,10 +46,14 @@ load-plugins=linter_plugin
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=fixme,locally-disabled,locally-enabled,abstract-class-not-used,abstract-class-little-used,bad-continuation,no-self-use,invalid-name,cyclic-import,duplicate-code,design
-# abstract-class-not-used cannot be disabled locally (at least in
-# pylint 1.4.1), same for abstract-class-little-used
-
+# CERTBOT COMMENT
+# 1) Once certbot codebase is claimed to be compatible exclusively with Python 3,
+#    the useless-object-inheritance check can be enabled again, and code fixed accordingly.
+# 2) Check unsubscriptable-object tends to create a lot of false positives. Let's disable it.
+#    See https://github.com/PyCQA/pylint/issues/1498.
+# 3) Same as point 2 for no-value-for-parameter.
+#    See https://github.com/PyCQA/pylint/issues/2820.
+disable=fixme,locally-disabled,locally-enabled,bad-continuation,no-self-use,invalid-name,cyclic-import,duplicate-code,design,import-outside-toplevel,useless-object-inheritance,unsubscriptable-object,no-value-for-parameter,no-else-return,no-else-raise,no-else-break,no-else-continue
 
 [REPORTS]
 

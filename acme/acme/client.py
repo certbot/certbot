@@ -5,25 +5,26 @@ import datetime
 from email.utils import parsedate_tz
 import heapq
 import logging
-import time
 import re
 import sys
+import time
 
-import six
-from six.moves import http_client  # pylint: disable=import-error
 import josepy as jose
 import OpenSSL
 import requests
 from requests.adapters import HTTPAdapter
 from requests_toolbelt.adapters.source import SourceAddressAdapter
+import six
+from six.moves import http_client
 
 from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict, List, Set, Text
-
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
+from acme.magic_typing import Text
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +34,9 @@ logger = logging.getLogger(__name__)
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     try:
-        # pylint: disable=no-member
         requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
     except AttributeError:
-        import urllib3.contrib.pyopenssl  # pylint: disable=import-error
+        import urllib3.contrib.pyopenssl
         urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 DEFAULT_NETWORK_TIMEOUT = 45
@@ -279,7 +279,6 @@ class Client(ClientBase):
         assert response.status_code == http_client.CREATED
 
         # "Instance of 'Field' has no key/contact member" bug:
-        # pylint: disable=no-member
         return self._regr_from_response(response)
 
     def query_registration(self, regr):
@@ -464,7 +463,6 @@ class Client(ClientBase):
             updated[authzr] = updated_authzr
 
             attempts[authzr] += 1
-            # pylint: disable=no-member
             if updated_authzr.body.status not in (
                     messages.STATUS_VALID, messages.STATUS_INVALID):
                 if attempts[authzr] < max_attempts:
@@ -605,7 +603,6 @@ class ClientV2(ClientBase):
         if response.status_code == 200 and 'Location' in response.headers:
             raise errors.ConflictError(response.headers.get('Location'))
         # "Instance of 'Field' has no key/contact member" bug:
-        # pylint: disable=no-member
         regr = self._regr_from_response(response)
         self.net.account = regr
         return regr
@@ -669,7 +666,7 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
-        for url in body.authorizations:  # pylint: disable=not-an-iterable
+        for url in body.authorizations:
             authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
@@ -729,7 +726,7 @@ class ClientV2(ClientBase):
         for authzr in responses:
             if authzr.body.status != messages.STATUS_VALID:
                 for chall in authzr.body.challenges:
-                    if chall.error != None:
+                    if chall.error is not None:
                         failed.append(authzr)
         if failed:
             raise errors.ValidationError(failed)
@@ -779,29 +776,13 @@ class ClientV2(ClientBase):
 
     def _post_as_get(self, *args, **kwargs):
         """
-        Send GET request using the POST-as-GET protocol if needed.
-        The request will be first issued using POST-as-GET for ACME v2. If the ACME CA servers do
-        not support this yet and return an error, request will be retried using GET.
-        For ACME v1, only GET request will be tried, as POST-as-GET is not supported.
+        Send GET request using the POST-as-GET protocol.
         :param args:
         :param kwargs:
         :return:
         """
-        if self.acme_version >= 2:
-            # We add an empty payload for POST-as-GET requests
-            new_args = args[:1] + (None,) + args[1:]
-            try:
-                return self._post(*new_args, **kwargs)
-            except messages.Error as error:
-                if error.code == 'malformed':
-                    logger.debug('Error during a POST-as-GET request, '
-                                 'your ACME CA server may not support it:\n%s', error)
-                    logger.debug('Retrying request with GET.')
-                else:  # pragma: no cover
-                    raise
-
-        # If POST-as-GET is not supported yet, we use a GET instead.
-        return self.net.get(*args, **kwargs)
+        new_args = args[:1] + (None,) + args[1:]
+        return self._post(*new_args, **kwargs)
 
 
 class BackwardsCompatibleClientV2(object):
@@ -961,7 +942,7 @@ class ClientNetwork(object):
     :param messages.RegistrationResource account: Account object. Required if you are
             planning to use .post() with acme_version=2 for anything other than
             creating a new account; may be set later after registering.
-    :param josepy.JWASignature alg: Algoritm to use in signing JWS.
+    :param josepy.JWASignature alg: Algorithm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
     :param float timeout: Timeout for requests.
@@ -1124,10 +1105,9 @@ class ClientNetwork(object):
             err_regex = r".*host='(\S*)'.*Max retries exceeded with url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
             m = re.match(err_regex, str(e))
             if m is None:
-                raise # pragma: no cover
-            else:
-                host, path, _err_no, err_msg = m.groups()
-                raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
+                raise  # pragma: no cover
+            host, path, _err_no, err_msg = m.groups()
+            raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
 
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
@@ -1193,8 +1173,7 @@ class ClientNetwork(object):
             if error.code == 'badNonce':
                 logger.debug('Retrying request after error:\n%s', error)
                 return self._post_once(*args, **kwargs)
-            else:
-                raise
+            raise
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
             acme_version=1, **kwargs):

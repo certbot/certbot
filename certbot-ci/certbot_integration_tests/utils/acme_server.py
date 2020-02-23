@@ -1,19 +1,22 @@
 #!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
+
 import errno
 import json
+import os
+from os.path import join
+import shutil
+import subprocess
+import sys
 import tempfile
 import time
-import os
-import subprocess
-import shutil
-import sys
-from os.path import join
 
 import requests
 
-from certbot_integration_tests.utils import misc, proxy, pebble_artifacts
+from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils import pebble_artifacts
+from certbot_integration_tests.utils import proxy
 from certbot_integration_tests.utils.constants import *
 
 
@@ -186,7 +189,7 @@ class ACMEServer(object):
         print('=> Finished configuring the HTTP proxy.')
 
     def _launch_process(self, command, cwd=os.getcwd(), env=None):
-        """Launch silently an subprocess OS command"""
+        """Launch silently a subprocess OS command"""
         if not env:
             env = os.environ
         process = subprocess.Popen(command, stdout=self._stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env)

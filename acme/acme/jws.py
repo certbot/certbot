@@ -15,7 +15,7 @@ class Header(jose.Header):
     url = jose.Field('url', omitempty=True)
 
     @nonce.decoder
-    def nonce(value):  # pylint: disable=missing-docstring,no-self-argument
+    def nonce(value):  # pylint: disable=no-self-argument,missing-function-docstring
         try:
             return jose.decode_b64jose(value)
         except jose.DeserializationError as error:
@@ -40,7 +40,7 @@ class Signature(jose.Signature):
 class JWS(jose.JWS):
     """ACME-specific JWS. Includes none, url, and kid in protected header."""
     signature_cls = Signature
-    __slots__ = jose.JWS._orig_slots  # pylint: disable=no-member
+    __slots__ = jose.JWS._orig_slots
 
     @classmethod
     # pylint: disable=arguments-differ
