@@ -3,27 +3,27 @@ Misc module contains stateless functions that could be used during pytest execut
 or outside during setup/teardown of the integration tests environment.
 """
 import contextlib
-import logging
 import errno
 import multiprocessing
 import os
 import re
 import shutil
 import stat
-import subprocess
 import sys
 import tempfile
 import time
 import warnings
-from distutils.version import LooseVersion
 
-import pkg_resources
-import requests
-from OpenSSL import crypto
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
-from six.moves import socketserver, SimpleHTTPServer
+from cryptography.hazmat.primitives.serialization import Encoding
+from cryptography.hazmat.primitives.serialization import NoEncryption
+from cryptography.hazmat.primitives.serialization import PrivateFormat
+from OpenSSL import crypto
+import pkg_resources
+import requests
+from six.moves import SimpleHTTPServer
+from six.moves import socketserver
 
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'

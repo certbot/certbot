@@ -1,4 +1,0 @@
-include LICENSE.txt
-include README.rst
-recursive-include docs *
-recursive-include letshelp_certbot/testdata *

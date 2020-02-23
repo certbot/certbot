@@ -13,6 +13,6 @@ coverage:
         flags: windows
         # Fixed target instead of auto set by #7173, can
         # be removed when flags in Codecov are added back.
-        target: 97.7
+        target: 97.4
         threshold: 0.1
         base: auto

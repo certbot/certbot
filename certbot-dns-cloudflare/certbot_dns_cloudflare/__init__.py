@@ -22,17 +22,40 @@ Credentials
 
 Use of this plugin requires a configuration file containing Cloudflare API
 credentials, obtained from your Cloudflare
-`account page <https://www.cloudflare.com/a/account/my-account>`_. This plugin
-does not currently support Cloudflare's "API Tokens", so please ensure you use
-the "Global API Key" for authentication.
+`account page <https://dash.cloudflare.com/profile/api-tokens>`_.
+
+Previously, Cloudflare's "Global API Key" was used for authentication, however
+this key can access the entire Cloudflare API for all domains in your account,
+meaning it could cause a lot of damage if leaked.
+
+Cloudflare's newer API Tokens can be restricted to specific domains and
+operations, and are therefore now the recommended authentication option.
+
+However, due to some shortcomings in Cloudflare's implementation of Tokens,
+Tokens created for Certbot currently require ``Zone:Zone:Read`` and ``Zone:DNS:Edit``
+permissions for **all** zones in your account. While this is not ideal, your Token
+will still have fewer permission than the Global key, so it's still worth doing.
+Hopefully Cloudflare will improve this in the future.
+
+Using Cloudflare Tokens also requires at least version 2.3.1 of the ``cloudflare``
+python module. If the version that automatically installed with this plugin is
+older than that, and you can't upgrade it on your system, you'll have to stick to
+the Global key.
 
 .. code-block:: ini
-   :name: credentials.ini
-   :caption: Example credentials file:
+   :name: certbot_cloudflare_token.ini
+   :caption: Example credentials file using restricted API Token (recommended):
+
+   # Cloudflare API token used by Certbot
+   dns_cloudflare_api_token = 0123456789abcdef0123456789abcdef01234567
+
+.. code-block:: ini
+   :name: certbot_cloudflare_key.ini
+   :caption: Example credentials file using Global API Key (not recommended):
 
    # Cloudflare API credentials used by Certbot
    dns_cloudflare_email = cloudflare@example.com
-   dns_cloudflare_api_key = 0123456789abcdef0123456789abcdef01234567
+   dns_cloudflare_api_key = 0123456789abcdef0123456789abcdef01234
 
 The path to this file can be provided interactively or using the
 ``--dns-cloudflare-credentials`` command-line argument. Certbot records the path

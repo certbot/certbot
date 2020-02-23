@@ -1,9 +1,10 @@
-from setuptools import setup
-from setuptools import find_packages
-from setuptools.command.test import test as TestCommand
 import sys
 
-version = '0.40.0.dev0'
+from setuptools import find_packages
+from setuptools import setup
+from setuptools.command.test import test as TestCommand
+
+version = '1.3.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -14,8 +15,8 @@ install_requires = [
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
-    # Connection.set_tlsext_host_name (>=0.13)
     'mock',
+    # Connection.set_tlsext_host_name (>=0.13)
     'PyOpenSSL>=0.13.1',
     'pyrfc3339',
     'pytz',
@@ -60,7 +61,7 @@ setup(
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
@@ -69,7 +70,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
