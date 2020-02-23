@@ -46,8 +46,10 @@ class AssertLogsContext(object):
         if level:
             # pylint: disable=protected-access,no-member
             try:
+                # In Python 3.x
                 name_to_level = logging._nameToLevel  # type: ignore
             except AttributeError:
+                # In Python 2.7
                 name_to_level = logging._levelNames  # type: ignore
 
             self.level = name_to_level.get(level, level)
