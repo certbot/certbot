@@ -2,6 +2,7 @@
 import mock
 import unittest
 
+from certbot.compat import os
 
 class ExecuteTest(unittest.TestCase):
     """Tests for certbot.compat.misc.execute_command."""
@@ -28,7 +29,11 @@ class ExecuteTest(unittest.TestCase):
 
         executed_command = mock_popen.call_args[1].get(
             "args", mock_popen.call_args[0][0])
-        self.assertEqual(executed_command, given_command)
+        if os.name == 'nt':
+            expected_command = ['powershell.exe', '-Command', given_command]
+        else:
+            expected_command = given_command
+        self.assertEqual(executed_command, expected_command)
 
         mock_logger.info.assert_any_call("Running %s command: %s",
                                          given_name, given_command)
