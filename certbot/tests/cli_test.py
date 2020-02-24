@@ -34,7 +34,9 @@ class TestReadFile(TempDirTestCase):
             # code using relative paths below. See
             # https://bugs.python.org/issue38295 for another example of this.
             # Eliminating any possible symlinks in self.tempdir before passing
-            # it to os.path.relpath solves the problem.
+            # it to os.path.relpath solves the problem. This is done by calling
+            # filesystem.realpath which removes any symlinks in the path on
+            # POSIX systems.
             real_path = filesystem.realpath(os.path.join(self.tempdir, 'foo'))
             relative_path = os.path.relpath(real_path)
             self.assertRaises(
