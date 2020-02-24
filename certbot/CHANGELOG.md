@@ -14,6 +14,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * certbot._internal.cli is now a package split in submodules instead of a whole module.
+* Fix acme module warnings when response Content-Type includes params (e.g. charset).
+* Fixed issue where webroot plugin would incorrectly raise `Read-only file system` 
+  error when creating challenge directories (issue #7165).
 
 ### Fixed
 
