@@ -17,7 +17,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-* Fix nginx plguin crash when non-ASCII configuration file is being read
+* Fix nginx plugin crash when non-ASCII configuration file is being read
 
 More details about these changes can be found on our GitHub repo.
 
