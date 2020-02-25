@@ -16,10 +16,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Fix acme module warnings when response Content-Type includes params (e.g. charset).
 * Fixed issue where webroot plugin would incorrectly raise `Read-only file system` 
   error when creating challenge directories (issue #7165).
+* Always check for required Apache modules when performing http-01 challenge
 
 ### Fixed
 
-*
+* 
 
 More details about these changes can be found on our GitHub repo.
 
