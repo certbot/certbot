@@ -496,11 +496,10 @@ class NginxParserTest(util.NginxTest):
             parsed = nparser._parse_files(path)  # pylint: disable=protected-access
 
         self.assertEqual([], parsed)
-        self.assertTrue([
-            True
+        self.assertTrue(any(
+            ('invalid character' in output) and ('UTF-8' in output)
             for output in log.output
-            if ('invalid character' in output) and ('UTF-8' in output)
-        ])
+        ))
 
     def test_valid_unicode_characters_in_ssl_options(self):
         nparser = parser.NginxParser(self.config_path)
@@ -516,11 +515,10 @@ class NginxParserTest(util.NginxTest):
             parsed = parser._parse_ssl_options(path)  # pylint: disable=protected-access
 
         self.assertEqual([], parsed)
-        self.assertTrue([
-            True
+        self.assertTrue(any(
+            ('invalid character' in output) and ('UTF-8' in output)
             for output in log.output
-            if ('invalid character' in output) and ('UTF-8' in output)
-        ])
+        ))
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
