@@ -138,7 +138,7 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
 
     def __init__(self, server_address, certs, challenge_certs, ipv6=False):
         TLSServer.__init__(
-            self, server_address, BaseRequestHandlerWithLogging, certs=certs,
+            self, server_address, _BaseRequestHandlerWithLogging, certs=certs,
             ipv6=ipv6)
         self.challenge_certs = challenge_certs
 
@@ -163,19 +163,6 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
         # send fatal tls alert.
         logger.debug("Cannot agree on ALPN proto. Got: %s", str(alpn_protos))
         raise BadALPNProtos("Got: %s" % str(alpn_protos))
-
-
-class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
-    """BaseRequestHandler with logging."""
-
-    def log_message(self, format, *args):  # pylint: disable=redefined-builtin
-        """Log arbitrary message."""
-        logger.debug("%s - - %s", self.client_address[0], format % args)
-
-    def handle(self):
-        """Handle request."""
-        self.log_message("Incoming request")
-        socketserver.BaseRequestHandler.handle(self)
 
 
 class HTTPServer(BaseHTTPServer.HTTPServer):
@@ -280,3 +267,16 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         """
         return functools.partial(
             cls, simple_http_resources=simple_http_resources)
+
+
+class _BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
+    """BaseRequestHandler with logging."""
+
+    def log_message(self, format, *args):  # pylint: disable=redefined-builtin
+        """Log arbitrary message."""
+        logger.debug("%s - - %s", self.client_address[0], format % args)
+
+    def handle(self):
+        """Handle request."""
+        self.log_message("Incoming request")
+        socketserver.BaseRequestHandler.handle(self)
