@@ -5,7 +5,6 @@ import argparse
 import atexit
 import collections
 from collections import OrderedDict
-from datetime import datetime
 import distutils.version  # pylint: disable=import-error,no-name-in-module
 import errno
 import logging

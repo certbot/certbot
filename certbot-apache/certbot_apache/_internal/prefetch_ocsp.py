@@ -269,7 +269,7 @@ class OCSPPrefetchMixin(object):
             apache_util.safe_copy(
                 cache_path,
                 os.path.join(self.config.work_dir, "ocsp_work", "ocsp_cache.db"))
-        except IOError:
+        except errors.PluginError:
             logger.debug("Encountered an issue while trying to backup OCSP dbm file")
 
     def _ocsp_prefetch_restore_db(self):

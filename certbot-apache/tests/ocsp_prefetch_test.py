@@ -197,7 +197,7 @@ class OCSPPrefetchTest(util.ApacheTest):
                 mock_times.return_value = produced_at, this_update, next_update
                 self.call_mocked_py2(self.config.enable_ocsp_prefetch,
                                      self.lineage, ["ocspvhost.com"])
-        odbm = self.config._read_dbm(self.db_path)
+        odbm = _read_dbm(self.db_path)
         self.assertEqual(len(odbm.keys()), 1)
         # The actual response data is prepended by Apache timestamp
         self.assertTrue(odbm[list(odbm.keys())[0]].endswith(b'MOCKRESPONSE'))
@@ -246,7 +246,7 @@ class OCSPPrefetchTest(util.ApacheTest):
         with mock.patch(rel_path, side_effect=ocsp_del_db):
             self.config.restart()
 
-        odbm = self.config._read_dbm(self.db_path)
+        odbm = _read_dbm(self.db_path)
         self.assertEqual(odbm[b'mock_key'], b'mock_value')
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.config_test")
@@ -336,7 +336,7 @@ class OCSPPrefetchTest(util.ApacheTest):
             self.config._write_to_dbm, self.db_path,
             b'key', expected_val
         )
-        db2 = self.call_mocked_py2(self.config._read_dbm, self.db_path)
+        db2 = self.call_mocked_py2(_read_dbm, self.db_path)
         self.assertEqual(db2[b'key'], expected_val)
 
     def test_ocsp_prefetch_open_close_py3_noerror(self):
@@ -346,7 +346,7 @@ class OCSPPrefetchTest(util.ApacheTest):
             self.config._write_to_dbm, self.db_path,
             b'key', expected_val
         )
-        db2 = self.call_mocked_py3(self.config._read_dbm, self.db_path)
+        db2 = self.call_mocked_py3(_read_dbm, self.db_path)
         self.assertEqual(db2[b'key'], expected_val)
 
     def test_ocsp_prefetch_safe_open_hash_mismatch(self):
@@ -413,7 +413,7 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.assertTrue(mock_rest.called)
 
 
-def _read_dbm(self, filename):
+def _read_dbm(filename):
 
     """Helper method for reading the dbm using context manager.
     Used for tests.
