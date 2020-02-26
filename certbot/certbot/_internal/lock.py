@@ -2,15 +2,15 @@
 import errno
 import logging
 
-from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Optional
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 
 try:
-    import fcntl  # pylint: disable=import-error
+    import fcntl
 except ImportError:
-    import msvcrt  # pylint: disable=import-error
+    import msvcrt
     POSIX_MODE = False
 else:
     POSIX_MODE = True
@@ -115,10 +115,10 @@ class _BaseLockMechanism(object):
         """
         return self._fd is not None
 
-    def acquire(self):  # pylint: disable=missing-docstring
+    def acquire(self):  # pylint: disable=missing-function-docstring
         pass  # pragma: no cover
 
-    def release(self):  # pylint: disable=missing-docstring
+    def release(self):  # pylint: disable=missing-function-docstring
         pass  # pragma: no cover
 
 

@@ -93,7 +93,7 @@ class ParseTest(unittest.TestCase):
 
         return output.getvalue()
 
-    @mock.patch("certbot._internal.cli.flag_default")
+    @mock.patch("certbot._internal.cli.helpful.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
         with tempfile.NamedTemporaryFile() as tmp_config:
             tmp_config.close()  # close now because of compatibility issues on Windows

@@ -15,16 +15,16 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests_toolbelt.adapters.source import SourceAddressAdapter
 import six
-from six.moves import http_client  # pylint: disable=import-error
+from six.moves import http_client
 
 from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Text  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
+from acme.magic_typing import Text
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ if sys.version_info < (2, 7, 9):  # pragma: no cover
     try:
         requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
     except AttributeError:
-        import urllib3.contrib.pyopenssl  # pylint: disable=import-error
+        import urllib3.contrib.pyopenssl
         urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 DEFAULT_NETWORK_TIMEOUT = 45
@@ -666,7 +666,7 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
-        for url in body.authorizations:  # pylint: disable=not-an-iterable
+        for url in body.authorizations:
             authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
@@ -942,7 +942,7 @@ class ClientNetwork(object):
     :param messages.RegistrationResource account: Account object. Required if you are
             planning to use .post() with acme_version=2 for anything other than
             creating a new account; may be set later after registering.
-    :param josepy.JWASignature alg: Algoritm to use in signing JWS.
+    :param josepy.JWASignature alg: Algorithm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
     :param float timeout: Timeout for requests.
@@ -1022,6 +1022,9 @@ class ClientNetwork(object):
 
         """
         response_ct = response.headers.get('Content-Type')
+        # Strip parameters from the media-type (rfc2616#section-3.7)
+        if response_ct:
+            response_ct = response_ct.split(';')[0].strip()
         try:
             # TODO: response.json() is called twice, once here, and
             # once in _get and _post clients

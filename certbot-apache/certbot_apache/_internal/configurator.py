@@ -19,11 +19,11 @@ except ImportError:  # pragma: no cover
     HAS_APACHECONFIG = False
 
 from acme import challenges
-from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import DefaultDict
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
+from acme.magic_typing import Union
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -802,7 +802,7 @@ class ApacheConfigurator(common.Installer):
 
         return util.get_filtered_names(all_names)
 
-    def get_name_from_ip(self, addr):  # pylint: disable=no-self-use
+    def get_name_from_ip(self, addr):
         """Returns a reverse dns name if available.
 
         :param addr: IP Address
@@ -1736,7 +1736,7 @@ class ApacheConfigurator(common.Installer):
     ######################################################################
     # Enhancements
     ######################################################################
-    def supported_enhancements(self):  # pylint: disable=no-self-use
+    def supported_enhancements(self):
         """Returns currently supported enhancements."""
         return ["redirect", "ensure-http-header", "staple-ocsp"]
 
@@ -1956,7 +1956,7 @@ class ApacheConfigurator(common.Installer):
                     ssl_vhost.filep)
 
     def _verify_no_matching_http_header(self, ssl_vhost, header_substring):
-        """Checks to see if an there is an existing Header directive that
+        """Checks to see if there is an existing Header directive that
         contains the string header_substring.
 
         :param ssl_vhost: vhost to check
@@ -2302,7 +2302,7 @@ class ApacheConfigurator(common.Installer):
             vhost.enabled = True
         return
 
-    def enable_mod(self, mod_name, temp=False):  # pylint: disable=unused-argument
+    def enable_mod(self, mod_name, temp=False):
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -2360,7 +2360,7 @@ class ApacheConfigurator(common.Installer):
                 error = str(err)
             raise errors.MisconfigurationError(error)
 
-    def config_test(self):  # pylint: disable=no-self-use
+    def config_test(self):
         """Check the configuration of Apache for errors.
 
         :raises .errors.MisconfigurationError: If config_test fails
@@ -2410,7 +2410,7 @@ class ApacheConfigurator(common.Installer):
     ###########################################################################
     # Challenges Section
     ###########################################################################
-    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
+    def get_chall_pref(self, unused_domain):
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 
@@ -2481,7 +2481,7 @@ class ApacheConfigurator(common.Installer):
         :type _unused_lineage: certbot._internal.storage.RenewableCert
 
         :param domains: List of domains in certificate to enhance
-        :type domains: str
+        :type domains: `list` of `str`
         """
 
         self._autohsts_fetch_state()

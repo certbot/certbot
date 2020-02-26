@@ -334,7 +334,6 @@ class FileDisplay(object):
             return self.input(message, default, cli_flag, force_interactive)
 
     def _scrub_checklist_input(self, indices, tags):
-        # pylint: disable=no-self-use
         """Validate input and transform indices to appropriate tags.
 
         :param list indices: input

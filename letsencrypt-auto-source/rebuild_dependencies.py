@@ -46,12 +46,6 @@ AUTHORITATIVE_CONSTRAINTS = {
     # certbot-auto failures on Python 3.6+ which enum34 doesn't support. See #5456.
     # TODO: hashin seems to overwrite environment markers in dependencies. This needs to be fixed.
     'enum34': '1.1.6 ; python_version < \'3.4\'',
-    # Newer versions of the packages below dropped support for python 3.4. Once
-    # Certbot does as well, we should unpin these dependencies.
-    'requests': '2.21.0',
-    'ConfigArgParse': '0.14.0',
-    'zope.hookable': '4.2.0',
-    'zope.interface': '4.6.0',
 }
 
 
@@ -63,7 +57,7 @@ CERTBOT_REPO_PATH = dirname(dirname(abspath(__file__)))
 #   - then this venv is used to consistently construct an empty new venv
 #   - once pipstraped, this new venv pip-installs certbot runtime (including apache/nginx),
 #     without pinned dependencies, and respecting input authoritative requirements
-#   - `certbot plugins` is called to check we have an healthy environment
+#   - `certbot plugins` is called to check we have a healthy environment
 #   - finally current set of dependencies is extracted out of the docker using pip freeze
 SCRIPT = r"""#!/bin/sh
 set -e

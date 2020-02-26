@@ -1,8 +1,4 @@
-"""Test utilities.
-
-.. warning:: This module is not part of the public API.
-
-"""
+"""Test utilities."""
 import logging
 from multiprocessing import Event
 from multiprocessing import Process
@@ -18,7 +14,7 @@ import mock
 import OpenSSL
 import pkg_resources
 import six
-from six.moves import reload_module  # pylint: disable=import-error
+from six.moves import reload_module
 
 from certbot import interfaces
 from certbot import util

@@ -10,7 +10,7 @@ from josepy import util as jose_util
 import pkg_resources
 import zope.interface
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List
 from certbot import achallenges  # pylint: disable=unused-import
 from certbot import crypto_util
 from certbot import errors
@@ -74,7 +74,6 @@ class Plugin(object):
         """
         # dummy function, doesn't check if dest.startswith(self.dest_namespace)
         def add(arg_name_no_prefix, *args, **kwargs):
-            # pylint: disable=missing-docstring
             return parser.add_argument(
                 "--{0}{1}".format(option_namespace(name), arg_name_no_prefix),
                 *args, **kwargs)

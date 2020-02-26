@@ -3,7 +3,7 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict
 from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
@@ -81,7 +81,7 @@ permitted by DNS standards.)
         add('public-ip-logging-ok', action='store_true',
             help='Automatically allows public IP logging (default: Ask)')
 
-    def prepare(self):  # pylint: disable=missing-docstring
+    def prepare(self):  # pylint: disable=missing-function-docstring
         if self.config.noninteractive_mode and not self.conf('auth-hook'):
             raise errors.PluginError(
                 'An authentication script must be provided with --{0} when '
@@ -97,17 +97,17 @@ permitted by DNS standards.)
                     hook_prefix = self.option_name(name)[:-len('-hook')]
                     hooks.validate_hook(hook, hook_prefix)
 
-    def more_info(self):  # pylint: disable=missing-docstring,no-self-use
+    def more_info(self):  # pylint: disable=missing-function-docstring
         return (
             'This plugin allows the user to customize setup for domain '
             'validation challenges either through shell scripts provided by '
             'the user or by performing the setup manually.')
 
     def get_chall_pref(self, domain):
-        # pylint: disable=missing-docstring,no-self-use,unused-argument
+        # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01, challenges.DNS01]
 
-    def perform(self, achalls):  # pylint: disable=missing-docstring
+    def perform(self, achalls):  # pylint: disable=missing-function-docstring
         self._verify_ip_logging_ok()
         if self.conf('auth-hook'):
             perform_achall = self._perform_achall_with_script
@@ -170,7 +170,7 @@ permitted by DNS standards.)
         display.notification(msg, wrap=False, force_interactive=True)
         self.subsequent_any_challenge = True
 
-    def cleanup(self, achalls):  # pylint: disable=missing-docstring
+    def cleanup(self, achalls):  # pylint: disable=missing-function-docstring
         if self.conf('cleanup-hook'):
             for achall in achalls:
                 env = self.env.pop(achall)
