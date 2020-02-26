@@ -57,9 +57,7 @@ def main():
     description = """
 This script is used by tox.ini (and thus by Travis CI and Azure Pipelines) in
 order to generate separate stats for each package. It should be removed once
-those packages are moved to a separate repo.
-
-Option -e makes sure we fail fast and don't submit to codecov."""
+those packages are moved to a separate repo."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--packages', nargs='+')
 
