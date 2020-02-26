@@ -517,7 +517,7 @@ class TLSALPN01(KeyAuthorizationChallenge):
         """
         Check if TLS-ALPN-01 challenge is supported on this machine.
         This implies that a recent version of OpenSSL is installed (>= 1.0.2),
-        or a recent cryptography version shipped with OpenSSL library is installed.
+        or a recent cryptography version shipped with the OpenSSL library is installed.
 
         :returns: ``True`` if TLS-ALPN-01 is supported on this machine, ``False`` otherwise.
         :rtype: bool
