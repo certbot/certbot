@@ -10,6 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   determine the OCSP status of certificates.
 * Don't verify the existing certificate in HTTP01Response.simple_verify, for 
   compatibility with the real-world ACME challenge checks.
+* Added TLS-ALPN-01 challenge support in `acme` module library. Support of this
+  challenge in Certbot client is planned to be added in a future release.
 
 ### Changed
 
