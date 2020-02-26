@@ -8,11 +8,11 @@ import re
 import pyparsing
 import six
 
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
+from acme.magic_typing import Tuple
+from acme.magic_typing import Union
 from certbot import errors
 from certbot.compat import os
 from certbot_nginx._internal import nginxparser
@@ -127,7 +127,6 @@ class NginxParser(object):
         return servers
 
     def get_vhosts(self):
-        # pylint: disable=cell-var-from-loop
         """Gets list of all 'virtual hosts' found in Nginx configuration.
         Technically this is a misnomer because Nginx does not have virtual
         hosts, it has 'server blocks'.

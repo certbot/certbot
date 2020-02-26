@@ -13,7 +13,6 @@ ply==3.4
 pyasn1==0.1.9
 pycparser==2.14
 pyOpenSSL==0.13.1
-pyparsing==1.5.6
 pyRFC3339==1.0
 python-augeas==0.5.0
 oauth2client==4.0.0
@@ -40,6 +39,7 @@ pytz==2012rc0
 google-api-python-client==1.5.5
 
 # Our setup.py constraints
+apacheconfig==0.3.1
 cloudflare==1.5.1
 cryptography==1.2.3
 parsedatetime==1.3

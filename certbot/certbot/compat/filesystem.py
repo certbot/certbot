@@ -5,12 +5,11 @@ import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List
+from acme.magic_typing import Tuple  # pylint: disable=unused-import
+from acme.magic_typing import Union  # pylint: disable=unused-import
 
 try:
-    # pylint: disable=import-error
     import ntsecuritycon
     import win32security
     import win32con
@@ -263,7 +262,7 @@ def replace(src, dst):
     :param str dst: The new file path.
     """
     if hasattr(os, 'replace'):
-        # Use replace if possible. On Windows, only Python >= 3.4 is supported
+        # Use replace if possible. On Windows, only Python >= 3.5 is supported
         # so we can assume that os.replace() is always available for this platform.
         getattr(os, 'replace')(src, dst)
     else:
@@ -541,7 +540,7 @@ def _generate_windows_flags(rights_desc):
     # write access on Linux: for Windows, FILE_GENERIC_WRITE does not include delete, move or
     # rename. This is something that requires ntsecuritycon.FILE_ALL_ACCESS.
     # So to reproduce the write right as POSIX, we will apply ntsecuritycon.FILE_ALL_ACCESS
-    # substracted of the rights corresponding to POSIX read and POSIX execute.
+    # subtracted of the rights corresponding to POSIX read and POSIX execute.
     #
     # Finally, having read + write + execute gives a ntsecuritycon.FILE_ALL_ACCESS,
     # so a "Full Control" on the file.

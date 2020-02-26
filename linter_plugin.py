@@ -10,13 +10,13 @@ from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
 
 # Modules in theses packages can import the os module.
-WHITELIST_PACKAGES = ['acme', 'certbot_compatibility_test', 'letshelp_certbot', 'lock_test']
+WHITELIST_PACKAGES = ['acme', 'certbot_compatibility_test', 'lock_test']
 
 
 class ForbidStandardOsModule(BaseChecker):
     """
     This checker ensures that standard os module (and submodules) is not imported by certbot
-    modules. Otherwise a 'os-module-forbidden' error will be registered for the faulty lines.
+    modules. Otherwise an 'os-module-forbidden' error will be registered for the faulty lines.
     """
     __implements__ = IAstroidChecker
 

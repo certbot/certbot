@@ -201,6 +201,16 @@ using an HTTP-01 challenge on a machine with Python 3:
     certbot_test certonly --standalone -d test.example.com
     # To stop Pebble, launch `fg` to get back the background job, then press CTRL+C
 
+Running tests in CI
+~~~~~~~~~~~~~~~~~~~
+
+Certbot uses both Azure Pipelines and Travis to run continuous integration
+tests. If you are using our Azure and Travis setup, a branch whose name starts
+with `test-` will run all Azure and Travis tests on that branch. If the branch
+name starts with `azure-test-`, it will run all of our Azure tests and none of
+our Travis tests. If the branch stats with `travis-test-`, only our Travis
+tests will be run.
+
 Code components and layout
 ==========================
 
@@ -524,19 +534,22 @@ during the next release.
 Updating the documentation
 ==========================
 
-In order to generate the Sphinx documentation, run the following
-commands:
+Many of the packages in the Certbot repository have documentation in a
+``docs/`` directory. This directory is located under the top level directory
+for the package. For instance, Certbot's documentation is under
+``certbot/docs``.
+
+To build the documentation of a package, make sure you have followed the
+instructions to set up a `local copy`_ of Certbot including activating the
+virtual environment. After that, ``cd`` to the docs directory you want to build
+and run the command:
 
 .. code-block:: shell
 
-   make -C docs clean html man
+   make clean html
 
-This should generate documentation in the ``docs/_build/html``
-directory.
-
-.. note:: If you skipped the "Getting Started" instructions above,
-  run ``pip install -e "certbot[docs]"`` to install Certbot's docs extras modules.
-
+This would generate the HTML documentation in ``_build/html`` in your current
+``docs/`` directory.
 
 .. _docker-dev:
 
@@ -583,7 +596,7 @@ OS-level dependencies can be installed like so:
 In general...
 
 * ``sudo`` is required as a suggested way of running privileged process
-* `Python`_ 2.7 or 3.4+ is required
+* `Python`_ 2.7 or 3.5+ is required
 * `Augeas`_ is required for the Python bindings
 * ``virtualenv`` is used for managing other Python library dependencies
 

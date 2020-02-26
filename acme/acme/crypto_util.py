@@ -11,9 +11,9 @@ from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 
 from acme import errors
-from acme.magic_typing import Callable  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Callable
+from acme.magic_typing import Tuple
+from acme.magic_typing import Union
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     class FakeConnection(object):
         """Fake OpenSSL.SSL.Connection."""
 
-        # pylint: disable=missing-docstring
+        # pylint: disable=missing-function-docstring
 
         def __init__(self, connection):
             self._wrapped = connection
@@ -108,7 +108,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
             # OpenSSL.SSL.Connection.shutdown doesn't accept any args
             return self._wrapped.shutdown()
 
-    def accept(self):  # pylint: disable=missing-docstring
+    def accept(self):  # pylint: disable=missing-function-docstring
         sock, addr = self.sock.accept()
 
         context = SSL.Context(self.method)
@@ -332,7 +332,6 @@ def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
 
     def _dump_cert(cert):
         if isinstance(cert, jose.ComparableX509):
-            # pylint: disable=protected-access
             cert = cert.wrapped
         return crypto.dump_certificate(filetype, cert)
 

@@ -885,19 +885,6 @@ class ClientV2Test(ClientTestBase):
                 new_nonce_url='https://www.letsencrypt-demo.org/acme/new-nonce')
             self.client.net.get.assert_not_called()
 
-            class FakeError(messages.Error):
-                """Fake error to reproduce a malformed request ACME error"""
-                def __init__(self):  # pylint: disable=super-init-not-called
-                    pass
-                @property
-                def code(self):
-                    return 'malformed'
-            self.client.net.post.side_effect = FakeError()
-
-            self.client.poll(self.authzr2)  # pylint: disable=protected-access
-
-            self.client.net.get.assert_called_once_with(self.authzr2.uri)
-
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):
     # pylint: disable=missing-docstring
@@ -992,6 +979,35 @@ class ClientNetworkTest(unittest.TestCase):
             # pylint: disable=protected-access
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
+
+    @mock.patch('acme.client.logger')
+    def test_check_response_ok_ct_with_charset(self, mock_logger):
+        self.response.json.return_value = {}
+        self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        # pylint: disable=protected-access
+        self.assertEqual(self.response, self.net._check_response(
+            self.response, content_type='application/json'))
+        try:
+            mock_logger.debug.assert_called_with(
+                'Ignoring wrong Content-Type (%r) for JSON decodable response',
+                'application/json; charset=utf-8'
+            )
+        except AssertionError:
+            return
+        raise AssertionError('Expected Content-Type warning ' #pragma: no cover
+            'to not have been logged')
+
+    @mock.patch('acme.client.logger')
+    def test_check_response_ok_bad_ct(self, mock_logger):
+        self.response.json.return_value = {}
+        self.response.headers['Content-Type'] = 'text/plain'
+        # pylint: disable=protected-access
+        self.assertEqual(self.response, self.net._check_response(
+            self.response, content_type='application/json'))
+        mock_logger.debug.assert_called_with(
+            'Ignoring wrong Content-Type (%r) for JSON decodable response',
+            'text/plain'
+        )
 
     def test_check_response_conflict(self):
         self.response.ok = False

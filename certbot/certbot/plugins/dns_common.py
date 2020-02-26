@@ -37,13 +37,13 @@ class DNSAuthenticator(common.Plugin):
             help='The number of seconds to wait for DNS to propagate before asking the ACME server '
                  'to verify the DNS record.')
 
-    def get_chall_pref(self, unused_domain):  # pylint: disable=missing-docstring,no-self-use
+    def get_chall_pref(self, unused_domain):  # pylint: disable=missing-function-docstring
         return [challenges.DNS01]
 
-    def prepare(self): # pylint: disable=missing-docstring
+    def prepare(self): # pylint: disable=missing-function-docstring
         pass
 
-    def perform(self, achalls): # pylint: disable=missing-docstring
+    def perform(self, achalls): # pylint: disable=missing-function-docstring
         self._setup_credentials()
 
         self._attempt_cleanup = True
@@ -66,7 +66,7 @@ class DNSAuthenticator(common.Plugin):
 
         return responses
 
-    def cleanup(self, achalls):  # pylint: disable=missing-docstring
+    def cleanup(self, achalls):  # pylint: disable=missing-function-docstring
         if self._attempt_cleanup:
             for achall in achalls:
                 domain = achall.domain
