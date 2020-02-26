@@ -154,14 +154,15 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
         logger.debug("Serving challenge cert for server name %s", server_name)
         return self.challenge_certs.get(server_name, None)
 
-    def _alpn_selection(self, _connection, alpn_protos):
+    def _alpn_selection(self, connection, alpn_protos):
         """Callback to select alpn protocol."""
         if len(alpn_protos) == 1 and alpn_protos[0] == self.ACME_TLS_1_PROTOCOL:
             logger.debug("Agreed on %s ALPN", self.ACME_TLS_1_PROTOCOL)
             return self.ACME_TLS_1_PROTOCOL
-        # Raising an exception causes openssl to terminate handshake and
-        # send fatal tls alert.
         logger.debug("Cannot agree on ALPN proto. Got: %s", str(alpn_protos))
+        # Explicitly close the connection now because some old versions of OpenSSL do
+        # not immediately terminate the handshake when an exception is raised.
+        connection.close()
         raise BadALPNProtos("Got: %s" % str(alpn_protos))
 
 
