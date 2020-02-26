@@ -266,8 +266,9 @@ class OCSPPrefetchMixin(object):
         self._ensure_ocsp_dirs()
         cache_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache.db")
         try:
-            apache_util.safe_copy(cache_path,
-                                  os.path.join(self.config.work_dir, "ocsp_work"))
+            apache_util.safe_copy(
+                cache_path,
+                os.path.join(self.config.work_dir, "ocsp_work", "ocsp_cache.db"))
         except IOError:
             logger.debug("Encountered an issue while trying to backup OCSP dbm file")
 
