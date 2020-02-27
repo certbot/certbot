@@ -14,14 +14,14 @@ DEFAULT_PACKAGES = [
     'certbot_dns_sakuracloud', 'certbot_nginx']
 
 COVER_THRESHOLDS = {
-    'certbot': {'linux': 96, 'windows': 96},
-    'acme': {'linux': 100, 'windows': 99},
+    'certbot': {'linux': 95.7, 'windows': 96.56},
+    'acme': {'linux': 100, 'windows': 99.76},
     'certbot_apache': {'linux': 100, 'windows': 100},
-    'certbot_dns_cloudflare': {'linux': 98, 'windows': 98},
-    'certbot_dns_cloudxns': {'linux': 98, 'windows': 98},
-    'certbot_dns_digitalocean': {'linux': 98, 'windows': 98},
-    'certbot_dns_dnsimple': {'linux': 98, 'windows': 98},
-    'certbot_dns_dnsmadeeasy': {'linux': 99, 'windows': 99},
+    'certbot_dns_cloudflare': {'linux': 98, 'windows': 98.67},
+    'certbot_dns_cloudxns': {'linux': 98, 'windows': 98.47},
+    'certbot_dns_digitalocean': {'linux': 98, 'windows': 98.78},
+    'certbot_dns_dnsimple': {'linux': 98, 'windows': 98.38},
+    'certbot_dns_dnsmadeeasy': {'linux': 99, 'windows': 98.49},
     'certbot_dns_gehirn': {'linux': 97, 'windows': 97},
     'certbot_dns_google': {'linux': 99, 'windows': 99},
     'certbot_dns_linode': {'linux': 98, 'windows': 98},
