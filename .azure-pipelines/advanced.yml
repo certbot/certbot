@@ -1,6 +1,7 @@
 # Advanced pipeline for running our full test suite on protected branches.
 trigger:
   - '*.x'
+pr: none
 # This pipeline is also nightly run on master
 schedules:
   - cron: "0 4 * * *"

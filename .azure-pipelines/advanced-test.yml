@@ -4,6 +4,7 @@ trigger:
   # "Running tests in CI" is still correct.
   - azure-test-*
   - test-*
+pr: none
 
 jobs:
   # Any addition here should be reflected in the advanced and release pipelines.
