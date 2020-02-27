@@ -1,3 +1,12 @@
+Running Certbot in Docker 
+=========================
+
+Docker is an amazingly simple and quick way to obtain a certificate. However, this mode of operation is unable to install certificates or configure your webserver, because our installer plugins cannot reach your webserver from inside the Docker container.
+ 
+**Most users should install Certbot by following the installation instructions at https://certbot.eff.org/instructions. You should only use Docker if you are sure you know what you are doing and have a good reason to do so.**
+
+For more information, please read [Certbot - Running with Docker](https://certbot.eff.org/docs/install.html#running-with-docker).
+
 Certbot-Docker project
 ======================
 
@@ -31,7 +40,7 @@ To set up the publication process, the target DockerHub project must be configur
     _For a Certbot DNS plugin Docker_ -> Source: `/^(v[0-9.]+).*$/`, Tag: `{\1}`, Dockerfile: `Dockerfile`, Build context: `/plugin`
 
 Publication worfklow
---------------------
+-------------------
 
 Assuming the version to publish is `v0.35.0`
 
