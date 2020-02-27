@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import argparse
 import os
 import subprocess
@@ -48,9 +50,16 @@ def cover(package):
 
     subprocess.check_call([sys.executable, '-m', 'pytest',
                            '--cov', pkg_dir, '--cov-append', '--cov-report=', pkg_dir])
-    subprocess.check_call([
-        sys.executable, '-m', 'coverage', 'report', '--fail-under', str(threshold), '--include',
-        '{0}/*'.format(pkg_dir), '--show-missing'])
+    try:
+        subprocess.check_call([
+            sys.executable, '-m', 'coverage', 'report', '--fail-under',
+            str(threshold), '--include', '{0}/*'.format(pkg_dir),
+            '--show-missing'])
+    except subprocess.CalledProcessError as err:
+        print(err)
+        print('Test coverage on', pkg_dir,
+              'did not meet threshold of {0}%.'.format(threshold))
+        sys.exit(1)
 
 
 def main():
