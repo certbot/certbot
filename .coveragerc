@@ -3,3 +3,4 @@ omit = */setup.py
 
 [report]
 omit = */setup.py
+precision = 2
