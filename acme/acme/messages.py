@@ -525,12 +525,26 @@ class AuthorizationResource(ResourceWithURI):
 class CertificateRequest(jose.JSONObjectWithFields):
     """ACME new-cert request.
 
+    Deprecated. Use `.Finalize`.
+
     :ivar josepy.util.ComparableX509 csr:
         `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
 
     """
     resource_type = 'new-cert'
     resource = fields.Resource(resource_type)
+    csr = jose.Field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
+
+
+@Directory.register
+class Finalize(jose.JSONObjectWithFields):
+    """ACME order finalize request.
+
+    :ivar josepy.util.ComparableX509 csr:
+        `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
+
+    """
+    resource_type = 'finalize'
     csr = jose.Field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
 
 

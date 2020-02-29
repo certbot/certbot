@@ -410,6 +410,20 @@ class CertificateRequestTest(unittest.TestCase):
             self.req, CertificateRequest.from_json(self.req.to_json()))
 
 
+class FinalizeTest(unittest.TestCase):
+    """Tests for acme.messages.Finalize."""
+
+    def setUp(self):
+        from acme.messages import Finalize
+        self.req = Finalize(csr=CSR)
+
+    def test_json_de_serializable(self):
+        self.assertTrue(isinstance(self.req, jose.JSONDeSerializable))
+        from acme.messages import Finalize
+        self.assertEqual(
+            self.req, Finalize.from_json(self.req.to_json()))
+
+
 class CertificateResourceTest(unittest.TestCase):
     """Tests for acme.messages.CertificateResourceTest."""
 

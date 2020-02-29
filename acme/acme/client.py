@@ -744,7 +744,7 @@ class ClientV2(ClientBase):
         """
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
-        wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
+        wrapped_csr = messages.Finalize(csr=jose.ComparableX509(csr))
         self._post(orderr.body.finalize, wrapped_csr)
         while datetime.datetime.now() < deadline:
             time.sleep(1)
