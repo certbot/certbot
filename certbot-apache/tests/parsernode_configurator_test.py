@@ -14,7 +14,7 @@ except ImportError:  # pragma: no cover
 
 @unittest.skipIf(not HAS_APACHECONFIG, reason='Tests require apacheconfig dependency')
 class ConfiguratorParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-methods
-    """Test ParserNode using available test configurations"""
+    """Test AugeasParserNode using available test configurations"""
 
     def setUp(self):  # pylint: disable=arguments-differ
         super(ConfiguratorParserNodeTest, self).setUp()
