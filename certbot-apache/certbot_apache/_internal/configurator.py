@@ -266,7 +266,7 @@ class ApacheConfigurator(common.Installer):
         pn_meta = {"augeasparser": self.parser,
                    "augeaspath": self.parser.get_root_augpath(),
                    "ac_ast": None}
-        if self.USE_PARSERNODE and HAS_APACHECONFIG:
+        if self.USE_PARSERNODE:
             self.parser_root = self.get_parsernode_root(pn_meta)
             self.parsed_paths = self.parser_root.parsed_paths()
 
@@ -368,16 +368,17 @@ class ApacheConfigurator(common.Installer):
     def get_parsernode_root(self, metadata):
         """Initializes the ParserNode parser root instance."""
 
-        apache_vars = dict()
-        apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
-        apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
-        apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
-        metadata["apache_vars"] = apache_vars
+        if HAS_APACHECONFIG:
+            apache_vars = dict()
+            apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
+            apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
+            apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
+            metadata["apache_vars"] = apache_vars
 
-        with open(self.parser.loc["root"]) as f:
-            with apacheconfig.make_loader(writable=True,
-                  **apacheconfig.flavors.NATIVE_APACHE) as loader:
-                metadata["ac_ast"] = loader.loads(f.read())
+            with open(self.parser.loc["root"]) as f:
+                with apacheconfig.make_loader(writable=True,
+                      **apacheconfig.flavors.NATIVE_APACHE) as loader:
+                    metadata["ac_ast"] = loader.loads(f.read())
 
         return dualparser.DualBlockNode(
             name=assertions.PASS,
