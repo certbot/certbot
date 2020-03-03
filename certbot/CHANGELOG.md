@@ -13,6 +13,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* Certbot will now renew certificates early if they have been revoked according
+  to OCSP.
 * Fix acme module warnings when response Content-Type includes params (e.g. charset).
 * Fixed issue where webroot plugin would incorrectly raise `Read-only file system` 
   error when creating challenge directories (issue #7165).
