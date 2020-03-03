@@ -73,7 +73,7 @@ class ApacheDirectiveNode(ApacheParserNode):
                     self.metadata == other.metadata)
         return False
 
-    def set_parameters(self, _parameters):
+    def set_parameters(self, _parameters):  # pragma: no cover
         """Sets the parameters for DirectiveNode"""
         return
 
@@ -97,7 +97,8 @@ class ApacheBlockNode(ApacheDirectiveNode):
                     self.metadata == other.metadata)
         return False
 
-    def add_child_block(self, name, parameters=None, position=None):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def add_child_block(self, name, parameters=None, position=None):  # pragma: no cover
         """Adds a new BlockNode to the sequence of children"""
         new_block = ApacheBlockNode(name=assertions.PASS,
                                     parameters=assertions.PASS,
@@ -107,7 +108,8 @@ class ApacheBlockNode(ApacheDirectiveNode):
         self.children += (new_block,)
         return new_block
 
-    def add_child_directive(self, name, parameters=None, position=None):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def add_child_directive(self, name, parameters=None, position=None):  # pragma: no cover
         """Adds a new DirectiveNode to the sequence of children"""
         new_dir = ApacheDirectiveNode(name=assertions.PASS,
                                       parameters=assertions.PASS,
@@ -144,7 +146,8 @@ class ApacheBlockNode(ApacheDirectiveNode):
                                     filepath=assertions.PASS,
                                     metadata=self.metadata)]
 
-    def find_comments(self, comment, exact=False): # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def find_comments(self, comment, exact=False):  # pragma: no cover
         """Recursive search of DirectiveNodes from the sequence of children"""
         return [ApacheCommentNode(comment=assertions.PASS,
                                   ancestor=self,
