@@ -699,7 +699,8 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertFalse(self.test_rc.ocsp_revoked(version))
         self.assertEqual(mock_checker.call_args[0][0], expected_cert_path)
         self.assertEqual(mock_checker.call_args[0][1], expected_chain_path)
-        self.assertTrue(logger.called)
+        log_msg = logger.call_args[0][0]
+        self.assertIn("An error occurred determining the OCSP status", log_msg)
 
     def test_add_time_interval(self):
         from certbot._internal import storage
