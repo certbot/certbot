@@ -906,7 +906,7 @@ class RenewableCert(interfaces.RenewableCert):
                                                                   chain_path)
         except Exception as e:  # pylint: disable=broad-except
             logger.warning(
-                "An error occurred determining the OCSP staus of %s.",
+                "An error occurred determining the OCSP status of %s.",
                 cert_path)
             logger.debug(str(e))
             return False
