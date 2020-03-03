@@ -603,13 +603,14 @@ def test_ocsp_renew(context):
 
     # Test that "certbot renew" does not renew the certificate
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
-    context.certbot(['renew'])
+    context.certbot(['renew'], force_renew=True)
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
     # Revoke the certificate and test that it does renew the certificate
     context.certbot(['revoke', '--cert-name', certname, '--no-delete-after-revoke'])
-    context.certbot(['renew'])
+    context.certbot(['renew'], force_renew=True)
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
+
 
 def test_dry_run_deactivate_authzs(context):
     """Test that Certbot deactivates authorizations when performing a dry run"""
