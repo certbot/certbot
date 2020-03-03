@@ -41,6 +41,7 @@ More details about these changes can be found on our GitHub repo.
 ### Fixed
 
 * Fix collections.abc imports for Python 3.9.
+* Fix Apache plugin to use less restrictive umask for making the challenge directory when a restrictive umask was set when certbot was started.
 
 More details about these changes can be found on our GitHub repo.
 
