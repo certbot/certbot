@@ -13,11 +13,14 @@ from certbot_apache._internal import augeasparser
 
 
 def _get_augeasnode_mock(filepath):
-    return lambda metadata, *args, **kwargs: augeasparser.AugeasBlockNode(
+    """ Helper function for mocking out DualNode instance with an AugeasNode """
+    def augeasnode_mock(metadata):
+        return augeasparser.AugeasBlockNode(
             name=assertions.PASS,
             ancestor=None,
             filepath=filepath,
             metadata=metadata)
+    return augeasnode_mock
 
 class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-methods
     """Test AugeasParserNode using available test configurations"""
@@ -26,7 +29,8 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         super(AugeasParserNodeTest, self).setUp()
 
         with mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.get_parsernode_root") as mock_parsernode:
-            mock_parsernode.side_effect = _get_augeasnode_mock(os.path.join(self.config_path, "apache2.conf"))
+            mock_parsernode.side_effect = _get_augeasnode_mock(
+                                              os.path.join(self.config_path, "apache2.conf"))
             self.config = util.get_apache_configurator(
                 self.config_path, self.vhost_path, self.config_dir, self.work_dir, use_parsernode=True)
         self.vh_truth = util.get_vh_truth(
