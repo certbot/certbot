@@ -10,6 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   determine the OCSP status of certificates.
 * Don't verify the existing certificate in HTTP01Response.simple_verify, for 
   compatibility with the real-world ACME challenge checks.
+* Added support for `$hostname` in nginx `server_name` directive
 
 ### Changed
 
@@ -21,7 +22,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fix Apache plugin to use less restrictive umask for making the challenge directory when a restrictive umask was set when certbot was started.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -30,7 +31,6 @@ More details about these changes can be found on our GitHub repo.
 ### Added
 
 * Added support for Cloudflare's limited-scope API Tokens
-* Added support for `$hostname` in nginx `server_name` directive
 
 ### Changed
 
@@ -43,7 +43,6 @@ More details about these changes can be found on our GitHub repo.
 ### Fixed
 
 * Fix collections.abc imports for Python 3.9.
-* Fix Apache plugin to use less restrictive umask for making the challenge directory when a restrictive umask was set when certbot was started.
 
 More details about these changes can be found on our GitHub repo.
 
