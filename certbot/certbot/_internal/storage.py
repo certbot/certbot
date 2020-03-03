@@ -897,11 +897,13 @@ class RenewableCert(interfaces.RenewableCert):
 
         """
         cert_path = self.version("cert", version)
+        chain_path = self.version("chain", version)
         # While the RevocationChecker should return False if it failed to
         # determine the OCSP status, let's ensure we don't crash Certbot by
         # catching all exceptions here.
         try:
-            return ocsp.RevocationChecker().ocsp_revoked(cert_path)
+            return ocsp.RevocationChecker().ocsp_revoked_by_paths(cert_path,
+                                                                  chain_path)
         except Exception as e:  # pylint: disable=broad-except
             logger.warning(
                 "An error occurred determining the OCSP staus of %s.",
