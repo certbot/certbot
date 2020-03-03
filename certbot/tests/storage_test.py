@@ -672,10 +672,30 @@ class RenewableCertTests(BaseRenewableCertTest):
             errors.CertStorageError,
             self.test_rc._update_link_to, "elephant", 17)
 
-    def test_ocsp_revoked(self):
-        # XXX: This is currently hardcoded to False due to a lack of an
-        #      OCSP server to test against.
-        self.assertFalse(self.test_rc.ocsp_revoked())
+    @mock.patch("certbot.ocsp.RevocationChecker.ocsp_revoked")
+    def test_ocsp_revoked(self, mock_checker):
+        # Write out test files
+        for kind in ALL_FOUR:
+            self._write_out_kind(kind, 1)
+        version = self.test_rc.latest_common_version()
+        expected_cert_path = self.test_rc.version("cert", version)
+
+        # Test with cert revoked
+        mock_checker.return_value = True
+        self.assertTrue(self.test_rc.ocsp_revoked(version))
+        self.assertEqual(mock_checker.call_args[0][0], expected_cert_path)
+
+        # Test with cert not revoked
+        mock_checker.return_value = False
+        self.assertFalse(self.test_rc.ocsp_revoked(version))
+        self.assertEqual(mock_checker.call_args[0][0], expected_cert_path)
+
+        # Test with error
+        mock_checker.side_effect = ValueError
+        with mock.patch("certbot._internal.storage.logger.warning") as logger:
+            self.assertFalse(self.test_rc.ocsp_revoked(version))
+        self.assertEqual(mock_checker.call_args[0][0], expected_cert_path)
+        self.assertTrue(logger.called)
 
     def test_add_time_interval(self):
         from certbot._internal import storage
