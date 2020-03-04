@@ -256,7 +256,7 @@ class OCSPPrefetchTest(util.ApacheTest):
         log_string = "Encountered an issue while trying to backup OCSP dbm file"
         log_string2 = "Encountered an issue when trying to restore OCSP dbm file"
         self.config._ocsp_prefetch = {"mock": "value"}
-        with mock.patch("shutil.copy2", side_effect=IOError):
+        with mock.patch("certbot.compat.filesystem.replace", side_effect=IOError):
             with mock.patch(log_path) as mock_log:
                 self.config.restart()
                 self.assertTrue(mock_log.called)

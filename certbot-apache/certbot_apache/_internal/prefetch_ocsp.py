@@ -32,7 +32,6 @@ restart.
 
 from datetime import datetime
 import logging
-import shutil
 import time
 
 from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
@@ -183,8 +182,7 @@ class OCSPPrefetchMixin(object):
         with DBMHandler(tmp_file, 'w') as db:
             db[key] = value
 
-        shutil.copy2(tmp_file, filename)
-        os.remove(tmp_file)
+        filesystem.replace(tmp_file, filename)
 
     def _ocsp_ttl(self, next_update):
         """Calculates Apache internal TTL for the next OCSP staple
@@ -284,7 +282,7 @@ class OCSPPrefetchMixin(object):
         cache_path = os.path.join(self.config.work_dir, "ocsp", "ocsp_cache.db")
         work_file_path = os.path.join(self.config.work_dir, "ocsp_work", "ocsp_cache.db")
         try:
-            shutil.copy2(work_file_path, cache_path)
+            filesystem.replace(work_file_path, cache_path)
         except IOError:
             logger.debug("Encountered an issue when trying to restore OCSP dbm file")
 
