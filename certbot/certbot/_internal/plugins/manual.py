@@ -109,14 +109,13 @@ permitted by DNS standards.)
 
     def perform(self, achalls):  # pylint: disable=missing-function-docstring
         self._verify_ip_logging_ok()
-        if self.conf('auth-hook'):
-            perform_achall = self._perform_achall_with_script
-        else:
-            perform_achall = self._perform_achall_manually
 
         responses = []
-        for achall in achalls:
-            perform_achall(achall)
+        for index, achall in enumerate(achalls):
+            if self.conf('auth-hook'):
+                self._perform_achall_with_script(index, achalls)
+            else:
+                self._perform_achall_manually(achall)
             responses.append(achall.response(achall.account_key))
         return responses
 
@@ -134,9 +133,12 @@ permitted by DNS standards.)
             else:
                 raise errors.PluginError('Must agree to IP logging to proceed')
 
-    def _perform_achall_with_script(self, achall):
+    def _perform_achall_with_script(self, achall_index, achalls):
+        achall = achalls[achall_index]
         env = dict(CERTBOT_DOMAIN=achall.domain,
-                   CERTBOT_VALIDATION=achall.validation(achall.account_key))
+                   CERTBOT_VALIDATION=achall.validation(achall.account_key),
+                   CERTBOT_ALL_DOMAINS=','.join([achall.domain for achall in achalls]),
+                   CERTBOT_REMAINING_CHALLENGES=str(len(achalls) - achall_index - 1))
         if isinstance(achall.chall, challenges.HTTP01):
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
         else:

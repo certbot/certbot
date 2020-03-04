@@ -72,9 +72,12 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = (
             '{0} -c "from __future__ import print_function;'
-            'from certbot.compat import os;  print(os.environ.get(\'CERTBOT_DOMAIN\'));'
+            'from certbot.compat import os;'
+            'print(os.environ.get(\'CERTBOT_DOMAIN\'));'
             'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'
-            'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));"'
+            'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));'
+            'print(os.environ.get(\'CERTBOT_ALL_DOMAINS\'));'
+            'print(os.environ.get(\'CERTBOT_REMAINING_CHALLENGES\'));"'
             .format(sys.executable))
         dns_expected = '{0}\n{1}\n{2}'.format(
             self.dns_achall.domain, 'notoken',
