@@ -28,8 +28,6 @@ jobs:
           imageName: windows-2019
         win2016:
           imageName: vs2017-win2016
-        win2012r2:
-          imageName: vs2015-win2012r2
     pool:
       vmImage: $(imageName)
     steps:
