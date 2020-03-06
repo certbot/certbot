@@ -136,7 +136,7 @@ permitted by DNS standards.)
     def _perform_achall_with_script(self, achall, achalls):
         env = dict(CERTBOT_DOMAIN=achall.domain,
                    CERTBOT_VALIDATION=achall.validation(achall.account_key),
-                   CERTBOT_ALL_DOMAINS=','.join([one_achall.domain for one_achall in achalls]),
+                   CERTBOT_ALL_DOMAINS=','.join(one_achall.domain for one_achall in achalls),
                    CERTBOT_REMAINING_CHALLENGES=str(len(achalls) - achalls.index(achall) - 1))
         if isinstance(achall.chall, challenges.HTTP01):
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
