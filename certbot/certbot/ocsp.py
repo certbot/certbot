@@ -68,8 +68,19 @@ class RevocationChecker(object):
         :rtype: bool
 
         """
-        cert_path, chain_path = cert.cert_path, cert.chain_path
+        return self.ocsp_revoked_by_paths(cert.cert_path, cert.chain_path)
 
+    def ocsp_revoked_by_paths(self, cert_path, chain_path):
+        # type: (str, str) -> bool
+        """Performs the OCSP revocation check
+
+        :param str cert_path: Certificate filepath
+        :param str chain_path: Certificate chain filepath
+
+        :returns: True if revoked; False if valid or the check failed or cert is expired.
+        :rtype: bool
+
+        """
         if self.broken:
             return False
 

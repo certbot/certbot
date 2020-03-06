@@ -485,43 +485,6 @@ If you want your hook to run only after a successful renewal, use
 
 ``certbot renew --deploy-hook /path/to/deploy-hook-script``
 
-For example, if you have a daemon that does not read its certificates as the
-root user, a deploy hook like this can copy them to the correct location and
-apply appropriate file permissions.
-
-/path/to/deploy-hook-script
-
-.. code-block:: none
-
-   #!/bin/sh
-
-   set -e
-
-   for domain in $RENEWED_DOMAINS; do
-           case $domain in
-           example.com)
-                   daemon_cert_root=/etc/some-daemon/certs
-
-                   # Make sure the certificate and private key files are
-                   # never world readable, even just for an instant while
-                   # we're copying them into daemon_cert_root.
-                   umask 077
-
-                   cp "$RENEWED_LINEAGE/fullchain.pem" "$daemon_cert_root/$domain.cert"
-                   cp "$RENEWED_LINEAGE/privkey.pem" "$daemon_cert_root/$domain.key"
-
-                   # Apply the proper file ownership and permissions for
-                   # the daemon to read its certificate and key.
-                   chown some-daemon "$daemon_cert_root/$domain.cert" \
-                           "$daemon_cert_root/$domain.key"
-                   chmod 400 "$daemon_cert_root/$domain.cert" \
-                           "$daemon_cert_root/$domain.key"
-
-                   service some-daemon restart >/dev/null
-                   ;;
-           esac
-   done
-
 You can also specify hooks by placing files in subdirectories of Certbot's
 configuration directory. Assuming your configuration directory is
 ``/etc/letsencrypt``, any executable files found in
@@ -685,6 +648,17 @@ via -d parameter. Rather than copying, please point
 your (web) server configuration directly to those files (or create
 symlinks). During the renewal_, ``/etc/letsencrypt/live`` is updated
 with the latest necessary files.
+
+For historical reasons, the containing directories are created with
+permissions of ``0700`` meaning that certificates are accessible only
+to servers that run as the root user.  **If you will never downgrade
+to an older version of Certbot**, then you can safely fix this using
+``chmod 0755 /etc/letsencrypt/{live,archive}``.
+
+For servers that drop root privileges before attempting to read the
+private key file, you will also need to use ``chgrp`` and ``chmod
+0640`` to allow the server to read
+``/etc/letsencrypt/live/$domain/privkey.pem``.
 
 .. note:: ``/etc/letsencrypt/archive`` and ``/etc/letsencrypt/keys``
    contain all previous keys and certificates, while
