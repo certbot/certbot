@@ -82,12 +82,12 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
             self.dns_achall.domain, 'notoken',
             self.dns_achall.validation(self.dns_achall.account_key),
-            ','.join([achall.domain for achall in self.achalls]),
+            ','.join(achall.domain for achall in self.achalls),
             len(self.achalls) - self.achalls.index(self.dns_achall) - 1)
         http_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
             self.http_achall.domain, self.http_achall.chall.encode('token'),
             self.http_achall.validation(self.http_achall.account_key),
-            ','.join([achall.domain for achall in self.achalls]),
+            ','.join(achall.domain for achall in self.achalls),
             len(self.achalls) - self.achalls.index(self.http_achall) - 1)
 
         self.assertEqual(
