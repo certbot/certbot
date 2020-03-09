@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added serial number of certificate to the output of `certbot certificates`
 
 ### Changed
 
