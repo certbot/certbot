@@ -31,7 +31,7 @@ COPY certbot-nginx /opt/certbot/src/certbot-nginx/
 COPY certbot-compatibility-test /opt/certbot/src/certbot-compatibility-test/
 COPY tools /opt/certbot/src/tools
 
-RUN VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages -p python2 /opt/certbot/venv && \
+RUN VIRTUALENV_NO_DOWNLOAD=1 virtualenv -p python2 /opt/certbot/venv && \
     /opt/certbot/venv/bin/pip install -U setuptools && \
     /opt/certbot/venv/bin/pip install -U pip
 ENV PATH /opt/certbot/venv/bin:$PATH
