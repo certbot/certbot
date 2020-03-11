@@ -42,11 +42,8 @@ class AutoHSTSTest(util.ApacheTest):
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_autohsts_enable_headers_mod(self, mock_enable, _restart):
-        try:
-            del self.config.parser.modules["headers_module"]
-            del self.config.parser.modules["mod_header.c"]
-        except KeyError:
-            pass
+        self.config.parser.modules.pop("headers_module", None)
+        self.config.parser.modules.pop("mod_header.c", None)
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         self.assertTrue(mock_enable.called)
 

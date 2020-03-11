@@ -544,9 +544,8 @@ class MultipleVhostsTest(util.ApacheTest):
                 call_found = True
         self.assertTrue(call_found)
 
-    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
-    def test_prepare_server_https(self, mock_cfg):
-        mock_cfg.return_value = ""
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.reset_modules")
+    def test_prepare_server_https(self, mock_reset):
         mock_enable = mock.Mock()
         self.config.enable_mod = mock_enable
 
@@ -572,9 +571,8 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.assertEqual(mock_add_dir.call_count, 2)
 
-    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
-    def test_prepare_server_https_named_listen(self, mock_cfg):
-        mock_cfg.return_value = ""
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.reset_modules")
+    def test_prepare_server_https_named_listen(self, mock_reset):
         mock_find = mock.Mock()
         mock_find.return_value = ["test1", "test2", "test3"]
         mock_get = mock.Mock()
@@ -586,7 +584,6 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.get_arg = mock_get
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
         self.config.enable_mod = mock_enable
-        self.config.parser.parse_modules = mock.Mock()
 
         # Test Listen statements with specific ip listeed
         self.config.prepare_server_https("443")
@@ -613,9 +610,8 @@ class MultipleVhostsTest(util.ApacheTest):
         # self.config.prepare_server_https("8080", temp=True)
         # self.assertEqual(self.listens, 0)
 
-    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
-    def test_prepare_server_https_needed_listen(self, mock_cfg):
-        mock_cfg.return_value = ""
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.reset_modules")
+    def test_prepare_server_https_needed_listen(self, mock_reset):
         mock_find = mock.Mock()
         mock_find.return_value = ["test1", "test2"]
         mock_get = mock.Mock()
@@ -627,14 +623,12 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.get_arg = mock_get
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
         self.config.enable_mod = mock_enable
-        self.config.parser.parse_modules = mock.Mock()
 
         self.config.prepare_server_https("443")
         self.assertEqual(mock_add_dir.call_count, 1)
 
-    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
-    def test_prepare_server_https_mixed_listen(self, mock_cfg):
-        mock_cfg.return_value = ""
+    @mock.patch("certbot_apache._internal.parser.ApacheParser.reset_modules")
+    def test_prepare_server_https_mixed_listen(self, mock_reset):
         mock_find = mock.Mock()
         mock_find.return_value = ["test1", "test2"]
         mock_get = mock.Mock()
@@ -646,7 +640,6 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.get_arg = mock_get
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
         self.config.enable_mod = mock_enable
-        self.config.parser.parse_modules = mock.Mock()
 
         # Test Listen statements with specific ip listeed
         self.config.prepare_server_https("443")
@@ -1803,8 +1796,8 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             OpenSSL 1.0.2g  1 Mar 2016
             """
         self.config.parser.modules['ssl_module'] = '/fake/path'
-        with mock.patch("%s.open" % six.moves.builtins.__name__,
-            mock.mock_open(read_data=some_string_contents)) as mock_file:
+        mock_file = mock.mock_open(read_data=some_string_contents)
+        with mock.patch("certbot_apache._internal.configurator.open", mock_file):
             self.assertEqual(self.config.openssl_version(), "1.0.2g")
 
     def test_current_version(self):
@@ -1834,8 +1827,8 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertTrue("Unable to read" in mock_log.call_args[0][0])
 
         contents_missing_openssl = "these contents won't match the regex"
-        with mock.patch("%s.open" % six.moves.builtins.__name__,
-            mock.mock_open(read_data=contents_missing_openssl)) as mock_file:
+        mock_file = mock.mock_open(read_data=contents_missing_openssl)
+        with mock.patch("certbot_apache._internal.configurator.open", mock_file):
             with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
                 # Check that correct logger.warning was printed
                 self.assertEqual(self.config.openssl_version(), None)
