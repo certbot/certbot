@@ -1796,8 +1796,9 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             OpenSSL 1.0.2g  1 Mar 2016
             """
         self.config.parser.modules['ssl_module'] = '/fake/path'
-        mock_file = mock.mock_open(read_data=some_string_contents)
-        with mock.patch("certbot_apache._internal.configurator.open", mock_file):
+        with mock.patch("certbot_apache._internal.configurator."
+            "ApacheConfigurator._open_module_file") as mock_omf:
+            mock_omf.return_value = some_string_contents.encode('UTF-8')
             self.assertEqual(self.config.openssl_version(), "1.0.2g")
 
     def test_current_version(self):
@@ -1827,8 +1828,9 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertTrue("Unable to read" in mock_log.call_args[0][0])
 
         contents_missing_openssl = "these contents won't match the regex"
-        mock_file = mock.mock_open(read_data=contents_missing_openssl)
-        with mock.patch("certbot_apache._internal.configurator.open", mock_file):
+        with mock.patch("certbot_apache._internal.configurator."
+            "ApacheConfigurator._open_module_file") as mock_omf:
+            mock_omf.return_value = contents_missing_openssl.encode('UTF-8')
             with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
                 # Check that correct logger.warning was printed
                 self.assertEqual(self.config.openssl_version(), None)
