@@ -245,16 +245,18 @@ class ApacheConfigurator(common.Installer):
         try:
             ssl_module_location = self.parser.modules['ssl_module']
         except KeyError:
+            logger.warning("Could not find ssl_module; not disabling session tickets.")
             return None
         if not ssl_module_location:
+            logger.warning("Could not find ssl_module; not disabling session tickets.")
             return None
         # Step 2. Grep in the .so for openssl version
         try:
             with open(ssl_module_location) as f:
                 contents = f.read()
         except IOError as error:
-            logger.debug(str(error), exc_info=True)
-            raise errors.PluginError("Unable to open ssl_module file")
+            logger.warning("Unable to read ssl_module file; not disabling session tickets.")
+            return None
         # looks like: OpenSSL 1.0.2s  28 May 2019
         matches = re.findall(r"OpenSSL ([0-9]\.[^ ]+) ", contents)
         if not matches:
