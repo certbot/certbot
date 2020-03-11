@@ -1819,7 +1819,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         self.config._openssl_version = '1.0.2a'
         self.assertTrue('old' in self.config.pick_apache_config())
 
-    def test_openssl_version_errors(self):
+    def test_openssl_version_warns(self):
         self.config._openssl_version = '1.0.2a'
         self.assertEqual(self.config.openssl_version(), '1.0.2a')
 
@@ -1828,7 +1828,10 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         self.assertEqual(self.config.openssl_version(), None)
 
         self.config.parser.modules['ssl_module'] = "/fake/path"
-        self.assertRaises(errors.PluginError, self.config.openssl_version)
+        with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
+            # Check that correct logger.warning was printed
+            self.assertEqual(self.config.openssl_version(), None)
+            self.assertTrue("Unable to read" in mock_log.call_args[0][0])
 
         contents_missing_openssl = "these contents won't match the regex"
         with mock.patch("%s.open" % six.moves.builtins.__name__,
@@ -1836,7 +1839,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
                 # Check that correct logger.warning was printed
                 self.assertEqual(self.config.openssl_version(), None)
-                self.assertTrue("Could not find" in mock_log.call_args[0][0])
+                self.assertTrue("Could not find OpenSSL" in mock_log.call_args[0][0])
 
 
 if __name__ == "__main__":
