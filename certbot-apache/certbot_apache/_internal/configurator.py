@@ -2516,7 +2516,7 @@ class ApacheConfigurator(common.Installer):
         :type _unused_lineage: certbot._internal.storage.RenewableCert
 
         :param domains: List of domains in certificate to enhance
-        :type domains: str
+        :type domains: `list` of `str`
         """
 
         self._autohsts_fetch_state()

@@ -1,5 +1,6 @@
 """Test for certbot_apache._internal.http_01."""
 import unittest
+import errno
 
 import mock
 
@@ -196,6 +197,12 @@ class ApacheHttp01Test(util.ApacheTest):
             self.assertEqual(len(matches), 1)
 
         self.assertTrue(os.path.exists(challenge_dir))
+
+    @mock.patch("certbot_apache._internal.http_01.filesystem.makedirs")
+    def test_failed_makedirs(self, mock_makedirs):
+        mock_makedirs.side_effect = OSError(errno.EACCES, "msg")
+        self.http.add_chall(self.achalls[0])
+        self.assertRaises(errors.PluginError, self.http.perform)
 
     def _test_challenge_conf(self):
         with open(self.http.challenge_conf_pre) as f:

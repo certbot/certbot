@@ -25,7 +25,7 @@ class Header(jose.Header):
 
 class Signature(jose.Signature):
     """ACME-specific Signature. Uses ACME-specific Header for customer fields."""
-    __slots__ = jose.Signature._orig_slots
+    __slots__ = jose.Signature._orig_slots  # pylint: disable=no-member
 
     # TODO: decoder/encoder should accept cls? Otherwise, subclassing
     # JSONObjectWithFields is tricky...

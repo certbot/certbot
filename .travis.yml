@@ -6,7 +6,6 @@ cache:
         - $HOME/.cache/pip
 
 before_script:
-  - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ulimit -n 1024 ; fi'
   # On Travis, the fastest parallelization for integration tests has proved to be 4.
   - 'if [[ "$TOXENV" == *"integration"* ]]; then export PYTEST_ADDOPTS="--numprocesses 4"; fi'
   # Use Travis retry feature for farm tests since they are flaky
@@ -224,24 +223,6 @@ matrix:
           packages:  # don't install nginx and apache
             - libaugeas0
       <<: *extended-test-suite
-    - language: generic
-      env: TOXENV=py27
-      os: osx
-      addons:
-        homebrew:
-          packages:
-            - augeas
-            - python2
-      <<: *extended-test-suite
-    - language: generic
-      env: TOXENV=py3
-      os: osx
-      addons:
-        homebrew:
-          packages:
-            - augeas
-            - python3
-      <<: *extended-test-suite
 
 # container-based infrastructure
 sudo: false
@@ -266,14 +247,12 @@ addons:
 # version of virtualenv. The option "-I" is set so when CERTBOT_NO_PIN is also
 # set, pip updates dependencies it thinks are already satisfied to avoid some
 # problems with its lack of real dependency resolution.
-install: 'tools/pip_install.py -I codecov tox virtualenv'
+install: 'tools/pip_install.py -I tox virtualenv'
 # Most of the time TRAVIS_RETRY is an empty string, and has no effect on the
 # script command. It is set only to `travis_retry` during farm tests, in
 # order to trigger the Travis retry feature, and compensate the inherent
 # flakiness of these specific tests.
 script: '$TRAVIS_RETRY tox'
-
-after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 
 notifications:
   email: false

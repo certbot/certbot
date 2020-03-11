@@ -28,15 +28,13 @@ jobs:
           imageName: windows-2019
         win2016:
           imageName: vs2017-win2016
-        win2012r2:
-          imageName: vs2015-win2012r2
     pool:
       vmImage: $(imageName)
     steps:
-      - powershell: Invoke-WebRequest https://www.python.org/ftp/python/3.8.1/python-3.8.1-amd64-webinstall.exe -OutFile C:\py3-setup.exe
-        displayName: Get Python
-      - script: C:\py3-setup.exe /quiet PrependPath=1 InstallAllUsers=1 Include_launcher=1 InstallLauncherAllUsers=1 Include_test=0 Include_doc=0 Include_dev=1 Include_debug=0 Include_tcltk=0 TargetDir=C:\py3
-        displayName: Install Python
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.8
+          addToPath: true
       - task: DownloadPipelineArtifact@2
         inputs:
           artifact: windows-installer
