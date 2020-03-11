@@ -1,8 +1,7 @@
 """Apache Configurator."""
 # pylint: disable=too-many-lines
 from collections import defaultdict
-# https://github.com/PyCQA/pylint/issues/73
-from distutils.version import LooseVersion  # pylint: disable=no-name-in-module, import-error
+from distutils.version import LooseVersion
 import copy
 import fnmatch
 import logging
