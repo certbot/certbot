@@ -11,6 +11,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   the `manual` plugin: `CERTBOT_REMAINING_CHALLENGES` is equal to the number of challenges
   remaining after the current challenge, `CERTBOT_ALL_DOMAINS` is a comma-separated list
   of all domains challenged for the current certificate.
+* Added TLS-ALPN-01 challenge support in the `acme` library. Support of this
+  challenge in the Certbot client is planned to be added in a future release.
 
 ### Changed
 
