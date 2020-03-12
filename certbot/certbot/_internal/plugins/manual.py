@@ -35,7 +35,11 @@ class Authenticator(common.Plugin):
         'is the validation string, and $CERTBOT_TOKEN is the filename of the '
         'resource requested when performing an HTTP-01 challenge. An additional '
         'cleanup script can also be provided and can use the additional variable '
-        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script.')
+        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script.'
+        'For both authenticator and cleanup script, on HTTP-01 and DNS-01 challenges,'
+        '$CERTBOT_REMAINING_CHALLENGES will be equal to the number of challenges that '
+        'remain after the current one, and $CERTBOT_ALL_DOMAINS contains a comma-separated '
+        'list of all domains that are challenged for the current certificate.')
     _DNS_INSTRUCTIONS = """\
 Please deploy a DNS TXT record under the name
 {domain} with the following value:
@@ -109,14 +113,13 @@ permitted by DNS standards.)
 
     def perform(self, achalls):  # pylint: disable=missing-function-docstring
         self._verify_ip_logging_ok()
-        if self.conf('auth-hook'):
-            perform_achall = self._perform_achall_with_script
-        else:
-            perform_achall = self._perform_achall_manually
 
         responses = []
         for achall in achalls:
-            perform_achall(achall)
+            if self.conf('auth-hook'):
+                self._perform_achall_with_script(achall, achalls)
+            else:
+                self._perform_achall_manually(achall)
             responses.append(achall.response(achall.account_key))
         return responses
 
@@ -134,9 +137,11 @@ permitted by DNS standards.)
             else:
                 raise errors.PluginError('Must agree to IP logging to proceed')
 
-    def _perform_achall_with_script(self, achall):
+    def _perform_achall_with_script(self, achall, achalls):
         env = dict(CERTBOT_DOMAIN=achall.domain,
-                   CERTBOT_VALIDATION=achall.validation(achall.account_key))
+                   CERTBOT_VALIDATION=achall.validation(achall.account_key),
+                   CERTBOT_ALL_DOMAINS=','.join(one_achall.domain for one_achall in achalls),
+                   CERTBOT_REMAINING_CHALLENGES=str(len(achalls) - achalls.index(achall) - 1))
         if isinstance(achall.chall, challenges.HTTP01):
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
         else:
