@@ -266,12 +266,11 @@ class ApacheConfigurator(common.Installer):
             logger.warning("Unable to read ssl_module file; not disabling session tickets.")
             return None
         # looks like: OpenSSL 1.0.2s  28 May 2019
-        contents = contents.decode('UTF-8')
-        matches = re.findall(r"OpenSSL ([0-9]\.[^ ]+) ", contents)
+        matches = re.findall(rb"OpenSSL ([0-9]\.[^ ]+) ", contents)
         if not matches:
             logger.warning("Could not find OpenSSL version; not disabling session tickets.")
             return None
-        self._openssl_version = matches[0]
+        self._openssl_version = matches[0].decode('UTF-8')
         return self._openssl_version
 
     def prepare(self):
