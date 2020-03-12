@@ -1836,6 +1836,10 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                 self.assertEqual(self.config.openssl_version(), None)
                 self.assertTrue("Could not find OpenSSL" in mock_log.call_args[0][0])
 
+    def test_open_module_file(self):
+        mock_open = mock.mock_open(read_data="testing 12 3")
+        with mock.patch("certbot_apache._internal.configurator.open", mock_open):
+            self.assertEqual (self.config._open_module_file("/nonsense/"), "testing 12 3")
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
