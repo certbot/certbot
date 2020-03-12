@@ -7,6 +7,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 * Added serial number of certificate to the output of `certbot certificates`
+* Expose two new environment variables in the authenticator and cleanup scripts used by
+  the `manual` plugin: `CERTBOT_REMAINING_CHALLENGES` is equal to the number of challenges
+  remaining after the current challenge, `CERTBOT_ALL_DOMAINS` is a comma-separated list
+  of all domains challenged for the current certificate.
 
 ### Changed
 

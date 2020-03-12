@@ -280,6 +280,7 @@ pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN
 proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
+dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -291,6 +292,7 @@ dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 .. _external-auth: https://github.com/EnigmaBridge/certbot-external-auth
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
+.. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -736,8 +738,10 @@ the ``cleanup.sh`` script. Additionally certbot will pass relevant environment
 variables to these scripts:
 
 - ``CERTBOT_DOMAIN``: The domain being authenticated
-- ``CERTBOT_VALIDATION``: The validation string (HTTP-01 and DNS-01 only)
+- ``CERTBOT_VALIDATION``: The validation string
 - ``CERTBOT_TOKEN``: Resource name part of the HTTP-01 challenge (HTTP-01 only)
+- ``CERTBOT_REMAINING_CHALLENGES``: Number of challenges remaining after the current challenge
+- ``CERTBOT_ALL_DOMAINS``: A comma-separated list of all domains challenged for the current certificate
 
 Additionally for cleanup:
 
