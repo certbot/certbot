@@ -150,14 +150,14 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
         logger.debug("Serving challenge cert for server name %s", server_name)
         return self.challenge_certs.get(server_name, None)
 
-    def _alpn_selection(self, connection, alpn_protos):
+    def _alpn_selection(self, _connection, alpn_protos):
         """Callback to select alpn protocol."""
         if len(alpn_protos) == 1 and alpn_protos[0] == self.ACME_TLS_1_PROTOCOL:
             logger.debug("Agreed on %s ALPN", self.ACME_TLS_1_PROTOCOL)
             return self.ACME_TLS_1_PROTOCOL
         logger.debug("Cannot agree on ALPN proto. Got: %s", str(alpn_protos))
         # Explicitly close the connection now, by returning an empty string.
-        # See https://www.pyopenssl.org/en/stable/api/ssl.html#OpenSSL.SSL.Context.set_alpn_select_callback
+        # See https://www.pyopenssl.org/en/stable/api/ssl.html#OpenSSL.SSL.Context.set_alpn_select_callback  # pylint: disable=line-too-long
         return b""
 
 
