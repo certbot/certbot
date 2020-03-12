@@ -276,12 +276,15 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
             status = "VALID: {0} days".format(diff.days)
 
     valid_string = "{0} ({1})".format(cert.target_expiry, status)
+    serial = format(crypto_util.get_serial_from_cert(cert.cert_path), 'x')
     certinfo.append("  Certificate Name: {0}\n"
-                    "    Domains: {1}\n"
-                    "    Expiry Date: {2}\n"
-                    "    Certificate Path: {3}\n"
-                    "    Private Key Path: {4}".format(
+                    "    Serial Number: {1}\n"
+                    "    Domains: {2}\n"
+                    "    Expiry Date: {3}\n"
+                    "    Certificate Path: {4}\n"
+                    "    Private Key Path: {5}".format(
                          cert.lineagename,
+                         serial,
                          " ".join(cert.names()),
                          valid_string,
                          cert.fullchain,
