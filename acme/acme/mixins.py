@@ -25,7 +25,7 @@ class VersionedLEACMEMixin(object):
 
 class ResourceMixin(VersionedLEACMEMixin):
     """
-    This mixin allows to generate a RFC8555 compliant JWS payload
+    This mixin generates a RFC8555 compliant JWS payload
     by removing the `resource` field if needed (eg. ACME v2 protocol).
     """
     def to_partial_json(self):
