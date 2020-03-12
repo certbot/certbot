@@ -127,10 +127,6 @@ class BaseDualNetworkedServers(object):
         self.threads = []
 
 
-class BadALPNProtos(Exception):
-    """Error raised when cannot negotiate ALPN protocol."""
-
-
 class TLSALPN01Server(TLSServer, ACMEServerMixin):
     """TLSALPN01 Server."""
 
