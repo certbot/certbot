@@ -160,10 +160,9 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
             logger.debug("Agreed on %s ALPN", self.ACME_TLS_1_PROTOCOL)
             return self.ACME_TLS_1_PROTOCOL
         logger.debug("Cannot agree on ALPN proto. Got: %s", str(alpn_protos))
-        # Explicitly close the connection now because some old versions of OpenSSL do
-        # not immediately terminate the handshake when an exception is raised.
-        connection.close()
-        raise BadALPNProtos("Got: %s" % str(alpn_protos))
+        # Explicitly close the connection now, by returning an empty string.
+        # See https://www.pyopenssl.org/en/stable/api/ssl.html#OpenSSL.SSL.Context.set_alpn_select_callback
+        return b""
 
 
 class HTTPServer(BaseHTTPServer.HTTPServer):
