@@ -70,7 +70,7 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
         from acme.challenges import HTTP01Response
 
         challenge_body = HTTP01Response()
-        challenge_body.le_auto_version = 2
+        challenge_body.le_acme_version = 2
 
         jobj = challenge_body.json_dumps(indent=2).encode()
         # RFC8555 states that challenge requests must have an empty payload.
@@ -85,7 +85,7 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
             resource = fields.Resource(resource_type)
 
         resource_body = _MockResourceResponse()
-        resource_body.le_auto_version = 2
+        resource_body.le_acme_version = 2
 
         jobj = resource_body.json_dumps(indent=2).encode()
         # Having a resource field in JWS payloads for resources is not compliant with RFC8555.

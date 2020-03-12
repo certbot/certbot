@@ -989,7 +989,7 @@ class ClientNetwork(object):
 
         """
         if isinstance(obj, VersionedLEACMEMixin):
-            obj.le_auto_version = acme_version
+            obj.le_acme_version = acme_version
         jobj = obj.json_dumps(indent=2).encode() if obj else b''
         logger.debug('JWS payload:\n%s', jobj)
         kwargs = {

@@ -4,19 +4,19 @@
 class VersionedLEACMEMixin(object):
     """This mixin allows to store the current ACME version as a property"""
     @property
-    def le_auto_version(self):
+    def le_acme_version(self):
         """Define the version of ACME protocol to use"""
-        return getattr(self, '_le_auto_version', 1)
+        return getattr(self, '_le_acme_version', 1)
 
-    @le_auto_version.setter
-    def le_auto_version(self, version):
+    @le_acme_version.setter
+    def le_acme_version(self, version):
         # We need to use object.__setattr__ to not depend on the specific implementation of
         # __setattr__  in current class (eg. jose.TypedJSONObjectWithFields raises AttributeError
         # for any attempt to set an attribute to make objects immutable).
-        object.__setattr__(self, '_le_auto_version', version)
+        object.__setattr__(self, '_le_acme_version', version)
 
     def __setattr__(self, key, value):
-        if key == 'le_auto_version':
+        if key == 'le_acme_version':
             # Required for @property to operate properly. See comment above.
             object.__setattr__(self, key, value)
         else:
@@ -32,7 +32,7 @@ class ResourceMixin(VersionedLEACMEMixin):
         """See josepy.JSONDeserializable.to_partial_json()"""
         if hasattr(super(ResourceMixin, self), 'to_partial_json'):
             jobj = super(ResourceMixin, self).to_partial_json()  # type: ignore
-            if self.le_auto_version == 2:
+            if self.le_acme_version == 2:
                 jobj.pop('resource', None)
             return jobj
 
@@ -48,7 +48,7 @@ class TypeMixin(VersionedLEACMEMixin):
         """See josepy.JSONDeserializable.to_partial_json()"""
         if hasattr(super(TypeMixin, self), 'to_partial_json'):
             jobj = super(TypeMixin, self).to_partial_json()  # type: ignore
-            if self.le_auto_version == 2:
+            if self.le_acme_version == 2:
                 jobj.pop('type', None)
             return jobj
 
