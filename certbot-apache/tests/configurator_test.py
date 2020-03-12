@@ -1784,7 +1784,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                             "hash of {0} when it is updated.".format(one_file))
 
     def test_openssl_version(self):
-        some_string_contents = """
+        some_string_contents = b"""
             SSLOpenSSLConfCmd
             OpenSSL configuration command
             SSLv3 not supported by this version of OpenSSL
@@ -1798,7 +1798,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         self.config.parser.modules['ssl_module'] = '/fake/path'
         with mock.patch("certbot_apache._internal.configurator."
             "ApacheConfigurator._open_module_file") as mock_omf:
-            mock_omf.return_value = some_string_contents.encode('UTF-8')
+            mock_omf.return_value = some_string_contents
             self.assertEqual(self.config.openssl_version(), "1.0.2g")
 
     def test_current_version(self):
@@ -1819,7 +1819,9 @@ class InstallSslOptionsConfTest(util.ApacheTest):
 
         self.config._openssl_version = None
         self.config.parser.modules['ssl_module'] = None
-        self.assertEqual(self.config.openssl_version(), None)
+        with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
+            self.assertEqual(self.config.openssl_version(), None)
+            self.assertTrue("Could not find ssl_module" in mock_log.call_args[0][0])
 
         self.config.parser.modules['ssl_module'] = "/fake/path"
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
@@ -1827,10 +1829,10 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertEqual(self.config.openssl_version(), None)
             self.assertTrue("Unable to read" in mock_log.call_args[0][0])
 
-        contents_missing_openssl = "these contents won't match the regex"
+        contents_missing_openssl = b"these contents won't match the regex"
         with mock.patch("certbot_apache._internal.configurator."
             "ApacheConfigurator._open_module_file") as mock_omf:
-            mock_omf.return_value = contents_missing_openssl.encode('UTF-8')
+            mock_omf.return_value = contents_missing_openssl
             with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
                 # Check that correct logger.warning was printed
                 self.assertEqual(self.config.openssl_version(), None)
