@@ -3,8 +3,6 @@ import unittest
 
 import josepy as jose
 
-from acme.mixins import ResourceMixin
-
 import test_util
 
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
@@ -62,34 +60,6 @@ class JWSTest(unittest.TestCase):
                        url=self.url)
         self.assertEqual(jws.signature.combined.kid, None)
         self.assertEqual(jws.signature.combined.jwk, self.pubkey)
-
-
-class JWSPayloadRFC8555Compliant(unittest.TestCase):
-    """Test for RFC8555 compliance of JWS generated from resources/challenges"""
-    def test_challenge_payload(self):
-        from acme.challenges import HTTP01Response
-
-        challenge_body = HTTP01Response()
-        challenge_body.le_acme_version = 2
-
-        jobj = challenge_body.json_dumps(indent=2).encode()
-        # RFC8555 states that challenge requests must have an empty payload.
-        self.assertEqual(jobj, b'{}')
-
-    def test_resource_payload(self):
-        from acme.messages import ResourceBody
-        from acme import fields
-
-        class _MockResourceResponse(ResourceMixin, ResourceBody):
-            resource_type = 'one-resource'
-            resource = fields.Resource(resource_type)
-
-        resource_body = _MockResourceResponse()
-        resource_body.le_acme_version = 2
-
-        jobj = resource_body.json_dumps(indent=2).encode()
-        # Having a resource field in JWS payloads for resources is not compliant with RFC8555.
-        self.assertTrue(b'resource' not in jobj)
 
 
 if __name__ == '__main__':

@@ -413,5 +413,18 @@ class DNSResponseTest(unittest.TestCase):
             self.msg.check_validation(self.chall, KEY.public_key()))
 
 
+class JWSPayloadRFC8555Compliant(unittest.TestCase):
+    """Test for RFC8555 compliance of JWS generated from resources/challenges"""
+    def test_challenge_payload(self):
+        from acme.challenges import HTTP01Response
+
+        challenge_body = HTTP01Response()
+        challenge_body.le_acme_version = 2
+
+        jobj = challenge_body.json_dumps(indent=2).encode()
+        # RFC8555 states that JWS bodies must not have a resource field.
+        self.assertEqual(jobj, b'{}')
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
