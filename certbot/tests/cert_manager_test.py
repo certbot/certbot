@@ -200,9 +200,11 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertTrue(mock_utility.called)
         shutil.rmtree(empty_tempdir)
 
+    @mock.patch('certbot.crypto_util.get_serial_from_cert')
     @mock.patch('certbot._internal.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
-    def test_report_human_readable(self, mock_revoked):
+    def test_report_human_readable(self, mock_revoked, mock_serial):
         mock_revoked.return_value = None
+        mock_serial.return_value = 1234567890
         from certbot._internal import cert_manager
         import datetime
         import pytz
