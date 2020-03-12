@@ -661,6 +661,25 @@ class ApacheParser(object):
 
         return True
 
+    def standard_path_from_server_root(self, arg):
+        """Ensure paths are consistent and absolute
+
+        :param str arg: Argument of directive
+
+        :returns: Standardized argument path
+        :rtype: str
+        """
+        # Remove beginning and ending quotes
+        arg = arg.strip("'\"")
+
+        # Standardize the include argument based on server root
+        if not arg.startswith("/"):
+            # Normpath will condense ../
+            arg = os.path.normpath(os.path.join(self.root, arg))
+        else:
+            arg = os.path.normpath(arg)
+        return arg
+
     def _get_include_path(self, arg):
         """Converts an Apache Include directive into Augeas path.
 
@@ -681,16 +700,7 @@ class ApacheParser(object):
         # if matchObj.group() != arg:
         #     logger.error("Error: Invalid regexp characters in %s", arg)
         #     return []
-
-        # Remove beginning and ending quotes
-        arg = arg.strip("'\"")
-
-        # Standardize the include argument based on server root
-        if not arg.startswith("/"):
-            # Normpath will condense ../
-            arg = os.path.normpath(os.path.join(self.root, arg))
-        else:
-            arg = os.path.normpath(arg)
+        arg = self.standard_path_from_server_root(arg)
 
         # Attempts to add a transform to the file if one does not already exist
         if os.path.isdir(arg):

@@ -259,6 +259,7 @@ class ApacheConfigurator(common.Installer):
         if not ssl_module_location:
             logger.warning("Could not find ssl_module; not disabling session tickets.")
             return None
+        ssl_module_location = self.parser.standard_path_from_server_root(ssl_module_location)
         # Step 2. Grep in the .so for openssl version
         contents = self._open_module_file(ssl_module_location)
         if not contents:
