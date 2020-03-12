@@ -30,13 +30,13 @@ class ResourceMixin(VersionedLEACMEMixin):
     """
     def to_partial_json(self):
         """See josepy.JSONDeserializable.to_partial_json()"""
-        if hasattr(super(ResourceMixin, self), 'to_partial_json'):
-            jobj = super(ResourceMixin, self).to_partial_json()  # type: ignore
-            if self.le_acme_version == 2:
-                jobj.pop('resource', None)
-            return jobj
+        return _safe_jobj_compliance(super(ResourceMixin, self),
+                                     'to_partial_json', 'resource')
 
-        raise AttributeError('Method to_partial_json() is not implemented.')  # pragma: no cover
+    def fields_to_partial_json(self):
+        """See josepy.JSONDeserializable.fields_to_partial_json()"""
+        return _safe_jobj_compliance(super(ResourceMixin, self),
+                                     'fields_to_partial_json', 'resource')
 
 
 class TypeMixin(VersionedLEACMEMixin):
@@ -46,10 +46,20 @@ class TypeMixin(VersionedLEACMEMixin):
     """
     def to_partial_json(self):
         """See josepy.JSONDeserializable.to_partial_json()"""
-        if hasattr(super(TypeMixin, self), 'to_partial_json'):
-            jobj = super(TypeMixin, self).to_partial_json()  # type: ignore
-            if self.le_acme_version == 2:
-                jobj.pop('type', None)
-            return jobj
+        return _safe_jobj_compliance(super(TypeMixin, self),
+                                     'to_partial_json', 'type')
 
-        raise AttributeError('Method to_partial_json() is not implemented.')  # pragma: no cover
+    def fields_to_partial_json(self):
+        """See josepy.JSONDeserializable.fields_to_partial_json()"""
+        return _safe_jobj_compliance(super(TypeMixin, self),
+                                     'fields_to_partial_json', 'type')
+
+
+def _safe_jobj_compliance(instance, jobj_method, uncompliant_field):
+    if hasattr(instance, jobj_method):
+        jobj = getattr(instance, jobj_method)()
+        if instance.le_acme_version == 2:
+            jobj.pop(uncompliant_field, None)
+        return jobj
+
+    raise AttributeError('Method {0}() is not implemented.'.format(jobj_method))  # pragma: no cover
