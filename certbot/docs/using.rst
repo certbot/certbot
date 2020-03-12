@@ -738,8 +738,10 @@ the ``cleanup.sh`` script. Additionally certbot will pass relevant environment
 variables to these scripts:
 
 - ``CERTBOT_DOMAIN``: The domain being authenticated
-- ``CERTBOT_VALIDATION``: The validation string (HTTP-01 and DNS-01 only)
+- ``CERTBOT_VALIDATION``: The validation string
 - ``CERTBOT_TOKEN``: Resource name part of the HTTP-01 challenge (HTTP-01 only)
+- ``CERTBOT_REMAINING_CHALLENGES``: Number of challenges remaining after the current challenge
+- ``CERTBOT_ALL_DOMAINS``: A comma-separated list of all domains challenged for the current certificate
 
 Additionally for cleanup:
 
