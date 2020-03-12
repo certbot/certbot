@@ -14,11 +14,11 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import DefaultDict
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
+from acme.magic_typing import Union
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -29,8 +29,10 @@ from certbot.plugins import common
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 from certbot.plugins.util import path_surgery
 from certbot_apache._internal import apache_util
+from certbot_apache._internal import assertions
 from certbot_apache._internal import constants
 from certbot_apache._internal import display_ops
+from certbot_apache._internal import dualparser
 from certbot_apache._internal import http_01
 from certbot_apache._internal import obj
 from certbot_apache._internal import parser
@@ -181,6 +183,7 @@ class ApacheConfigurator(common.Installer):
 
         """
         version = kwargs.pop("version", None)
+        use_parsernode = kwargs.pop("use_parsernode", False)
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Add name_server association dict
@@ -196,10 +199,15 @@ class ApacheConfigurator(common.Installer):
         self._autohsts = {}  # type: Dict[str, Dict[str, Union[int, float]]]
         # Reverter save notes
         self.save_notes = ""
-
+        # Should we use ParserNode implementation instead of the old behavior
+        self.USE_PARSERNODE = use_parsernode
+        # Saves the list of file paths that were parsed initially, and
+        # not added to parser tree by self.conf("vhost-root") for example.
+        self.parsed_paths = []  # type: List[str]
         # These will be set in the prepare function
         self._prepared = False
         self.parser = None
+        self.parser_root = None
         self.version = version
         self.vhosts = None
         self.options = copy.deepcopy(self.OS_DEFAULTS)
@@ -248,6 +256,14 @@ class ApacheConfigurator(common.Installer):
         self.recovery_routine()
         # Perform the actual Augeas initialization to be able to react
         self.parser = self.get_parser()
+
+        # Set up ParserNode root
+        pn_meta = {"augeasparser": self.parser,
+                   "augeaspath": self.parser.get_root_augpath(),
+                   "ac_ast": None}
+        if self.USE_PARSERNODE:
+            self.parser_root = self.get_parsernode_root(pn_meta)
+            self.parsed_paths = self.parser_root.parsed_paths()
 
         # Check for errors in parsing files with Augeas
         self.parser.check_parsing_errors("httpd.aug")
@@ -343,6 +359,22 @@ class ApacheConfigurator(common.Installer):
         return parser.ApacheParser(
             self.option("server_root"), self.conf("vhost-root"),
             self.version, configurator=self)
+
+    def get_parsernode_root(self, metadata):
+        """Initializes the ParserNode parser root instance."""
+
+        apache_vars = dict()
+        apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
+        apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
+        apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
+        metadata["apache_vars"] = apache_vars
+
+        return dualparser.DualBlockNode(
+            name=assertions.PASS,
+            ancestor=None,
+            filepath=self.parser.loc["root"],
+            metadata=metadata
+        )
 
     def _wildcard_domain(self, domain):
         """
@@ -760,7 +792,7 @@ class ApacheConfigurator(common.Installer):
 
         return util.get_filtered_names(all_names)
 
-    def get_name_from_ip(self, addr):  # pylint: disable=no-self-use
+    def get_name_from_ip(self, addr):
         """Returns a reverse dns name if available.
 
         :param addr: IP Address
@@ -868,6 +900,29 @@ class ApacheConfigurator(common.Installer):
         return vhost
 
     def get_virtual_hosts(self):
+        """
+        Temporary wrapper for legacy and ParserNode version for
+        get_virtual_hosts. This should be replaced with the ParserNode
+        implementation when ready.
+        """
+
+        v1_vhosts = self.get_virtual_hosts_v1()
+        if self.USE_PARSERNODE:
+            v2_vhosts = self.get_virtual_hosts_v2()
+
+            for v1_vh in v1_vhosts:
+                found = False
+                for v2_vh in v2_vhosts:
+                    if assertions.isEqualVirtualHost(v1_vh, v2_vh):
+                        found = True
+                        break
+                if not found:
+                    raise AssertionError("Equivalent for {} was not found".format(v1_vh.path))
+
+            return v2_vhosts
+        return v1_vhosts
+
+    def get_virtual_hosts_v1(self):
         """Returns list of virtual hosts found in the Apache configuration.
 
         :returns: List of :class:`~certbot_apache._internal.obj.VirtualHost`
@@ -919,6 +974,80 @@ class ApacheConfigurator(common.Installer):
                     internal_paths[realpath].add(internal_path)
                     vhs.append(new_vhost)
         return vhs
+
+    def get_virtual_hosts_v2(self):
+        """Returns list of virtual hosts found in the Apache configuration using
+        ParserNode interface.
+        :returns: List of :class:`~certbot_apache.obj.VirtualHost`
+            objects found in configuration
+        :rtype: list
+        """
+
+        vhs = []
+        vhosts = self.parser_root.find_blocks("VirtualHost", exclude=False)
+        for vhblock in vhosts:
+            vhs.append(self._create_vhost_v2(vhblock))
+        return vhs
+
+    def _create_vhost_v2(self, node):
+        """Used by get_virtual_hosts_v2 to create vhost objects using ParserNode
+        interfaces.
+        :param interfaces.BlockNode node: The BlockNode object of VirtualHost block
+        :returns: newly created vhost
+        :rtype: :class:`~certbot_apache.obj.VirtualHost`
+        """
+        addrs = set()
+        for param in node.parameters:
+            addrs.add(obj.Addr.fromstring(param))
+
+        is_ssl = False
+        # Exclusion to match the behavior in get_virtual_hosts_v2
+        sslengine = node.find_directives("SSLEngine", exclude=False)
+        if sslengine:
+            for directive in sslengine:
+                if directive.parameters[0].lower() == "on":
+                    is_ssl = True
+                    break
+
+        # "SSLEngine on" might be set outside of <VirtualHost>
+        # Treat vhosts with port 443 as ssl vhosts
+        for addr in addrs:
+            if addr.get_port() == "443":
+                is_ssl = True
+
+        enabled = apache_util.included_in_paths(node.filepath, self.parsed_paths)
+
+        macro = False
+        # Check if the VirtualHost is contained in a mod_macro block
+        if node.find_ancestors("Macro"):
+            macro = True
+        vhost = obj.VirtualHost(
+            node.filepath, None, addrs, is_ssl, enabled, modmacro=macro, node=node
+        )
+        self._populate_vhost_names_v2(vhost)
+        return vhost
+
+    def _populate_vhost_names_v2(self, vhost):
+        """Helper function that populates the VirtualHost names.
+        :param host: In progress vhost whose names will be added
+        :type host: :class:`~certbot_apache.obj.VirtualHost`
+        """
+
+        servername_match = vhost.node.find_directives("ServerName",
+                                                      exclude=False)
+        serveralias_match = vhost.node.find_directives("ServerAlias",
+                                                       exclude=False)
+
+        servername = None
+        if servername_match:
+            servername = servername_match[-1].parameters[-1]
+
+        if not vhost.modmacro:
+            for alias in serveralias_match:
+                for serveralias in alias.parameters:
+                    vhost.aliases.add(serveralias)
+            vhost.name = servername
+
 
     def is_name_vhost(self, target_addr):
         """Returns if vhost is a name based vhost
@@ -1597,7 +1726,7 @@ class ApacheConfigurator(common.Installer):
     ######################################################################
     # Enhancements
     ######################################################################
-    def supported_enhancements(self):  # pylint: disable=no-self-use
+    def supported_enhancements(self):
         """Returns currently supported enhancements."""
         return ["redirect", "ensure-http-header", "staple-ocsp"]
 
@@ -1817,7 +1946,7 @@ class ApacheConfigurator(common.Installer):
                     ssl_vhost.filep)
 
     def _verify_no_matching_http_header(self, ssl_vhost, header_substring):
-        """Checks to see if an there is an existing Header directive that
+        """Checks to see if there is an existing Header directive that
         contains the string header_substring.
 
         :param ssl_vhost: vhost to check
@@ -2163,7 +2292,7 @@ class ApacheConfigurator(common.Installer):
             vhost.enabled = True
         return
 
-    def enable_mod(self, mod_name, temp=False):  # pylint: disable=unused-argument
+    def enable_mod(self, mod_name, temp=False):
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -2221,7 +2350,7 @@ class ApacheConfigurator(common.Installer):
                 error = str(err)
             raise errors.MisconfigurationError(error)
 
-    def config_test(self):  # pylint: disable=no-self-use
+    def config_test(self):
         """Check the configuration of Apache for errors.
 
         :raises .errors.MisconfigurationError: If config_test fails
@@ -2271,7 +2400,7 @@ class ApacheConfigurator(common.Installer):
     ###########################################################################
     # Challenges Section
     ###########################################################################
-    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
+    def get_chall_pref(self, unused_domain):
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 
@@ -2342,7 +2471,7 @@ class ApacheConfigurator(common.Installer):
         :type _unused_lineage: certbot._internal.storage.RenewableCert
 
         :param domains: List of domains in certificate to enhance
-        :type domains: str
+        :type domains: `list` of `str`
         """
 
         self._autohsts_fetch_state()

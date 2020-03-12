@@ -6,7 +6,7 @@ import logging
 
 import six
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List
 from certbot import errors
 
 logger = logging.getLogger(__name__)

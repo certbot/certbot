@@ -23,7 +23,7 @@ import six
 import zope.component
 
 from acme import crypto_util as acme_crypto_util
-from acme.magic_typing import IO  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import IO  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -491,3 +491,17 @@ def cert_and_chain_from_fullchain(fullchain_pem):
         crypto.load_certificate(crypto.FILETYPE_PEM, fullchain_pem)).decode()
     chain = fullchain_pem[len(cert):].lstrip()
     return (cert, chain)
+
+def get_serial_from_cert(cert_path):
+    """Retrieve the serial number of a certificate from certificate path
+
+    :param str cert_path: path to a cert in PEM format
+
+    :returns: serial number of the certificate
+    :rtype: int
+    """
+    # pylint: disable=redefined-outer-name
+    with open(cert_path) as f:
+        x509 = crypto.load_certificate(crypto.FILETYPE_PEM,
+                                                           f.read())
+    return x509.get_serial_number()

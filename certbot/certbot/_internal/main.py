@@ -11,7 +11,7 @@ import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -394,7 +394,7 @@ def _find_domains_or_certname(config, installer, question=None):
     :param installer: Installer object
     :type installer: interfaces.IInstaller
 
-    :param `str` question: Overriding dialog question to ask the user if asked
+    :param `str` question: Overriding default question to ask the user if asked
         to choose from domain names.
 
     :returns: Two-part tuple of domains and certname

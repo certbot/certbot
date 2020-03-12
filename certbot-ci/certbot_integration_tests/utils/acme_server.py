@@ -189,7 +189,7 @@ class ACMEServer(object):
         print('=> Finished configuring the HTTP proxy.')
 
     def _launch_process(self, command, cwd=os.getcwd(), env=None):
-        """Launch silently an subprocess OS command"""
+        """Launch silently a subprocess OS command"""
         if not env:
             env = os.environ
         process = subprocess.Popen(command, stdout=self._stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env)

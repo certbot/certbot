@@ -5,18 +5,15 @@ import logging
 import socket
 import threading
 
-from six.moves import BaseHTTPServer  # type: ignore  # pylint: disable=import-error
-from six.moves import http_client  # pylint: disable=import-error
-from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
+from six.moves import BaseHTTPServer  # type: ignore
+from six.moves import http_client
+from six.moves import socketserver  # type: ignore
 
 from acme import challenges
 from acme import crypto_util
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List
 
 logger = logging.getLogger(__name__)
-
-# six.moves.* | pylint: disable=no-member,attribute-defined-outside-init
-# pylint: disable=no-init
 
 
 class TLSServer(socketserver.TCPServer):
@@ -30,7 +27,6 @@ class TLSServer(socketserver.TCPServer):
             self.address_family = socket.AF_INET
         self.certs = kwargs.pop("certs", {})
         self.method = kwargs.pop(
-            # pylint: disable=protected-access
             "method", crypto_util._DEFAULT_SSL_METHOD)
         self.allow_reuse_address = kwargs.pop("allow_reuse_address", True)
         socketserver.TCPServer.__init__(self, *args, **kwargs)
@@ -39,7 +35,7 @@ class TLSServer(socketserver.TCPServer):
         self.socket = crypto_util.SSLSocket(
             self.socket, certs=self.certs, method=self.method)
 
-    def server_bind(self):  # pylint: disable=missing-docstring
+    def server_bind(self):
         self._wrap_sock()
         return socketserver.TCPServer.server_bind(self)
 
@@ -178,7 +174,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.log_message("Incoming request")
         BaseHTTPServer.BaseHTTPRequestHandler.handle(self)
 
-    def do_GET(self):  # pylint: disable=invalid-name,missing-docstring
+    def do_GET(self):  # pylint: disable=invalid-name,missing-function-docstring
         if self.path == "/":
             self.handle_index()
         elif self.path.startswith("/" + challenges.HTTP01.URI_ROOT_PATH):

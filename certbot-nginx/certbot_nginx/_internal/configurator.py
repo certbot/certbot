@@ -1,6 +1,6 @@
 """Nginx Configuration"""
 # https://github.com/PyCQA/pylint/issues/73
-from distutils.version import LooseVersion  # pylint: disable=no-name-in-module, import-error
+from distutils.version import LooseVersion
 import logging
 import re
 import socket
@@ -14,9 +14,9 @@ import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -313,9 +313,6 @@ class NginxConfigurator(common.Installer):
         .. todo:: This should maybe return list if no obvious answer
             is presented.
 
-        .. todo:: The special name "$hostname" corresponds to the machine's
-            hostname. Currently we just ignore this.
-
         :param str target_name: domain name
         :param bool create_if_no_match: If we should create a new vhost from default
             when there is no match found. If we can't choose a default, raise a
@@ -598,6 +595,12 @@ class NginxConfigurator(common.Installer):
         all_names = set()  # type: Set[str]
 
         for vhost in self.parser.get_vhosts():
+            try:
+                vhost.names.remove("$hostname")
+                vhost.names.add(socket.gethostname())
+            except KeyError:
+                pass
+
             all_names.update(vhost.names)
 
             for addr in vhost.addrs:
@@ -693,7 +696,7 @@ class NginxConfigurator(common.Installer):
     ##################################
     # enhancement methods (IInstaller)
     ##################################
-    def supported_enhancements(self):  # pylint: disable=no-self-use
+    def supported_enhancements(self):
         """Returns currently supported enhancements."""
         return ['redirect', 'ensure-http-header', 'staple-ocsp']
 
@@ -912,7 +915,7 @@ class NginxConfigurator(common.Installer):
         """
         nginx_restart(self.conf('ctl'), self.nginx_conf)
 
-    def config_test(self):  # pylint: disable=no-self-use
+    def config_test(self):
         """Check the configuration of Nginx for errors.
 
         :raises .errors.MisconfigurationError: If config_test fails
@@ -1008,7 +1011,7 @@ class NginxConfigurator(common.Installer):
             matches = re.findall(r"built with OpenSSL ([^ ]+) ", text)
             if not matches:
                 logger.warning("NGINX configured with OpenSSL alternatives is not officially"
-                    "supported by Certbot.")
+                    " supported by Certbot.")
                 return ""
         return matches[0]
 
@@ -1087,7 +1090,7 @@ class NginxConfigurator(common.Installer):
     ###########################################################################
     # Challenges Section for IAuthenticator
     ###########################################################################
-    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
+    def get_chall_pref(self, unused_domain):
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 

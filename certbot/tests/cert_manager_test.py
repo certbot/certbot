@@ -200,9 +200,11 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertTrue(mock_utility.called)
         shutil.rmtree(empty_tempdir)
 
+    @mock.patch('certbot.crypto_util.get_serial_from_cert')
     @mock.patch('certbot._internal.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
-    def test_report_human_readable(self, mock_revoked):
+    def test_report_human_readable(self, mock_revoked, mock_serial):
         mock_revoked.return_value = None
+        mock_serial.return_value = 1234567890
         from certbot._internal import cert_manager
         import datetime
         import pytz
@@ -564,13 +566,11 @@ class GetCertnameTest(unittest.TestCase):
     """Tests for certbot._internal.cert_manager."""
 
     def setUp(self):
-        self.get_utility_patch = test_util.patch_get_utility()
-        self.mock_get_utility = self.get_utility_patch.start()
+        get_utility_patch = test_util.patch_get_utility()
+        self.mock_get_utility = get_utility_patch.start()
+        self.addCleanup(get_utility_patch.stop)
         self.config = mock.MagicMock()
         self.config.certname = None
-
-    def tearDown(self):
-        self.get_utility_patch.stop()
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')

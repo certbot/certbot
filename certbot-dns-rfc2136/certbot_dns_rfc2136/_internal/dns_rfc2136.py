@@ -50,7 +50,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials', help='RFC 2136 credentials INI file.')
 
-    def more_info(self):  # pylint: disable=missing-docstring,no-self-use
+    def more_info(self):  # pylint: disable=missing-function-docstring
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'RFC 2136 Dynamic Updates.'
 
@@ -129,7 +129,7 @@ class _RFC2136Client(object):
         rcode = response.rcode()
 
         if rcode == dns.rcode.NOERROR:
-            logger.debug('Successfully added TXT record')
+            logger.debug('Successfully added TXT record %s', record_name)
         else:
             raise errors.PluginError('Received response from server: {0}'
                                      .format(dns.rcode.to_text(rcode)))
@@ -164,7 +164,7 @@ class _RFC2136Client(object):
         rcode = response.rcode()
 
         if rcode == dns.rcode.NOERROR:
-            logger.debug('Successfully deleted TXT record')
+            logger.debug('Successfully deleted TXT record %s', record_name)
         else:
             raise errors.PluginError('Received response from server: {0}'
                                      .format(dns.rcode.to_text(rcode)))

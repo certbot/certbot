@@ -8,10 +8,16 @@ import six
 import zope.interface
 import zope.interface.verify
 
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
+
+try:
+    # Python 3.3+
+    from collections.abc import Mapping
+except ImportError:  # pragma: no cover
+    from collections import Mapping
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +184,7 @@ class PluginEntryPoint(object):
         return "\n".join(lines)
 
 
-class PluginsRegistry(collections.Mapping):
+class PluginsRegistry(Mapping):
     """Plugins registry."""
 
     def __init__(self, plugins):
@@ -189,14 +195,12 @@ class PluginsRegistry(collections.Mapping):
 
         # Pylint checks for super init, but also claims the super
         # has no __init__member
-        # pylint: disable=super-init-not-called
         self._plugins = collections.OrderedDict(sorted(six.iteritems(plugins)))
 
     @classmethod
     def find_all(cls):
         """Find plugins using setuptools entry points."""
         plugins = {}  # type: Dict[str, PluginEntryPoint]
-        # pylint: disable=not-callable
         entry_points = itertools.chain(
             pkg_resources.iter_entry_points(
                 constants.SETUPTOOLS_PLUGINS_ENTRY_POINT),
@@ -206,7 +210,6 @@ class PluginsRegistry(collections.Mapping):
             plugin_ep = PluginEntryPoint(entry_point)
             assert plugin_ep.name not in plugins, (
                 "PREFIX_FREE_DISTRIBUTIONS messed up")
-            # providedBy | pylint: disable=no-member
             if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
                 plugins[plugin_ep.name] = plugin_ep
             else:  # pragma: no cover

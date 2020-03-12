@@ -45,7 +45,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                   'required permissions.)').format(ACCT_URL, PERMISSIONS_URL),
             default=None)
 
-    def more_info(self): # pylint: disable=missing-docstring,no-self-use
+    def more_info(self): # pylint: disable=missing-function-docstring
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'the Google Cloud DNS API.'
 
@@ -148,7 +148,7 @@ class _GoogleClient(object):
                 },
             ]
 
-        changes = self.dns.changes()  # changes | pylint: disable=no-member
+        changes = self.dns.changes()
 
         try:
             request = changes.create(project=self.project_id, managedZone=zone_id, body=data)
@@ -213,7 +213,7 @@ class _GoogleClient(object):
                 },
             ]
 
-        changes = self.dns.changes()  # changes | pylint: disable=no-member
+        changes = self.dns.changes()
 
         try:
             request = changes.create(project=self.project_id, managedZone=zone_id, body=data)
@@ -264,7 +264,7 @@ class _GoogleClient(object):
 
         zone_dns_name_guesses = dns_common.base_domain_name_guesses(domain)
 
-        mz = self.dns.managedZones()  # managedZones | pylint: disable=no-member
+        mz = self.dns.managedZones()
         for zone_name in zone_dns_name_guesses:
             try:
                 request = mz.list(project=self.project_id, dnsName=zone_name + '.')

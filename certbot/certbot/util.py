@@ -5,7 +5,7 @@ import argparse
 import atexit
 import collections
 from collections import OrderedDict
-import distutils.version  # pylint: disable=import-error,no-name-in-module
+import distutils.version
 import errno
 import logging
 import platform
@@ -17,19 +17,17 @@ import sys
 import configargparse
 import six
 
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple
+from acme.magic_typing import Union
 from certbot import errors
 from certbot._internal import constants
 from certbot._internal import lock
 from certbot.compat import filesystem
 from certbot.compat import os
 
-if sys.platform.startswith('linux'):
-    import distro  # pylint: disable=import-error
-    _USE_DISTRO = True
-else:
-    _USE_DISTRO = False
+_USE_DISTRO = sys.platform.startswith('linux')
+if _USE_DISTRO:
+    import distro
 
 logger = logging.getLogger(__name__)
 

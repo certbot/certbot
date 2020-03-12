@@ -13,7 +13,7 @@ import OpenSSL
 import six
 import zope.component
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -192,7 +192,7 @@ def _restore_pref_challs(unused_name, value):
     :returns: converted option value to be stored in the runtime config
     :rtype: `list` of `str`
 
-    :raises errors.Error: if value can't be converted to an bool
+    :raises errors.Error: if value can't be converted to a bool
 
     """
     # If pref_challs has only one element, configobj saves the value
@@ -203,7 +203,7 @@ def _restore_pref_challs(unused_name, value):
 
 
 def _restore_bool(name, value):
-    """Restores an boolean key-value pair from a renewal config file.
+    """Restores a boolean key-value pair from a renewal config file.
 
     :param str name: option name
     :param str value: option value
@@ -211,7 +211,7 @@ def _restore_bool(name, value):
     :returns: converted option value to be stored in the runtime config
     :rtype: bool
 
-    :raises errors.Error: if value can't be converted to an bool
+    :raises errors.Error: if value can't be converted to a bool
 
     """
     lowercase_value = value.lower()
@@ -244,7 +244,7 @@ def _restore_int(name, value):
 
 
 def _restore_str(unused_name, value):
-    """Restores an string key-value pair from a renewal config file.
+    """Restores a string key-value pair from a renewal config file.
 
     :param str unused_name: option name
     :param str value: option value
@@ -471,4 +471,7 @@ def handle_renewal_request(config):
     if renew_failures or parse_failures:
         raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
             len(renew_failures), len(parse_failures)))
+
+    # Windows installer integration tests rely on handle_renewal_request behavior here.
+    # If the text below changes, these tests will need to be updated accordingly.
     logger.debug("no renewal failures")
