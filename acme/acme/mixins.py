@@ -34,7 +34,7 @@ class ResourceMixin(VersionedLEACMEMixin):
                                      'to_partial_json', 'resource')
 
     def fields_to_partial_json(self):
-        """See josepy.JSONDeserializable.fields_to_partial_json()"""
+        """See josepy.JSONObjectWithFields.fields_to_partial_json()"""
         return _safe_jobj_compliance(super(ResourceMixin, self),
                                      'fields_to_partial_json', 'resource')
 
