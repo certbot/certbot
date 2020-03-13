@@ -15,7 +15,6 @@ try:
     import win32file
     import pywintypes
     import winerror
-    # pylint: enable=import-error
 except ImportError:
     POSIX_MODE = True
 else:
