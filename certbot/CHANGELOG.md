@@ -20,7 +20,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* When using an RFC 8555 compliant endpoint, the `acme` library no longer sends the
+  `resource` field in any requests or the `type` field when responding to challenges.
 
 More details about these changes can be found on our GitHub repo.
 

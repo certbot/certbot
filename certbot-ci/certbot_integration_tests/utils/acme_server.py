@@ -131,7 +131,7 @@ class ACMEServer(object):
         environ['PEBBLE_AUTHZREUSE'] = '100'
 
         self._launch_process(
-            [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053'],
+            [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053', '-strict'],
             env=environ)
 
         self._launch_process(

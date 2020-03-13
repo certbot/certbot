@@ -16,6 +16,7 @@ from OpenSSL import crypto
 from acme import crypto_util
 from acme import errors
 from acme import fields
+from acme.mixins import ResourceMixin, TypeMixin
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
             return UnrecognizedChallenge.from_json(jobj)
 
 
-class ChallengeResponse(jose.TypedJSONObjectWithFields):
+class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
     TYPES = {}  # type: dict
