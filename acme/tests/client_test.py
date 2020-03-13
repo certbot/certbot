@@ -15,7 +15,6 @@ from acme import challenges
 from acme import errors
 from acme import jws as acme_jws
 from acme import messages
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 from acme.mixins import VersionedLEACMEMixin
 import messages_test
 import test_util

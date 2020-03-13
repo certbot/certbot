@@ -12,7 +12,6 @@ from six.moves import socketserver  # type: ignore  # pylint: disable=import-err
 from acme import challenges
 from acme import crypto_util
 from acme import errors
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 
 import test_util
 

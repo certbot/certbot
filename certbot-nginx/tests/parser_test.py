@@ -4,7 +4,6 @@ import re
 import shutil
 import unittest
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.compat import os
 from certbot_nginx._internal import nginxparser
