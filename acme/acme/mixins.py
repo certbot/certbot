@@ -50,7 +50,7 @@ class TypeMixin(VersionedLEACMEMixin):
                                      'to_partial_json', 'type')
 
     def fields_to_partial_json(self):
-        """See josepy.JSONDeserializable.fields_to_partial_json()"""
+        """See josepy.JSONObjectWithFields.fields_to_partial_json()"""
         return _safe_jobj_compliance(super(TypeMixin, self),
                                      'fields_to_partial_json', 'type')
 
