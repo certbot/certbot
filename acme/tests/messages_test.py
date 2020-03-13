@@ -477,7 +477,7 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
         new_order.le_acme_version = 2
 
         jobj = new_order.json_dumps(indent=2).encode()
-        # RFC8555 states that challenge requests must have an empty payload.
+        # RFC8555 states that JWS bodies must not have a resource field.
         self.assertEqual(jobj, b'{}')
 
 
