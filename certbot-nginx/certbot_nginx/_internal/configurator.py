@@ -1,5 +1,4 @@
 """Nginx Configuration"""
-# https://github.com/PyCQA/pylint/issues/73
 from distutils.version import LooseVersion
 import logging
 import re
