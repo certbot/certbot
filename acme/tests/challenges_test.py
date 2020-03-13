@@ -422,7 +422,7 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
         challenge_body.le_acme_version = 2
 
         jobj = challenge_body.json_dumps(indent=2).encode()
-        # RFC8555 states that challenge requests must have an empty payload.
+        # RFC8555 states that challenge responses must have an empty payload.
         self.assertEqual(jobj, b'{}')
 
 
