@@ -22,6 +22,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * When using an RFC 8555 compliant endpoint, the `acme` library no longer sends the
   `resource` field in any requests or the `type` field when responding to challenges.
+* Fix nginx plugin crash when non-ASCII configuration file is being read (instead,
+  the user will be warned that UTF-8 must be used).
 
 More details about these changes can be found on our GitHub repo.
 

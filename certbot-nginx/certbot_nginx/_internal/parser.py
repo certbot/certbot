@@ -2,6 +2,7 @@
 import copy
 import functools
 import glob
+import io
 import logging
 import re
 
@@ -205,12 +206,16 @@ class NginxParser(object):
             if item in self.parsed and not override:
                 continue
             try:
-                with open(item) as _file:
+                with io.open(item, "r", encoding="utf-8") as _file:
                     parsed = nginxparser.load(_file)
                     self.parsed[item] = parsed
                     trees.append(parsed)
             except IOError:
                 logger.warning("Could not open file: %s", item)
+            except UnicodeDecodeError:
+                logger.warning("Could not read file: %s due to invalid "
+                               "character. Only UTF-8 encoding is "
+                               "supported.", item)
             except pyparsing.ParseException as err:
                 logger.debug("Could not parse file: %s due to %s", item, err)
         return trees
@@ -414,10 +419,13 @@ class NginxParser(object):
 def _parse_ssl_options(ssl_options):
     if ssl_options is not None:
         try:
-            with open(ssl_options) as _file:
+            with io.open(ssl_options, "r", encoding="utf-8") as _file:
                 return nginxparser.load(_file)
         except IOError:
             logger.warning("Missing NGINX TLS options file: %s", ssl_options)
+        except UnicodeDecodeError:
+            logger.warning("Could not read file: %s due to invalid character. "
+                           "Only UTF-8 encoding is supported.", ssl_options)
         except pyparsing.ParseBaseException as err:
             logger.debug("Could not parse file: %s due to %s", ssl_options, err)
     return []
