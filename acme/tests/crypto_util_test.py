@@ -11,7 +11,6 @@ import six
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
 from acme import errors
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 import test_util
 
 

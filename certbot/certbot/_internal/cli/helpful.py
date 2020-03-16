@@ -11,9 +11,7 @@ import zope.interface
 
 from zope.interface import interfaces as zope_interfaces
 
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Any, Dict, Optional
-# pylint: enable=unused-import, no-name-in-module
+from acme.magic_typing import Any, Dict
 
 from certbot import crypto_util
 from certbot import errors
