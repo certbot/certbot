@@ -242,7 +242,8 @@ class ApacheConfigurator(common.Installer):
         try:
             with open(ssl_module_location, mode="rb") as f:
                 contents = f.read()
-        except IOError:
+        except IOError as error:
+            logger.debug(str(error), exc_info=True)
             return None
         return contents
 
