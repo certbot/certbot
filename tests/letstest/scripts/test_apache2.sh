@@ -68,7 +68,7 @@ elif [ "$OS_TYPE" = "centos" ]; then
 fi
 OPENSSL_VERSION=$(strings "$MOD_SSL_LOCATION" | egrep -o '^OpenSSL ([0-9]\.[^ ]+) ' | tail -c -8)
 APACHE_VERSION=$($APACHE_NAME -v | egrep -o 'Apache/([0-9]\.[^ ]+)' | tail -c -7)
-"$PYTHON_NAME" test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
+"$PYTHON_NAME" tests/letstest/scripts/test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
 if [ $? -ne 0 ] ; then
     FAIL=1
 fi
