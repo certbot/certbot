@@ -58,6 +58,22 @@ if [ $? -ne 0 ] ; then
     FAIL=1
 fi
 
+# Check that ssl_module detection is working on various systems
+if [ "$OS_TYPE" = "ubuntu" ] ; then
+    MOD_SSL_LOCATION="/usr/lib/apache2/modules/mod_ssl.so"
+    APACHE_NAME=apache2
+elif [ "$OS_TYPE" = "centos" ]; then
+    MOD_SSL_LOCATION="/usr/lib/httpd/modules/mod_ssl.so"
+    APACHE_NAME=httpd
+fi
+OPENSSL_VERSION=$(strings "$MOD_SSL_LOCATION" | egrep -o '^OpenSSL ([0-9]\.[^ ]+) ' | tail -c -8)
+APACHE_VERSION=$($APACHE_NAME -v | egrep -o 'Apache/([0-9]\.[^ ]+)' | tail -c -7)
+"$PYTHON_NAME" test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
+if [ $? -ne 0 ] ; then
+    FAIL=1
+fi
+
+
 if [ "$OS_TYPE" = "ubuntu" ] ; then
     export SERVER="$BOULDER_URL"
     "$VENV_PATH/bin/tox" -e apacheconftest
