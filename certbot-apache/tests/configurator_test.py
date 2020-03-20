@@ -1784,6 +1784,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                             "hash of {0} when it is updated.".format(one_file))
 
     def test_openssl_version(self):
+        self.config._openssl_version = None
         some_string_contents = b"""
             SSLOpenSSLConfCmd
             OpenSSL configuration command

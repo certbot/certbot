@@ -199,6 +199,7 @@ class ApacheConfigurator(common.Installer):
         """
         version = kwargs.pop("version", None)
         use_parsernode = kwargs.pop("use_parsernode", False)
+        openssl_version = kwargs.pop("openssl_version", None)
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Add name_server association dict
@@ -224,7 +225,7 @@ class ApacheConfigurator(common.Installer):
         self.parser = None
         self.parser_root = None
         self.version = version
-        self._openssl_version = None
+        self._openssl_version = openssl_version
         self.vhosts = None
         self.options = copy.deepcopy(self.OS_DEFAULTS)
         self._enhance_func = {"redirect": self._enable_redirect,
