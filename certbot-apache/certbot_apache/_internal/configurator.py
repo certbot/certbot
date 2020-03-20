@@ -116,16 +116,20 @@ class ApacheConfigurator(common.Installer):
         """Get a value from options"""
         return self.options.get(key)
 
-    def pick_apache_config(self):
+    def pick_apache_config(self, warn_on_no_mod_ssl=True):
         """
         Pick the appropriate TLS Apache configuration file for current version of Apache and OS.
+
+        :param bool warn_on_no_mod_ssl: True if we should warn if mod_ssl is not found.
+
         :return: the path to the TLS Apache configuration file to use
         :rtype: str
         """
         # Disabling TLS session tickets is supported by Apache 2.4.11+ and OpenSSL 1.0.2l+.
         # So for old versions of Apache we pick a configuration without this option.
-        if self.version < (2, 4, 11) or not self.openssl_version() or\
-            LooseVersion(self.openssl_version()) < LooseVersion('1.0.2l'):
+        openssl_version = self.openssl_version(warn_on_no_mod_ssl)
+        if self.version < (2, 4, 11) or not openssl_version or\
+            LooseVersion(openssl_version) < LooseVersion('1.0.2l'):
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 
@@ -247,15 +251,24 @@ class ApacheConfigurator(common.Installer):
             return None
         return contents
 
-    def openssl_version(self):
-        """Lazily retrieve openssl version"""
+    def openssl_version(self, warn_on_no_mod_ssl=True):
+        """Lazily retrieve openssl version
+
+        :param bool warn_on_no_mod_ssl: `True` if we should warn if mod_ssl is not found. Set to
+            `False` when we know we'll try to enable mod_ssl later. This is currently debian/ubuntu,
+            when called from `prepare`.
+
+        :return: the OpenSSL version as a string, or None.
+        :rtype: str
+        """
         if self._openssl_version:
             return self._openssl_version
         # Step 1. Check for LoadModule directive
         try:
             ssl_module_location = self.parser.modules['ssl_module']
         except KeyError:
-            logger.warning("Could not find ssl_module; not disabling session tickets.")
+            if warn_on_no_mod_ssl:
+                logger.warning("Could not find ssl_module; not disabling session tickets.")
             return None
         if not ssl_module_location:
             logger.warning("Could not find ssl_module; not disabling session tickets.")
@@ -320,8 +333,12 @@ class ApacheConfigurator(common.Installer):
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
 
+        # We may try to enable mod_ssl later. If so, we shouldn't warn if we can't find it now.
+        # This is currently only true for debian/ubuntu.
+        warn_on_no_mod_ssl = not self.option("handle_modules")
         self.install_ssl_options_conf(self.mod_ssl_conf,
-                                      self.updated_mod_ssl_conf_digest)
+                                      self.updated_mod_ssl_conf_digest,
+                                      warn_on_no_mod_ssl)
 
         # Prevent two Apache plugins from modifying a config at once
         try:
@@ -1294,7 +1311,8 @@ class ApacheConfigurator(common.Installer):
                 self.parser.reset_modules() # Reset to load the new ssl_module path
                 # Call again because now we can gate on openssl version
                 self.install_ssl_options_conf(self.mod_ssl_conf,
-                                              self.updated_mod_ssl_conf_digest)
+                                              self.updated_mod_ssl_conf_digest,
+                                              warn_on_no_mod_ssl=True)
 
     def make_vhost_ssl(self, nonssl_vhost):
         """Makes an ssl_vhost version of a nonssl_vhost.
@@ -2508,13 +2526,16 @@ class ApacheConfigurator(common.Installer):
             self.restart()
             self.parser.reset_modules()
 
-    def install_ssl_options_conf(self, options_ssl, options_ssl_digest):
-        """Copy Certbot's SSL options file into the system's config dir if required."""
+    def install_ssl_options_conf(self, options_ssl, options_ssl_digest, warn_on_no_mod_ssl=True):
+        """Copy Certbot's SSL options file into the system's config dir if required.
+
+        :param bool warn_on_no_mod_ssl: True if we should warn if mod_ssl is not found.
+        """
 
         # XXX if we ever try to enforce a local privilege boundary (eg, running
         # certbot for unprivileged users via setuid), this function will need
         # to be modified.
-        apache_config_path = self.pick_apache_config()
+        apache_config_path = self.pick_apache_config(warn_on_no_mod_ssl)
 
         return common.install_version_controlled_file(
             options_ssl, options_ssl_digest, apache_config_path, constants.ALL_SSL_OPTIONS_HASHES)
