@@ -61,7 +61,7 @@ fi
 # Check that ssl_module detection is working on various systems
 if [ "$OS_TYPE" = "ubuntu" ] ; then
     MOD_SSL_LOCATION="/usr/lib/apache2/modules/mod_ssl.so"
-    APACHE_NAME=apache2
+    APACHE_NAME=apache2ctl
 elif [ "$OS_TYPE" = "centos" ]; then
     MOD_SSL_LOCATION="/etc/httpd/modules/mod_ssl.so"
     APACHE_NAME=httpd
