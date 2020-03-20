@@ -1819,6 +1819,11 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         self.assertEqual(self.config.openssl_version(), '1.0.2a')
 
         self.config._openssl_version = None
+        with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
+            self.assertEqual(self.config.openssl_version(), None)
+            self.assertTrue("Could not find ssl_module" in mock_log.call_args[0][0])
+
+        self.config._openssl_version = None
         self.config.parser.modules['ssl_module'] = None
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
             self.assertEqual(self.config.openssl_version(), None)
