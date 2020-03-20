@@ -1308,6 +1308,8 @@ class ApacheConfigurator(common.Installer):
                 self.enable_mod("socache_shmcb", temp=temp)
             if "ssl_module" not in self.parser.modules:
                 self.enable_mod("ssl", temp=temp)
+                # Make sure we're not throwing away any unwritten changes to the config
+                self.parser.ensure_augeas_state()
                 self.parser.aug.load()
                 self.parser.reset_modules() # Reset to load the new ssl_module path
                 # Call again because now we can gate on openssl version
