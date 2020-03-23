@@ -260,7 +260,7 @@ class ApacheConfigurator(common.Installer):
             when called from `prepare`.
 
         :return: the OpenSSL version as a string, or None.
-        :rtype: str
+        :rtype: str or None
         """
         if self._openssl_version:
             return self._openssl_version

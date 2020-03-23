@@ -18,13 +18,13 @@ def main(openssl_version, apache_version):
         # assert SSLSessionTickets not in conf file
         if "SSLSessionTickets" in contents:
             raise Exception("Apache or OpenSSL version is too old, "
-                "but SSLSessionTickets is enabled.")
+                "but SSLSessionTickets is set.")
     else:
         # should be current version
         # assert SSLSessionTickets in conf file
         if "SSLSessionTickets" not in contents:
             raise Exception("Apache and OpenSSL versions are sufficiently new, "
-                "but SSLSessionTickets is not enabled.")
+                "but SSLSessionTickets is not set.")
 
 if __name__ == '__main__':
     main(*sys.argv[1:])
