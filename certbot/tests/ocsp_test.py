@@ -162,11 +162,11 @@ class OSCPTestCryptography(unittest.TestCase):
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.ocsp._check_ocsp_cryptography')
-    def test_ensure_cryptography_toggled(self, mock_revoke, mock_determine):
+    def test_ensure_cryptography_toggled(self, mock_check, mock_determine):
         mock_determine.return_value = ('http://example.com', 'example.com')
         self.checker.ocsp_revoked(self.cert_obj)
 
-        mock_revoke.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com')
+        mock_check.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com', 10)
 
     def test_revoke(self):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
