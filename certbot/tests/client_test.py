@@ -614,12 +614,12 @@ class EnhanceConfigTest(ClientTestCommon):
 
     @mock.patch("certbot._internal.client.enhancements.ask")
     @mock.patch("certbot._internal.client.logger")
-    def test_warn_redirect(self, mock_log, mock_ask):
+    def test_no_warn_redirect(self, mock_log, mock_ask):
         self.config.redirect = None
         mock_ask.return_value = False
         self._test_with_already_existing()
-        self.assertTrue(mock_log.warning.called)
-        self.assertTrue("disable" in mock_log.warning.call_args[0][0])
+        self.assertFalse(mock_log.warning.called)
+        self.assertFalse(mock_ask.called)
 
     def test_no_ask_hsts(self):
         self.config.hsts = True
@@ -669,12 +669,6 @@ class EnhanceConfigTest(ClientTestCommon):
         installer.rollback_checkpoints.side_effect = errors.ReverterError
         self.client.installer = installer
         self._test_error_with_rollback()
-
-    @mock.patch("certbot._internal.client.enhancements.ask")
-    def test_ask(self, mock_ask):
-        self.config.redirect = None
-        mock_ask.return_value = True
-        self._test_with_all_supported()
 
     def _test_error_with_rollback(self):
         self._test_error()

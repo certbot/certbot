@@ -927,7 +927,7 @@ def enhance(config, plugins):
         config.chain_path = lineage.chain_path
     if oldstyle_enh:
         le_client = _init_le_client(config, authenticator=None, installer=installer)
-        le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
+        le_client.enhance_config(domains, config.chain_path)
     if enhancements.are_requested(config):
         enhancements.enable(lineage, domains, installer, config)
 
