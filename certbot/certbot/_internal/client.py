@@ -28,7 +28,6 @@ from certbot._internal import constants
 from certbot._internal import eff
 from certbot._internal import error_handler
 from certbot._internal import storage
-from certbot._internal.display import enhancements
 from certbot._internal.plugins import selection as plugin_selection
 from certbot.compat import os
 from certbot.display import ops as display_ops
