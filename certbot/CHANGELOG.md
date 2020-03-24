@@ -25,6 +25,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `resource` field in any requests or the `type` field when responding to challenges.
 * Fix nginx plugin crash when non-ASCII configuration file is being read (instead,
   the user will be warned that UTF-8 must be used).
+* Fix hanging OCSP queries during revocation checking - added a 10 second timeout.
 
 More details about these changes can be found on our GitHub repo.
 
