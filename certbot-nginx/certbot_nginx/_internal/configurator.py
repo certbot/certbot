@@ -340,8 +340,10 @@ class NginxConfigurator(common.Installer):
                              "nginx configuration for every domain on your certificate: "
                              "https://nginx.org/en/docs/http/server_names.html") % (target_name))
         # Note: if we are enhancing with ocsp, vhost should already be ssl.
+        logger.info("VHosts matching  the given domain name: %s ", vhosts)
         for vhost in vhosts:
             if not vhost.ssl:
+                logger.info("Found non-ssl vhost: %s ", vhost)
                 self._make_server_ssl(vhost)
 
         return vhosts
@@ -657,32 +659,40 @@ class NginxConfigurator(common.Installer):
         if not vhost.addrs:
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
             self.parser.add_server_directives(vhost, listen_block)
+        
+        # Appending 'ssl' to existing listen block as we should not loose anything from the existing address
+        logger.info("Existing Listen directive set: %s", vhost.addrs)
+        listen_directive_existing = vhost.addrs.pop()
+        logger.info("Existing Listen directive: %s", listen_directive_existing)
+        old_port = listen_directive_existing.get_port()
 
-        if vhost.ipv6_enabled():
-            ipv6_block = ['\n    ',
-                          'listen',
-                          ' ',
-                          '[::]:{0}'.format(https_port),
-                          ' ',
-                          'ssl']
-            if not ipv6info[1]:
-                # ipv6only=on is absent in global config
-                ipv6_block.append(' ')
-                ipv6_block.append('ipv6only=on')
+		# Replacing '80' port with '443' as we should not put ssl on '80' port directly & should use '443' instead
+        if old_port == "80":
+            listen_directive_existing = obj.Addr.fromstring(listen_directive_existing.to_string().replace("80", "443"))
+            logger.info("Existing Listen directive's 80 is replaed with 443: %s"
+                        , listen_directive_existing)
+        
+        listen_directive_to_update = [[
+            '\n    ',
+            'listen',
+            ' ',
+            '{0}'.format(listen_directive_existing),
+            ' ',
+            'ssl',
+            ]]
+        self.parser.update_or_add_server_directives(vhost,
+                                         listen_directive_to_update)
 
-        if vhost.ipv4_enabled():
-            ipv4_block = ['\n    ',
-                          'listen',
-                          ' ',
-                          '{0}'.format(https_port),
-                          ' ',
-                          'ssl']
-
+        # for listendir in vhost.addrs:
+        #    logger.info("ListeDir: %s", listendir)
+        #    listen_directive_to_update = [['\n    ', 'listen', ' ', '{0}'.format(listendir), ' ', 'ssl']]
+        #    logger.info("Listen Directive to update: %s", listen_directive_to_update)
+        #    self.parser.update_or_add_server_directives(vhost,
+        #                                 listen_directive_to_update)
+        #    logger.info("updated vhost in loop: %s", vhost)
+         
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-
         ssl_block = ([
-            ipv6_block,
-            ipv4_block,
             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
             ['\n    ', 'include', ' ', self.mod_ssl_conf],
