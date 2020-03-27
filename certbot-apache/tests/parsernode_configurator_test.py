@@ -5,7 +5,14 @@ import mock
 
 import util
 
+try:
+    import apacheconfig
+    HAS_APACHECONFIG = True
+except ImportError:  # pragma: no cover
+    HAS_APACHECONFIG = False
 
+
+@unittest.skipIf(not HAS_APACHECONFIG, reason='Tests require apacheconfig dependency')
 class ConfiguratorParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-methods
     """Test AugeasParserNode using available test configurations"""
 

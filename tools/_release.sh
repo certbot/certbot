@@ -59,7 +59,7 @@ mv "dist.$version" "dist.$version.$(date +%s).bak" || true
 git tag --delete "$tag" || true
 
 tmpvenv=$(mktemp -d)
-VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages -p python2 $tmpvenv
+VIRTUALENV_NO_DOWNLOAD=1 virtualenv -p python2 $tmpvenv
 . $tmpvenv/bin/activate
 # update setuptools/pip just like in other places in the repo
 pip install -U setuptools
@@ -160,7 +160,7 @@ cd "dist.$version"
 python -m SimpleHTTPServer $PORT &
 # cd .. is NOT done on purpose: we make sure that all subpackages are
 # installed from local PyPI rather than current directory (repo root)
-VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages ../venv
+VIRTUALENV_NO_DOWNLOAD=1 virtualenv ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip

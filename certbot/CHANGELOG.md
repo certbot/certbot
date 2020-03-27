@@ -2,25 +2,55 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.3.0 - master
+## 1.4.0 - master
 
 ### Added
 
-* Added certbot.ocsp Certbot's API. The certbot.ocsp module can be used to 
-  determine the OCSP status of certificates.
-* Don't verify the existing certificate in HTTP01Response.simple_verify, for 
-  compatibility with the real-world ACME challenge checks.
+* Turn off session tickets for apache plugin by default when appropriate.
+* Added serial number of certificate to the output of `certbot certificates`
+* Expose two new environment variables in the authenticator and cleanup scripts used by
+  the `manual` plugin: `CERTBOT_REMAINING_CHALLENGES` is equal to the number of challenges
+  remaining after the current challenge, `CERTBOT_ALL_DOMAINS` is a comma-separated list
+  of all domains challenged for the current certificate.
+* Added TLS-ALPN-01 challenge support in the `acme` library. Support of this
+  challenge in the Certbot client is planned to be added in a future release.
 * Added support for \_acme-challenge as a DNS zone apex.
 
 ### Changed
 
+*
+
+### Fixed
+
+* When using an RFC 8555 compliant endpoint, the `acme` library no longer sends the
+  `resource` field in any requests or the `type` field when responding to challenges.
+* Fix nginx plugin crash when non-ASCII configuration file is being read (instead,
+  the user will be warned that UTF-8 must be used).
+* Fix hanging OCSP queries during revocation checking - added a 10 second timeout.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.3.0 - 2020-03-03
+
+### Added
+
+* Added certbot.ocsp Certbot's API. The certbot.ocsp module can be used to
+  determine the OCSP status of certificates.
+* Don't verify the existing certificate in HTTP01Response.simple_verify, for
+  compatibility with the real-world ACME challenge checks.
+* Added support for `$hostname` in nginx `server_name` directive
+
+### Changed
+
+* Certbot will now renew certificates early if they have been revoked according
+  to OCSP.
 * Fix acme module warnings when response Content-Type includes params (e.g. charset).
-* Fixed issue where webroot plugin would incorrectly raise `Read-only file system` 
+* Fixed issue where webroot plugin would incorrectly raise `Read-only file system`
   error when creating challenge directories (issue #7165).
 
 ### Fixed
 
-*
+* Fix Apache plugin to use less restrictive umask for making the challenge directory when a restrictive umask was set when certbot was started.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -29,7 +59,6 @@ More details about these changes can be found on our GitHub repo.
 ### Added
 
 * Added support for Cloudflare's limited-scope API Tokens
-* Added support for `$hostname` in nginx `server_name` directive
 
 ### Changed
 

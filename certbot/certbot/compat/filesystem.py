@@ -6,8 +6,6 @@ import os  # pylint: disable=os-module-forbidden
 import stat
 
 from acme.magic_typing import List
-from acme.magic_typing import Tuple  # pylint: disable=unused-import
-from acme.magic_typing import Union  # pylint: disable=unused-import
 
 try:
     import ntsecuritycon
@@ -17,7 +15,6 @@ try:
     import win32file
     import pywintypes
     import winerror
-    # pylint: enable=import-error
 except ImportError:
     POSIX_MODE = True
 else:

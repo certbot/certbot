@@ -192,9 +192,6 @@ class PluginsRegistry(Mapping):
         # This prevents deadlock caused by plugins acquiring a lock
         # and ensures at least one concurrent Certbot instance will run
         # successfully.
-
-        # Pylint checks for super init, but also claims the super
-        # has no __init__member
         self._plugins = collections.OrderedDict(sorted(six.iteritems(plugins)))
 
     @classmethod

@@ -126,7 +126,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
                 return mod_val
             return ""
         mock_get.side_effect = mock_get_cfg
-        self.config.parser.modules = set()
+        self.config.parser.modules = {}
         self.config.parser.variables = {}
 
         with mock.patch("certbot.util.get_os_info") as mock_osi:

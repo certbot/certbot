@@ -131,7 +131,7 @@ class ACMEServer(object):
         environ['PEBBLE_AUTHZREUSE'] = '100'
 
         self._launch_process(
-            [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053'],
+            [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053', '-strict'],
             env=environ)
 
         self._launch_process(
@@ -170,7 +170,7 @@ class ACMEServer(object):
 
         # Wait for the ACME CA server to be up.
         print('=> Waiting for boulder instance to respond...')
-        misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=240)
+        misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=300)
 
         # Configure challtestsrv to answer any A record request with ip of the docker host.
         response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),

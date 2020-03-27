@@ -247,8 +247,8 @@ built-in Standalone authenticator, implement just one interface.
 There are also `~certbot.interfaces.IDisplay` plugins,
 which can change how prompts are displayed to a user.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
+.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/plugins/common.py#L45
 
 
 Authenticators

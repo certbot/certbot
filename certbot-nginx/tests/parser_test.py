@@ -4,7 +4,6 @@ import re
 import shutil
 import unittest
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.compat import os
 from certbot_nginx._internal import nginxparser
@@ -482,7 +481,43 @@ class NginxParserTest(util.NginxTest):
                 called = True
         self.assertTrue(called)
 
+    def test_valid_unicode_characters(self):
+        nparser = parser.NginxParser(self.config_path)
+        path = nparser.abs_path('valid_unicode_comments.conf')
+        parsed = nparser._parse_files(path)  # pylint: disable=protected-access
+        self.assertEqual(['server'], parsed[0][2][0])
+        self.assertEqual(['listen', '80'], parsed[0][2][1][3])
 
+    def test_invalid_unicode_characters(self):
+        with self.assertLogs() as log:
+            nparser = parser.NginxParser(self.config_path)
+            path = nparser.abs_path('invalid_unicode_comments.conf')
+            parsed = nparser._parse_files(path)  # pylint: disable=protected-access
+
+        self.assertEqual([], parsed)
+        self.assertTrue(any(
+            ('invalid character' in output) and ('UTF-8' in output)
+            for output in log.output
+        ))
+
+    def test_valid_unicode_characters_in_ssl_options(self):
+        nparser = parser.NginxParser(self.config_path)
+        path = nparser.abs_path('valid_unicode_comments.conf')
+        parsed = parser._parse_ssl_options(path)  # pylint: disable=protected-access
+        self.assertEqual(['server'], parsed[2][0])
+        self.assertEqual(['listen', '80'], parsed[2][1][3])
+
+    def test_invalid_unicode_characters_in_ssl_options(self):
+        with self.assertLogs() as log:
+            nparser = parser.NginxParser(self.config_path)
+            path = nparser.abs_path('invalid_unicode_comments.conf')
+            parsed = parser._parse_ssl_options(path)  # pylint: disable=protected-access
+
+        self.assertEqual([], parsed)
+        self.assertTrue(any(
+            ('invalid character' in output) and ('UTF-8' in output)
+            for output in log.output
+        ))
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

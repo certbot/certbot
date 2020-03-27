@@ -39,7 +39,7 @@ pytz==2012rc0
 google-api-python-client==1.5.5
 
 # Our setup.py constraints
-apacheconfig==0.3.1
+apacheconfig==0.3.2
 cloudflare==1.5.1
 cryptography==1.2.3
 parsedatetime==1.3

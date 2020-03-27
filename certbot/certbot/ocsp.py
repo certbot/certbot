@@ -68,8 +68,20 @@ class RevocationChecker(object):
         :rtype: bool
 
         """
-        cert_path, chain_path = cert.cert_path, cert.chain_path
+        return self.ocsp_revoked_by_paths(cert.cert_path, cert.chain_path)
 
+    def ocsp_revoked_by_paths(self, cert_path, chain_path, timeout=10):
+        # type: (str, str, int) -> bool
+        """Performs the OCSP revocation check
+
+        :param str cert_path: Certificate filepath
+        :param str chain_path: Certificate chain
+        :param int timeout: Timeout (in seconds) for the OCSP query
+
+        :returns: True if revoked; False if valid or the check failed or cert is expired.
+        :rtype: bool
+
+        """
         if self.broken:
             return False
 
@@ -85,11 +97,11 @@ class RevocationChecker(object):
             return False
 
         if self.use_openssl_binary:
-            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url)
-        return _check_ocsp_cryptography(cert_path, chain_path, url)
+            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, timeout)
+        return _check_ocsp_cryptography(cert_path, chain_path, url, timeout)
 
-    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url):
-        # type: (str, str, str, str) -> bool
+    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, timeout):
+        # type: (str, str, str, str, int) -> bool
         # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
         cmd = ["openssl", "ocsp",
                "-no_nonce",
@@ -99,6 +111,7 @@ class RevocationChecker(object):
                "-CAfile", chain_path,
                "-verify_other", chain_path,
                "-trust_other",
+               "-timeout", str(timeout),
                "-header"] + self.host_args(host)
         logger.debug("Querying OCSP for %s", cert_path)
         logger.debug(" ".join(cmd))
@@ -141,8 +154,8 @@ def _determine_ocsp_server(cert_path):
     return None, None
 
 
-def _check_ocsp_cryptography(cert_path, chain_path, url):
-    # type: (str, str, str) -> bool
+def _check_ocsp_cryptography(cert_path, chain_path, url, timeout):
+    # type: (str, str, str, int) -> bool
     # Retrieve OCSP response
     with open(chain_path, 'rb') as file_handler:
         issuer = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
@@ -154,7 +167,8 @@ def _check_ocsp_cryptography(cert_path, chain_path, url):
     request_binary = request.public_bytes(serialization.Encoding.DER)
     try:
         response = requests.post(url, data=request_binary,
-                                 headers={'Content-Type': 'application/ocsp-request'})
+                                 headers={'Content-Type': 'application/ocsp-request'},
+                                 timeout=timeout)
     except requests.exceptions.RequestException:
         logger.info("OCSP check failed for %s (are we offline?)", cert_path, exc_info=True)
         return False
