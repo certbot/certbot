@@ -1633,7 +1633,10 @@ class ApacheConfigurator(common.Installer):
         for addr in ssl_addr_p:
             old_addr = obj.Addr.fromstring(
                 str(self.parser.get_arg(addr)))
-            ssl_addr = old_addr.get_addr_obj("443")
+            old_port = old_addr.get_port()
+            ssl_addr = old_addr
+            if old_port == "80":
+                old_addr.get_addr_obj("443")
             self.parser.aug.set(addr, str(ssl_addr))
             ssl_addrs.add(ssl_addr)
 
