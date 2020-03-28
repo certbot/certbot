@@ -997,8 +997,26 @@ class ApacheConfigurator(common.Installer):
                 if not found:
                     raise AssertionError("Equivalent for {} was not found".format(v1_vh.path))
 
-            return v2_vhosts
-        return v1_vhosts
+            return self.get_modified_vhosts(v2_vhosts)
+        return self.get_modified_vhosts(v1_vhosts)
+
+    def get_modified_vhosts(self, vhosts):
+        """
+        Consider all virtual hosts ssl except with addr *:80
+        :param List of :class:`~certbot_apache._internal.obj.VirtualHost`
+        :return: list
+        """
+        m_vhosts = []
+        if vhosts:
+            for vhost in vhosts:
+                http_port = False
+                for addr in vhost.addrs:
+                    if addr.get_port() == "80":
+                        http_port = True
+                if not vhost.ssl and not http_port:
+                    vhost.ssl = True
+                m_vhosts.append(vhost)
+        return m_vhosts
 
     def get_virtual_hosts_v1(self):
         """Returns list of virtual hosts found in the Apache configuration.
@@ -1633,10 +1651,7 @@ class ApacheConfigurator(common.Installer):
         for addr in ssl_addr_p:
             old_addr = obj.Addr.fromstring(
                 str(self.parser.get_arg(addr)))
-            old_port = old_addr.get_port()
-            ssl_addr = old_addr
-            if old_port == "80":
-                ssl_addr = old_addr.get_addr_obj("443")
+            ssl_addr = old_addr.get_addr_obj("443")
             self.parser.aug.set(addr, str(ssl_addr))
             ssl_addrs.add(ssl_addr)
 
