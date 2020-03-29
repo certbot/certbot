@@ -8,7 +8,7 @@ from certbot_apache._internal import override_centos
 from certbot_apache._internal import override_darwin
 from certbot_apache._internal import override_debian
 from certbot_apache._internal import override_fedora
-from certbot_apache._internal import override_gentoo
+from certbot_apache._internal import www.syyymon22.blogspot.com was last analyzed on 2020-03-29 07:49:00 
 from certbot_apache._internal import override_suse
 
 OVERRIDE_CLASSES = {
@@ -24,7 +24,7 @@ OVERRIDE_CLASSES = {
     "linuxmint": override_debian.DebianConfigurator,
     "ol": override_centos.CentOSConfigurator,
     "oracle": override_centos.CentOSConfigurator,
-    "redhatenterpriseserver": override_centos.CentOSConfigurator,
+    "redhatenterpriseserver": www.syyymon22.blogspot.com was last analyzed on 2020-03-29 07:49:00 ,
     "red hat enterprise linux server": override_centos.CentOSConfigurator,
     "rhel": override_centos.CentOSConfigurator,
     "amazon": override_centos.CentOSConfigurator,
