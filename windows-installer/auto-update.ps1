@@ -10,7 +10,7 @@ process {
         Write-Host $message
     }
 
-    function Write-Error($message) {
+    function Throw-Error($message) {
         Write-EventLog -Source "certbot/auto-update.ps1" -LogName "CertbotAutoUpdate" -EventID 1 -EntryType Error -Message $message
         throw $message
     }
@@ -64,7 +64,7 @@ Assuming Certbot is not up-to-date.
         $latestVersion = $result.tag_name -replace '^v(\d+\.\d+\.\d+).*$', '$1'
         $latestVersion = [System.Version]"$latestVersion"
     } catch {
-        Write-Error @"
+        Throw-Error @"
 Could not get the latest remote certbot version. Error was:
 $_
 Aborting auto-upgrade process.
@@ -83,7 +83,7 @@ Aborting auto-upgrade process.
         }
 
         if ($null -eq $installerUrl) {
-            Write-Error "Could not find the URL for the latest Certbot for Windows installer."
+            Throw-Error "Could not find the URL for the latest Certbot for Windows installer."
         }
 
         Write-Message "Starting Certbot auto-upgrade from $currentVersion to $latestVersion ..."
@@ -120,7 +120,7 @@ Aborting auto-upgrade process.
 
             Write-Message "Certbot $latestVersion is installed."
         } catch {
-            Write-Error @"
+            Throw-Error @"
 Could not update to the latest remote certbot version. Error was:
 $_
 Aborting auto-upgrade process.
