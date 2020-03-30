@@ -1,3 +1,4 @@
+#Requires -Version 5.0
 param(
     [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
     [string]

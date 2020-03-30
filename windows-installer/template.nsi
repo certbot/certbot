@@ -19,6 +19,17 @@ InstallDir "$PROGRAMFILES\Certbot"
  
 SetCompressor lzma
 
+Function .onInit
+  ; Check that Powershell is at least 5.0.
+  nsExec::ExecToStack `powershell -ExecutionPolicy RemoteSigned -Command "Write-Host -NoNewline (Get-Host | Select-Object Version).Version.CompareTo((New-Object -TypeName System.Version -ArgumentList '5.0'))"`
+  Pop $0
+  Pop $1
+  StrCmp $1 "-1" 0 powershellok
+    MessageBox MB_OK|MB_ICONSTOP "Certbot requires Powershell 5.0+ to work.$\r$\nPlease check the following link to know how to upgrade your system:$\r$\nhttps://docs.microsoft.com/powershell/scripting/install/installing-powershell"
+    Abort
+  powershellok:
+FunctionEnd
+
 [% block modernui %]
 ; Modern UI installer stuff 
 !include "MUI2.nsh"
@@ -131,7 +142,7 @@ Section "!${PRODUCT_NAME}" sec_app
 
   ; Execute ps script to create the certbot renew & auto-update task
   DetailPrint "Setting up certbot renew & auto-update scheduled task"
-  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\tasks-up.ps1" -InstallDir "$INSTDIR"'
+  nsExec::ExecToLog 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\tasks-up.ps1" -InstallDir "$INSTDIR"'
 
   ; Check if we need to reboot
   IfRebootFlag 0 noreboot
@@ -146,7 +157,7 @@ Section "Uninstall"
   SetShellVarContext all
 
   ; Execute ps script to remove the certbot renew & auto-update task, then delete scripts
-  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\tasks-down.ps1"'
+  nsExec::ExecToLog 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\tasks-down.ps1"'
   Delete "$INSTDIR\tasks-down.ps1"
   Delete "$INSTDIR\tasks-up.ps1"
   Delete "$INSTDIR\auto-update.ps1"
