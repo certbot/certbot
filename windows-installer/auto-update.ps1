@@ -54,7 +54,7 @@ An error occured while fetching the current local certbot version:
 $_
 Assuming Certbot is not up-to-date.
 "@ "Warning"
-        $currentVersion = "0.0.0"
+        $currentVersion = [System.Version]"0.0.0"
     }
 
     # Get latest remote certbot version
