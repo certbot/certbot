@@ -321,12 +321,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "--redirect", action="store_true", dest="redirect",
         default=flag_default("redirect"),
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
-             "authenticated vhost. (default: Ask)")
+             "authenticated vhost. (default: False for enhance, True for renew and run)")
     helpful.add(
         "security", "--no-redirect", action="store_false", dest="redirect",
         default=flag_default("redirect"),
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
-             "authenticated vhost. (default: Ask)")
+             "authenticated vhost. (default: False for enhance, True for renew and run)")
     helpful.add(
         ["security", "enhance"],
         "--hsts", action="store_true", dest="hsts", default=flag_default("hsts"),
