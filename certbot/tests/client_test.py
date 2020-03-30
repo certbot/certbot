@@ -613,7 +613,7 @@ class EnhanceConfigTest(ClientTestCommon):
     @mock.patch("certbot._internal.client.logger")
     def test_no_warn_redirect(self, mock_log):
         self.config.redirect = None
-        self._test_with_already_existing()
+        self._test_with_all_supported()
         self.assertFalse(mock_log.warning.called)
 
     def test_no_ask_hsts(self):

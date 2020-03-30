@@ -520,12 +520,13 @@ class Client(object):
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains, chain_path):
+    def enhance_config(self, domains, chain_path, redirect_default=True):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
         :param chain_path: chain file path
         :type chain_path: `str` or `None`
+        :param redirect_default: boolean value that the "redirect" flag should default to
 
         :raises .errors.Error: if no installer is specified in the
             client.
@@ -547,6 +548,8 @@ class Client(object):
         for config_name, enhancement_name, option in enhancement_info:
             config_value = getattr(self.config, config_name)
             if enhancement_name in supported:
+                if config_name == "redirect" and config_value is None:
+                    config_value = redirect_default
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True
