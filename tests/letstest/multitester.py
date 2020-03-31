@@ -40,7 +40,8 @@ import socket
 import sys
 import time
 import traceback
-import urllib2
+import urllib.error
+import urllib.request
 
 import boto3
 from botocore.exceptions import ClientError
@@ -203,11 +204,11 @@ def block_until_http_ready(urlstring, wait_time=10, timeout=240):
         try:
             sys.stdout.write('.')
             sys.stdout.flush()
-            req = urllib2.Request(urlstring)
-            response = urllib2.urlopen(req)
+            req = urllib.request.Request(urlstring)
+            response = urllib.request.urlopen(req)
             #if response.code == 200:
             server_ready = True
-        except urllib2.URLError:
+        except urllib.error.URLError:
             pass
         time.sleep(wait_time)
         t_elapsed += wait_time
