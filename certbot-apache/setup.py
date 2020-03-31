@@ -19,7 +19,7 @@ install_requires = [
 ]
 
 dev_extras = [
-    'apacheconfig>=0.3.1',
+    'apacheconfig>=0.3.2',
 ]
 
 class PyTest(TestCommand):

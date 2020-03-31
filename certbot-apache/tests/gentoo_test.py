@@ -117,7 +117,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
                 return mod_val
             return None  # pragma: no cover
         mock_get.side_effect = mock_get_cfg
-        self.config.parser.modules = set()
+        self.config.parser.modules = {}
 
         with mock.patch("certbot.util.get_os_info") as mock_osi:
             # Make sure we have the have the Gentoo httpd constants

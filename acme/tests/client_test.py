@@ -15,7 +15,7 @@ from acme import challenges
 from acme import errors
 from acme import jws as acme_jws
 from acme import messages
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.mixins import VersionedLEACMEMixin
 import messages_test
 import test_util
 
@@ -886,7 +886,7 @@ class ClientV2Test(ClientTestBase):
             self.client.net.get.assert_not_called()
 
 
-class MockJSONDeSerializable(jose.JSONDeSerializable):
+class MockJSONDeSerializable(VersionedLEACMEMixin, jose.JSONDeSerializable):
     # pylint: disable=missing-docstring
     def __init__(self, value):
         self.value = value

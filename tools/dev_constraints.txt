@@ -3,7 +3,7 @@
 # Some dev package versions specified here may be overridden by higher level constraints
 # files during tests (eg. letsencrypt-auto-source/pieces/dependency-requirements.txt).
 alabaster==0.7.10
-apacheconfig==0.3.1
+apacheconfig==0.3.2
 apipkg==1.4
 appnope==0.1.0
 asn1crypto==0.22.0

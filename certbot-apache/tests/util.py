@@ -85,7 +85,8 @@ def get_apache_configurator(
         config_dir, work_dir, version=(2, 4, 7),
         os_info="generic",
         conf_vhost_path=None,
-        use_parsernode=False):
+        use_parsernode=False,
+        openssl_version="1.1.1a"):
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -118,7 +119,8 @@ def get_apache_configurator(
                     except KeyError:
                         config_class = configurator.ApacheConfigurator
                     config = config_class(config=mock_le_config, name="apache",
-                                          version=version, use_parsernode=use_parsernode)
+                                          version=version, use_parsernode=use_parsernode,
+                                          openssl_version=openssl_version)
                     if not conf_vhost_path:
                         config_class.OS_DEFAULTS["vhost_root"] = vhost_path
                     else:

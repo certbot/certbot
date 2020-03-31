@@ -266,5 +266,6 @@ Authors
 * [Yomna](https://github.com/ynasser)
 * [Yoni Jah](https://github.com/yonjah)
 * [YourDaddyIsHere](https://github.com/YourDaddyIsHere)
+* [Yuseong Cho](https://github.com/g6123)
 * [Zach Shepherd](https://github.com/zjs)
 * [陈三](https://github.com/chenxsan)
