@@ -3,15 +3,19 @@
 param()
 begin {}
 process {
-    New-EventLog -Source "certbot/auto-update.ps1" -LogName "CertbotAutoUpdate" -ErrorAction SilentlyContinue
+    $eventSource = "certbot/auto-update.ps1"
+    $logName = "CertbotAutoUpdate"
+    $eventID = 1
+
+    New-EventLog -Source $eventSource -LogName $logName -ErrorAction SilentlyContinue
 
     function Write-Message($message, $level = "Information") {
-        Write-EventLog -Source "certbot/auto-update.ps1" -LogName "CertbotAutoUpdate" -EventID 1 -EntryType $level -Message $message
+        Write-EventLog -Source $eventSource -LogName $logName -EventID $eventID -EntryType $level -Message $message
         Write-Host $message
     }
 
     function Throw-Error($message) {
-        Write-EventLog -Source "certbot/auto-update.ps1" -LogName "CertbotAutoUpdate" -EventID 1 -EntryType Error -Message $message
+        Write-EventLog -Source $eventSource -LogName $logName -EventID $eventID -EntryType Error -Message $message
         throw $message
     }
 
