@@ -17,7 +17,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Stop asking interactively if the user would like to add a redirect.
 
 ### Fixed
 
