@@ -32,7 +32,7 @@ jobs:
       vmImage: $(imageName)
     steps:
       - powershell: |
-          $currentVersion = (Get-Host | Select-Object Version).Version
+          $currentVersion = $PSVersionTable.PSVersion
           if ($currentVersion.Major -ne 5) {
               throw "Powershell version is not 5.x"
           }
