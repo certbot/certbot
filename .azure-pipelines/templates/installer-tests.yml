@@ -31,6 +31,13 @@ jobs:
     pool:
       vmImage: $(imageName)
     steps:
+      - powershell: |
+          $currentVersion = (Get-Host | Select-Object Version).Version
+          if ($currentVersion.Major -ne 5) {
+              throw "Powershell version is not 5.x"
+          }
+        condition: eq(variables['imageName'], 'vs2017-win2016')
+        displayName: Check Powershell 5.x is used in vs2017-win2016
       - task: UsePythonVersion@0
         inputs:
           versionSpec: 3.8
