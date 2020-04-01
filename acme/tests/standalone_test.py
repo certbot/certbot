@@ -101,7 +101,7 @@ class HTTP01ServerTest(unittest.TestCase):
         is_hung = server_thread.is_alive()
         try:
             client.shutdown(socket.SHUT_RDWR)
-        except OSError:
+        except:
             # may raise error because socket could already be closed
             pass
 
