@@ -12,9 +12,7 @@ import shutil
 import warnings
 
 import pytest
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    import pkg_resources
+import pkg_resources
 
 SCHEDULED_TASK_NAME = 'Certbot Renew and Auto-Update Task'
 GITHUB_FAKE_API_PORT = 8009
