@@ -26,6 +26,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Fix nginx plugin crash when non-ASCII configuration file is being read (instead,
   the user will be warned that UTF-8 must be used).
 * Fix hanging OCSP queries during revocation checking - added a 10 second timeout.
+* Standalone servers now have a default socket timeout of 30 seconds, fixing
+  cases where an idle connection can cause the standalone plugin to hang.
 
 More details about these changes can be found on our GitHub repo.
 
