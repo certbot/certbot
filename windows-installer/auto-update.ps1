@@ -7,9 +7,6 @@ process {
     $logName = "CertbotAutoUpdate"
     $eventID = 1
 
-    # Ensure to use TLS 1.2+ for HTTPS exchanges.
-    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-
     New-EventLog -Source $eventSource -LogName $logName -ErrorAction SilentlyContinue
 
     function Write-Message($message, $level = "Information") {
