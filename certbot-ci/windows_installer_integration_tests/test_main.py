@@ -17,6 +17,7 @@ with warnings.catch_warnings():
     import pkg_resources
 
 SCHEDULED_TASK_NAME = 'Certbot Renew and Auto-Update Task'
+GITHUB_FAKE_API_PORT = 8009
 
 
 @pytest.fixture
@@ -87,7 +88,8 @@ def github_mock(installer):
                             'tag_name': 'v99.9.9',
                             'assets': [{
                                 'name': os.path.basename(installer),
-                                'browser_download_url': 'http://localhost:8009/{0}'.format(os.path.basename(installer))
+                                'browser_download_url':
+                                    'http://localhost:{0}/{1}'.format(GITHUB_FAKE_API_PORT, os.path.basename(installer))
                             }]
                         }
                     ).encode())
@@ -101,13 +103,13 @@ def github_mock(installer):
                     self.send_response(404)
                     self.end_headers()
 
-        server_address = ('', 8009)
+        server_address = ('', GITHUB_FAKE_API_PORT)
         server = _ThreadedTCPServer(server_address, GitHubMock)
         thread = threading.Thread(target=server.serve_forever)
         thread.daemon = True
         thread.start()
 
-        yield 'http://localhost:8009/releases/latest'
+        yield 'http://localhost:{0}/releases/latest'.format(GITHUB_FAKE_API_PORT)
     finally:
         if server:
             server.shutdown()
