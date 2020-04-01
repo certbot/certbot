@@ -7,6 +7,9 @@ process {
     $logName = "CertbotAutoUpdate"
     $eventID = 1
 
+    # Ensure to use TLS 1.2+ for HTTPS exchanges.
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+
     New-EventLog -Source $eventSource -LogName $logName -ErrorAction SilentlyContinue
 
     function Write-Message($message, $level = "Information") {
@@ -63,7 +66,6 @@ Assuming Certbot is not up-to-date.
 
     # Get latest remote certbot version
     try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
         $result = Invoke-RestMethod -Uri $certbotUpgradeApiURL -TimeoutSec 60
         $latestVersion = $result.tag_name -replace '^v(\d+\.\d+\.\d+).*$', '$1'
         $latestVersion = [System.Version]"$latestVersion"
@@ -96,8 +98,8 @@ Aborting auto-upgrade process.
         try {
             # Download the installer
             Write-Message "Downloading the installer ..."
-            $webClient = New-Object System.Net.WebClient
-            $webClient.DownloadFile($installerUrl, $installerPath)
+            $ProgressPreference = "SilentlyContinue"
+            Invoke-RestMethod $installerUrl -OutFile $installerPath -TimeoutSec 3600
 
             # Check installer has a valid signature from the Certbot release team
             $signature = Get-AuthenticodeSignature $installerPath
