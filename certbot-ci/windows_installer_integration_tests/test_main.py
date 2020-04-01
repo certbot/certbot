@@ -62,7 +62,7 @@ def installer(request, signing_cert):
 @pytest.fixture
 def github_mock(installer):
     """
-    This fixture starts a GitHub release API mock on localhost:9001. This mock returns a
+    This fixture starts a GitHub release API mock on localhost:8009. This mock returns a
     compliant GitHub release payload declaring that Certbot v99.9.9 is available.
     The assets path associated allows to download on localhost the signed Certbot installer
     used during the tests.
