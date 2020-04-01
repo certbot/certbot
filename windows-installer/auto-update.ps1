@@ -94,7 +94,10 @@ Aborting auto-upgrade process.
 
         Write-Message "Starting Certbot auto-upgrade from $currentVersion to $latestVersion ..."
 
-        $installerPath = "$env:TMP/certbot-installer-win32.exe"
+        $tmpPath = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
+        New-Item -ItemType Directory -Path $tmpPath
+
+        $installerPath = Join-Path $tmpPath "certbot-installer-win32.exe"
         try {
             # Download the installer
             Write-Message "Downloading the installer ..."
@@ -132,7 +135,7 @@ $_
 Aborting auto-upgrade process.
 "@
         } finally {
-            Remove-Item $installerPath -ErrorAction 'Ignore'
+            Remove-Item $tmpPath -Recurse -ErrorAction 'Ignore'
         }
     }
 
