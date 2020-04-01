@@ -59,6 +59,10 @@ def installer(request, signing_cert):
         yield installer_path
 
 
+class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    pass
+
+
 @pytest.fixture
 def github_mock(installer):
     """
@@ -69,9 +73,6 @@ def github_mock(installer):
     """
     server = None
     try:
-        class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-            pass
-
         class GitHubMock(BaseHTTPRequestHandler):
             def log_message(self, log_format, *args):
                 pass
@@ -101,7 +102,7 @@ def github_mock(installer):
                     self.end_headers()
 
         server_address = ('', 8009)
-        server = ThreadedTCPServer(server_address, GitHubMock)
+        server = _ThreadedTCPServer(server_address, GitHubMock)
         thread = threading.Thread(target=server.serve_forever)
         thread.daemon = True
         thread.start()
