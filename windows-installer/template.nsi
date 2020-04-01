@@ -1,7 +1,6 @@
 ; This NSIS template is based on the built-in one in pynsist 2.4.
 ; If pynsist is upgraded, this template may be updated if necessary using the new built-in one.
 ; Original file can be found here: https://github.com/takluyver/pynsist/blob/2.4/nsist/pyapp.nsi
-; Diff file is located at .\template-nsi.patch
 
 ; Require the installer do be installed with admin privileges
 RequestExecutionLevel admin
