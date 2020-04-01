@@ -1,18 +1,22 @@
 """ACME protocol messages."""
 import json
-import six
-try:
-    from collections.abc import Hashable  # pylint: disable=no-name-in-module
-except ImportError:  # pragma: no cover
-    from collections import Hashable
 
 import josepy as jose
+import six
 
 from acme import challenges
 from acme import errors
 from acme import fields
-from acme import util
 from acme import jws
+from acme import util
+from acme.mixins import ResourceMixin
+
+try:
+    from collections.abc import Hashable
+except ImportError:  # pragma: no cover
+    from collections import Hashable
+
+
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
@@ -33,7 +37,7 @@ ERROR_CODES = {
                    ' domain'),
     'dns': 'There was a problem with a DNS query during identifier validation',
     'dnssec': 'The server could not validate a DNSSEC signed domain',
-    'incorrectResponse': 'Response recieved didn\'t match the challenge\'s requirements',
+    'incorrectResponse': 'Response received didn\'t match the challenge\'s requirements',
     # deprecate invalidEmail
     'invalidEmail': 'The provided email for a registration was invalid',
     'invalidContact': 'The provided contact URI was invalid',
@@ -143,7 +147,7 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
         if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
             raise jose.DeserializationError(
                 '{0} not recognized'.format(cls.__name__))
-        return cls.POSSIBLE_NAMES[jobj]  # pylint: disable=unsubscriptable-object
+        return cls.POSSIBLE_NAMES[jobj]
 
     def __repr__(self):
         return '{0}({1})'.format(self.__class__.__name__, self.name)
@@ -242,13 +246,13 @@ class Directory(jose.JSONDeSerializable):
         try:
             return self[name.replace('_', '-')]
         except KeyError as error:
-            raise AttributeError(str(error) + ': ' + name)
+            raise AttributeError(str(error))
 
     def __getitem__(self, name):
         try:
             return self._jobj[self._canon_key(name)]
         except KeyError:
-            raise KeyError('Directory field not found')
+            raise KeyError('Directory field "' + self._canon_key(name) + '" not found')
 
     def to_partial_json(self):
         return self._jobj
@@ -353,13 +357,13 @@ class Registration(ResourceBody):
 
 
 @Directory.register
-class NewRegistration(Registration):
+class NewRegistration(ResourceMixin, Registration):
     """New registration."""
     resource_type = 'new-reg'
     resource = fields.Resource(resource_type)
 
 
-class UpdateRegistration(Registration):
+class UpdateRegistration(ResourceMixin, Registration):
     """Update registration."""
     resource_type = 'reg'
     resource = fields.Resource(resource_type)
@@ -457,7 +461,6 @@ class ChallengeResource(Resource):
     @property
     def uri(self):
         """The URL of the challenge body."""
-        # pylint: disable=function-redefined,no-member
         return self.body.uri
 
 
@@ -485,7 +488,7 @@ class Authorization(ResourceBody):
     wildcard = jose.Field('wildcard', omitempty=True)
 
     @challenges.decoder
-    def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
+    def challenges(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
     @property
@@ -496,13 +499,13 @@ class Authorization(ResourceBody):
 
 
 @Directory.register
-class NewAuthorization(Authorization):
+class NewAuthorization(ResourceMixin, Authorization):
     """New authorization."""
     resource_type = 'new-authz'
     resource = fields.Resource(resource_type)
 
 
-class UpdateAuthorization(Authorization):
+class UpdateAuthorization(ResourceMixin, Authorization):
     """Update authorization."""
     resource_type = 'authz'
     resource = fields.Resource(resource_type)
@@ -520,7 +523,7 @@ class AuthorizationResource(ResourceWithURI):
 
 
 @Directory.register
-class CertificateRequest(jose.JSONObjectWithFields):
+class CertificateRequest(ResourceMixin, jose.JSONObjectWithFields):
     """ACME new-cert request.
 
     :ivar josepy.util.ComparableX509 csr:
@@ -546,7 +549,7 @@ class CertificateResource(ResourceWithURI):
 
 
 @Directory.register
-class Revocation(jose.JSONObjectWithFields):
+class Revocation(ResourceMixin, jose.JSONObjectWithFields):
     """Revocation message.
 
     :ivar .ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
@@ -582,7 +585,7 @@ class Order(ResourceBody):
     error = jose.Field('error', omitempty=True, decoder=Error.from_json)
 
     @identifiers.decoder
-    def identifiers(value):  # pylint: disable=missing-docstring,no-self-argument
+    def identifiers(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(Identifier.from_json(identifier) for identifier in value)
 
 class OrderResource(ResourceWithURI):

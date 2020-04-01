@@ -1,19 +1,22 @@
 #!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
+
 import errno
 import json
+import os
+from os.path import join
+import shutil
+import subprocess
+import sys
 import tempfile
 import time
-import os
-import subprocess
-import shutil
-import sys
-from os.path import join
 
 import requests
 
-from certbot_integration_tests.utils import misc, proxy, pebble_artifacts
+from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils import pebble_artifacts
+from certbot_integration_tests.utils import proxy
 from certbot_integration_tests.utils.constants import *
 
 
@@ -125,9 +128,10 @@ class ACMEServer(object):
         environ = os.environ.copy()
         environ['PEBBLE_VA_NOSLEEP'] = '1'
         environ['PEBBLE_WFE_NONCEREJECT'] = '0'
+        environ['PEBBLE_AUTHZREUSE'] = '100'
 
         self._launch_process(
-            [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053'],
+            [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053', '-strict'],
             env=environ)
 
         self._launch_process(
@@ -166,7 +170,7 @@ class ACMEServer(object):
 
         # Wait for the ACME CA server to be up.
         print('=> Waiting for boulder instance to respond...')
-        misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=240)
+        misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=300)
 
         # Configure challtestsrv to answer any A record request with ip of the docker host.
         response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),
@@ -185,7 +189,7 @@ class ACMEServer(object):
         print('=> Finished configuring the HTTP proxy.')
 
     def _launch_process(self, command, cwd=os.getcwd(), env=None):
-        """Launch silently an subprocess OS command"""
+        """Launch silently a subprocess OS command"""
         if not env:
             env = os.environ
         process = subprocess.Popen(command, stdout=self._stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env)

@@ -6,9 +6,10 @@ for a directory a specific configuration using built-in pytest hooks.
 
 See https://docs.pytest.org/en/latest/reference.html#hook-reference
 """
+from __future__ import print_function
 import contextlib
-import sys
 import subprocess
+import sys
 
 from certbot_integration_tests.utils import acme_server as acme_lib
 
@@ -61,7 +62,7 @@ def _setup_primary_node(config):
     """
     Setup the environment for integration tests.
     Will:
-        - check runtime compatiblity (Docker, docker-compose, Nginx)
+        - check runtime compatibility (Docker, docker-compose, Nginx)
         - create a temporary workspace and the persistent GIT repositories space
         - configure and start paralleled ACME CA servers using Docker
         - transfer ACME CA servers configurations to pytest nodes using env variables
