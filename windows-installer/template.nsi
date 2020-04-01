@@ -25,7 +25,7 @@ Function .onInit
   Pop $0
   Pop $1
   StrCmp $1 "-1" 0 powershellok
-    MessageBox MB_OK|MB_ICONSTOP "Certbot requires Powershell 5.0+ to work.$\r$\nPlease check the following link to know how to upgrade your system:$\r$\nhttps://docs.microsoft.com/powershell/scripting/install/installing-powershell"
+    MessageBox MB_OK|MB_ICONSTOP "Certbot requires Powershell 5.0+ to work.$\r$\nPlease check the following link to learn how to upgrade your system:$\r$\nhttps://docs.microsoft.com/powershell/scripting/install/installing-powershell"
     Abort
   powershellok:
 FunctionEnd
