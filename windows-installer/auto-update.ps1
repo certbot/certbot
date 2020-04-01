@@ -63,7 +63,7 @@ Assuming Certbot is not up-to-date.
 
     # Get latest remote certbot version
     try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
         $result = Invoke-RestMethod -Uri $certbotUpgradeApiURL
         $latestVersion = $result.tag_name -replace '^v(\d+\.\d+\.\d+).*$', '$1'
         $latestVersion = [System.Version]"$latestVersion"
