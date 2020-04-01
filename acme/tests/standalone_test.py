@@ -99,7 +99,11 @@ class HTTP01ServerTest(unittest.TestCase):
         server_thread.join(5.)
 
         is_hung = server_thread.is_alive()
-        client.shutdown(socket.SHUT_RDWR)
+        try:
+            client.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            # may raise error because socket could already be closed
+            pass
 
         self.assertFalse(is_hung, msg='Server shutdown should not be hung')
 
