@@ -48,7 +48,6 @@ from six.moves.urllib import request as urllib_request
 import yaml
 
 import fabric
-from fabric.api import cd
 from fabric.api import env
 from fabric.api import execute
 from fabric.api import local
@@ -292,8 +291,8 @@ def deploy_script(scriptpath, *args):
     run('./'+scriptfile+' '+args_str)
 
 def run_boulder():
-    with cd('$GOPATH/src/github.com/letsencrypt/boulder'):
-        run('sudo docker-compose up -d')
+    boulder_path = '$GOPATH/src/github.com/letsencrypt/boulder'
+    run('cd %s && sudo docker-compose up -d' % boulder_path)
 
 def config_and_launch_boulder(instance):
     execute(deploy_script, 'scripts/boulder_config.sh')
