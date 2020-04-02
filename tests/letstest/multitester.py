@@ -282,30 +282,40 @@ def local_repo_clean():
     local_path = os.path.join(LOGDIR, filename)
     local('rm %s' % local_path)
 
-def deploy_script(scriptpath, *args):
+def deploy_script(cxn, scriptpath, *args, **kwargs):
     "copies to remote and executes local script"
-    put(local_path=scriptpath, remote_path='', mirror_local_mode=True)
+    shell_env = kwargs.pop("shell_env", {})
+    cxn.put(local=scriptpath, remote='', preserve_mode=True)
     scriptfile = os.path.split(scriptpath)[1]
     args_str = ' '.join(args)
+    # cxn.run('./'+scriptfile+' '+args_str, env=shell_env)
     run('./'+scriptfile+' '+args_str)
 
-def run_boulder():
+def run_boulder(cxn):
     boulder_path = '$GOPATH/src/github.com/letsencrypt/boulder'
-    run('cd %s && sudo docker-compose up -d' % boulder_path)
+    cxn.run('cd %s && sudo docker-compose up -d' % boulder_path)
 
-def config_and_launch_boulder(instance):
-    deploy_script('scripts/boulder_config.sh')
-    run_boulder()
+def config_and_launch_boulder(cxn, instance):
+    deploy_script(cxn, 'scripts/boulder_config.sh')
+    run_boulder(cxn)
 
 def install_and_launch_certbot(cxn, instance, boulder_url, target):
     local_repo_to_remote(cxn)
+    shell_env_2 = {
+        'BOULDER_URL': boulder_url,
+        'PUBLIC_IP': instance.public_ip_address,
+        'PRIVATE_IP': instance.private_ip_address,
+        'PUBLIC_HOSTNAME': instance.public_dns_name,
+        'PIP_EXTRA_INDEX_URL': cl_args.alt_pip,
+        'OS_TYPE': target['type']
+    }
     with shell_env(BOULDER_URL=boulder_url,
                    PUBLIC_IP=instance.public_ip_address,
                    PRIVATE_IP=instance.private_ip_address,
                    PUBLIC_HOSTNAME=instance.public_dns_name,
                    PIP_EXTRA_INDEX_URL=cl_args.alt_pip,
                    OS_TYPE=target['type']):
-        deploy_script(cl_args.test_script)
+        deploy_script(cxn, cl_args.test_script)#, shell_env=shell_env)
 
 def grab_certbot_log():
     "grabs letsencrypt.log via cat into logged stdout"
@@ -516,10 +526,11 @@ def main():
 
         # env.host_string defines the ssh user and host for connection
         env.host_string = "ubuntu@%s"%boulder_server.public_ip_address
+        cxn = Connection(env.host_string, config=fab_config, connect_timeout=10)
         print("Boulder Server at (SSH):", env.host_string)
         if not boulder_preexists:
             print("Configuring and Launching Boulder")
-            config_and_launch_boulder(boulder_server)
+            config_and_launch_boulder(cxn, boulder_server)
             # blocking often unnecessary, but cheap EC2 VMs can get very slow
             block_until_http_ready('http://%s:4000'%boulder_server.public_ip_address,
                                    wait_time=10, timeout=500)
