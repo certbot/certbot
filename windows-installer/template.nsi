@@ -20,7 +20,7 @@ SetCompressor lzma
 
 Function .onInit
   ; Check that Powershell is at least 5.0.
-  nsExec::ExecToStack `powershell -ExecutionPolicy RemoteSigned -Command "Write-Host -NoNewline (Get-Host | Select-Object Version).Version.CompareTo([System.Version]'5.0')"`
+  nsExec::ExecToStack `powershell -ExecutionPolicy RemoteSigned -Command "Write-Host -NoNewline $$PSVersionTable.PSVersion.Major.CompareTo(5)"`
   Pop $0
   Pop $1
   StrCmp $1 "-1" 0 powershellok
