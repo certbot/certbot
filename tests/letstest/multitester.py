@@ -55,8 +55,8 @@ from fabric.api import sudo
 from fabric.context_managers import shell_env
 from fabric.operations import get
 from fabric.operations import put
-# from fabric2 import Config
-# from fabric2 import Connection
+from fabric2 import Config
+from fabric2 import Connection
 
 
 # Command line parser
@@ -269,12 +269,12 @@ def local_git_PR(repo_url, PRnumstr, merge_master=True):
         local('cd %s && cd letsencrypt && git merge origin/master -m "testmerge"' % LOGDIR)
     local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
 
-def local_repo_to_remote():
+def local_repo_to_remote(cxn):
     "copies local tarball of repo to remote"
     filename = 'le.tar.gz'
     local_path = os.path.join(LOGDIR, filename)
-    put(local_path=local_path, remote_path='')
-    run('tar xzf %s' % filename)
+    cxn.put(local=local_path, remote='')
+    cxn.run('tar xzf %s' % filename)
 
 def local_repo_clean():
     "delete tarball"
@@ -297,8 +297,8 @@ def config_and_launch_boulder(instance):
     deploy_script('scripts/boulder_config.sh')
     run_boulder()
 
-def install_and_launch_certbot(instance, boulder_url, target):
-    local_repo_to_remote()
+def install_and_launch_certbot(cxn, instance, boulder_url, target):
+    local_repo_to_remote(cxn)
     with shell_env(BOULDER_URL=boulder_url,
                    PUBLIC_IP=instance.public_ip_address,
                    PRIVATE_IP=instance.private_ip_address,
@@ -341,7 +341,7 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id):
                          userdata=userdata)
 
 
-def test_client_process(inqueue, outqueue, boulder_url):
+def test_client_process(fab_config, inqueue, outqueue, boulder_url):
     cur_proc = mp.current_process()
     for inreq in iter(inqueue.get, SENTINEL):
         ii, instance_id, target = inreq
@@ -360,9 +360,10 @@ def test_client_process(inqueue, outqueue, boulder_url):
         print("server %s at %s"%(instance, instance.public_ip_address))
         env.host_string = "%s@%s"%(target['user'], instance.public_ip_address)
         print(env.host_string)
+        cxn = Connection(env.host_string, config=fab_config, connect_timeout=10)
 
         try:
-            install_and_launch_certbot(instance, boulder_url, target)
+            install_and_launch_certbot(cxn, instance, boulder_url, target)
             outqueue.put((ii, target, Status.PASS))
             print("%s - %s SUCCESS"%(target['ami'], target['name']))
         except:
@@ -406,6 +407,8 @@ def main():
     env.shell = '/bin/bash -l -i -c'
     env.connection_attempts = 5
     env.timeout = 10
+    fab_config = Config()
+    fab_config.connect_kwargs = {"key_filename": KEYFILE}
     # replace default SystemExit thrown by fabric during trouble
     class FabricException(Exception):
         pass
@@ -545,7 +548,7 @@ def main():
 
         # initiate process execution
         for i in range(num_processes):
-            p = mp.Process(target=test_client_process, args=(inqueue, outqueue, boulder_url))
+            p = mp.Process(target=test_client_process, args=(fab_config, inqueue, outqueue, boulder_url))
             jobs.append(p)
             p.daemon = True  # kills subprocesses if parent is killed
             p.start()
