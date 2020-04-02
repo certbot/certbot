@@ -15,7 +15,7 @@ PYWIN32_VERSION = 227  # do not forget to edit pywin32 dependency accordingly in
 NSIS_VERSION = '3.04'
 
 # Certbot's auto-upgrade feature and integration tests rely on the installer name format.
-# If you need to change it, you will ensure that it will not break anything, in particular
+# If you need to change it, you must ensure that it will not break anything, in particular
 # the auto-upgrade feature.
 INSTALLER_NAME = 'certbot-beta-installer-{installer_suffix}.exe'.format(
     installer_suffix='win_amd64' if PYTHON_BITNESS == 64 else 'win32')
