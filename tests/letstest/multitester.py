@@ -57,8 +57,8 @@ from fabric.api import sudo
 from fabric.context_managers import shell_env
 from fabric.operations import get
 from fabric.operations import put
-from fabric2 import Config
-from fabric2 import Connection
+# from fabric2 import Config
+# from fabric2 import Connection
 
 
 # Command line parser
@@ -78,17 +78,17 @@ parser.add_argument('test_script',
 #                    help='space-delimited list of arguments to pass to the bash test script',
 #                    required=False)
 parser.add_argument('--repo',
-                    default='https://github.com/certbot/certbot.git',
+                    default='https://github.com/letsencrypt/letsencrypt.git',
                     help='certbot git repo to use')
 parser.add_argument('--branch',
                     default='~',
                     help='certbot git branch to trial')
 parser.add_argument('--pull_request',
                     default='~',
-                    help='certbot/certbot request to trial')
+                    help='letsencrypt/letsencrypt pull request to trial')
 parser.add_argument('--merge_master',
                     action='store_true',
-                    help="if set merges PR into master branch of certbot/certbot")
+                    help="if set merges PR into master branch of letsencrypt/letsencrypt")
 parser.add_argument('--saveinstances',
                     action='store_true',
                     help="don't kill EC2 instances after run, useful for debugging")
@@ -249,38 +249,27 @@ def block_until_instance_ready(booting_instance, wait_time=5, extra_wait_time=20
 #-------------------------------------------------------------------------------
 def local_git_clone(repo_url):
     "clones master of repo_url"
-    dirname = 'letsencrypt'
-    local_path = os.path.join(LOGDIR, dirname)
-    filename = 'le.tar.gz'
-    local_tar_path = os.path.join(LOGDIR, filename)
-    local('if [ -d %s ]; then rm -rf %s; fi' % (local_path, local_path))
-    local('git clone %s %s'% (repo_url, local_path))
-    local('tar czf %s %s' % (local_tar_path, local_path))
+    local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
+    local('cd %s && git clone %s letsencrypt'% (LOGDIR, repo_url))
+    local('cd %s && tar czf le.tar.gz letsencrypt'% LOGDIR)
 
 def local_git_branch(repo_url, branch_name):
     "clones branch <branch_name> of repo_url"
-    dirname = 'letsencrypt'
-    local_path = os.path.join(LOGDIR, dirname)
-    filename = 'le.tar.gz'
-    local_tar_path = os.path.join(LOGDIR, filename)
-    local('if [ -d %s ]; then rm -rf %s; fi' % (local_path, local_path))
-    local('git clone %s %s --branch %s --single-branch'%(repo_url, local_path, branch_name))
-    local('tar czf %s %s' % (local_tar_path, local_path))
+    local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
+    local('cd %s && git clone %s letsencrypt --branch %s --single-branch'%
+        (LOGDIR, repo_url, branch_name))
+    local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
 
 def local_git_PR(repo_url, PRnumstr, merge_master=True):
     "clones specified pull request from repo_url and optionally merges into master"
-    dirname = 'letsencrypt'
-    local_path = os.path.join(LOGDIR, dirname)
-    filename = 'le.tar.gz'
-    local_tar_path = os.path.join(LOGDIR, filename)
-    local('if [ -d %s ]; then rm -rf %s; fi' % (local_path, local_path))
-    local('git clone %s %s'% (repo_url, local_path))
-    local('cd %s && git fetch origin pull/%s/head:lePRtest'%(local_path, PRnumstr))
-    local('cd %s && git checkout lePRtest' % (local_path))
+    local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
+    local('cd %s && git clone %s letsencrypt' % (LOGDIR, repo_url))
+    local('cd %s && cd letsencrypt && git fetch origin pull/%s/head:lePRtest' % (LOGDIR, PRnumstr))
+    local('cd %s && cd letsencrypt && git checkout lePRtest' % LOGDIR)
     if merge_master:
-        local('cd %s && git remote update origin' % local_path)
-        local('cd %s && git merge origin/master -m "testmerge"' % local_path)
-    local('tar czf %s %s' % (local_tar_path, local_path))
+        local('cd %s && cd letsencrypt && git remote update origin' % LOGDIR)
+        local('cd %s && cd letsencrypt && git merge origin/master -m "testmerge"' % LOGDIR)
+    local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
 
 def local_repo_to_remote():
     "copies local tarball of repo to remote"
