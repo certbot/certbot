@@ -49,7 +49,7 @@ jobs:
         displayName: Retrieve Windows installer
       - script: |
           py -3 -m venv venv
-          venv\Scripts\python -m pip install --upgrade pip setuptools
+          venv\Scripts\python letsencrypt-auto-source/pieces/pipstrap.py
           venv\Scripts\python tools\pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
       - script: |
