@@ -8,6 +8,7 @@ import hashlib
 import logging
 import warnings
 
+import re
 # See https://github.com/pyca/cryptography/issues/4275
 from cryptography import x509  # type: ignore
 from cryptography.exceptions import InvalidSignature
@@ -478,6 +479,17 @@ def sha256sum(filename):
         sha256.update(file_d.read().encode('UTF-8'))
     return sha256.hexdigest()
 
+# Finds one CERTIFICATE stricttextualmsg according to rfc7468#section-3.
+# Does not validate the base64text - use crypto.load_certificate.
+CERT_PEM_REGEX = re.compile(
+    b"""(-----BEGIN CERTIFICATE-----\r?
+.+?\r?
+-----END CERTIFICATE-----\r?
+)""",
+    re.DOTALL # DOTALL (/s) because the base64text may include newlines
+)
+
+
 def cert_and_chain_from_fullchain(fullchain_pem):
     """Split fullchain_pem into cert_pem and chain_pem
 
@@ -486,11 +498,24 @@ def cert_and_chain_from_fullchain(fullchain_pem):
     :returns: tuple of string cert_pem and chain_pem
     :rtype: tuple
 
+    :raises errors.Error: If there are than 2 certificates in the chain.
+
     """
-    cert = crypto.dump_certificate(crypto.FILETYPE_PEM,
-        crypto.load_certificate(crypto.FILETYPE_PEM, fullchain_pem)).decode()
-    chain = fullchain_pem[len(cert):].lstrip()
-    return (cert, chain)
+    # First pass: find the boundary of each certificate in the chain.
+    # TODO: This will silently skip over any "explanatory text" in between boundaries,
+    # which is prohibited by RFC8555.
+    certs = CERT_PEM_REGEX.findall(fullchain_pem.encode())
+    if len(certs) < 2:
+        raise errors.Error("failed to parse fullchain into cert and chain: " +
+                           "less than 2 certificates in chain")
+
+    # Second pass: for each certificate found, parse it using OpenSSL and re-encode it,
+    # with the effect of normalizing any encoding variations (e.g. CRLF, whitespace).
+    certs_normalized = [crypto.dump_certificate(crypto.FILETYPE_PEM,
+        crypto.load_certificate(crypto.FILETYPE_PEM, cert)).decode() for cert in certs]
+
+    # Since each normalized cert has a newline suffix, no extra newlines are required.
+    return (certs_normalized[0], "".join(certs_normalized[1:]))
 
 def get_serial_from_cert(cert_path):
     """Retrieve the serial number of a certificate from certificate path
