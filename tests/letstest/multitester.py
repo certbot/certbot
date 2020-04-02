@@ -40,11 +40,11 @@ import socket
 import sys
 import time
 import traceback
-import urllib.error
-import urllib.request
 
 import boto3
 from botocore.exceptions import ClientError
+from six.moves.urllib import error as urllib_error
+from six.moves.urllib import request as urllib_request
 import yaml
 
 import fabric
@@ -204,11 +204,11 @@ def block_until_http_ready(urlstring, wait_time=10, timeout=240):
         try:
             sys.stdout.write('.')
             sys.stdout.flush()
-            req = urllib.request.Request(urlstring)
-            response = urllib.request.urlopen(req)
+            req = urllib_request.Request(urlstring)
+            response = urllib_request.urlopen(req)
             #if response.code == 200:
             server_ready = True
-        except urllib.error.URLError:
+        except urllib_error.URLError:
             pass
         time.sleep(wait_time)
         t_elapsed += wait_time
