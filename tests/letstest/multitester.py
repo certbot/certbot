@@ -295,11 +295,11 @@ def run_boulder():
     run('cd %s && sudo docker-compose up -d' % boulder_path)
 
 def config_and_launch_boulder(instance):
-    execute(deploy_script, 'scripts/boulder_config.sh')
-    execute(run_boulder)
+    deploy_script('scripts/boulder_config.sh')
+    run_boulder()
 
 def install_and_launch_certbot(instance, boulder_url, target):
-    execute(local_repo_to_remote)
+    local_repo_to_remote()
     with shell_env(BOULDER_URL=boulder_url,
                    PUBLIC_IP=instance.public_ip_address,
                    PRIVATE_IP=instance.private_ip_address,
@@ -375,7 +375,7 @@ def test_client_process(inqueue, outqueue, boulder_url):
         # append server certbot.log to each per-machine output log
         print("\n\ncertbot.log\n" + "-"*80 + "\n")
         try:
-            execute(grab_certbot_log)
+            grab_certbot_log()
         except:
             print("log fail\n")
             traceback.print_exc(file=sys.stdout)
@@ -423,13 +423,13 @@ def main():
         if cl_args.pull_request != '~':
             print('Testing PR %s '%cl_args.pull_request,
                   "MERGING into master" if cl_args.merge_master else "")
-            execute(local_git_PR, cl_args.repo, cl_args.pull_request, cl_args.merge_master)
+            local_git_PR(cl_args.repo, cl_args.pull_request, cl_args.merge_master)
         elif cl_args.branch != '~':
             print('Testing branch %s of %s'%(cl_args.branch, cl_args.repo))
-            execute(local_git_branch, cl_args.repo, cl_args.branch)
+            local_git_branch(cl_args.repo, cl_args.branch)
         else:
             print('Testing master of %s'%cl_args.repo)
-            execute(local_git_clone, cl_args.repo)
+            local_git_clone(cl_args.repo)
     except FabricException:
         print("FAIL: trouble with git repo")
         traceback.print_exc()
@@ -570,7 +570,7 @@ def main():
         outqueue.put(SENTINEL)
 
         # clean up
-        execute(local_repo_clean)
+        local_repo_clean()
 
         # print and save summary results
         results_file = open(LOGDIR+'/results', 'w')
