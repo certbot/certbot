@@ -51,13 +51,15 @@ import fabric
 from fabric.api import cd
 from fabric.api import env
 from fabric.api import execute
-from fabric.api import lcd
 from fabric.api import local
 from fabric.api import run
 from fabric.api import sudo
 from fabric.context_managers import shell_env
 from fabric.operations import get
 from fabric.operations import put
+from fabric2 import Config
+from fabric2 import Connection
+
 
 # Command line parser
 #-------------------------------------------------------------------------------
@@ -76,17 +78,17 @@ parser.add_argument('test_script',
 #                    help='space-delimited list of arguments to pass to the bash test script',
 #                    required=False)
 parser.add_argument('--repo',
-                    default='https://github.com/letsencrypt/letsencrypt.git',
+                    default='https://github.com/certbot/certbot.git',
                     help='certbot git repo to use')
 parser.add_argument('--branch',
                     default='~',
                     help='certbot git branch to trial')
 parser.add_argument('--pull_request',
                     default='~',
-                    help='letsencrypt/letsencrypt pull request to trial')
+                    help='certbot/certbot request to trial')
 parser.add_argument('--merge_master',
                     action='store_true',
-                    help="if set merges PR into master branch of letsencrypt/letsencrypt")
+                    help="if set merges PR into master branch of certbot/certbot")
 parser.add_argument('--saveinstances',
                     action='store_true',
                     help="don't kill EC2 instances after run, useful for debugging")
@@ -247,44 +249,54 @@ def block_until_instance_ready(booting_instance, wait_time=5, extra_wait_time=20
 #-------------------------------------------------------------------------------
 def local_git_clone(repo_url):
     "clones master of repo_url"
-    with lcd(LOGDIR):
-        local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s letsencrypt'% repo_url)
-        local('tar czf le.tar.gz letsencrypt')
+    dirname = 'letsencrypt'
+    local_path = os.path.join(LOGDIR, dirname)
+    filename = 'le.tar.gz'
+    local_tar_path = os.path.join(LOGDIR, filename)
+    local('if [ -d %s ]; then rm -rf %s; fi' % (local_path, local_path))
+    local('git clone %s %s'% (repo_url, local_path))
+    local('tar czf %s %s' % (local_tar_path, local_path))
 
 def local_git_branch(repo_url, branch_name):
     "clones branch <branch_name> of repo_url"
-    with lcd(LOGDIR):
-        local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s letsencrypt --branch %s --single-branch'%(repo_url, branch_name))
-        local('tar czf le.tar.gz letsencrypt')
+    dirname = 'letsencrypt'
+    local_path = os.path.join(LOGDIR, dirname)
+    filename = 'le.tar.gz'
+    local_tar_path = os.path.join(LOGDIR, filename)
+    local('if [ -d %s ]; then rm -rf %s; fi' % (local_path, local_path))
+    local('git clone %s %s --branch %s --single-branch'%(repo_url, local_path, branch_name))
+    local('tar czf %s %s' % (local_tar_path, local_path))
 
 def local_git_PR(repo_url, PRnumstr, merge_master=True):
     "clones specified pull request from repo_url and optionally merges into master"
-    with lcd(LOGDIR):
-        local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s letsencrypt'% repo_url)
-        local('cd letsencrypt && git fetch origin pull/%s/head:lePRtest'%PRnumstr)
-        local('cd letsencrypt && git checkout lePRtest')
-        if merge_master:
-            local('cd letsencrypt && git remote update origin')
-            local('cd letsencrypt && git merge origin/master -m "testmerge"')
-        local('tar czf le.tar.gz letsencrypt')
+    dirname = 'letsencrypt'
+    local_path = os.path.join(LOGDIR, dirname)
+    filename = 'le.tar.gz'
+    local_tar_path = os.path.join(LOGDIR, filename)
+    local('if [ -d %s ]; then rm -rf %s; fi' % (local_path, local_path))
+    local('git clone %s %s'% (repo_url, local_path))
+    local('cd %s && git fetch origin pull/%s/head:lePRtest'%(local_path, PRnumstr))
+    local('cd %s && git checkout lePRtest' % (local_path))
+    if merge_master:
+        local('cd %s && git remote update origin' % local_path)
+        local('cd %s && git merge origin/master -m "testmerge"' % local_path)
+    local('tar czf %s %s' % (local_tar_path, local_path))
 
 def local_repo_to_remote():
     "copies local tarball of repo to remote"
-    with lcd(LOGDIR):
-        put(local_path='le.tar.gz', remote_path='')
-        run('tar xzf le.tar.gz')
+    filename = 'le.tar.gz'
+    local_path = os.path.join(LOGDIR, filename)
+    put(local_path=local_path, remote_path='')
+    run('tar xzf %s' % filename)
 
 def local_repo_clean():
     "delete tarball"
-    with lcd(LOGDIR):
-        local('rm le.tar.gz')
+    filename = 'le.tar.gz'
+    local_path = os.path.join(LOGDIR, filename)
+    local('rm %s' % local_path)
 
 def deploy_script(scriptpath, *args):
     "copies to remote and executes local script"
-    #with lcd('scripts'):
     put(local_path=scriptpath, remote_path='', mirror_local_mode=True)
     scriptfile = os.path.split(scriptpath)[1]
     args_str = ' '.join(args)
