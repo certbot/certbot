@@ -49,7 +49,6 @@ import yaml
 
 import fabric
 from fabric.api import env
-from fabric.api import execute
 from fabric.api import local
 from fabric.api import run
 from fabric.api import sudo
@@ -306,7 +305,7 @@ def install_and_launch_certbot(instance, boulder_url, target):
                    PUBLIC_HOSTNAME=instance.public_dns_name,
                    PIP_EXTRA_INDEX_URL=cl_args.alt_pip,
                    OS_TYPE=target['type']):
-        execute(deploy_script, cl_args.test_script)
+        deploy_script(cl_args.test_script)
 
 def grab_certbot_log():
     "grabs letsencrypt.log via cat into logged stdout"
