@@ -50,11 +50,6 @@ import yaml
 import fabric
 from fabric.api import env
 from fabric.api import local
-from fabric.api import run
-from fabric.api import sudo
-from fabric.context_managers import shell_env
-from fabric.operations import get
-from fabric.operations import put
 from fabric2 import Config
 from fabric2 import Connection
 
@@ -284,12 +279,10 @@ def local_repo_clean():
 
 def deploy_script(cxn, scriptpath, *args, **kwargs):
     "copies to remote and executes local script"
-    shell_env = kwargs.pop("shell_env", {})
     cxn.put(local=scriptpath, remote='', preserve_mode=True)
     scriptfile = os.path.split(scriptpath)[1]
     args_str = ' '.join(args)
-    # cxn.run('./'+scriptfile+' '+args_str, env=shell_env)
-    run('./'+scriptfile+' '+args_str)
+    cxn.run('./'+scriptfile+' '+args_str)
 
 def run_boulder(cxn):
     boulder_path = '$GOPATH/src/github.com/letsencrypt/boulder'
@@ -301,29 +294,27 @@ def config_and_launch_boulder(cxn, instance):
 
 def install_and_launch_certbot(cxn, instance, boulder_url, target):
     local_repo_to_remote(cxn)
-    shell_env_2 = {
-        'BOULDER_URL': boulder_url,
-        'PUBLIC_IP': instance.public_ip_address,
-        'PRIVATE_IP': instance.private_ip_address,
-        'PUBLIC_HOSTNAME': instance.public_dns_name,
-        'PIP_EXTRA_INDEX_URL': cl_args.alt_pip,
-        'OS_TYPE': target['type']
-    }
-    with shell_env(BOULDER_URL=boulder_url,
-                   PUBLIC_IP=instance.public_ip_address,
-                   PRIVATE_IP=instance.private_ip_address,
-                   PUBLIC_HOSTNAME=instance.public_dns_name,
-                   PIP_EXTRA_INDEX_URL=cl_args.alt_pip,
-                   OS_TYPE=target['type']):
-        deploy_script(cxn, cl_args.test_script)#, shell_env=shell_env)
+    # This needs to be like this, I promise. 1) The env argument to run doesn't work.
+    # See https://github.com/fabric/fabric/issues/1744. 2) prefix() sticks an && between
+    # the commands, so it needs to be exports rather than no &&s in between for the script subshell.
+    with cxn.prefix('export BOULDER_URL=%s && export PUBLIC_IP=%s && export PRIVATE_IP=%s &&'
+                    'export PUBLIC_HOSTNAME=%s && export PIP_EXTRA_INDEX_URL=%s && '
+                    'export OS_TYPE=%s' %
+                    (boulder_url,
+                    instance.public_ip_address,
+                    instance.private_ip_address,
+                    instance.public_dns_name,
+                    cl_args.alt_pip,
+                    target['type'])):
+        deploy_script(cxn, cl_args.test_script)
 
-def grab_certbot_log():
+def grab_certbot_log(cxn):
     "grabs letsencrypt.log via cat into logged stdout"
-    sudo('if [ -f /var/log/letsencrypt/letsencrypt.log ]; then \
-    cat /var/log/letsencrypt/letsencrypt.log; else echo "[novarlog]"; fi')
+    cxn.sudo('if [ -f /var/log/letsencrypt/letsencrypt.log ]; then '
+        'cat /var/log/letsencrypt/letsencrypt.log; else echo "[novarlog]"; fi')
     # fallback file if /var/log is unwriteable...? correct?
-    sudo('if [ -f ./certbot.log ]; then \
-    cat ./certbot.log; else echo "[nolocallog]"; fi')
+    cxn.sudo('if [ -f ./certbot.log ]; then '
+        'cat ./certbot.log; else echo "[nolocallog]"; fi')
 
 
 def create_client_instance(ec2_client, target, security_group_id, subnet_id):
@@ -370,7 +361,7 @@ def test_client_process(fab_config, inqueue, outqueue, boulder_url):
         print("server %s at %s"%(instance, instance.public_ip_address))
         env.host_string = "%s@%s"%(target['user'], instance.public_ip_address)
         print(env.host_string)
-        cxn = Connection(env.host_string, config=fab_config, connect_timeout=10)
+        cxn = Connection(env.host_string, config=fab_config)
 
         try:
             install_and_launch_certbot(cxn, instance, boulder_url, target)
@@ -385,7 +376,7 @@ def test_client_process(fab_config, inqueue, outqueue, boulder_url):
         # append server certbot.log to each per-machine output log
         print("\n\ncertbot.log\n" + "-"*80 + "\n")
         try:
-            grab_certbot_log()
+            grab_certbot_log(cxn)
         except:
             print("log fail\n")
             traceback.print_exc(file=sys.stdout)
@@ -417,8 +408,18 @@ def main():
     env.shell = '/bin/bash -l -i -c'
     env.connection_attempts = 5
     env.timeout = 10
-    fab_config = Config()
-    fab_config.connect_kwargs = {"key_filename": KEYFILE}
+    fab_config = Config(overrides={
+        "connect_kwargs": {
+            "key_filename": KEYFILE,
+        },
+        "run": {
+            "echo": True,
+            "pty": True,
+        },
+        "timeouts": {
+            "connect": 10,
+        },
+    })
     # replace default SystemExit thrown by fabric during trouble
     class FabricException(Exception):
         pass
@@ -526,7 +527,7 @@ def main():
 
         # env.host_string defines the ssh user and host for connection
         env.host_string = "ubuntu@%s"%boulder_server.public_ip_address
-        cxn = Connection(env.host_string, config=fab_config, connect_timeout=10)
+        cxn = Connection(env.host_string, config=fab_config)
         print("Boulder Server at (SSH):", env.host_string)
         if not boulder_preexists:
             print("Configuring and Launching Boulder")
