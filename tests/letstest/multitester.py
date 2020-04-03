@@ -47,11 +47,8 @@ from six.moves.urllib import error as urllib_error
 from six.moves.urllib import request as urllib_request
 import yaml
 
-import fabric
-from fabric.api import env
-from fabric.api import local
-from fabric2 import Config
-from fabric2 import Connection
+from fabric import Config
+from fabric import Connection
 
 
 # Command line parser
@@ -240,29 +237,31 @@ def block_until_instance_ready(booting_instance, wait_time=5, extra_wait_time=20
 
 # Fabric Routines
 #-------------------------------------------------------------------------------
-def local_git_clone(repo_url):
+def local_git_clone(local_cxn, repo_url):
     "clones master of repo_url"
-    local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
-    local('cd %s && git clone %s letsencrypt'% (LOGDIR, repo_url))
-    local('cd %s && tar czf le.tar.gz letsencrypt'% LOGDIR)
+    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
+    local_cxn.local('cd %s && git clone %s letsencrypt'% (LOGDIR, repo_url))
+    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt'% LOGDIR)
 
-def local_git_branch(repo_url, branch_name):
+def local_git_branch(local_cxn, repo_url, branch_name):
     "clones branch <branch_name> of repo_url"
-    local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
-    local('cd %s && git clone %s letsencrypt --branch %s --single-branch'%
+    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
+    local_cxn.local('cd %s && git clone %s letsencrypt --branch %s --single-branch'%
         (LOGDIR, repo_url, branch_name))
-    local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
+    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
 
-def local_git_PR(repo_url, PRnumstr, merge_master=True):
+def local_git_PR(local_cxn, repo_url, PRnumstr, merge_master=True):
     "clones specified pull request from repo_url and optionally merges into master"
-    local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
-    local('cd %s && git clone %s letsencrypt' % (LOGDIR, repo_url))
-    local('cd %s && cd letsencrypt && git fetch origin pull/%s/head:lePRtest' % (LOGDIR, PRnumstr))
-    local('cd %s && cd letsencrypt && git checkout lePRtest' % LOGDIR)
+    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
+    local_cxn.local('cd %s && git clone %s letsencrypt' % (LOGDIR, repo_url))
+    local_cxn.local('cd %s && cd letsencrypt && '
+        'git fetch origin pull/%s/head:lePRtest' % (LOGDIR, PRnumstr))
+    local_cxn.local('cd %s && cd letsencrypt && git checkout lePRtest' % LOGDIR)
     if merge_master:
-        local('cd %s && cd letsencrypt && git remote update origin' % LOGDIR)
-        local('cd %s && cd letsencrypt && git merge origin/master -m "testmerge"' % LOGDIR)
-    local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
+        local_cxn.local('cd %s && cd letsencrypt && git remote update origin' % LOGDIR)
+        local_cxn.local('cd %s && cd letsencrypt && '
+            'git merge origin/master -m "testmerge"' % LOGDIR)
+    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
 
 def local_repo_to_remote(cxn):
     "copies local tarball of repo to remote"
@@ -271,11 +270,11 @@ def local_repo_to_remote(cxn):
     cxn.put(local=local_path, remote='')
     cxn.run('tar xzf %s' % filename)
 
-def local_repo_clean():
+def local_repo_clean(local_cxn):
     "delete tarball"
     filename = 'le.tar.gz'
     local_path = os.path.join(LOGDIR, filename)
-    local('rm %s' % local_path)
+    local_cxn.local('rm %s' % local_path)
 
 def deploy_script(cxn, scriptpath, *args, **kwargs):
     "copies to remote and executes local script"
@@ -297,7 +296,7 @@ def install_and_launch_certbot(cxn, instance, boulder_url, target):
     # This needs to be like this, I promise. 1) The env argument to run doesn't work.
     # See https://github.com/fabric/fabric/issues/1744. 2) prefix() sticks an && between
     # the commands, so it needs to be exports rather than no &&s in between for the script subshell.
-    with cxn.prefix('export BOULDER_URL=%s && export PUBLIC_IP=%s && export PRIVATE_IP=%s &&'
+    with cxn.prefix('export BOULDER_URL=%s && export PUBLIC_IP=%s && export PRIVATE_IP=%s && '
                     'export PUBLIC_HOSTNAME=%s && export PIP_EXTRA_INDEX_URL=%s && '
                     'export OS_TYPE=%s' %
                     (boulder_url,
@@ -359,9 +358,9 @@ def test_client_process(fab_config, inqueue, outqueue, boulder_url):
         print("[%s : client %d %s %s]" % (cur_proc.name, ii, target['ami'], target['name']))
         instance = block_until_instance_ready(instance)
         print("server %s at %s"%(instance, instance.public_ip_address))
-        env.host_string = "%s@%s"%(target['user'], instance.public_ip_address)
-        print(env.host_string)
-        cxn = Connection(env.host_string, config=fab_config)
+        host_string = "%s@%s"%(target['user'], instance.public_ip_address)
+        print(host_string)
+        cxn = Connection(host_string, config=fab_config)
 
         try:
             install_and_launch_certbot(cxn, instance, boulder_url, target)
@@ -404,10 +403,6 @@ def cleanup(cl_args, instances, targetlist):
 
 def main():
     # Fabric library controlled through global env parameters
-    env.key_filename = KEYFILE
-    env.shell = '/bin/bash -l -i -c'
-    env.connection_attempts = 5
-    env.timeout = 10
     fab_config = Config(overrides={
         "connect_kwargs": {
             "key_filename": KEYFILE,
@@ -420,15 +415,12 @@ def main():
             "connect": 10,
         },
     })
-    # replace default SystemExit thrown by fabric during trouble
-    class FabricException(Exception):
-        pass
-    env['abort_exception'] = FabricException
+    local_cxn = Connection('localhost', config=fab_config)
 
     # Set up local copy of git repo
     #-------------------------------------------------------------------------------
     print("Making local dir for test repo and logs: %s"%LOGDIR)
-    local('mkdir %s'%LOGDIR)
+    local_cxn.local('mkdir %s'%LOGDIR)
 
     # figure out what git object to test and locally create it in LOGDIR
     print("Making local git repo")
@@ -436,14 +428,14 @@ def main():
         if cl_args.pull_request != '~':
             print('Testing PR %s '%cl_args.pull_request,
                   "MERGING into master" if cl_args.merge_master else "")
-            local_git_PR(cl_args.repo, cl_args.pull_request, cl_args.merge_master)
+            local_git_PR(local_cxn, cl_args.repo, cl_args.pull_request, cl_args.merge_master)
         elif cl_args.branch != '~':
             print('Testing branch %s of %s'%(cl_args.branch, cl_args.repo))
-            local_git_branch(cl_args.repo, cl_args.branch)
+            local_git_branch(local_cxn, cl_args.repo, cl_args.branch)
         else:
             print('Testing master of %s'%cl_args.repo)
-            local_git_clone(cl_args.repo)
-    except FabricException:
+            local_git_clone(local_cxn, cl_args.repo)
+    except Exception:
         print("FAIL: trouble with git repo")
         traceback.print_exc()
         exit()
@@ -525,10 +517,10 @@ def main():
         print(" server %s"%boulder_server)
 
 
-        # env.host_string defines the ssh user and host for connection
-        env.host_string = "ubuntu@%s"%boulder_server.public_ip_address
-        cxn = Connection(env.host_string, config=fab_config)
-        print("Boulder Server at (SSH):", env.host_string)
+        # host_string defines the ssh user and host for connection
+        host_string = "ubuntu@%s"%boulder_server.public_ip_address
+        cxn = Connection(host_string, config=fab_config)
+        print("Boulder Server at (SSH):", host_string)
         if not boulder_preexists:
             print("Configuring and Launching Boulder")
             config_and_launch_boulder(cxn, boulder_server)
@@ -584,7 +576,7 @@ def main():
         outqueue.put(SENTINEL)
 
         # clean up
-        local_repo_clean()
+        local_repo_clean(local_cxn)
 
         # print and save summary results
         results_file = open(LOGDIR+'/results', 'w')
@@ -610,9 +602,6 @@ def main():
 
     finally:
         cleanup(cl_args, instances, targetlist)
-
-        # kill any connections
-        fabric.network.disconnect_all()
 
 
 if __name__ == '__main__':
