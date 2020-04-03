@@ -443,7 +443,7 @@ def main():
 
     # Set up EC2 instances
     #-------------------------------------------------------------------------------
-    configdata = yaml.load(open(cl_args.config_file, 'r'))
+    configdata = yaml.safe_load(open(cl_args.config_file, 'r'))
     targetlist = configdata['targets']
     print('Testing against these images: [%d total]'%len(targetlist))
     for target in targetlist:
