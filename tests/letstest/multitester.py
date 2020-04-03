@@ -310,11 +310,11 @@ def install_and_launch_certbot(cxn, instance, boulder_url, target):
 
 def grab_certbot_log(cxn):
     "grabs letsencrypt.log via cat into logged stdout"
-    cxn.sudo('if [ -f /var/log/letsencrypt/letsencrypt.log ]; then '
-        'cat /var/log/letsencrypt/letsencrypt.log; else echo "[novarlog]"; fi')
+    cxn.sudo('/bin/bash -l -i -c \'if [ -f "/var/log/letsencrypt/letsencrypt.log" ]; then ' +
+        'cat "/var/log/letsencrypt/letsencrypt.log"; else echo "[novarlog]"; fi\'')
     # fallback file if /var/log is unwriteable...? correct?
-    cxn.sudo('if [ -f ./certbot.log ]; then '
-        'cat ./certbot.log; else echo "[nolocallog]"; fi')
+    cxn.sudo('/bin/bash -l -i -c \'if [ -f ./certbot.log ]; then ' +
+        'cat ./certbot.log; else echo "[nolocallog]"; fi\'')
 
 
 def create_client_instance(ec2_client, target, security_group_id, subnet_id):
