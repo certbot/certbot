@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import json
-import sys
 import re
+import sys
 
 import requests
 from six.moves import BaseHTTPServer

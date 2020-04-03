@@ -2,16 +2,16 @@
 import logging
 import unittest
 
-import OpenSSL
 import mock
+import OpenSSL
 import zope.component
 
-import certbot.tests.util as test_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import os
 from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
@@ -164,7 +164,7 @@ class ImportCSRFileTest(unittest.TestCase):
                           test_util.load_vector('cert_512.pem'))
 
 
-class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
+class MakeKeyTest(unittest.TestCase):
     """Tests for certbot.crypto_util.make_key."""
 
     def test_it(self):  # pylint: disable=no-self-use
@@ -181,15 +181,15 @@ class VerifyCertSetup(unittest.TestCase):
         super(VerifyCertSetup, self).setUp()
 
         self.renewable_cert = mock.MagicMock()
-        self.renewable_cert.cert = SS_CERT_PATH
-        self.renewable_cert.chain = SS_CERT_PATH
-        self.renewable_cert.privkey = RSA2048_KEY_PATH
-        self.renewable_cert.fullchain = test_util.vector_path('cert_fullchain_2048.pem')
+        self.renewable_cert.cert_path = SS_CERT_PATH
+        self.renewable_cert.chain_path = SS_CERT_PATH
+        self.renewable_cert.key_path = RSA2048_KEY_PATH
+        self.renewable_cert.fullchain_path = test_util.vector_path('cert_fullchain_2048.pem')
 
         self.bad_renewable_cert = mock.MagicMock()
-        self.bad_renewable_cert.chain = SS_CERT_PATH
-        self.bad_renewable_cert.cert = SS_CERT_PATH
-        self.bad_renewable_cert.fullchain = SS_CERT_PATH
+        self.bad_renewable_cert.chain_path = SS_CERT_PATH
+        self.bad_renewable_cert.cert_path = SS_CERT_PATH
+        self.bad_renewable_cert.fullchain_path = SS_CERT_PATH
 
 
 class VerifyRenewableCertTest(VerifyCertSetup):
@@ -219,13 +219,13 @@ class VerifyRenewableCertSigTest(VerifyCertSetup):
 
     def test_cert_sig_match_ec(self):
         renewable_cert = mock.MagicMock()
-        renewable_cert.cert = P256_CERT_PATH
-        renewable_cert.chain = P256_CERT_PATH
-        renewable_cert.privkey = P256_KEY
+        renewable_cert.cert_path = P256_CERT_PATH
+        renewable_cert.chain_path = P256_CERT_PATH
+        renewable_cert.key_path = P256_KEY
         self.assertEqual(None, self._call(renewable_cert))
 
     def test_cert_sig_mismatch(self):
-        self.bad_renewable_cert.cert = test_util.vector_path('cert_512_bad.pem')
+        self.bad_renewable_cert.cert_path = test_util.vector_path('cert_512_bad.pem')
         self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
 
 

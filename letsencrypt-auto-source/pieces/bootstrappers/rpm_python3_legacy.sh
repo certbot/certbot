@@ -20,11 +20,14 @@ EnablePython36SCL() {
   if "$EXISTS" python3.6 > /dev/null 2> /dev/null; then
       return 0
   fi
-  if ! scl --list 2>/dev/null | grep -q rh-python36; then
+  if [ ! -f /opt/rh/rh-python36/enable ]; then
       return 0
   fi
   set +e
-  . scl_source enable rh-python36
+  if ! . /opt/rh/rh-python36/enable; then
+    error 'Unable to enable rh-python36!'
+    exit 1
+  fi
   set -e
 }
 

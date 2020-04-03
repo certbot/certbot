@@ -34,6 +34,12 @@ RUN update-ca-trust
 # Copy current letsencrypt-auto:
 COPY . /home/lea/certbot/letsencrypt-auto-source
 
+# Tweak uname binary for tests on fake 32bits
+COPY tests/uname_wrapper.sh /bin
+RUN mv /bin/uname /bin/uname_orig \
+ && mv /bin/uname_wrapper.sh /bin/uname \
+ && chmod +x /bin/uname
+
 # Fetch previous letsencrypt-auto that was installing python 3.4
 RUN curl https://raw.githubusercontent.com/certbot/certbot/v0.38.0/letsencrypt-auto-source/letsencrypt-auto \
     -o /home/lea/certbot/letsencrypt-auto-source/letsencrypt-auto_py_34 \

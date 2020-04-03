@@ -1,20 +1,18 @@
 """Validators to determine the current webserver configuration"""
 import logging
 import socket
-import requests
 
+import requests
 import six
-from six.moves import xrange  # pylint: disable=import-error,redefined-builtin
+from six.moves import xrange
 
 from acme import crypto_util
 from acme import errors as acme_errors
-
 
 logger = logging.getLogger(__name__)
 
 
 class Validator(object):
-    # pylint: disable=no-self-use
     """Collection of functions to test a live webserver's configuration"""
 
     def certificate(self, cert, name, alt_host=None, port=443):
