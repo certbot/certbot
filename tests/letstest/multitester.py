@@ -382,7 +382,7 @@ def test_client_process(fab_config, inqueue, outqueue, boulder_url):
             pass
 
 
-def cleanup(cl_args, instances, targetlist):
+def cleanup(cl_args, instances, targetlist, boulder_server):
     print('Logs in ', LOGDIR)
     # If lengths of instances and targetlist aren't equal, instances failed to
     # start before running tests so leaving instances running for debugging
@@ -601,7 +601,7 @@ def main():
             sys.exit(1)
 
     finally:
-        cleanup(cl_args, instances, targetlist)
+        cleanup(cl_args, instances, targetlist, boulder_server)
 
 
 if __name__ == '__main__':
