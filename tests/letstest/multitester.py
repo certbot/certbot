@@ -276,7 +276,7 @@ def local_repo_clean(local_cxn):
     local_path = os.path.join(LOGDIR, filename)
     local_cxn.local('rm %s' % local_path)
 
-def deploy_script(cxn, scriptpath, *args, **kwargs):
+def deploy_script(cxn, scriptpath, *args):
     "copies to remote and executes local script"
     cxn.put(local=scriptpath, remote='', preserve_mode=True)
     scriptfile = os.path.split(scriptpath)[1]
