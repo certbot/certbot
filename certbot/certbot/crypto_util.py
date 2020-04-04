@@ -498,7 +498,7 @@ def cert_and_chain_from_fullchain(fullchain_pem):
     :returns: tuple of string cert_pem and chain_pem
     :rtype: tuple
 
-    :raises errors.Error: If there are than 2 certificates in the chain.
+    :raises errors.Error: If there are less than 2 certificates in the chain.
 
     """
     # First pass: find the boundary of each certificate in the chain.
