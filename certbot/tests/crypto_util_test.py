@@ -395,14 +395,13 @@ class CertAndChainFromFullchainTest(unittest.TestCase):
             self._parse_and_reencode_pem(cert_pem) + self._parse_and_reencode_pem(SS_CERT.decode())
 
         from certbot.crypto_util import cert_and_chain_from_fullchain
-        for fullchain in (fullchain_pem, spacey_fullchain_pem, crlf_fullchain_pem, acmev1_fullchain_pem):
+        for fullchain in (fullchain_pem, spacey_fullchain_pem, crlf_fullchain_pem,
+                          acmev1_fullchain_pem):
             cert_out, chain_out = cert_and_chain_from_fullchain(fullchain)
             self.assertEqual(cert_out, cert_pem)
             self.assertEqual(chain_out, chain_pem)
 
-        self.assertRaisesRegex(errors.Error,
-            "failed to parse fullchain into cert and chain: less than 2 certificates in chain",
-            cert_and_chain_from_fullchain, cert_pem)
+        self.assertRaises(errors.Error, cert_and_chain_from_fullchain, cert_pem)
 
 
 if __name__ == '__main__':
