@@ -482,10 +482,10 @@ def sha256sum(filename):
 # Finds one CERTIFICATE stricttextualmsg according to rfc7468#section-3.
 # Does not validate the base64text - use crypto.load_certificate.
 CERT_PEM_REGEX = re.compile(
-    b"""(-----BEGIN CERTIFICATE-----\r?
+    b"""-----BEGIN CERTIFICATE-----\r?
 .+?\r?
 -----END CERTIFICATE-----\r?
-)""",
+""",
     re.DOTALL # DOTALL (/s) because the base64text may include newlines
 )
 
