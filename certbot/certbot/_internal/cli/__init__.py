@@ -310,6 +310,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         help="Be willing to replace or renew valid certificates with invalid "
              "(testing/staging) certificates")
     helpful.add(
+        "security", "--rsa-key-size", type=int, metavar="N",
+        default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
+    helpful.add(
         ["testing", "certonly", "renew", "run"], "--key-type", dest="key_type",
         default=flag_default("key_type"),
         help="The type of private key, "
