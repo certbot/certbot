@@ -71,6 +71,8 @@ CLI_DEFAULTS = dict(
     random_sleep_on_renew=True,
     eab_hmac_key=None,
     eab_kid=None,
+    key_type="rsa",
+    elliptic_curve="secp256r1",
 
     # Subparsers
     num=None,

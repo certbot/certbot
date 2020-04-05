@@ -626,7 +626,7 @@ class NginxConfigurator(common.Installer):
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
         le_key = crypto_util.init_save_key(
-            key_size=1024, key_dir=tmp_dir, keyname="key.pem")
+           {"type": "rsa", "size": 1024}, key_dir=tmp_dir, keyname="key.pem")
         key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
         cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])

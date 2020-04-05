@@ -50,7 +50,7 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
         mock_make.return_value = b'key_pem'
-        key = self._call(1024, self.workdir)
+        key = self._call({"type": "rsa", "size": 1024}, self.workdir)
         self.assertEqual(key.pem, b'key_pem')
         self.assertTrue('key-certbot.pem' in key.file)
         self.assertTrue(os.path.exists(os.path.join(self.workdir, key.file)))
@@ -171,7 +171,7 @@ class MakeKeyTest(unittest.TestCase):
         from certbot.crypto_util import make_key
         # Do not test larger keys as it takes too long.
         OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
+            OpenSSL.crypto.FILETYPE_PEM, make_key({"type": "rsa", "size": 1024}))
 
 
 class VerifyCertSetup(unittest.TestCase):

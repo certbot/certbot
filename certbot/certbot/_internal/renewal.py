@@ -33,7 +33,8 @@ logger = logging.getLogger(__name__)
 # the renewal configuration process loses this information.
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
-                    "renew_hook", "pre_hook", "post_hook", "http01_address"]
+                    "renew_hook", "pre_hook", "post_hook", "http01_address",
+                    "key_type", "elliptic_curve"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "http01_port"]
 BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key",
                      "autorenew"]

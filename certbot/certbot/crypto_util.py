@@ -12,6 +12,8 @@ import warnings
 from cryptography import x509  # type: ignore
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
@@ -33,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 # High level functions
-def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
+def init_save_key(key_prop, key_dir, keyname="key-certbot.pem"):
     """Initializes and saves a privkey.
 
     Inits key and saves it in PEM format on the filesystem.
@@ -41,7 +43,7 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
     .. note:: keyname is the attempted filename, it may be different if a file
         already exists at the path.
 
-    :param int key_size: RSA key size in bits
+    :param int key_prop: Key property such as type, bits, curve name
     :param str key_dir: Key save directory.
     :param str keyname: Filename of key
 
@@ -52,7 +54,7 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
 
     """
     try:
-        key_pem = make_key(key_size)
+        key_pem = make_key(key_prop)
     except ValueError as err:
         logger.error("", exc_info=True)
         raise err
@@ -64,7 +66,10 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
         os.path.join(key_dir, keyname), 0o600, "wb")
     with key_f:
         key_f.write(key_pem)
-    logger.debug("Generating key (%d bits): %s", key_size, key_path)
+    if key_prop["type"] == "rsa":
+        logger.debug("Generating RSA key (%d bits): %s", key_prop["size"], key_path)
+    elif key_prop["type"] == "ecdsa":
+        logger.debug("Generating EC key (%s): %s", key_prop["curve"], key_path)
 
     return util.Key(key_path, key_pem)
 
@@ -173,23 +178,39 @@ def import_csr_file(csrfile, data):
     return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
-def make_key(bits):
-    """Generate PEM encoded RSA key.
+def make_key(key_prop):
+    """Generate PEM encoded RSA/EC key.
 
-    :param int bits: Number of bits, at least 1024.
+    :param dict key_prop: Key property such as type, bits, curve name.
 
-    :returns: new RSA key in PEM form with specified number of bits
+    :returns: new RSA/EC key in PEM form with specified number of bits
     :rtype: str
 
     """
-    assert bits >= 1024  # XXX
-    key = crypto.PKey()
-    key.generate_key(crypto.TYPE_RSA, bits)
-    return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+    if key_prop["type"] == "rsa":
+        bits = key_prop["size"]
+        assert bits >= 1024  # XXX
+        key = crypto.PKey()
+        key.generate_key(crypto.TYPE_RSA, bits)
+        return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+    elif key_prop["type"] == "ecdsa":
+        curve_name = key_prop["curve"]
+        cv = getattr(ec, curve_name.upper())
+        assert curve_name == cv.name
+        ekey = ec.generate_private_key(cv(), default_backend())
+        return ekey.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+    else:
+        error_str = "Unsupported key type: {0}".format(key_prop["type"])
+        logger.exception(error_str)
+        raise errors.Error(error_str)
 
 
 def valid_privkey(privkey):
-    """Is valid RSA private key?
+    """Is valid RSA/EC private key?
 
     :param str privkey: Private key file contents in PEM
 
