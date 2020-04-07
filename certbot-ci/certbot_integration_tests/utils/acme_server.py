@@ -180,7 +180,7 @@ class ACMEServer(object):
         except BaseException:
             # If we failed to set up boulder, print its logs.
             print('=> Boulder setup failed. Boulder logs are:')
-            process = self._launch_process(['docker-compose', 'logs'], cwd=instance_path, force_output=True)
+            process = self._launch_process(['docker-compose', 'logs'], cwd=instance_path, force_stderr=True)
             process.wait()
             raise
 
@@ -195,11 +195,11 @@ class ACMEServer(object):
         self._launch_process(command)
         print('=> Finished configuring the HTTP proxy.')
 
-    def _launch_process(self, command, cwd=os.getcwd(), env=None, force_output=False):
+    def _launch_process(self, command, cwd=os.getcwd(), env=None, force_stderr=False):
         """Launch silently a subprocess OS command"""
         if not env:
             env = os.environ
-        stdout = sys.stdout if force_output else self._stdout
+        stdout = sys.stderr if force_stderr else self._stdout
         process = subprocess.Popen(command, stdout=stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env)
         self._processes.append(process)
         return process
