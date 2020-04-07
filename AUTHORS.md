@@ -33,6 +33,7 @@ Authors
 * [Ben Wolfe](https://github.com/bwolfe)
 * [Bigfish](https://github.com/bwolfe)
 * [Blake Griffith](https://github.com/cowlicks)
+* [Bob Carroll](https://github.com/rcarz)
 * [Brad Warren](https://github.com/bmw)
 * [Brandon Kraft](https://github.com/kraftbj)
 * [Brandon Kreisel](https://github.com/kraftbj)

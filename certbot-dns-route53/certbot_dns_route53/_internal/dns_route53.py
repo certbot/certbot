@@ -104,8 +104,32 @@ class Authenticator(dns_common.DNSAuthenticator):
         zones.sort(key=lambda z: len(z[0]), reverse=True)
         return zones[0][1]
 
+    def _find_zone_id_for_domain_or_alias(self, domain):
+        """Find the zone id responsible a given FQDN.
+
+           That is, the id for the zone whose name is the longest parent of the
+           domain. If the matching resource record is a CNAME to a delegated zone
+           then follow the CNAME and return the delegated zone id.
+        """
+        zone_id = self._find_zone_id_for_domain(domain)
+        paginator = self.r53.get_paginator("list_resource_record_sets")
+        target = "{}.".format(domain)
+        alias = None
+
+        for page in paginator.paginate(HostedZoneId=zone_id):
+            for zone in page["ResourceRecordSets"]:
+                if zone["Name"] == target and zone["Type"] == "CNAME":
+                    alias = zone["ResourceRecords"][0]["Value"]
+                    break
+
+        if not alias:
+            return zone_id, domain
+
+        return self._find_zone_id_for_domain(alias), alias
+
     def _change_txt_record(self, action, validation_domain_name, validation):
-        zone_id = self._find_zone_id_for_domain(validation_domain_name)
+        zone_id, validation_domain_name = self._find_zone_id_for_domain_or_alias(
+            validation_domain_name)
 
         rrecords = self._resource_records[validation_domain_name]
         challenge = {"Value": '"{0}"'.format(validation)}
