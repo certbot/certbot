@@ -157,7 +157,7 @@ class ACMEServer(object):
         instance_path = join(self._workspace, 'boulder')
 
         # Load Boulder from git, that includes a docker-compose.yml ready for production.
-        process = self._launch_process(['git', 'clone', 'https://github.com/letsencrypt/boulder',
+        process = self._launch_process(['git', 'clone', 'https://github.com/bmw/boulder',
                                         '--single-branch', '--depth=1', instance_path])
         process.wait()
 
