@@ -14,6 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   of all domains challenged for the current certificate.
 * Added TLS-ALPN-01 challenge support in the `acme` library. Support of this
   challenge in the Certbot client is planned to be added in a future release.
+* Added support for \_acme-challenge as a DNS zone apex.
 
 ### Changed
 
@@ -313,7 +314,8 @@ More details about these changes can be found on our GitHub repo.
 
 ### Changed
 
-*
+* The `domain` parameter of `LexiconClient.{add,del}_txt_record()` is now
+  deprecated, and is ignored if passed.
 
 ### Fixed
 

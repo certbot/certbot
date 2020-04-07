@@ -67,10 +67,10 @@ class Authenticator(dns_common.DNSAuthenticator):
             dns_common.validate_file_permissions(self.conf('credentials'))
 
     def _perform(self, domain, validation_name, validation):
-        self._get_google_client().add_txt_record(domain, validation_name, validation, self.ttl)
+        self._get_google_client().add_txt_record(validation_name, validation, self.ttl)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_google_client().del_txt_record(domain, validation_name, validation, self.ttl)
+        self._get_google_client().del_txt_record(validation_name, validation, self.ttl)
 
     def _get_google_client(self):
         return _GoogleClient(self.conf('credentials'))
@@ -99,18 +99,17 @@ class _GoogleClient(object):
         else:
             self.dns = dns_api
 
-    def add_txt_record(self, domain, record_name, record_content, record_ttl):
+    def add_txt_record(self, record_name, record_content, record_ttl):
         """
         Add a TXT record using the supplied information.
 
-        :param str domain: The domain to use to look up the managed zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :param int record_ttl: The record TTL (number of seconds that the record may be cached).
         :raises certbot.errors.PluginError: if an error occurs communicating with the Google API
         """
 
-        zone_id = self._find_managed_zone_id(domain)
+        zone_id = self._find_managed_zone_id(record_name)
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
         if record_contents is None:
@@ -165,11 +164,10 @@ class _GoogleClient(object):
             raise errors.PluginError('Error communicating with the Google Cloud DNS API: {0}'
                                      .format(e))
 
-    def del_txt_record(self, domain, record_name, record_content, record_ttl):
+    def del_txt_record(self, record_name, record_content, record_ttl):
         """
         Delete a TXT record using the supplied information.
 
-        :param str domain: The domain to use to look up the managed zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :param int record_ttl: The record TTL (number of seconds that the record may be cached).
@@ -177,7 +175,7 @@ class _GoogleClient(object):
         """
 
         try:
-            zone_id = self._find_managed_zone_id(domain)
+            zone_id = self._find_managed_zone_id(record_name)
         except errors.PluginError as e:
             logger.warning('Error finding zone. Skipping cleanup.')
             return

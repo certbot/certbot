@@ -37,7 +37,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
     def test_perform(self):
         self.auth.perform([self.achall])
 
-        expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
+        expected = [mock.call.add_txt_record('_acme-challenge.'+DOMAIN, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
     def test_cleanup(self):
@@ -45,7 +45,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth._attempt_cleanup = True
         self.auth.cleanup([self.achall])
 
-        expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
+        expected = [mock.call.del_txt_record('_acme-challenge.'+DOMAIN, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
 
@@ -75,7 +75,7 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         self.manager.get_all_domains.return_value = [wrong_domain_mock, domain_mock]
 
-        self.digitalocean_client.add_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.digitalocean_client.add_txt_record(self.record_name, self.record_content)
 
         domain_mock.create_new_domain_record.assert_called_with(type='TXT',
                                                                 name=self.record_prefix,
@@ -86,14 +86,14 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         self.assertRaises(errors.PluginError,
                           self.digitalocean_client.add_txt_record,
-                          DOMAIN, self.record_name, self.record_content)
+                          self.record_name, self.record_content)
 
     def test_add_txt_record_error_finding_domain(self):
         self.manager.get_all_domains.side_effect = API_ERROR
 
         self.assertRaises(errors.PluginError,
                           self.digitalocean_client.add_txt_record,
-                          DOMAIN, self.record_name, self.record_content)
+                          self.record_name, self.record_content)
 
     def test_add_txt_record_error_creating_record(self):
         domain_mock = mock.MagicMock()
@@ -104,7 +104,7 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         self.assertRaises(errors.PluginError,
                           self.digitalocean_client.add_txt_record,
-                          DOMAIN, self.record_name, self.record_content)
+                          self.record_name, self.record_content)
 
     def test_del_txt_record(self):
         first_record_mock = mock.MagicMock()
@@ -130,7 +130,7 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         self.manager.get_all_domains.return_value = [domain_mock]
 
-        self.digitalocean_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.digitalocean_client.del_txt_record(self.record_name, self.record_content)
 
         self.assertTrue(correct_record_mock.destroy.called)
 
@@ -140,7 +140,7 @@ class DigitalOceanClientTest(unittest.TestCase):
     def test_del_txt_record_error_finding_domain(self):
         self.manager.get_all_domains.side_effect = API_ERROR
 
-        self.digitalocean_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.digitalocean_client.del_txt_record(self.record_name, self.record_content)
 
     def test_del_txt_record_error_finding_record(self):
         domain_mock = mock.MagicMock()
@@ -149,7 +149,7 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         self.manager.get_all_domains.return_value = [domain_mock]
 
-        self.digitalocean_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.digitalocean_client.del_txt_record(self.record_name, self.record_content)
 
     def test_del_txt_record_error_deleting_record(self):
         record_mock = mock.MagicMock()
@@ -164,7 +164,7 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         self.manager.get_all_domains.return_value = [domain_mock]
 
-        self.digitalocean_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.digitalocean_client.del_txt_record(self.record_name, self.record_content)
 
 
 if __name__ == "__main__":
