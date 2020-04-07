@@ -179,7 +179,8 @@ class ACMEServer(object):
             response.raise_for_status()
         except BaseException:
             # If we failed to set up boulder, print its logs.
-            process = self._launch_process(['docker-compose logs'], cwd=instance_path, force_output=True)
+            print('=> Boulder setup failed. Boulder logs are:')
+            process = self._launch_process(['docker-compose', 'logs'], cwd=instance_path, force_output=True)
             process.wait()
             raise
 
