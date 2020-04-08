@@ -228,6 +228,28 @@ class OCSPPrefetchTest(util.ApacheTest):
             self.call_mocked_py2(self.config.update_ocsp_prefetch, None)
             self.assertFalse(mock_refresh.called)
 
+    def test_ocsp_prefetch_refresh_error(self):
+        def ocsp_req_mock(_cert, _chain, workfile):
+            """Method to mock the OCSP request and write response to file"""
+            with open(workfile, 'w') as fh:
+                fh.write("MOCKRESPONSE")
+            return True
+
+        ocsp_path = "certbot.ocsp.RevocationChecker.ocsp_revoked_by_paths"
+        with mock.patch(ocsp_path, side_effect=ocsp_req_mock):
+            self.call_mocked_py2(self.config.enable_ocsp_prefetch,
+                                 self.lineage, ["ocspvhost.com"])
+        self.assertEqual(len(self.config._ocsp_prefetch), 1)
+        refresh_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh"
+        rn_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh_needed"
+        with mock.patch(refresh_path) as mock_refresh:
+            mock_refresh.side_effect = errors.PluginError("Could not update")
+            with mock.patch("certbot_apache._internal.prefetch_ocsp.logger.warning") as mock_log:
+                with mock.patch(rn_path) as mock_needed:
+                    mock_needed.return_value = True
+                    self.call_mocked_py2(self.config.update_ocsp_prefetch, None)
+                    self.assertTrue(mock_log.called)
+
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.config_test")
     def test_ocsp_prefetch_backup_db(self, _mock_test):
         def ocsp_del_db():
@@ -374,14 +396,34 @@ class OCSPPrefetchTest(util.ApacheTest):
                 b'anything', b'irrelevant'
             )
 
-    @mock.patch("certbot_apache._internal.constants.OCSP_APACHE_TTL", 1234)
-    def test_ttl(self):
-        self.assertEqual(self.config._ocsp_ttl(None), 1234)
-        next_update = datetime.today() + timedelta(days=6)
+    def test_ttl_no_nextupdate(self):
+        self.assertRaises(errors.PluginError,
+                          self.config._ocsp_ttl,
+                          None)
+
+    def test_ttl_nextupdate_in_past(self):
+        next_update = datetime.utcnow() - timedelta(hours=1)
+        self.assertRaises(errors.PluginError,
+                          self.config._ocsp_ttl,
+                          next_update)
+
+    def test_ttl_nextupdate_not_enough_leeway(self):
+        next_update = datetime.utcnow() + timedelta(hours=29)
+        self.assertRaises(errors.PluginError,
+                          self.config._ocsp_ttl,
+                          next_update)
+
+    def test_ttl_ok(self):
+        next_update = datetime.utcnow() + timedelta(hours=32)
         ttl = self.config._ocsp_ttl(next_update)
-        # ttl should be roughly 3 days
-        self.assertTrue(ttl > 86400*2)
-        self.assertTrue(ttl < 86400*4)
+        self.assertTrue(ttl > 7100 and ttl < 7201)
+
+    def test_ttl(self):
+        next_update = datetime.utcnow() + timedelta(days=6)
+        ttl = self.config._ocsp_ttl(next_update)
+        # ttl should be 30h from next_update
+        self.assertTrue(ttl < timedelta(days=4, hours=19).total_seconds())
+        self.assertTrue(ttl > timedelta(days=4, hours=17).total_seconds())
 
     @mock.patch("certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin._ocsp_prefetch_fetch_state")
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.config_test")
