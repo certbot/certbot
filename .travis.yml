@@ -223,6 +223,26 @@ matrix:
           packages:  # don't install nginx and apache
             - libaugeas0
       <<: *extended-test-suite
+    - sudo: required
+      before_script:
+        - sudo snapcraft --use-lxd
+      install:
+        - sudo /snap/bin/lxd.migrate -yes
+        - sudo /snap/bin/lxd waitready
+        - sudo /snap/bin/lxd init --auto
+        - tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > constraints.txt
+      script:
+        - sudo snap install --dangerous --classic *.snap
+        - sudo bash snap/test.sh
+      addons:
+        snaps:
+          - name: snapcraft
+            # TODO: move back to stable channel once snapcraft 3.10 has been pushed to it.
+            channel: candidate
+            classic: true
+          - name: lxd
+            channel: stable
+      <<: *extended-test-suite
 
 # container-based infrastructure
 sudo: false
@@ -231,6 +251,7 @@ addons:
   apt:
     packages:  # Keep in sync with letsencrypt-auto-source/pieces/bootstrappers/deb_common.sh and Boulder.
     - python-dev
+    - python3-dev
     - gcc
     - libaugeas0
     - libssl-dev
