@@ -130,7 +130,7 @@ def included_in_paths(filepath, paths):
     :rtype: bool
     """
 
-    return any([fnmatch.fnmatch(filepath, path) for path in paths])
+    return any(fnmatch.fnmatch(filepath, path) for path in paths)
 
 
 def parse_defines(apachectl):

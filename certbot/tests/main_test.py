@@ -1583,9 +1583,9 @@ class EnhanceTest(test_util.ConfigTestCase):
             not_req_enh = ["uir"]
             self.assertTrue(mock_client.enhance_config.called)
             self.assertTrue(
-                all([getattr(mock_client.config, e) for e in req_enh]))
+                all(getattr(mock_client.config, e) for e in req_enh))
             self.assertFalse(
-                any([getattr(mock_client.config, e) for e in not_req_enh]))
+                any(getattr(mock_client.config, e) for e in not_req_enh))
             self.assertTrue(
                 "example.com" in mock_client.enhance_config.call_args[0][0])
 

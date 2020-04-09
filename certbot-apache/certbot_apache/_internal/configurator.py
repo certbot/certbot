@@ -1579,7 +1579,7 @@ class ApacheConfigurator(common.Installer):
                         result.append(comment)
                         sift = True
 
-                    result.append('\n'.join(['# ' + l for l in chunk]))
+                    result.append('\n'.join('# ' + l for l in chunk))
                 else:
                     result.append('\n'.join(chunk))
         return result, sift
@@ -2471,7 +2471,7 @@ class ApacheConfigurator(common.Installer):
         if len(matches) != 1:
             raise errors.PluginError("Unable to find Apache version")
 
-        return tuple([int(i) for i in matches[0].split(".")])
+        return tuple(int(i) for i in matches[0].split("."))
 
     def more_info(self):
         """Human-readable string to help understand the module"""

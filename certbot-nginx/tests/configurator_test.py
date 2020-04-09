@@ -177,7 +177,7 @@ class NginxConfiguratorTest(util.NginxTest):
             self.assertTrue(vhost.ipv6_enabled())
             # Make sure that we have SSL enabled also for IPv6 addr
             self.assertTrue(
-                any([True for x in vhost.addrs if x.ssl and x.ipv6]))
+                any(True for x in vhost.addrs if x.ssl and x.ipv6))
 
     def test_choose_vhosts_bad(self):
         bad_results = ['www.foo.com', 'example', 't.www.bar.co',

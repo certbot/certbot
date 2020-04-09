@@ -104,7 +104,7 @@ class CentOS6Tests(util.ApacheTest):
         pre_loadmods = self.config.parser.find_dir(
             "LoadModule", "ssl_module", exclude=False)
         # LoadModules are not within IfModule blocks
-        self.assertFalse(any(["ifmodule" in m.lower() for m in pre_loadmods]))
+        self.assertFalse(any("ifmodule" in m.lower() for m in pre_loadmods))
         self.config.assoc["test.example.com"] = self.vh_truth[0]
         self.config.deploy_cert(
             "random.demo", "example/cert.pem", "example/key.pem",

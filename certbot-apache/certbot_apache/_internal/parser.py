@@ -945,8 +945,8 @@ def case_i(string):
     :param str string: string to make case i regex
 
     """
-    return "".join(["[" + c.upper() + c.lower() + "]"
-                    if c.isalpha() else c for c in re.escape(string)])
+    return "".join("[" + c.upper() + c.lower() + "]"
+                    if c.isalpha() else c for c in re.escape(string))
 
 
 def get_aug_path(file_path):
