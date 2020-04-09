@@ -173,14 +173,14 @@ class FileOutputDisplayTest(unittest.TestCase):
         code, tag_list = self.displayer.checklist(
             "msg", TAGS, force_interactive=True)
         self.assertEqual(
-            (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2"])))
+            (code, set(tag_list)), (display_util.OK, {"tag1", "tag2"}))
 
     @mock.patch("certbot.display.util.input_with_timeout")
     def test_checklist_empty(self, mock_input):
         mock_input.return_value = ""
         code, tag_list = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(
-            (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2", "tag3"])))
+            (code, set(tag_list)), (display_util.OK, {"tag1", "tag2", "tag3"}))
 
     @mock.patch("certbot.display.util.input_with_timeout")
     def test_checklist_miss_valid(self, mock_input):
@@ -212,9 +212,9 @@ class FileOutputDisplayTest(unittest.TestCase):
             ["2", "3"],
         ]
         exp = [
-            set(["tag1"]),
-            set(["tag1", "tag2"]),
-            set(["tag2", "tag3"]),
+            {"tag1"},
+            {"tag1", "tag2"},
+            {"tag2", "tag3"},
         ]
         for i, list_ in enumerate(indices):
             set_tags = set(

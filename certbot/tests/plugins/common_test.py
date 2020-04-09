@@ -94,7 +94,7 @@ class InstallerTest(test_util.ConfigTestCase):
         self.reverter = self.installer.reverter
 
     def test_add_to_real_checkpoint(self):
-        files = set(("foo.bar", "baz.qux",))
+        files = {"foo.bar", "baz.qux",}
         save_notes = "foo bar baz qux"
         self._test_wrapped_method("add_to_checkpoint", files, save_notes)
 
@@ -105,7 +105,7 @@ class InstallerTest(test_util.ConfigTestCase):
         self._test_add_to_checkpoint_common(True)
 
     def _test_add_to_checkpoint_common(self, temporary):
-        files = set(("foo.bar", "baz.qux",))
+        files = {"foo.bar", "baz.qux",}
         save_notes = "foo bar baz qux"
 
         installer_func = functools.partial(self.installer.add_to_checkpoint,
@@ -242,17 +242,17 @@ class AddrTest(unittest.TestCase):
 
     def test_set_inclusion(self):
         from certbot.plugins.common import Addr
-        set_a = set([self.addr1, self.addr2])
+        set_a = {self.addr1, self.addr2}
         addr1b = Addr.fromstring("192.168.1.1")
         addr2b = Addr.fromstring("192.168.1.1:*")
-        set_b = set([addr1b, addr2b])
+        set_b = {addr1b, addr2b}
 
         self.assertEqual(set_a, set_b)
 
-        set_c = set([self.addr4, self.addr5])
+        set_c = {self.addr4, self.addr5}
         addr4b = Addr.fromstring("[fe00::1]")
         addr5b = Addr.fromstring("[fe00::1]:*")
-        set_d = set([addr4b, addr5b])
+        set_d = {addr4b, addr5b}
 
         self.assertEqual(set_c, set_d)
 

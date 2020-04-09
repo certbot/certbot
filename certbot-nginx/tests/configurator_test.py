@@ -104,7 +104,7 @@ class NginxConfiguratorTest(util.NginxTest):
         filep = self.config.parser.abs_path('sites-enabled/example.com')
         mock_vhost = obj.VirtualHost(filep,
                                      None, None, None,
-                                     set(['.example.com', 'example.*']),
+                                     {'.example.com', 'example.*'},
                                      None, [0])
         self.config.parser.add_server_directives(
             mock_vhost,
@@ -150,11 +150,11 @@ class NginxConfiguratorTest(util.NginxTest):
         self._test_choose_vhosts_common('ipv6.com', 'ipv6_conf')
 
     def _test_choose_vhosts_common(self, name, conf):
-        conf_names = {'localhost_conf': set(['localhost', r'~^(www\.)?(example|bar)\.']),
-                 'server_conf': set(['somename', 'another.alias', 'alias']),
-                 'example_conf': set(['.example.com', 'example.*']),
-                 'foo_conf': set(['*.www.foo.com', '*.www.example.com']),
-                 'ipv6_conf': set(['ipv6.com'])}
+        conf_names = {'localhost_conf': {'localhost', r'~^(www\.)?(example|bar)\.'},
+                 'server_conf': {'somename', 'another.alias', 'alias'},
+                 'example_conf': {'.example.com', 'example.*'},
+                 'foo_conf': {'*.www.foo.com', '*.www.example.com'},
+                 'ipv6_conf': {'ipv6.com'}}
 
         conf_path = {'localhost': "etc_nginx/nginx.conf",
                    'alias': "etc_nginx/nginx.conf",

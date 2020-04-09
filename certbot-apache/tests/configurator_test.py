@@ -140,11 +140,9 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_utility = mock_getutility()
         mock_utility.notification = mock.MagicMock(return_value=True)
         names = self.config.get_all_names()
-        self.assertEqual(names, set(
-            ["certbot.demo", "ocspvhost.com", "encryption-example.demo",
+        self.assertEqual(names, {"certbot.demo", "ocspvhost.com", "encryption-example.demo",
              "nonsym.link", "vhost.in.rootconf", "www.certbot.demo",
-             "duplicate.example.com"]
-        ))
+             "duplicate.example.com"})
 
     @certbot_util.patch_get_utility()
     @mock.patch("certbot_apache._internal.configurator.socket.gethostbyaddr")
@@ -154,9 +152,9 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_utility.notification.return_value = True
         vhost = obj.VirtualHost(
             "fp", "ap",
-            set([obj.Addr(("8.8.8.8", "443")),
+            {obj.Addr(("8.8.8.8", "443")),
                  obj.Addr(("zombo.com",)),
-                 obj.Addr(("192.168.1.2"))]),
+                 obj.Addr(("192.168.1.2"))},
             True, False)
 
         self.config.vhosts.append(vhost)
@@ -185,7 +183,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_bad_servername_alias(self):
         ssl_vh1 = obj.VirtualHost(
-            "fp1", "ap1", set([obj.Addr(("*", "443"))]),
+            "fp1", "ap1", {obj.Addr(("*", "443"))},
             True, False)
         # pylint: disable=protected-access
         self.config._add_servernames(ssl_vh1)
@@ -198,7 +196,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.config._add_servernames(self.vh_truth[2])
         self.assertEqual(
-            self.vh_truth[2].get_names(), set(["*.le.co", "ip-172-30-0-17"]))
+            self.vh_truth[2].get_names(), {"*.le.co", "ip-172-30-0-17"})
 
     def test_get_virtual_hosts(self):
         """Make sure all vhosts are being properly found."""
@@ -269,7 +267,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_choose_vhost_select_vhost_conflicting_non_ssl(self, mock_select):
         mock_select.return_value = self.vh_truth[3]
         conflicting_vhost = obj.VirtualHost(
-            "path", "aug_path", set([obj.Addr.fromstring("*:443")]),
+            "path", "aug_path", {obj.Addr.fromstring("*:443")},
             True, True)
         self.config.vhosts.append(conflicting_vhost)
 
@@ -278,14 +276,14 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_find_best_http_vhost_default(self):
         vh = obj.VirtualHost(
-            "fp", "ap", set([obj.Addr.fromstring("_default_:80")]), False, True)
+            "fp", "ap", {obj.Addr.fromstring("_default_:80")}, False, True)
         self.config.vhosts = [vh]
         self.assertEqual(self.config.find_best_http_vhost("foo.bar", False), vh)
 
     def test_find_best_http_vhost_port(self):
         port = "8080"
         vh = obj.VirtualHost(
-            "fp", "ap", set([obj.Addr.fromstring("*:" + port)]),
+            "fp", "ap", {obj.Addr.fromstring("*:" + port)},
             False, True, "encryption-example.demo")
         self.config.vhosts.append(vh)
         self.assertEqual(self.config.find_best_http_vhost("foo.bar", False, port), vh)
@@ -313,8 +311,8 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_find_best_vhost_variety(self):
         # pylint: disable=protected-access
         ssl_vh = obj.VirtualHost(
-            "fp", "ap", set([obj.Addr(("*", "443")),
-                             obj.Addr(("zombo.com",))]),
+            "fp", "ap", {obj.Addr(("*", "443")),
+                             obj.Addr(("zombo.com",))},
             True, False)
         self.config.vhosts.append(ssl_vh)
         self.assertEqual(self.config._find_best_vhost("zombo.com"), ssl_vh)
@@ -685,7 +683,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(ssl_vhost.path,
                          "/files" + ssl_vhost.filep + "/IfModule/Virtualhost")
         self.assertEqual(len(ssl_vhost.addrs), 1)
-        self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
+        self.assertEqual({obj.Addr.fromstring("*:443")}, ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.name, "encryption-example.demo")
         self.assertTrue(ssl_vhost.ssl)
         self.assertFalse(ssl_vhost.enabled)
@@ -910,7 +908,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.modules["rewrite_module"] = None
         mock_exe.return_value = True
         ssl_vh1 = obj.VirtualHost(
-            "fp1", "ap1", set([obj.Addr(("*", "443"))]),
+            "fp1", "ap1", {obj.Addr(("*", "443"))},
             True, False)
         ssl_vh1.name = "satoshi.com"
         self.config.vhosts.append(ssl_vh1)
@@ -1011,7 +1009,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_get_http_vhost_third_filter(self):
         ssl_vh = obj.VirtualHost(
-            "fp", "ap", set([obj.Addr(("*", "443"))]),
+            "fp", "ap", {obj.Addr(("*", "443"))},
             True, False)
         ssl_vh.name = "satoshi.com"
         self.config.vhosts.append(ssl_vh)
@@ -1214,8 +1212,8 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_redirect_with_conflict(self):
         self.config.parser.modules["rewrite_module"] = None
         ssl_vh = obj.VirtualHost(
-            "fp", "ap", set([obj.Addr(("*", "443")),
-                             obj.Addr(("zombo.com",))]),
+            "fp", "ap", {obj.Addr(("*", "443")),
+                             obj.Addr(("zombo.com",))},
             True, False)
         # No names ^ this guy should conflict.
 
@@ -1257,7 +1255,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.get_version = mock.Mock(return_value=(2, 3, 9))
         # For full testing... give names...
         self.vh_truth[1].name = "default.com"
-        self.vh_truth[1].aliases = set(["yes.default.com"])
+        self.vh_truth[1].aliases = {"yes.default.com"}
 
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
@@ -1268,7 +1266,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.get_version = mock.Mock(return_value=(2, 2))
         # For full testing... give names...
         self.vh_truth[1].name = "default.com"
-        self.vh_truth[1].aliases = set(["yes.default.com"])
+        self.vh_truth[1].aliases = {"yes.default.com"}
 
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
@@ -1609,7 +1607,7 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertEqual(ssl_vhost.path,
                          "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
         self.assertEqual(len(ssl_vhost.addrs), 1)
-        self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
+        self.assertEqual({obj.Addr.fromstring("*:443")}, ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.name, "banana.vomit.com")
         self.assertTrue(ssl_vhost.ssl)
         self.assertFalse(ssl_vhost.enabled)

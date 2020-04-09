@@ -30,7 +30,7 @@ class ApacheParser(object):
 
     """
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
-    fnmatch_chars = set(["*", "?", "\\", "[", "]"])
+    fnmatch_chars = {"*", "?", "\\", "[", "]"}
 
     def __init__(self, root, vhostroot=None, version=(2, 4),
                  configurator=None):

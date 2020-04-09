@@ -1719,7 +1719,7 @@ class ApacheConfigurator(common.Installer):
         for addr in vhost.addrs:
             # In Apache 2.2, when a NameVirtualHost directive is not
             # set, "*" and "_default_" will conflict when sharing a port
-            addrs = set((addr,))
+            addrs = {addr,}
             if addr.get_addr() in ("*", "_default_"):
                 addrs.update(obj.Addr((a, addr.get_port(),))
                              for a in ("*", "_default_"))

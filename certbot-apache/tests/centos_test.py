@@ -21,12 +21,12 @@ def get_vh_truth(temp_dir, config_name):
         obj.VirtualHost(
             os.path.join(prefix, "centos.example.com.conf"),
             os.path.join(aug_pre, "centos.example.com.conf/VirtualHost"),
-            set([obj.Addr.fromstring("*:80")]),
+            {obj.Addr.fromstring("*:80")},
             False, True, "centos.example.com"),
         obj.VirtualHost(
             os.path.join(prefix, "ssl.conf"),
             os.path.join(aug_pre, "ssl.conf/VirtualHost"),
-            set([obj.Addr.fromstring("_default_:443")]),
+            {obj.Addr.fromstring("_default_:443")},
             True, True, None)
     ]
     return vh_truth

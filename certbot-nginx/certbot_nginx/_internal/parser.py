@@ -404,9 +404,9 @@ class NginxParser(object):
                 if directive and directive[0] == 'listen':
                     # Exclude one-time use parameters which will cause an error if repeated.
                     # https://nginx.org/en/docs/http/ngx_http_core_module.html#listen
-                    exclude = set(('default_server', 'default', 'setfib', 'fastopen', 'backlog',
+                    exclude = {'default_server', 'default', 'setfib', 'fastopen', 'backlog',
                                    'rcvbuf', 'sndbuf', 'accept_filter', 'deferred', 'bind',
-                                   'ipv6only', 'reuseport', 'so_keepalive'))
+                                   'ipv6only', 'reuseport', 'so_keepalive'}
 
                     for param in exclude:
                         # See: github.com/certbot/certbot/pull/6223#pullrequestreview-143019225
@@ -578,7 +578,7 @@ def _update_or_add_directives(directives, insert_at_top, block):
 
 
 INCLUDE = 'include'
-REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE, 'rewrite', 'add_header'])
+REPEATABLE_DIRECTIVES = {'server_name', 'listen', INCLUDE, 'rewrite', 'add_header'}
 COMMENT = ' managed by Certbot'
 COMMENT_BLOCK = [' ', '#', COMMENT]
 

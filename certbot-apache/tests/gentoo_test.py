@@ -21,19 +21,19 @@ def get_vh_truth(temp_dir, config_name):
         obj.VirtualHost(
             os.path.join(prefix, "gentoo.example.com.conf"),
             os.path.join(aug_pre, "gentoo.example.com.conf/VirtualHost"),
-            set([obj.Addr.fromstring("*:80")]),
+            {obj.Addr.fromstring("*:80")},
             False, True, "gentoo.example.com"),
         obj.VirtualHost(
             os.path.join(prefix, "00_default_vhost.conf"),
             os.path.join(aug_pre, "00_default_vhost.conf/IfDefine/VirtualHost"),
-            set([obj.Addr.fromstring("*:80")]),
+            {obj.Addr.fromstring("*:80")},
             False, True, "localhost"),
         obj.VirtualHost(
             os.path.join(prefix, "00_default_ssl_vhost.conf"),
             os.path.join(aug_pre,
                          "00_default_ssl_vhost.conf" +
                          "/IfDefine/IfDefine/IfModule/VirtualHost"),
-            set([obj.Addr.fromstring("_default_:443")]),
+            {obj.Addr.fromstring("_default_:443")},
             True, True, "localhost")
     ]
     return vh_truth
