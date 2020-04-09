@@ -224,16 +224,14 @@ matrix:
             - libaugeas0
       <<: *extended-test-suite
     - sudo: required
-      before_script:
-        - sudo snapcraft --use-lxd
-      install:
+      env: TOXENV=integration-external,apacheconftest-external-with-pebble
+      before_install:
         - sudo /snap/bin/lxd.migrate -yes
         - sudo /snap/bin/lxd waitready
         - sudo /snap/bin/lxd init --auto
         - tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > constraints.txt
-      script:
+        - sudo snapcraft --use-lxd
         - sudo snap install --dangerous --classic *.snap
-        - sudo bash snap/test.sh
       addons:
         snaps:
           - name: snapcraft
