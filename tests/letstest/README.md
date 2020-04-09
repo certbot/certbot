@@ -15,8 +15,8 @@ Simple AWS testfarm scripts for certbot client testing
     are needed, they need to be requested via online webform.
 
 ## Installation and configuration
-These tests require Python 2.7, awscli, boto3, PyYAML, and fabric<2.0. If you
-have Python 2.7 and virtualenv installed, you can use requirements.txt to
+These tests require Python 3, awscli, boto3, PyYAML, and fabric 2.0+. If you
+have Python 3 and virtualenv installed, you can use requirements.txt to
 create a virtual environment with a known set of dependencies by running:
 ```
 python3 -m venv venv3
