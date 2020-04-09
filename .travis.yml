@@ -229,8 +229,7 @@ matrix:
       addons:
         snaps:
           - name: snapcraft
-            # TODO: move back to stable channel once snapcraft 3.10 has been pushed to it.
-            channel: candidate
+            channel: stable
             confinement: classic
           - name: lxd
             channel: stable
