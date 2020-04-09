@@ -407,7 +407,7 @@ def main():
     # Fabric library controlled through global env parameters
     fab_config = Config(overrides={
         "connect_kwargs": {
-            "key_filename": KEYFILE,
+            "key_filename": [KEYFILE], # https://github.com/fabric/fabric/issues/2007
         },
         "run": {
             "echo": True,
