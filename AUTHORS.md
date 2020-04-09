@@ -103,6 +103,7 @@ Authors
 * [Henry Chen](https://github.com/henrychen95)
 * [Hugo van Kemenade](https://github.com/hugovk)
 * [Ingolf Becker](https://github.com/watercrossing)
+* [Ivan Nejgebauer](https://github.com/inejge)
 * [Jaap Eldering](https://github.com/eldering)
 * [Jacob Hoffman-Andrews](https://github.com/jsha)
 * [Jacob Sachs](https://github.com/jsachs)

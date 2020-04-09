@@ -14,6 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   of all domains challenged for the current certificate.
 * Added TLS-ALPN-01 challenge support in the `acme` library. Support of this
   challenge in the Certbot client is planned to be added in a future release.
+* Added minimal proxy support for OCSP verification.
 
 ### Changed
 
