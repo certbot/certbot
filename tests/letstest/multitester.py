@@ -284,11 +284,11 @@ def deploy_script(cxn, scriptpath, *args):
     cxn.run('./'+scriptfile+' '+args_str)
 
 def run_boulder(cxn):
-    # yes, we're hardcoding the gopath. it's a predetermined AMI.
     boulder_path = '$GOPATH/src/github.com/letsencrypt/boulder'
     cxn.run('cd %s && sudo docker-compose up -d' % boulder_path)
 
 def config_and_launch_boulder(cxn, instance):
+    # yes, we're hardcoding the gopath. it's a predetermined AMI.
     with cxn.prefix('export GOPATH=/home/ubuntu/gopath'):
         deploy_script(cxn, 'scripts/boulder_config.sh')
         run_boulder(cxn)
