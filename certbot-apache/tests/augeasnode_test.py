@@ -2,7 +2,6 @@
 import mock
 
 import os
-import unittest
 import util
 
 from certbot import errors
