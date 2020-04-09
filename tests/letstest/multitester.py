@@ -362,26 +362,26 @@ def test_client_process(fab_config, inqueue, outqueue, boulder_url):
         print("server %s at %s"%(instance, instance.public_ip_address))
         host_string = "%s@%s"%(target['user'], instance.public_ip_address)
         print(host_string)
-        cxn = Connection(host_string, config=fab_config)
 
-        try:
-            install_and_launch_certbot(cxn, instance, boulder_url, target)
-            outqueue.put((ii, target, Status.PASS))
-            print("%s - %s SUCCESS"%(target['ami'], target['name']))
-        except:
-            outqueue.put((ii, target, Status.FAIL))
-            print("%s - %s FAIL"%(target['ami'], target['name']))
-            traceback.print_exc(file=sys.stdout)
-            pass
+        with Connection(host_string, config=fab_config) as cxn:
+            try:
+                install_and_launch_certbot(cxn, instance, boulder_url, target)
+                outqueue.put((ii, target, Status.PASS))
+                print("%s - %s SUCCESS"%(target['ami'], target['name']))
+            except:
+                outqueue.put((ii, target, Status.FAIL))
+                print("%s - %s FAIL"%(target['ami'], target['name']))
+                traceback.print_exc(file=sys.stdout)
+                pass
 
-        # append server certbot.log to each per-machine output log
-        print("\n\ncertbot.log\n" + "-"*80 + "\n")
-        try:
-            grab_certbot_log(cxn)
-        except:
-            print("log fail\n")
-            traceback.print_exc(file=sys.stdout)
-            pass
+            # append server certbot.log to each per-machine output log
+            print("\n\ncertbot.log\n" + "-"*80 + "\n")
+            try:
+                grab_certbot_log(cxn)
+            except:
+                print("log fail\n")
+                traceback.print_exc(file=sys.stdout)
+                pass
 
 
 def cleanup(cl_args, instances, targetlist, boulder_server):
@@ -417,6 +417,7 @@ def main():
             "connect": 10,
         },
     })
+    # no network connection, so don't worry about closing this one.
     local_cxn = Connection('localhost', config=fab_config)
 
     # Set up local copy of git repo
@@ -521,14 +522,14 @@ def main():
 
         # host_string defines the ssh user and host for connection
         host_string = "ubuntu@%s"%boulder_server.public_ip_address
-        cxn = Connection(host_string, config=fab_config)
         print("Boulder Server at (SSH):", host_string)
         if not boulder_preexists:
             print("Configuring and Launching Boulder")
-            config_and_launch_boulder(cxn, boulder_server)
-            # blocking often unnecessary, but cheap EC2 VMs can get very slow
-            block_until_http_ready('http://%s:4000'%boulder_server.public_ip_address,
-                                   wait_time=10, timeout=500)
+            with Connection(host_string, config=fab_config) as boulder_cxn:
+                config_and_launch_boulder(boulder_cxn, boulder_server)
+                # blocking often unnecessary, but cheap EC2 VMs can get very slow
+                block_until_http_ready('http://%s:4000'%boulder_server.public_ip_address,
+                                           wait_time=10, timeout=500)
 
         boulder_url = "http://%s:4000/directory"%boulder_server.private_ip_address
         print("Boulder Server at (public ip): http://%s:4000/directory"%boulder_server.public_ip_address)
