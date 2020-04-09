@@ -437,7 +437,7 @@ def main():
         else:
             print('Testing master of %s'%cl_args.repo)
             local_git_clone(local_cxn, cl_args.repo)
-    except Exception:
+    except BaseException:
         print("FAIL: trouble with git repo")
         traceback.print_exc()
         exit()
