@@ -208,12 +208,12 @@ class ApacheConfigurator(common.Installer):
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Add name_server association dict
-        self.assoc = dict()  # type: Dict[str, obj.VirtualHost]
+        self.assoc = {}  # type: Dict[str, obj.VirtualHost]
         # Outstanding challenges
         self._chall_out = set()  # type: Set[KeyAuthorizationAnnotatedChallenge]
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = dict()  # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_vhosts = {}  # type: Dict[str, List[obj.VirtualHost]]
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
         # Temporary state for AutoHSTS enhancement
@@ -436,7 +436,7 @@ class ApacheConfigurator(common.Installer):
         """Initializes the ParserNode parser root instance."""
 
         if HAS_APACHECONFIG:
-            apache_vars = dict()
+            apache_vars = {}
             apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
             apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
             apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
@@ -548,7 +548,7 @@ class ApacheConfigurator(common.Installer):
 
         # Go through the vhosts, making sure that we cover all the names
         # present, but preferring the SSL vhosts
-        filtered_vhosts = dict()
+        filtered_vhosts = {}
         for vhost in vhosts:
             for name in vhost.get_names():
                 if vhost.ssl:
@@ -574,7 +574,7 @@ class ApacheConfigurator(common.Installer):
 
         # Make sure we create SSL vhosts for the ones that are HTTP only
         # if requested.
-        return_vhosts = list()
+        return_vhosts = []
         for vhost in dialog_output:
             if not vhost.ssl:
                 return_vhosts.append(self.make_vhost_ssl(vhost))
@@ -1910,7 +1910,7 @@ class ApacheConfigurator(common.Installer):
         try:
             self._autohsts = self.storage.fetch("autohsts")
         except KeyError:
-            self._autohsts = dict()
+            self._autohsts = {}
 
     def _autohsts_save_state(self):
         """

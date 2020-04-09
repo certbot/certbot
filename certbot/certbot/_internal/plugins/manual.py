@@ -71,7 +71,7 @@ permitted by DNS standards.)
         super(Authenticator, self).__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
-        self.env = dict() \
+        self.env = {} \
         # type: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]]
         self.subsequent_dns_challenge = False
         self.subsequent_any_challenge = False

@@ -11,7 +11,7 @@ def validate_kwargs(kwargs, required_names):
     :param list required_names: List of required parameter names.
     """
 
-    validated_kwargs = dict()
+    validated_kwargs = {}
     for name in required_names:
         try:
             validated_kwargs[name] = kwargs.pop(name)

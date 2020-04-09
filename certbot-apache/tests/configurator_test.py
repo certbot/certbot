@@ -99,7 +99,7 @@ class MultipleVhostsTest(util.ApacheTest):
         parserargs = ["server_root", "enmod", "dismod", "le_vhost_ext",
                       "vhost_root", "logs_root", "challenge_location",
                       "handle_modules", "handle_sites", "ctl"]
-        exp = dict()
+        exp = {}
 
         for k in ApacheConfigurator.OS_DEFAULTS:
             if k in parserargs:

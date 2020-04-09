@@ -80,7 +80,7 @@ class ParsingHooksTest(unittest.TestCase):
         fake_parser1.should_parse = lambda x: False
         parsing_hooks.return_value = (fake_parser1,)
         self.assertRaises(errors.MisconfigurationError, parse_raw, [])
-        parsing_hooks.return_value = tuple()
+        parsing_hooks.return_value = ()
         self.assertRaises(errors.MisconfigurationError, parse_raw, [])
 
     def test_parse_raw_passes_add_spaces(self):

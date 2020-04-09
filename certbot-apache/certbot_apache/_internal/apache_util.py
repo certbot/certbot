@@ -144,7 +144,7 @@ def parse_defines(apachectl):
     :rtype: dict
     """
 
-    variables = dict()
+    variables = {}
     define_cmd = [apachectl, "-t", "-D",
                   "DUMP_RUN_CFG"]
     matches = parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
