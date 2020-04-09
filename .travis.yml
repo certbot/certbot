@@ -225,7 +225,7 @@ matrix:
             - libaugeas0
       <<: *extended-test-suite
     - sudo: required
-      env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble
+      env: TOXENV=snap,integration-external,apacheconftest-external-with-pebble
       addons:
         snaps:
           - name: snapcraft
