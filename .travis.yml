@@ -231,7 +231,7 @@ matrix:
           - name: snapcraft
             # TODO: move back to stable channel once snapcraft 3.10 has been pushed to it.
             channel: candidate
-            classic: true
+            confinement: classic
           - name: lxd
             channel: stable
       <<: *extended-test-suite
