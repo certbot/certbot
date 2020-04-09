@@ -227,6 +227,9 @@ matrix:
     - sudo: required
       env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble
       addons:
+        apt:
+          packages:
+          - nginx-light
         snaps:
           - name: snapcraft
             channel: stable
