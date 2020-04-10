@@ -1,7 +1,10 @@
 """Tests for renewal updater interfaces"""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from certbot import interfaces
 from certbot._internal import main

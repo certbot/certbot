@@ -5,7 +5,10 @@ from socket import errno as socket_errors  # type: ignore
 import unittest
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import OpenSSL.crypto  # pylint: disable=unused-import
 import six
 
