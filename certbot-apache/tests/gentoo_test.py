@@ -1,7 +1,10 @@
 """Test for certbot_apache._internal.configurator for Gentoo overrides"""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from certbot import errors
 from certbot.compat import filesystem
