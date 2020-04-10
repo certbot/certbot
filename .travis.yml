@@ -224,8 +224,7 @@ matrix:
           packages:  # don't install nginx and apache
             - libaugeas0
       <<: *extended-test-suite
-    - python: "3.8"
-      sudo: required
+    - sudo: required
       env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble
       addons:
         apt:
