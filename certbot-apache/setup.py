@@ -1,5 +1,7 @@
+from distutils.version import StrictVersion
 import sys
 
+from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
@@ -11,12 +13,17 @@ version = '1.4.0.dev0'
 install_requires = [
     'acme>=0.29.0',
     'certbot>=1.1.0',
-    'mock',
     'python-augeas',
     'setuptools',
     'zope.component',
     'zope.interface',
 ]
+
+setuptools_known_environment_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
+if setuptools_known_environment_markers:
+    install_requires.append('mock ; python_version < "3.3"')
+elif sys.version_info < (3,3):
+    install_requires.append('mock')
 
 dev_extras = [
     'apacheconfig>=0.3.2',
