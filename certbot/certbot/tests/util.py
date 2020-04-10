@@ -13,7 +13,7 @@ import josepy as jose
 try:
     import mock
 except ImportError: # pragma: no cover
-    from unittest import mock
+    from unittest import mock # type: ignore
 import OpenSSL
 import pkg_resources
 import six
