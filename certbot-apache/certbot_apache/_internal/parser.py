@@ -30,7 +30,7 @@ class ApacheParser(object):
 
     """
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
-    fnmatch_chars = set(["*", "?", "\\", "[", "]"])
+    fnmatch_chars = {"*", "?", "\\", "[", "]"}
 
     def __init__(self, root, vhostroot=None, version=(2, 4),
                  configurator=None):
@@ -945,8 +945,8 @@ def case_i(string):
     :param str string: string to make case i regex
 
     """
-    return "".join(["[" + c.upper() + c.lower() + "]"
-                    if c.isalpha() else c for c in re.escape(string)])
+    return "".join("[" + c.upper() + c.lower() + "]"
+                    if c.isalpha() else c for c in re.escape(string))
 
 
 def get_aug_path(file_path):

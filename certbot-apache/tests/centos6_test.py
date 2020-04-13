@@ -19,12 +19,12 @@ def get_vh_truth(temp_dir, config_name):
         obj.VirtualHost(
             os.path.join(prefix, "test.example.com.conf"),
             os.path.join(aug_pre, "test.example.com.conf/VirtualHost"),
-            set([obj.Addr.fromstring("*:80")]),
+            {obj.Addr.fromstring("*:80")},
             False, True, "test.example.com"),
         obj.VirtualHost(
             os.path.join(prefix, "ssl.conf"),
             os.path.join(aug_pre, "ssl.conf/VirtualHost"),
-            set([obj.Addr.fromstring("_default_:443")]),
+            {obj.Addr.fromstring("_default_:443")},
             True, True, None)
     ]
     return vh_truth
@@ -104,7 +104,7 @@ class CentOS6Tests(util.ApacheTest):
         pre_loadmods = self.config.parser.find_dir(
             "LoadModule", "ssl_module", exclude=False)
         # LoadModules are not within IfModule blocks
-        self.assertFalse(any(["ifmodule" in m.lower() for m in pre_loadmods]))
+        self.assertFalse(any("ifmodule" in m.lower() for m in pre_loadmods))
         self.config.assoc["test.example.com"] = self.vh_truth[0]
         self.config.deploy_cert(
             "random.demo", "example/cert.pem", "example/key.pem",

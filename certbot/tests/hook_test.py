@@ -24,7 +24,7 @@ class ValidateHooksTest(unittest.TestCase):
         self._call(config)
 
         types = [call[0][1] for call in mock_validate_hook.call_args_list]
-        self.assertEqual(set(("pre", "post", "deploy",)), set(types[:-1]))
+        self.assertEqual({"pre", "post", "deploy",}, set(types[:-1]))
         # This ensures error messages are about deploy hooks when appropriate
         self.assertEqual("renew", types[-1])
 

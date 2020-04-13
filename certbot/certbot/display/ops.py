@@ -195,7 +195,7 @@ def _choose_names_manually(prompt_prefix=""):
         cli_flag="--domains", force_interactive=True)
 
     if code == display_util.OK:
-        invalid_domains = dict()
+        invalid_domains = {}
         retry_message = ""
         try:
             domain_list = display_util.separate_list_input(input_)

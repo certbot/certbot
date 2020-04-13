@@ -161,7 +161,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         self.auth.cleanup(["chall1"])
         self.assertEqual(self.auth.served, {
-            "server1": set(), "server2": set(["chall2", "chall3"])})
+            "server1": set(), "server2": {"chall2", "chall3"}})
         self.auth.servers.stop.assert_called_once_with(1)
 
         self.auth.servers.running.return_value = {
@@ -169,12 +169,12 @@ class AuthenticatorTest(unittest.TestCase):
         }
         self.auth.cleanup(["chall2"])
         self.assertEqual(self.auth.served, {
-            "server1": set(), "server2": set(["chall3"])})
+            "server1": set(), "server2": {"chall3"}})
         self.assertEqual(1, self.auth.servers.stop.call_count)
 
         self.auth.cleanup(["chall3"])
         self.assertEqual(self.auth.served, {
-            "server1": set(), "server2": set([])})
+            "server1": set(), "server2": set()})
         self.auth.servers.stop.assert_called_with(2)
 
 

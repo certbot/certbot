@@ -271,7 +271,7 @@ class ChooseNamesTest(unittest.TestCase):
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_names_valid_return(self, mock_util):
-        self.mock_install.get_all_names.return_value = set(["example.com"])
+        self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
 
         names = self._call(self.mock_install)
@@ -280,7 +280,7 @@ class ChooseNamesTest(unittest.TestCase):
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_namees_override_question(self, mock_util):
-        self.mock_install.get_all_names.return_value = set(["example.com"])
+        self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
         names = self._call(self.mock_install, "Custom")
         self.assertEqual(names, ["example.com"])
@@ -289,14 +289,14 @@ class ChooseNamesTest(unittest.TestCase):
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_names_nothing_selected(self, mock_util):
-        self.mock_install.get_all_names.return_value = set(["example.com"])
+        self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, [])
 
         self.assertEqual(self._call(self.mock_install), [])
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_names_cancel(self, mock_util):
-        self.mock_install.get_all_names.return_value = set(["example.com"])
+        self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (
             display_util.CANCEL, ["example.com"])
 
