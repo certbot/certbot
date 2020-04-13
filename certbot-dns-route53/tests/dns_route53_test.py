@@ -4,7 +4,10 @@ import unittest
 
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from certbot import errors
 from certbot.compat import os
