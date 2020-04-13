@@ -1,10 +1,7 @@
 """Tests for acme.errors."""
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 
 
 class BadNonceTest(unittest.TestCase):
