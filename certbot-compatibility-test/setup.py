@@ -18,11 +18,11 @@ install_requires = [
 setuptools_known_environment_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
 if setuptools_known_environment_markers:
     install_requires.append('mock ; python_version < "3.3"')
-elif sys.version_info < (3,3):
-    install_requires.append('mock')
-else:
+elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
                        'of setuptools. Version 36.2+ of setuptools is required.')
+elif sys.version_info < (3,3):
+    install_requires.append('mock')
 
 if sys.version_info < (2, 7, 9):
     # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)
