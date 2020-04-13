@@ -77,6 +77,9 @@ if setuptools_known_environment_markers:
     install_requires.append('mock ; python_version < "3.3"')
 elif sys.version_info < (3,3):
     install_requires.append('mock')
+else:
+    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
+                       'of setuptools. Version 36.2+ of setuptools is required.')
 
 dev_extras = [
     'coverage',
