@@ -6,7 +6,10 @@ import stat
 import unittest
 
 import configobj
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import pytz
 import six
 

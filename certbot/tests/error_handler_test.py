@@ -4,7 +4,10 @@ import signal
 import sys
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from certbot.compat import os
 

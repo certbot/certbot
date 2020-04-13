@@ -13,7 +13,10 @@ import traceback
 import unittest
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import pytz
 import six
 from six.moves import reload_module  # pylint: disable=import-error
