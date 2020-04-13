@@ -7,10 +7,7 @@ import tempfile
 import unittest
 
 import configobj
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 
 from certbot import errors
 from certbot._internal import configuration

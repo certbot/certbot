@@ -3,10 +3,7 @@ import functools
 import string
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 import pkg_resources
 import six
 import zope.interface

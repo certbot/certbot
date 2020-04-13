@@ -2,10 +2,7 @@
 import logging
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 import OpenSSL
 import zope.component
 
