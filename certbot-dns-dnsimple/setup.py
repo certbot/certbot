@@ -21,11 +21,11 @@ install_requires = [
 setuptools_known_environment_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
 if setuptools_known_environment_markers:
     install_requires.append('mock ; python_version < "3.3"')
-elif sys.version_info < (3,3):
-    install_requires.append('mock')
-else:
+elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
                        'of setuptools. Version 36.2+ of setuptools is required.')
+elif sys.version_info < (3,3):
+    install_requires.append('mock')
 
 # This package normally depends on dns-lexicon>=3.2.1 to address the
 # problem described in https://github.com/AnalogJ/lexicon/issues/387,
