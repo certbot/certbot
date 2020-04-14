@@ -133,7 +133,7 @@ def build_lexicon_config(lexicon_provider_name, lexicon_options, provider_option
         config.update(provider_options)
     else:
         # Lexicon 3.x
-        provider_config = {}
+        provider_config = {}  # type: Dict[str, Any]
         provider_config.update(provider_options)
         config[lexicon_provider_name] = provider_config
         config = ConfigResolver().with_dict(config).with_env()
