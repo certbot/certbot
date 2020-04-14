@@ -1,10 +1,7 @@
 """Tests for certbot._internal.renewal"""
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 
 from acme import challenges
 from certbot import errors

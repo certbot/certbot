@@ -4,10 +4,7 @@ import sys
 import unittest
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 import zope.component
 
 from acme import messages

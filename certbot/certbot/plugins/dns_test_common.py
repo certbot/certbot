@@ -2,10 +2,7 @@
 
 import configobj
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
+import mock
 import six
 
 from acme import challenges

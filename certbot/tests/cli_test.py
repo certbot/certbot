@@ -4,10 +4,7 @@ import copy
 import tempfile
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 

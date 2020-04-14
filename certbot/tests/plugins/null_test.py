@@ -1,10 +1,7 @@
 """Tests for certbot._internal.plugins.null."""
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 import six
 
 
