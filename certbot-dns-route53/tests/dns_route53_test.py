@@ -7,7 +7,7 @@ from botocore.exceptions import NoCredentialsError
 try:
     import mock
 except ImportError: # pragma: no cover
-    from unittest import mock
+    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import os
