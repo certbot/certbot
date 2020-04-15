@@ -10,7 +10,10 @@ import unittest
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import OpenSSL
 import pkg_resources
 import six

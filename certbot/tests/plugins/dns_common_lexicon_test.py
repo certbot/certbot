@@ -2,7 +2,10 @@
 
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from certbot.plugins import dns_common_lexicon
 from certbot.plugins import dns_test_common_lexicon
