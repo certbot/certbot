@@ -1,10 +1,7 @@
 """Tests for ApacheConfigurator for AugeasParserNode classes"""
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 
 import util
 

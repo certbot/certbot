@@ -5,10 +5,7 @@ import unittest
 
 import augeas
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 import zope.component
 
 from certbot.compat import os

@@ -2,10 +2,7 @@
 import unittest
 import errno
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 
 from acme import challenges
 from certbot import achallenges

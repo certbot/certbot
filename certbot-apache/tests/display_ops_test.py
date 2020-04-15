@@ -1,10 +1,7 @@
 """Test certbot_apache._internal.display_ops."""
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 
 from certbot import errors
 from certbot.display import util as display_util

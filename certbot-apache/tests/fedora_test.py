@@ -1,10 +1,7 @@
 """Test for certbot_apache._internal.configurator for Fedora 29+ overrides"""
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+import mock
 
 from certbot import errors
 from certbot.compat import filesystem
