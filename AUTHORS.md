@@ -21,6 +21,7 @@ Authors
 * [Andrzej Górski](https://github.com/andrzej3393)
 * [Anselm Levskaya](https://github.com/levskaya)
 * [Antoine Jacoutot](https://github.com/ajacoutot)
+* [April King](https://github.com/april)
 * [asaph](https://github.com/asaph)
 * [Axel Beckert](https://github.com/xtaran)
 * [Bas](https://github.com/Mechazawa)
