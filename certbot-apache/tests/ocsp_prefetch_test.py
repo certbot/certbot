@@ -4,6 +4,8 @@ from datetime import datetime
 from datetime import timedelta
 import json
 import sys
+import tempfile
+import time
 import unittest
 
 import mock
@@ -89,7 +91,8 @@ class OCSPPrefetchTest(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
             os_info="debian")
 
-        self.lineage = mock.MagicMock(cert_path="cert", chain_path="chain")
+        _, self.tmp_certfile = tempfile.mkstemp()
+        self.lineage = mock.MagicMock(cert_path=self.tmp_certfile, chain_path="chain")
         self.config.parser.modules.add("headers_module")
         self.config.parser.modules.add("mod_headers.c")
         self.config.parser.modules.add("ssl_module")
@@ -101,6 +104,9 @@ class OCSPPrefetchTest(util.ApacheTest):
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
         self.config._ensure_ocsp_dirs()
         self.db_path = os.path.join(self.work_dir, "ocsp", "ocsp_cache") + ".db"
+
+    def tearDown(self):
+        os.remove(self.tmp_certfile)
 
     def _call_mocked(self, func, *args, **kwargs):
         """Helper method to call functins with mock stack"""
@@ -154,7 +160,7 @@ class OCSPPrefetchTest(util.ApacheTest):
         ref_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh"
         with mock.patch(ref_path):
             self.call_mocked_py2(self.config.enable_ocsp_prefetch,
-                                 self.lineage, ["ocspvhost.com"])
+                                self.lineage, ["ocspvhost.com"])
         self.assertTrue(mock_enable.called)
         self.assertEqual(len(self.config._ocsp_prefetch), 1)
 
@@ -211,35 +217,27 @@ class OCSPPrefetchTest(util.ApacheTest):
                 self.call_mocked_py2(self.config.update_ocsp_prefetch, None)
                 self.assertTrue(mock_ocsp.called)
 
-    def test_ocsp_prefetch_refresh_noop(self):
-        def ocsp_req_mock(_cert, _chain, workfile):
-            """Method to mock the OCSP request and write response to file"""
-            with open(workfile, 'w') as fh:
-                fh.write("MOCKRESPONSE")
-            return True
-
-        ocsp_path = "certbot.ocsp.RevocationChecker.ocsp_revoked_by_paths"
-        with mock.patch(ocsp_path, side_effect=ocsp_req_mock):
-            self.call_mocked_py2(self.config.enable_ocsp_prefetch,
-                                 self.lineage, ["ocspvhost.com"])
+    def test_ocsp_prefetch_refresh_cert_deleted(self):
+        self.config._ocsp_prefetch_save("nonexistent_cert_path", "irrelevant")
         self.assertEqual(len(self.config._ocsp_prefetch), 1)
+        rn_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh_needed"
+        with mock.patch(rn_path) as mock_needed:
+            mock_needed.return_value = True
+            with mock.patch("certbot_apache._internal.prefetch_ocsp.logger.warning") as mock_log:
+                self.call_mocked_py2(self.config.update_ocsp_prefetch, None)
+                self.assertTrue(mock_log.called)
+                self.assertTrue("has been removed" in mock_log.call_args[0][0])
+        self.assertEqual(len(self.config._ocsp_prefetch), 0)
+
+    def test_ocsp_prefetch_refresh_noop(self):
+        self.config._ocsp_prefetch_save(self.lineage.cert_path, "irrelevant")
         refresh_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh"
         with mock.patch(refresh_path) as mock_refresh:
             self.call_mocked_py2(self.config.update_ocsp_prefetch, None)
             self.assertFalse(mock_refresh.called)
 
     def test_ocsp_prefetch_refresh_error(self):
-        def ocsp_req_mock(_cert, _chain, workfile):
-            """Method to mock the OCSP request and write response to file"""
-            with open(workfile, 'w') as fh:
-                fh.write("MOCKRESPONSE")
-            return True
-
-        ocsp_path = "certbot.ocsp.RevocationChecker.ocsp_revoked_by_paths"
-        with mock.patch(ocsp_path, side_effect=ocsp_req_mock):
-            self.call_mocked_py2(self.config.enable_ocsp_prefetch,
-                                 self.lineage, ["ocspvhost.com"])
-        self.assertEqual(len(self.config._ocsp_prefetch), 1)
+        self.config._ocsp_prefetch_save(self.lineage.cert_path, "irrelevant")
         refresh_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh"
         rn_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh_needed"
         with mock.patch(refresh_path) as mock_refresh:
@@ -293,8 +291,11 @@ class OCSPPrefetchTest(util.ApacheTest):
         with mock.patch(ocsp_path) as mock_ocsp:
             mock_ocsp.return_value = True
             with mock.patch(log_path) as mock_log:
-                self.call_mocked_py2(self.config.enable_ocsp_prefetch,
-                                     self.lineage, ["ocspvhost.com"])
+                self.assertRaises(errors.PluginError,
+                                  self.call_mocked_py2,
+                                  self.config.enable_ocsp_prefetch,
+                                  self.lineage, ["ocspvhost.com"]
+                )
                 self.assertTrue(mock_log.called)
                 self.assertTrue(
                     "trying to prefetch OCSP" in mock_log.call_args[0][0])

@@ -34,7 +34,7 @@ from datetime import datetime
 import logging
 import time
 
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, Union  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import ocsp
@@ -90,7 +90,7 @@ class OCSPPrefetchMixin(object):
     """OCSPPrefetchMixin implements OCSP response prefetching"""
 
     def __init__(self, *args, **kwargs):
-        self._ocsp_prefetch = {}  # type: Dict[str, str]
+        self._ocsp_prefetch = {}  # type: Dict[str, Dict[str, Union[str, float]]]
         # This is required because of python super() call chain.
         # Additionally, mypy isn't able to figure the chain out and needs to be
         # disabled for this line. See https://github.com/python/mypy/issues/5887
@@ -121,16 +121,16 @@ class OCSPPrefetchMixin(object):
                        "Apache OCSP stapling cache database.")
                 raise errors.NotSupportedError(msg)
 
-    def _ocsp_refresh_needed(self, pf_obj):
+    def _ocsp_refresh_needed(self, lastupdate):
         """Refreshes OCSP response for a certificate if it's due
 
-        :param dict pf_obj: OCSP prefetch object from pluginstorage
+        :param int lastupdate: Last update timestamp from pluginstorage entry
 
         :returns: If OCSP response was updated
         :rtype: bool
 
         """
-        ttl = pf_obj["lastupdate"] + constants.OCSP_INTERNAL_TTL
+        ttl = lastupdate + constants.OCSP_INTERNAL_TTL
         if ttl < time.time():
             return True
         return False
@@ -150,6 +150,9 @@ class OCSPPrefetchMixin(object):
                 os.path.dirname(self._ocsp_work),
                 apache_util.certid_sha1_hex(cert_path))
             handler = ocsp.RevocationChecker()
+            if not os.path.isfile(cert_path):
+                raise OCSPCertificateError("Certificate has been removed from the system.")
+
             if not handler.ocsp_revoked_by_paths(cert_path, chain_path, ocsp_workfile):
                 # Guaranteed good response
                 cert_sha = apache_util.certid_sha1(cert_path)
@@ -159,6 +162,7 @@ class OCSPPrefetchMixin(object):
             else:
                 logger.warning("Encountered an issue while trying to prefetch OCSP "
                                "response for certificate: %s", cert_path)
+                raise OCSPCertificateError("Certificate has been revoked.")
         finally:
             try:
                 os.remove(ocsp_workfile)
@@ -251,13 +255,20 @@ class OCSPPrefetchMixin(object):
         """
         status = {
             "lastupdate": time.time(),
-            "cert_path": cert_path,
             "chain_path": chain_path
         }
-        cert_id = apache_util.certid_sha1_hex(cert_path)
-        self._ocsp_prefetch[cert_id] = status
+        self._ocsp_prefetch[cert_path] = status
         self.storage.put("ocsp_prefetch", self._ocsp_prefetch)
         self.storage.save()
+
+    def _ocsp_prefetch_remove(self, cert_path):
+        """Removes OCSP prefetch configuration from PluginStorage object for
+        a certificate.
+
+        :param str cert_path: Filesystem path to certificate
+        """
+        self._ocsp_prefetch.pop(cert_path)
+        self.storage.put("ocsp_prefetch", self._ocsp_prefetch)
 
     def _ocsp_prefetch_fetch_state(self):
         """
@@ -365,16 +376,24 @@ class OCSPPrefetchMixin(object):
             # No OCSP prefetching enabled for any certificate
             return
 
-        for pf in self._ocsp_prefetch.values():
-            if self._ocsp_refresh_needed(pf):
+        # make a copy of the list of dictionary keys as we might remove items mid-iteration
+        for cert_path in list(self._ocsp_prefetch):
+            pf = self._ocsp_prefetch[cert_path]
+            if self._ocsp_refresh_needed(pf["lastupdate"]):
                 try:
-                    self._ocsp_refresh(pf["cert_path"], pf["chain_path"])
+                    self._ocsp_refresh(cert_path, pf["chain_path"])
+                except OCSPCertificateError as err:
+                    self._ocsp_prefetch_remove(cert_path)
+                    msg = ("Error when trying to prefetch OCSP staple: {} " +
+                           "OCSP prefetch functionality removed for the certificate").format(err)
+                    logger.warning(msg)
+                    continue
                 except errors.PluginError as err:
                     msg = "Encountered a issue when trying to renew OCSP staple: {}".format(err)
                     logger.warning(msg)
                 # Save the status to pluginstorage. Do this even if errored out to prevent
                 # spurious errors when handling multiple renewals.
-                self._ocsp_prefetch_save(pf["cert_path"], pf["chain_path"])
+                self._ocsp_prefetch_save(cert_path, pf["chain_path"])
 
     def restart(self):
         """Reloads the Apache server. When restarting, Apache deletes
@@ -402,6 +421,10 @@ class OCSPPrefetchMixin(object):
             if self._ocsp_prefetch:
                 # Restore the backed up dbm database
                 self._ocsp_prefetch_restore_db()
+
+
+class OCSPCertificateError(errors.PluginError):
+    """Error that prompts for removal of certificate from OCSP prefetch pool."""
 
 
 OCSPPrefetchEnhancement.register(OCSPPrefetchMixin)  # pylint: disable=no-member
