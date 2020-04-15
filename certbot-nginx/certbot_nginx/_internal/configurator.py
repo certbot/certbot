@@ -662,26 +662,33 @@ class NginxConfigurator(common.Installer):
         
         # Appending 'ssl' to existing listen block as we should not loose anything from the existing address
         logger.info("Existing Listen directive set: %s", vhost.addrs)
-        listen_directive_existing = vhost.addrs.pop()
-        logger.info("Existing Listen directive: %s", listen_directive_existing)
-        old_port = listen_directive_existing.get_port()
+        existing_listen_directives = vhost.addrs
+        logger.info("Copied Listen directive set: %s", existing_listen_directives)
+        # Removing existing listen directive to add same listen directive with SSL enabled
+        logger.info("Removing Listen directive to add same directives with SSL enabled...")
+        self.parser.remove_server_directives(vhost, 'listen')
+        # Adding exisitng listen directives with SSL enabled
+        for listen_dir in existing_listen_directives:
+            listen_directive_existing = listen_dir
+            logger.info("Existing Listen directive: %s", listen_directive_existing)
+            old_port = listen_directive_existing.get_port()
 
-		# Replacing '80' port with '443' as we should not put ssl on '80' port directly & should use '443' instead
-        if old_port == "80":
-            listen_directive_existing = obj.Addr.fromstring(listen_directive_existing.to_string().replace("80", "443"))
-            logger.info("Existing Listen directive's 80 is replaed with 443: %s"
-                        , listen_directive_existing)
+		    # Replacing '80' port with '443' as we should not put ssl on '80' port directly & should use '443' instead
+            if old_port == "80":
+                listen_directive_existing = obj.Addr.fromstring(listen_directive_existing.to_string().replace("80", "443"))
+                logger.info("Existing Listen directive's 80 is replaed with 443: %s"
+                            , listen_directive_existing)
         
-        listen_directive_to_update = [[
-            '\n    ',
-            'listen',
-            ' ',
-            '{0}'.format(listen_directive_existing),
-            ' ',
-            'ssl',
-            ]]
-        self.parser.update_or_add_server_directives(vhost,
-                                         listen_directive_to_update)
+            listen_directive_to_update = [[
+                '\n    ',
+                'listen',
+                ' ',
+                '{0}'.format(listen_directive_existing),
+                ' ',
+                'ssl',
+                ]]
+            logger.info("Updated Listen directive: %s", listen_directive_to_update)
+            self.parser.add_server_directives(vhost, listen_directive_to_update)
 
         # for listendir in vhost.addrs:
         #    logger.info("ListeDir: %s", listendir)
