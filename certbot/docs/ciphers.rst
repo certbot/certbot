@@ -241,7 +241,7 @@ Mozilla
 
 Mozilla's general server configuration guidance is available at https://wiki.mozilla.org/Security/Server_Side_TLS
 
-Mozilla has also produced a configuration generator: https://mozilla.github.io/server-side-tls/ssl-config-generator/
+Mozilla has also produced a configuration generator: https://ssl-config.mozilla.org
 
 Dutch National Cyber Security Centre
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

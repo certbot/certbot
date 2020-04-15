@@ -4,7 +4,10 @@ import shutil
 import unittest
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from acme import challenges
 from certbot import achallenges

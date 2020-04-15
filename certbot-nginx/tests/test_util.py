@@ -4,7 +4,10 @@ import shutil
 import tempfile
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import pkg_resources
 import zope.component
 

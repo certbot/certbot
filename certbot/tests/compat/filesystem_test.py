@@ -3,7 +3,10 @@ import contextlib
 import errno
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from certbot import util
 from certbot._internal import lock
