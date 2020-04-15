@@ -19,6 +19,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Stop asking interactively if the user would like to add a redirect.
+* `mock` dependency is now conditional on Python 2 in all of our packages.
 
 ### Fixed
 
