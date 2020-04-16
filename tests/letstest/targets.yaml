@@ -50,6 +50,11 @@ targets:
     type: centos
     virt: hvm
     user: ec2-user
+  - ami: ami-0fcbe88944a53b4c8
+    name: fedora31
+    type: centos
+    virt: hvm
+    user: fedora
   - ami: ami-00bbc6858140f19ed
     name: fedora30
     type: centos
