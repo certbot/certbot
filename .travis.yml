@@ -238,6 +238,14 @@ matrix:
             confinement: classic
           - name: lxd
             channel: stable
+      git:
+        # By default, Travis clones the repo to a depth of 50 commits which can
+        # break the ability to use `git describe` to set the version of the
+        # snap. This setting removes the --depth flag from git commands solving
+        # this problem. See
+        # https://docs.travis-ci.com/user/customizing-the-build#git-clone-depth
+        # for more info.
+        depth: false
       deploy:
         'on':
           # Deploy on release tags or nightly runs
