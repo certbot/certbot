@@ -69,7 +69,6 @@ matrix:
     - sudo: required
       env: TOXENV=apache_compat
       services: docker
-      before_install:
       addons:
       <<: *not-on-master
     - sudo: required
@@ -87,7 +86,6 @@ matrix:
     - sudo: required
       env: TOXENV=nginx_compat
       services: docker
-      before_install:
       addons:
       <<: *extended-test-suite
     - python: "3.7"
