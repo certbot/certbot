@@ -9,6 +9,7 @@ from acme import errors
 from acme import fields
 from acme import jws
 from acme import util
+from acme.mixins import ResourceMixin
 
 try:
     from collections.abc import Hashable
@@ -356,13 +357,13 @@ class Registration(ResourceBody):
 
 
 @Directory.register
-class NewRegistration(Registration):
+class NewRegistration(ResourceMixin, Registration):
     """New registration."""
     resource_type = 'new-reg'
     resource = fields.Resource(resource_type)
 
 
-class UpdateRegistration(Registration):
+class UpdateRegistration(ResourceMixin, Registration):
     """Update registration."""
     resource_type = 'reg'
     resource = fields.Resource(resource_type)
@@ -498,13 +499,13 @@ class Authorization(ResourceBody):
 
 
 @Directory.register
-class NewAuthorization(Authorization):
+class NewAuthorization(ResourceMixin, Authorization):
     """New authorization."""
     resource_type = 'new-authz'
     resource = fields.Resource(resource_type)
 
 
-class UpdateAuthorization(Authorization):
+class UpdateAuthorization(ResourceMixin, Authorization):
     """Update authorization."""
     resource_type = 'authz'
     resource = fields.Resource(resource_type)
@@ -522,7 +523,7 @@ class AuthorizationResource(ResourceWithURI):
 
 
 @Directory.register
-class CertificateRequest(jose.JSONObjectWithFields):
+class CertificateRequest(ResourceMixin, jose.JSONObjectWithFields):
     """ACME new-cert request.
 
     :ivar josepy.util.ComparableX509 csr:
@@ -548,7 +549,7 @@ class CertificateResource(ResourceWithURI):
 
 
 @Directory.register
-class Revocation(jose.JSONObjectWithFields):
+class Revocation(ResourceMixin, jose.JSONObjectWithFields):
     """Revocation message.
 
     :ivar .ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in

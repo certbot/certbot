@@ -1,7 +1,10 @@
 """Test for certbot_apache._internal.entrypoint for override class resolution"""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot_apache._internal import configurator
 from certbot_apache._internal import entrypoint

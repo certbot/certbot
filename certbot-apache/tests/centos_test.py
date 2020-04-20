@@ -1,7 +1,10 @@
 """Test for certbot_apache._internal.configurator for Centos overrides"""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import filesystem
@@ -21,12 +24,12 @@ def get_vh_truth(temp_dir, config_name):
         obj.VirtualHost(
             os.path.join(prefix, "centos.example.com.conf"),
             os.path.join(aug_pre, "centos.example.com.conf/VirtualHost"),
-            set([obj.Addr.fromstring("*:80")]),
+            {obj.Addr.fromstring("*:80")},
             False, True, "centos.example.com"),
         obj.VirtualHost(
             os.path.join(prefix, "ssl.conf"),
             os.path.join(aug_pre, "ssl.conf/VirtualHost"),
-            set([obj.Addr.fromstring("_default_:443")]),
+            {obj.Addr.fromstring("_default_:443")},
             True, True, None)
     ]
     return vh_truth
@@ -126,7 +129,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
                 return mod_val
             return ""
         mock_get.side_effect = mock_get_cfg
-        self.config.parser.modules = set()
+        self.config.parser.modules = {}
         self.config.parser.variables = {}
 
         with mock.patch("certbot.util.get_os_info") as mock_osi:

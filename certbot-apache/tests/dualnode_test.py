@@ -1,7 +1,10 @@
 """Tests for DualParserNode implementation"""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot_apache._internal import assertions
 from certbot_apache._internal import augeasparser

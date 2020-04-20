@@ -6,7 +6,10 @@ import json
 import unittest
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import OpenSSL
 import requests
 from six.moves import http_client  # pylint: disable=import-error
@@ -15,7 +18,7 @@ from acme import challenges
 from acme import errors
 from acme import jws as acme_jws
 from acme import messages
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.mixins import VersionedLEACMEMixin
 import messages_test
 import test_util
 
@@ -886,7 +889,7 @@ class ClientV2Test(ClientTestBase):
             self.client.net.get.assert_not_called()
 
 
-class MockJSONDeSerializable(jose.JSONDeSerializable):
+class MockJSONDeSerializable(VersionedLEACMEMixin, jose.JSONDeSerializable):
     # pylint: disable=missing-docstring
     def __init__(self, value):
         self.value = value

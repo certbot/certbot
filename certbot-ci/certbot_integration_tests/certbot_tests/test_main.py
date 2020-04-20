@@ -595,6 +595,23 @@ def test_ocsp_status_live(context):
     assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
 
 
+def test_ocsp_renew(context):
+    """Test that revoked certificates are renewed."""
+    # Obtain a certificate
+    certname = context.get_domain('ocsp-renew')
+    context.certbot(['--domains', certname])
+
+    # Test that "certbot renew" does not renew the certificate
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+    context.certbot(['renew'], force_renew=False)
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
+    # Revoke the certificate and test that it does renew the certificate
+    context.certbot(['revoke', '--cert-name', certname, '--no-delete-after-revoke'])
+    context.certbot(['renew'], force_renew=False)
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+
+
 def test_dry_run_deactivate_authzs(context):
     """Test that Certbot deactivates authorizations when performing a dry run"""
 

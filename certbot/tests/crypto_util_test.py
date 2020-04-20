@@ -2,7 +2,10 @@
 import logging
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import OpenSSL
 import zope.component
 
@@ -376,16 +379,32 @@ class Sha256sumTest(unittest.TestCase):
 class CertAndChainFromFullchainTest(unittest.TestCase):
     """Tests for certbot.crypto_util.cert_and_chain_from_fullchain"""
 
+    def _parse_and_reencode_pem(self, cert_pem):
+        from OpenSSL import crypto
+        return crypto.dump_certificate(crypto.FILETYPE_PEM,
+            crypto.load_certificate(crypto.FILETYPE_PEM, cert_pem)).decode()
+
     def test_cert_and_chain_from_fullchain(self):
         cert_pem = CERT.decode()
         chain_pem = cert_pem + SS_CERT.decode()
         fullchain_pem = cert_pem + chain_pem
         spacey_fullchain_pem = cert_pem + u'\n' + chain_pem
+        crlf_fullchain_pem = fullchain_pem.replace(u'\n', u'\r\n')
+
+        # In the ACME v1 code path, the fullchain is constructed by loading cert+chain DERs
+        # and using OpenSSL to dump them, so here we confirm that OpenSSL is producing certs
+        # that will be parseable by cert_and_chain_from_fullchain.
+        acmev1_fullchain_pem = self._parse_and_reencode_pem(cert_pem) + \
+            self._parse_and_reencode_pem(cert_pem) + self._parse_and_reencode_pem(SS_CERT.decode())
+
         from certbot.crypto_util import cert_and_chain_from_fullchain
-        for fullchain in (fullchain_pem, spacey_fullchain_pem):
+        for fullchain in (fullchain_pem, spacey_fullchain_pem, crlf_fullchain_pem,
+                          acmev1_fullchain_pem):
             cert_out, chain_out = cert_and_chain_from_fullchain(fullchain)
             self.assertEqual(cert_out, cert_pem)
             self.assertEqual(chain_out, chain_pem)
+
+        self.assertRaises(errors.Error, cert_and_chain_from_fullchain, cert_pem)
 
 
 if __name__ == '__main__':

@@ -3,7 +3,10 @@ import contextlib
 import errno
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from certbot import util
 from certbot._internal import lock
@@ -13,11 +16,9 @@ import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
 
 try:
-    # pylint: disable=import-error
     import win32api
     import win32security
     import ntsecuritycon
-    # pylint: enable=import-error
     POSIX_MODE = False
 except ImportError:
     POSIX_MODE = True

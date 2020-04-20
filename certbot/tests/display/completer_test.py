@@ -7,10 +7,12 @@ import string
 import sys
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 from six.moves import reload_module  # pylint: disable=import-error
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot.compat import filesystem  # pylint: disable=ungrouped-imports
 from certbot.compat import os  # pylint: disable=ungrouped-imports
 import certbot.tests.util as test_util  # pylint: disable=ungrouped-imports

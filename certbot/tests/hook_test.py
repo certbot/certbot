@@ -1,9 +1,11 @@
 """Tests for certbot._internal.hooks."""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot import util
 from certbot.compat import filesystem
@@ -25,7 +27,7 @@ class ValidateHooksTest(unittest.TestCase):
         self._call(config)
 
         types = [call[0][1] for call in mock_validate_hook.call_args_list]
-        self.assertEqual(set(("pre", "post", "deploy",)), set(types[:-1]))
+        self.assertEqual({"pre", "post", "deploy",}, set(types[:-1]))
         # This ensures error messages are about deploy hooks when appropriate
         self.assertEqual("renew", types[-1])
 

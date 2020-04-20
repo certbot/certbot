@@ -44,8 +44,8 @@ matrix:
       <<: *not-on-master
 
     # This job is always executed, including on master
-    - python: "2.7"
-      env: TOXENV=py27-cover FYI="py27 tests + code coverage"
+    - python: "3.8"
+      env: TOXENV=py38-cover FYI="py38 tests + code coverage"
 
     - python: "3.7"
       env: TOXENV=lint
@@ -60,11 +60,11 @@ matrix:
       dist: trusty
       env: TOXENV='py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest'
       <<: *not-on-master
+    - python: "2.7"
+      env: TOXENV=py27
+      <<: *not-on-master
     - python: "3.5"
       env: TOXENV=py35
-      <<: *not-on-master
-    - python: "3.8"
-      env: TOXENV=py38
       <<: *not-on-master
     - sudo: required
       env: TOXENV=apache_compat
@@ -90,24 +90,24 @@ matrix:
       before_install:
       addons:
       <<: *extended-test-suite
-    - python: "2.7"
+    - python: "3.7"
       env:
         - TOXENV=travis-test-farm-apache2
         - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
       <<: *extended-test-suite
-    - python: "2.7"
+    - python: "3.7"
       env:
         - TOXENV=travis-test-farm-leauto-upgrades
         - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
       git:
         depth: false  # This is needed to have the history to checkout old versions of certbot-auto.
       <<: *extended-test-suite
-    - python: "2.7"
+    - python: "3.7"
       env:
         - TOXENV=travis-test-farm-certonly-standalone
         - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
       <<: *extended-test-suite
-    - python: "2.7"
+    - python: "3.7"
       env:
         - TOXENV=travis-test-farm-sdists
         - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
@@ -247,14 +247,12 @@ addons:
 # version of virtualenv. The option "-I" is set so when CERTBOT_NO_PIN is also
 # set, pip updates dependencies it thinks are already satisfied to avoid some
 # problems with its lack of real dependency resolution.
-install: 'tools/pip_install.py -I codecov tox virtualenv'
+install: 'tools/pip_install.py -I tox virtualenv'
 # Most of the time TRAVIS_RETRY is an empty string, and has no effect on the
 # script command. It is set only to `travis_retry` during farm tests, in
 # order to trigger the Travis retry feature, and compensate the inherent
 # flakiness of these specific tests.
 script: '$TRAVIS_RETRY tox'
-
-after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 
 notifications:
   email: false
