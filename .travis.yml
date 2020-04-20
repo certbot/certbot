@@ -32,15 +32,16 @@ branches:
 not-on-master: &not-on-master
   if: NOT (type = push AND branch = master)
 
-# Jobs for the extended test suite are executed for cron jobs and pushes to
-# non-development branches. See the explanation for apache-parser-v2 above.
+# Jobs for the extended test suite are executed for tags, cron jobs, and pushes
+# to non-development branches. See the explanation for apache-parser-v2 above.
 extended-test-suite: &extended-test-suite
-  if: type = cron OR (type = push AND branch NOT IN (apache-parser-v2, master))
+  if: tag IS present OR type = cron OR (type = push AND branch NOT IN (apache-parser-v2, master))
 
 matrix:
   include:
     # Main test suite
-    - python: "2.7"
+    - stage: "Test"
+      python: "2.7"
       env: ACME_SERVER=pebble TOXENV=integration
       <<: *not-on-master
 
@@ -224,7 +225,8 @@ matrix:
           packages:  # don't install nginx and apache
             - libaugeas0
       <<: *extended-test-suite
-    - sudo: required
+    - stage: "Create Snap"
+      sudo: required
       env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble
       addons:
         apt:
@@ -236,6 +238,14 @@ matrix:
             confinement: classic
           - name: lxd
             channel: stable
+      deploy:
+        'on':
+          # Deploy on release tags or nightly runs
+          condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
+        provider: snap
+        snap: certbot_*.snap
+        channel: edge
+        skip_cleanup: true
       <<: *extended-test-suite
 
 # container-based infrastructure

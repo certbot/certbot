@@ -1,7 +1,0 @@
-deploy:
-  'on':
-    branch: master
-  provider: snap
-  snap: certbot_*.snap
-  channel: edge
-  skip_cleanup: true
