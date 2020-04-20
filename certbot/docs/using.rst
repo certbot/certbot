@@ -385,7 +385,7 @@ certificate exists alongside any previously obtained certificates, whether
 or not the previous certificates have expired. The generation of a new
 certificate counts against several rate limits that are intended to prevent
 abuse of the ACME protocol, as described
-`here <https://community.letsencrypt.org/t/rate-limits-for-lets-encrypt/6769>`__.
+`here <https://letsencrypt.org/docs/rate-limits/>`__.
 
 .. _changing:
 
