@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 import os
 import sys
 
@@ -8,4 +7,5 @@ if hook_script_type == 'deploy' and ('RENEWED_DOMAINS' not in os.environ or 'REN
     sys.stderr.write('Environment variables not properly set!\n')
     sys.exit(1)
 
-print(hook_script_type)
+with open(sys.argv[2], 'a') as file_h:
+    file_h.write(hook_script_type + '\n')
