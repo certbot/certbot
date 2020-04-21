@@ -672,55 +672,6 @@ BootstrapFreeBsd() {
     libffi
 }
 
-# If new packages are installed by BootstrapMac below, this version number must
-# be increased.
-BOOTSTRAP_MAC_VERSION=1
-
-BootstrapMac() {
-  if hash brew 2>/dev/null; then
-    say "Using Homebrew to install dependencies..."
-    pkgman=brew
-    pkgcmd="brew install"
-  elif hash port 2>/dev/null; then
-    say "Using MacPorts to install dependencies..."
-    pkgman=port
-    pkgcmd="port install"
-  else
-    say "No Homebrew/MacPorts; installing Homebrew..."
-    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-    pkgman=brew
-    pkgcmd="brew install"
-  fi
-
-  $pkgcmd augeas
-  if [ "$(which python)" = "/System/Library/Frameworks/Python.framework/Versions/2.7/bin/python" \
-      -o "$(which python)" = "/usr/bin/python" ]; then
-    # We want to avoid using the system Python because it requires root to use pip.
-    # python.org, MacPorts or HomeBrew Python installations should all be OK.
-    say "Installing python..."
-    $pkgcmd python
-  fi
-
-  # Workaround for _dlopen not finding augeas on macOS
-  if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
-    say "Applying augeas workaround"
-    mkdir -p /usr/local/lib/
-    ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
-  fi
-
-  if ! hash pip 2>/dev/null; then
-    say "pip not installed"
-    say "Installing pip..."
-    curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
-  fi
-
-  if ! hash virtualenv 2>/dev/null; then
-    say "virtualenv not installed."
-    say "Installing with pip..."
-    pip install virtualenv
-  fi
-}
-
 # If new packages are installed by BootstrapSmartOS below, this version number
 # must be increased.
 BOOTSTRAP_SMARTOS_VERSION=1
@@ -885,10 +836,7 @@ elif uname | grep -iq FreeBSD ; then
   }
   BOOTSTRAP_VERSION="BootstrapFreeBsd $BOOTSTRAP_FREEBSD_VERSION"
 elif uname | grep -iq Darwin ; then
-  Bootstrap() {
-    DeprecationBootstrap "macOS" BootstrapMac
-  }
-  BOOTSTRAP_VERSION="BootstrapMac $BOOTSTRAP_MAC_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
   Bootstrap() {
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
@@ -945,7 +893,6 @@ BootstrapRpmCommon 1
 BootstrapSuseCommon 1
 BootstrapArchCommon 1
 BootstrapFreeBsd 1
-BootstrapMac 1
 BootstrapSmartOS 1
 UNLIKELY_EOF
   then
