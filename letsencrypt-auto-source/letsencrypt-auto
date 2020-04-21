@@ -656,22 +656,6 @@ BootstrapArchCommon() {
   fi
 }
 
-# If new packages are installed by BootstrapFreeBsd below, this version number
-# must be increased.
-BOOTSTRAP_FREEBSD_VERSION=1
-
-BootstrapFreeBsd() {
-  if [ "$QUIET" = 1 ]; then
-    QUIET_FLAG="--quiet"
-  fi
-
-  pkg install -Ay $QUIET_FLAG \
-    python \
-    py27-virtualenv \
-    augeas \
-    libffi
-}
-
 # If new packages are installed by BootstrapSmartOS below, this version number
 # must be increased.
 BOOTSTRAP_SMARTOS_VERSION=1
@@ -831,10 +815,7 @@ elif [ -f /etc/manjaro-release ]; then
 elif [ -f /etc/gentoo-release ]; then
   DEPRECATED_OS=1
 elif uname | grep -iq FreeBSD ; then
-  Bootstrap() {
-    DeprecationBootstrap "FreeBSD" BootstrapFreeBsd
-  }
-  BOOTSTRAP_VERSION="BootstrapFreeBsd $BOOTSTRAP_FREEBSD_VERSION"
+  DEPRECATED_OS=1
 elif uname | grep -iq Darwin ; then
   DEPRECATED_OS=1
 elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
@@ -892,7 +873,6 @@ BootstrapMageiaCommon 1
 BootstrapRpmCommon 1
 BootstrapSuseCommon 1
 BootstrapArchCommon 1
-BootstrapFreeBsd 1
 BootstrapSmartOS 1
 UNLIKELY_EOF
   then
