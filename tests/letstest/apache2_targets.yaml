@@ -1,6 +1,11 @@
 targets:
   #-----------------------------------------------------------------------------
   #Ubuntu
+  - ami: ami-0545f7036167eb3aa
+    name: ubuntu19.10
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
   - ami: ami-095192256fe1477ad
     name: ubuntu18.04LTS
     type: ubuntu
