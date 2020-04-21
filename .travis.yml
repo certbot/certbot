@@ -20,9 +20,6 @@ branches:
   # When changing these branches, please ensure the documentation under
   # "Running tests in CI" is still correct.
   only:
-    # apache-parser-v2 is a temporary branch for doing work related to
-    # rewriting the parser in the Apache plugin.
-    - apache-parser-v2
     - master
     - /^\d+\.\d+\.x$/
     - /^(travis-)?test-.*$/
@@ -32,9 +29,9 @@ not-on-master: &not-on-master
   if: NOT (type = push AND branch = master)
 
 # Jobs for the extended test suite are executed for cron jobs and pushes to
-# non-development branches. See the explanation for apache-parser-v2 above.
+# non-development branches.
 extended-test-suite: &extended-test-suite
-  if: type = cron OR (type = push AND branch NOT IN (apache-parser-v2, master))
+  if: type = cron OR (type = push AND branch = master)
 
 matrix:
   include:
