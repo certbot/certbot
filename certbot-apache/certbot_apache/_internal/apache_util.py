@@ -9,6 +9,8 @@ import struct
 import subprocess
 import time
 
+
+from cryptography.hazmat.primitives import hashes  # type: ignore
 import pkg_resources
 
 from certbot import crypto_util
@@ -16,6 +18,7 @@ from certbot import errors
 from certbot import util
 
 from certbot.compat import os
+
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +61,7 @@ def certid_sha1(cert_path):
     :rtype: `str`
 
     """
-    return crypto_util.cert_sha1_fingerprint(cert_path)
+    return cert_sha1_fingerprint(cert_path)
 
 
 def safe_copy(source, target):
@@ -338,6 +341,7 @@ def _get_runtime_cfg(command):
 
     return stdout
 
+
 def find_ssl_apache_conf(prefix):
     """
     Find a TLS Apache config file in the dedicated storage.
@@ -348,3 +352,16 @@ def find_ssl_apache_conf(prefix):
     return pkg_resources.resource_filename(
         "certbot_apache",
         os.path.join("_internal", "tls_configs", "{0}-options-ssl-apache.conf".format(prefix)))
+
+
+def cert_sha1_fingerprint(cert_path):
+    """Read a certificate by its file path and return its SHA-1 fingerprint.
+
+    :param str cert_path: File path to the x509 certificate file
+
+    :returns: SHA-1 fingerprint of the certificate
+    :rtype: bytes
+    """
+
+    cert = crypto_util.load_cert(cert_path)
+    return cert.fingerprint(hashes.SHA1())

@@ -13,7 +13,6 @@ import re
 from cryptography import x509  # type: ignore
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes  # type: ignore
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
@@ -235,19 +234,6 @@ def load_cert(cert_path):
     with open(cert_path, 'rb') as fh:
         cert_pem = fh.read()
     return x509.load_pem_x509_certificate(cert_pem, default_backend())
-
-
-def cert_sha1_fingerprint(cert_path):
-    """Read a certificate by its file path and return its SHA-1 fingerprint.
-
-    :param str cert_path: File path to the x509 certificate file
-
-    :returns: SHA-1 fingerprint of the certificate
-    :rtype: bytes
-    """
-
-    cert = load_cert(cert_path)
-    return cert.fingerprint(hashes.SHA1())
 
 
 def verify_renewable_cert_sig(renewable_cert):

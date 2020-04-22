@@ -118,7 +118,7 @@ class OCSPPrefetchTest(util.ApacheTest):
 
         ver_path = "certbot_apache._internal.configurator.ApacheConfigurator.get_version"
         res_path = "certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin.restart"
-        cry_path = "certbot.crypto_util.cert_sha1_fingerprint"
+        cry_path = "certbot_apache._internal.apache_util.cert_sha1_fingerprint"
 
         with mock.patch(ver_path) as mock_ver:
             mock_ver.return_value = (2, 4, 10)
@@ -483,6 +483,20 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
         self.assertTrue(mock_bck.called)
         self.assertTrue(mock_rest.called)
+
+
+class CertFingerprintTest(unittest.TestCase):
+    """Tests for certbot_apache._internal.apache_util.cert_sha1_fingerprint"""
+
+    def test_cert_sha1_fingerprint(self):
+        import certbot.tests.util as test_util
+        from certbot_apache._internal.apache_util import cert_sha1_fingerprint
+
+        cert_path = test_util.vector_path('cert_512.pem')
+        self.assertEqual(
+            cert_sha1_fingerprint(cert_path),
+            b'\t\xf8\xce\x01E\r(\x84g\xc32j\xc0E~5\x199\xc7.'
+        )
 
 
 def _read_dbm(filename):

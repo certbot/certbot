@@ -410,16 +410,5 @@ class CertAndChainFromFullchainTest(unittest.TestCase):
         self.assertRaises(errors.Error, cert_and_chain_from_fullchain, cert_pem)
 
 
-class CertFingerprintTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.cert_sha1_fingerprint"""
-
-    def test_cert_sha1_fingerprint(self):
-        from certbot.crypto_util import cert_sha1_fingerprint
-        self.assertEqual(
-            cert_sha1_fingerprint(CERT_PATH),
-            b'\t\xf8\xce\x01E\r(\x84g\xc32j\xc0E~5\x199\xc7.'
-        )
-
-
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
