@@ -100,7 +100,8 @@ class RevocationChecker(object):
         if not host or not url:
             return False
         if self.use_openssl_binary:
-            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, timeout, response_file)
+            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url,
+                                                timeout, response_file)
         return _check_ocsp_cryptography(cert_path, chain_path, url, timeout, response_file)
 
     def ocsp_times(self, response_file):
@@ -120,7 +121,8 @@ class RevocationChecker(object):
             return _ocsp_times_openssl_bin(response_file)
         return _ocsp_times_cryptography(response_file)
 
-    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, timeout, response_file=None):
+    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, timeout, response_file=None):  # pylint: disable=line-too-long
+
         # type: (str, str, str, str, int, Optional[str]) -> bool
         # Minimal implementation of proxy selection logic as seen in, e.g., cURL
         # Some things that won't work, but may well be in use somewhere:

@@ -93,12 +93,12 @@ class OCSPPrefetchTest(util.ApacheTest):
 
         _, self.tmp_certfile = tempfile.mkstemp()
         self.lineage = mock.MagicMock(cert_path=self.tmp_certfile, chain_path="chain")
-        self.config.parser.modules.add("headers_module")
-        self.config.parser.modules.add("mod_headers.c")
-        self.config.parser.modules.add("ssl_module")
-        self.config.parser.modules.add("mod_ssl.c")
-        self.config.parser.modules.add("socache_dbm_module")
-        self.config.parser.modules.add("mod_socache_dbm.c")
+        self.config.parser.modules["headers_module"] = None
+        self.config.parser.modules["mod_headers.c"] = None
+        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["mod_ssl.c"] = None
+        self.config.parser.modules["socache_dbm_module"] = None
+        self.config.parser.modules["mod_socache_dbm.c"] = None
 
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
@@ -152,10 +152,10 @@ class OCSPPrefetchTest(util.ApacheTest):
 
     @mock.patch("certbot_apache._internal.override_debian.DebianConfigurator.enable_mod")
     def test_ocsp_prefetch_enable_mods(self, mock_enable):
-        self.config.parser.modules.discard("socache_dbm_module")
-        self.config.parser.modules.discard("mod_socache_dbm.c")
-        self.config.parser.modules.discard("headers_module")
-        self.config.parser.modules.discard("mod_header.c")
+        self.config.parser.modules.pop("socache_dbm_module", None)
+        self.config.parser.modules.pop("mod_socache_dbm.c", None)
+        self.config.parser.modules.pop("headers_module", None)
+        self.config.parser.modules.pop("mod_header.c", None)
 
         ref_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh"
         with mock.patch(ref_path):
