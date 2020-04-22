@@ -2,7 +2,10 @@
 import shutil
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import os
@@ -61,8 +64,8 @@ class MultipleVhostsTestDebian(util.ApacheTest):
     def test_deploy_cert_enable_new_vhost(self):
         # Create
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
-        self.config.parser.modules.add("ssl_module")
-        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["mod_ssl.c"] = None
         self.assertFalse(ssl_vhost.enabled)
         self.config.deploy_cert(
             "encryption-example.demo", "example/cert.pem", "example/key.pem",
@@ -92,8 +95,8 @@ class MultipleVhostsTestDebian(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir,
             self.work_dir, version=(2, 4, 16))
         self.config = self.mock_deploy_cert(self.config)
-        self.config.parser.modules.add("ssl_module")
-        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["mod_ssl.c"] = None
 
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
@@ -128,8 +131,8 @@ class MultipleVhostsTestDebian(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir,
             self.work_dir, version=(2, 4, 16))
         self.config = self.mock_deploy_cert(self.config)
-        self.config.parser.modules.add("ssl_module")
-        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["mod_ssl.c"] = None
 
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
@@ -143,8 +146,8 @@ class MultipleVhostsTestDebian(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir,
             self.work_dir, version=(2, 4, 7))
         self.config = self.mock_deploy_cert(self.config)
-        self.config.parser.modules.add("ssl_module")
-        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["mod_ssl.c"] = None
 
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
@@ -157,7 +160,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
     @mock.patch("certbot.util.exe_exists")
     def test_ocsp_stapling_enable_mod(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
-        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules["mod_ssl.c"] = None
         self.config.get_version = mock.Mock(return_value=(2, 4, 7))
         mock_exe.return_value = True
         # This will create an ssl vhost for certbot.demo
@@ -169,7 +172,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
     @mock.patch("certbot.util.exe_exists")
     def test_ensure_http_header_enable_mod(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
-        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules["mod_ssl.c"] = None
         mock_exe.return_value = True
 
         # This will create an ssl vhost for certbot.demo

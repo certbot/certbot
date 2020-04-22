@@ -15,7 +15,7 @@ class Header(jose.Header):
     url = jose.Field('url', omitempty=True)
 
     @nonce.decoder
-    def nonce(value):  # pylint: disable=missing-docstring,no-self-argument
+    def nonce(value):  # pylint: disable=no-self-argument,missing-function-docstring
         try:
             return jose.decode_b64jose(value)
         except jose.DeserializationError as error:

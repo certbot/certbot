@@ -11,7 +11,7 @@ import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -394,7 +394,7 @@ def _find_domains_or_certname(config, installer, question=None):
     :param installer: Installer object
     :type installer: interfaces.IInstaller
 
-    :param `str` question: Overriding dialog question to ask the user if asked
+    :param `str` question: Overriding default question to ask the user if asked
         to choose from domain names.
 
     :returns: Two-part tuple of domains and certname
@@ -895,7 +895,7 @@ def enhance(config, plugins):
     """
     supported_enhancements = ["hsts", "redirect", "uir", "staple"]
     # Check that at least one enhancement was requested on command line
-    oldstyle_enh = any([getattr(config, enh) for enh in supported_enhancements])
+    oldstyle_enh = any(getattr(config, enh) for enh in supported_enhancements)
     if not enhancements.are_requested(config) and not oldstyle_enh:
         msg = ("Please specify one or more enhancement types to configure. To list "
                "the available enhancement types, run:\n\n%s --help enhance\n")
@@ -934,7 +934,7 @@ def enhance(config, plugins):
         config.cert_path = lineage.cert_path
     if oldstyle_enh:
         le_client = _init_le_client(config, authenticator=None, installer=installer)
-        le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
+        le_client.enhance_config(domains, config.chain_path, redirect_default=False)
     # It's important that the old style enhancements get enabled before
     # the new style ones, as some of the new enhancements can modify the
     # same configuration directives.

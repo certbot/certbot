@@ -7,9 +7,8 @@ import sys
 
 import six
 
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict
+from acme.magic_typing import List
 from certbot import errors
 from certbot.compat import os
 from certbot_apache._internal import apache_util
@@ -31,7 +30,7 @@ class ApacheParser(object):
 
     """
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
-    fnmatch_chars = set(["*", "?", "\\", "[", "]"])
+    fnmatch_chars = {"*", "?", "\\", "[", "]"}
 
     def __init__(self, root, vhostroot=None, version=(2, 4),
                  configurator=None):
@@ -52,7 +51,7 @@ class ApacheParser(object):
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
-        self.modules = set()  # type: Set[str]
+        self.modules = {}  # type: Dict[str, str]
         self.parser_paths = {}  # type: Dict[str, List[str]]
         self.variables = {}  # type: Dict[str, str]
 
@@ -249,14 +248,14 @@ class ApacheParser(object):
     def add_mod(self, mod_name):
         """Shortcut for updating parser modules."""
         if mod_name + "_module" not in self.modules:
-            self.modules.add(mod_name + "_module")
+            self.modules[mod_name + "_module"] = None
         if "mod_" + mod_name + ".c" not in self.modules:
-            self.modules.add("mod_" + mod_name + ".c")
+            self.modules["mod_" + mod_name + ".c"] = None
 
     def reset_modules(self):
         """Reset the loaded modules list. This is called from cleanup to clear
         temporarily loaded modules."""
-        self.modules = set()
+        self.modules = {}
         self.update_modules()
         self.parse_modules()
 
@@ -267,7 +266,7 @@ class ApacheParser(object):
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
-        mods = set()  # type: Set[str]
+        mods = {}  # type: Dict[str, str]
         matches = self.find_dir("LoadModule")
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
@@ -281,8 +280,8 @@ class ApacheParser(object):
                 mod_name = self.get_arg(match_name)
                 mod_filename = self.get_arg(match_filename)
                 if mod_name and mod_filename:
-                    mods.add(mod_name)
-                    mods.add(os.path.basename(mod_filename)[:-2] + "c")
+                    mods[mod_name] = mod_filename
+                    mods[os.path.basename(mod_filename)[:-2] + "c"] = mod_filename
                 else:
                     logger.debug("Could not read LoadModule directive from Augeas path: %s",
                                  match_name[6:])
@@ -321,7 +320,7 @@ class ApacheParser(object):
         for mod in matches:
             self.add_mod(mod.strip())
 
-    def filter_args_num(self, matches, args):  # pylint: disable=no-self-use
+    def filter_args_num(self, matches, args):
         """Filter out directives with specific number of arguments.
 
         This function makes the assumption that all related arguments are given
@@ -621,7 +620,7 @@ class ApacheParser(object):
 
     def exclude_dirs(self, matches):
         """Exclude directives that are not loaded into the configuration."""
-        filters = [("ifmodule", self.modules), ("ifdefine", self.variables)]
+        filters = [("ifmodule", self.modules.keys()), ("ifdefine", self.variables)]
 
         valid_matches = []
 
@@ -662,6 +661,25 @@ class ApacheParser(object):
 
         return True
 
+    def standard_path_from_server_root(self, arg):
+        """Ensure paths are consistent and absolute
+
+        :param str arg: Argument of directive
+
+        :returns: Standardized argument path
+        :rtype: str
+        """
+        # Remove beginning and ending quotes
+        arg = arg.strip("'\"")
+
+        # Standardize the include argument based on server root
+        if not arg.startswith("/"):
+            # Normpath will condense ../
+            arg = os.path.normpath(os.path.join(self.root, arg))
+        else:
+            arg = os.path.normpath(arg)
+        return arg
+
     def _get_include_path(self, arg):
         """Converts an Apache Include directive into Augeas path.
 
@@ -682,16 +700,7 @@ class ApacheParser(object):
         # if matchObj.group() != arg:
         #     logger.error("Error: Invalid regexp characters in %s", arg)
         #     return []
-
-        # Remove beginning and ending quotes
-        arg = arg.strip("'\"")
-
-        # Standardize the include argument based on server root
-        if not arg.startswith("/"):
-            # Normpath will condense ../
-            arg = os.path.normpath(os.path.join(self.root, arg))
-        else:
-            arg = os.path.normpath(arg)
+        arg = self.standard_path_from_server_root(arg)
 
         # Attempts to add a transform to the file if one does not already exist
         if os.path.isdir(arg):
@@ -715,7 +724,7 @@ class ApacheParser(object):
 
         return get_aug_path(arg)
 
-    def fnmatch_to_re(self, clean_fn_match):  # pylint: disable=no-self-use
+    def fnmatch_to_re(self, clean_fn_match):
         """Method converts Apache's basic fnmatch to regular expression.
 
         Assumption - Configs are assumed to be well-formed and only writable by
@@ -732,7 +741,7 @@ class ApacheParser(object):
         """
         if sys.version_info < (3, 6):
             # This strips off final /Z(?ms)
-            return fnmatch.translate(clean_fn_match)[:-7]
+            return fnmatch.translate(clean_fn_match)[:-7]  # pragma: no cover
         # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
         return fnmatch.translate(clean_fn_match)[4:-3]  # pragma: no cover
 
@@ -936,8 +945,8 @@ def case_i(string):
     :param str string: string to make case i regex
 
     """
-    return "".join(["[" + c.upper() + c.lower() + "]"
-                    if c.isalpha() else c for c in re.escape(string)])
+    return "".join("[" + c.upper() + c.lower() + "]"
+                    if c.isalpha() else c for c in re.escape(string))
 
 
 def get_aug_path(file_path):

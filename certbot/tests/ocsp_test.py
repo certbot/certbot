@@ -10,7 +10,10 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes  # type: ignore
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import pytz
 
 from certbot import errors
@@ -201,7 +204,7 @@ class OSCPTestCryptography(unittest.TestCase):
         self.checker.ocsp_revoked(self.cert_obj)
 
         mock_revoke.assert_called_once_with(self.cert_path, self.chain_path,
-                                            'http://example.com', None)
+                                            'http://example.com', 10, None)
 
     def test_revoke(self):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):

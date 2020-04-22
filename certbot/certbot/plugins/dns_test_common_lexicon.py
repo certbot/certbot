@@ -1,7 +1,10 @@
 """Base test class for DNS authenticators built on Lexicon."""
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 

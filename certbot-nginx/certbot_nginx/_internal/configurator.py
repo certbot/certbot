@@ -1,6 +1,5 @@
 """Nginx Configuration"""
-# https://github.com/PyCQA/pylint/issues/73
-from distutils.version import LooseVersion  # pylint: disable=no-name-in-module, import-error
+from distutils.version import LooseVersion
 import logging
 import re
 import socket
@@ -14,9 +13,9 @@ import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -696,7 +695,7 @@ class NginxConfigurator(common.Installer):
     ##################################
     # enhancement methods (IInstaller)
     ##################################
-    def supported_enhancements(self):  # pylint: disable=no-self-use
+    def supported_enhancements(self):
         """Returns currently supported enhancements."""
         return ['redirect', 'ensure-http-header', 'staple-ocsp']
 
@@ -749,7 +748,7 @@ class NginxConfigurator(common.Installer):
 
             # if there is no separate SSL block, break the block into two and
             # choose the SSL block.
-            if vhost.ssl and any([not addr.ssl for addr in vhost.addrs]):
+            if vhost.ssl and any(not addr.ssl for addr in vhost.addrs):
                 _, vhost = self._split_block(vhost)
 
             header_directives = [
@@ -915,7 +914,7 @@ class NginxConfigurator(common.Installer):
         """
         nginx_restart(self.conf('ctl'), self.nginx_conf)
 
-    def config_test(self):  # pylint: disable=no-self-use
+    def config_test(self):
         """Check the configuration of Nginx for errors.
 
         :raises .errors.MisconfigurationError: If config_test fails
@@ -984,7 +983,7 @@ class NginxConfigurator(common.Installer):
             logger.warning("NGINX derivative %s is not officially supported by"
                            " certbot", product_name)
 
-        nginx_version = tuple([int(i) for i in product_version.split(".")])
+        nginx_version = tuple(int(i) for i in product_version.split("."))
 
         # nginx < 0.8.48 uses machine hostname as default server_name instead of
         # the empty string
@@ -1090,7 +1089,7 @@ class NginxConfigurator(common.Installer):
     ###########################################################################
     # Challenges Section for IAuthenticator
     ###########################################################################
-    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
+    def get_chall_pref(self, unused_domain):
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 

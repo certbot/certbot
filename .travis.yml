@@ -6,7 +6,6 @@ cache:
         - $HOME/.cache/pip
 
 before_script:
-  - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ulimit -n 1024 ; fi'
   # On Travis, the fastest parallelization for integration tests has proved to be 4.
   - 'if [[ "$TOXENV" == *"integration"* ]]; then export PYTEST_ADDOPTS="--numprocesses 4"; fi'
   # Use Travis retry feature for farm tests since they are flaky
@@ -21,9 +20,6 @@ branches:
   # When changing these branches, please ensure the documentation under
   # "Running tests in CI" is still correct.
   only:
-    # apache-parser-v2 is a temporary branch for doing work related to
-    # rewriting the parser in the Apache plugin.
-    - apache-parser-v2
     - master
     - /^\d+\.\d+\.x$/
     - /^(travis-)?test-.*$/
@@ -33,9 +29,9 @@ not-on-master: &not-on-master
   if: NOT (type = push AND branch = master)
 
 # Jobs for the extended test suite are executed for cron jobs and pushes to
-# non-development branches. See the explanation for apache-parser-v2 above.
+# non-development branches.
 extended-test-suite: &extended-test-suite
-  if: type = cron OR (type = push AND branch NOT IN (apache-parser-v2, master))
+  if: type = cron OR (type = push AND branch != master)
 
 matrix:
   include:
@@ -45,8 +41,8 @@ matrix:
       <<: *not-on-master
 
     # This job is always executed, including on master
-    - python: "2.7"
-      env: TOXENV=py27-cover FYI="py27 tests + code coverage"
+    - python: "3.8"
+      env: TOXENV=py38-cover FYI="py38 tests + code coverage"
 
     - python: "3.7"
       env: TOXENV=lint
@@ -61,11 +57,11 @@ matrix:
       dist: trusty
       env: TOXENV='py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest'
       <<: *not-on-master
+    - python: "2.7"
+      env: TOXENV=py27
+      <<: *not-on-master
     - python: "3.5"
       env: TOXENV=py35
-      <<: *not-on-master
-    - python: "3.8"
-      env: TOXENV=py38
       <<: *not-on-master
     - sudo: required
       env: TOXENV=apache_compat
@@ -91,24 +87,24 @@ matrix:
       before_install:
       addons:
       <<: *extended-test-suite
-    - python: "2.7"
+    - python: "3.7"
       env:
         - TOXENV=travis-test-farm-apache2
         - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
       <<: *extended-test-suite
-    - python: "2.7"
+    - python: "3.7"
       env:
         - TOXENV=travis-test-farm-leauto-upgrades
         - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
       git:
         depth: false  # This is needed to have the history to checkout old versions of certbot-auto.
       <<: *extended-test-suite
-    - python: "2.7"
+    - python: "3.7"
       env:
         - TOXENV=travis-test-farm-certonly-standalone
         - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
       <<: *extended-test-suite
-    - python: "2.7"
+    - python: "3.7"
       env:
         - TOXENV=travis-test-farm-sdists
         - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
@@ -224,24 +220,6 @@ matrix:
           packages:  # don't install nginx and apache
             - libaugeas0
       <<: *extended-test-suite
-    - language: generic
-      env: TOXENV=py27
-      os: osx
-      addons:
-        homebrew:
-          packages:
-            - augeas
-            - python2
-      <<: *extended-test-suite
-    - language: generic
-      env: TOXENV=py3
-      os: osx
-      addons:
-        homebrew:
-          packages:
-            - augeas
-            - python3
-      <<: *extended-test-suite
 
 # container-based infrastructure
 sudo: false
@@ -266,14 +244,12 @@ addons:
 # version of virtualenv. The option "-I" is set so when CERTBOT_NO_PIN is also
 # set, pip updates dependencies it thinks are already satisfied to avoid some
 # problems with its lack of real dependency resolution.
-install: 'tools/pip_install.py -I codecov tox virtualenv'
+install: 'tools/pip_install.py -I tox virtualenv'
 # Most of the time TRAVIS_RETRY is an empty string, and has no effect on the
 # script command. It is set only to `travis_retry` during farm tests, in
 # order to trigger the Travis retry feature, and compensate the inherent
 # flakiness of these specific tests.
 script: '$TRAVIS_RETRY tox'
-
-after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 
 notifications:
   email: false

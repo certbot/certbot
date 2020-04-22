@@ -5,7 +5,10 @@ import tempfile
 import unittest
 
 from josepy import interfaces
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from certbot import errors
 from certbot import util
@@ -577,8 +580,7 @@ class EnhanceConfigTest(ClientTestCommon):
         self.assertRaises(
             errors.Error, self.client.enhance_config, [self.domain], None)
 
-    @mock.patch("certbot._internal.client.enhancements")
-    def test_unsupported(self, mock_enhancements):
+    def test_unsupported(self):
         self.client.installer = mock.MagicMock()
         self.client.installer.supported_enhancements.return_value = []
 
@@ -588,7 +590,6 @@ class EnhanceConfigTest(ClientTestCommon):
             self.client.enhance_config([self.domain], None)
         self.assertEqual(mock_logger.warning.call_count, 1)
         self.client.installer.enhance.assert_not_called()
-        mock_enhancements.ask.assert_not_called()
 
     @mock.patch("certbot._internal.client.logger")
     def test_already_exists_header(self, mock_log):
@@ -612,14 +613,11 @@ class EnhanceConfigTest(ClientTestCommon):
         self._test_with_already_existing()
         self.assertFalse(mock_log.warning.called)
 
-    @mock.patch("certbot._internal.client.enhancements.ask")
     @mock.patch("certbot._internal.client.logger")
-    def test_warn_redirect(self, mock_log, mock_ask):
+    def test_no_warn_redirect(self, mock_log):
         self.config.redirect = None
-        mock_ask.return_value = False
-        self._test_with_already_existing()
-        self.assertTrue(mock_log.warning.called)
-        self.assertTrue("disable" in mock_log.warning.call_args[0][0])
+        self._test_with_all_supported()
+        self.assertFalse(mock_log.warning.called)
 
     def test_no_ask_hsts(self):
         self.config.hsts = True
@@ -669,12 +667,6 @@ class EnhanceConfigTest(ClientTestCommon):
         installer.rollback_checkpoints.side_effect = errors.ReverterError
         self.client.installer = installer
         self._test_error_with_rollback()
-
-    @mock.patch("certbot._internal.client.enhancements.ask")
-    def test_ask(self, mock_ask):
-        self.config.redirect = None
-        mock_ask.return_value = True
-        self._test_with_all_supported()
 
     def _test_error_with_rollback(self):
         self._test_error()

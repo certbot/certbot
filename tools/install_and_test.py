@@ -12,7 +12,7 @@ import re
 import subprocess
 import sys
 
-SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache', 'letshelp-certbot']
+SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache']
 
 
 def call_with_print(command):

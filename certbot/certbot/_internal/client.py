@@ -14,8 +14,8 @@ from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List
+from acme.magic_typing import Optional
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -28,7 +28,6 @@ from certbot._internal import constants
 from certbot._internal import eff
 from certbot._internal import error_handler
 from certbot._internal import storage
-from certbot._internal.display import enhancements
 from certbot._internal.plugins import selection as plugin_selection
 from certbot.compat import os
 from certbot.display import ops as display_ops
@@ -343,7 +342,7 @@ class Client(object):
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
         authzr = orderr.authorizations
-        auth_domains = set(a.body.identifier.value for a in authzr)  # pylint: disable=not-an-iterable
+        auth_domains = set(a.body.identifier.value for a in authzr)
         successful_domains = [d for d in domains if d in auth_domains]
 
         # allow_subset_of_names is currently disabled for wildcard
@@ -521,12 +520,13 @@ class Client(object):
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains, chain_path, ask_redirect=True):
+    def enhance_config(self, domains, chain_path, redirect_default=True):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
         :param chain_path: chain file path
         :type chain_path: `str` or `None`
+        :param redirect_default: boolean value that the "redirect" flag should default to
 
         :raises .errors.Error: if no installer is specified in the
             client.
@@ -548,14 +548,8 @@ class Client(object):
         for config_name, enhancement_name, option in enhancement_info:
             config_value = getattr(self.config, config_name)
             if enhancement_name in supported:
-                if ask_redirect:
-                    if config_name == "redirect" and config_value is None:
-                        config_value = enhancements.ask(enhancement_name)
-                        if not config_value:
-                            logger.warning("Future versions of Certbot will automatically "
-                                "configure the webserver so that all requests redirect to secure "
-                                "HTTPS access. You can control this behavior and disable this "
-                                "warning with the --redirect and --no-redirect flags.")
+                if config_name == "redirect" and config_value is None:
+                    config_value = redirect_default
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True

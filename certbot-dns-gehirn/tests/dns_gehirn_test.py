@@ -2,7 +2,10 @@
 
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 from requests.exceptions import HTTPError
 
 from certbot.compat import os

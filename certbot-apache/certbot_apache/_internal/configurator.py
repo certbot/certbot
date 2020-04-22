@@ -1,6 +1,7 @@
 """Apache Configurator."""
 # pylint: disable=too-many-lines
 from collections import defaultdict
+from distutils.version import LooseVersion
 import copy
 import fnmatch
 import logging
@@ -8,17 +9,21 @@ import re
 import socket
 import time
 
-import pkg_resources
 import six
 import zope.component
 import zope.interface
+try:
+    import apacheconfig
+    HAS_APACHECONFIG = True
+except ImportError:  # pragma: no cover
+    HAS_APACHECONFIG = False
 
 from acme import challenges
-from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import DefaultDict
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
+from acme.magic_typing import Union
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -111,13 +116,28 @@ class ApacheConfigurator(common.Installer):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2",
-        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", os.path.join("_internal", "options-ssl-apache.conf"))
     )
 
     def option(self, key):
         """Get a value from options"""
         return self.options.get(key)
+
+    def pick_apache_config(self, warn_on_no_mod_ssl=True):
+        """
+        Pick the appropriate TLS Apache configuration file for current version of Apache and OS.
+
+        :param bool warn_on_no_mod_ssl: True if we should warn if mod_ssl is not found.
+
+        :return: the path to the TLS Apache configuration file to use
+        :rtype: str
+        """
+        # Disabling TLS session tickets is supported by Apache 2.4.11+ and OpenSSL 1.0.2l+.
+        # So for old versions of Apache we pick a configuration without this option.
+        openssl_version = self.openssl_version(warn_on_no_mod_ssl)
+        if self.version < (2, 4, 11) or not openssl_version or\
+            LooseVersion(openssl_version) < LooseVersion('1.0.2l'):
+            return apache_util.find_ssl_apache_conf("old")
+        return apache_util.find_ssl_apache_conf("current")
 
     def _prepare_options(self):
         """
@@ -185,15 +205,16 @@ class ApacheConfigurator(common.Installer):
         """
         version = kwargs.pop("version", None)
         use_parsernode = kwargs.pop("use_parsernode", False)
+        openssl_version = kwargs.pop("openssl_version", None)
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Add name_server association dict
-        self.assoc = dict()  # type: Dict[str, obj.VirtualHost]
+        self.assoc = {}  # type: Dict[str, obj.VirtualHost]
         # Outstanding challenges
         self._chall_out = set()  # type: Set[KeyAuthorizationAnnotatedChallenge]
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = dict()  # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_vhosts = {}  # type: Dict[str, List[obj.VirtualHost]]
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
         # Temporary state for AutoHSTS enhancement
@@ -210,6 +231,7 @@ class ApacheConfigurator(common.Installer):
         self.parser = None
         self.parser_root = None
         self.version = version
+        self._openssl_version = openssl_version
         self.vhosts = None
         self.options = copy.deepcopy(self.OS_DEFAULTS)
         self._enhance_func = {"redirect": self._enable_redirect,
@@ -225,6 +247,52 @@ class ApacheConfigurator(common.Installer):
     def updated_mod_ssl_conf_digest(self):
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
+
+    def _open_module_file(self, ssl_module_location):
+        """Extract the open lines of openssl_version for testing purposes"""
+        try:
+            with open(ssl_module_location, mode="rb") as f:
+                contents = f.read()
+        except IOError as error:
+            logger.debug(str(error), exc_info=True)
+            return None
+        return contents
+
+    def openssl_version(self, warn_on_no_mod_ssl=True):
+        """Lazily retrieve openssl version
+
+        :param bool warn_on_no_mod_ssl: `True` if we should warn if mod_ssl is not found. Set to
+            `False` when we know we'll try to enable mod_ssl later. This is currently debian/ubuntu,
+            when called from `prepare`.
+
+        :return: the OpenSSL version as a string, or None.
+        :rtype: str or None
+        """
+        if self._openssl_version:
+            return self._openssl_version
+        # Step 1. Check for LoadModule directive
+        try:
+            ssl_module_location = self.parser.modules['ssl_module']
+        except KeyError:
+            if warn_on_no_mod_ssl:
+                logger.warning("Could not find ssl_module; not disabling session tickets.")
+            return None
+        if not ssl_module_location:
+            logger.warning("Could not find ssl_module; not disabling session tickets.")
+            return None
+        ssl_module_location = self.parser.standard_path_from_server_root(ssl_module_location)
+        # Step 2. Grep in the .so for openssl version
+        contents = self._open_module_file(ssl_module_location)
+        if not contents:
+            logger.warning("Unable to read ssl_module file; not disabling session tickets.")
+            return None
+        # looks like: OpenSSL 1.0.2s  28 May 2019
+        matches = re.findall(br"OpenSSL ([0-9]\.[^ ]+) ", contents)
+        if not matches:
+            logger.warning("Could not find OpenSSL version; not disabling session tickets.")
+            return None
+        self._openssl_version = matches[0].decode('UTF-8')
+        return self._openssl_version
 
     def prepare(self):
         """Prepare the authenticator/installer.
@@ -272,8 +340,12 @@ class ApacheConfigurator(common.Installer):
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
 
+        # We may try to enable mod_ssl later. If so, we shouldn't warn if we can't find it now.
+        # This is currently only true for debian/ubuntu.
+        warn_on_no_mod_ssl = not self.option("handle_modules")
         self.install_ssl_options_conf(self.mod_ssl_conf,
-                                      self.updated_mod_ssl_conf_digest)
+                                      self.updated_mod_ssl_conf_digest,
+                                      warn_on_no_mod_ssl)
 
         # Prevent two Apache plugins from modifying a config at once
         try:
@@ -364,11 +436,17 @@ class ApacheConfigurator(common.Installer):
     def get_parsernode_root(self, metadata):
         """Initializes the ParserNode parser root instance."""
 
-        apache_vars = dict()
-        apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
-        apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
-        apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
-        metadata["apache_vars"] = apache_vars
+        if HAS_APACHECONFIG:
+            apache_vars = {}
+            apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
+            apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
+            apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
+            metadata["apache_vars"] = apache_vars
+
+            with open(self.parser.loc["root"]) as f:
+                with apacheconfig.make_loader(writable=True,
+                      **apacheconfig.flavors.NATIVE_APACHE) as loader:
+                    metadata["ac_ast"] = loader.loads(f.read())
 
         return dualparser.DualBlockNode(
             name=assertions.PASS,
@@ -471,7 +549,7 @@ class ApacheConfigurator(common.Installer):
 
         # Go through the vhosts, making sure that we cover all the names
         # present, but preferring the SSL vhosts
-        filtered_vhosts = dict()
+        filtered_vhosts = {}
         for vhost in vhosts:
             for name in vhost.get_names():
                 if vhost.ssl:
@@ -497,7 +575,7 @@ class ApacheConfigurator(common.Installer):
 
         # Make sure we create SSL vhosts for the ones that are HTTP only
         # if requested.
-        return_vhosts = list()
+        return_vhosts = []
         for vhost in dialog_output:
             if not vhost.ssl:
                 return_vhosts.append(self.make_vhost_ssl(vhost))
@@ -793,7 +871,7 @@ class ApacheConfigurator(common.Installer):
 
         return util.get_filtered_names(all_names)
 
-    def get_name_from_ip(self, addr):  # pylint: disable=no-self-use
+    def get_name_from_ip(self, addr):
         """Returns a reverse dns name if available.
 
         :param addr: IP Address
@@ -908,7 +986,7 @@ class ApacheConfigurator(common.Installer):
         """
 
         v1_vhosts = self.get_virtual_hosts_v1()
-        if self.USE_PARSERNODE:
+        if self.USE_PARSERNODE and HAS_APACHECONFIG:
             v2_vhosts = self.get_virtual_hosts_v2()
 
             for v1_vh in v1_vhosts:
@@ -1242,6 +1320,14 @@ class ApacheConfigurator(common.Installer):
                 self.enable_mod("socache_shmcb", temp=temp)
             if "ssl_module" not in self.parser.modules:
                 self.enable_mod("ssl", temp=temp)
+                # Make sure we're not throwing away any unwritten changes to the config
+                self.parser.ensure_augeas_state()
+                self.parser.aug.load()
+                self.parser.reset_modules() # Reset to load the new ssl_module path
+                # Call again because now we can gate on openssl version
+                self.install_ssl_options_conf(self.mod_ssl_conf,
+                                              self.updated_mod_ssl_conf_digest,
+                                              warn_on_no_mod_ssl=True)
 
     def make_vhost_ssl(self, nonssl_vhost):
         """Makes an ssl_vhost version of a nonssl_vhost.
@@ -1494,7 +1580,7 @@ class ApacheConfigurator(common.Installer):
                         result.append(comment)
                         sift = True
 
-                    result.append('\n'.join(['# ' + l for l in chunk]))
+                    result.append('\n'.join('# ' + l for l in chunk))
                 else:
                     result.append('\n'.join(chunk))
         return result, sift
@@ -1634,7 +1720,7 @@ class ApacheConfigurator(common.Installer):
         for addr in vhost.addrs:
             # In Apache 2.2, when a NameVirtualHost directive is not
             # set, "*" and "_default_" will conflict when sharing a port
-            addrs = set((addr,))
+            addrs = {addr,}
             if addr.get_addr() in ("*", "_default_"):
                 addrs.update(obj.Addr((a, addr.get_port(),))
                              for a in ("*", "_default_"))
@@ -1727,7 +1813,7 @@ class ApacheConfigurator(common.Installer):
     ######################################################################
     # Enhancements
     ######################################################################
-    def supported_enhancements(self):  # pylint: disable=no-self-use
+    def supported_enhancements(self):
         """Returns currently supported enhancements."""
         return ["redirect", "ensure-http-header", "staple-ocsp"]
 
@@ -1825,7 +1911,7 @@ class ApacheConfigurator(common.Installer):
         try:
             self._autohsts = self.storage.fetch("autohsts")
         except KeyError:
-            self._autohsts = dict()
+            self._autohsts = {}
 
     def _autohsts_save_state(self):
         """
@@ -2301,7 +2387,7 @@ class ApacheConfigurator(common.Installer):
             vhost.enabled = True
         return
 
-    def enable_mod(self, mod_name, temp=False):  # pylint: disable=unused-argument
+    def enable_mod(self, mod_name, temp=False):
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -2359,7 +2445,7 @@ class ApacheConfigurator(common.Installer):
                 error = str(err)
             raise errors.MisconfigurationError(error)
 
-    def config_test(self):  # pylint: disable=no-self-use
+    def config_test(self):
         """Check the configuration of Apache for errors.
 
         :raises .errors.MisconfigurationError: If config_test fails
@@ -2394,7 +2480,7 @@ class ApacheConfigurator(common.Installer):
         if len(matches) != 1:
             raise errors.PluginError("Unable to find Apache version")
 
-        return tuple([int(i) for i in matches[0].split(".")])
+        return tuple(int(i) for i in matches[0].split("."))
 
     def more_info(self):
         """Human-readable string to help understand the module"""
@@ -2409,7 +2495,7 @@ class ApacheConfigurator(common.Installer):
     ###########################################################################
     # Challenges Section
     ###########################################################################
-    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
+    def get_chall_pref(self, unused_domain):
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 
@@ -2463,14 +2549,19 @@ class ApacheConfigurator(common.Installer):
             self.restart()
             self.parser.reset_modules()
 
-    def install_ssl_options_conf(self, options_ssl, options_ssl_digest):
-        """Copy Certbot's SSL options file into the system's config dir if required."""
+    def install_ssl_options_conf(self, options_ssl, options_ssl_digest, warn_on_no_mod_ssl=True):
+        """Copy Certbot's SSL options file into the system's config dir if required.
+
+        :param bool warn_on_no_mod_ssl: True if we should warn if mod_ssl is not found.
+        """
 
         # XXX if we ever try to enforce a local privilege boundary (eg, running
         # certbot for unprivileged users via setuid), this function will need
         # to be modified.
-        return common.install_version_controlled_file(options_ssl, options_ssl_digest,
-            self.option("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
+        apache_config_path = self.pick_apache_config(warn_on_no_mod_ssl)
+
+        return common.install_version_controlled_file(
+            options_ssl, options_ssl_digest, apache_config_path, constants.ALL_SSL_OPTIONS_HASHES)
 
     def enable_autohsts(self, _unused_lineage, domains):
         """
@@ -2480,7 +2571,7 @@ class ApacheConfigurator(common.Installer):
         :type _unused_lineage: certbot._internal.storage.RenewableCert
 
         :param domains: List of domains in certificate to enhance
-        :type domains: str
+        :type domains: `list` of `str`
         """
 
         self._autohsts_fetch_state()

@@ -16,17 +16,18 @@ from cryptography.hazmat.primitives import serialization
 import pytz
 import requests
 
-from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Optional
+from acme.magic_typing import Tuple
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
+from certbot.compat.os import getenv
 from certbot.interfaces import RenewableCert  # pylint: disable=unused-import
 
 try:
     # Only cryptography>=2.5 has ocsp module
     # and signature_hash_algorithm attribute in OCSPResponse class
-    from cryptography.x509 import ocsp  # pylint: disable=import-error, ungrouped-imports
+    from cryptography.x509 import ocsp  # pylint: disable=ungrouped-imports
     getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp = None  # type: ignore
@@ -72,12 +73,13 @@ class RevocationChecker(object):
 
         return self.ocsp_revoked_by_paths(cert.cert_path, cert.chain_path)
 
-    def ocsp_revoked_by_paths(self, cert_path, chain_path, response_file=None):
-        # type: (str, str, Optional[str]) -> bool
+    def ocsp_revoked_by_paths(self, cert_path, chain_path, timeout=10, response_file=None):
+        # type: (str, str, int, Optional[str]) -> bool
         """Performs the OCSP revocation check
 
         :param str cert_path: Certificate path
-        :param str chain_path: Certificate chain filepath
+        :param str chain_path: Certificate chain
+        :param int timeout: Timeout (in seconds) for the OCSP query
         :param str response_file: File path where the raw OCSP response should be written
 
         :returns: True if revoked; False if valid or the check failed or cert is expired.
@@ -98,8 +100,8 @@ class RevocationChecker(object):
         if not host or not url:
             return False
         if self.use_openssl_binary:
-            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, response_file)
-        return _check_ocsp_cryptography(cert_path, chain_path, url, response_file)
+            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, timeout, response_file)
+        return _check_ocsp_cryptography(cert_path, chain_path, url, timeout, response_file)
 
     def ocsp_times(self, response_file):
         # type: (str) -> Tuple[Optional[datetime], Optional[datetime], Optional[datetime]]
@@ -118,8 +120,24 @@ class RevocationChecker(object):
             return _ocsp_times_openssl_bin(response_file)
         return _ocsp_times_cryptography(response_file)
 
-    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, response_file=None):
-        # type: (str, str, str, str, Optional[str]) -> bool
+    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, timeout, response_file=None):
+        # type: (str, str, str, str, int, Optional[str]) -> bool
+        # Minimal implementation of proxy selection logic as seen in, e.g., cURL
+        # Some things that won't work, but may well be in use somewhere:
+        # - username and password for proxy authentication
+        # - proxies accepting TLS connections
+        # - proxy exclusion through NO_PROXY
+        env_http_proxy = getenv('http_proxy')
+        env_HTTP_PROXY = getenv('HTTP_PROXY')
+        proxy_host = None
+        if env_http_proxy is not None or env_HTTP_PROXY is not None:
+            proxy_host = env_http_proxy if env_http_proxy is not None else env_HTTP_PROXY
+        if proxy_host is None:
+            url_opts = ["-url", url]
+        else:
+            if proxy_host.startswith('http://'):
+                proxy_host = proxy_host[len('http://'):]
+            url_opts = ["-host", proxy_host, "-path", url]
         # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
         cmd = ["openssl", "ocsp",
                "-no_nonce",
@@ -129,9 +147,12 @@ class RevocationChecker(object):
                "-CAfile", chain_path,
                "-verify_other", chain_path,
                "-trust_other",
-               "-header"] + self.host_args(host)
+               "-timeout", str(timeout),
+               "-header"] + self.host_args(host) + url_opts
+
         if response_file:  # pragma: no cover
             cmd += ["-respout", response_file]
+
         logger.debug("Querying OCSP for %s", cert_path)
         logger.debug(" ".join(cmd))
         try:
@@ -223,8 +244,8 @@ def _ocsp_times_cryptography(response_file):
     return response.produced_at, response.this_update, response.next_update
 
 
-def _check_ocsp_cryptography(cert_path, chain_path, url, response_file=None):
-    # type: (str, str, str, Optional[str]) -> bool
+def _check_ocsp_cryptography(cert_path, chain_path, url, timeout, response_file=None):
+    # type: (str, str, str, int, Optional[str]) -> bool
     # Retrieve OCSP response
     with open(chain_path, 'rb') as file_handler:
         issuer = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
@@ -236,7 +257,8 @@ def _check_ocsp_cryptography(cert_path, chain_path, url, response_file=None):
     request_binary = request.public_bytes(serialization.Encoding.DER)
     try:
         response = requests.post(url, data=request_binary,
-                                 headers={'Content-Type': 'application/ocsp-request'})
+                                 headers={'Content-Type': 'application/ocsp-request'},
+                                 timeout=timeout)
     except requests.exceptions.RequestException:
         logger.info("OCSP check failed for %s (are we offline?)", cert_path, exc_info=True)
         return False

@@ -5,12 +5,9 @@ import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List
 
 try:
-    # pylint: disable=import-error
     import ntsecuritycon
     import win32security
     import win32con
@@ -18,7 +15,6 @@ try:
     import win32file
     import pywintypes
     import winerror
-    # pylint: enable=import-error
 except ImportError:
     POSIX_MODE = True
 else:

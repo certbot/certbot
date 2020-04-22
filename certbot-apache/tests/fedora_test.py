@@ -1,7 +1,10 @@
 """Test for certbot_apache._internal.configurator for Fedora 29+ overrides"""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import filesystem
@@ -120,7 +123,7 @@ class MultipleVhostsTestFedora(util.ApacheTest):
                 return mod_val
             return ""
         mock_get.side_effect = mock_get_cfg
-        self.config.parser.modules = set()
+        self.config.parser.modules = {}
         self.config.parser.variables = {}
 
         with mock.patch("certbot.util.get_os_info") as mock_osi:

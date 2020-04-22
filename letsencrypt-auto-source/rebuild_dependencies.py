@@ -103,7 +103,7 @@ def _requirements_from_one_distribution(distribution, verbose):
         os.chmod(script, 0o755)
 
         _write_to(authoritative_constraints, '\n'.join(
-            ['{0}=={1}'.format(package, version) for package, version in AUTHORITATIVE_CONSTRAINTS.items()]))
+            '{0}=={1}'.format(package, version) for package, version in AUTHORITATIVE_CONSTRAINTS.items()))
 
         command = ['docker', 'run', '--rm', '--cidfile', cid_file,
                    '-v', '{0}:/tmp/certbot'.format(CERTBOT_REPO_PATH),

@@ -15,8 +15,8 @@ from urllib3.util import connection
 from acme import challenges
 from acme import crypto_util
 from acme import messages
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List
+from acme.magic_typing import Tuple
 from certbot import achallenges
 from certbot import errors as le_errors
 from certbot.tests import acme_util
@@ -96,7 +96,7 @@ def test_authenticator(plugin, config, temp_dir):
 
 def _create_achalls(plugin):
     """Returns a list of annotated challenges to test on plugin"""
-    achalls = list()
+    achalls = []
     names = plugin.get_testable_domain_names()
     for domain in names:
         prefs = plugin.get_chall_pref(domain)
