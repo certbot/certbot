@@ -19,7 +19,7 @@ from certbot import errors
 from certbot.compat import os
 import util
 
-from certbot_apache._internal.prefetch_ocsp import DBMHandler
+from certbot_apache._internal.prefetch_ocsp import DBMHandler, OCSPCertificateError
 
 
 class MockDBM(object):
@@ -185,6 +185,35 @@ class OCSPPrefetchTest(util.ApacheTest):
                               self.config.enable_ocsp_prefetch,
                               self.lineage,
                               ["domainnotfound"])
+
+    def test_deploy_ocsp_prefetch_noop(self):
+        dumb_lineage = mock.MagicMock(cert_path="not_found")
+        refresh = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_try_refresh"
+
+        with mock.patch(refresh) as mock_refresh:
+            self.config.deploy_ocsp_prefetch(dumb_lineage)
+            self.assertFalse(mock_refresh.called)
+
+    @mock.patch("certbot_apache._internal.override_debian.DebianConfigurator._ocsp_try_refresh")
+    def test_deploy_ocsp_prefetch(self, mock_refresh):
+        self.config._ocsp_prefetch_save("artificial_path", "irrelevant")
+        mock_lineage = mock.MagicMock(cert_path="artificial_path")
+        s_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_prefetch_save"
+        with mock.patch(s_path) as mock_save:
+            self.config.deploy_ocsp_prefetch(mock_lineage)
+            self.assertTrue(mock_refresh.called)
+            self.assertTrue(mock_save.called)
+
+    @mock.patch("certbot_apache._internal.override_debian.DebianConfigurator._ocsp_try_refresh")
+    def test_deploy_ocsp_prefetch_error(self, mock_refresh):
+        self.config._ocsp_prefetch_save("artificial_path", "irrelevant")
+        mock_lineage = mock.MagicMock(cert_path="artificial_path")
+        mock_refresh.side_effect = OCSPCertificateError("Error")
+        s_path = "certbot_apache._internal.override_debian.DebianConfigurator._ocsp_prefetch_save"
+        with mock.patch(s_path) as mock_save:
+            self.config.deploy_ocsp_prefetch(mock_lineage)
+            self.assertTrue(mock_refresh.called)
+            self.assertFalse(mock_save.called)
 
     @mock.patch("certbot_apache._internal.constants.OCSP_INTERNAL_TTL", 0)
     def test_ocsp_prefetch_refresh(self):

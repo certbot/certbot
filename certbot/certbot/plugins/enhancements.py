@@ -234,7 +234,7 @@ _INDEX = [
         "cli_action": "store_true",
         "class": OCSPPrefetchEnhancement,
         "updater_function": "update_ocsp_prefetch",
-        "deployer_function": None,
+        "deployer_function": "deploy_ocsp_prefetch",
         "enable_function": "enable_ocsp_prefetch"
     }
 ]  # type: List[Dict[str, Any]]

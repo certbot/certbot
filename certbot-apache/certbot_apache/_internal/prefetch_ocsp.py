@@ -367,6 +367,24 @@ class OCSPPrefetchMixin(object):
                    "enhancement: %s\nOCSP prefetch was not enabled.")
             raise errors.PluginError(msg % str(err))
 
+    def deploy_ocsp_prefetch(self, lineage):
+        """When certificate gets renewed, ensure that we're able to serve an appropriate OCSP
+        staple after the restart that replaces the certificate."""
+
+        self._ocsp_prefetch_fetch_state()
+        if not self._ocsp_prefetch:
+            # No OCSP prefetching enabled for any certificate
+            return
+
+        if lineage.cert_path in self._ocsp_prefetch:
+            pf = self._ocsp_prefetch[lineage.cert_path]
+            try:
+                self._ocsp_try_refresh(lineage.cert_path)
+            except OCSPCertificateError:
+                # This error was logged and handled already down the stack. Return to avoid save.
+                return
+            self._ocsp_prefetch_save(lineage.cert_path, pf["chain_path"])
+
     def update_ocsp_prefetch(self, _unused_lineage):
         """Checks all certificates that are managed by OCSP prefetch, and
         refreshes OCSP responses for them if required."""
@@ -381,19 +399,32 @@ class OCSPPrefetchMixin(object):
             pf = self._ocsp_prefetch[cert_path]
             if self._ocsp_refresh_needed(pf["lastupdate"]):
                 try:
-                    self._ocsp_refresh(cert_path, pf["chain_path"])
-                except OCSPCertificateError as err:
-                    self._ocsp_prefetch_remove(cert_path)
-                    msg = ("Error when trying to prefetch OCSP staple: {} " +
-                           "OCSP prefetch functionality removed for the certificate").format(err)
-                    logger.warning(msg)
+                    self._ocsp_try_refresh(cert_path)
+                except OCSPCertificateError:
+                    # We want to skip saving in this case, as we just removed the
+                    # certificate from prefetch pool.
                     continue
-                except errors.PluginError as err:
-                    msg = "Encountered a issue when trying to renew OCSP staple: {}".format(err)
-                    logger.warning(msg)
-                # Save the status to pluginstorage. Do this even if errored out to prevent
-                # spurious errors when handling multiple renewals.
                 self._ocsp_prefetch_save(cert_path, pf["chain_path"])
+
+    def _ocsp_try_refresh(self, cert_path):
+        """Attempt to refresh OCSP staple for a certificate.
+
+        :param str cert_path: Path to certificate
+        """
+
+        pf = self._ocsp_prefetch[cert_path]
+
+        try:
+            self._ocsp_refresh(cert_path, pf["chain_path"])
+        except OCSPCertificateError as err:
+            self._ocsp_prefetch_remove(cert_path)
+            msg = ("Error when trying to prefetch OCSP staple: {} " +
+                    "OCSP prefetch functionality removed for the certificate").format(err)
+            logger.warning(msg)
+            raise
+        except errors.PluginError as err:
+            msg = "Encountered a issue when trying to renew OCSP staple: {}".format(err)
+            logger.warning(msg)
 
     def restart(self):
         """Reloads the Apache server. When restarting, Apache deletes
