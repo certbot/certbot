@@ -117,7 +117,7 @@ def underscores_for_unsupported_characters_in_path(path):
 
 
 def execute_command(cmd_name, shell_cmd):
-    # type: (str, Union[str, List[str]]) -> None
+    # type: (str, str) -> (str, str)
     """
     Run a command:
         - on Linux command will be run by the standard shell selected with Popen(shell=True)
@@ -125,7 +125,6 @@ def execute_command(cmd_name, shell_cmd):
 
     :param str cmd_name: the user facing name of the hook being run
     :param str shell_cmd: shell command to execute
-    :type shell_cmd: `list` of `str` or `str`
 
     :returns: `tuple` (`str` stderr, `str` stdout)
     """
@@ -135,8 +134,6 @@ def execute_command(cmd_name, shell_cmd):
         cmd = subprocess.Popen(shell_cmd, shell=True, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, universal_newlines=True)
     else:
-        if isinstance(shell_cmd, list):
-            shell_cmd = subprocess.list2cmdline(shell_cmd)
         line = ['powershell.exe', '-Command', shell_cmd]
         cmd = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                universal_newlines=True)
