@@ -13,7 +13,6 @@
 # serve to show the default.
 
 import os
-import shlex
 import sys
 
 here = os.path.abspath(os.path.dirname(__file__))

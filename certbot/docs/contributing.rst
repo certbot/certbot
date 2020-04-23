@@ -117,13 +117,11 @@ either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
 For debugging, we recommend putting
 ``import ipdb; ipdb.set_trace()`` statements inside the source code.
 
-Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
-run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
-2.7).
-
-Once all the unittests pass, check for sufficient test coverage using ``tox -e
-py27-cover``, and then check for code style with ``tox -e lint`` (all files) or
-``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
+Once you are done with your code changes, and the tests in ``foo_test.py``
+pass, run all of the unit tests for Certbot and check for coverage with ``tox
+-e py3-cover``. You should then check for code style with ``tox -e lint`` (all
+files) or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a
+time).
 
 Once all of the above is successful, you may run the full test suite using
 ``tox --skip-missing-interpreters``. We recommend running the commands above
@@ -247,8 +245,8 @@ built-in Standalone authenticator, implement just one interface.
 There are also `~certbot.interfaces.IDisplay` plugins,
 which can change how prompts are displayed to a user.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
+.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/plugins/common.py#L45
 
 
 Authenticators

@@ -36,7 +36,7 @@ version = meta['version']
 # specified here to avoid masking the more specific request requirements in
 # acme. See https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
-    'acme>=0.40.0',
+    'acme>=1.4.0.dev0',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
@@ -47,7 +47,6 @@ install_requires = [
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
-    'mock',
     'parsedatetime>=1.3',  # Calendar.parseDT
     'pyrfc3339',
     'pytz',
@@ -62,7 +61,8 @@ install_requires = [
 # So this dependency is not added for old Linux distributions with old setuptools,
 # in order to allow these systems to build certbot from sources.
 pywin32_req = 'pywin32>=227'  # do not forget to edit pywin32 dependency accordingly in windows-installer/construct.py
-if StrictVersion(setuptools_version) >= StrictVersion('36.2'):
+setuptools_known_environment_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
+if setuptools_known_environment_markers:
     install_requires.append(pywin32_req + " ; sys_platform == 'win32'")
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
@@ -72,6 +72,14 @@ elif os.name == 'nt':
     # it, if the sdist is installed on Windows with an old version of
     # setuptools, pywin32 will not be specified as a dependency.
     install_requires.append(pywin32_req)
+
+if setuptools_known_environment_markers:
+    install_requires.append('mock ; python_version < "3.3"')
+elif 'bdist_wheel' in sys.argv[1:]:
+    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
+                       'of setuptools. Version 36.2+ of setuptools is required.')
+elif sys.version_info < (3,3):
+    install_requires.append('mock')
 
 dev_extras = [
     'coverage',

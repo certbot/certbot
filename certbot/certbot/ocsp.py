@@ -21,6 +21,7 @@ from acme.magic_typing import Tuple
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
+from certbot.compat.os import getenv
 from certbot.interfaces import RenewableCert  # pylint: disable=unused-import
 
 try:
@@ -68,8 +69,20 @@ class RevocationChecker(object):
         :rtype: bool
 
         """
-        cert_path, chain_path = cert.cert_path, cert.chain_path
+        return self.ocsp_revoked_by_paths(cert.cert_path, cert.chain_path)
 
+    def ocsp_revoked_by_paths(self, cert_path, chain_path, timeout=10):
+        # type: (str, str, int) -> bool
+        """Performs the OCSP revocation check
+
+        :param str cert_path: Certificate filepath
+        :param str chain_path: Certificate chain
+        :param int timeout: Timeout (in seconds) for the OCSP query
+
+        :returns: True if revoked; False if valid or the check failed or cert is expired.
+        :rtype: bool
+
+        """
         if self.broken:
             return False
 
@@ -85,21 +98,37 @@ class RevocationChecker(object):
             return False
 
         if self.use_openssl_binary:
-            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url)
-        return _check_ocsp_cryptography(cert_path, chain_path, url)
+            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, timeout)
+        return _check_ocsp_cryptography(cert_path, chain_path, url, timeout)
 
-    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url):
-        # type: (str, str, str, str) -> bool
+    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, timeout):
+        # type: (str, str, str, str, int) -> bool
+        # Minimal implementation of proxy selection logic as seen in, e.g., cURL
+        # Some things that won't work, but may well be in use somewhere:
+        # - username and password for proxy authentication
+        # - proxies accepting TLS connections
+        # - proxy exclusion through NO_PROXY
+        env_http_proxy = getenv('http_proxy')
+        env_HTTP_PROXY = getenv('HTTP_PROXY')
+        proxy_host = None
+        if env_http_proxy is not None or env_HTTP_PROXY is not None:
+            proxy_host = env_http_proxy if env_http_proxy is not None else env_HTTP_PROXY
+        if proxy_host is None:
+            url_opts = ["-url", url]
+        else:
+            if proxy_host.startswith('http://'):
+                proxy_host = proxy_host[len('http://'):]
+            url_opts = ["-host", proxy_host, "-path", url]
         # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
         cmd = ["openssl", "ocsp",
                "-no_nonce",
                "-issuer", chain_path,
                "-cert", cert_path,
-               "-url", url,
                "-CAfile", chain_path,
                "-verify_other", chain_path,
                "-trust_other",
-               "-header"] + self.host_args(host)
+               "-timeout", str(timeout),
+               "-header"] + self.host_args(host) + url_opts
         logger.debug("Querying OCSP for %s", cert_path)
         logger.debug(" ".join(cmd))
         try:
@@ -141,8 +170,8 @@ def _determine_ocsp_server(cert_path):
     return None, None
 
 
-def _check_ocsp_cryptography(cert_path, chain_path, url):
-    # type: (str, str, str) -> bool
+def _check_ocsp_cryptography(cert_path, chain_path, url, timeout):
+    # type: (str, str, str, int) -> bool
     # Retrieve OCSP response
     with open(chain_path, 'rb') as file_handler:
         issuer = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
@@ -154,7 +183,8 @@ def _check_ocsp_cryptography(cert_path, chain_path, url):
     request_binary = request.public_bytes(serialization.Encoding.DER)
     try:
         response = requests.post(url, data=request_binary,
-                                 headers={'Content-Type': 'application/ocsp-request'})
+                                 headers={'Content-Type': 'application/ocsp-request'},
+                                 timeout=timeout)
     except requests.exceptions.RequestException:
         logger.info("OCSP check failed for %s (are we offline?)", cert_path, exc_info=True)
         return False

@@ -33,7 +33,14 @@ class TLSServer(socketserver.TCPServer):
 
     def _wrap_sock(self):
         self.socket = crypto_util.SSLSocket(
-            self.socket, certs=self.certs, method=self.method)
+            self.socket, cert_selection=self._cert_selection,
+            alpn_selection=getattr(self, '_alpn_selection', None),
+            method=self.method)
+
+    def _cert_selection(self, connection):  # pragma: no cover
+        """Callback selecting certificate for connection."""
+        server_name = connection.get_servername()
+        return self.certs.get(server_name, None)
 
     def server_bind(self):
         self._wrap_sock()
@@ -120,6 +127,40 @@ class BaseDualNetworkedServers(object):
         self.threads = []
 
 
+class TLSALPN01Server(TLSServer, ACMEServerMixin):
+    """TLSALPN01 Server."""
+
+    ACME_TLS_1_PROTOCOL = b"acme-tls/1"
+
+    def __init__(self, server_address, certs, challenge_certs, ipv6=False):
+        TLSServer.__init__(
+            self, server_address, _BaseRequestHandlerWithLogging, certs=certs,
+            ipv6=ipv6)
+        self.challenge_certs = challenge_certs
+
+    def _cert_selection(self, connection):
+        # TODO: We would like to serve challenge cert only if asked for it via
+        # ALPN. To do this, we need to retrieve the list of protos from client
+        # hello, but this is currently impossible with openssl [0], and ALPN
+        # negotiation is done after cert selection.
+        # Therefore, currently we always return challenge cert, and terminate
+        # handshake in alpn_selection() if ALPN protos are not what we expect.
+        # [0] https://github.com/openssl/openssl/issues/4952
+        server_name = connection.get_servername()
+        logger.debug("Serving challenge cert for server name %s", server_name)
+        return self.challenge_certs.get(server_name, None)
+
+    def _alpn_selection(self, _connection, alpn_protos):
+        """Callback to select alpn protocol."""
+        if len(alpn_protos) == 1 and alpn_protos[0] == self.ACME_TLS_1_PROTOCOL:
+            logger.debug("Agreed on %s ALPN", self.ACME_TLS_1_PROTOCOL)
+            return self.ACME_TLS_1_PROTOCOL
+        logger.debug("Cannot agree on ALPN proto. Got: %s", str(alpn_protos))
+        # Explicitly close the connection now, by returning an empty string.
+        # See https://www.pyopenssl.org/en/stable/api/ssl.html#OpenSSL.SSL.Context.set_alpn_select_callback  # pylint: disable=line-too-long
+        return b""
+
+
 class HTTPServer(BaseHTTPServer.HTTPServer):
     """Generic HTTP Server."""
 
@@ -135,10 +176,10 @@ class HTTPServer(BaseHTTPServer.HTTPServer):
 class HTTP01Server(HTTPServer, ACMEServerMixin):
     """HTTP01 Server."""
 
-    def __init__(self, server_address, resources, ipv6=False):
+    def __init__(self, server_address, resources, ipv6=False, timeout=30):
         HTTPServer.__init__(
             self, server_address, HTTP01RequestHandler.partial_init(
-                simple_http_resources=resources), ipv6=ipv6)
+                simple_http_resources=resources, timeout=timeout), ipv6=ipv6)
 
 
 class HTTP01DualNetworkedServers(BaseDualNetworkedServers):
@@ -163,6 +204,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
+        self.timeout = kwargs.pop('timeout', 30)
         BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
     def log_message(self, format, *args):  # pylint: disable=redefined-builtin
@@ -212,7 +254,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                          self.path)
 
     @classmethod
-    def partial_init(cls, simple_http_resources):
+    def partial_init(cls, simple_http_resources, timeout):
         """Partially initialize this handler.
 
         This is useful because `socketserver.BaseServer` takes
@@ -221,4 +263,18 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
         """
         return functools.partial(
-            cls, simple_http_resources=simple_http_resources)
+            cls, simple_http_resources=simple_http_resources,
+            timeout=timeout)
+
+
+class _BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
+    """BaseRequestHandler with logging."""
+
+    def log_message(self, format, *args):  # pylint: disable=redefined-builtin
+        """Log arbitrary message."""
+        logger.debug("%s - - %s", self.client_address[0], format % args)
+
+    def handle(self):
+        """Handle request."""
+        self.log_message("Incoming request")
+        socketserver.BaseRequestHandler.handle(self)

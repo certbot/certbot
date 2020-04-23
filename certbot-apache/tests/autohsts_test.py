@@ -3,7 +3,10 @@
 import re
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import six  # pylint: disable=unused-import  # six is used in mock.patch()
 
 from certbot import errors
@@ -20,10 +23,10 @@ class AutoHSTSTest(util.ApacheTest):
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
-        self.config.parser.modules.add("headers_module")
-        self.config.parser.modules.add("mod_headers.c")
-        self.config.parser.modules.add("ssl_module")
-        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules["headers_module"] = None
+        self.config.parser.modules["mod_headers.c"] = None
+        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["mod_ssl.c"] = None
 
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
@@ -42,8 +45,8 @@ class AutoHSTSTest(util.ApacheTest):
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_autohsts_enable_headers_mod(self, mock_enable, _restart):
-        self.config.parser.modules.discard("headers_module")
-        self.config.parser.modules.discard("mod_header.c")
+        self.config.parser.modules.pop("headers_module", None)
+        self.config.parser.modules.pop("mod_header.c", None)
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         self.assertTrue(mock_enable.called)
 

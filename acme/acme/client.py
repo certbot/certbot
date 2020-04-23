@@ -25,6 +25,7 @@ from acme.magic_typing import Dict
 from acme.magic_typing import List
 from acme.magic_typing import Set
 from acme.magic_typing import Text
+from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
 
@@ -987,6 +988,8 @@ class ClientNetwork(object):
         :rtype: `josepy.JWS`
 
         """
+        if isinstance(obj, VersionedLEACMEMixin):
+            obj.le_acme_version = acme_version
         jobj = obj.json_dumps(indent=2).encode() if obj else b''
         logger.debug('JWS payload:\n%s', jobj)
         kwargs = {
@@ -1120,8 +1123,8 @@ class ClientNetwork(object):
             debug_content = response.content.decode("utf-8")
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
-                     "\n".join(["{0}: {1}".format(k, v)
-                                for k, v in response.headers.items()]),
+                     "\n".join("{0}: {1}".format(k, v)
+                                for k, v in response.headers.items()),
                      debug_content)
         return response
 

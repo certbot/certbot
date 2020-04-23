@@ -13,12 +13,14 @@ import traceback
 import unittest
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import pytz
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces  # pylint: disable=unused-import
@@ -1584,9 +1586,9 @@ class EnhanceTest(test_util.ConfigTestCase):
             not_req_enh = ["uir"]
             self.assertTrue(mock_client.enhance_config.called)
             self.assertTrue(
-                all([getattr(mock_client.config, e) for e in req_enh]))
+                all(getattr(mock_client.config, e) for e in req_enh))
             self.assertFalse(
-                any([getattr(mock_client.config, e) for e in not_req_enh]))
+                any(getattr(mock_client.config, e) for e in not_req_enh))
             self.assertTrue(
                 "example.com" in mock_client.enhance_config.call_args[0][0])
 

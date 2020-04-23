@@ -25,11 +25,9 @@ from certbot._internal import lock
 from certbot.compat import filesystem
 from certbot.compat import os
 
-if sys.platform.startswith('linux'):
+_USE_DISTRO = sys.platform.startswith('linux')
+if _USE_DISTRO:
     import distro
-    _USE_DISTRO = True
-else:
-    _USE_DISTRO = False
 
 logger = logging.getLogger(__name__)
 
