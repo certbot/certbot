@@ -26,8 +26,8 @@ branches:
   # "Running tests in CI" is still correct.
   only:
     - master
-    - /^\d+\.\d+\.x$/
-    - /^v\d+\.\d+\.\d+$/
+    - /^\d+\.\d+\.x$/  # this matches our point release branches
+    - /^v\d+\.\d+\.\d+$/  # this matches our release tags
     - /^(travis-)?test-.*$/
 
 # Jobs for the main test suite are always executed (including on PRs) except for pushes on master.
@@ -46,6 +46,11 @@ matrix:
       python: "2.7"
       env: ACME_SERVER=pebble TOXENV=integration
       <<: *not-on-master
+
+    # As documented at
+    # https://docs.travis-ci.com/user/build-stages/#how-to-define-build-stages,
+    # the previous stage will be automatically applied to all subsequent jobs
+    # until a new stage is defined.
 
     # This job is always executed, including on master
     - python: "3.8"
@@ -267,6 +272,9 @@ matrix:
         provider: snap
         snap: certbot_*.snap
         channel: edge
+        # skip_cleanup is needed to prevent Travis from deleting the snaps we
+        # just built and tested. See
+        # https://docs.travis-ci.com/user/deployment#uploading-files-and-skip_cleanup.
         skip_cleanup: true
       <<: *extended-test-suite
 
