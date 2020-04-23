@@ -432,20 +432,11 @@ elif [ -f /etc/manjaro-release ]; then
   }
   BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
 elif [ -f /etc/gentoo-release ]; then
-  Bootstrap() {
-    DeprecationBootstrap "Gentoo" BootstrapGentooCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapGentooCommon $BOOTSTRAP_GENTOO_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif uname | grep -iq FreeBSD ; then
-  Bootstrap() {
-    DeprecationBootstrap "FreeBSD" BootstrapFreeBsd
-  }
-  BOOTSTRAP_VERSION="BootstrapFreeBsd $BOOTSTRAP_FREEBSD_VERSION"
+  DEPRECATED_OS=1
 elif uname | grep -iq Darwin ; then
-  Bootstrap() {
-    DeprecationBootstrap "macOS" BootstrapMac
-  }
-  BOOTSTRAP_VERSION="BootstrapMac $BOOTSTRAP_MAC_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
   Bootstrap() {
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
