@@ -12,7 +12,7 @@ import sys
 from certbot import errors
 from certbot.compat import os
 
-from acme.magic_typing import Union, List
+from acme.magic_typing import Tuple
 
 try:
     from win32com.shell import shell as shellwin32
@@ -117,7 +117,7 @@ def underscores_for_unsupported_characters_in_path(path):
 
 
 def execute_command(cmd_name, shell_cmd):
-    # type: (str, str) -> (str, str)
+    # type: (str, str) -> Tuple[str, str]
     """
     Run a command:
         - on Linux command will be run by the standard shell selected with Popen(shell=True)
