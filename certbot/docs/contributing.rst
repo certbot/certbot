@@ -168,7 +168,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv.py` contains two commands
+The virtual environment set up with `python tools/venv3.py` contains two commands
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
