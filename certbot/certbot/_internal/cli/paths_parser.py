@@ -38,7 +38,7 @@ def _paths_parser(helpful):
         default_cp = flag_default("auth_chain_path")
     add(["paths", "install"], "--fullchain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a full certificate chain (certificate plus chain).")
-    add("paths", "--chain-path", default=default_cp, type=os.path.abspath,
+    add(["paths", "install"], "--chain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a certificate chain.")
     add("paths", "--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
