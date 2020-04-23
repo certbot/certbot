@@ -12,6 +12,8 @@ import sys
 from certbot import errors
 from certbot.compat import os
 
+from acme.magic_typing import Union, List
+
 try:
     from win32com.shell import shell as shellwin32
     POSIX_MODE = False
@@ -115,6 +117,7 @@ def underscores_for_unsupported_characters_in_path(path):
 
 
 def execute_command(cmd_name, shell_cmd):
+    # type: (str, Union[str, List[str]]) -> None
     """
     Run a command:
         - on Linux command will be run by the standard shell selected with Popen(shell=True)
@@ -132,6 +135,8 @@ def execute_command(cmd_name, shell_cmd):
         cmd = subprocess.Popen(shell_cmd, shell=True, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, universal_newlines=True)
     else:
+        if isinstance(shell_cmd, list):
+            shell_cmd = subprocess.list2cmdline(shell_cmd)
         line = ['powershell.exe', '-Command', shell_cmd]
         cmd = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                universal_newlines=True)
