@@ -1,8 +1,12 @@
 """Tests for certbot.compat.misc"""
-import mock
+try:
+    import mock
+except ImportError:  # pragma: no cover
+    from unittest import mock  # type: ignore
 import unittest
 
 from certbot.compat import os
+
 
 class ExecuteTest(unittest.TestCase):
     """Tests for certbot.compat.misc.execute_command."""
