@@ -32,10 +32,12 @@ jobs:
       TOXENV: apache_compat
     steps:
       - script: |
+          sudo apt-get update
+          sudo apt-get install expect
           python tools/pip_install.py -U tox
         displayName: Install dependencies
       - script: |
-          python -m tox
+          unbuffer -p python -m tox
         displayName: Run tox
   - job: test
     strategy:
