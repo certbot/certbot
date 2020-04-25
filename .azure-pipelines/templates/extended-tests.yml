@@ -29,11 +29,11 @@ jobs:
         linux-py36:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.6
-          TOXENV: py35
+          TOXENV: py36
         linux-py37:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.7
-          TOXENV: py35
+          TOXENV: py37
         linux-py37-nopin:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.7
