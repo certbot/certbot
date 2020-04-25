@@ -74,7 +74,7 @@ jobs:
         displayName: Built Certbot snap
       - task: CopyFiles@2
         inputs:
-          sourceFolder: $(System.DefaultWorkingDirectory)/windows-installer/build/nsis
+          sourceFolder: $(System.DefaultWorkingDirectory)
           contents: 'certbot_*.snap'
           targetFolder: $(Build.ArtifactStagingDirectory)
       - task: PublishPipelineArtifact@1
