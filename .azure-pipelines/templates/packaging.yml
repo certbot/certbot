@@ -71,12 +71,8 @@ jobs:
         displayName: Install dependencies
       - script: |
           snap/local/build_and_install.sh
-        displayName: Built Certbot snap
-      - task: CopyFiles@2
-        inputs:
-          sourceFolder: $(System.DefaultWorkingDirectory)
-          contents: '*.snap'
-          targetFolder: $(Build.ArtifactStagingDirectory)
+          mv *.snap $SYSTEM_ARTIFACTSTAGINGDIRECTORY
+        displayName: Build Certbot snap
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
