@@ -43,18 +43,33 @@ jobs:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.5
           TOXENV: mypy
-
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
-    - bash: brew install augeas
+    - bash: |
+        brew install augeas
       condition: startswith(variables['IMAGE_NAME'], 'macOS')
-      displayName: Install Augeas
+      displayName: Install MacOS dependencies
+    - bash: |
+        apt update
+        apt install -y --no-install-recommends \
+          python-dev \
+          gcc \
+          libaugeas0 \
+          libssl-dev \
+          libffi-dev \
+          ca-certificates \
+          nginx-light \
+          openssl
+      condition: startswith(variables['IMAGE_NAME'], 'ubuntu')
+      displayName: Install Linux dependencies
     - task: UsePythonVersion@0
       inputs:
         versionSpec: $(PYTHON_VERSION)
         addToPath: true
-    - script: python tools/pip_install.py -U tox coverage
+    - script: |
+        python tools/pip_install.py -U tox coverage
       displayName: Install dependencies
-    - script: python -m tox
+    - script: |
+        python -m tox
       displayName: Run tox
