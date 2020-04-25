@@ -2,7 +2,6 @@ jobs:
   - job: oldest_test
     pool:
       vmImage: ubuntu-latest
-    container: ubuntu:14.04
     variables:
       TOXENV: py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest
     steps:

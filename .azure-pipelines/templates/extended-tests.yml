@@ -110,7 +110,7 @@ jobs:
           versionSpec: $(PYTHON_VERSION)
           addToPath: true
       - script: |
-          python tools/pip_install.py -U tox coverage
+          python tools/pip_install.py -U tox
         displayName: Install dependencies
       - script: |
           python -m tox
@@ -118,9 +118,6 @@ jobs:
   - job: oldest_extended_test
     pool:
       vmImage: ubuntu-latest
-    container:
-      image: ubuntu:14.04
-      options: --network=host
     strategy:
       matrix:
         linux-boulder-v1-integration-certbot:
