@@ -60,7 +60,6 @@ jobs:
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
   - job: snap_build
-    dependsOn: snap_build
     pool:
       vmImage: ubuntu-18.04
     steps:
@@ -84,6 +83,7 @@ jobs:
           artifact: snap
         displayName: Publish Snap
   - job: snap_run
+    dependsOn: snap_build
     pool:
       vmImage: ubuntu-18.04
     variables:
