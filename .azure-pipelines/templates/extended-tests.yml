@@ -3,7 +3,7 @@ jobs:
     strategy:
       matrix:
         nginx-compat:
-          TOXENV: nginx-compat
+          TOXENV: nginx_compat
         le-auto-jessie:
           TOXENV: le_auto_jessie
         le-auto-centos6:
