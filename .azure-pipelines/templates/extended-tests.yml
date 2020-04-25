@@ -106,11 +106,9 @@ jobs:
         displayName: Run tox
 
   - job: oldest_extended_test
-    pool:
-      vmImage: ubuntu-latest
+    variables:
+      PYTEST_ADDOPTS: --numprocesses 4
     strategy:
-      variables:
-        PYTEST_ADDOPTS: --numprocesses 4
       matrix:
         linux-boulder-v1-integration-certbot:
           TOXENV: integration-certbot-oldest
@@ -124,6 +122,8 @@ jobs:
         linux-boulder-v2-integration-nginx:
           TOXENV: integration-nginx-oldest
           ACME_SERVER: boulder-v2
+    pool:
+      vmImage: ubuntu-18.04
     steps:
       - script: |
           tools/run_oldest_tests.sh
