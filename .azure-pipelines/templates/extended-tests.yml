@@ -118,7 +118,9 @@ jobs:
   - job: oldest_extended_test
     pool:
       vmImage: ubuntu-latest
-    container: ubuntu:14.04
+    container:
+      image: ubuntu:14.04
+      options: --network=host
     strategy:
       matrix:
         linux-boulder-v1-integration-certbot:
