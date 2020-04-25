@@ -146,9 +146,10 @@ jobs:
             libffi-dev \
             ca-certificates \
             nginx-light \
-            openssl
-        displayName: Install Linux dependencies
-      - script: |
+            openssl \
+            curl
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sudo sh get-docker.sh
           sudo pip install --upgrade pip setuptools wheel
           python tools/pip_install.py -U tox
         displayName: Install dependencies
