@@ -17,11 +17,11 @@ jobs:
     steps:
       - script: |
           sudo apt-get update
-          sudo apt-get install libaugeas0
+          sudo apt-get install libaugeas0 expect
           python tools/pip_install.py -U tox
         displayName: Install dependencies
       - script: |
-          python -m tox
+          unbuffer -p python -m tox
         displayName: Run tox
   - job: extended_test
     strategy:
