@@ -51,8 +51,8 @@ jobs:
       condition: startswith(variables['IMAGE_NAME'], 'macOS')
       displayName: Install MacOS dependencies
     - bash: |
-        apt update
-        apt install -y --no-install-recommends \
+        sudo apt update
+        sudo apt install -y --no-install-recommends \
           python-dev \
           gcc \
           libaugeas0 \
