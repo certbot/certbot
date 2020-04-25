@@ -3,6 +3,8 @@ jobs:
     pool:
       vmImage: ubuntu-latest
     container: ubuntu:14.04
+    variables:
+      TOXENV: py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest
     steps:
       - bash: |
           sudo apt-get update
@@ -22,7 +24,7 @@ jobs:
           pip install -U tox
         displayName: Install dependencies
       - script: |
-          python -m tox -e py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest
+          python -m tox
         displayName: Run tox
 #  - job: test
 #    strategy:
