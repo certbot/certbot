@@ -11,13 +11,12 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             python-dev \
             python-pip \
+            git \
             gcc \
             libaugeas0 \
             libssl-dev \
             libffi-dev \
-            ca-certificates \
-            nginx-light \
-            openssl
+            ca-certificates
         displayName: Install Linux dependencies
       - script: |
           sudo pip install --upgrade pip setuptools wheel
