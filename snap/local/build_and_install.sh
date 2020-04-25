@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-if [[ -z "$TRAVIS" ]]; then
+if [[ -z "$TRAVIS" && -z "$SYSTEM_TEAMFOUNDATIONSERVERURI" ]]; then
     echo "This script makes global changes to the system it is run on so should only be run in CI."
     exit 1
 fi
