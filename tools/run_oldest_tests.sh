@@ -38,4 +38,15 @@ python tools/pip_install.py --ignore-installed six -U tox
 python -m tox
 EOF
 
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "${PWD}:${PWD}" -v "${SCRIPT}:/script.sh" -e TOXENV -e ACME_SERVER -e PYTEST_ADDOPTS -w "${PWD}" --network=host ubuntu:14.04 /script.sh
+docker run \
+  --rm \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "${PWD}:${PWD}" -v "${SCRIPT}:/script.sh" \
+  -v /tmp:/tmp \
+  -e TOXENV \
+  -e ACME_SERVER \
+  -e PYTEST_ADDOPTS \
+  -w "${PWD}" \
+  --network=host \
+  ubuntu:14.04 \
+  /script.sh
