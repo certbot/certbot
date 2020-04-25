@@ -1,0 +1,157 @@
+jobs:
+  - job: docker
+    strategy:
+      matrix:
+        nginx-compat:
+          TOXENV: nginx-compat
+        le-auto-jessie:
+          TOXENV: le_auto_jessie
+        le-auto-centos6:
+          TOXENV: le_auto_centos6
+        le-auto-oraclelinux6:
+          TOXENV: le_auto_oraclelinux6
+        dev:
+          TOXENV: docker_dev
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - script: |
+          sudo apt-get update
+          sudo apt-get install libaugeas0
+          python tools/pip_install.py -U tox
+        displayName: Install dependencies
+      - script: |
+          python -m tox
+        displayName: Run tox
+  - job: extended_test
+    strategy:
+      matrix:
+        linux-py36:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.6
+          TOXENV: py35
+        linux-py37:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.7
+          TOXENV: py35
+        linux-py37-nopin:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.7
+          TOXENV: py37
+          CERTBOT_NO_PIN: 1
+        linux-boulder-v1-py27-integration:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 2.7
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py27-integration:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 2.7
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-py35-integration:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.5
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py35-integration:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.5
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-py36-integration:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.6
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py36-integration:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.6
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-py37-integration:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.7
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py37-integration:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.7
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-py38-integration:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.8
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py38-integration:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.8
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+    pool:
+      vmImage: $(IMAGE_NAME)
+    steps:
+      - bash: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python-dev \
+            gcc \
+            libaugeas0 \
+            libssl-dev \
+            libffi-dev \
+            ca-certificates \
+            nginx-light \
+            openssl
+        condition: startswith(variables['IMAGE_NAME'], 'ubuntu')
+        displayName: Install Linux dependencies
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: $(PYTHON_VERSION)
+          addToPath: true
+      - script: |
+          python tools/pip_install.py -U tox coverage
+        displayName: Install dependencies
+      - script: |
+          python -m tox
+        displayName: Run tox
+  - job: oldest_extended_test
+    pool:
+      vmImage: ubuntu-latest
+    container: ubuntu:14.04
+    strategy:
+      matrix:
+        linux-boulder-v1-integration-certbot:
+          TOXENV: integration-certbot-oldest
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-integration-certbot:
+          TOXENV: integration-certbot-oldest
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-integration-nginx:
+          TOXENV: integration-nginx-oldest
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-integration-nginx:
+          TOXENV: integration-nginx-oldest
+          ACME_SERVER: boulder-v2
+    steps:
+      - script: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python-dev \
+            python-pip \
+            git \
+            gcc \
+            libaugeas0 \
+            libssl-dev \
+            libffi-dev \
+            ca-certificates \
+            nginx-light \
+            openssl
+        displayName: Install Linux dependencies
+      - script: |
+          sudo pip install --upgrade pip setuptools wheel
+          python tools/pip_install.py -U tox
+        displayName: Install dependencies
+      - script: |
+          python -m tox
+        displayName: Run tox

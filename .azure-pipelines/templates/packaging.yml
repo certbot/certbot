@@ -75,7 +75,7 @@ jobs:
       - task: CopyFiles@2
         inputs:
           sourceFolder: $(System.DefaultWorkingDirectory)
-          contents: 'certbot_*.snap'
+          contents: '*.snap'
           targetFolder: $(Build.ArtifactStagingDirectory)
       - task: PublishPipelineArtifact@1
         inputs:
@@ -89,10 +89,6 @@ jobs:
     variables:
       TOXENV: integration-external,apacheconftest-external-with-pebble
     steps:
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: 3.8
-          addToPath: true
       - script: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends nginx-light snap

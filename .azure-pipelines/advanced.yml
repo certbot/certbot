@@ -15,4 +15,5 @@ jobs:
   # Any addition here should be reflected in the advanced-test and release pipelines.
   # It is advised to declare all jobs here as templates to improve maintainability.
   - template: templates/standard-tests.yml
+  - template: templates/extended-tests.yml
   - template: templates/packaging.yml
