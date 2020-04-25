@@ -21,7 +21,7 @@ jobs:
         displayName: Install Linux dependencies
       - script: |
           sudo pip install --upgrade pip setuptools wheel
-          pip install -U tox
+          python tools/pip_install.py -U tox
         displayName: Install dependencies
       - script: |
           python -m tox
