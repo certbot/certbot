@@ -14,5 +14,5 @@ schedules:
 jobs:
   # Any addition here should be reflected in the advanced-test and release pipelines.
   # It is advised to declare all jobs here as templates to improve maintainability.
-  - template: templates/tests-suite.yml
-  - template: templates/installer-tests.yml
+  - template: templates/standard-tests-suite.yml
+  - template: templates/windows-installer-tests.yml

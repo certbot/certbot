@@ -23,6 +23,27 @@ jobs:
           PYTHON_VERSION: 3.7
           TOXENV: integration-certbot
           PYTEST_ADDOPTS: --numprocesses 4
+        linux-py27:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 2.7
+          TOXENV: py27
+        linux-py35:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.5
+          TOXENV: py35
+        linux-py38-cover:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.8
+          TOXENV: py27-cover
+        linux-py37-lint:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.7
+          TOXENV: lint
+        linux-py35-mypy:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.5
+          TOXENV: mypy
+
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
