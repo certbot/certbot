@@ -8,6 +8,7 @@ jobs:
           sudo apt update
           sudo apt install -y --no-install-recommends \
             python-dev \
+            python-pip \
             gcc \
             libaugeas0 \
             libssl-dev \
@@ -16,16 +17,11 @@ jobs:
             nginx-light \
             openssl
         displayName: Install Linux dependencies
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: 2.7
-          addToPath: true
       - script: |
-          python -m virtualenv venv
-          venv/bin/python tools/pip_install.py -U tox coverage
+          pip install -U tox coverage
         displayName: Install dependencies
       - script: |
-          venv/bin/python -m tox -e py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest
+          python -m tox -e py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest
         displayName: Run tox
 #  - job: test
 #    strategy:
