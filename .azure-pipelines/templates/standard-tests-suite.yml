@@ -18,7 +18,8 @@ jobs:
             openssl
         displayName: Install Linux dependencies
       - script: |
-          pip install -U tox coverage
+          pip install --upgrade pip setuptools wheel
+          pip install -U tox
         displayName: Install dependencies
       - script: |
           python -m tox -e py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest
