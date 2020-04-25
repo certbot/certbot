@@ -6,7 +6,7 @@ jobs:
     variables:
       TOXENV: py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest
     steps:
-      - bash: |
+      - script: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             python-dev \
@@ -81,6 +81,11 @@ jobs:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.5
           TOXENV: mypy
+        linux-integration:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 2.7
+          TOXENV: integration
+          ACME_SERVER: pebble
     pool:
       vmImage: $(IMAGE_NAME)
     steps:

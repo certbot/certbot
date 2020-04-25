@@ -59,3 +59,52 @@ jobs:
           set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
+  - job: snap_build
+    pool:
+      vmImage: ubuntu-18.04
+    steps:
+      - script: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends snap
+          sudo snap install --classic snapcraft
+          snap install lxd
+        displayName: Install dependencies
+      - script: |
+          snap/local/build_and_install.sh
+        displayName: Built Certbot snap
+      - task: CopyFiles@2
+        inputs:
+          sourceFolder: $(System.DefaultWorkingDirectory)/windows-installer/build/nsis
+          contents: 'certbot_*.snap'
+          targetFolder: $(Build.ArtifactStagingDirectory)
+      - task: PublishPipelineArtifact@1
+        inputs:
+          path: $(Build.ArtifactStagingDirectory)
+          artifact: snap
+        displayName: Publish Snap
+  - job: snap_run
+    pool:
+      vmImage: ubuntu-18.04
+    variables:
+      TOXENV: integration-external,apacheconftest-external-with-pebble
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.8
+          addToPath: true
+      - script: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends nginx-light snap
+          python tools/pip_install.py -U tox
+        displayName: Install dependencies
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          artifact: snap
+          path: $(Build.SourcesDirectory)/snap
+        displayName: Retrieve Certbot snap
+      - script: |
+          sudo snap install --dangerous --classic snap/*.snap
+        displayName: Install Certbot snap
+      - script: |
+          python -m tox
+        displayName: Run tox
