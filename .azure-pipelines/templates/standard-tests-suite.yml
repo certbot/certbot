@@ -5,8 +5,8 @@ jobs:
     container: ubuntu:14.04
     steps:
       - bash: |
-          sudo apt update
-          sudo apt install -y --no-install-recommends \
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
             python-dev \
             python-pip \
             gcc \
@@ -18,7 +18,7 @@ jobs:
             openssl
         displayName: Install Linux dependencies
       - script: |
-          pip install --upgrade pip setuptools wheel
+          sudo pip install --upgrade pip setuptools wheel
           pip install -U tox
         displayName: Install dependencies
       - script: |
@@ -76,8 +76,8 @@ jobs:
 #      condition: startswith(variables['IMAGE_NAME'], 'macOS')
 #      displayName: Install MacOS dependencies
 #    - bash: |
-#        sudo apt update
-#        sudo apt install -y --no-install-recommends \
+#        sudo apt-get update
+#        sudo apt-get install -y --no-install-recommends \
 #          python-dev \
 #          gcc \
 #          libaugeas0 \
