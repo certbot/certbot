@@ -137,24 +137,5 @@ jobs:
           ACME_SERVER: boulder-v2
     steps:
       - script: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            python-dev \
-            python-pip \
-            git \
-            gcc \
-            libaugeas0 \
-            libssl-dev \
-            libffi-dev \
-            ca-certificates \
-            nginx-light \
-            openssl \
-            curl
-          curl -fsSL https://get.docker.com -o get-docker.sh
-          sudo sh get-docker.sh
-          sudo pip install --upgrade pip setuptools wheel
-          python tools/pip_install.py -U tox
-        displayName: Install dependencies
-      - script: |
-          python -m tox
-        displayName: Run tox
+          tools/run_oldest_tests.sh
+        displayName: Run oldest tests
