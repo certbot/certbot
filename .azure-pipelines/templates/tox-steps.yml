@@ -27,6 +27,7 @@ steps:
       python tools/pip_install.py -U tox coverage
     displayName: Install runtime dependencies
   - bash: |
+      exit 1
       if [[ "${TOXENV}" == *"test-farm"* ]]; then
         # To be removed once farm tests are configured on Azure
         exit 0
