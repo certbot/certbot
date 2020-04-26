@@ -6,6 +6,6 @@ stages:
           vmImage: ubuntu-latest
         steps:
           - bash: |
-              MESSAGE="---\n#### Azure Pipeline: $(Build.DefinitionName) - build $(Build.BuildId)\n:warning: __[Build has failed](https://dev.azure.com/$(Build.Repository.ID)/_build/results?buildId=$(Build.BuildId)&view=results)__ :warning:\n\n---"
+              MESSAGE="---\n#### Azure Pipeline:\nPipeline: $(Build.DefinitionName) - Build: $(Build.BuildId)\n:warning: __[Build has failed](https://dev.azure.com/$(Build.Repository.ID)/_build/results?buildId=$(Build.BuildId)&view=results)__ :warning:\n\n---"
               curl -i -H "Authorization: Bearer $(MATTERMOST_TOKEN)" --data "{\"channel_id\":\"$(MATTERMOST_CHANNEL_ID)\",\"message\":\"${MESSAGE}\"}" -X POST "$(MATTERMOST_URL)/api/v4/posts"
     condition: failed()
