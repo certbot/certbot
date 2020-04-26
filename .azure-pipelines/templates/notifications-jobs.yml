@@ -4,4 +4,7 @@ jobs:
       vmImage: ubuntu-latest
     steps:
       - bash: |
-          curl -i -H "Authorization: Bearer $(MATTERMOST_TOKEN)" --data '{"channel_id":"$(MATTERMOST_CHANNEL_ID)","message":"Build has failed: https://dev.azure.com/adferrand/certbot/_build/results?buildId=$(Build.BuildId)&view=results"}' -X POST "$(MATTERMOST_URL)/api/v4/posts"
+          curl -i -H "Authorization: Bearer ${MATTERMOST_TOKEN}" --data "{\"channel_id\":\"${MATTERMOST_CHANNEL_ID}\",\"message\":\"Build has failed: https://dev.azure.com/adferrand/certbot/_build/results?buildId=${BUILD_ID}&view=results\"}" -X POST "${MATTERMOST_URL}/api/v4/posts"
+        env:
+          MATTERMOST_TOKEN: $(MATTERMOST_TOKEN)
+          BUILD_ID: $(Build.BuildId)
