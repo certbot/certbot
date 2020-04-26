@@ -8,20 +8,6 @@ jobs:
       - script: |
           tools/run_oldest_tests.sh
         displayName: Run oldest tests
-  - job: apache_compat
-    pool:
-      vmImage: ubuntu-latest
-    variables:
-      TOXENV: apache_compat
-    steps:
-      - script: |
-          sudo apt-get update
-          sudo apt-get install expect
-          python tools/pip_install.py -U tox
-        displayName: Install dependencies
-      - script: |
-          unbuffer -p python -m tox
-        displayName: Run tox
   - job: test
     strategy:
       matrix:
@@ -71,33 +57,10 @@ jobs:
           PYTHON_VERSION: 2.7
           TOXENV: integration
           ACME_SERVER: pebble
+        apache-compat:
+          IMAGE_NAME: ubuntu-18.04
+          TOXENV: apache_compat
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
-      - bash: |
-          brew install augeas
-        condition: startswith(variables['IMAGE_NAME'], 'macOS')
-        displayName: Install MacOS dependencies
-      - bash: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            python-dev \
-            gcc \
-            libaugeas0 \
-            libssl-dev \
-            libffi-dev \
-            ca-certificates \
-            nginx-light \
-            openssl
-        condition: startswith(variables['IMAGE_NAME'], 'ubuntu')
-        displayName: Install Linux dependencies
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: $(PYTHON_VERSION)
-          addToPath: true
-      - script: |
-          python tools/pip_install.py -U tox coverage
-        displayName: Install dependencies
-      - script: |
-          python -m tox
-        displayName: Run tox
+      - template: tox-steps.yml

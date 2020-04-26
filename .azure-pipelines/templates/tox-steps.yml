@@ -1,0 +1,31 @@
+steps:
+  - bash: |
+      brew install augeas
+    condition: startswith(variables['IMAGE_NAME'], 'macOS')
+    displayName: Install MacOS dependencies
+  - bash: |
+      sudo apt-get update
+      sudo apt-get install -y --no-install-recommends \
+        python-dev \
+        gcc \
+        libaugeas0 \
+        libssl-dev \
+        libffi-dev \
+        ca-certificates \
+        nginx-light \
+        openssl \
+        expect
+    condition: startswith(variables['IMAGE_NAME'], 'ubuntu')
+    displayName: Install Linux dependencies
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: $(PYTHON_VERSION)
+      addToPath: true
+    condition: ne(coalesce(variables['PYTHON_VERSION'], 'UNSPECIFIED'), 'UNSPECIFIED')
+    displayName: Activate selected Python version
+  - script: |
+      python tools/pip_install.py -U tox coverage
+    displayName: Install runtime dependencies
+  - script: |
+      unbuffered -p python -m tox
+    displayName: Run tox

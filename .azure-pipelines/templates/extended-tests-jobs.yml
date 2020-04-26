@@ -1,29 +1,5 @@
 jobs:
-  - job: docker
-    strategy:
-      matrix:
-        nginx-compat:
-          TOXENV: nginx_compat
-        le-auto-jessie:
-          TOXENV: le_auto_jessie
-        le-auto-centos6:
-          TOXENV: le_auto_centos6
-        le-auto-oraclelinux6:
-          TOXENV: le_auto_oraclelinux6
-        dev:
-          TOXENV: docker_dev
-    pool:
-      vmImage: ubuntu-latest
-    steps:
-      - script: |
-          sudo apt-get update
-          sudo apt-get install libaugeas0 expect
-          python tools/pip_install.py -U tox
-        displayName: Install dependencies
-      - script: |
-          unbuffer -p python -m tox
-        displayName: Run tox
-  - job: extended_test
+  - job: x_test
     variables:
       ${{ if eq(variables['TOXENV'], 'integration') }}:
         PYTEST_ADDOPTS: --numprocesses 4
@@ -79,33 +55,21 @@ jobs:
           PYTHON_VERSION: 3.8
           TOXENV: integration
           ACME_SERVER: boulder-v2
+        nginx-compat:
+          TOXENV: nginx_compat
+        le-auto-jessie:
+          TOXENV: le_auto_jessie
+        le-auto-centos6:
+          TOXENV: le_auto_centos6
+        le-auto-oraclelinux6:
+          TOXENV: le_auto_oraclelinux6
+        dev:
+          TOXENV: docker_dev
     pool:
       vmImage: ubuntu-18.04
     steps:
-      - bash: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            python-dev \
-            gcc \
-            libaugeas0 \
-            libssl-dev \
-            libffi-dev \
-            ca-certificates \
-            nginx-light \
-            openssl
-        displayName: Install Linux dependencies
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: $(PYTHON_VERSION)
-          addToPath: true
-      - script: |
-          python tools/pip_install.py -U tox
-        displayName: Install dependencies
-      - script: |
-          python -m tox
-        displayName: Run tox
-
-  - job: oldest_extended_test
+      - template: tox-steps.yml
+  - job: oldest_x_test
     variables:
       PYTEST_ADDOPTS: --numprocesses 4
     strategy:

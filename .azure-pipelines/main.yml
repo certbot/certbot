@@ -5,4 +5,4 @@ pr:
   - '*.x'
 
 jobs:
-  - template: templates/standard-tests.yml
+  - template: templates/standard-tests-jobs.yml

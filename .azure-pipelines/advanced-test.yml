@@ -9,6 +9,6 @@ pr: none
 jobs:
   # Any addition here should be reflected in the advanced and release pipelines.
   # It is advised to declare all jobs here as templates to improve maintainability.
-  - template: templates/standard-tests.yml
-  - template: templates/extended-tests.yml
-  - template: templates/packaging.yml
+  - template: templates/standard-tests-jobs.yml
+  - template: templates/extended-tests-jobs.yml
+  - template: templates/packaging-jobs.yml
