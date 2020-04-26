@@ -8,10 +8,13 @@ jobs:
           versionSpec: 3.7
           architecture: x86
           addToPath: true
-      - bash: |
-          python windows-installer/construct.py
-          mv windows-installer/build/nsis/*.exe $(Build.ArtifactStagingDirectory)
+      - script: python windows-installer/construct.py
         displayName: Build Certbot installer
+      - task: CopyFiles@2
+        inputs:
+          sourceFolder: $(System.DefaultWorkingDirectory)/windows-installer/build/nsis
+          contents: '*.exe'
+          targetFolder: $(Build.ArtifactStagingDirectory)
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
