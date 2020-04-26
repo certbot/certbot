@@ -1,7 +1,7 @@
 steps:
   - bash: |
       brew install augeas
-    condition: startswith(pool.vmImage, 'macOS')
+    condition: eq(Agent.OS, 'Darwin')
     displayName: Install MacOS dependencies
   - bash: |
       sudo apt-get update
@@ -15,7 +15,7 @@ steps:
         nginx-light \
         openssl \
         expect
-    condition: startswith(pool.vmImage, 'ubuntu')
+    condition: eq(Agent.OS, 'Linux')
     displayName: Install Linux dependencies
   - task: UsePythonVersion@0
     inputs:
