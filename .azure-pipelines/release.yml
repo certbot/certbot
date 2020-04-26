@@ -16,5 +16,5 @@ stage:
       - template: templates/changelog-jobs.yml
   - stage: Deploy
     jobs:
-      - template: templates/deploy-jobs.yml
+      - template: templates/deployment-jobs.yml
   - template: templates/notify-failure-steps.yml
