@@ -27,7 +27,7 @@ steps:
       python tools/pip_install.py -U tox coverage
     displayName: Install runtime dependencies
   - bash: |
-      if command -v unbuffer > /dev/null 2> &1; then
+      if command -v unbuffer >/dev/null 2>&1; then
         unbuffer -p python -m tox
       else
         python -m tox
