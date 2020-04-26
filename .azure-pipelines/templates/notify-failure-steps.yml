@@ -1,0 +1,10 @@
+stages:
+  - stage: Notify_Failure
+    jobs:
+      - job: notify
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - bash: |
+              curl -i -H "Authorization: Bearer $(MATTERMOST_TOKEN)" --data '{"channel_id":"$(MATTERMOST_CHANNEL_ID)","message":"Build has failed: https://dev.azure.com/$(Build.RepositoryId)/_build/results?buildId=$(Build.BuildId)&view=results"}' -X POST "$(MATTERMOST_URL)/api/v4/posts"
+    condition: failed()

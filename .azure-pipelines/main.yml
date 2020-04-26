@@ -8,7 +8,4 @@ stages:
   - stage: Test
     jobs:
       - template: templates/standard-tests-jobs.yml
-  - stage: Notify
-    jobs:
-      - template: templates/notifications-jobs.yml
-    condition: succeededOrFailed()
+  - template: templates/notify-failure-steps.yml
