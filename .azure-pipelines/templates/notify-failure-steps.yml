@@ -7,5 +7,5 @@ stages:
         steps:
           - bash: |
               MESSAGE="---\n#### Azure Pipeline: $(Build.DefinitionName)\nBuild has failed: https://dev.azure.com/$(Build.Repository.ID)/_build/results?buildId=$(Build.BuildId)&view=results\n\n---"
-              curl -i -H "Authorization: Bearer $(MATTERMOST_TOKEN)" --data '{"channel_id":"$(MATTERMOST_CHANNEL_ID)","message":"${MESSAGE}"}' -X POST "$(MATTERMOST_URL)/api/v4/posts"
+              curl -i -H "Authorization: Bearer $(MATTERMOST_TOKEN)" --data "{\"channel_id\":\"$(MATTERMOST_CHANNEL_ID)\",\"message\":\"${MESSAGE}\"}" -X POST "$(MATTERMOST_URL)/api/v4/posts"
     condition: failed()
