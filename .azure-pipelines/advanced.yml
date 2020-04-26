@@ -19,4 +19,7 @@ stages:
       - template: templates/standard-tests-jobs.yml
       - template: templates/extended-tests-jobs.yml
       - template: templates/packaging-jobs.yml
+  - stage: Deploy
+    jobs:
+      - template: templates/deploy-jobs.yml
   - template: templates/notify-failure-steps.yml
