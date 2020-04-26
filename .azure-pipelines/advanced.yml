@@ -11,9 +11,12 @@ schedules:
       - master
     always: true
 
-jobs:
-  # Any addition here should be reflected in the advanced-test and release pipelines.
-  # It is advised to declare all jobs here as templates to improve maintainability.
-  - template: templates/standard-tests-jobs.yml
-  - template: templates/extended-tests-jobs.yml
-  - template: templates/packaging-jobs.yml
+stages:
+  - stage: Build_Test_Package
+    jobs:
+      # Any addition here should be reflected in the advanced-test and release pipelines.
+      # It is advised to declare all jobs here as templates to improve maintainability.
+      - template: templates/standard-tests-jobs.yml
+      - template: templates/extended-tests-jobs.yml
+      - template: templates/packaging-jobs.yml
+  - template: templates/notify-failure-steps.yml
