@@ -1,14 +1,8 @@
 jobs:
-  - job: oldest_test
-    pool:
-      vmImage: ubuntu-latest
-    variables:
-      TOXENV: py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest
-    steps:
-      - script: |
-          tools/run_oldest_tests.sh
-        displayName: Run oldest tests
   - job: test
+    variables:
+      ${{ if contains(variables['TOXENV'], 'integration') }}:
+        PYTEST_ADDOPTS: --numprocesses 4
     strategy:
       matrix:
         macos-py27:
@@ -31,7 +25,9 @@ jobs:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.7
           TOXENV: integration-certbot
-          PYTEST_ADDOPTS: --numprocesses 4
+        linux-oldest-tests:
+          IMAGE_NAME: ubuntu-18.04
+          TOXENV: py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest
         linux-py27:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 2.7

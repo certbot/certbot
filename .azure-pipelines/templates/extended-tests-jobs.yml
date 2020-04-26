@@ -2,7 +2,7 @@ jobs:
   - job: x_test
     variables:
       IMAGE_NAME: ubuntu-18.04
-      ${{ if eq(variables['TOXENV'], 'integration') }}:
+      ${{ if contains(variables['TOXENV'], 'integration') }}:
         PYTEST_ADDOPTS: --numprocesses 4
     strategy:
       matrix:
@@ -16,6 +16,18 @@ jobs:
           PYTHON_VERSION: 3.7
           TOXENV: py37
           CERTBOT_NO_PIN: 1
+        linux-boulder-v1-integration-certbot:
+          TOXENV: integration-certbot-oldest
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-integration-certbot:
+          TOXENV: integration-certbot-oldest
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-integration-nginx:
+          TOXENV: integration-nginx-oldest
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-integration-nginx:
+          TOXENV: integration-nginx-oldest
+          ACME_SERVER: boulder-v2
         linux-boulder-v1-py27-integration:
           PYTHON_VERSION: 2.7
           TOXENV: integration
@@ -70,26 +82,3 @@ jobs:
       vmImage: $(IMAGE_NAME)
     steps:
       - template: tox-steps.yml
-  - job: oldest_x_test
-    variables:
-      PYTEST_ADDOPTS: --numprocesses 4
-    strategy:
-      matrix:
-        linux-boulder-v1-integration-certbot:
-          TOXENV: integration-certbot-oldest
-          ACME_SERVER: boulder-v1
-        linux-boulder-v2-integration-certbot:
-          TOXENV: integration-certbot-oldest
-          ACME_SERVER: boulder-v2
-        linux-boulder-v1-integration-nginx:
-          TOXENV: integration-nginx-oldest
-          ACME_SERVER: boulder-v1
-        linux-boulder-v2-integration-nginx:
-          TOXENV: integration-nginx-oldest
-          ACME_SERVER: boulder-v2
-    pool:
-      vmImage: ubuntu-18.04
-    steps:
-      - script: |
-          tools/run_oldest_tests.sh
-        displayName: Run oldest tests
