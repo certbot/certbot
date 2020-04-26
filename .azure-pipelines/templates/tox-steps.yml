@@ -23,9 +23,13 @@ steps:
       addToPath: true
     condition: ne(coalesce(variables['PYTHON_VERSION'], 'UNSPECIFIED'), 'UNSPECIFIED')
     displayName: Activate selected Python version
-  - script: |
+  - bash: |
       python tools/pip_install.py -U tox coverage
     displayName: Install runtime dependencies
-  - script: |
-      unbuffered -p python -m tox
+  - bash: |
+      if command -v unbuffer 2> /dev/null; then
+        unbuffer -p python -m tox
+      else
+        python -m tox
+      fi
     displayName: Run tox
