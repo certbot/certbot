@@ -20,6 +20,8 @@ cat << "EOF" >> "${SCRIPT}"
 set -e
 apt-get update
 apt-get install -y --no-install-recommends \
+    python-dev \
+    python-pip \
     git \
     gcc \
     libaugeas0 \
@@ -29,16 +31,15 @@ apt-get install -y --no-install-recommends \
     nginx-light \
     openssl \
     curl \
-    make
+    software-properties-common
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5BB92C09DB82666C
+add-apt-repository ppa:fkrull/deadsnakes-python2.7
+apt-get update
+apt-get upgrade -y
 sh <(curl -fsSL https://get.docker.com)
-curl -fsSL https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tgz | tar xvz
-cd Python-2.7.18/
-./configure --prefix /usr/local/lib/python --enable-ipv6
-make -j2 && make install
-cd .. && rm -rf Python-2.7.18 && cd certbot
-/usr/local/lib/python/bin/python -m ensurepip
-/usr/local/lib/python/bin/python -m pip install tox
-/usr/local/lib/python/bin/python -m tox
+python -m pip install --upgrade pip virtualenv wheel
+python -m pip install tox
+python -m tox
 EOF
 
 docker run \
