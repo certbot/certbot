@@ -1,6 +1,7 @@
 jobs:
   - job: x_test
     variables:
+      IMAGE_NAME: ubuntu-18.04
       ${{ if eq(variables['TOXENV'], 'integration') }}:
         PYTEST_ADDOPTS: --numprocesses 4
     strategy:
@@ -66,7 +67,7 @@ jobs:
         dev:
           TOXENV: docker_dev
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: $(IMAGE_NAME)
     steps:
       - template: tox-steps.yml
   - job: oldest_x_test
