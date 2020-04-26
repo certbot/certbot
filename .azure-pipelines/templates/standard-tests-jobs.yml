@@ -9,53 +9,53 @@ jobs:
           IMAGE_NAME: macOS-10.14
           PYTHON_VERSION: 2.7
           TOXENV: py27
-        macos-py38:
-          IMAGE_NAME: macOS-10.14
-          PYTHON_VERSION: 3.8
-          TOXENV: py38
-        windows-py35:
-          IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.5
-          TOXENV: py35
-        windows-py37-cover:
-          IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.7
-          TOXENV: py37-cover
-        windows-integration-certbot:
-          IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.7
-          TOXENV: integration-certbot
-        linux-oldest-tests:
-          IMAGE_NAME: ubuntu-18.04
-          TOXENV: py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest
-        linux-py27:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
-          TOXENV: py27
-        linux-py35:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.5
-          TOXENV: py35
-        linux-py38-cover:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.8
-          TOXENV: py27-cover
-        linux-py37-lint:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.7
-          TOXENV: lint
-        linux-py35-mypy:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.5
-          TOXENV: mypy
-        linux-integration:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
-          TOXENV: integration
-          ACME_SERVER: pebble
-        apache-compat:
-          IMAGE_NAME: ubuntu-18.04
-          TOXENV: apache_compat
+#        macos-py38:
+#          IMAGE_NAME: macOS-10.14
+#          PYTHON_VERSION: 3.8
+#          TOXENV: py38
+#        windows-py35:
+#          IMAGE_NAME: vs2017-win2016
+#          PYTHON_VERSION: 3.5
+#          TOXENV: py35
+#        windows-py37-cover:
+#          IMAGE_NAME: vs2017-win2016
+#          PYTHON_VERSION: 3.7
+#          TOXENV: py37-cover
+#        windows-integration-certbot:
+#          IMAGE_NAME: vs2017-win2016
+#          PYTHON_VERSION: 3.7
+#          TOXENV: integration-certbot
+#        linux-oldest-tests:
+#          IMAGE_NAME: ubuntu-18.04
+#          TOXENV: py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest
+#        linux-py27:
+#          IMAGE_NAME: ubuntu-18.04
+#          PYTHON_VERSION: 2.7
+#          TOXENV: py27
+#        linux-py35:
+#          IMAGE_NAME: ubuntu-18.04
+#          PYTHON_VERSION: 3.5
+#          TOXENV: py35
+#        linux-py38-cover:
+#          IMAGE_NAME: ubuntu-18.04
+#          PYTHON_VERSION: 3.8
+#          TOXENV: py27-cover
+#        linux-py37-lint:
+#          IMAGE_NAME: ubuntu-18.04
+#          PYTHON_VERSION: 3.7
+#          TOXENV: lint
+#        linux-py35-mypy:
+#          IMAGE_NAME: ubuntu-18.04
+#          PYTHON_VERSION: 3.5
+#          TOXENV: mypy
+#        linux-integration:
+#          IMAGE_NAME: ubuntu-18.04
+#          PYTHON_VERSION: 2.7
+#          TOXENV: integration
+#          ACME_SERVER: pebble
+#        apache-compat:
+#          IMAGE_NAME: ubuntu-18.04
+#          TOXENV: apache_compat
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
