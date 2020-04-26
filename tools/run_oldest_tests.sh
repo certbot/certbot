@@ -20,18 +20,8 @@ cat << "EOF" >> "${SCRIPT}"
 set -e
 apt-get update
 apt-get install -y --no-install-recommends \
-    python-dev \
-    python-pip \
-    git \
-    gcc \
-    libaugeas0 \
-    libssl-dev \
-    libffi-dev \
-    ca-certificates \
-    nginx-light \
-    openssl \
-    curl \
-    software-properties-common
+    python-dev python-pip git gcc libaugeas0 libssl-dev libffi-dev \
+    ca-certificates nginx-light openssl curl software-properties-common
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5BB92C09DB82666C
 add-apt-repository ppa:fkrull/deadsnakes-python2.7
 apt-get update
@@ -42,15 +32,9 @@ python -m pip install tox
 python -m tox
 EOF
 
-docker run \
-  --rm \
+docker run --rm --network=host -w "${PWD}" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "${PWD}:${PWD}" -v "${SCRIPT}:/script.sh" \
   -v /tmp:/tmp \
-  -e TOXENV \
-  -e ACME_SERVER \
-  -e PYTEST_ADDOPTS \
-  -w "${PWD}" \
-  --network=host \
-  ubuntu:14.04 \
-  /script.sh
+  -e TOXENV -e ACME_SERVER -e PYTEST_ADDOPTS \
+  ubuntu:14.04 /script.sh
