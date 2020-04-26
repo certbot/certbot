@@ -8,13 +8,10 @@ jobs:
           versionSpec: 3.7
           architecture: x86
           addToPath: true
-      - script: python windows-installer/construct.py
+      - bash: |
+          python windows-installer/construct.py
+          mv windows-installer/build/nsis/*.exe $(Build.ArtifactStagingDirectory)
         displayName: Build Certbot installer
-      - task: CopyFiles@2
-        inputs:
-          sourceFolder: $(System.DefaultWorkingDirectory)/windows-installer/build/nsis
-          contents: '*.exe'
-          targetFolder: $(Build.ArtifactStagingDirectory)
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
@@ -32,8 +29,7 @@ jobs:
       vmImage: $(imageName)
     steps:
       - powershell: |
-          $currentVersion = $PSVersionTable.PSVersion
-          if ($currentVersion.Major -ne 5) {
+          if ($PSVersionTable.PSVersion.Major -ne 5) {
               throw "Powershell version is not 5.x"
           }
         condition: eq(variables['imageName'], 'vs2017-win2016')
