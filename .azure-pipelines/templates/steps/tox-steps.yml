@@ -22,9 +22,8 @@ steps:
       versionSpec: $(PYTHON_VERSION)
       addToPath: true
     condition: ne(coalesce(variables['PYTHON_VERSION'], 'UNSPECIFIED'), 'UNSPECIFIED')
-    displayName: Activate selected Python version
   - bash: |
-      python tools/pip_install.py -U tox coverage
+      python tools/pip_install.py -I tox virtualenv
     displayName: Install runtime dependencies
   - bash: |
       if [[ "${TOXENV}" == *"test-farm"* ]]; then

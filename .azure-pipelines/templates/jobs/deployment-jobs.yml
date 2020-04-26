@@ -8,15 +8,13 @@ jobs:
           sudo apt-get install -y --no-install-recommends snap
           sudo snap install --classic snapcraft
         displayName: Install dependencies
-      - bash: |
-          mkdir .snapcraft
-          echo $(SNAPCRAFT_LOGIN_FILE) | base64 --decode --ignore-garbage > .snapcraft/snapcraft.cfg
-        displayName: Prepare login to Snap store
       - task: DownloadPipelineArtifact@2
         inputs:
           artifact: snap
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snap
       - bash: |
+          mkdir .snapcraft
+          echo $(SNAPCRAFT_LOGIN_FILE) | base64 --decode --ignore-garbage > .snapcraft/snapcraft.cfg
           snapcraft push --release=edge snap/*.snap
         displayName: Publish to Snap store

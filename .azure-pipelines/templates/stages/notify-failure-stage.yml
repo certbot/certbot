@@ -1,7 +1,7 @@
 stages:
-  - stage: Notify_Failure
+  - stage: On_Failure
     jobs:
-      - job: notify
+      - job: notify_mattermost
         pool:
           vmImage: ubuntu-latest
         steps:
