@@ -11,3 +11,4 @@ stages:
   - stage: Notify
     jobs:
       - template: templates/notifications-jobs.yml
+    condition: succeededOrFailed()
