@@ -4,5 +4,10 @@ pr:
   - master
   - '*.x'
 
-jobs:
-  - template: templates/standard-tests-jobs.yml
+stages:
+  - stage: Test
+    jobs:
+      - template: templates/standard-tests-jobs.yml
+  - stage: Notify
+    jobs:
+      - template: templates/notifications-jobs.yml
