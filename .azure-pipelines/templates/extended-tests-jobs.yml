@@ -78,6 +78,18 @@ jobs:
           TOXENV: le_auto_oraclelinux6
         dev:
           TOXENV: docker_dev
+        farmtest-apache2:
+          PYTHON_VERSION: 3.7
+          TOXENV: azure-test-farm-apache2
+        farmtest-leauto-upgrades:
+          PYTHON_VERSION: 3.7
+          TOXENV: azure-test-farm-leauto-upgrades
+        farmtest-certonly-standalone:
+          PYTHON_VERSION: 3.7
+          TOXENV: azure-test-farm-certonly-standalone
+        farmtest-sdists:
+          PYTHON_VERSION: 3.7
+          TOXENV: azure-test-farm-sdists
     pool:
       vmImage: $(IMAGE_NAME)
     steps:

@@ -206,7 +206,7 @@ Certbot uses both Azure Pipelines and Travis to run continuous integration
 tests. If you are using our Azure and Travis setup, a branch whose name starts
 with `test-` will run all Azure and Travis tests on that branch. If the branch
 name starts with `azure-test-`, it will run all of our Azure tests and none of
-our Travis tests. If the branch stats with `travis-test-`, only our Travis
+our Travis tests. If the branch starts with `travis-test-`, only our Travis
 tests will be run.
 
 Code components and layout
