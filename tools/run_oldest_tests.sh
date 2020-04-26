@@ -15,13 +15,11 @@ trap cleanup EXIT
 SCRIPT=$(mktemp /tmp/test-script.XXXXXX)
 chmod +x "${SCRIPT}"
 
-cat << EOF >> "${SCRIPT}"
-#!/bin/sh
+cat << "EOF" >> "${SCRIPT}"
+#!/bin/bash
 set -e
 apt-get update
 apt-get install -y --no-install-recommends \
-    python-dev \
-    python-pip \
     git \
     gcc \
     libaugeas0 \
@@ -30,12 +28,17 @@ apt-get install -y --no-install-recommends \
     ca-certificates \
     nginx-light \
     openssl \
-    curl
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-pip install --upgrade pip setuptools wheel
-python tools/pip_install.py --ignore-installed six -U tox
-python -m tox
+    curl \
+    make
+sh <(curl -fsSL https://get.docker.com)
+curl -fsSL https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tgz | tar xvz
+cd Python-2.7.18/
+./configure --prefix /usr/local/lib/python --enable-ipv6
+make -j2 && make install
+cd .. && rm -rf Python-2.7.18 && cd certbot
+/usr/local/lib/python/bin/python -m ensurepip
+/usr/local/lib/python/bin/python -m pip install tox
+/usr/local/lib/python/bin/python -m tox
 EOF
 
 docker run \
