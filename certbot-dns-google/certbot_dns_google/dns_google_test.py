@@ -1,5 +1,6 @@
 """Tests for certbot_dns_google.dns_google."""
 
+import os
 import unittest
 
 import mock
@@ -9,7 +10,6 @@ from googleapiclient.http import HttpMock
 from httplib2 import ServerNotFoundError
 
 from certbot import errors
-from certbot.compat import os
 from certbot.errors import PluginError
 from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
@@ -276,9 +276,9 @@ class GoogleClientTest(unittest.TestCase):
             [{'managedZones': [{'id': self.zone}]}])
         # Record name mocked in setUp
         found = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
-        self.assertEqual(found, ["\"example-txt-contents\""])
+        self.assertEquals(found, ["\"example-txt-contents\""])
         not_found = client.get_existing_txt_rrset(self.zone, "nonexistent.tld")
-        self.assertEqual(not_found, None)
+        self.assertEquals(not_found, None)
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',

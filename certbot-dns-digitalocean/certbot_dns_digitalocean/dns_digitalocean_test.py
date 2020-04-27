@@ -1,12 +1,12 @@
 """Tests for certbot_dns_digitalocean.dns_digitalocean."""
 
+import os
 import unittest
 
 import digitalocean
 import mock
 
 from certbot import errors
-from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
@@ -50,8 +50,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
 
 class DigitalOceanClientTest(unittest.TestCase):
-
-    id_num = 1
+    id = 1
     record_prefix = "_acme-challenge"
     record_name = record_prefix + "." + DOMAIN
     record_content = "bar"
@@ -71,7 +70,7 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         domain_mock = mock.MagicMock()
         domain_mock.name = DOMAIN
-        domain_mock.create_new_domain_record.return_value = {'domain_record': {'id': self.id_num}}
+        domain_mock.create_new_domain_record.return_value = {'domain_record': {'id': self.id}}
 
         self.manager.get_all_domains.return_value = [wrong_domain_mock, domain_mock]
 
