@@ -87,6 +87,7 @@ parts:
     after: [certbot-apache]
   wrappers:
     plugin: dump
+    source: .
     stage: [certbot.wrapper]
 
 plugs:
