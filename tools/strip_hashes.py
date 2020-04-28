@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Removes hash information from requirement files passed to it as file path
 arguments or simply piped to stdin."""
 
