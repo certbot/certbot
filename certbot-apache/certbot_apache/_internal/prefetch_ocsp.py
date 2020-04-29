@@ -153,7 +153,7 @@ class OCSPPrefetchMixin(object):
             if not os.path.isfile(cert_path):
                 raise OCSPCertificateError("Certificate has been removed from the system.")
 
-            if not handler.ocsp_revoked_by_paths(cert_path, chain_path, ocsp_workfile):
+            if not handler.ocsp_revoked_by_paths(cert_path, chain_path, 10, ocsp_workfile):
                 # Guaranteed good response
                 cert_sha = apache_util.certid_sha1(cert_path)
                 # dbm.open automatically adds the file extension
