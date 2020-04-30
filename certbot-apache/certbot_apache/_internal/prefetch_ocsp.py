@@ -181,6 +181,10 @@ class OCSPPrefetchMixin(object):
         :param filename: DBM database filename
         :param bytes key: Database key name
         :param bytes value: Database entry value
+
+        :raises .errors.PluginError: If there was an error copying
+            Apache's DBM file
+
         """
         tmp_file = os.path.join(
             os.path.dirname(self._ocsp_work),
