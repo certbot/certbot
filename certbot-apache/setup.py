@@ -13,7 +13,6 @@ version = '1.6.0.dev0'
 install_requires = [
     'acme>=0.29.0',
     'certbot>=1.4.0.dev0',
-    'mock',
     'python-augeas',
     'setuptools',
     'zope.component',
