@@ -327,7 +327,7 @@ class OCSPPrefetchMixin(object):
         except IOError:
             logger.debug("Encountered an issue when trying to restore OCSP dbm file")
 
-    def enable_ocsp_prefetch(self, lineage, domains):
+    def enable_ocsp_prefetch(self, lineage, domains, *_unused_args, **_unused_kwargs):
         """Enable OCSP Stapling and prefetching of the responses.
 
         In OCSP, each client (e.g. browser) would have to query the
@@ -382,7 +382,7 @@ class OCSPPrefetchMixin(object):
                    "enhancement: %s\nOCSP prefetch was not enabled.")
             raise errors.PluginError(msg % str(err))
 
-    def deploy_ocsp_prefetch(self, lineage):
+    def deploy_ocsp_prefetch(self, lineage, *_unused_args, **_unused_kwargs):
         """When certificate gets renewed, ensure that we're able to serve an appropriate OCSP
         staple after the restart that replaces the certificate."""
 
@@ -400,7 +400,7 @@ class OCSPPrefetchMixin(object):
                 return
             self._ocsp_prefetch_save(lineage.cert_path, pf["chain_path"])
 
-    def update_ocsp_prefetch(self, _unused_lineage):
+    def update_ocsp_prefetch(self, _unused_lineage, *_unused_args, **_unused_kwargs):
         """Checks all certificates that are managed by OCSP prefetch, and
         refreshes OCSP responses for them if required."""
 
