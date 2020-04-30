@@ -192,6 +192,17 @@ class OCSPPrefetchEnhancement(object):
         """
 
     @abc.abstractmethod
+    def deploy_ocsp_prefetch(self, lineage, *args, **kwargs):
+        """
+        Gets called for a lineage when its certificate is successfully renewed.
+        This method is used to prefetch the OCSP response before configuring
+        the server to use the renewed certificates.
+
+        :param lineage: Certificate lineage object
+        :type lineage: certbot.interfaces.RenewableCert
+        """
+
+    @abc.abstractmethod
     def enable_ocsp_prefetch(self, lineage, domains, *args, **kwargs):
         """
         Enables the OCSP enhancement, enabling OCSP Stapling functionality for
