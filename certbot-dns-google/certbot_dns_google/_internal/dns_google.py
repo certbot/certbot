@@ -6,6 +6,7 @@ from googleapiclient import discovery
 from googleapiclient import errors as googleapiclient_errors
 import httplib2
 from oauth2client.service_account import ServiceAccountCredentials
+from oauth2client.contrib.gce import AppAssertionCredentials
 import zope.interface
 
 from certbot import errors
@@ -89,7 +90,7 @@ class _GoogleClient(object):
             with open(account_json) as account:
                 self.project_id = json.load(account)['project_id']
         else:
-            credentials = None
+            credentials = AppAssertionCredentials()
             self.project_id = self.get_project_id()
 
         if not dns_api:
