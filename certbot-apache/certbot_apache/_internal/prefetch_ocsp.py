@@ -142,6 +142,11 @@ class OCSPPrefetchMixin(object):
         :param str cert_path: Filesystem path to certificate file
         :param str chain_path: Filesystem path to certificate chain file
 
+        :raises .errors.PluginError: If the OCSP response should not be
+            configured for use with Apache
+
+        :raises OCSPCertificateError: If the given certificate should be
+            removed from the OCSP prefetch pool.
         """
 
         self._ensure_ocsp_dirs()
@@ -193,16 +198,19 @@ class OCSPPrefetchMixin(object):
         """Calculates Apache internal TTL for the next OCSP staple
         update.
 
-        The resulting TTL is half of the time between now
-        and the time noted by nextUpdate field in OCSP response.
+        The resulting TTL is the duration until there is 30 hours from
+        the time noted by the nextUpdate field in the OCSP response.
 
-        If nextUpdate value is None, a default value will be
-        used instead.
+        If nextUpdate value is None, an exception is raised.
 
         :param next_update: datetime value for nextUpdate or None
 
+        :raises .errors.PluginError: If the OCSP response should not be
+            configured for use with Apache
+
         :returns: TTL in seconds.
         :rtype: int
+
         """
         # hour in seconds
         hour = 3600
@@ -231,6 +239,9 @@ class OCSPPrefetchMixin(object):
         """Creates a dbm entry for OCSP response data
 
         :param str workfile: File path for raw OCSP response
+
+        :raises .errors.PluginError: If the OCSP response should not be
+            configured for use with Apache
 
         :returns: OCSP response cache data that Apache can use
         :rtype: string
@@ -410,6 +421,10 @@ class OCSPPrefetchMixin(object):
         """Attempt to refresh OCSP staple for a certificate.
 
         :param str cert_path: Path to certificate
+
+        :raises OCSPCertificateError: If the given certificate should be
+            removed from the OCSP prefetch pool.
+
         """
 
         pf = self._ocsp_prefetch[cert_path]
