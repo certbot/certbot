@@ -8,7 +8,10 @@ import tempfile
 import time
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 # six is used in mock.patch()
 import six  # pylint: disable=unused-import
 
