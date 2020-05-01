@@ -25,11 +25,13 @@ else:
 # We choose 022 as initial value since it is the default one on Linux, and it is a decent
 # choice to not have write permissions for group owner and everybody by default.
 class WindowsUmask:
+    """Store the current umask to apply on Windows"""
     def __init__(self):
         self._mask = 0o022
 
     @property
     def mask(self):
+        """Integer representing the current umask."""
         return self._mask
 
     @mask.setter
