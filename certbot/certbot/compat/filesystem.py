@@ -21,6 +21,25 @@ else:
     POSIX_MODE = False
 
 
+# Windows umask implementation, since Windows does not have a concept of umask by default.
+# We choose 022 as initial value since it is the default one on Linux, and it is a decent
+# choice to not have write permissions for group owner and everybody by default.
+class WindowsUmask:
+    def __init__(self):
+        self._mask = 0o022
+
+    @property
+    def mask(self):
+        return self._mask
+
+    @mask.setter
+    def mask(self, value):
+        self._mask = value
+
+
+_WINDOWS_UMASK = WindowsUmask()
+
+
 def chmod(file_path, mode):
     # type: (str, int) -> None
     """
@@ -40,6 +59,23 @@ def chmod(file_path, mode):
         os.chmod(file_path, mode)
     else:
         _apply_win_mode(file_path, mode)
+
+
+def umask(mask):
+    # type: (int) -> int
+    """
+    Set the current numeric umask and return the previous umask. On Linux, the built-in umask
+    method is used. On Windows, our Certbot-side implementation is used.
+    :param int mask: The user file-creation mode mask to apply.
+    :rtype: int
+    :return: The previous umask value.
+    """
+    if POSIX_MODE:
+        return os.umask(mask)
+
+    previous_umask = _WINDOWS_UMASK.mask
+    _WINDOWS_UMASK.mask = mask
+    return previous_umask
 
 
 # One could ask why there is no copy_ownership() function, or even a reimplementation
@@ -158,7 +194,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
         attributes = win32security.SECURITY_ATTRIBUTES()
         security = attributes.SECURITY_DESCRIPTOR
         user = _get_current_user()
-        dacl = _generate_dacl(user, mode)
+        dacl = _generate_dacl(user, mode, _WINDOWS_UMASK.mask)
         # We set second parameter to 0 (`False`) to say that this security descriptor is
         # NOT constructed from a default mechanism, but is explicitly set by the user.
         # See https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-setsecuritydescriptorowner  # pylint: disable=line-too-long
@@ -235,7 +271,7 @@ def mkdir(file_path, mode=0o777):
     attributes = win32security.SECURITY_ATTRIBUTES()
     security = attributes.SECURITY_DESCRIPTOR
     user = _get_current_user()
-    dacl = _generate_dacl(user, mode)
+    dacl = _generate_dacl(user, mode, _WINDOWS_UMASK.mask)
     security.SetSecurityDescriptorOwner(user, False)
     security.SetSecurityDescriptorDacl(1, dacl, 0)
 
@@ -465,7 +501,9 @@ def _apply_win_mode(file_path, mode):
     win32security.SetFileSecurity(file_path, win32security.DACL_SECURITY_INFORMATION, security)
 
 
-def _generate_dacl(user_sid, mode):
+def _generate_dacl(user_sid, mode, mask=None):
+    if mask:
+        mode = mode & (0o777 - mask)
     analysis = _analyze_mode(mode)
 
     # Get standard accounts from "well-known" sid
