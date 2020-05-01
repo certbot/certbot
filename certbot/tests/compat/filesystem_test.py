@@ -152,11 +152,13 @@ class WindowsChmodTests(TempDirTestCase):
 
 class UmaskTest(TempDirTestCase):
     def test_umask_on_dir(self):
+        previous_umask = filesystem.umask(0o022)
+
         dir1 = os.path.join(self.tempdir, 'probe1')
         filesystem.mkdir(dir1)
         self.assertTrue(filesystem.check_mode(dir1, 0o755))
 
-        previous_umask = filesystem.umask(0o077)
+        filesystem.umask(0o077)
 
         try:
             dir2 = os.path.join(self.tempdir, 'dir2')
@@ -170,11 +172,13 @@ class UmaskTest(TempDirTestCase):
             filesystem.umask(previous_umask)
 
     def test_umask_on_file(self):
+        previous_umask = filesystem.umask(0o022)
+
         file1 = os.path.join(self.tempdir, 'probe1')
         UmaskTest._create_file(file1)
         self.assertTrue(filesystem.check_mode(file1, 0o755))
 
-        previous_umask = filesystem.umask(0o077)
+        filesystem.umask(0o077)
 
         try:
             file2 = os.path.join(self.tempdir, 'probe2')
