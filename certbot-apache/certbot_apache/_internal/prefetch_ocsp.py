@@ -150,14 +150,13 @@ class OCSPPrefetchMixin(object):
         """
 
         self._ensure_ocsp_dirs()
+        if not os.path.isfile(cert_path):
+            raise OCSPCertificateError("Certificate has been removed from the system.")
+        ocsp_workfile = os.path.join(
+            os.path.dirname(self._ocsp_work),
+            apache_util.certid_sha1_hex(cert_path))
+        handler = ocsp.RevocationChecker()
         try:
-            ocsp_workfile = os.path.join(
-                os.path.dirname(self._ocsp_work),
-                apache_util.certid_sha1_hex(cert_path))
-            handler = ocsp.RevocationChecker()
-            if not os.path.isfile(cert_path):
-                raise OCSPCertificateError("Certificate has been removed from the system.")
-
             if not handler.ocsp_revoked_by_paths(cert_path, chain_path, 10, ocsp_workfile):
                 # Guaranteed good response
                 cert_sha = apache_util.certid_sha1(cert_path)
