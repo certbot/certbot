@@ -444,18 +444,27 @@ class RenewableCert(interfaces.RenewableCert):
         #       file at this stage?
         self.configuration = config_with_defaults(self.configfile)
 
-        if not all(x in self.configuration for x in ALL_ITEMS):
-            raise errors.CertStorageError(
-                "renewal config file {0} is missing a required "
-                "file reference".format(self.configfile))
+        if self.configuration["version"] is None:
+            self.conf_version = util.get_strict_version("0.0.dev0")
+        else:
+            self.conf_version = util.get_strict_version(self.configuration["version"])
+        logger.debug("Configuration file has version %s.", self.conf_version)
 
-        conf_version = self.configuration.get("version")
-        if (conf_version is not None and
-                util.get_strict_version(conf_version) > CURRENT_VERSION):
+        if self.conf_version < CURRENT_VERSION:
+            self._upgrade_configuration()
+
+        if self.conf_version > CURRENT_VERSION:
             logger.info(
                 "Attempting to parse the version %s renewal configuration "
                 "file found at %s with version %s of Certbot. This might not "
-                "work.", conf_version, config_filename, certbot.__version__)
+                "work.", self.configuration["version"], config_filename,
+                certbot.__version__)
+
+        for kind in ALL_ITEMS:
+            if not kind in self.configuration:
+                raise errors.CertStorageError(
+                    "renewal config file {0} is missing required "
+                    "file reference {1}".format(self.configfile, kind))
 
         self.cert = self.configuration["cert"]
         self.privkey = self.configuration["privkey"]
