@@ -444,11 +444,12 @@ class RenewableCert(interfaces.RenewableCert):
         #       file at this stage?
         self.configuration = config_with_defaults(self.configfile)
 
-        if self.configuration["version"] is None:
-            self.conf_version = util.get_strict_version("0.0.dev0")
-        else:
+        if "version" in self.configuration:
             self.conf_version = util.get_strict_version(self.configuration["version"])
-        logger.debug("Configuration file has version %s.", self.conf_version)
+            logger.debug("Configuration file has version %s.", self.conf_version)
+        else:
+            logger.warning("Configuration file is missing a version number.")
+            self.conf_version = util.get_strict_version("0.0.dev0")
 
         if self.conf_version < CURRENT_VERSION:
             self._upgrade_configuration()
