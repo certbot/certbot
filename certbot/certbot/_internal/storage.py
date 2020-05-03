@@ -533,6 +533,36 @@ class RenewableCert(interfaces.RenewableCert):
             return util.is_staging(server)
         return False
 
+    def _upgrade_configuration(self):
+        logger.info("Upgrading config from %s to %s",
+            self.conf_version, CURRENT_VERSION)
+
+        # Add the privkey_fullchain lineage item on upgrade
+        if "privkey_fullchain" not in self.configuration and (
+            self.conf_version < constants.PKFC_VERSION
+        ):
+            # create privkey_fullchain in the archive_dir
+            pkfc_real = os.path.join(self.archive_dir, "privkey_" +
+                os.path.basename(filesystem.realpath(self.configuration["fullchain"])))
+            logger.debug("Writing private key and full chain to %s.", pkfc_real)
+            with util.safe_open(pkfc_real, "wb", chmod=BASE_PRIVKEY_MODE) as pkfc:
+                with open(self.configuration["privkey"], "rb") as pk:
+                    pkfc.write(pk.read())
+                with open(self.configuration["fullchain"], "rb") as fc:
+                    pkfc.write(fc.read())
+            # create the symlink in the same place as the fullchain one
+            linkname = os.path.join(
+                os.path.dirname(self.configuration["fullchain"]),
+                "privkey_fullchain.pem")
+            os.symlink(_relpath_from_file(pkfc_real, linkname), linkname)
+            self.configuration["privkey_fullchain"] = linkname
+
+        # Update renewal config file
+        self.conf_version = CURRENT_VERSION
+        symlinks = dict((kind, self.configuration[kind]) for kind in ALL_ITEMS)
+        self.configfile = update_configuration(
+            self.lineagename, self.archive_dir, symlinks, self.cli_config)
+
     def _check_symlinks(self):
         """Raises an exception if a symlink doesn't exist"""
         for kind in ALL_ITEMS:
