@@ -99,6 +99,7 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
         filesystem.makedirs(os.path.join(self.config.config_dir, "renewal"))
 
         config_file = configobj.ConfigObj()
+        config_file['version'] = certbot.__version__
         for kind in ALL_ITEMS:
             kind_path = os.path.join(self.config.config_dir, "live", "example.org",
                                         kind + ".pem")
