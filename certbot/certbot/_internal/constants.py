@@ -1,7 +1,7 @@
 """Certbot constants."""
 import logging
 
-import distutils
+import distutils.version
 import pkg_resources
 
 from acme import challenges
