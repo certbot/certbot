@@ -90,7 +90,13 @@ class _GoogleClient(object):
             with open(account_json) as account:
                 self.project_id = json.load(account)['project_id']
         else:
-            credentials = AppAssertionCredentials()
+            try:
+                # try it infer credentials from Google Compute Engine.
+                # support for other GCP environments is restricted due to the
+                # limitations of the deprecated oauth2client library
+                credentials = AppAssertionCredentials()
+            except:
+                credentials = None
             self.project_id = self.get_project_id()
 
         if not dns_api:
