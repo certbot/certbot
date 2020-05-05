@@ -86,7 +86,8 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
 def copy_ownership_and_mode(src, dst, copy_user=True, copy_group=True):
     # type: (str, str, bool, bool) -> None
     """
-    Copy ownership (user and optionally group on Linux)
+    Copy ownership (user and optionally group on Linux) and mode/DACL
+    from the source to the destination.
     :param str src: Path of the source file
     :param str dst: Path of the destination file
     :param bool copy_user: Copy user if `True`

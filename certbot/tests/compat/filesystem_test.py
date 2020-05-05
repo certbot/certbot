@@ -281,7 +281,7 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
 
 
 class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
-    """Tests about copy_ownership_and_apply_mode and has_same_ownership"""
+    """Tests about copy_ownership_and_apply_mode, copy_ownership_and_mode and has_same_ownership"""
     def setUp(self):
         super(CopyOwnershipAndModeTest, self).setUp()
         self.probe_path = _create_probe(self.tempdir)
