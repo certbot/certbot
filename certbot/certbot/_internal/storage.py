@@ -1182,12 +1182,9 @@ class RenewableCert(interfaces.RenewableCert):
             f.write(new_cert + new_chain)
         with util.safe_open(target["privkey_fullchain"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
             logger.debug("Writing private key and full chain to %s.", target["privkey_fullchain"])
-            if new_privkey is not None:
-                f.write(new_privkey + new_cert + new_chain)
-            else:
-                with open(old_privkey, "rb") as op:
-                    f.write(op.read())
-                f.write(new_cert + new_chain)
+            with open(target["privkey"], "rb") as pk:
+                f.write(pk.read())
+            f.write(new_cert + new_chain)
         # Preserve gid and (mode & MASK_FOR_PRIVATE_KEY_PERMISSIONS)
         # from previous privkey_fullchain in this lineage.
         old_pkfc = os.path.join(self.archive_dir,
