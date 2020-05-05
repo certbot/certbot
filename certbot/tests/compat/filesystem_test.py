@@ -345,7 +345,7 @@ class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
 
         # Checking an actual change of owner is tricky during a unit test, since we do not know
         # if any user exists beside the current one. So we mock _copy_win_ownership. It's behavior
-        # have been checked theoretically with test_copy_ownership_and_apply_mode_linux.
+        # have been checked theoretically with test_copy_ownership_and_apply_mode_windows.
         with mock.patch('certbot.compat.filesystem._copy_win_ownership') as mock_copy_owner:
             filesystem.copy_ownership_and_mode(src, dst)
 
