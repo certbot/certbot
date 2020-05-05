@@ -8,13 +8,14 @@
 # CERTBOT_OLDEST is set, this script must be run with `-e <package-name>` and
 # no other arguments.
 
-from __future__ import print_function, absolute_import
+from __future__ import absolute_import
+from __future__ import print_function
 
-import subprocess
 import os
-import sys
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 
 import merge_requirements as merge_module
@@ -69,9 +70,9 @@ def merge_requirements(tools_path, requirements, test_constraints, all_constrain
         fd.write(merged_requirements)
 
 
-def call_with_print(command, cwd=None):
+def call_with_print(command):
     print(command)
-    subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
+    subprocess.check_call(command, shell=True)
 
 
 def pip_install_with_print(args_str):

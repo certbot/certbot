@@ -1,36 +1,37 @@
-"""Tests for certbot.log."""
+"""Tests for certbot._internal.log."""
 import logging
 import logging.handlers
 import sys
 import time
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import six
 
 from acme import messages
-from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
-
-from certbot import constants
 from certbot import errors
 from certbot import util
+from certbot._internal import constants
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
 
 
 class PreArgParseSetupTest(unittest.TestCase):
-    """Tests for certbot.log.pre_arg_parse_setup."""
+    """Tests for certbot._internal.log.pre_arg_parse_setup."""
 
     @classmethod
     def _call(cls, *args, **kwargs):  # pylint: disable=unused-argument
-        from certbot.log import pre_arg_parse_setup
+        from certbot._internal.log import pre_arg_parse_setup
         return pre_arg_parse_setup()
 
-    @mock.patch('certbot.log.sys')
-    @mock.patch('certbot.log.pre_arg_parse_except_hook')
-    @mock.patch('certbot.log.logging.getLogger')
-    @mock.patch('certbot.log.util.atexit_register')
+    @mock.patch('certbot._internal.log.sys')
+    @mock.patch('certbot._internal.log.pre_arg_parse_except_hook')
+    @mock.patch('certbot._internal.log.logging.getLogger')
+    @mock.patch('certbot._internal.log.util.atexit_register')
     def test_it(self, mock_register, mock_get, mock_except_hook, mock_sys):
         mock_sys.argv = ['--debug']
         mock_sys.version_info = sys.version_info
@@ -58,11 +59,11 @@ class PreArgParseSetupTest(unittest.TestCase):
 
 
 class PostArgParseSetupTest(test_util.ConfigTestCase):
-    """Tests for certbot.log.post_arg_parse_setup."""
+    """Tests for certbot._internal.log.post_arg_parse_setup."""
 
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.log import post_arg_parse_setup
+        from certbot._internal.log import post_arg_parse_setup
         return post_arg_parse_setup(*args, **kwargs)
 
     def setUp(self):
@@ -73,9 +74,9 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         self.config.verbose_count = constants.CLI_DEFAULTS['verbose_count']
         self.devnull = open(os.devnull, 'w')
 
-        from certbot.log import ColoredStreamHandler
+        from certbot._internal.log import ColoredStreamHandler
         self.stream_handler = ColoredStreamHandler(six.StringIO())
-        from certbot.log import MemoryHandler, TempHandler
+        from certbot._internal.log import MemoryHandler, TempHandler
         self.temp_handler = TempHandler()
         self.temp_path = self.temp_handler.path
         self.memory_handler = MemoryHandler(self.temp_handler)
@@ -90,11 +91,11 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         super(PostArgParseSetupTest, self).tearDown()
 
     def test_common(self):
-        with mock.patch('certbot.log.logging.getLogger') as mock_get_logger:
+        with mock.patch('certbot._internal.log.logging.getLogger') as mock_get_logger:
             mock_get_logger.return_value = self.root_logger
-            except_hook_path = 'certbot.log.post_arg_parse_except_hook'
+            except_hook_path = 'certbot._internal.log.post_arg_parse_except_hook'
             with mock.patch(except_hook_path) as mock_except_hook:
-                with mock.patch('certbot.log.sys') as mock_sys:
+                with mock.patch('certbot._internal.log.sys') as mock_sys:
                     mock_sys.version_info = sys.version_info
                     self._call(self.config)
 
@@ -124,18 +125,18 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
 
 
 class SetupLogFileHandlerTest(test_util.ConfigTestCase):
-    """Tests for certbot.log.setup_log_file_handler."""
+    """Tests for certbot._internal.log.setup_log_file_handler."""
 
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.log import setup_log_file_handler
+        from certbot._internal.log import setup_log_file_handler
         return setup_log_file_handler(*args, **kwargs)
 
     def setUp(self):
         super(SetupLogFileHandlerTest, self).setUp()
         self.config.max_log_backups = 42
 
-    @mock.patch('certbot.main.logging.handlers.RotatingFileHandler')
+    @mock.patch('certbot._internal.main.logging.handlers.RotatingFileHandler')
     def test_failure(self, mock_handler):
         mock_handler.side_effect = IOError
 
@@ -167,7 +168,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         backup_path = os.path.join(self.config.logs_dir, log_file + '.1')
         self.assertEqual(os.path.exists(backup_path), should_rollover)
 
-    @mock.patch('certbot.log.logging.handlers.RotatingFileHandler')
+    @mock.patch('certbot._internal.log.logging.handlers.RotatingFileHandler')
     def test_max_log_backups_used(self, mock_handler):
         self._call(self.config, 'test.log', '%(message)s')
         backup_count = mock_handler.call_args[1]['backupCount']
@@ -175,7 +176,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
 
 
 class ColoredStreamHandlerTest(unittest.TestCase):
-    """Tests for certbot.log.ColoredStreamHandler"""
+    """Tests for certbot._internal.log.ColoredStreamHandler"""
 
     def setUp(self):
         self.stream = six.StringIO()
@@ -183,7 +184,7 @@ class ColoredStreamHandlerTest(unittest.TestCase):
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)
 
-        from certbot.log import ColoredStreamHandler
+        from certbot._internal.log import ColoredStreamHandler
         self.handler = ColoredStreamHandler(self.stream)
         self.logger.addHandler(self.handler)
 
@@ -207,7 +208,7 @@ class ColoredStreamHandlerTest(unittest.TestCase):
 
 
 class MemoryHandlerTest(unittest.TestCase):
-    """Tests for certbot.log.MemoryHandler"""
+    """Tests for certbot._internal.log.MemoryHandler"""
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
@@ -215,7 +216,7 @@ class MemoryHandlerTest(unittest.TestCase):
         self.stream = six.StringIO()
 
         self.stream_handler = logging.StreamHandler(self.stream)
-        from certbot.log import MemoryHandler
+        from certbot._internal.log import MemoryHandler
         self.handler = MemoryHandler(self.stream_handler)
         self.logger.addHandler(self.handler)
 
@@ -250,10 +251,10 @@ class MemoryHandlerTest(unittest.TestCase):
 
 
 class TempHandlerTest(unittest.TestCase):
-    """Tests for certbot.log.TempHandler."""
+    """Tests for certbot._internal.log.TempHandler."""
     def setUp(self):
         self.closed = False
-        from certbot.log import TempHandler
+        from certbot._internal.log import TempHandler
         self.handler = TempHandler()
 
     def tearDown(self):
@@ -274,13 +275,13 @@ class TempHandlerTest(unittest.TestCase):
 
 
 class PreArgParseExceptHookTest(unittest.TestCase):
-    """Tests for certbot.log.pre_arg_parse_except_hook."""
+    """Tests for certbot._internal.log.pre_arg_parse_except_hook."""
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.log import pre_arg_parse_except_hook
+        from certbot._internal.log import pre_arg_parse_except_hook
         return pre_arg_parse_except_hook(*args, **kwargs)
 
-    @mock.patch('certbot.log.post_arg_parse_except_hook')
+    @mock.patch('certbot._internal.log.post_arg_parse_except_hook')
     def test_it(self, mock_post_arg_parse_except_hook):
         memory_handler = mock.MagicMock()
         args = ('some', 'args',)
@@ -294,10 +295,10 @@ class PreArgParseExceptHookTest(unittest.TestCase):
 
 
 class PostArgParseExceptHookTest(unittest.TestCase):
-    """Tests for certbot.log.post_arg_parse_except_hook."""
+    """Tests for certbot._internal.log.post_arg_parse_except_hook."""
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.log import post_arg_parse_except_hook
+        from certbot._internal.log import post_arg_parse_except_hook
         return post_arg_parse_except_hook(*args, **kwargs)
 
     def setUp(self):
@@ -353,9 +354,9 @@ class PostArgParseExceptHookTest(unittest.TestCase):
             raise error_type(self.error_msg)
         except BaseException:
             exc_info = sys.exc_info()
-            with mock.patch('certbot.log.logger') as mock_logger:
+            with mock.patch('certbot._internal.log.logger') as mock_logger:
                 mock_logger.error.side_effect = write_err
-                with mock.patch('certbot.log.sys.stderr', mock_err):
+                with mock.patch('certbot._internal.log.sys.stderr', mock_err):
                     try:
                         self._call(
                             *exc_info, debug=debug, log_path=self.log_path)
@@ -387,10 +388,10 @@ class PostArgParseExceptHookTest(unittest.TestCase):
 
 
 class ExitWithLogPathTest(test_util.TempDirTestCase):
-    """Tests for certbot.log.exit_with_log_path."""
+    """Tests for certbot._internal.log.exit_with_log_path."""
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.log import exit_with_log_path
+        from certbot._internal.log import exit_with_log_path
         return exit_with_log_path(*args, **kwargs)
 
     def test_log_file(self):

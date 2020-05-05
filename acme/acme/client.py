@@ -5,25 +5,27 @@ import datetime
 from email.utils import parsedate_tz
 import heapq
 import logging
-import time
 import re
 import sys
+import time
 
-import six
-from six.moves import http_client  # pylint: disable=import-error
 import josepy as jose
 import OpenSSL
 import requests
 from requests.adapters import HTTPAdapter
 from requests_toolbelt.adapters.source import SourceAddressAdapter
+import six
+from six.moves import http_client
 
 from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict, List, Set, Text
-
+from acme.magic_typing import Dict
+from acme.magic_typing import List
+from acme.magic_typing import Set
+from acme.magic_typing import Text
+from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +35,9 @@ logger = logging.getLogger(__name__)
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     try:
-        # pylint: disable=no-member
         requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
     except AttributeError:
-        import urllib3.contrib.pyopenssl  # pylint: disable=import-error
+        import urllib3.contrib.pyopenssl
         urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 DEFAULT_NETWORK_TIMEOUT = 45
@@ -44,7 +45,7 @@ DEFAULT_NETWORK_TIMEOUT = 45
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
 
-class ClientBase(object):  # pylint: disable=too-many-instance-attributes
+class ClientBase(object):
     """ACME client base object.
 
     :ivar messages.Directory directory:
@@ -136,7 +137,8 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         """
         body = messages.UpdateAuthorization(status='deactivated')
         response = self._post(authzr.uri, body)
-        return self._authzr_from_response(response)
+        return self._authzr_from_response(response,
+            authzr.body.identifier, authzr.uri)
 
     def _authzr_from_response(self, response, identifier=None, uri=None):
         authzr = messages.AuthorizationResource(
@@ -253,7 +255,6 @@ class Client(ClientBase):
             URI from which the resource will be downloaded.
 
         """
-        # pylint: disable=too-many-arguments
         self.key = key
         if net is None:
             net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl)
@@ -279,7 +280,6 @@ class Client(ClientBase):
         assert response.status_code == http_client.CREATED
 
         # "Instance of 'Field' has no key/contact member" bug:
-        # pylint: disable=no-member
         return self._regr_from_response(response)
 
     def query_registration(self, regr):
@@ -434,7 +434,6 @@ class Client(ClientBase):
             was marked by the CA as invalid
 
         """
-        # pylint: disable=too-many-locals
         assert max_attempts > 0
         attempts = collections.defaultdict(int) # type: Dict[messages.AuthorizationResource, int]
         exhausted = set()
@@ -465,7 +464,6 @@ class Client(ClientBase):
             updated[authzr] = updated_authzr
 
             attempts[authzr] += 1
-            # pylint: disable=no-member
             if updated_authzr.body.status not in (
                     messages.STATUS_VALID, messages.STATUS_INVALID):
                 if attempts[authzr] < max_attempts:
@@ -606,7 +604,6 @@ class ClientV2(ClientBase):
         if response.status_code == 200 and 'Location' in response.headers:
             raise errors.ConflictError(response.headers.get('Location'))
         # "Instance of 'Field' has no key/contact member" bug:
-        # pylint: disable=no-member
         regr = self._regr_from_response(response)
         self.net.account = regr
         return regr
@@ -670,7 +667,7 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
-        for url in body.authorizations:  # pylint: disable=not-an-iterable
+        for url in body.authorizations:
             authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
@@ -730,7 +727,7 @@ class ClientV2(ClientBase):
         for authzr in responses:
             if authzr.body.status != messages.STATUS_VALID:
                 for chall in authzr.body.challenges:
-                    if chall.error != None:
+                    if chall.error is not None:
                         failed.append(authzr)
         if failed:
             raise errors.ValidationError(failed)
@@ -780,29 +777,13 @@ class ClientV2(ClientBase):
 
     def _post_as_get(self, *args, **kwargs):
         """
-        Send GET request using the POST-as-GET protocol if needed.
-        The request will be first issued using POST-as-GET for ACME v2. If the ACME CA servers do
-        not support this yet and return an error, request will be retried using GET.
-        For ACME v1, only GET request will be tried, as POST-as-GET is not supported.
+        Send GET request using the POST-as-GET protocol.
         :param args:
         :param kwargs:
         :return:
         """
-        if self.acme_version >= 2:
-            # We add an empty payload for POST-as-GET requests
-            new_args = args[:1] + (None,) + args[1:]
-            try:
-                return self._post(*new_args, **kwargs)
-            except messages.Error as error:
-                if error.code == 'malformed':
-                    logger.debug('Error during a POST-as-GET request, '
-                                 'your ACME CA server may not support it:\n%s', error)
-                    logger.debug('Retrying request with GET.')
-                else:  # pragma: no cover
-                    raise
-
-        # If POST-as-GET is not supported yet, we use a GET instead.
-        return self.net.get(*args, **kwargs)
+        new_args = args[:1] + (None,) + args[1:]
+        return self._post(*new_args, **kwargs)
 
 
 class BackwardsCompatibleClientV2(object):
@@ -946,7 +927,7 @@ class BackwardsCompatibleClientV2(object):
         return self.client.external_account_required()
 
 
-class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
+class ClientNetwork(object):
     """Wrapper around requests that signs POSTs for authentication.
 
     Also adds user agent, and handles Content-Type.
@@ -962,7 +943,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     :param messages.RegistrationResource account: Account object. Required if you are
             planning to use .post() with acme_version=2 for anything other than
             creating a new account; may be set later after registering.
-    :param josepy.JWASignature alg: Algoritm to use in signing JWS.
+    :param josepy.JWASignature alg: Algorithm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
     :param float timeout: Timeout for requests.
@@ -972,7 +953,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
                  user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT,
                  source_address=None):
-        # pylint: disable=too-many-arguments
         self.key = key
         self.account = account
         self.alg = alg
@@ -1008,6 +988,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `josepy.JWS`
 
         """
+        if isinstance(obj, VersionedLEACMEMixin):
+            obj.le_acme_version = acme_version
         jobj = obj.json_dumps(indent=2).encode() if obj else b''
         logger.debug('JWS payload:\n%s', jobj)
         kwargs = {
@@ -1043,6 +1025,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         """
         response_ct = response.headers.get('Content-Type')
+        # Strip parameters from the media-type (rfc2616#section-3.7)
+        if response_ct:
+            response_ct = response_ct.split(';')[0].strip()
         try:
             # TODO: response.json() is called twice, once here, and
             # once in _get and _post clients
@@ -1080,7 +1065,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         return response
 
     def _send_request(self, method, url, *args, **kwargs):
-        # pylint: disable=too-many-locals
         """Send HTTP request.
 
         Makes sure that `verify_ssl` is respected. Logs request and
@@ -1127,10 +1111,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             err_regex = r".*host='(\S*)'.*Max retries exceeded with url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
             m = re.match(err_regex, str(e))
             if m is None:
-                raise # pragma: no cover
-            else:
-                host, path, _err_no, err_msg = m.groups()
-                raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
+                raise  # pragma: no cover
+            host, path, _err_no, err_msg = m.groups()
+            raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
 
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
@@ -1140,8 +1123,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             debug_content = response.content.decode("utf-8")
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
-                     "\n".join(["{0}: {1}".format(k, v)
-                                for k, v in response.headers.items()]),
+                     "\n".join("{0}: {1}".format(k, v)
+                                for k, v in response.headers.items()),
                      debug_content)
         return response
 
@@ -1196,8 +1179,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             if error.code == 'badNonce':
                 logger.debug('Retrying request after error:\n%s', error)
                 return self._post_once(*args, **kwargs)
-            else:
-                raise
+            raise
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
             acme_version=1, **kwargs):

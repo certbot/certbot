@@ -32,17 +32,24 @@ see:
 from __future__ import print_function
 from __future__ import with_statement
 
-import sys, os, time, argparse, socket, traceback
+import argparse
 import multiprocessing as mp
 from multiprocessing import Manager
-import urllib2
-import yaml
+import os
+import socket
+import sys
+import time
+import traceback
+
 import boto3
 from botocore.exceptions import ClientError
-import fabric
-from fabric.api import run, execute, local, env, sudo, cd, lcd
-from fabric.operations import get, put
-from fabric.context_managers import shell_env
+from six.moves.urllib import error as urllib_error
+from six.moves.urllib import request as urllib_request
+import yaml
+
+from fabric import Config
+from fabric import Connection
+
 
 # Command line parser
 #-------------------------------------------------------------------------------
@@ -84,9 +91,6 @@ parser.add_argument('--killboulder',
 parser.add_argument('--boulderonly',
                     action='store_true',
                     help="only make a boulder server")
-parser.add_argument('--fast',
-                    action='store_true',
-                    help="use larger instance types to run faster (saves about a minute, probably not worth it)")
 cl_args = parser.parse_args()
 
 # Credential Variables
@@ -192,11 +196,11 @@ def block_until_http_ready(urlstring, wait_time=10, timeout=240):
         try:
             sys.stdout.write('.')
             sys.stdout.flush()
-            req = urllib2.Request(urlstring)
-            response = urllib2.urlopen(req)
+            req = urllib_request.Request(urlstring)
+            response = urllib_request.urlopen(req)
             #if response.code == 200:
             server_ready = True
-        except urllib2.URLError:
+        except urllib_error.URLError:
             pass
         time.sleep(wait_time)
         t_elapsed += wait_time
@@ -233,76 +237,85 @@ def block_until_instance_ready(booting_instance, wait_time=5, extra_wait_time=20
 
 # Fabric Routines
 #-------------------------------------------------------------------------------
-def local_git_clone(repo_url):
+def local_git_clone(local_cxn, repo_url):
     "clones master of repo_url"
-    with lcd(LOGDIR):
-        local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s letsencrypt'% repo_url)
-        local('tar czf le.tar.gz letsencrypt')
+    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
+    local_cxn.local('cd %s && git clone %s letsencrypt'% (LOGDIR, repo_url))
+    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt'% LOGDIR)
 
-def local_git_branch(repo_url, branch_name):
+def local_git_branch(local_cxn, repo_url, branch_name):
     "clones branch <branch_name> of repo_url"
-    with lcd(LOGDIR):
-        local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s letsencrypt --branch %s --single-branch'%(repo_url, branch_name))
-        local('tar czf le.tar.gz letsencrypt')
+    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
+    local_cxn.local('cd %s && git clone %s letsencrypt --branch %s --single-branch'%
+        (LOGDIR, repo_url, branch_name))
+    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
 
-def local_git_PR(repo_url, PRnumstr, merge_master=True):
+def local_git_PR(local_cxn, repo_url, PRnumstr, merge_master=True):
     "clones specified pull request from repo_url and optionally merges into master"
-    with lcd(LOGDIR):
-        local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s letsencrypt'% repo_url)
-        local('cd letsencrypt && git fetch origin pull/%s/head:lePRtest'%PRnumstr)
-        local('cd letsencrypt && git checkout lePRtest')
-        if merge_master:
-            local('cd letsencrypt && git remote update origin')
-            local('cd letsencrypt && git merge origin/master -m "testmerge"')
-        local('tar czf le.tar.gz letsencrypt')
+    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
+    local_cxn.local('cd %s && git clone %s letsencrypt' % (LOGDIR, repo_url))
+    local_cxn.local('cd %s && cd letsencrypt && '
+        'git fetch origin pull/%s/head:lePRtest' % (LOGDIR, PRnumstr))
+    local_cxn.local('cd %s && cd letsencrypt && git checkout lePRtest' % LOGDIR)
+    if merge_master:
+        local_cxn.local('cd %s && cd letsencrypt && git remote update origin' % LOGDIR)
+        local_cxn.local('cd %s && cd letsencrypt && '
+            'git merge origin/master -m "testmerge"' % LOGDIR)
+    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
 
-def local_repo_to_remote():
+def local_repo_to_remote(cxn):
     "copies local tarball of repo to remote"
-    with lcd(LOGDIR):
-        put(local_path='le.tar.gz', remote_path='')
-        run('tar xzf le.tar.gz')
+    filename = 'le.tar.gz'
+    local_path = os.path.join(LOGDIR, filename)
+    cxn.put(local=local_path, remote='')
+    cxn.run('tar xzf %s' % filename)
 
-def local_repo_clean():
+def local_repo_clean(local_cxn):
     "delete tarball"
-    with lcd(LOGDIR):
-        local('rm le.tar.gz')
+    filename = 'le.tar.gz'
+    local_path = os.path.join(LOGDIR, filename)
+    local_cxn.local('rm %s' % local_path)
 
-def deploy_script(scriptpath, *args):
+def deploy_script(cxn, scriptpath, *args):
     "copies to remote and executes local script"
-    #with lcd('scripts'):
-    put(local_path=scriptpath, remote_path='', mirror_local_mode=True)
+    cxn.put(local=scriptpath, remote='', preserve_mode=True)
     scriptfile = os.path.split(scriptpath)[1]
     args_str = ' '.join(args)
-    run('./'+scriptfile+' '+args_str)
+    cxn.run('./'+scriptfile+' '+args_str)
 
-def run_boulder():
-    with cd('$GOPATH/src/github.com/letsencrypt/boulder'):
-        run('sudo docker-compose up -d')
+def run_boulder(cxn):
+    boulder_path = '$GOPATH/src/github.com/letsencrypt/boulder'
+    cxn.run('cd %s && sudo docker-compose up -d' % boulder_path)
 
-def config_and_launch_boulder(instance):
-    execute(deploy_script, 'scripts/boulder_config.sh')
-    execute(run_boulder)
+def config_and_launch_boulder(cxn, instance):
+    # yes, we're hardcoding the gopath. it's a predetermined AMI.
+    with cxn.prefix('export GOPATH=/home/ubuntu/gopath'):
+        deploy_script(cxn, 'scripts/boulder_config.sh')
+        run_boulder(cxn)
 
-def install_and_launch_certbot(instance, boulder_url, target):
-    execute(local_repo_to_remote)
-    with shell_env(BOULDER_URL=boulder_url,
-                   PUBLIC_IP=instance.public_ip_address,
-                   PRIVATE_IP=instance.private_ip_address,
-                   PUBLIC_HOSTNAME=instance.public_dns_name,
-                   PIP_EXTRA_INDEX_URL=cl_args.alt_pip,
-                   OS_TYPE=target['type']):
-        execute(deploy_script, cl_args.test_script)
+def install_and_launch_certbot(cxn, instance, boulder_url, target):
+    local_repo_to_remote(cxn)
+    # This needs to be like this, I promise. 1) The env argument to run doesn't work.
+    # See https://github.com/fabric/fabric/issues/1744. 2) prefix() sticks an && between
+    # the commands, so it needs to be exports rather than no &&s in between for the script subshell.
+    with cxn.prefix('export BOULDER_URL=%s && export PUBLIC_IP=%s && export PRIVATE_IP=%s && '
+                    'export PUBLIC_HOSTNAME=%s && export PIP_EXTRA_INDEX_URL=%s && '
+                    'export OS_TYPE=%s' %
+                    (boulder_url,
+                    instance.public_ip_address,
+                    instance.private_ip_address,
+                    instance.public_dns_name,
+                    cl_args.alt_pip,
+                    target['type'])):
+        deploy_script(cxn, cl_args.test_script)
 
-def grab_certbot_log():
+def grab_certbot_log(cxn):
     "grabs letsencrypt.log via cat into logged stdout"
-    sudo('if [ -f /var/log/letsencrypt/letsencrypt.log ]; then \
-    cat /var/log/letsencrypt/letsencrypt.log; else echo "[novarlog]"; fi')
+    cxn.sudo('/bin/bash -l -i -c \'if [ -f "/var/log/letsencrypt/letsencrypt.log" ]; then ' +
+        'cat "/var/log/letsencrypt/letsencrypt.log"; else echo "[novarlog]"; fi\'')
     # fallback file if /var/log is unwriteable...? correct?
-    sudo('if [ -f ./certbot.log ]; then \
-    cat ./certbot.log; else echo "[nolocallog]"; fi')
+    cxn.sudo('/bin/bash -l -i -c \'if [ -f ./certbot.log ]; then ' +
+        'cat ./certbot.log; else echo "[nolocallog]"; fi\'')
 
 
 def create_client_instance(ec2_client, target, security_group_id, subnet_id):
@@ -310,10 +323,10 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id):
     if 'machine_type' in target:
         machine_type = target['machine_type']
     elif target['virt'] == 'hvm':
-        machine_type = 't2.medium' if cl_args.fast else 't2.micro'
+        machine_type = 't2.medium'
     else:
         # 32 bit systems
-        machine_type = 'c1.medium' if cl_args.fast else 't1.micro'
+        machine_type = 'c1.medium'
     if 'userdata' in target.keys():
         userdata = target['userdata']
     else:
@@ -330,7 +343,7 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id):
                          userdata=userdata)
 
 
-def test_client_process(inqueue, outqueue, boulder_url):
+def test_client_process(fab_config, inqueue, outqueue, boulder_url):
     cur_proc = mp.current_process()
     for inreq in iter(inqueue.get, SENTINEL):
         ii, instance_id, target = inreq
@@ -347,30 +360,31 @@ def test_client_process(inqueue, outqueue, boulder_url):
         print("[%s : client %d %s %s]" % (cur_proc.name, ii, target['ami'], target['name']))
         instance = block_until_instance_ready(instance)
         print("server %s at %s"%(instance, instance.public_ip_address))
-        env.host_string = "%s@%s"%(target['user'], instance.public_ip_address)
-        print(env.host_string)
+        host_string = "%s@%s"%(target['user'], instance.public_ip_address)
+        print(host_string)
 
-        try:
-            install_and_launch_certbot(instance, boulder_url, target)
-            outqueue.put((ii, target, Status.PASS))
-            print("%s - %s SUCCESS"%(target['ami'], target['name']))
-        except:
-            outqueue.put((ii, target, Status.FAIL))
-            print("%s - %s FAIL"%(target['ami'], target['name']))
-            traceback.print_exc(file=sys.stdout)
-            pass
+        with Connection(host_string, config=fab_config) as cxn:
+            try:
+                install_and_launch_certbot(cxn, instance, boulder_url, target)
+                outqueue.put((ii, target, Status.PASS))
+                print("%s - %s SUCCESS"%(target['ami'], target['name']))
+            except:
+                outqueue.put((ii, target, Status.FAIL))
+                print("%s - %s FAIL"%(target['ami'], target['name']))
+                traceback.print_exc(file=sys.stdout)
+                pass
 
-        # append server certbot.log to each per-machine output log
-        print("\n\ncertbot.log\n" + "-"*80 + "\n")
-        try:
-            execute(grab_certbot_log)
-        except:
-            print("log fail\n")
-            traceback.print_exc(file=sys.stdout)
-            pass
+            # append server certbot.log to each per-machine output log
+            print("\n\ncertbot.log\n" + "-"*80 + "\n")
+            try:
+                grab_certbot_log(cxn)
+            except:
+                print("log fail\n")
+                traceback.print_exc(file=sys.stdout)
+                pass
 
 
-def cleanup(cl_args, instances, targetlist):
+def cleanup(cl_args, instances, targetlist, boulder_server):
     print('Logs in ', LOGDIR)
     # If lengths of instances and targetlist aren't equal, instances failed to
     # start before running tests so leaving instances running for debugging
@@ -391,19 +405,25 @@ def cleanup(cl_args, instances, targetlist):
 
 def main():
     # Fabric library controlled through global env parameters
-    env.key_filename = KEYFILE
-    env.shell = '/bin/bash -l -i -c'
-    env.connection_attempts = 5
-    env.timeout = 10
-    # replace default SystemExit thrown by fabric during trouble
-    class FabricException(Exception):
-        pass
-    env['abort_exception'] = FabricException
+    fab_config = Config(overrides={
+        "connect_kwargs": {
+            "key_filename": [KEYFILE], # https://github.com/fabric/fabric/issues/2007
+        },
+        "run": {
+            "echo": True,
+            "pty": True,
+        },
+        "timeouts": {
+            "connect": 10,
+        },
+    })
+    # no network connection, so don't worry about closing this one.
+    local_cxn = Connection('localhost', config=fab_config)
 
     # Set up local copy of git repo
     #-------------------------------------------------------------------------------
     print("Making local dir for test repo and logs: %s"%LOGDIR)
-    local('mkdir %s'%LOGDIR)
+    local_cxn.local('mkdir %s'%LOGDIR)
 
     # figure out what git object to test and locally create it in LOGDIR
     print("Making local git repo")
@@ -411,14 +431,14 @@ def main():
         if cl_args.pull_request != '~':
             print('Testing PR %s '%cl_args.pull_request,
                   "MERGING into master" if cl_args.merge_master else "")
-            execute(local_git_PR, cl_args.repo, cl_args.pull_request, cl_args.merge_master)
+            local_git_PR(local_cxn, cl_args.repo, cl_args.pull_request, cl_args.merge_master)
         elif cl_args.branch != '~':
             print('Testing branch %s of %s'%(cl_args.branch, cl_args.repo))
-            execute(local_git_branch, cl_args.repo, cl_args.branch)
+            local_git_branch(local_cxn, cl_args.repo, cl_args.branch)
         else:
             print('Testing master of %s'%cl_args.repo)
-            execute(local_git_clone, cl_args.repo)
-    except FabricException:
+            local_git_clone(local_cxn, cl_args.repo)
+    except BaseException:
         print("FAIL: trouble with git repo")
         traceback.print_exc()
         exit()
@@ -426,7 +446,7 @@ def main():
 
     # Set up EC2 instances
     #-------------------------------------------------------------------------------
-    configdata = yaml.load(open(cl_args.config_file, 'r'))
+    configdata = yaml.safe_load(open(cl_args.config_file, 'r'))
     targetlist = configdata['targets']
     print('Testing against these images: [%d total]'%len(targetlist))
     for target in targetlist:
@@ -500,15 +520,16 @@ def main():
         print(" server %s"%boulder_server)
 
 
-        # env.host_string defines the ssh user and host for connection
-        env.host_string = "ubuntu@%s"%boulder_server.public_ip_address
-        print("Boulder Server at (SSH):", env.host_string)
+        # host_string defines the ssh user and host for connection
+        host_string = "ubuntu@%s"%boulder_server.public_ip_address
+        print("Boulder Server at (SSH):", host_string)
         if not boulder_preexists:
             print("Configuring and Launching Boulder")
-            config_and_launch_boulder(boulder_server)
-            # blocking often unnecessary, but cheap EC2 VMs can get very slow
-            block_until_http_ready('http://%s:4000'%boulder_server.public_ip_address,
-                                   wait_time=10, timeout=500)
+            with Connection(host_string, config=fab_config) as boulder_cxn:
+                config_and_launch_boulder(boulder_cxn, boulder_server)
+                # blocking often unnecessary, but cheap EC2 VMs can get very slow
+                block_until_http_ready('http://%s:4000'%boulder_server.public_ip_address,
+                                           wait_time=10, timeout=500)
 
         boulder_url = "http://%s:4000/directory"%boulder_server.private_ip_address
         print("Boulder Server at (public ip): http://%s:4000/directory"%boulder_server.public_ip_address)
@@ -534,7 +555,7 @@ def main():
 
         # initiate process execution
         for i in range(num_processes):
-            p = mp.Process(target=test_client_process, args=(inqueue, outqueue, boulder_url))
+            p = mp.Process(target=test_client_process, args=(fab_config, inqueue, outqueue, boulder_url))
             jobs.append(p)
             p.daemon = True  # kills subprocesses if parent is killed
             p.start()
@@ -558,7 +579,7 @@ def main():
         outqueue.put(SENTINEL)
 
         # clean up
-        execute(local_repo_clean)
+        local_repo_clean(local_cxn)
 
         # print and save summary results
         results_file = open(LOGDIR+'/results', 'w')
@@ -583,10 +604,7 @@ def main():
             sys.exit(1)
 
     finally:
-        cleanup(cl_args, instances, targetlist)
-
-        # kill any connections
-        fabric.network.disconnect_all()
+        cleanup(cl_args, instances, targetlist, boulder_server)
 
 
 if __name__ == '__main__':

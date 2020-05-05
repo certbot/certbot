@@ -12,17 +12,17 @@ VENV_NAME.
 
 from __future__ import print_function
 
-import os
-import shutil
 import glob
-import time
+import os
+import re
+import shutil
 import subprocess
 import sys
-import re
+import time
 
 REQUIREMENTS = [
     '-e acme[dev]',
-    '-e .[dev,docs]',
+    '-e certbot[dev,docs]',
     '-e certbot-apache',
     '-e certbot-dns-cloudflare',
     '-e certbot-dns-cloudxns',
@@ -39,7 +39,6 @@ REQUIREMENTS = [
     '-e certbot-dns-route53',
     '-e certbot-dns-sakuracloud',
     '-e certbot-nginx',
-    '-e letshelp-certbot',
     '-e certbot-compatibility-test',
     '-e certbot-ci',
 ]
@@ -125,7 +124,9 @@ def _check_version(version_str, major_version):
     return False
 
 
-def subprocess_with_print(cmd, env=os.environ, shell=False):
+def subprocess_with_print(cmd, env=None, shell=False):
+    if env is None:
+        env = os.environ
     print('+ {0}'.format(subprocess.list2cmdline(cmd)) if isinstance(cmd, list) else cmd)
     subprocess.check_call(cmd, env=env, shell=shell)
 

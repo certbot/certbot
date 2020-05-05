@@ -1,0 +1,61 @@
+jobs:
+  - job: installer_build
+    pool:
+      vmImage: vs2017-win2016
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.7
+          architecture: x86
+          addToPath: true
+      - script: python windows-installer/construct.py
+        displayName: Build Certbot installer
+      - task: CopyFiles@2
+        inputs:
+          sourceFolder: $(System.DefaultWorkingDirectory)/windows-installer/build/nsis
+          contents: '*.exe'
+          targetFolder: $(Build.ArtifactStagingDirectory)
+      - task: PublishPipelineArtifact@1
+        inputs:
+          path: $(Build.ArtifactStagingDirectory)
+          artifact: windows-installer
+        displayName: Publish Windows installer
+  - job: installer_run
+    dependsOn: installer_build
+    strategy:
+      matrix:
+        win2019:
+          imageName: windows-2019
+        win2016:
+          imageName: vs2017-win2016
+    pool:
+      vmImage: $(imageName)
+    steps:
+      - powershell: |
+          $currentVersion = $PSVersionTable.PSVersion
+          if ($currentVersion.Major -ne 5) {
+              throw "Powershell version is not 5.x"
+          }
+        condition: eq(variables['imageName'], 'vs2017-win2016')
+        displayName: Check Powershell 5.x is used in vs2017-win2016
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.8
+          addToPath: true
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          artifact: windows-installer
+          path: $(Build.SourcesDirectory)/bin
+        displayName: Retrieve Windows installer
+      - script: |
+          py -3 -m venv venv
+          venv\Scripts\python tools\pip_install.py -e certbot-ci
+        displayName: Prepare Certbot-CI
+      - script: |
+          set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
+          venv\Scripts\python -m pytest certbot-ci\windows_installer_integration_tests --allow-persistent-changes --installer-path $(Build.SourcesDirectory)\bin\certbot-beta-installer-win32.exe
+        displayName: Run windows installer integration tests
+      - script: |
+          set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
+          venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
+        displayName: Run certbot integration tests

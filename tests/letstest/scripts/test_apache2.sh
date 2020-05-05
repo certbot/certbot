@@ -50,13 +50,29 @@ fi
 # instance, Fedora uses Python 3 and Python 2 is not installed.
 . tests/letstest/scripts/set_python_envvars.sh
 
-"$VENV_SCRIPT" -e acme[dev] -e .[dev,docs] -e certbot-apache
-sudo "$VENV_PATH/bin/certbot" -v --debug --text --agree-dev-preview --agree-tos \
+"$VENV_SCRIPT" -e acme[dev] -e certbot[dev,docs] -e certbot-apache
+sudo "$VENV_PATH/bin/certbot" -v --debug --text --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
 if [ $? -ne 0 ] ; then
     FAIL=1
 fi
+
+# Check that ssl_module detection is working on various systems
+if [ "$OS_TYPE" = "ubuntu" ] ; then
+    MOD_SSL_LOCATION="/usr/lib/apache2/modules/mod_ssl.so"
+    APACHE_NAME=apache2ctl
+elif [ "$OS_TYPE" = "centos" ]; then
+    MOD_SSL_LOCATION="/etc/httpd/modules/mod_ssl.so"
+    APACHE_NAME=httpd
+fi
+OPENSSL_VERSION=$(strings "$MOD_SSL_LOCATION" | egrep -o -m1 '^OpenSSL ([0-9]\.[^ ]+) ' | tail -c +9)
+APACHE_VERSION=$(sudo $APACHE_NAME -v | egrep -o 'Apache/([0-9]\.[^ ]+)' | tail -c +8)
+"$PYTHON_NAME" tests/letstest/scripts/test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
+if [ $? -ne 0 ] ; then
+    FAIL=1
+fi
+
 
 if [ "$OS_TYPE" = "ubuntu" ] ; then
     export SERVER="$BOULDER_URL"

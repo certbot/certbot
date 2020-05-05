@@ -1,13 +1,24 @@
 """Tests for ocsp.py"""
 # pylint: disable=protected-access
 import contextlib
+from datetime import datetime
+from datetime import timedelta
 import unittest
-from datetime import datetime, timedelta
 
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes  # type: ignore
-from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
-from cryptography import x509
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+import pytz
+
+from certbot import errors
+from certbot.tests import util as test_util
+
 try:
     # Only cryptography>=2.5 has ocsp module
     # and signature_hash_algorithm attribute in OCSPResponse class
@@ -15,11 +26,7 @@ try:
     getattr(ocsp_lib.OCSPResponse, 'signature_hash_algorithm')
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp_lib = None  # type: ignore
-import mock
-import pytz
 
-from certbot import errors
-from certbot.tests import util as test_util
 
 out = """Missing = in header key=value
 ocsp: Use -help for summary.
@@ -28,7 +35,7 @@ ocsp: Use -help for summary.
 
 class OCSPTestOpenSSL(unittest.TestCase):
     """
-    OCSP revokation tests using OpenSSL binary.
+    OCSP revocation tests using OpenSSL binary.
     """
 
     def setUp(self):
@@ -71,13 +78,14 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(checker.broken, True)
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
+    @mock.patch('certbot.ocsp.crypto_util.notAfter')
     @mock.patch('certbot.util.run_script')
-    def test_ocsp_revoked(self, mock_run, mock_determine):
+    def test_ocsp_revoked(self, mock_run, mock_na, mock_determine):
         now = pytz.UTC.fromutc(datetime.utcnow())
         cert_obj = mock.MagicMock()
-        cert_obj.cert = "x"
-        cert_obj.chain = "y"
-        cert_obj.target_expiry = now + timedelta(hours=2)
+        cert_obj.cert_path = "x"
+        cert_obj.chain_path = "y"
+        mock_na.return_value = now + timedelta(hours=2)
 
         self.checker.broken = True
         mock_determine.return_value = ("", "")
@@ -95,7 +103,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(mock_run.call_count, 2)
 
         # cert expired
-        cert_obj.target_expiry = now
+        mock_na.return_value = now
         mock_determine.return_value = ("", "")
         count_before = mock_determine.call_count
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
@@ -146,18 +154,22 @@ class OSCPTestCryptography(unittest.TestCase):
         self.cert_path = test_util.vector_path('ocsp_certificate.pem')
         self.chain_path = test_util.vector_path('ocsp_issuer_certificate.pem')
         self.cert_obj = mock.MagicMock()
-        self.cert_obj.cert = self.cert_path
-        self.cert_obj.chain = self.chain_path
+        self.cert_obj.cert_path = self.cert_path
+        self.cert_obj.chain_path = self.chain_path
         now = pytz.UTC.fromutc(datetime.utcnow())
-        self.cert_obj.target_expiry = now + timedelta(hours=2)
+        self.mock_notAfter = mock.patch('certbot.ocsp.crypto_util.notAfter',
+                                        return_value=now + timedelta(hours=2))
+        self.mock_notAfter.start()
+        # Ensure the mock.patch is stopped even if test raises an exception
+        self.addCleanup(self.mock_notAfter.stop)
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.ocsp._check_ocsp_cryptography')
-    def test_ensure_cryptography_toggled(self, mock_revoke, mock_determine):
+    def test_ensure_cryptography_toggled(self, mock_check, mock_determine):
         mock_determine.return_value = ('http://example.com', 'example.com')
         self.checker.ocsp_revoked(self.cert_obj)
 
-        mock_revoke.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com')
+        mock_check.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com', 10)
 
     def test_revoke(self):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
@@ -276,7 +288,8 @@ def _ocsp_mock(certificate_status, response_status,
             certificate_status, response_status)
         with mock.patch('certbot.ocsp.requests.post') as mock_post:
             mock_post.return_value = mock.Mock(status_code=http_status_code)
-            with mock.patch('certbot.ocsp.crypto_util.verify_signed_payload') as mock_check:
+            with mock.patch('certbot.ocsp.crypto_util.verify_signed_payload') \
+                as mock_check:
                 if check_signature_side_effect:
                     mock_check.side_effect = check_signature_side_effect
                 yield {

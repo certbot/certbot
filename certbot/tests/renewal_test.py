@@ -1,18 +1,20 @@
-"""Tests for certbot.renewal"""
+"""Tests for certbot._internal.renewal"""
 import unittest
-import mock
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from acme import challenges
-
-from certbot import configuration
 from certbot import errors
-from certbot import storage
-
+from certbot._internal import configuration
+from certbot._internal import storage
 import certbot.tests.util as test_util
 
 
 class RenewalTest(test_util.ConfigTestCase):
-    @mock.patch('certbot.cli.set_by_cli')
+    @mock.patch('certbot._internal.cli.set_by_cli')
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         rc_path = test_util.make_lineage(
@@ -24,15 +26,16 @@ class RenewalTest(test_util.ConfigTestCase):
         lineage = storage.RenewableCert(rc_path, config)
         renewalparams = lineage.configuration['renewalparams']
         # pylint: disable=protected-access
-        from certbot import renewal
+        from certbot._internal import renewal
         renewal._restore_webroot_config(config, renewalparams)
         self.assertEqual(config.webroot_path, ['/var/www/'])
 
-    @mock.patch('certbot.renewal.cli.set_by_cli')
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_webroot_params_conservation(self, mock_set_by_cli):
         # For more details about why this test is important, see:
-        # certbot.plugins.webroot_test::WebrootActionTest::test_webroot_map_partial_without_perform
-        from certbot import renewal
+        # certbot._internal.plugins.webroot_test::
+        #   WebrootActionTest::test_webroot_map_partial_without_perform
+        from certbot._internal import renewal
         mock_set_by_cli.return_value = False
 
         renewalparams = {
@@ -53,39 +56,34 @@ class RenewalTest(test_util.ConfigTestCase):
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
-    """Tests for certbot.renewal.restore_required_config_elements."""
+    """Tests for certbot._internal.renewal.restore_required_config_elements."""
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.renewal import restore_required_config_elements
+        from certbot._internal.renewal import restore_required_config_elements
         return restore_required_config_elements(*args, **kwargs)
 
-    @mock.patch('certbot.renewal.cli.set_by_cli')
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_allow_subset_of_names_success(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         self._call(self.config, {'allow_subset_of_names': 'True'})
         self.assertTrue(self.config.allow_subset_of_names is True)
 
-    @mock.patch('certbot.renewal.cli.set_by_cli')
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_allow_subset_of_names_failure(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         renewalparams = {'allow_subset_of_names': 'maybe'}
         self.assertRaises(
             errors.Error, self._call, self.config, renewalparams)
 
-    @mock.patch('certbot.renewal.cli.set_by_cli')
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_pref_challs_list(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
-        # TODO: remove tls-sni and related assertions to logger.warning call once
-        #  the deprecation logic has been removed
-        renewalparams = {'pref_challs': 'tls-sni, http-01, dns'.split(',')}
-        with mock.patch('certbot.renewal.cli.logger.warning') as mock_warn:
-            self._call(self.config, renewalparams)
+        renewalparams = {'pref_challs': 'http-01, dns'.split(',')}
+        self._call(self.config, renewalparams)
         expected = [challenges.HTTP01.typ, challenges.DNS01.typ]
         self.assertEqual(self.config.pref_challs, expected)
-        self.assertEqual(mock_warn.call_count, 1)
-        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
 
-    @mock.patch('certbot.renewal.cli.set_by_cli')
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_pref_challs_str(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         renewalparams = {'pref_challs': 'dns'}
@@ -93,19 +91,19 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         expected = [challenges.DNS01.typ]
         self.assertEqual(self.config.pref_challs, expected)
 
-    @mock.patch('certbot.renewal.cli.set_by_cli')
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_pref_challs_failure(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         renewalparams = {'pref_challs': 'finding-a-shrubbery'}
         self.assertRaises(errors.Error, self._call, self.config, renewalparams)
 
-    @mock.patch('certbot.renewal.cli.set_by_cli')
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_must_staple_success(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         self._call(self.config, {'must_staple': 'True'})
         self.assertTrue(self.config.must_staple is True)
 
-    @mock.patch('certbot.renewal.cli.set_by_cli')
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_must_staple_failure(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         renewalparams = {'must_staple': 'maybe'}

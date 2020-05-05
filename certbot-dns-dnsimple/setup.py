@@ -1,19 +1,31 @@
+from distutils.version import StrictVersion
 import os
-from setuptools import setup
+import sys
+
+from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
+from setuptools import setup
+from setuptools.command.test import test as TestCommand
 
-
-version = '0.39.0.dev0'
+version = '1.4.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
     'acme>=0.31.0',
-    'certbot>=0.39.0.dev0',
-    'mock',
+    'certbot>=1.1.0',
     'setuptools',
     'zope.interface',
 ]
+
+setuptools_known_environment_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
+if setuptools_known_environment_markers:
+    install_requires.append('mock ; python_version < "3.3"')
+elif 'bdist_wheel' in sys.argv[1:]:
+    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
+                       'of setuptools. Version 36.2+ of setuptools is required.')
+elif sys.version_info < (3,3):
+    install_requires.append('mock')
 
 # This package normally depends on dns-lexicon>=3.2.1 to address the
 # problem described in https://github.com/AnalogJ/lexicon/issues/387,
@@ -32,6 +44,20 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
+class PyTest(TestCommand):
+    user_options = []
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = ''
+
+    def run_tests(self):
+        import shlex
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(shlex.split(self.pytest_args))
+        sys.exit(errno)
+
 setup(
     name='certbot-dns-dnsimple',
     version=version,
@@ -40,9 +66,9 @@ setup(
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: Apache Software License',
@@ -51,7 +77,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
@@ -72,8 +97,10 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-dnsimple = certbot_dns_dnsimple.dns_dnsimple:Authenticator',
+            'dns-dnsimple = certbot_dns_dnsimple._internal.dns_dnsimple:Authenticator',
         ],
     },
+    tests_require=["pytest"],
     test_suite='certbot_dns_dnsimple',
+    cmdclass={"test": PyTest},
 )

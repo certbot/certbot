@@ -3,27 +3,27 @@ Misc module contains stateless functions that could be used during pytest execut
 or outside during setup/teardown of the integration tests environment.
 """
 import contextlib
-import logging
 import errno
 import multiprocessing
 import os
 import re
 import shutil
 import stat
-import subprocess
 import sys
 import tempfile
 import time
 import warnings
-from distutils.version import LooseVersion
 
-import pkg_resources
-import requests
-from OpenSSL import crypto
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
-from six.moves import socketserver, SimpleHTTPServer
+from cryptography.hazmat.primitives.serialization import Encoding
+from cryptography.hazmat.primitives.serialization import NoEncryption
+from cryptography.hazmat.primitives.serialization import PrivateFormat
+from OpenSSL import crypto
+import pkg_resources
+import requests
+from six.moves import SimpleHTTPServer
+from six.moves import socketserver
 
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
@@ -140,13 +140,12 @@ def generate_test_file_hooks(config_dir, hook_probe):
             entrypoint_script = '''\
 #!/usr/bin/env bash
 set -e
-"{0}" "{1}" "{2}" "{3}"
+"{0}" "{1}" "{2}" >> "{3}"
 '''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
         else:
-            entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.bat')
+            entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.ps1')
             entrypoint_script = '''\
-@echo off
-"{0}" "{1}" "{2}" "{3}"
+& "{0}" "{1}" "{2}" >> "{3}"
             '''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
 
         with open(entrypoint_script_path, 'w') as file_h:
@@ -236,7 +235,7 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
         file_h.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
 
     req = crypto.X509Req()
-    san = ', '.join(['DNS:{0}'.format(item) for item in domains])
+    san = ', '.join('DNS:{0}'.format(item) for item in domains)
     san_constraint = crypto.X509Extension(b'subjectAltName', False, san.encode('utf-8'))
     req.add_extensions([san_constraint])
 

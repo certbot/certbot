@@ -13,9 +13,9 @@ ply==3.4
 pyasn1==0.1.9
 pycparser==2.14
 pyOpenSSL==0.13.1
-pyparsing==1.5.6
 pyRFC3339==1.0
 python-augeas==0.5.0
+oauth2client==4.0.0
 six==1.9.0
 # setuptools 0.9.8 is the actual version packaged, but some other dependencies
 # in this file require setuptools>=1.0 and there are no relevant changes for us
@@ -35,11 +35,13 @@ idna==2.0
 pbr==1.8.0
 pytz==2012rc0
 
+# Debian Buster constraints
+google-api-python-client==1.5.5
+
 # Our setup.py constraints
+apacheconfig==0.3.2
 cloudflare==1.5.1
 cryptography==1.2.3
-google-api-python-client==1.5
-oauth2client==2.0
 parsedatetime==1.3
 pyparsing==1.5.5
 python-digitalocean==1.11

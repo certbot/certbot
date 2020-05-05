@@ -1,0 +1,8 @@
+trigger:
+  - master
+pr:
+  - master
+  - '*.x'
+
+jobs:
+  - template: templates/tests-suite.yml

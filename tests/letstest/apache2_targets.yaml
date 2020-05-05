@@ -1,8 +1,8 @@
 targets:
   #-----------------------------------------------------------------------------
   #Ubuntu
-  - ami: ami-08ab45c4343f5f5c6
-    name: ubuntu19.04
+  - ami: ami-0545f7036167eb3aa
+    name: ubuntu19.10
     type: ubuntu
     virt: hvm
     user: ubuntu
@@ -18,6 +18,11 @@ targets:
     user: ubuntu
   #-----------------------------------------------------------------------------
   # Debian
+  - ami: ami-01db78123b2b99496
+    name: debian10
+    type: ubuntu
+    virt: hvm
+    user: admin
   - ami: ami-003f19e0e687de1cd
     name: debian9
     type: ubuntu
@@ -36,6 +41,11 @@ targets:
     user: admin
   #-----------------------------------------------------------------------------
   # Fedora
+  - ami: ami-0fcbe88944a53b4c8
+    name: fedora31
+    type: centos
+    virt: hvm
+    user: fedora
   - ami: ami-00bbc6858140f19ed
     name: fedora30
     type: centos

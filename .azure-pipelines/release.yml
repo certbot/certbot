@@ -1,0 +1,13 @@
+# Release pipeline to build and deploy Certbot for Windows for GitHub release tags
+trigger:
+  tags:
+    include:
+      - v*
+pr: none
+
+jobs:
+  # Any addition here should be reflected in the advanced and advanced-test pipelines.
+  # It is advised to declare all jobs here as templates to improve maintainability.
+  - template: templates/tests-suite.yml
+  - template: templates/installer-tests.yml
+  - template: templates/changelog.yml

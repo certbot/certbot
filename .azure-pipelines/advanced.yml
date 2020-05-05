@@ -1,0 +1,18 @@
+# Advanced pipeline for running our full test suite on protected branches.
+trigger:
+  - '*.x'
+pr: none
+# This pipeline is also nightly run on master
+schedules:
+  - cron: "0 4 * * *"
+    displayName: Nightly build
+    branches:
+      include:
+      - master
+    always: true
+
+jobs:
+  # Any addition here should be reflected in the advanced-test and release pipelines.
+  # It is advised to declare all jobs here as templates to improve maintainability.
+  - template: templates/tests-suite.yml
+  - template: templates/installer-tests.yml

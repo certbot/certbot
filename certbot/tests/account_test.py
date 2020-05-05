@@ -1,29 +1,30 @@
-"""Tests for certbot.account."""
+"""Tests for certbot._internal.account."""
 import datetime
 import json
-import shutil
 import unittest
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import pytz
 
 from acme import messages
-
-import certbot.tests.util as test_util
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
+import certbot.tests.util as test_util
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
 class AccountTest(unittest.TestCase):
-    """Tests for certbot.account.Account."""
+    """Tests for certbot._internal.account.Account."""
 
     def setUp(self):
-        from certbot.account import Account
+        from certbot._internal.account import Account
         self.regr = mock.MagicMock()
         self.meta = Account.Meta(
             creation_host="test.certbot.org",
@@ -32,9 +33,9 @@ class AccountTest(unittest.TestCase):
         self.acc = Account(self.regr, KEY, self.meta)
         self.regr.__repr__ = mock.MagicMock(return_value="i_am_a_regr")
 
-        with mock.patch("certbot.account.socket") as mock_socket:
+        with mock.patch("certbot._internal.account.socket") as mock_socket:
             mock_socket.getfqdn.return_value = "test.certbot.org"
-            with mock.patch("certbot.account.datetime") as mock_dt:
+            with mock.patch("certbot._internal.account.datetime") as mock_dt:
                 mock_dt.datetime.now.return_value = self.meta.creation_dt
                 self.acc_no_meta = Account(self.regr, KEY)
 
@@ -56,18 +57,18 @@ class AccountTest(unittest.TestCase):
           "<Account(i_am_a_regr, 7adac10320f585ddf118429c0c4af2cd, Meta("))
 
 class ReportNewAccountTest(test_util.ConfigTestCase):
-    """Tests for certbot.account.report_new_account."""
+    """Tests for certbot._internal.account.report_new_account."""
 
     def _call(self):
-        from certbot.account import report_new_account
+        from certbot._internal.account import report_new_account
         report_new_account(self.config)
 
-    @mock.patch("certbot.account.zope.component.queryUtility")
+    @mock.patch("certbot._internal.account.zope.component.queryUtility")
     def test_no_reporter(self, mock_zope):
         mock_zope.return_value = None
         self._call()
 
-    @mock.patch("certbot.account.zope.component.queryUtility")
+    @mock.patch("certbot._internal.account.zope.component.queryUtility")
     def test_it(self, mock_zope):
         self._call()
         call_list = mock_zope().add_message.call_args_list
@@ -75,10 +76,10 @@ class ReportNewAccountTest(test_util.ConfigTestCase):
 
 
 class AccountMemoryStorageTest(unittest.TestCase):
-    """Tests for certbot.account.AccountMemoryStorage."""
+    """Tests for certbot._internal.account.AccountMemoryStorage."""
 
     def setUp(self):
-        from certbot.account import AccountMemoryStorage
+        from certbot._internal.account import AccountMemoryStorage
         self.storage = AccountMemoryStorage()
 
     def test_it(self):
@@ -93,16 +94,15 @@ class AccountMemoryStorageTest(unittest.TestCase):
 
 
 class AccountFileStorageTest(test_util.ConfigTestCase):
-    """Tests for certbot.account.AccountFileStorage."""
-    #pylint: disable=too-many-public-methods
+    """Tests for certbot._internal.account.AccountFileStorage."""
 
     def setUp(self):
         super(AccountFileStorageTest, self).setUp()
 
-        from certbot.account import AccountFileStorage
+        from certbot._internal.account import AccountFileStorage
         self.storage = AccountFileStorage(self.config)
 
-        from certbot.account import Account
+        from certbot._internal.account import Account
         new_authzr_uri = "hi"
         self.acc = Account(
             regr=messages.RegistrationResource(
@@ -163,23 +163,16 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         # pylint: disable=protected-access
         self.storage._load_for_server_path = mock.MagicMock(
             side_effect=["x", errors.AccountStorageError, "z"])
-        with mock.patch("certbot.account.os.listdir") as mock_listdir:
+        with mock.patch("certbot._internal.account.os.listdir") as mock_listdir:
             mock_listdir.return_value = ["x", "y", "z"]
             self.assertEqual(["x", "z"], self.storage.find_all())
 
     def test_load_non_existent_raises_error(self):
         self.assertRaises(errors.AccountNotFound, self.storage.load, "missing")
 
-    def test_load_id_mismatch_raises_error(self):
-        self.storage.save(self.acc, self.mock_client)
-        shutil.move(os.path.join(self.config.accounts_dir, self.acc.id),
-                    os.path.join(self.config.accounts_dir, "x" + self.acc.id))
-        self.assertRaises(errors.AccountStorageError, self.storage.load,
-                          "x" + self.acc.id)
-
     def _set_server(self, server):
         self.config.server = server
-        from certbot.account import AccountFileStorage
+        from certbot._internal.account import AccountFileStorage
         self.storage = AccountFileStorage(self.config)
 
     def test_find_all_neither_exists(self):
@@ -286,7 +279,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         # ensure v2 isn't already linked to it
-        with mock.patch('certbot.constants.LE_REUSE_SERVERS', {}):
+        with mock.patch('certbot._internal.constants.LE_REUSE_SERVERS', {}):
             self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
             self.assertRaises(errors.AccountNotFound, self.storage.load, self.acc.id)
 

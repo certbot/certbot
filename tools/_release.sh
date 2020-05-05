@@ -7,6 +7,24 @@ if [ "$RELEASE_DIR" = "" ]; then
     exit 1
 fi
 
+ExitWarning() {
+    exit_status="$?"
+    if [ "$exit_status" != 0 ]; then
+        # Don't print each command before executing it because it will disrupt
+        # the desired output.
+        set +x
+        echo '******************************'
+        echo '*                            *'
+        echo '* THE RELEASE SCRIPT FAILED! *'
+        echo '*                            *'
+        echo '******************************'
+        set -x
+    fi
+    exit "$exit_status"
+}
+
+trap ExitWarning EXIT
+
 version="$1"
 echo Releasing production version "$version"...
 nextversion="$2"
@@ -30,7 +48,6 @@ SUBPKGS_NOT_IN_AUTO="certbot-dns-cloudflare certbot-dns-cloudxns certbot-dns-dig
 SUBPKGS_IN_AUTO="certbot $SUBPKGS_IN_AUTO_NO_CERTBOT"
 SUBPKGS_NO_CERTBOT="$SUBPKGS_IN_AUTO_NO_CERTBOT $SUBPKGS_NOT_IN_AUTO"
 SUBPKGS="$SUBPKGS_IN_AUTO $SUBPKGS_NOT_IN_AUTO"
-subpkgs_modules="$(echo $SUBPKGS | sed s/-/_/g)"
 # certbot_compatibility_test is not packaged because:
 # - it is not meant to be used by anyone else than Certbot devs
 # - it causes problems when running pytest - the latter tries to
@@ -42,7 +59,7 @@ mv "dist.$version" "dist.$version.$(date +%s).bak" || true
 git tag --delete "$tag" || true
 
 tmpvenv=$(mktemp -d)
-VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages -p python2 $tmpvenv
+python3 -m venv "$tmpvenv"
 . $tmpvenv/bin/activate
 # update setuptools/pip just like in other places in the repo
 pip install -U setuptools
@@ -66,12 +83,11 @@ fi
 git checkout "$RELEASE_BRANCH"
 
 # Update changelog
-sed -i "s/master/$(date +'%Y-%m-%d')/" CHANGELOG.md
-git add CHANGELOG.md
-git diff --cached
+sed -i "s/master/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
+git add certbot/CHANGELOG.md
 git commit -m "Update changelog for $version release"
 
-for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
+for pkg_dir in $SUBPKGS certbot-compatibility-test
 do
   sed -i 's/\.dev0//' "$pkg_dir/setup.py"
   git add "$pkg_dir/setup.py"
@@ -79,8 +95,8 @@ do
   if [ -f "$pkg_dir/local-oldest-requirements.txt" ]; then
     sed -i "s/-e acme\[dev\]/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
     sed -i "s/-e acme/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e \.\[dev\]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e \./certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    sed -i "s/-e certbot\[dev\]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    sed -i "s/-e certbot/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
     git add "$pkg_dir/local-oldest-requirements.txt"
   fi
 done
@@ -97,7 +113,7 @@ SetVersion() {
       fi
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
-    init_file="certbot/__init__.py"
+    init_file="certbot/certbot/__init__.py"
     if [ $(grep -c '^__version' "$init_file") != 1 ]; then
       echo "Unexpected count of __version variables in $init_file"
       exit 1
@@ -113,7 +129,7 @@ SetVersion "$version"
 # conditionals like the one found in certbot-dns-dnsimple's setup.py file.
 unset CERTBOT_OLDEST
 echo "Preparing sdists and wheels"
-for pkg_dir in . $SUBPKGS_NO_CERTBOT
+for pkg_dir in $SUBPKGS
 do
   cd $pkg_dir
 
@@ -133,8 +149,7 @@ done
 
 
 mkdir "dist.$version"
-mv dist "dist.$version/certbot"
-for pkg_dir in $SUBPKGS_NO_CERTBOT
+for pkg_dir in $SUBPKGS
 do
   mv $pkg_dir/dist "dist.$version/$pkg_dir/"
 done
@@ -142,10 +157,10 @@ done
 echo "Testing packages"
 cd "dist.$version"
 # start local PyPI
-python -m SimpleHTTPServer $PORT &
+python -m http.server $PORT &
 # cd .. is NOT done on purpose: we make sure that all subpackages are
 # installed from local PyPI rather than current directory (repo root)
-VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages ../venv
+VIRTUALENV_NO_DOWNLOAD=1 virtualenv ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip
@@ -163,7 +178,7 @@ cd ~-
 
 # get a snapshot of the CLI help for the docs
 # We set CERTBOT_DOCS to use dummy values in example user-agent string.
-CERTBOT_DOCS=1 certbot --help all > docs/cli-help.txt
+CERTBOT_DOCS=1 certbot --help all > certbot/docs/cli-help.txt
 jws --help > acme/docs/jws-help.txt
 
 cd ..
@@ -177,17 +192,17 @@ mkdir kgs
 kgs="kgs/$version"
 pip freeze | tee $kgs
 python ../tools/pip_install.py pytest
-for module in $subpkgs_modules ; do
+cd ~-
+for module in $SUBPKGS ; do
     echo testing $module
     # use an empty configuration file rather than the one in the repo root
-    pytest -c <(echo '') --pyargs $module
+    pytest -c <(echo '') $module
 done
-cd ~-
 
 # pin pip hashes of the things we just built
 for pkg in $SUBPKGS_IN_AUTO ; do
     echo $pkg==$version \\
-    pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
+    pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python -c 'from sys import stdin; input = stdin.read(); print("   ", input.replace("\n--hash", " \\\n    --hash"), end="")'
 done > letsencrypt-auto-source/pieces/certbot-requirements.txt
 deactivate
 
@@ -231,8 +246,7 @@ mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-
 cp -p letsencrypt-auto-source/letsencrypt-auto certbot-auto
 cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
 
-git add certbot-auto letsencrypt-auto letsencrypt-auto-source docs/cli-help.txt
-git diff --cached
+git add certbot-auto letsencrypt-auto letsencrypt-auto-source certbot/docs/cli-help.txt
 while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
     echo "Unable to sign the release commit using git."
     echo "You may have to configure git to use gpg2 by running:"
@@ -251,17 +265,16 @@ echo gpg2 -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
 cd ~-
 
 # Add master section to CHANGELOG.md
-header=$(head -n 4 CHANGELOG.md)
+header=$(head -n 4 certbot/CHANGELOG.md)
 body=$(sed s/nextversion/$nextversion/ tools/_changelog_top.txt)
-footer=$(tail -n +5 CHANGELOG.md)
+footer=$(tail -n +5 certbot/CHANGELOG.md)
 echo "$header
 
 $body
 
-$footer" > CHANGELOG.md
-git add CHANGELOG.md
-git diff --cached
-git commit -m "Add contents to CHANGELOG.md for next version"
+$footer" > certbot/CHANGELOG.md
+git add certbot/CHANGELOG.md
+git commit -m "Add contents to certbot/CHANGELOG.md for next version"
 
 echo "New root: $root"
 echo "Test commands (in the letstest repo):"
@@ -275,6 +288,5 @@ if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
     letsencrypt-auto-source/build.py
     git add letsencrypt-auto-source/letsencrypt-auto
-    git diff
     git commit -m "Bump version to $nextversion"
 fi

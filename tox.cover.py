@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import argparse
-import subprocess
 import os
+import subprocess
 import sys
 
 DEFAULT_PACKAGES = [
@@ -9,14 +11,14 @@ DEFAULT_PACKAGES = [
     'certbot_dns_digitalocean', 'certbot_dns_dnsimple', 'certbot_dns_dnsmadeeasy',
     'certbot_dns_gehirn', 'certbot_dns_google', 'certbot_dns_linode', 'certbot_dns_luadns',
     'certbot_dns_nsone', 'certbot_dns_ovh', 'certbot_dns_rfc2136', 'certbot_dns_route53',
-    'certbot_dns_sakuracloud', 'certbot_nginx', 'letshelp_certbot']
+    'certbot_dns_sakuracloud', 'certbot_nginx']
 
 COVER_THRESHOLDS = {
     'certbot': {'linux': 96, 'windows': 96},
     'acme': {'linux': 100, 'windows': 99},
     'certbot_apache': {'linux': 100, 'windows': 100},
     'certbot_dns_cloudflare': {'linux': 98, 'windows': 98},
-    'certbot_dns_cloudxns': {'linux': 99, 'windows': 99},
+    'certbot_dns_cloudxns': {'linux': 98, 'windows': 98},
     'certbot_dns_digitalocean': {'linux': 98, 'windows': 98},
     'certbot_dns_dnsimple': {'linux': 98, 'windows': 98},
     'certbot_dns_dnsmadeeasy': {'linux': 99, 'windows': 99},
@@ -30,10 +32,9 @@ COVER_THRESHOLDS = {
     'certbot_dns_route53': {'linux': 92, 'windows': 92},
     'certbot_dns_sakuracloud': {'linux': 97, 'windows': 97},
     'certbot_nginx': {'linux': 97, 'windows': 97},
-    'letshelp_certbot': {'linux': 100, 'windows': 100}
 }
 
-SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache', 'letshelp-certbot']
+SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache']
 
 
 def cover(package):
@@ -47,20 +48,25 @@ def cover(package):
             .format(pkg_dir)))
         return
 
-    subprocess.check_call([sys.executable, '-m', 'pytest', '--pyargs',
-                           '--cov', pkg_dir, '--cov-append', '--cov-report=', package])
-    subprocess.check_call([
-        sys.executable, '-m', 'coverage', 'report', '--fail-under', str(threshold), '--include',
-        '{0}/*'.format(pkg_dir), '--show-missing'])
+    subprocess.check_call([sys.executable, '-m', 'pytest',
+                           '--cov', pkg_dir, '--cov-append', '--cov-report=', pkg_dir])
+    try:
+        subprocess.check_call([
+            sys.executable, '-m', 'coverage', 'report', '--fail-under',
+            str(threshold), '--include', '{0}/*'.format(pkg_dir),
+            '--show-missing'])
+    except subprocess.CalledProcessError as err:
+        print(err)
+        print('Test coverage on', pkg_dir,
+              'did not meet threshold of {0}%.'.format(threshold))
+        sys.exit(1)
 
 
 def main():
     description = """
-This script is used by tox.ini (and thus by Travis CI and AppVeyor) in order
-to generate separate stats for each package. It should be removed once those
-packages are moved to a separate repo.
-
-Option -e makes sure we fail fast and don't submit to codecov."""
+This script is used by tox.ini (and thus by Travis CI and Azure Pipelines) in
+order to generate separate stats for each package. It should be removed once
+those packages are moved to a separate repo."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--packages', nargs='+')
 

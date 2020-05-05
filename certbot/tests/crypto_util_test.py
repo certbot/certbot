@@ -2,16 +2,19 @@
 import logging
 import unittest
 
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import OpenSSL
-import mock
 import zope.component
 
-import certbot.tests.util as test_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import os
 from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
@@ -164,7 +167,7 @@ class ImportCSRFileTest(unittest.TestCase):
                           test_util.load_vector('cert_512.pem'))
 
 
-class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
+class MakeKeyTest(unittest.TestCase):
     """Tests for certbot.crypto_util.make_key."""
 
     def test_rsa(self):  # pylint: disable=no-self-use
@@ -218,15 +221,15 @@ class VerifyCertSetup(unittest.TestCase):
         super(VerifyCertSetup, self).setUp()
 
         self.renewable_cert = mock.MagicMock()
-        self.renewable_cert.cert = SS_CERT_PATH
-        self.renewable_cert.chain = SS_CERT_PATH
-        self.renewable_cert.privkey = RSA2048_KEY_PATH
-        self.renewable_cert.fullchain = test_util.vector_path('cert_fullchain_2048.pem')
+        self.renewable_cert.cert_path = SS_CERT_PATH
+        self.renewable_cert.chain_path = SS_CERT_PATH
+        self.renewable_cert.key_path = RSA2048_KEY_PATH
+        self.renewable_cert.fullchain_path = test_util.vector_path('cert_fullchain_2048.pem')
 
         self.bad_renewable_cert = mock.MagicMock()
-        self.bad_renewable_cert.chain = SS_CERT_PATH
-        self.bad_renewable_cert.cert = SS_CERT_PATH
-        self.bad_renewable_cert.fullchain = SS_CERT_PATH
+        self.bad_renewable_cert.chain_path = SS_CERT_PATH
+        self.bad_renewable_cert.cert_path = SS_CERT_PATH
+        self.bad_renewable_cert.fullchain_path = SS_CERT_PATH
 
 
 class VerifyRenewableCertTest(VerifyCertSetup):
@@ -256,13 +259,13 @@ class VerifyRenewableCertSigTest(VerifyCertSetup):
 
     def test_cert_sig_match_ec(self):
         renewable_cert = mock.MagicMock()
-        renewable_cert.cert = P256_CERT_PATH
-        renewable_cert.chain = P256_CERT_PATH
-        renewable_cert.privkey = P256_KEY
+        renewable_cert.cert_path = P256_CERT_PATH
+        renewable_cert.chain_path = P256_CERT_PATH
+        renewable_cert.key_path = P256_KEY
         self.assertEqual(None, self._call(renewable_cert))
 
     def test_cert_sig_mismatch(self):
-        self.bad_renewable_cert.cert = test_util.vector_path('cert_512_bad.pem')
+        self.bad_renewable_cert.cert_path = test_util.vector_path('cert_512_bad.pem')
         self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
 
 
@@ -413,16 +416,32 @@ class Sha256sumTest(unittest.TestCase):
 class CertAndChainFromFullchainTest(unittest.TestCase):
     """Tests for certbot.crypto_util.cert_and_chain_from_fullchain"""
 
+    def _parse_and_reencode_pem(self, cert_pem):
+        from OpenSSL import crypto
+        return crypto.dump_certificate(crypto.FILETYPE_PEM,
+            crypto.load_certificate(crypto.FILETYPE_PEM, cert_pem)).decode()
+
     def test_cert_and_chain_from_fullchain(self):
         cert_pem = CERT.decode()
         chain_pem = cert_pem + SS_CERT.decode()
         fullchain_pem = cert_pem + chain_pem
         spacey_fullchain_pem = cert_pem + u'\n' + chain_pem
+        crlf_fullchain_pem = fullchain_pem.replace(u'\n', u'\r\n')
+
+        # In the ACME v1 code path, the fullchain is constructed by loading cert+chain DERs
+        # and using OpenSSL to dump them, so here we confirm that OpenSSL is producing certs
+        # that will be parseable by cert_and_chain_from_fullchain.
+        acmev1_fullchain_pem = self._parse_and_reencode_pem(cert_pem) + \
+            self._parse_and_reencode_pem(cert_pem) + self._parse_and_reencode_pem(SS_CERT.decode())
+
         from certbot.crypto_util import cert_and_chain_from_fullchain
-        for fullchain in (fullchain_pem, spacey_fullchain_pem):
+        for fullchain in (fullchain_pem, spacey_fullchain_pem, crlf_fullchain_pem,
+                          acmev1_fullchain_pem):
             cert_out, chain_out = cert_and_chain_from_fullchain(fullchain)
             self.assertEqual(cert_out, cert_pem)
             self.assertEqual(chain_out, chain_pem)
+
+        self.assertRaises(errors.Error, cert_and_chain_from_fullchain, cert_pem)
 
 
 if __name__ == '__main__':

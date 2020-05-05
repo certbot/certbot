@@ -4,7 +4,10 @@ import socket
 import tempfile
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import six
 
 from certbot import errors
@@ -58,7 +61,6 @@ class FileOutputDisplayTest(unittest.TestCase):
     functions look to a user, uncomment the test_visual function.
 
     """
-    # pylint:disable=too-many-public-methods
     def setUp(self):
         super(FileOutputDisplayTest, self).setUp()
         self.mock_stdout = mock.MagicMock()
@@ -174,14 +176,14 @@ class FileOutputDisplayTest(unittest.TestCase):
         code, tag_list = self.displayer.checklist(
             "msg", TAGS, force_interactive=True)
         self.assertEqual(
-            (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2"])))
+            (code, set(tag_list)), (display_util.OK, {"tag1", "tag2"}))
 
     @mock.patch("certbot.display.util.input_with_timeout")
     def test_checklist_empty(self, mock_input):
         mock_input.return_value = ""
         code, tag_list = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(
-            (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2", "tag3"])))
+            (code, set(tag_list)), (display_util.OK, {"tag1", "tag2", "tag3"}))
 
     @mock.patch("certbot.display.util.input_with_timeout")
     def test_checklist_miss_valid(self, mock_input):
@@ -213,9 +215,9 @@ class FileOutputDisplayTest(unittest.TestCase):
             ["2", "3"],
         ]
         exp = [
-            set(["tag1"]),
-            set(["tag1", "tag2"]),
-            set(["tag2", "tag3"]),
+            {"tag1"},
+            {"tag1", "tag2"},
+            {"tag2", "tag3"},
         ]
         for i, list_ in enumerate(indices):
             set_tags = set(
@@ -312,12 +314,12 @@ class FileOutputDisplayTest(unittest.TestCase):
     def test_methods_take_force_interactive(self):
         # Every IDisplay method implemented by FileDisplay must take
         # force_interactive to prevent workflow regressions.
-        for name in interfaces.IDisplay.names():  # pylint: disable=no-member,no-value-for-parameter
+        for name in interfaces.IDisplay.names():
             if six.PY2:
-                getargspec = inspect.getargspec # pylint: disable=no-member
+                getargspec = inspect.getargspec
             else:
-                getargspec = inspect.getfullargspec # pylint: disable=no-member
-            arg_spec = getargspec(getattr(self.displayer, name))
+                getargspec = inspect.getfullargspec
+            arg_spec = getargspec(getattr(self.displayer, name))  # pylint: disable=deprecated-method
             self.assertTrue("force_interactive" in arg_spec.args)
 
 
@@ -373,14 +375,14 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         # NoninteractiveDisplay.
 
         # Use pylint code for disable to keep on single line under line length limit
-        for name in interfaces.IDisplay.names():  # pylint: disable=no-member,E1120
+        for name in interfaces.IDisplay.names():  # pylint: disable=E1120
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
             if six.PY2:
-                result = inspect.getargspec(method).keywords # pylint: disable=no-member
+                result = inspect.getargspec(method).keywords  # pylint:deprecated-method
                 self.assertFalse(result is None)
             else:
-                result = inspect.getfullargspec(method).varkw # pylint: disable=no-member
+                result = inspect.getfullargspec(method).varkw
                 self.assertFalse(result is None)
 
 
