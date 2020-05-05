@@ -308,7 +308,8 @@ class LineageForCertnameTest(BaseCertManagerTest):
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
+    @mock.patch('certbot._internal.storage.RenewableCert._upgrade_configuration')
+    def test_no_match(self, mock_upgrade_conf, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "other.com.conf"
         from certbot._internal import cert_manager
         self.assertEqual(cert_manager.lineage_for_certname(self.config, "example.com"), None)
@@ -343,7 +344,8 @@ class DomainsForCertnameTest(BaseCertManagerTest):
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
+    @mock.patch('certbot._internal.storage.RenewableCert._upgrade_configuration')
+    def test_no_match(self, mock_upgrade_conf, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"
         from certbot._internal import cert_manager
         self.assertEqual(cert_manager.domains_for_certname(self.config, "other.com"), None)
