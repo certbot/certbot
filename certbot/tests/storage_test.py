@@ -178,6 +178,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         # Here the required privkey is missing.
         config["chain"] = "imaginary_chain.pem"
         config["fullchain"] = "imaginary_fullchain.pem"
+        config["privkey_fullchain"] = "imaginary_privkey_fullchain.pem"
         config.filename = os.path.join(self.config.config_dir, "imaginary_config.conf")
         config.write()
         self.assertRaises(errors.CertStorageError, storage.RenewableCert,
