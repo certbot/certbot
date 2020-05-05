@@ -12,7 +12,7 @@ try:
 except ImportError: # pragma: no cover
     from unittest import mock
 
-from certbot import errors
+from certbot import errors,__version__
 from certbot._internal import configuration
 from certbot._internal.storage import ALL_ITEMS
 from certbot.compat import filesystem
@@ -49,6 +49,7 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
         # TODO: main() should create those dirs, c.f. #902
         filesystem.makedirs(os.path.join(self.config.live_dir, domain))
         config_file = configobj.ConfigObj()
+        config_file["version"] = __version__
 
         if custom_archive is not None:
             filesystem.makedirs(custom_archive)
