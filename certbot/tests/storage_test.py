@@ -580,9 +580,11 @@ class RenewableCertTests(BaseRenewableCertTest):
             self._write_out_kind(kind, 1)
         self.test_rc.update_all_links_to(1)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
-        self.assertFalse(mock_ownership.called)
+        first_args = [ c[0][0] for c in mock_ownership.call_args_list ]
+        self.assertFalse(any([a for a in first_args if a.endswith('privkey1.pem')]))
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(mock_ownership.called)
+        first_args = [ c[0][0] for c in mock_ownership.call_args_list ]
+        self.assertTrue(any([a for a in first_args if a.endswith('privkey2.pem')]))
 
     @mock.patch("certbot._internal.storage.relevant_values")
     def test_new_lineage(self, mock_rv):
