@@ -173,6 +173,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         the renewal configuration file is missing a required file element."""
         from certbot._internal import storage
         config = configobj.ConfigObj()
+        config["version"] = certbot.__version__
         config["cert"] = "imaginary_cert.pem"
         # Here the required privkey is missing.
         config["chain"] = "imaginary_chain.pem"
@@ -185,6 +186,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_no_renewal_version(self):
         from certbot._internal import storage
 
+        del self.config_file['version']
         self._write_out_ex_kinds()
         self.assertTrue("version" not in self.config_file)
 
