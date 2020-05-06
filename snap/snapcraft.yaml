@@ -32,9 +32,8 @@ apps:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
       AUGEAS_LENS_LIB: $SNAP/usr/share/augeas/lenses/dist
       LD_LIBRARY_PATH: "$SNAP/usr/lib/x86_64-linux-gnu/:$LD_LIBRARY_PATH"
-    passthrough:
-        # Run approximately twice a day with randomization
-        timer: 00:00~24:00/2
+    # Run approximately twice a day with randomization
+    timer: 00:00~24:00/2
 
 parts:
   python-augeas:
