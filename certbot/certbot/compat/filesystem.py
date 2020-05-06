@@ -78,6 +78,35 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
     chmod(dst, mode)
 
 
+# Quite similar to copy_ownership_and_apply_mode, but this time the DACL is copied from
+# the source file on Windows. The DACL stays consistent with the dynamic rights of the
+# equivalent POSIX mode, because ownership and mode are copied altogether on the destination
+# file, so no recomputing of the DACL against the new owner is needed, as it would be
+# for a copy_ownership alone method.
+def copy_ownership_and_mode(src, dst, copy_user=True, copy_group=True):
+    # type: (str, str, bool, bool) -> None
+    """
+    Copy ownership (user and optionally group on Linux) and mode/DACL
+    from the source to the destination.
+    :param str src: Path of the source file
+    :param str dst: Path of the destination file
+    :param bool copy_user: Copy user if `True`
+    :param bool copy_group: Copy group if `True` on Linux (has no effect on Windows)
+    """
+    if POSIX_MODE:
+        # On Linux, we just delegate to chown and chmod.
+        stats = os.stat(src)
+        user_id = stats.st_uid if copy_user else -1
+        group_id = stats.st_gid if copy_group else -1
+        os.chown(dst, user_id, group_id)
+        chmod(dst, stats.st_mode)
+    else:
+        if copy_user:
+            # There is no group handling in Windows
+            _copy_win_ownership(src, dst)
+        _copy_win_mode(src, dst)
+
+
 def check_mode(file_path, mode):
     # type: (str, int) -> bool
     """
@@ -515,6 +544,9 @@ def _analyze_mode(mode):
 
 
 def _copy_win_ownership(src, dst):
+    # Resolve symbolic links
+    src = realpath(src)
+
     security_src = win32security.GetFileSecurity(src, win32security.OWNER_SECURITY_INFORMATION)
     user_src = security_src.GetSecurityDescriptorOwner()
 
@@ -524,6 +556,19 @@ def _copy_win_ownership(src, dst):
     security_dst.SetSecurityDescriptorOwner(user_src, False)
 
     win32security.SetFileSecurity(dst, win32security.OWNER_SECURITY_INFORMATION, security_dst)
+
+
+def _copy_win_mode(src, dst):
+    # Resolve symbolic links
+    src = realpath(src)
+
+    # Copy the DACL from src to dst.
+    security_src = win32security.GetFileSecurity(src, win32security.DACL_SECURITY_INFORMATION)
+    dacl = security_src.GetSecurityDescriptorDacl()
+
+    security_dst = win32security.GetFileSecurity(dst, win32security.DACL_SECURITY_INFORMATION)
+    security_dst.SetSecurityDescriptorDacl(1, dacl, 0)
+    win32security.SetFileSecurity(dst, win32security.DACL_SECURITY_INFORMATION, security_dst)
 
 
 def _generate_windows_flags(rights_desc):
