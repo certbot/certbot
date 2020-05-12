@@ -342,7 +342,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_deploy_cert_enable_new_vhost(self):
         # Create
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
-        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["ssl_module"] = "whatever"
         self.config.parser.modules["mod_ssl.c"] = None
         self.config.parser.modules["socache_shmcb_module"] = None
 
@@ -378,7 +378,7 @@ class MultipleVhostsTest(util.ApacheTest):
                     # pragma: no cover
 
     def test_deploy_cert(self):
-        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["ssl_module"] = "whatever"
         self.config.parser.modules["mod_ssl.c"] = None
         self.config.parser.modules["socache_shmcb_module"] = None
         # Patch _add_dummy_ssl_directives to make sure we write them correctly
@@ -1330,7 +1330,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_deploy_cert_not_parsed_path(self):
         # Make sure that we add include to root config for vhosts when
         # handle-sites is false
-        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["ssl_module"] = "whatever"
         self.config.parser.modules["mod_ssl.c"] = None
         self.config.parser.modules["socache_shmcb_module"] = None
         tmp_path = filesystem.realpath(tempfile.mkdtemp("vhostroot"))
@@ -1348,6 +1348,20 @@ class MultipleVhostsTest(util.ApacheTest):
                 # Test that we actually called add_include
                 self.assertTrue(mock_add.called)
         shutil.rmtree(tmp_path)
+
+    def test_deploy_cert_no_mod_ssl(self):
+        # Create
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
+        self.config.parser.modules["socache_shmcb_module"] = None
+
+        self.assertRaises(errors.MisconfigurationError, self.config.deploy_cert,
+            "encryption-example.demo", "example/cert.pem", "example/key.pem",
+            "example/cert_chain.pem", "example/fullchain.pem")
+
+        self.config.parser.modules["ssl_module"] = None
+        self.assertRaises(errors.MisconfigurationError, self.config.deploy_cert,
+            "encryption-example.demo", "example/cert.pem", "example/key.pem",
+            "example/cert_chain.pem", "example/fullchain.pem")
 
     @mock.patch("certbot_apache._internal.parser.ApacheParser.parsed_in_original")
     def test_choose_vhost_and_servername_addition_parsed(self, mock_parsed):

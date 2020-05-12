@@ -597,7 +597,8 @@ class ApacheConfigurator(common.Installer):
 
         # If we haven't managed to enable mod_ssl by this point, error out
         if "ssl_module" not in self.parser.modules or not self.parser.modules["ssl_module"]:
-            raise errors.PluginError("Could not find ssl_module; not installing certificate.")
+            raise errors.MisconfigurationError("Could not find ssl_module; "
+                "not installing certificate.")
 
         # Add directives and remove duplicates
         self._add_dummy_ssl_directives(vhost.path)
