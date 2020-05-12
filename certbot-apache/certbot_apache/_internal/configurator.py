@@ -595,6 +595,10 @@ class ApacheConfigurator(common.Installer):
         # cert_key... can all be parsed appropriately
         self.prepare_server_https("443")
 
+        # If we haven't managed to enable mod_ssl by this point, error out
+        if "ssl_module" not in self.parser.modules or not self.parser.modules["ssl_module"]:
+            raise errors.PluginError("Could not find ssl_module; not installing certificate.")
+
         # Add directives and remove duplicates
         self._add_dummy_ssl_directives(vhost.path)
         self._clean_vhost(vhost)
