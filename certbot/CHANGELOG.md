@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Add support for OCSP responses which use a public key hash ResponderID, fixing
+  interoperability with Sectigo CAs.
 
 More details about these changes can be found on our GitHub repo.
 
