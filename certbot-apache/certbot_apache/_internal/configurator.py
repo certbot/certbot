@@ -614,21 +614,6 @@ class ApacheConfigurator(common.Installer):
             path["chain_path"] = self.parser.find_dir(
                 "SSLCertificateChainFile", None, vhost.path)
 
-        # Handle errors when certificate/key directives cannot be found
-        if not path["cert_path"]:
-            logger.warning(
-                "Cannot find an SSLCertificateFile directive in %s. "
-                "VirtualHost was not modified", vhost.path)
-            raise errors.PluginError(
-                "Unable to find an SSLCertificateFile directive")
-        elif not path["cert_key"]:
-            logger.warning(
-                "Cannot find an SSLCertificateKeyFile directive for "
-                "certificate in %s. VirtualHost was not modified", vhost.path)
-            raise errors.PluginError(
-                "Unable to find an SSLCertificateKeyFile directive for "
-                "certificate")
-
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         if self.version < (2, 4, 8) or (chain_path and not fullchain_path):
