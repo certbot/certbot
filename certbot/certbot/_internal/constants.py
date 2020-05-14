@@ -13,6 +13,15 @@ SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 """Plugins Setuptools entry point before rename."""
 
+RENEWER_DEFAULTS = dict(
+    renewer_enabled="yes",
+    renew_before_expiry="30 days",
+    # This value should ensure that there is never a deployment delay by
+    # default.
+    deploy_before_expiry="99 years",
+)
+"""Defaults for renewer script."""
+
 CLI_DEFAULTS = dict(
     config_files=[
         os.path.join(misc.get_default_folder('config'), 'cli.ini'),
@@ -36,6 +45,7 @@ CLI_DEFAULTS = dict(
     reinstall=False,
     expand=False,
     renew_by_default=False,
+    renew_before_expiry=RENEWER_DEFAULTS['renew_before_expiry'],
     renew_with_new_domains=False,
     autorenew=True,
     allow_subset_of_names=False,
@@ -135,15 +145,6 @@ REVOCATION_REASONS = {
 
 QUIET_LOGGING_LEVEL = logging.WARNING
 """Logging level to use in quiet mode."""
-
-RENEWER_DEFAULTS = dict(
-    renewer_enabled="yes",
-    renew_before_expiry="30 days",
-    # This value should ensure that there is never a deployment delay by
-    # default.
-    deploy_before_expiry="99 years",
-)
-"""Defaults for renewer script."""
 
 ARCHIVE_DIR = "archive"
 """Archive directory, relative to `IConfig.config_dir`."""
