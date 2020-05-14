@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added `--renew-before-expiry` CLI flag, which allows overriding the default (currently 30 day) expiry interval, allowing easy renewal of certs at an earlier time. It can be used in conjunction with the `renew_before_expiry` renewal config file setting, in which case the the longer interval (i.e. earlier renewal date) will be accepted (provided it is different to the default value).
 
 ### Changed
 
