@@ -131,7 +131,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir,
             self.work_dir, version=(2, 4, 16))
         self.config = self.mock_deploy_cert(self.config)
-        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["ssl_module"] = "whatever"
         self.config.parser.modules["mod_ssl.c"] = None
 
         # Get the default 443 vhost
@@ -146,7 +146,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir,
             self.work_dir, version=(2, 4, 7))
         self.config = self.mock_deploy_cert(self.config)
-        self.config.parser.modules["ssl_module"] = None
+        self.config.parser.modules["ssl_module"] = "whatever"
         self.config.parser.modules["mod_ssl.c"] = None
 
         # Get the default 443 vhost
