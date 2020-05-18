@@ -323,7 +323,10 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
     else:
         logger.debug('Exiting abnormally:', exc_info=exc_info)
         if issubclass(exc_type, errors.Error):
-            sys.exit(exc_value)
+            # Use logger to print the error message to take advantage of
+            # our logger printing warnings and errors in red text.
+            logger.error(exc_value)
+            sys.exit(1)
         logger.error('An unexpected error occurred:')
         if messages.is_acme_error(exc_value):
             # Remove the ACME error prefix from the exception
