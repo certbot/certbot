@@ -1324,11 +1324,6 @@ class MultipleVhostsTest(util.ApacheTest):
             "encryption-example.demo", "example/cert.pem", "example/key.pem",
             "example/cert_chain.pem", "example/fullchain.pem")
 
-        self.config.parser.modules["ssl_module"] = None
-        self.assertRaises(errors.MisconfigurationError, self.config.deploy_cert,
-            "encryption-example.demo", "example/cert.pem", "example/key.pem",
-            "example/cert_chain.pem", "example/fullchain.pem")
-
     @mock.patch("certbot_apache._internal.parser.ApacheParser.parsed_in_original")
     def test_choose_vhost_and_servername_addition_parsed(self, mock_parsed):
         ret_vh = self.vh_truth[8]
