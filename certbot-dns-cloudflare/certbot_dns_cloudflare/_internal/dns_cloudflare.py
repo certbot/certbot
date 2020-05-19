@@ -81,7 +81,8 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def _get_cloudflare_client(self):
         if self.credentials.conf('api-token'):
-            return _CloudflareClient(None, self.credentials.conf('api-token'))
+            return _CloudflareClient(None, self.credentials.conf('api-token'),
+                                     self.credentials.conf('zone-ids'))
         return _CloudflareClient(self.credentials.conf('email'), self.credentials.conf('api-key'))
 
 
@@ -90,7 +91,8 @@ class _CloudflareClient(object):
     Encapsulates all communication with the Cloudflare API.
     """
 
-    def __init__(self, email, api_key):
+    def __init__(self, email, api_key, zone_ids=None):
+        self.zone_ids = zone_ids
         self.cf = CloudFlare.CloudFlare(email, api_key)
 
     def add_txt_record(self, domain, record_name, record_content, record_ttl):
@@ -118,8 +120,11 @@ class _CloudflareClient(object):
             code = int(e)
             hint = None
 
-            if code == 9109:
+            if code == 1009:
                 hint = 'Does your API token have "Zone:DNS:Edit" permissions?'
+            elif code == 10000:
+                hint = 'If you manually set a Zone ID in the config file, is it correct? Does ' + \
+                       'your API token have access to that zone?'
 
             logger.error('Encountered CloudFlareAPIError adding TXT record: %d %s', e, e)
             raise errors.PluginError('Error communicating with the Cloudflare API: {0}{1}'
@@ -204,6 +209,12 @@ class _CloudflareClient(object):
                 else:
                     logger.debug('Unrecognised CloudFlareAPIError while finding zone_id: %d %s. '
                                  'Continuing with next zone guess...', e, e)
+
+            if self.zone_ids and zone_name in self.zone_ids:
+                zone_id = self.zone_ids.get(zone_name)
+                logger.debug('Found zone_id of %s for %s using name %s from config file',
+                             zone_id, domain, zone_name)
+                return zone_id
 
             if zones:
                 zone_id = zones[0]['id']

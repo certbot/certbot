@@ -130,11 +130,25 @@ class CloudflareClientTest(unittest.TestCase):
         self.assertEqual(self.record_content, post_data['content'])
         self.assertEqual(self.record_ttl, post_data['ttl'])
 
+    def test_add_txt_record_zoneid_from_config(self):
+        self.cloudflare_client.zone_ids = {DOMAIN: self.zone_id}
+        self.cf.zones.get.side_effect = API_ERROR
+
+        self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
+                                              self.record_ttl)
+
+        self.cf.zones.dns_records.post.assert_called_with(self.zone_id, data=mock.ANY)
+
     def test_add_txt_record_error(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
 
-        self.cf.zones.dns_records.post.side_effect = CloudFlare.exceptions.CloudFlareAPIError(9109, '', '')
+        self.cf.zones.dns_records.post.side_effect = CloudFlare.exceptions.CloudFlareAPIError(1009, '', '')
+        self.assertRaises(
+            errors.PluginError,
+            self.cloudflare_client.add_txt_record,
+            DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
+        self.cf.zones.dns_records.post.side_effect = CloudFlare.exceptions.CloudFlareAPIError(10000, '', '')
         self.assertRaises(
             errors.PluginError,
             self.cloudflare_client.add_txt_record,
