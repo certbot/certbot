@@ -21,43 +21,14 @@ Credentials
 -----------
 
 Use of this plugin requires a configuration file containing Cloudflare API
-credentials, obtained from your Cloudflare
-`account page <https://dash.cloudflare.com/profile/api-tokens>`_.
+credentials.
 
-Previously, Cloudflare's "Global API Key" was used for authentication, however
-this key can access the entire Cloudflare API for all domains in your account,
-meaning it could cause a lot of damage if leaked.
+There are three ways to accomplish this. Using the `easy setup`_ or `advanced setup`_ is
+recommended, however requires at least version 2.3.1 of the ``cloudflare`` python module.
+If the version that automatically installed with this plugin is older than that,
+and you can't upgrade it on your system, you'll have to stick to the `legacy setup`_.
 
-Cloudflare's newer API Tokens can be restricted to specific domains and
-operations, and are therefore now the recommended authentication option.
-
-However, due to some shortcomings in Cloudflare's implementation of Tokens,
-Tokens created for Certbot currently require ``Zone:Zone:Read`` and ``Zone:DNS:Edit``
-permissions for **all** zones in your account. While this is not ideal, your Token
-will still have fewer permission than the Global key, so it's still worth doing.
-Hopefully Cloudflare will improve this in the future.
-
-Using Cloudflare Tokens also requires at least version 2.3.1 of the ``cloudflare``
-python module. If the version that automatically installed with this plugin is
-older than that, and you can't upgrade it on your system, you'll have to stick to
-the Global key.
-
-.. code-block:: ini
-   :name: certbot_cloudflare_token.ini
-   :caption: Example credentials file using restricted API Token (recommended):
-
-   # Cloudflare API token used by Certbot
-   dns_cloudflare_api_token = 0123456789abcdef0123456789abcdef01234567
-
-.. code-block:: ini
-   :name: certbot_cloudflare_key.ini
-   :caption: Example credentials file using Global API Key (not recommended):
-
-   # Cloudflare API credentials used by Certbot
-   dns_cloudflare_email = cloudflare@example.com
-   dns_cloudflare_api_key = 0123456789abcdef0123456789abcdef01234
-
-The path to this file can be provided interactively or using the
+The path to the configuration file can be provided interactively or using the
 ``--dns-cloudflare-credentials`` command-line argument. Certbot records the path
 to this file for use during renewal, but does not store the file's contents.
 
@@ -69,16 +40,73 @@ to this file for use during renewal, but does not store the file's contents.
    new certificates or revoke existing certificates for associated domains,
    even if those domains aren't being managed by this server.
 
-Certbot will emit a warning if it detects that the credentials file can be
+Certbot will emit a warning if it detects that the configuration file can be
 accessed by other users on your system. The warning reads "Unsafe permissions
-on credentials configuration file", followed by the path to the credentials
-file. This warning will be emitted each time Certbot uses the credentials file,
+on credentials configuration file", followed by the path to the file.
+This warning will be emitted each time Certbot uses the credentials file,
 including for renewal, and cannot be silenced except by addressing the issue
 (e.g., by using a command like ``chmod 600`` to restrict access to the file).
 
 
-Examples
---------
+Easy setup
+^^^^^^^^^^
+
+Create a Token in your `Cloudflare dashboard <https://dash.cloudflare.com/profile/api-tokens>`_
+with ``Zone:Zone:Read`` and ``Zone:DNS:Edit`` permissions for **all** zones in your account.
+If you wish to restrict token access on a per-zone level, follow the `advanced setup`_.
+
+Copy and save the token in a file like so:
+
+.. code-block:: ini
+   :name: certbot_cloudflare_token.ini
+   :caption: Example credentials file using API Token:
+
+   # Cloudflare API token used by Certbot
+   dns_cloudflare_api_token = 0123456789abcdef0123456789abcdef01234567
+
+
+Advanced setup
+^^^^^^^^^^^^^^
+
+Create a Token in your `Cloudflare dashboard <https://dash.cloudflare.com/profile/api-tokens>`_
+with ``Zone:DNS:Edit`` permissions for the specific zones for which you need certificates.
+
+You will also need to add the Zone ID for each zone(from the bottom right of each zone page in
+your dashboard) to the configuration file like so:
+
+.. code-block:: ini
+   :name: certbot_cloudflare_credentials.ini
+   :caption: Example credentials file using API Token with Zone IDs:
+
+   # Cloudflare API token used by Certbot
+   dns_cloudflare_api_token = 0123456789abcdef0123456789abcdef01234567
+
+   [dns_cloudflare_zone_ids]
+   example.com = 0123456789abcdef0123456789abcdef
+   example.org = 0123456789abcdef0123456789abcdef
+
+
+Legacy setup
+^^^^^^^^^^^^
+
+A Global Key was previously used by Cloudflare for authentication, however this key can access
+the entire Cloudflare API for all domains in your account, meaning it could cause a lot of
+damage if leaked. **If possible, you should use a Cloudflare Token.**
+
+Copy your Global Key from your `Cloudflare dashboard <https://dash.cloudflare.com/profile/api-tokens>`_
+and save it with your Cloudflare account's email address in the configuration file:
+
+.. code-block:: ini
+   :name: certbot_cloudflare_key.ini
+   :caption: Example credentials file using Global API Key:
+
+   # Cloudflare API credentials used by Certbot
+   dns_cloudflare_email = cloudflare@example.com
+   dns_cloudflare_api_key = 0123456789abcdef0123456789abcdef01234
+
+
+Usage
+-----
 
 .. code-block:: bash
    :caption: To acquire a certificate for ``example.com``
