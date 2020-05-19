@@ -51,7 +51,8 @@ including for renewal, and cannot be silenced except by addressing the issue
 Easy setup
 ^^^^^^^^^^
 
-Create a Token in your `Cloudflare dashboard <https://dash.cloudflare.com/profile/api-tokens>`_
+Create a Token in your
+`Cloudflare dashboard <https://dash.cloudflare.com/?to=/:account/profile/api-tokens>`_
 with ``Zone:Zone:Read`` and ``Zone:DNS:Edit`` permissions for **all** zones in your account.
 If you wish to restrict token access on a per-zone level, follow the `advanced setup`_.
 
@@ -68,7 +69,8 @@ Copy and save the token in a file like so:
 Advanced setup
 ^^^^^^^^^^^^^^
 
-Create a Token in your `Cloudflare dashboard <https://dash.cloudflare.com/profile/api-tokens>`_
+Create a Token in your
+`Cloudflare dashboard <https://dash.cloudflare.com/?to=/:account/profile/api-tokens>`_
 with ``Zone:DNS:Edit`` permissions for the specific zones for which you need certificates.
 
 You will also need to add the Zone ID for each zone(from the bottom right of each zone page in
@@ -94,8 +96,8 @@ the entire Cloudflare API for all domains in your account, meaning it could caus
 damage if leaked. **If possible, you should use a Cloudflare Token.**
 
 Copy your Global Key from your
-`Cloudflare dashboard <https://dash.cloudflare.com/profile/api-tokens>`_ and save it with your
-Cloudflare account's email address in the configuration file:
+`Cloudflare dashboard <https://dash.cloudflare.com/?to=/:account/profile/api-tokens>`_
+and save it with your Cloudflare account's email address in the configuration file:
 
 .. code-block:: ini
    :name: certbot_cloudflare_key.ini
