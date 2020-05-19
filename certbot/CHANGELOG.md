@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Improved error message in apache installer when mod_ssl is not available.
 
 ### Fixed
 
