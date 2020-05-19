@@ -15,7 +15,7 @@ description: |
    - Help you revoke the certificate if that ever becomes necessary.
 confinement: classic
 grade: devel
-base: core18
+base: core20
 adopt-info: certbot
 
 apps:
@@ -62,7 +62,7 @@ parts:
         snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC && git describe|sed s/^v//`
     # Workaround for lack of site-packages leading to empty sitecustomize.py
     stage:
-      - -usr/lib/python3.6/sitecustomize.py
+      - -usr/lib/python3.8/sitecustomize.py
   certbot-apache:
     plugin: python
     source: .
@@ -73,7 +73,7 @@ parts:
     stage-packages: [libaugeas0]
     stage:
       # Prefer cffi
-      - -lib/python3.6/site-packages/augeas.py
+      - -lib/python3.8/site-packages/augeas.py
   certbot-nginx:
     plugin: python
     source: .
