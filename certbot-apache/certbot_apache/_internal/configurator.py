@@ -596,7 +596,7 @@ class ApacheConfigurator(common.Installer):
         self.prepare_server_https("443")
 
         # If we haven't managed to enable mod_ssl by this point, error out
-        if "ssl_module" not in self.parser.modules or not self.parser.modules["ssl_module"]:
+        if "ssl_module" not in self.parser.modules:
             raise errors.MisconfigurationError("Could not find ssl_module; "
                 "not installing certificate.")
 
