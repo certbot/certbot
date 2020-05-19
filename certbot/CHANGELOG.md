@@ -14,6 +14,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+* Add ability to override Cloudflare zone ID lookups in config file to allow greater
+  restriction of API Token permissions.
+
 * Add support for OCSP responses which use a public key hash ResponderID, fixing
   interoperability with Sectigo CAs.
 
