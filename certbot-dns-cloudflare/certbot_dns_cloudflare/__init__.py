@@ -93,8 +93,9 @@ A Global Key was previously used by Cloudflare for authentication, however this 
 the entire Cloudflare API for all domains in your account, meaning it could cause a lot of
 damage if leaked. **If possible, you should use a Cloudflare Token.**
 
-Copy your Global Key from your `Cloudflare dashboard <https://dash.cloudflare.com/profile/api-tokens>`_
-and save it with your Cloudflare account's email address in the configuration file:
+Copy your Global Key from your
+`Cloudflare dashboard <https://dash.cloudflare.com/profile/api-tokens>`_ and save it with your
+Cloudflare account's email address in the configuration file:
 
 .. code-block:: ini
    :name: certbot_cloudflare_key.ini
