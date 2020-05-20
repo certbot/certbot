@@ -30,7 +30,7 @@ def get_email(invalid=False, optional=True):
 
     """
     invalid_prefix = "There seem to be problems with that address. "
-    msg = "Enter email address (used for urgent renewal and security notices)"
+    msg = "Enter email address (used for urgent renewal and security notices)\n"
     unsafe_suggestion = ("\n\nIf you really want to skip this, you can run "
                          "the client with --register-unsafely-without-email "
                          "but make sure you then backup your account key from "
@@ -64,7 +64,7 @@ def get_email(invalid=False, optional=True):
         if util.safe_email(email):
             return email
         if suggest_unsafe:
-            msg += unsafe_suggestion
+            msg = unsafe_suggestion + msg
             suggest_unsafe = False  # add this message at most once
 
         invalid = bool(email)

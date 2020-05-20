@@ -6,7 +6,7 @@ from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-version = '1.4.0.dev0'
+version = '1.5.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
