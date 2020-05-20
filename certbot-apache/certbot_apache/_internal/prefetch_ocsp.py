@@ -392,13 +392,12 @@ class OCSPPrefetchMixin(object):
             return
 
         if lineage.cert_path in self._ocsp_prefetch:
-            pf = self._ocsp_prefetch[lineage.cert_path]
             try:
-                self._ocsp_try_refresh(lineage.cert_path)
+                self._ocsp_try_refresh(lineage.cert_path, lineage.chain_path)
             except OCSPCertificateError:
                 # This error was logged and handled already down the stack. Return to avoid save.
                 return
-            self._ocsp_prefetch_save(lineage.cert_path, pf["chain_path"])
+            self._ocsp_prefetch_save(lineage.cert_path, lineage.chain_path)
 
     def update_ocsp_prefetch(self, _unused_lineage, *_unused_args, **_unused_kwargs):
         """Checks all certificates that are managed by OCSP prefetch, and
@@ -413,28 +412,27 @@ class OCSPPrefetchMixin(object):
         for cert_path in list(self._ocsp_prefetch):
             pf = self._ocsp_prefetch[cert_path]
             if self._ocsp_refresh_needed(pf["lastupdate"]):
+                chain_path = pf["chain_path"]
                 try:
-                    self._ocsp_try_refresh(cert_path)
+                    self._ocsp_try_refresh(cert_path, chain_path)
                 except OCSPCertificateError:
                     # We want to skip saving in this case, as we just removed the
                     # certificate from prefetch pool.
                     continue
-                self._ocsp_prefetch_save(cert_path, pf["chain_path"])
+                self._ocsp_prefetch_save(cert_path, chain_path)
 
-    def _ocsp_try_refresh(self, cert_path):
+    def _ocsp_try_refresh(self, cert_path, chain_path):
         """Attempt to refresh OCSP staple for a certificate.
 
         :param str cert_path: Path to certificate
+        :param str chain_path: Filesystem path to certificate chain file
 
         :raises OCSPCertificateError: If the given certificate should be
             removed from the OCSP prefetch pool.
 
         """
-
-        pf = self._ocsp_prefetch[cert_path]
-
         try:
-            self._ocsp_refresh(cert_path, pf["chain_path"])
+            self._ocsp_refresh(cert_path, chain_path)
         except OCSPCertificateError as err:
             self._ocsp_prefetch_remove(cert_path)
             msg = ("Error when trying to prefetch OCSP staple: {} " +
