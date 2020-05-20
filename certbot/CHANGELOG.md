@@ -42,7 +42,6 @@ More details about these changes can be found on our GitHub repo.
 
 * OCSP prefetching functionality for Apache plugin that attempts to refresh the OCSP
   response cache for managed certificates when scheduled Certbot renew is being run. 
-* Added certbot.ocsp Certbot's API. The certbot.ocsp module can be used to 
 * Turn off session tickets for apache plugin by default when appropriate.
 * Added serial number of certificate to the output of `certbot certificates`
 * Expose two new environment variables in the authenticator and cleanup scripts used by
