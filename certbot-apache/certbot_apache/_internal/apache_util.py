@@ -17,10 +17,8 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import util
 
+from certbot.compat import filesystem
 from certbot.compat import os
-
-# TEMPORARY WORKAROUND
-import os as stdlib_os
 
 
 logger = logging.getLogger(__name__)
@@ -68,9 +66,18 @@ def certid_sha1(cert_path):
 
 
 def safe_copy(source, target):
-    """Copies a file, while verifying the target integrity
-    with the source. Retries twice if the initial
-    copy fails.
+    """Copies a file preserving its integrity and permissions.
+
+    After the file is copied, the access permissions from the source
+    file are copied to the target file. The fact that these attributes
+    are not done atomically with the initial copy may be important for
+    some uses of this function.
+
+    After the permissions are applied, a check is done that the copied
+    file matches the source file.
+
+    If any of this process fails, it will be retried twice before an
+    exception is raised.
 
     :param str source: File path of the source file
     :param str target: File path of the target file
@@ -78,21 +85,13 @@ def safe_copy(source, target):
     :raises: .errors.PluginError: If file cannot be
         copied or the target file hash does not match
         with the source file.
-    """
-    orig_perms = None
-    try:
-        orig_perms = stdlib_os.stat(target)
-    except OSError:
-        # target file was not found
-        pass
 
+    """
     for _ in range(3):
         try:
             shutil.copy2(source, target)
-            if orig_perms:
-                stdlib_os.chown(target, orig_perms.st_uid)
-                stdlib_os.chmod(target, oct(orig_perms.st_mode & 0o777))
-        except IOError as e:
+            filesystem.copy_ownership_and_mode(source, target)
+        except EnvironmentError as e:
             emsg = "Could not copy {} to {}: {}".format(
                 source, target, e
             )
