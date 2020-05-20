@@ -150,6 +150,7 @@ class OCSPPrefetchMixin(object):
         """
 
         self._ensure_ocsp_dirs()
+        # Ensure cert_path exists before trying to use it.
         if not os.path.isfile(cert_path):
             raise OCSPCertificateError("Certificate has been removed from the system.")
         ocsp_workfile = os.path.join(
