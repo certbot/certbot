@@ -220,9 +220,9 @@ class OCSPPrefetchTest(util.ApacheTest):
 
     @mock.patch("certbot_apache._internal.constants.OCSP_INTERNAL_TTL", 0)
     def test_ocsp_prefetch_refresh(self):
-        def ocsp_req_mock(_cert, _chain, _timeout, workfile):
+        def ocsp_req_mock(_cert, _chain, response_file):
             """Method to mock the OCSP request and write response to file"""
-            with open(workfile, 'w') as fh:
+            with open(response_file, 'w') as fh:
                 fh.write("MOCKRESPONSE")
             return False
 
