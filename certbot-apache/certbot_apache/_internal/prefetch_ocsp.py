@@ -157,16 +157,16 @@ class OCSPPrefetchMixin(object):
             apache_util.certid_sha1_hex(cert_path))
         handler = ocsp.RevocationChecker()
         try:
-            if not handler.ocsp_revoked_by_paths(cert_path, chain_path, 10, ocsp_workfile):
+            if handler.ocsp_revoked_by_paths(cert_path, chain_path, response_file=ocsp_workfile):
+                logger.warning("Encountered an issue while trying to prefetch OCSP "
+                               "response for certificate: %s", cert_path)
+                raise OCSPCertificateError("Certificate has been revoked.")
+            else:
                 # Guaranteed good response
                 cert_sha = apache_util.certid_sha1(cert_path)
                 # dbm.open automatically adds the file extension
                 self._write_to_dbm(self._ocsp_store, cert_sha,
                                    self._ocsp_response_dbm(ocsp_workfile))
-            else:
-                logger.warning("Encountered an issue while trying to prefetch OCSP "
-                               "response for certificate: %s", cert_path)
-                raise OCSPCertificateError("Certificate has been revoked.")
         finally:
             try:
                 os.remove(ocsp_workfile)
