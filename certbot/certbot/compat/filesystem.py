@@ -237,8 +237,19 @@ def makedirs(file_path, mode=0o777):
                      will be applied if ``None``
     """
     if POSIX_MODE:
-        return os.makedirs(file_path, mode)
+        # Since Python 3.7, os.makedirs does not set the given mode to the intermediate directories
+        # that could be created in the process. To keep things safe and consistent on all
+        # Python versions, we set the umask accordingly to have all directories (intermediate and
+        # leaf) created with the given mode.
+        current_umask = os.umask(0)
+        try:
+            os.umask(current_umask | 0o777 ^ mode)
+            return os.makedirs(file_path, mode)
+        finally:
+            os.umask(current_umask)
 
+    # TODO: Windows does not support umask. A specific PR (#7967) is handling this, and will need
+    #       to add appropriate umask call for the Windows part of the logic below.
     orig_mkdir_fn = os.mkdir
     try:
         # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
