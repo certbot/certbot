@@ -238,7 +238,7 @@ def makedirs(file_path, mode=0o777):
     """
     if POSIX_MODE:
         # Since Python 3.7, os.makedirs does not set the given mode to the intermediate directories
-        # that could be created in the process. To keep things safe and being consistent on all
+        # that could be created in the process. To keep things safe and consistent on all
         # Python versions, we set the umask accordingly to have all directories (intermediate and
         # leaf) created with the given mode.
         current_umask = os.umask(0)
