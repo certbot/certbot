@@ -282,6 +282,7 @@ class OCSPPrefetchMixin(object):
         """
         self._ocsp_prefetch.pop(cert_path)
         self.storage.put("ocsp_prefetch", self._ocsp_prefetch)
+        self.storage.save()
 
     def _ocsp_prefetch_fetch_state(self):
         """
