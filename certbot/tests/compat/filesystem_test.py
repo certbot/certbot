@@ -280,6 +280,24 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         self.assertEqual(original_mkdir, std_os.mkdir)
 
 
+@unittest.skipUnless(POSIX_MODE, reason='Needs umask to succeed, and Windows does not have it')
+class LinuxMkdirTests(test_util.TempDirTestCase):
+    """Unit tests for Linux mkdir + makedirs functions in filesystem module"""
+    def test_makedirs_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'dir')
+        subpath = os.path.join(path, 'subpath')
+
+        previous_umask = os.umask(0o755)
+
+        try:
+            filesystem.makedirs(subpath, 0o700)
+
+            assert os.stat(path).st_mode == 0o700
+            assert os.stat(subpath).st_mode == 0o700
+        finally:
+            os.umask(previous_umask)
+
+
 class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
     """Tests about copy_ownership_and_apply_mode, copy_ownership_and_mode and has_same_ownership"""
     def setUp(self):
