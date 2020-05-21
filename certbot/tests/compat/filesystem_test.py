@@ -280,6 +280,7 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         self.assertEqual(original_mkdir, std_os.mkdir)
 
 
+# TODO: This test can be used both by Linux and Windows once on #7967
 @unittest.skipUnless(POSIX_MODE, reason='Needs umask to succeed, and Windows does not have it')
 class LinuxMkdirTests(test_util.TempDirTestCase):
     """Unit tests for Linux mkdir + makedirs functions in filesystem module"""
