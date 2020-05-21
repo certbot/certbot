@@ -1,5 +1,6 @@
 """Certbot client interfaces."""
 import abc
+import enum
 
 import six
 import zope.interface
@@ -588,6 +589,41 @@ class RenewableCert(object):
         :raises .CertStorageError: if could not find cert file.
 
         """
+
+
+@six.add_metaclass(abc.ABCMeta):
+class OCSPResponse(object):
+    """I'll have a real description someday."""
+
+    @abc.abstractproperty
+    def certificate_status(self):
+        """Cert status
+
+        :rtype: OCSPCertStatus
+
+        """
+
+    @abc.abstractproperty
+    def next_update(self):
+        """Next update
+
+        :rtype: stdlib datetime thing
+
+        """
+
+    @abc.abstractpoperty
+    def raw_bytes(self):
+        """Raw bytes of the OCSP Response
+
+        :rtype: bytes
+
+        """
+
+
+class OCSPCertStatus(enum):
+    GOOD = 1
+    REVOKED = 2
+
 
 # Updater interfaces
 #
