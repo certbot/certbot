@@ -159,8 +159,6 @@ class OCSPPrefetchMixin(object):
         handler = ocsp.RevocationChecker()
         try:
             if handler.ocsp_revoked_by_paths(cert_path, chain_path, response_file=ocsp_workfile):
-                logger.warning("Encountered an issue while trying to prefetch OCSP "
-                               "response for certificate: %s", cert_path)
                 raise OCSPCertificateError("Certificate has been revoked.")
             else:
                 # Guaranteed good response
