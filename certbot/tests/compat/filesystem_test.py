@@ -1,6 +1,7 @@
 """Tests for certbot.compat.filesystem"""
 import contextlib
 import errno
+import stat
 import unittest
 
 try:
@@ -288,13 +289,14 @@ class LinuxMkdirTests(test_util.TempDirTestCase):
         path = os.path.join(self.tempdir, 'dir')
         subpath = os.path.join(path, 'subpath')
 
-        previous_umask = os.umask(0o755)
+        previous_umask = os.umask(0o022)
 
         try:
             filesystem.makedirs(subpath, 0o700)
 
-            assert os.stat(path).st_mode == 0o700
-            assert os.stat(subpath).st_mode == 0o700
+            import os as std_os  # pylint: disable=os-module-forbidden
+            assert stat.S_IMODE(std_os.stat(path).st_mode) == 0o700
+            assert stat.S_IMODE(std_os.stat(subpath).st_mode) == 0o700
         finally:
             os.umask(previous_umask)
 
