@@ -231,18 +231,11 @@ matrix:
             - libaugeas0
       <<: *extended-test-suite
     - stage: "Snap"
-      sudo: required
-      env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble
+      env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=amd64
       addons:
         apt:
           packages:
           - nginx-light
-        snaps:
-          - name: snapcraft
-            channel: stable
-            confinement: classic
-          - name: lxd
-            channel: stable
       git:
         # By default, Travis clones the repo to a depth of 50 commits which can
         # break the ability to use `git describe` to set the version of the
@@ -273,6 +266,33 @@ matrix:
         # skip_cleanup is needed to prevent Travis from deleting the snaps we
         # just built and tested. See
         # https://docs.travis-ci.com/user/deployment#uploading-files-and-skip_cleanup.
+        skip_cleanup: true
+      <<: *extended-test-suite
+    # See detailed reasoning for snap tests configuration juste above.
+    - env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=arm64
+      git:
+        depth: false
+      deploy:
+        'on':
+          all_branches: true
+          condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
+          repo: certbot/certbot
+        provider: snap
+        snap: certbot_*.snap
+        channel: edge
+        skip_cleanup: true
+      <<: *extended-test-suite
+    - env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=armhf
+      git:
+        depth: false
+      deploy:
+        'on':
+          all_branches: true
+          condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
+          repo: certbot/certbot
+        provider: snap
+        snap: certbot_*.snap
+        channel: edge
         skip_cleanup: true
       <<: *extended-test-suite
 
