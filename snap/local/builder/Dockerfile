@@ -6,7 +6,7 @@ COPY qemu-${QEMU_ARCH}-static /usr/bin/
 
 # Grab dependencies
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl jq squashfs-tools \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl jq squashfs-tools \
  && rm -rf /var/lib/apt/lists/*
 
 ARG SNAP_ARCH
@@ -47,7 +47,7 @@ COPY --from=builder /snap/bin/snapcraft /snap/bin/snapcraft
 
 # Generate locale and add runtime dependencies
 RUN apt-get update \
- && apt-get install -y --no-install-recommends sudo locales git \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends sudo locales git \
  && locale-gen en_US.UTF-8 \
  && rm -rf /var/lib/apt/lists/*
 
