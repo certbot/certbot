@@ -14,7 +14,7 @@ from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 
-ACCOUNT_URL = 'https://dash.cloudflare.com/profile/api-tokens'
+ACCOUNT_URL = 'https://dash.cloudflare.com/?to=/:account/profile/api-tokens'
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -118,7 +118,7 @@ class _CloudflareClient(object):
             code = int(e)
             hint = None
 
-            if code == 9109:
+            if code == 10000:
                 hint = 'Does your API token have "Zone:DNS:Edit" permissions?'
 
             logger.error('Encountered CloudFlareAPIError adding TXT record: %d %s', e, e)
