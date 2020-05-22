@@ -11,7 +11,7 @@ before_script:
   # Use Travis retry feature for farm tests since they are flaky
   - 'if [[ "$TOXENV" == "travis-test-farm"* ]]; then export TRAVIS_RETRY=travis_retry; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
-  - 'if [[ "$SNAP" == true ]]; then snap/local/build_and_install.sh amd64; fi'
+  - 'if [[ "$SNAP" == true ]]; then snap/local/build_and_install.sh $TARGET_ARCH; fi'
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-`, `travis-test-`, or of the form `digit(s).digit(s).x` or
