@@ -1,5 +1,5 @@
 #!/bin/bash
-set -emx
+set -ex
 
 if [[ -z "${TRAVIS}" ]]; then
     echo "This script makes global changes to the system it is run on so should only be run in CI."
@@ -14,10 +14,11 @@ if [[ -z "${SNAP_ARCH}" ]]; then
 fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+CERTBOT_DIR="$(dirname $(dirname "${DIR}"))"
 
-source "${DIR}/builder/common.sh"
+source "${DIR}/common_libs.sh"
 
-"${DIR}/builder/prepare.sh" "${SNAP_ARCH}"
+"${DIR}/prepare_builder.sh" "${SNAP_ARCH}"
 
 docker run --net=host -d --rm -v "${DIR}/packages:/data/packages" --name pypiserver pypiserver/pypiserver
 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > snap-constraints.txt
@@ -31,10 +32,10 @@ trap cleanup EXIT
 docker run \
   --rm \
   --net=host \
-  -v "$(pwd):$(pwd)" \
-  -w "$(pwd)" \
+  -v "${CERTBOT_DIR}:${CERTBOT_DIR}" \
+  -w "${CERTBOT_DIR}" \
   -e "PIP_EXTRA_INDEX_URL=http://localhost:8080/simple" \
-  -t "builder:${SNAP_ARCH}" \
+  "builder:${SNAP_ARCH}" \
   snapcraft
 
 if [[ "$(arch)" == "$(GetQemuArch "${SNAP_ARCH}")" ]]; then
