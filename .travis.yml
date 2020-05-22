@@ -232,6 +232,7 @@ matrix:
       <<: *extended-test-suite
     - stage: "Snap"
       env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=amd64
+      dist: bionic
       addons:
         apt:
           packages:
@@ -270,6 +271,7 @@ matrix:
       <<: *not-on-master
     # See detailed reasoning for snap tests configuration juste above.
     - env: SNAP=true TARGET_ARCH=arm64
+      dist: bionic
       addons:
         apt:
           packages:
@@ -287,6 +289,7 @@ matrix:
       #   skip_cleanup: true
       <<: *not-on-master
     - env: SNAP=true TARGET_ARCH=armhf
+      dist: bionic
       addons:
         apt:
           packages:
