@@ -269,7 +269,7 @@ matrix:
         skip_cleanup: true
       <<: *not-on-master
     # See detailed reasoning for snap tests configuration juste above.
-    - env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=arm64
+    - env: SNAP=true TARGET_ARCH=arm64
       addons:
         apt:
           packages:
@@ -286,7 +286,7 @@ matrix:
       #   channel: edge
       #   skip_cleanup: true
       <<: *not-on-master
-    - env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=armhf
+    - env: SNAP=true TARGET_ARCH=armhf
       addons:
         apt:
           packages:
@@ -332,7 +332,7 @@ install: 'tools/pip_install.py -I tox virtualenv'
 # script command. It is set only to `travis_retry` during farm tests, in
 # order to trigger the Travis retry feature, and compensate the inherent
 # flakiness of these specific tests.
-script: '$TRAVIS_RETRY tox'
+script: 'if [[ ! -z "$TOXENV" ]]; then $TRAVIS_RETRY tox; fi'
 
 notifications:
   email: false
