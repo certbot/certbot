@@ -48,6 +48,8 @@ parts:
     source-subdir: acme
     constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-version: python3
+    # To build cryptography and cffi if needed
+    build-packages: [libffi-dev, libssl-dev]
   certbot:
     plugin: python
     source: .
