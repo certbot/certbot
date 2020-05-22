@@ -1,4 +1,8 @@
 #!/bin/bash
+# Cross-compile the Certbot snap from local sources for the specified architecture,
+# and install it if this architecture is also the the current machine one.
+# This script is designed for CI tests purpose.
+# Usage: build_and_install.sh [amd64,arm64,armhf]
 set -ex
 
 if [[ -z "${TRAVIS}" ]]; then

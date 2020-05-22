@@ -1,4 +1,5 @@
 #!/bin/bash
+# Common bash functions useful for cross-compiling Certbot snaps.
 
 # Returns the translation from Snap architecture to Docker architecture
 # Usage: GetQemuArch [amd64|arm64|armhf]

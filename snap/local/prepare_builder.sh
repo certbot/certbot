@@ -1,4 +1,5 @@
 #!/bin/bash
+# Build a snapcraft docker suitable for cross-compilation of snaps on foreign architectures.
 set -ex
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"

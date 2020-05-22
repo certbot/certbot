@@ -1,4 +1,7 @@
 #!/bin/bash
+# Cross-compile cryptography and cffi native wheels for arm64 and armhf architectures,
+# on the versions required by the current pinning of Certbot dependencies.
+# Wheels are stored in snap/local/packages folder to speed up cross-compilation of Certbot snap.
 set -ex
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
