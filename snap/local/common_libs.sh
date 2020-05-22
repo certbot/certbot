@@ -43,9 +43,10 @@ GetQemuArch() {
 }
 
 # Downloads QEMU static binary file for architecture
-# Usage: DownloadQemuStatic [x86_64|aarch64|arm]
+# Usage: DownloadQemuStatic [x86_64|aarch64|arm] DEST_DIR
 DownloadQemuStatic() {
     QEMU_ARCH=$1
+    DEST_DIR=$2
 
     if [ ! -f "${DIR}/qemu-${QEMU_ARCH}-static" ]; then
         QEMU_DOWNLOAD_URL="https://github.com/multiarch/qemu-user-static/releases/download"
