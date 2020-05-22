@@ -133,7 +133,7 @@ class CloudflareClientTest(unittest.TestCase):
     def test_add_txt_record_error(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
 
-        self.cf.zones.dns_records.post.side_effect = CloudFlare.exceptions.CloudFlareAPIError(9109, '', '')
+        self.cf.zones.dns_records.post.side_effect = CloudFlare.exceptions.CloudFlareAPIError(10000, '', '')
 
         self.assertRaises(
             errors.PluginError,
