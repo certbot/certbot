@@ -41,55 +41,55 @@ extended-test-suite: &extended-test-suite
 
 matrix:
   include:
-    # Main test suite
-    - stage: "Test"
-      python: "2.7"
-      env: ACME_SERVER=pebble TOXENV=integration
-      <<: *not-on-master
+    # # Main test suite
+    # - stage: "Test"
+    #   python: "2.7"
+    #   env: ACME_SERVER=pebble TOXENV=integration
+    #   <<: *not-on-master
 
-    # As documented at
-    # https://docs.travis-ci.com/user/build-stages/#how-to-define-build-stages,
-    # the previous stage will be automatically applied to all subsequent jobs
-    # until a new stage is defined.
+    # # As documented at
+    # # https://docs.travis-ci.com/user/build-stages/#how-to-define-build-stages,
+    # # the previous stage will be automatically applied to all subsequent jobs
+    # # until a new stage is defined.
 
-    # This job is always executed, including on master
-    - python: "3.8"
-      env: TOXENV=py38-cover FYI="py38 tests + code coverage"
+    # # This job is always executed, including on master
+    # - python: "3.8"
+    #   env: TOXENV=py38-cover FYI="py38 tests + code coverage"
 
-    - python: "3.7"
-      env: TOXENV=lint
-      <<: *not-on-master
-    - python: "3.5"
-      env: TOXENV=mypy
-      <<: *not-on-master
-    - python: "2.7"
-      # Ubuntu Trusty or older must be used because the oldest version of
-      # cryptography we support cannot be compiled against the version of
-      # OpenSSL in Xenial or newer.
-      dist: trusty
-      env: TOXENV='py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest'
-      <<: *not-on-master
-    - python: "2.7"
-      env: TOXENV=py27
-      <<: *not-on-master
-    - python: "3.5"
-      env: TOXENV=py35
-      <<: *not-on-master
-    - sudo: required
-      env: TOXENV=apache_compat
-      services: docker
-      addons:
-      <<: *not-on-master
-    - sudo: required
-      env: TOXENV=le_auto_xenial
-      services: docker
-      <<: *not-on-master
-    - python: "2.7"
-      env: TOXENV=apacheconftest-with-pebble
-      <<: *not-on-master
-    - python: "2.7"
-      env: TOXENV=nginxroundtrip
-      <<: *not-on-master
+    # - python: "3.7"
+    #   env: TOXENV=lint
+    #   <<: *not-on-master
+    # - python: "3.5"
+    #   env: TOXENV=mypy
+    #   <<: *not-on-master
+    # - python: "2.7"
+    #   # Ubuntu Trusty or older must be used because the oldest version of
+    #   # cryptography we support cannot be compiled against the version of
+    #   # OpenSSL in Xenial or newer.
+    #   dist: trusty
+    #   env: TOXENV='py27-{acme,apache,apache-v2,certbot,dns,nginx}-oldest'
+    #   <<: *not-on-master
+    # - python: "2.7"
+    #   env: TOXENV=py27
+    #   <<: *not-on-master
+    # - python: "3.5"
+    #   env: TOXENV=py35
+    #   <<: *not-on-master
+    # - sudo: required
+    #   env: TOXENV=apache_compat
+    #   services: docker
+    #   addons:
+    #   <<: *not-on-master
+    # - sudo: required
+    #   env: TOXENV=le_auto_xenial
+    #   services: docker
+    #   <<: *not-on-master
+    # - python: "2.7"
+    #   env: TOXENV=apacheconftest-with-pebble
+    #   <<: *not-on-master
+    # - python: "2.7"
+    #   env: TOXENV=nginxroundtrip
+    #   <<: *not-on-master
 
     # Extended test suite on cron jobs and pushes to tested branches other than master
     - sudo: required
@@ -244,57 +244,65 @@ matrix:
         # https://docs.travis-ci.com/user/customizing-the-build#git-clone-depth
         # for more info.
         depth: false
-      deploy:
-        # This section relies on credentials stored in a SNAP_TOKEN environment
-        # variable in Travis. See
-        # https://docs.travis-ci.com/user/deployment/snaps/ for more info.
-        # This credential has a maximum lifetime of 1 year and the current
-        # credential will expire on 4/22/2021. The value of SNAP_TOKEN will
-        # need to be updated to use a new credential before then to prevent
-        # automated deploys from breaking. Remembering to do this is also
-        # tracked by https://github.com/certbot/certbot/issues/7931.
-        'on':
-          # Deploy on release tags or nightly runs from any branch. We only try
-          # to deploy from the certbot/certbot repo to prevent errors if forks
-          # of this repo try to run tests.
-          all_branches: true
-          condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
-          repo: certbot/certbot
-        provider: snap
-        snap: certbot_*.snap
-        channel: edge
-        # skip_cleanup is needed to prevent Travis from deleting the snaps we
-        # just built and tested. See
-        # https://docs.travis-ci.com/user/deployment#uploading-files-and-skip_cleanup.
+      # deploy:
+      #   # This section relies on credentials stored in a SNAP_TOKEN environment
+      #   # variable in Travis. See
+      #   # https://docs.travis-ci.com/user/deployment/snaps/ for more info.
+      #   # This credential has a maximum lifetime of 1 year and the current
+      #   # credential will expire on 4/22/2021. The value of SNAP_TOKEN will
+      #   # need to be updated to use a new credential before then to prevent
+      #   # automated deploys from breaking. Remembering to do this is also
+      #   # tracked by https://github.com/certbot/certbot/issues/7931.
+      #   'on':
+      #     # Deploy on release tags or nightly runs from any branch. We only try
+      #     # to deploy from the certbot/certbot repo to prevent errors if forks
+      #     # of this repo try to run tests.
+      #     all_branches: true
+      #     condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
+      #     repo: certbot/certbot
+      #   provider: snap
+      #   snap: certbot_*.snap
+      #   channel: edge
+      #   # skip_cleanup is needed to prevent Travis from deleting the snaps we
+      #   # just built and tested. See
+      #   # https://docs.travis-ci.com/user/deployment#uploading-files-and-skip_cleanup.
         skip_cleanup: true
-      <<: *extended-test-suite
+      <<: *not-on-master
     # See detailed reasoning for snap tests configuration juste above.
     - env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=arm64
+      addons:
+        apt:
+          packages:
+          - nginx-light
       git:
         depth: false
-      deploy:
-        'on':
-          all_branches: true
-          condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
-          repo: certbot/certbot
-        provider: snap
-        snap: certbot_*.snap
-        channel: edge
-        skip_cleanup: true
-      <<: *extended-test-suite
+      # deploy:
+      #   'on':
+      #     all_branches: true
+      #     condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
+      #     repo: certbot/certbot
+      #   provider: snap
+      #   snap: certbot_*.snap
+      #   channel: edge
+      #   skip_cleanup: true
+      <<: *not-on-master
     - env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=armhf
+      addons:
+        apt:
+          packages:
+          - nginx-light
       git:
         depth: false
-      deploy:
-        'on':
-          all_branches: true
-          condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
-          repo: certbot/certbot
-        provider: snap
-        snap: certbot_*.snap
-        channel: edge
-        skip_cleanup: true
-      <<: *extended-test-suite
+      # deploy:
+      #   'on':
+      #     all_branches: true
+      #     condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
+      #     repo: certbot/certbot
+      #   provider: snap
+      #   snap: certbot_*.snap
+      #   channel: edge
+      #   skip_cleanup: true
+      <<: *not-on-master
 
 # container-based infrastructure
 sudo: false
