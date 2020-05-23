@@ -57,7 +57,7 @@ DownloadQemuStatic() {
             | cut -d '"' -f 4)
         echo "${QEMU_DOWNLOAD_URL}/${QEMU_LATEST_TAG}/x86_64_qemu-${QEMU_ARCH}-static.tar.gz"
         curl -SL "${QEMU_DOWNLOAD_URL}/${QEMU_LATEST_TAG}/x86_64_qemu-${QEMU_ARCH}-static.tar.gz" \
-            | tar xzv -C "${DIR}"
+            | tar xzv -C "${DEST_DIR}"
     fi
 }
 
