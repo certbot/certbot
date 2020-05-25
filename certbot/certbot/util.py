@@ -539,17 +539,10 @@ def enforce_domain_sanity(domain):
                 )
             )
 
+# there was ip address check : removed for support ip address
     # Explain separately that IP addresses aren't allowed (apart from not
     # being FQDNs) because hope springs eternal concerning this point
-    try:
-        socket.inet_aton(domain)
-        raise errors.ConfigurationError(
-            "Requested name {0} is an IP address. The Let's Encrypt "
-            "certificate authority will not issue certificates for a "
-            "bare IP address.".format(domain))
-    except socket.error:
-        # It wasn't an IP address, so that's good
-        pass
+
 
     # FQDN checks according to RFC 2181: domain name should be less than 255
     # octets (inclusive). And each label is 1 - 63 octets (inclusive).
@@ -565,6 +558,21 @@ def enforce_domain_sanity(domain):
             raise errors.ConfigurationError("{0} label {1} is too long.".format(msg, l))
 
     return domain
+
+
+def is_ipaddress(address):
+    """this function check if input name is actually an IP(v4 or v6) address"""
+    try:
+        socket.inet_pton(socket.AF_INET, address)
+        # If this line runs it was ip address (ipv4)
+        return True
+    except socket.error:
+        # It wasn't an IPv4 address, so try ipv6
+        try:
+            socket.inet_pton(socket.AF_INET6, address)
+            return True
+        except socket.error:
+            return False
 
 
 def is_wildcard_domain(domain):

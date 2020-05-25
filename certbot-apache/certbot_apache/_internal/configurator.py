@@ -706,6 +706,15 @@ class ApacheConfigurator(common.Installer):
         :raises .errors.PluginError: If no vhost is available or chosen
 
         """
+
+        if util.is_ipaddress(target_name):
+            # ip address is currently doesn't work
+            logger.error(
+                "Currently plugin doesn't support installing cert for ip address %s",
+                target_name)
+            raise errors.PluginError(
+                "Currently plugin doesn't support installing cert for ip address")
+
         # Allows for domain names to be associated with a virtual host
         if target_name in self.assoc:
             return self.assoc[target_name]

@@ -983,10 +983,6 @@ class MainTest(test_util.ConfigTestCase):
         self.assertRaises(errors.ConfigurationError,
                           self._call,
                           ['-d', (('a' * 50) + '.') * 10])
-        # Bare IP address (this is actually a different error message now)
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['-d', '204.11.231.35'])
 
     def test_csr_with_besteffort(self):
         self.assertRaises(

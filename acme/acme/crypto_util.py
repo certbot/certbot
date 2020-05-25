@@ -199,11 +199,20 @@ def make_csr(private_key_pem, domains, must_staple=False):
     private_key = crypto.load_privatekey(
         crypto.FILETYPE_PEM, private_key_pem)
     csr = crypto.X509Req()
+    #as our 'domains' are no longer strictly domains, so check for ip address
+    sanlist = []
+    for address in domains:
+        if _is_ip(address):
+            sanlist.append('IP:' + address)
+        else:
+            sanlist.append('DNS:' + address)
+# strict type check for debug
+    san_string = ', '.join(sanlist).encode('ascii')
     extensions = [
         crypto.X509Extension(
             b'subjectAltName',
             critical=False,
-            value=', '.join('DNS:' + d for d in domains).encode('ascii')
+            value=san_string
         ),
     ]
     if must_staple:
@@ -229,6 +238,7 @@ def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
 
 
 def _pyopenssl_cert_or_req_san(cert_or_req):
+    #for some reason this always return nothing
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
 
     .. todo:: Implement directly in PyOpenSSL!
@@ -269,6 +279,45 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
 
     return [part.split(part_separator)[1]
             for part in sans_parts if part.startswith(prefix)]
+
+def _pyopenssl_cert_or_req_san_ip(cert_or_req):
+    """Get Subject Alternative Names IPs from certificate or CSR using pyOpenSSL.
+
+    .. note:: Although this is `acme` internal API, it is used by
+        `letsencrypt`.
+
+    :param cert_or_req: Certificate or CSR.
+    :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
+
+    :returns: A list of Subject Alternative Names.
+    :rtype: `list` of `unicode`
+
+    """
+    # This function finds SANs by dumping the certificate/CSR to text and
+    # searching for "X509v3 Subject Alternative Name" in the text. This method
+    # is used to support PyOpenSSL version 0.13 where the
+    # `_subjectAltNameString` and `get_extensions` methods are not available
+    # for CSRs.
+
+    # constants based on PyOpenSSL certificate/CSR text dump
+    part_separator = ":"
+    parts_separator = ", "
+    prefix = "IP Address" + part_separator
+
+    if isinstance(cert_or_req, crypto.X509):
+        # pylint: disable=line-too-long
+        func = crypto.dump_certificate # type: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]]
+    else:
+        func = crypto.dump_certificate_request
+    text = func(crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
+    # WARNING: this function does not support multiple SANs extensions.
+    # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
+    match = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)
+    # WARNING: this function assumes that no SAN can include
+    # parts_separator, hence the split!
+    sans_parts = [] if match is None else match.group(1).split(parts_separator)
+    # "IP Address:" is 11 letters so remove first 11 letters from part
+    return [part[11:] for part in sans_parts if part.startswith(prefix)]
 
 
 def gen_ss_cert(key, domains, not_before=None,
@@ -342,3 +391,18 @@ def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
     return b"".join(_dump_cert(cert) for cert in chain)
+
+
+def _is_ip(address):
+    """ check if this is an IP address"""
+    try:
+        socket.inet_pton(socket.AF_INET, address)
+        # If this line runs it was ip address (ipv4)
+        return True
+    except socket.error:
+        # It wasn't an IPv4 address
+        try:
+            socket.inet_pton(socket.AF_INET6, address)
+            return True
+        except socket.error:
+            return False
