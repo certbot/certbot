@@ -179,6 +179,7 @@ class IdentifierType(_Constant):
     """ACME identifier type."""
     POSSIBLE_NAMES = {}  # type: dict
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
+IDENTIFIER_IP = IdentifierType('ip') # IdentifierIP in pebble - not in Boulder yet
 
 
 class Identifier(jose.JSONObjectWithFields):

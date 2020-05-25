@@ -658,10 +658,13 @@ class ClientV2(ClientBase):
         csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
         # pylint: disable=protected-access
         dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
-
+        ipNames = crypto_util._pyopenssl_cert_or_req_san_ip(csr)
         identifiers = []
         for name in dnsNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
+                value=name))
+        for name in ipNames:
+            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
                 value=name))
         order = messages.NewOrder(identifiers=identifiers)
         response = self._post(self.directory['newOrder'], order)

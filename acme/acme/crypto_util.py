@@ -266,7 +266,44 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
 
     return [part.split(part_separator)[1]
             for part in sans_parts if part.startswith(prefix)]
+def _pyopenssl_cert_or_req_san_ip(cert_or_req):
+    """Get Subject Alternative Names IPs from certificate or CSR using pyOpenSSL.
 
+    .. note:: Although this is `acme` internal API, it is used by
+        `letsencrypt`.
+
+    :param cert_or_req: Certificate or CSR.
+    :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
+
+    :returns: A list of Subject Alternative Names.
+    :rtype: `list` of `unicode`
+
+    """
+    # This function finds SANs by dumping the certificate/CSR to text and
+    # searching for "X509v3 Subject Alternative Name" in the text. This method
+    # is used to support PyOpenSSL version 0.13 where the
+    # `_subjectAltNameString` and `get_extensions` methods are not available
+    # for CSRs.
+
+    # constants based on PyOpenSSL certificate/CSR text dump
+    part_separator = ":"
+    parts_separator = ", "
+    prefix = "IP" + part_separator
+
+    if isinstance(cert_or_req, crypto.X509):
+        # pylint: disable=line-too-long
+        func = crypto.dump_certificate # type: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]]
+    else:
+        func = crypto.dump_certificate_request
+    text = func(crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
+    # WARNING: this function does not support multiple SANs extensions.
+    # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
+    match = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)
+    # WARNING: this function assumes that no SAN can include
+    # parts_separator, hence the split!
+    sans_parts = [] if match is None else match.group(1).split(parts_separator)
+    return [part.split(part_separator)[1]
+            for part in sans_parts if part.startswith(prefix)]
 
 def gen_ss_cert(key, domains, not_before=None,
                 validity=(7 * 24 * 60 * 60), force_san=True, extensions=None):
