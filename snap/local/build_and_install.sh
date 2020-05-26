@@ -42,7 +42,7 @@ docker run \
   -v "${CERTBOT_DIR}:${CERTBOT_DIR}" \
   -w "${CERTBOT_DIR}" \
   -e "PIP_EXTRA_INDEX_URL=http://localhost:8080/simple" \
-  "adferrand/snapcraft:${DOCKER_ARCH}-beta" \
+  "adferrand/snapcraft:${DOCKER_ARCH}-stable" \
   snapcraft
 
 if [[ "$(arch)" == "${QEMU_ARCH}" ]]; then
