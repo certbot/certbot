@@ -623,6 +623,8 @@ class OCSPResponse(object):
 class OCSPCertStatus(enum):
     GOOD = 1
     REVOKED = 2
+    UNRECOGNIZED = 3
+    """There are other OCSP statuses, but we may not have code to recognize them yet."""
 
 
 # Updater interfaces
