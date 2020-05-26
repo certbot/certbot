@@ -6,7 +6,7 @@ import os  # pylint: disable=os-module-forbidden
 import stat
 
 from acme.magic_typing import List
-from certbot import util
+import certbot.util as util
 
 try:
     import ntsecuritycon
