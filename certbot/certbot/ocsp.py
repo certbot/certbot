@@ -70,6 +70,12 @@ class RevocationChecker(object):
         OCSP response is returned from this function, the caller knows
         it is properly timestamped, signed, etc.
 
+        .. note:: This function currently works when cryptography is
+            used for OCSP. Whether a new enough version of crypography
+            with OCSP support is available can be checked through
+            CRYPTOGRAPHY_OCSP_AVAILABLE. If it is not available, None is
+            always returned by this function for now.
+
         :param str cert_path: Certificate filepath
         :param str chain_path: Certificate chain
         :param int timeout: Timeout (in seconds) for the OCSP query
