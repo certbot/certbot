@@ -8,7 +8,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 TARGET_ARCHS="arm64 armhf"
 
 rm -f "${DIR}/packages/*"
-source "${DIR}/builder/common_libs.sh"
+
+# shellcheck source=common.sh
+source "${DIR}/builder/common.sh"
 
 RegisterQemuHandlers
 
