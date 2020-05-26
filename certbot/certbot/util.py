@@ -5,6 +5,7 @@ import argparse
 import atexit
 import collections
 from collections import OrderedDict
+from contextlib import contextmanager
 import distutils.version
 import errno
 import logging
@@ -596,3 +597,24 @@ def atexit_register(func, *args, **kwargs):
 def _atexit_call(func, *args, **kwargs):
     if _INITIAL_PID == os.getpid():
         func(*args, **kwargs)
+
+
+@contextmanager
+def os_umask(mask):
+    """Temporarily sets the current numeric umask.
+
+    As a context manager, this function sets the current numeric
+    umask, as though through `os.umask`. At the end of the wrapped
+    scope, the mask is reset back to its original value, whether or
+    not the scope is exited via normal execution or through an
+    exception. Within the inner scope, the context manager's value
+    shall be the original mask value, before reassignment.
+
+    :param int mask: the new umask value, to be used inside the scope
+
+    """
+    old_mask = os.umask(mask)
+    try:
+        yield old_mask
+    finally:
+        os.umask(old_mask)
