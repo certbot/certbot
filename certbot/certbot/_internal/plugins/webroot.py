@@ -23,7 +23,7 @@ from certbot.display import ops
 from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.plugins import util
-from certbot.util import safe_open
+from certbot.util import os_umask, safe_open
 
 logger = logging.getLogger(__name__)
 
@@ -164,8 +164,7 @@ to serve all files under specified web root ({0})."""
             # Change the permissions to be writable (GH #1389)
             # Umask is used instead of chmod to ensure the client can also
             # run as non-root (GH #1795)
-            old_umask = os.umask(0o022)
-            try:
+            with os_umask(0o022):
                 # We ignore the last prefix in the next iteration,
                 # as it does not correspond to a folder path ('/' or 'C:')
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
@@ -190,8 +189,6 @@ to serve all files under specified web root ({0})."""
                         raise errors.PluginError(
                             "Couldn't create root for {0} http-01 "
                             "challenge responses: {1}".format(name, exception))
-            finally:
-                os.umask(old_umask)
 
     def _get_validation_path(self, root_path, achall):  # pylint: no-self-use
         return os.path.join(root_path, achall.chall.encode("token"))

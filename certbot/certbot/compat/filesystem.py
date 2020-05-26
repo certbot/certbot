@@ -6,6 +6,7 @@ import os  # pylint: disable=os-module-forbidden
 import stat
 
 from acme.magic_typing import List
+from certbot import util
 
 try:
     import ntsecuritycon
@@ -241,12 +242,9 @@ def makedirs(file_path, mode=0o777):
         # that could be created in the process. To keep things safe and consistent on all
         # Python versions, we set the umask accordingly to have all directories (intermediate and
         # leaf) created with the given mode.
-        current_umask = os.umask(0)
-        try:
+        with util.os_umask(0) as current_umask:
             os.umask(current_umask | 0o777 ^ mode)
             return os.makedirs(file_path, mode)
-        finally:
-            os.umask(current_umask)
 
     # TODO: Windows does not support umask. A specific PR (#7967) is handling this, and will need
     #       to add appropriate umask call for the Windows part of the logic below.
