@@ -5,7 +5,7 @@ import errno
 from acme.magic_typing import List
 from acme.magic_typing import Set
 from certbot import errors
-from certbot import util
+import certbot.util as util
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
