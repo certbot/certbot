@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Require explicit confirmation of snap plugin permissions before connecting.
 
 ### Changed
 
