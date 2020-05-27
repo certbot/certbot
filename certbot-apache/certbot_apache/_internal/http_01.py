@@ -5,10 +5,10 @@ import errno
 from acme.magic_typing import List
 from acme.magic_typing import Set
 from certbot import errors
+from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
-from certbot.util import os_umask
 from certbot_apache._internal.obj import VirtualHost  # pylint: disable=unused-import
 from certbot_apache._internal.parser import get_aug_path
 
@@ -170,7 +170,7 @@ class ApacheHttp01(common.ChallengePerformer):
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
-            with os_umask(0o022):
+            with util.os_umask(0o022):
                 try:
                     filesystem.makedirs(self.challenge_dir, 0o755)
                 except OSError as exception:
