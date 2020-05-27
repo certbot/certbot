@@ -34,10 +34,10 @@ fi
 VERSION=$("$PYTHON_NAME" letsencrypt-auto-source/version.py)
 
 # setup venv
-"$VENV_SCRIPT" --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
+PIP_NO_BINARY=":all:" "$VENV_SCRIPT" --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
 . "$VENV_PATH/bin/activate"
 # pytest is needed to run tests on some of our packages so we install a pinned version here.
-PIP_NO_BINARY=":all:" tools/pip_install.py pytest
+tools/pip_install.py pytest
 
 # build sdists
 for pkg_dir in acme certbot $PLUGINS; do
