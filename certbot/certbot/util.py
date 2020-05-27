@@ -511,17 +511,10 @@ def enforce_domain_sanity(domain):
                 )
             )
 
+# there was ip address check : removed for support ip address
     # Explain separately that IP addresses aren't allowed (apart from not
     # being FQDNs) because hope springs eternal concerning this point
-    try:
-        socket.inet_aton(domain)
-        raise errors.ConfigurationError(
-            "Requested name {0} is an IP address. The Let's Encrypt "
-            "certificate authority will not issue certificates for a "
-            "bare IP address.".format(domain))
-    except socket.error:
-        # It wasn't an IP address, so that's good
-        pass
+
 
     # FQDN checks according to RFC 2181: domain name should be less than 255
     # octets (inclusive). And each label is 1 - 63 octets (inclusive).
@@ -538,6 +531,13 @@ def enforce_domain_sanity(domain):
 
     return domain
 
+def is_ipaddress(domain)
+    try:
+        socket.inet_aton(domain)
+        return true
+    except socket.error:
+        # It wasn't an IP address, so that's good
+        return false
 
 def is_wildcard_domain(domain):
     """"Is domain a wildcard domain?
