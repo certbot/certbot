@@ -198,11 +198,18 @@ def make_csr(private_key_pem, domains, must_staple=False):
     private_key = crypto.load_privatekey(
         crypto.FILETYPE_PEM, private_key_pem)
     csr = crypto.X509Req()
+    #as our 'domains' are no longer strictly domains, so check for ip address
+    sanlist = []
+    for address in domains:
+        if _is_ip(address):
+            sanlist.append('IP' + address)
+        else:
+            sanlist.append('DNS:' + address)
     extensions = [
         crypto.X509Extension(
             b'subjectAltName',
             critical=False,
-            value=', '.join('DNS:' + d for d in domains).encode('ascii')
+            value=', '.join(sanlist).encode('ascii')
         ),
     ]
     if must_staple:
@@ -266,6 +273,7 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
 
     return [part.split(part_separator)[1]
             for part in sans_parts if part.startswith(prefix)]
+
 def _pyopenssl_cert_or_req_san_ip(cert_or_req):
     """Get Subject Alternative Names IPs from certificate or CSR using pyOpenSSL.
 
@@ -279,7 +287,7 @@ def _pyopenssl_cert_or_req_san_ip(cert_or_req):
     :rtype: `list` of `unicode`
 
     """
-    # This function finds SANs by dumping the certificate/CSR to text and
+    # This function finds IP SANs by dumping the certificate/CSR to text and
     # searching for "X509v3 Subject Alternative Name" in the text. This method
     # is used to support PyOpenSSL version 0.13 where the
     # `_subjectAltNameString` and `get_extensions` methods are not available
@@ -375,3 +383,12 @@ def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
     return b"".join(_dump_cert(cert) for cert in chain)
+
+def _is_ip(input):
+    try:
+        socket.inet_aton(ipput)
+        # If this line runs it was ip address (ipv4)
+        return True
+    except socket.error:
+        # It wasn't an IP address
+        return False
