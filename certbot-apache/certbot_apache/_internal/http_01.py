@@ -8,6 +8,7 @@ from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
+from certbot.util import os_umask
 from certbot_apache._internal.obj import VirtualHost  # pylint: disable=unused-import
 from certbot_apache._internal.parser import get_aug_path
 
@@ -169,15 +170,13 @@ class ApacheHttp01(common.ChallengePerformer):
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
-            old_umask = os.umask(0o022)
-            try:
-                filesystem.makedirs(self.challenge_dir, 0o755)
-            except OSError as exception:
-                if exception.errno not in (errno.EEXIST, errno.EISDIR):
-                    raise errors.PluginError(
-                        "Couldn't create root for http-01 challenge")
-            finally:
-                os.umask(old_umask)
+            with os_umask(0o022):
+                try:
+                    filesystem.makedirs(self.challenge_dir, 0o755)
+                except OSError as exception:
+                    if exception.errno not in (errno.EEXIST, errno.EISDIR):
+                        raise errors.PluginError(
+                            "Couldn't create root for http-01 challenge")
 
         responses = []
         for achall in self.achalls:
