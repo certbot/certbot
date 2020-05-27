@@ -46,5 +46,5 @@ docker run \
   snapcraft
 
 if [[ "$(arch)" == "${QEMU_ARCH}" ]]; then
-    sudo snap install --dangerous --classic "*.snap"
+    sudo snap install --dangerous --classic *.snap
 fi
