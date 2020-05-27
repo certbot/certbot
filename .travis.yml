@@ -268,7 +268,7 @@ matrix:
         # just built and tested. See
         # https://docs.travis-ci.com/user/deployment#uploading-files-and-skip_cleanup.
         skip_cleanup: true
-      <<: *not-on-master
+      <<: *extended-test-suite
     # See detailed reasoning for snap tests configuration just above.
     - env: SNAP=true TARGET_ARCH=arm64
       dist: bionic
@@ -287,7 +287,7 @@ matrix:
         snap: certbot_*.snap
         channel: edge
         skip_cleanup: true
-      <<: *not-on-master
+      <<: *extended-test-suite
     - env: SNAP=true TARGET_ARCH=armhf
       dist: bionic
       addons:
@@ -305,7 +305,7 @@ matrix:
         snap: certbot_*.snap
         channel: edge
         skip_cleanup: true
-      <<: *not-on-master
+      <<: *extended-test-suite
 
 # container-based infrastructure
 sudo: false
