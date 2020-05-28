@@ -191,9 +191,15 @@ def install_packages(venv_name, pip_args):
     # Using the python executable from venv, we ensure to execute following commands in this venv.
     py_venv = get_venv_python_path(venv_name)
     subprocess_with_print([py_venv, os.path.abspath('letsencrypt-auto-source/pieces/pipstrap.py')])
+    env_pip_no_binary = os.environ.get('CERTBOT_PIP_NO_BINARY')
+    if env_pip_no_binary:
+        print('Setting PIP_NO_BINARY to {0}'
+              ' as specified in CERTBOT_PIP_NO_BINARY'.format(env_pip_no_binary))
+        os.environ['PIP_NO_BINARY'] = env_pip_no_binary
     command = [py_venv, os.path.abspath('tools/pip_install.py')]
     command.extend(pip_args)
     subprocess_with_print(command)
+    del os.environ['PIP_NO_BINARY']
 
     if os.path.isdir(os.path.join(venv_name, 'bin')):
         # Linux/OSX specific
