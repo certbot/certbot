@@ -205,11 +205,13 @@ def make_csr(private_key_pem, domains, must_staple=False):
             sanlist.append('IP:' + address)
         else:
             sanlist.append('DNS:' + address)
+# strict type check for debug
+    san_string:str = ', '.join(sanlist).encode('ascii')
     extensions = [
         crypto.X509Extension(
             b'subjectAltName',
             critical=False,
-            value=', '.join(sanlist).encode('ascii')
+            value= san_string
         ),
     ]
     if must_staple:
