@@ -206,7 +206,7 @@ def make_csr(private_key_pem, domains, must_staple=False):
         else:
             sanlist.append('DNS:' + address)
 # strict type check for debug
-    san_string:str = ', '.join(sanlist).encode('ascii')
+    san_string = ', '.join(sanlist).encode('ascii')
     extensions = [
         crypto.X509Extension(
             b'subjectAltName',
