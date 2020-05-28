@@ -202,10 +202,10 @@ def install_packages(venv_name, pip_args):
     env_pip_no_binary = os.environ.get('CERTBOT_PIP_NO_BINARY')
     if env_pip_no_binary:
         # Check OpenSSL version. If it's too low, don't apply the env variable.
-        openssl_version_string = subprocess_output_with_print("openssl version")
-        matches = re.findall(r"OpenSSL ([^ ]+) ", openssl_version_string)
+        openssl_version_string = str(subprocess_output_with_print(['openssl', 'version']))
+        matches = re.findall(r'OpenSSL ([^ ]+) ', openssl_version_string)
         if not matches:
-            print("Could not find OpenSSL version, not setting PIP_NO_BINARY.")
+            print('Could not find OpenSSL version, not setting PIP_NO_BINARY.')
         else:
             openssl_version = matches[0]
 
