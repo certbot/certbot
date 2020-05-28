@@ -386,7 +386,7 @@ def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
 
 def _is_ip(input):
     try:
-        socket.inet_aton(ipput)
+        socket.inet_aton(input)
         # If this line runs it was ip address (ipv4)
         return True
     except socket.error:
