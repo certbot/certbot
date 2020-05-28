@@ -199,7 +199,8 @@ def install_packages(venv_name, pip_args):
     command = [py_venv, os.path.abspath('tools/pip_install.py')]
     command.extend(pip_args)
     subprocess_with_print(command)
-    del os.environ['PIP_NO_BINARY']
+    if 'PIP_NO_BINARY' in os.environ:
+        del os.environ['PIP_NO_BINARY']
 
     if os.path.isdir(os.path.join(venv_name, 'bin')):
         # Linux/OSX specific
