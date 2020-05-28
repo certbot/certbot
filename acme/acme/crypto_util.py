@@ -235,6 +235,7 @@ def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
     return [common_name] + [d for d in sans if d != common_name]
 
 def _pyopenssl_cert_or_req_san(cert_or_req):
+    #for some reason this always return nothing
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
 
     .. todo:: Implement directly in PyOpenSSL!
@@ -298,7 +299,7 @@ def _pyopenssl_cert_or_req_san_ip(cert_or_req):
     # constants based on PyOpenSSL certificate/CSR text dump
     part_separator = ":"
     parts_separator = ", "
-    prefix = "IP" + part_separator
+    prefix = "IP Address" + part_separator
 
     if isinstance(cert_or_req, crypto.X509):
         # pylint: disable=line-too-long
