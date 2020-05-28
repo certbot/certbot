@@ -202,7 +202,7 @@ def make_csr(private_key_pem, domains, must_staple=False):
     sanlist = []
     for address in domains:
         if _is_ip(address):
-            sanlist.append('IP' + address)
+            sanlist.append('IP:' + address)
         else:
             sanlist.append('DNS:' + address)
     extensions = [
