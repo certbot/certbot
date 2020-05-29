@@ -177,6 +177,38 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
                          ['chicago-cubs.venafi.example', 'cubs.venafi.example'])
 
 
+class PyOpenSSLCertOrReqSANIPTest(unittest.TestCase):
+    """Test for acme.crypto_util._pyopenssl_cert_or_req_san_ip."""
+
+    @classmethod
+    def _call(cls, loader, name):
+        # pylint: disable=protected-access
+        from acme.crypto_util import _pyopenssl_cert_or_req_san_ip
+        return _pyopenssl_cert_or_req_san_ip(loader(name))
+
+    def _call_cert(self, name):
+        return self._call(test_util.load_cert, name)
+
+    def _call_csr(self, name):
+        return self._call(test_util.load_csr, name)
+
+    def test_cert_no_sans(self):
+        self.assertEqual(self._call_cert('cert.pem'), [])
+
+    def test_csr_no_sans(self):
+        self.assertEqual(self._call_csr('csr-nosans.pem'), [])
+
+    def test_cert_domain_sans(self):
+        self.assertEqual(self._call_cert('cert-san.pem'), [])
+
+    def test_csr_domain_sans(self):
+        self.assertEqual(self._call_csr('csr-san.pem'), [])
+
+    def test_cert_ip_two_sans(self):
+        self.assertEqual(self._call_cert('cert-ipsans.pem'),['192.0.2.145','203.0.113.1'])
+
+    def test_csr_ip_two_sans(self):
+        self.assertEqual(self._call_csr('csr-ipsans.pem'),['192.0.2.145','203.0.113.1'])
 
 class RandomSnTest(unittest.TestCase):
     """Test for random certificate serial numbers."""
@@ -223,6 +255,25 @@ class MakeCSRTest(unittest.TestCase):
                     b'subjectAltName',
                     critical=False,
                     value=b'DNS:a.example, DNS:b.example',
+                ).get_data(),
+            )
+
+    def test_make_csr_ip(self):
+        csr_pem = self._call_with_key(["a.example", "127.0.0.1"])
+        self.assertTrue(b'--BEGIN CERTIFICATE REQUEST--' in csr_pem)
+        self.assertTrue(b'--END CERTIFICATE REQUEST--' in csr_pem)
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
+        # have a get_extensions() method, so we skip this test if the method
+        # isn't available.
+        if hasattr(csr, 'get_extensions'):
+            self.assertEqual(len(csr.get_extensions()), 1)
+            self.assertEqual(csr.get_extensions()[0].get_data(),
+                OpenSSL.crypto.X509Extension(
+                    b'subjectAltName',
+                    critical=False,
+                    value=b'DNS:a.example, IP:127.0.0.1',
                 ).get_data(),
             )
 
