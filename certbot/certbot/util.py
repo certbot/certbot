@@ -534,10 +534,10 @@ def enforce_domain_sanity(domain):
 def is_ipaddress(domain):
     try:
         socket.inet_aton(domain)
-        return true
+        return True
     except socket.error:
         # It wasn't an IP address, so that's good
-        return false
+        return False
 
 def is_wildcard_domain(domain):
     """"Is domain a wildcard domain?
