@@ -532,6 +532,7 @@ def enforce_domain_sanity(domain):
     return domain
 
 def is_ipaddress(domain):
+    """this function check if input name is actually an IP address"""
     try:
         socket.inet_aton(domain)
         return True

@@ -211,7 +211,7 @@ def make_csr(private_key_pem, domains, must_staple=False):
         crypto.X509Extension(
             b'subjectAltName',
             critical=False,
-            value= san_string
+            value=san_string
         ),
     ]
     if must_staple:
@@ -387,9 +387,10 @@ def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
     # newline character
     return b"".join(_dump_cert(cert) for cert in chain)
 
-def _is_ip(input):
+def _is_ip(address):
+    """ check if this is an IP address"""
     try:
-        socket.inet_aton(input)
+        socket.inet_aton(address)
         # If this line runs it was ip address (ipv4)
         return True
     except socket.error:
