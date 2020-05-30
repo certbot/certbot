@@ -31,7 +31,7 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
 
             def server_bind(self):  # pylint: disable=missing-docstring
                 self.socket = SSLSocket(socket.socket(),
-                        certs)
+                                        certs)
                 socketserver.TCPServer.server_bind(self)
 
         self.server = _TestServer(('', 0), socketserver.BaseRequestHandler)
@@ -79,7 +79,7 @@ class SSLSocketTest(unittest.TestCase):
         from acme.crypto_util import SSLSocket
         with self.assertRaises(ValueError):
             _ = SSLSocket(None, {'sni': ('key', 'cert')},
-                    cert_selection=lambda _: None)
+                          cert_selection=lambda _: None)
         with self.assertRaises(ValueError):
             _ = SSLSocket(None)
 
@@ -110,7 +110,6 @@ class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):
 
 class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
     """Test for acme.crypto_util._pyopenssl_cert_or_req_san."""
-
 
     @classmethod
     def _call(cls, loader, name):
@@ -205,18 +204,26 @@ class PyOpenSSLCertOrReqSANIPTest(unittest.TestCase):
         self.assertEqual(self._call_csr('csr-san.pem'), [])
 
     def test_cert_ip_two_sans(self):
-        self.assertEqual(self._call_cert('cert-ipsans.pem'),['192.0.2.145','203.0.113.1'])
+        self.assertEqual(self._call_cert('cert-ipsans.pem'), ['192.0.2.145', '203.0.113.1'])
 
     def test_csr_ip_two_sans(self):
-        self.assertEqual(self._call_csr('csr-ipsans.pem'),['192.0.2.145','203.0.113.1'])
+        self.assertEqual(self._call_csr('csr-ipsans.pem'), ['192.0.2.145', '203.0.113.1'])
+
+    def test_csr_ipv6_sans(self):
+        self.assertEqual(self._call_csr('csr-ipv6sans.pem'),
+                         ['0:0:0:0:0:0:0:1', 'A3BE:32F3:206E:C75D:956:CEE:9858:5EC5'])
+
+    def test_cert_ipv6_sans(self):
+        self.assertEqual(self._call_cert('cert-ipv6sans.pem'),
+                         ['0:0:0:0:0:0:0:1', 'A3BE:32F3:206E:C75D:956:CEE:9858:5EC5'])
+
 
 class RandomSnTest(unittest.TestCase):
     """Test for random certificate serial numbers."""
 
-
     def setUp(self):
         self.cert_count = 5
-        self.serial_num = [] # type: List[int]
+        self.serial_num = []  # type: List[int]
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 
@@ -227,6 +234,7 @@ class RandomSnTest(unittest.TestCase):
             cert = gen_ss_cert(self.key, ['dummy'], force_san=True)
             self.serial_num.append(cert.get_serial_number())
         self.assertTrue(len(set(self.serial_num)) > 1)
+
 
 class MakeCSRTest(unittest.TestCase):
     """Test for standalone functions."""
@@ -251,15 +259,15 @@ class MakeCSRTest(unittest.TestCase):
         if hasattr(csr, 'get_extensions'):
             self.assertEqual(len(csr.get_extensions()), 1)
             self.assertEqual(csr.get_extensions()[0].get_data(),
-                OpenSSL.crypto.X509Extension(
-                    b'subjectAltName',
-                    critical=False,
-                    value=b'DNS:a.example, DNS:b.example',
-                ).get_data(),
-            )
+                             OpenSSL.crypto.X509Extension(
+                                 b'subjectAltName',
+                                 critical=False,
+                                 value=b'DNS:a.example, DNS:b.example',
+                             ).get_data(),
+                             )
 
     def test_make_csr_ip(self):
-        csr_pem = self._call_with_key(["a.example", "127.0.0.1"])
+        csr_pem = self._call_with_key(["a.example", "127.0.0.1", "::1"])
         self.assertTrue(b'--BEGIN CERTIFICATE REQUEST--' in csr_pem)
         self.assertTrue(b'--END CERTIFICATE REQUEST--' in csr_pem)
         csr = OpenSSL.crypto.load_certificate_request(
@@ -270,12 +278,12 @@ class MakeCSRTest(unittest.TestCase):
         if hasattr(csr, 'get_extensions'):
             self.assertEqual(len(csr.get_extensions()), 1)
             self.assertEqual(csr.get_extensions()[0].get_data(),
-                OpenSSL.crypto.X509Extension(
-                    b'subjectAltName',
-                    critical=False,
-                    value=b'DNS:a.example, IP:127.0.0.1',
-                ).get_data(),
-            )
+                             OpenSSL.crypto.X509Extension(
+                                 b'subjectAltName',
+                                 critical=False,
+                                 value=b'DNS:a.example, IP:127.0.0.1, IP:::1',
+                             ).get_data(),
+                             )
 
     def test_make_csr_must_staple(self):
         csr_pem = self._call_with_key(["a.example"], must_staple=True)
@@ -291,9 +299,9 @@ class MakeCSRTest(unittest.TestCase):
             # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
             # and the shortname field is just "UNDEF"
             must_staple_exts = [e for e in csr.get_extensions()
-                if e.get_data() == b"0\x03\x02\x01\x05"]
+                                if e.get_data() == b"0\x03\x02\x01\x05"]
             self.assertEqual(len(must_staple_exts), 1,
-                "Expected exactly one Must Staple extension")
+                             "Expected exactly one Must Staple extension")
 
 
 class DumpPyopensslChainTest(unittest.TestCase):

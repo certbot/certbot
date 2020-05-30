@@ -531,14 +531,21 @@ def enforce_domain_sanity(domain):
 
     return domain
 
-def is_ipaddress(domain):
-    """this function check if input name is actually an IP address"""
+
+def is_ipaddress(address):
+    """this function check if input name is actually an IP(v4 or v6) address"""
     try:
-        socket.inet_aton(domain)
+        socket.inet_pton(socket.AF_INET, address)
+        # If this line runs it was ip address (ipv4)
         return True
     except socket.error:
-        # It wasn't an IP address, so that's good
-        return False
+        # It wasn't an IPv4 address, so try ipv6
+        try:
+            socket.inet_pton(socket.AF_INET6, address)
+            return True
+        except socket.error:
+            return False
+
 
 def is_wildcard_domain(domain):
     """"Is domain a wildcard domain?

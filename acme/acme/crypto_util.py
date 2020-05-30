@@ -277,6 +277,7 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     return [part.split(part_separator)[1]
             for part in sans_parts if part.startswith(prefix)]
 
+
 def _pyopenssl_cert_or_req_san_ip(cert_or_req):
     """Get Subject Alternative Names IPs from certificate or CSR using pyOpenSSL.
 
@@ -313,8 +314,9 @@ def _pyopenssl_cert_or_req_san_ip(cert_or_req):
     # WARNING: this function assumes that no SAN can include
     # parts_separator, hence the split!
     sans_parts = [] if match is None else match.group(1).split(parts_separator)
-    return [part.split(part_separator)[1]
-            for part in sans_parts if part.startswith(prefix)]
+    # "IP Address:" is 11 letters so remove first 11 letters from part
+    return [part[11:] for part in sans_parts if part.startswith(prefix)]
+
 
 def gen_ss_cert(key, domains, not_before=None,
                 validity=(7 * 24 * 60 * 60), force_san=True, extensions=None):
@@ -387,12 +389,17 @@ def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
     # newline character
     return b"".join(_dump_cert(cert) for cert in chain)
 
+
 def _is_ip(address):
     """ check if this is an IP address"""
     try:
-        socket.inet_aton(address)
+        socket.inet_pton(socket.AF_INET, address)
         # If this line runs it was ip address (ipv4)
         return True
     except socket.error:
-        # It wasn't an IP address
-        return False
+        # It wasn't an IPv4 address
+        try:
+            socket.inet_pton(socket.AF_INET6, address)
+            return True
+        except socket.error:
+            return False
