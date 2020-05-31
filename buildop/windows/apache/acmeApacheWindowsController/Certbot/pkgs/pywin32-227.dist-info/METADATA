@@ -1,0 +1,24 @@
+Metadata-Version: 2.1
+Name: pywin32
+Version: 227
+Summary: Python for Window Extensions
+Home-page: https://github.com/mhammond/pywin32
+Author: Mark Hammond (et al)
+Author-email: mhammond@skippinet.com.au
+License: PSF
+Platform: UNKNOWN
+Classifier: Environment :: Win32 (MS Windows)
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Python Software Foundation License
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: Implementation :: CPython
+
+Python extensions for Microsoft Windows
+Provides access to much of the Win32 API, the
+ability to create and use COM objects, and the
+Pythonwin environment.
+

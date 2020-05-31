@@ -175,7 +175,7 @@ class VirtualHost(object):
             "Names: {names}\n"
             "HTTPS: {https}\n".format(
                 filename=self.filep,
-                addrs=", ".join(str(addr) for addr in self.addrs),
+                addrs=str(self.addrs),
                 names=", ".join(self.get_names()),
                 https="Yes" if self.ssl else "No"))
 

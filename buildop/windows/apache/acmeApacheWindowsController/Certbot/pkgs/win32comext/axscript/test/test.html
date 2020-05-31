@@ -1,0 +1,88 @@
+<HTML>
+<BODY>
+A multi-language Active Debugging demo.
+
+<FORM>
+  <INPUT NAME="Button1" 
+       VALUE="Click for VB to call JScript!" 
+       TYPE="Button" 
+       OnClick="JScriptEntryPoint" 
+       LANGUAGE="VBScript"
+  >
+  <INPUT NAME="Button2" 
+       VALUE="Click for VB to call ForthScript!" 
+       TYPE="Button" 
+       OnClick="ForthEntryPoint2"
+       LANGUAGE="VBScript"
+  >
+</FORM>
+<BR>
+
+<!-- We start with JScript code calling Python... -->
+<SCRIPT LANGUAGE="JScript">
+
+function JScriptEntryPoint()
+{
+    PythonEntryPoint2();
+}
+
+</SCRIPT>
+
+<!-- Python calling Perl -->
+<SCRIPT LANGUAGE="Python">
+
+def PythonEntryPoint():
+	# Perl works as a property.
+	result = window.PerlEntryPoint
+
+</SCRIPT>
+
+<SCRIPT LANGUAGE="Python">
+def PythonEntryPoint2():
+	a = 1
+	b = 2
+	DoTheCall()
+
+def DoTheCall():
+	a = 2
+	b = "Hi there"
+	window.PythonEntryPoint()
+	c = "Done it!"
+
+</SCRIPT>
+
+<!-- And some Perl code to call VBScript -->
+<SCRIPT LANGUAGE="PerlScript">
+
+sub PerlEntryPoint {
+	$window->VBScriptEntryPoint();
+	$window->alert("Perl just called VBScript");
+}
+
+</SCRIPT>
+
+
+<!-- VBscript finally calls our Forth Sample -->
+<SCRIPT LANGUAGE="VBScript">
+
+Sub VBScriptEntryPoint
+   call ForthEntryPoint
+End Sub
+
+</SCRIPT>
+
+
+<SCRIPT LANGUAGE="ForthScript">
+
+: ForthEntryPoint
+    1 0 /
+    "Forth has no one to call" 1 window.alert call
+;
+
+: ForthEntryPoint2
+	0 window.JScriptEntryPoint call
+;
+</SCRIPT>
+
+</BODY>
+</HTML>
