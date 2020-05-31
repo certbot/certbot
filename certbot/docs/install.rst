@@ -61,6 +61,23 @@ Alternate installation methods
 If you are offline or your operating system doesn't provide a package, you can use
 an alternate method for installing ``certbot``.
 
+.. _snap-install:
+
+Snap
+----
+
+Most modern Linux distributions (basically any that use systemd) can install
+Certbot packaged as a snap. Support for the Certbot snap is currently in its
+beta phase and limited to the x86_64 architecture, but it provides an easy way
+to ensure you have the latest version of Certbot with features like automated
+certificate renewal preconfigured.
+
+You can find instructions for installing the Certbot snap at
+https://certbot.eff.org/instructions by selecting your server software and then
+choosing "snapd" in the "System" dropdown menu. (You should select "snapd"
+regardless of your operating system, as our instructions are the same across
+all systems.)
+
 .. _certbot-auto:
 
 Certbot-Auto

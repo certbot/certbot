@@ -1,8 +1,10 @@
 """Tests for AugeasParserNode classes"""
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 import os
-import unittest
 import util
 
 from certbot import errors

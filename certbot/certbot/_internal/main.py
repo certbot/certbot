@@ -890,7 +890,7 @@ def enhance(config, plugins):
     """
     supported_enhancements = ["hsts", "redirect", "uir", "staple"]
     # Check that at least one enhancement was requested on command line
-    oldstyle_enh = any([getattr(config, enh) for enh in supported_enhancements])
+    oldstyle_enh = any(getattr(config, enh) for enh in supported_enhancements)
     if not enhancements.are_requested(config) and not oldstyle_enh:
         msg = ("Please specify one or more enhancement types to configure. To list "
                "the available enhancement types, run:\n\n%s --help enhance\n")
@@ -927,7 +927,7 @@ def enhance(config, plugins):
         config.chain_path = lineage.chain_path
     if oldstyle_enh:
         le_client = _init_le_client(config, authenticator=None, installer=installer)
-        le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
+        le_client.enhance_config(domains, config.chain_path, redirect_default=False)
     if enhancements.are_requested(config):
         enhancements.enable(lineage, domains, installer, config)
 

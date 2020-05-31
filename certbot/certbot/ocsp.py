@@ -21,6 +21,7 @@ from acme.magic_typing import Tuple
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
+from certbot.compat.os import getenv
 from certbot.interfaces import RenewableCert  # pylint: disable=unused-import
 
 try:
@@ -102,17 +103,32 @@ class RevocationChecker(object):
 
     def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, timeout):
         # type: (str, str, str, str, int) -> bool
+        # Minimal implementation of proxy selection logic as seen in, e.g., cURL
+        # Some things that won't work, but may well be in use somewhere:
+        # - username and password for proxy authentication
+        # - proxies accepting TLS connections
+        # - proxy exclusion through NO_PROXY
+        env_http_proxy = getenv('http_proxy')
+        env_HTTP_PROXY = getenv('HTTP_PROXY')
+        proxy_host = None
+        if env_http_proxy is not None or env_HTTP_PROXY is not None:
+            proxy_host = env_http_proxy if env_http_proxy is not None else env_HTTP_PROXY
+        if proxy_host is None:
+            url_opts = ["-url", url]
+        else:
+            if proxy_host.startswith('http://'):
+                proxy_host = proxy_host[len('http://'):]
+            url_opts = ["-host", proxy_host, "-path", url]
         # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
         cmd = ["openssl", "ocsp",
                "-no_nonce",
                "-issuer", chain_path,
                "-cert", cert_path,
-               "-url", url,
                "-CAfile", chain_path,
                "-verify_other", chain_path,
                "-trust_other",
                "-timeout", str(timeout),
-               "-header"] + self.host_args(host)
+               "-header"] + self.host_args(host) + url_opts
         logger.debug("Querying OCSP for %s", cert_path)
         logger.debug(" ".join(cmd))
         try:
@@ -240,7 +256,11 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
 
 def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
     """Verify an OCSP response signature against certificate issuer or responder"""
-    if response_ocsp.responder_name == issuer_cert.subject:
+    def _key_hash(cert):
+        return x509.SubjectKeyIdentifier.from_public_key(cert.public_key()).digest
+
+    if response_ocsp.responder_name == issuer_cert.subject or \
+       response_ocsp.responder_key_hash == _key_hash(issuer_cert):
         # Case where the OCSP responder is also the certificate issuer
         logger.debug('OCSP response for certificate %s is signed by the certificate\'s issuer.',
                      cert_path)
@@ -251,7 +271,8 @@ def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
                      cert_path)
 
         responder_certs = [cert for cert in response_ocsp.certificates
-                           if cert.subject == response_ocsp.responder_name]
+                           if response_ocsp.responder_name == cert.subject or \
+                              response_ocsp.responder_key_hash == _key_hash(cert)]
         if not responder_certs:
             raise AssertionError('no matching responder certificate could be found')
 

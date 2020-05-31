@@ -30,7 +30,7 @@ class ApacheParser(object):
 
     """
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
-    fnmatch_chars = set(["*", "?", "\\", "[", "]"])
+    fnmatch_chars = {"*", "?", "\\", "[", "]"}
 
     def __init__(self, root, vhostroot=None, version=(2, 4),
                  configurator=None):
@@ -741,7 +741,7 @@ class ApacheParser(object):
         """
         if sys.version_info < (3, 6):
             # This strips off final /Z(?ms)
-            return fnmatch.translate(clean_fn_match)[:-7]
+            return fnmatch.translate(clean_fn_match)[:-7]  # pragma: no cover
         # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
         return fnmatch.translate(clean_fn_match)[4:-3]  # pragma: no cover
 
@@ -945,8 +945,8 @@ def case_i(string):
     :param str string: string to make case i regex
 
     """
-    return "".join(["[" + c.upper() + c.lower() + "]"
-                    if c.isalpha() else c for c in re.escape(string)])
+    return "".join("[" + c.upper() + c.lower() + "]"
+                    if c.isalpha() else c for c in re.escape(string))
 
 
 def get_aug_path(file_path):

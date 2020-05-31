@@ -14,7 +14,7 @@ DEFAULT_PACKAGES = [
     'certbot_dns_sakuracloud', 'certbot_nginx']
 
 COVER_THRESHOLDS = {
-    'certbot': {'linux': 96, 'windows': 96},
+    'certbot': {'linux': 95, 'windows': 96},
     'acme': {'linux': 100, 'windows': 99},
     'certbot_apache': {'linux': 100, 'windows': 100},
     'certbot_dns_cloudflare': {'linux': 98, 'windows': 98},

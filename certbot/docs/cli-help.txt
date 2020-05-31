@@ -113,7 +113,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.3.0 (certbot(-auto);
+                        "". (default: CertbotACMEClient/1.4.0 (certbot(-auto);
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -188,10 +188,12 @@ security:
                         supported setups (Apache version >= 2.3.3 ). (default:
                         False)
   --redirect            Automatically redirect all HTTP traffic to HTTPS for
-                        the newly authenticated vhost. (default: Ask)
+                        the newly authenticated vhost. (default: redirect
+                        enabled for install and run, disabled for enhance)
   --no-redirect         Do not automatically redirect all HTTP traffic to
                         HTTPS for the newly authenticated vhost. (default:
-                        Ask)
+                        redirect enabled for install and run, disabled for
+                        enhance)
   --hsts                Add the Strict-Transport-Security header to every HTTP
                         response. Forcing browser to always use SSL for the
                         domain. Defends against SSL Stripping. (default: None)
@@ -213,8 +215,8 @@ testing:
 
   --test-cert, --staging
                         Use the staging server to obtain or revoke test
-                        (invalid) certificates; equivalent to --server https
-                        ://acme-staging-v02.api.letsencrypt.org/directory
+                        (invalid) certificates; equivalent to --server
+                        https://acme-staging-v02.api.letsencrypt.org/directory
                         (default: False)
   --debug               Show tracebacks in case of errors, and allow certbot-
                         auto execution on experimental platforms (default:
@@ -319,8 +321,8 @@ renew:
                         of renewed certificate domains (for example,
                         "example.com www.example.com" (default: None)
   --disable-hook-validation
-                        Ordinarily the commands specified for --pre-hook
-                        /--post-hook/--deploy-hook will be checked for
+                        Ordinarily the commands specified for --pre-
+                        hook/--post-hook/--deploy-hook will be checked for
                         validity, to see if the programs being run are in the
                         $PATH, so that mistakes can be caught early, even when
                         the hooks aren't being run just yet. The validation is
@@ -669,7 +671,11 @@ manual:
   requested when performing an HTTP-01 challenge. An additional cleanup
   script can also be provided and can use the additional variable
   $CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth
-  script.
+  script.For both authenticator and cleanup script, on HTTP-01 and DNS-01
+  challenges,$CERTBOT_REMAINING_CHALLENGES will be equal to the number of
+  challenges that remain after the current one, and $CERTBOT_ALL_DOMAINS
+  contains a comma-separated list of all domains that are challenged for the
+  current certificate.
 
   --manual-auth-hook MANUAL_AUTH_HOOK
                         Path or command to execute for the authentication

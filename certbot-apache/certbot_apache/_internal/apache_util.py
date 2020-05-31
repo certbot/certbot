@@ -130,7 +130,7 @@ def included_in_paths(filepath, paths):
     :rtype: bool
     """
 
-    return any([fnmatch.fnmatch(filepath, path) for path in paths])
+    return any(fnmatch.fnmatch(filepath, path) for path in paths)
 
 
 def parse_defines(apachectl):
@@ -144,7 +144,7 @@ def parse_defines(apachectl):
     :rtype: dict
     """
 
-    variables = dict()
+    variables = {}
     define_cmd = [apachectl, "-t", "-D",
                   "DUMP_RUN_CFG"]
     matches = parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")

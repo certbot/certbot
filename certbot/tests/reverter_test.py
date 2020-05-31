@@ -5,7 +5,10 @@ import shutil
 import tempfile
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import six
 
 from certbot import errors
@@ -87,7 +90,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
 
         # Check to make sure new files are also checked...
         self.assertRaises(errors.ReverterError, self.reverter.add_to_checkpoint,
-                          set([config3]), "invalid save")
+                          {config3}, "invalid save")
 
     def test_multiple_saves_and_temp_revert(self):
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save1")
@@ -414,9 +417,9 @@ def setup_test_files():
     with open(config2, "w") as file_fd:
         file_fd.write("directive-dir2")
 
-    sets = [set([config1]),
-            set([config2]),
-            set([config1, config2])]
+    sets = [{config1},
+            {config2},
+            {config1, config2}]
 
     return config1, config2, dir1, dir2, sets
 
