@@ -199,6 +199,10 @@ def install_packages(venv_name, pip_args):
     # Using the python executable from venv, we ensure to execute following commands in this venv.
     py_venv = get_venv_python_path(venv_name)
     subprocess_with_print([py_venv, os.path.abspath('letsencrypt-auto-source/pieces/pipstrap.py')])
+    # We only use this value during pip install because:
+    # 1) We're really only adding it for installing cryptography, which happens here, and
+    # 2) There are issues with calling it along with VIRTUALENV_NO_DOWNLOAD, which applies at the
+    #    steps above, not during pip install.
     env_pip_no_binary = os.environ.get('CERTBOT_PIP_NO_BINARY')
     if env_pip_no_binary:
         # Check OpenSSL version. If it's too low, don't apply the env variable.
