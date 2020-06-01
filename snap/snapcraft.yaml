@@ -85,3 +85,9 @@ parts:
     # After certbot-apache to not rebuild duplicates (essentially sharing what was already staged,
     # like zope)
     after: [certbot-apache]
+
+plugs:
+  plugin:
+    interface: content
+    content: certbot-1
+    target: $SNAP/certbot-plugin
