@@ -46,8 +46,12 @@ AUTHORITATIVE_CONSTRAINTS = {
     # certbot-auto failures on Python 3.6+ which enum34 doesn't support. See #5456.
     # TODO: hashin seems to overwrite environment markers in dependencies. This needs to be fixed.
     'enum34': '1.1.6 ; python_version < \'3.4\'',
+    # Cryptography 2.9+ drops support for OpenSSL 1.0.1, but we still need to support it
+    # for officially supported ancient distributions like RHEL 6 or Debian 8.
+    'cryptography': '2.8',
+    # Parsedatetime 2.6 is broken on Python 2.7, see https://github.com/bear/parsedatetime/issues/246
+    'parsedatetime': '2.5',
 }
-
 
 # ./certbot/letsencrypt-auto-source/rebuild_dependencies.py (2 levels from certbot root path)
 CERTBOT_REPO_PATH = dirname(dirname(abspath(__file__)))
