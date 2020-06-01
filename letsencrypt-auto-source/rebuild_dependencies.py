@@ -43,7 +43,7 @@ AUTHORITATIVE_CONSTRAINTS = {
     # in favor of pure python parser for Apache.
     'python-augeas': '0.5.0',
     # Cryptography 2.9+ drops support for OpenSSL 1.0.1, but we still need to support it
-    # for officially supported ancient distributions like RHEL 6 or Debian 8.
+    # for officially supported non-x86_64 ancient distributions like RHEL 6 or Debian 8.
     'cryptography': '2.8',
     # Parsedatetime 2.6 is broken on Python 2.7, see https://github.com/bear/parsedatetime/issues/246
     'parsedatetime': '2.5',
