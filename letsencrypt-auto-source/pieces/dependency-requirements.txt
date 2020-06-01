@@ -78,7 +78,9 @@ cryptography==2.8 \
 distro==1.4.0 \
     --hash=sha256:362dde65d846d23baee4b5c058c8586f219b5a54be1cf5fc6ff55c4578392f57 \
     --hash=sha256:eedf82a470ebe7d010f1872c17237c79ab04097948800029994fa458e52fb4b4
-enum34==1.1.6 \
+# Package enum34 needs to be explicitly limited to Python2.x, in order to avoid
+# certbot-auto failures on Python 3.6+ which enum34 doesn't support. See #5456.
+enum34==1.1.6 ; python_version < '3.4' \
     --hash=sha256:2d81cbbe0e73112bdfe6ef8576f2238f2ba27dd0d55752a776c41d38b7da2850 \
     --hash=sha256:644837f692e5f550741432dd3f223bbb9852018674981b1664e5dc339387588a \
     --hash=sha256:6bd0f6ad48ec2aa117d3d141940d484deccda84d4fcd884f5c3d93c23ecd8c79 \
