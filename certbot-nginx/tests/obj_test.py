@@ -98,10 +98,10 @@ class AddrTest(unittest.TestCase):
 
     def test_set_inclusion(self):
         from certbot_nginx._internal.obj import Addr
-        set_a = set([self.addr1, self.addr2])
+        set_a = {self.addr1, self.addr2}
         addr1b = Addr.fromstring("192.168.1.1")
         addr2b = Addr.fromstring("192.168.1.1:* ssl")
-        set_b = set([addr1b, addr2b])
+        set_b = {addr1b, addr2b}
 
         self.assertEqual(set_a, set_b)
 
@@ -120,8 +120,8 @@ class VirtualHostTest(unittest.TestCase):
         ]
         self.vhost1 = VirtualHost(
             "filep",
-            set([Addr.fromstring("localhost")]), False, False,
-            set(['localhost']), raw1, [])
+            {Addr.fromstring("localhost")}, False, False,
+            {'localhost'}, raw1, [])
         raw2 = [
             ['listen', '69.50.225.155:9000'],
             [['if', '($scheme', '!=', '"https") '],
@@ -130,24 +130,24 @@ class VirtualHostTest(unittest.TestCase):
         ]
         self.vhost2 = VirtualHost(
             "filep",
-            set([Addr.fromstring("localhost")]), False, False,
-            set(['localhost']), raw2, [])
+            {Addr.fromstring("localhost")}, False, False,
+            {'localhost'}, raw2, [])
         raw3 = [
             ['listen', '69.50.225.155:9000'],
             ['rewrite', '^(.*)$', '$scheme://www.domain.com$1', 'permanent']
         ]
         self.vhost3 = VirtualHost(
             "filep",
-            set([Addr.fromstring("localhost")]), False, False,
-            set(['localhost']), raw3, [])
+            {Addr.fromstring("localhost")}, False, False,
+            {'localhost'}, raw3, [])
         raw4 = [
             ['listen', '69.50.225.155:9000'],
             ['server_name', 'return.com']
         ]
         self.vhost4 = VirtualHost(
             "filp",
-            set([Addr.fromstring("localhost")]), False, False,
-            set(['localhost']), raw4, [])
+            {Addr.fromstring("localhost")}, False, False,
+            {'localhost'}, raw4, [])
         raw_has_hsts = [
             ['listen', '69.50.225.155:9000'],
             ['server_name', 'return.com'],
@@ -155,16 +155,16 @@ class VirtualHostTest(unittest.TestCase):
         ]
         self.vhost_has_hsts = VirtualHost(
             "filep",
-            set([Addr.fromstring("localhost")]), False, False,
-            set(['localhost']), raw_has_hsts, [])
+            {Addr.fromstring("localhost")}, False, False,
+            {'localhost'}, raw_has_hsts, [])
 
     def test_eq(self):
         from certbot_nginx._internal.obj import Addr
         from certbot_nginx._internal.obj import VirtualHost
         vhost1b = VirtualHost(
             "filep",
-            set([Addr.fromstring("localhost blah")]), False, False,
-            set(['localhost']), [], [])
+            {Addr.fromstring("localhost blah")}, False, False,
+            {'localhost'}, [], [])
 
         self.assertEqual(vhost1b, self.vhost1)
         self.assertEqual(str(vhost1b), str(self.vhost1))
@@ -203,8 +203,8 @@ class VirtualHostTest(unittest.TestCase):
             ['#', ' managed by Certbot'], []]
         vhost_haystack = VirtualHost(
             "filp",
-            set([Addr.fromstring("localhost")]), False, False,
-            set(['localhost']), test_haystack, [])
+            {Addr.fromstring("localhost")}, False, False,
+            {'localhost'}, test_haystack, [])
         test_bad_haystack = [['listen', '80'], ['root', '/var/www/html'],
             ['index', 'index.html index.htm index.nginx-debian.html'],
             ['server_name', 'two.functorkitten.xyz'], ['listen', '443 ssl'],
@@ -219,8 +219,8 @@ class VirtualHostTest(unittest.TestCase):
             ['#', ' managed by Certbot'], []]
         vhost_bad_haystack = VirtualHost(
             "filp",
-            set([Addr.fromstring("localhost")]), False, False,
-            set(['localhost']), test_bad_haystack, [])
+            {Addr.fromstring("localhost")}, False, False,
+            {'localhost'}, test_bad_haystack, [])
         self.assertTrue(vhost_haystack.contains_list(test_needle))
         self.assertFalse(vhost_bad_haystack.contains_list(test_needle))
 

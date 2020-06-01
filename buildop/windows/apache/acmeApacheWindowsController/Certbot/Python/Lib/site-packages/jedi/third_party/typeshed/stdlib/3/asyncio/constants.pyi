@@ -1,0 +1,13 @@
+
+import enum
+
+LOG_THRESHOLD_FOR_CONNLOST_WRITES: int
+ACCEPT_RETRY_DELAY: int
+DEBUG_STACK_DEPTH: int
+SSL_HANDSHAKE_TIMEOUT: float
+SENDFILE_FALLBACK_READBUFFER_SIZE: int
+
+class _SendfileMode(enum.Enum):
+    UNSUPPORTED: int = ...
+    TRY_NATIVE: int = ...
+    FALLBACK: int = ...

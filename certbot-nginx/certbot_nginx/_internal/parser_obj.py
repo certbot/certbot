@@ -206,7 +206,7 @@ class Sentence(Parsable):
         :returns: whether this lists is parseable by `Sentence`.
         """
         return isinstance(lists, list) and len(lists) > 0 and \
-            all([isinstance(elem, six.string_types) for elem in lists])
+            all(isinstance(elem, six.string_types) for elem in lists)
 
     def parse(self, raw_list, add_spaces=False):
         """ Parses a list of string types into this object.
@@ -214,7 +214,7 @@ class Sentence(Parsable):
         if add_spaces:
             raw_list = _space_list(raw_list)
         if not isinstance(raw_list, list) or \
-                any([not isinstance(elem, six.string_types) for elem in raw_list]):
+                any(not isinstance(elem, six.string_types) for elem in raw_list):
             raise errors.MisconfigurationError("Sentence parsing expects a list of string types.")
         self._data = raw_list
 

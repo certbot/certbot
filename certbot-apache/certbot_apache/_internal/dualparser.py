@@ -49,7 +49,7 @@ class DualNodeBase(object):
 
         pass_primary = assertions.isPassNodeList(primary_res)
         pass_secondary = assertions.isPassNodeList(secondary_res)
-        new_nodes = list()
+        new_nodes = []
 
         if pass_primary and pass_secondary:
             # Both unimplemented
@@ -221,7 +221,7 @@ class DualBlockNode(DualNodeBase):
         implementations to a list of tuples.
         """
 
-        matched = list()
+        matched = []
         for p in primary_list:
             match = None
             for s in secondary_list:

@@ -1,9 +1,13 @@
 """Tests for certbot.compat.filesystem"""
 import contextlib
 import errno
+import stat
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from certbot import util
 from certbot._internal import lock
@@ -277,14 +281,34 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         self.assertEqual(original_mkdir, std_os.mkdir)
 
 
-class OwnershipTest(test_util.TempDirTestCase):
-    """Tests about copy_ownership_and_apply_mode and has_same_ownership"""
+# TODO: This test can be used both by Linux and Windows once on #7967
+@unittest.skipUnless(POSIX_MODE, reason='Needs umask to succeed, and Windows does not have it')
+class LinuxMkdirTests(test_util.TempDirTestCase):
+    """Unit tests for Linux mkdir + makedirs functions in filesystem module"""
+    def test_makedirs_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'dir')
+        subpath = os.path.join(path, 'subpath')
+
+        previous_umask = os.umask(0o022)
+
+        try:
+            filesystem.makedirs(subpath, 0o700)
+
+            import os as std_os  # pylint: disable=os-module-forbidden
+            assert stat.S_IMODE(std_os.stat(path).st_mode) == 0o700
+            assert stat.S_IMODE(std_os.stat(subpath).st_mode) == 0o700
+        finally:
+            os.umask(previous_umask)
+
+
+class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
+    """Tests about copy_ownership_and_apply_mode, copy_ownership_and_mode and has_same_ownership"""
     def setUp(self):
-        super(OwnershipTest, self).setUp()
+        super(CopyOwnershipAndModeTest, self).setUp()
         self.probe_path = _create_probe(self.tempdir)
 
     @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
-    def test_copy_ownership_windows(self):
+    def test_copy_ownership_and_apply_mode_windows(self):
         system = win32security.ConvertStringSidToSid(SYSTEM_SID)
         security = win32security.SECURITY_ATTRIBUTES().SECURITY_DESCRIPTOR
         security.SetSecurityDescriptorOwner(system, False)
@@ -310,7 +334,7 @@ class OwnershipTest(test_util.TempDirTestCase):
                           if dacl.GetAce(index)[2] == everybody])
 
     @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
-    def test_copy_ownership_linux(self):
+    def test_copy_ownership_and_apply_mode_linux(self):
         with mock.patch('os.chown') as mock_chown:
             with mock.patch('os.chmod') as mock_chmod:
                 with mock.patch('os.stat') as mock_stat:
@@ -330,6 +354,24 @@ class OwnershipTest(test_util.TempDirTestCase):
         util.safe_open(path2, 'w').close()
 
         self.assertTrue(filesystem.has_same_ownership(path1, path2))
+
+    @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
+    def test_copy_ownership_and_mode_windows(self):
+        src = self.probe_path
+        dst = _create_probe(self.tempdir, name='dst')
+
+        filesystem.chmod(src, 0o700)
+        self.assertTrue(filesystem.check_mode(src, 0o700))
+        self.assertTrue(filesystem.check_mode(dst, 0o744))
+
+        # Checking an actual change of owner is tricky during a unit test, since we do not know
+        # if any user exists beside the current one. So we mock _copy_win_ownership. It's behavior
+        # have been checked theoretically with test_copy_ownership_and_apply_mode_windows.
+        with mock.patch('certbot.compat.filesystem._copy_win_ownership') as mock_copy_owner:
+            filesystem.copy_ownership_and_mode(src, dst)
+
+        mock_copy_owner.assert_called_once_with(src, dst)
+        self.assertTrue(filesystem.check_mode(dst, 0o700))
 
 
 class CheckPermissionsTest(test_util.TempDirTestCase):
@@ -534,9 +576,9 @@ def _set_owner(target, security_owner, user):
         target, win32security.OWNER_SECURITY_INFORMATION, security_owner)
 
 
-def _create_probe(tempdir):
+def _create_probe(tempdir, name='probe'):
     filesystem.chmod(tempdir, 0o744)
-    probe_path = os.path.join(tempdir, 'probe')
+    probe_path = os.path.join(tempdir, name)
     util.safe_open(probe_path, 'w', chmod=0o744).close()
     return probe_path
 

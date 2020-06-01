@@ -71,15 +71,11 @@ ACME spec: http://ietf-wg-acme.github.io/acme/
 
 ACME working area in github: https://github.com/ietf-wg-acme/acme
 
-|build-status| |container|
+|build-status|
 
 .. |build-status| image:: https://travis-ci.com/certbot/certbot.svg?branch=master
    :target: https://travis-ci.com/certbot/certbot
    :alt: Travis CI status
-
-.. |container| image:: https://quay.io/repository/letsencrypt/letsencrypt/status
-   :target: https://quay.io/repository/letsencrypt/letsencrypt
-   :alt: Docker Repository on Quay.io
 
 .. Do not modify this comment unless you know what you're doing. tag:links-end
 

@@ -1,0 +1,3 @@
+[console_scripts]
+ipdb3 = ipdb.__main__:main
+

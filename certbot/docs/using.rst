@@ -385,7 +385,7 @@ certificate exists alongside any previously obtained certificates, whether
 or not the previous certificates have expired. The generation of a new
 certificate counts against several rate limits that are intended to prevent
 abuse of the ACME protocol, as described
-`here <https://community.letsencrypt.org/t/rate-limits-for-lets-encrypt/6769>`__.
+`here <https://letsencrypt.org/docs/rate-limits/>`__.
 
 .. _changing:
 
@@ -846,17 +846,15 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
 Changing the ACME Server
 ========================
 
-By default, Certbot uses Let's Encrypt's initial production server at
-https://acme-v01.api.letsencrypt.org/. You can tell Certbot to use a
+By default, Certbot uses Let's Encrypt's production server at
+https://acme-v02.api.letsencrypt.org/. You can tell Certbot to use a
 different CA by providing ``--server`` on the command line or in a
 :ref:`configuration file <config-file>` with the URL of the server's
 ACME directory. For example, if you would like to use Let's Encrypt's
-new ACMEv2 server, you would add ``--server
-https://acme-v02.api.letsencrypt.org/directory`` to the command line.
-Certbot will automatically select which version of the ACME protocol to
-use based on the contents served at the provided URL.
+staging server, you would add ``--server
+https://acme-staging-v02.api.letsencrypt.org/directory`` to the command line.
 
-If you use ``--server`` to specify an ACME CA that implements a newer
+If you use ``--server`` to specify an ACME CA that implements the standardized
 version of the spec, you may be able to obtain a certificate for a
 wildcard domain. Some CAs (such as Let's Encrypt) require that domain
 validation for wildcard domains must be done through modifications to

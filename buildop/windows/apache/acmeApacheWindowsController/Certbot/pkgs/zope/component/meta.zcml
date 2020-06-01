@@ -1,0 +1,45 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:meta="http://namespaces.zope.org/meta">
+
+  <meta:directives namespace="http://namespaces.zope.org/zope">
+
+    <meta:directive
+        name="interface"
+        schema="zope.component.zcml.IInterfaceDirective"
+        handler="zope.component.zcml.interface"
+        />
+
+    <meta:directive
+        name="adapter"
+        schema="zope.component.zcml.IAdapterDirective"
+        handler="zope.component.zcml.adapter"
+        />
+
+    <meta:directive
+        name="subscriber"
+        schema="zope.component.zcml.ISubscriberDirective"
+        handler="zope.component.zcml.subscriber"
+        />
+
+    <meta:directive
+        name="utility"
+        schema="zope.component.zcml.IUtilityDirective"
+        handler="zope.component.zcml.utility"
+        />
+
+    <meta:directive
+        name="view"
+        schema="zope.component.zcml.IViewDirective"
+        handler="zope.component.zcml.view"
+        />
+
+    <meta:directive
+        name="resource"
+        schema="zope.component.zcml.IResourceDirective"
+        handler="zope.component.zcml.resource"
+        />
+
+  </meta:directives>
+
+</configure>

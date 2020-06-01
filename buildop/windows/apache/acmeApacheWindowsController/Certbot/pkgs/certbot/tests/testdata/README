@@ -1,0 +1,11 @@
+The following command has been used to generate test keys:
+
+	for x in 256 512 2048; do openssl genrsa -out rsa${k}_key.pem $k; done
+
+and for the CSR PEM (Certificate Signing Request):
+
+		openssl req -new -out csr-Xsans_X.pem -key rsa512_key.pem [-config csr-Xsans_X.conf | -subj '/CN=example.com'] [-outform DER > csr_X.der]
+
+and for the certificate:
+
+  openssl req -new -out cert_X.pem -key rsaX_key.pem -subj '/CN=example.com' -x509 [-outform DER > cert_X.der]

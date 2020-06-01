@@ -124,7 +124,9 @@ def _check_version(version_str, major_version):
     return False
 
 
-def subprocess_with_print(cmd, env=os.environ, shell=False):
+def subprocess_with_print(cmd, env=None, shell=False):
+    if env is None:
+        env = os.environ
     print('+ {0}'.format(subprocess.list2cmdline(cmd)) if isinstance(cmd, list) else cmd)
     subprocess.check_call(cmd, env=env, shell=shell)
 

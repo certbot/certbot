@@ -1,0 +1,11 @@
+zope.event-4.4-py2.7-nspkg.pth,sha256=SWEVH-jEWsKYrL0qoC6GBJaStx_iKxGoAY9PQycFVC4,529
+zope/event/__init__.py,sha256=-GW-8PML_6_LsjCDvLzFVkL4sTYRtlLr_ZKtPbs-Rw4,1141
+zope/event/classhandler.py,sha256=CEx6issKWSia0Wruob_jIQI2EfYX45krokoTHyVsJFQ,1816
+zope/event/tests.py,sha256=bvEzvOmPoQETMqYiqsR9EeVsC8Dzy-HOclfpQFVjDhE,1871
+zope.event-4.4.dist-info/DESCRIPTION.rst,sha256=CX2EVKqG2pzw-faFr2_KGRuKmh9ZHuGbMaXjAZc0Zuw,2714
+zope.event-4.4.dist-info/METADATA,sha256=4v_8UFIp8sJkKZy1o72XMJkV4ZKwz8_NgMGXmiOKQ5Q,4135
+zope.event-4.4.dist-info/RECORD,,
+zope.event-4.4.dist-info/WHEEL,sha256=o2k-Qa-RMNIJmUdIc7KU6VWR_ErNRbWNlxDIpl7lm34,110
+zope.event-4.4.dist-info/metadata.json,sha256=v3W0O2Dqqg20UMy2YprUVg3i3wf88J4qClxwIlePve4,1464
+zope.event-4.4.dist-info/namespace_packages.txt,sha256=QpUHvpO4wIuZDeEgKY8qZCtD-tAukB0fn_f6utzlb98,5
+zope.event-4.4.dist-info/top_level.txt,sha256=QpUHvpO4wIuZDeEgKY8qZCtD-tAukB0fn_f6utzlb98,5

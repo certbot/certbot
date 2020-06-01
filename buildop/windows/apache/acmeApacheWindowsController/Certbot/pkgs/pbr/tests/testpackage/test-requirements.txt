@@ -1,0 +1,2 @@
+ordereddict;python_version=='2.6'
+requests-mock

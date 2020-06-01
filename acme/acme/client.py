@@ -1123,8 +1123,8 @@ class ClientNetwork(object):
             debug_content = response.content.decode("utf-8")
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
-                     "\n".join(["{0}: {1}".format(k, v)
-                                for k, v in response.headers.items()]),
+                     "\n".join("{0}: {1}".format(k, v)
+                                for k, v in response.headers.items()),
                      debug_content)
         return response
 

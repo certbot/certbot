@@ -3,7 +3,10 @@ import unittest
 
 import josepy as jose
 import OpenSSL
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import requests
 from six.moves.urllib import parse as urllib_parse
 
