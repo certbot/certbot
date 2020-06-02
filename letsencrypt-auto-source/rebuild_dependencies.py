@@ -42,6 +42,9 @@ AUTHORITATIVE_CONSTRAINTS = {
     # Too touchy to move to a new version. And will be removed soon
     # in favor of pure python parser for Apache.
     'python-augeas': '0.5.0',
+    # Package enum34 needs to be explicitly limited to Python2.x, in order to avoid
+    # certbot-auto failures on Python 3.6+ which enum34 doesn't support. See #5456.
+    'enum34': '1.1.6 ; python_version < \'3.4\'',
     # Cryptography 2.9+ drops support for OpenSSL 1.0.1, but we still want to support it
     # for officially supported non-x86_64 ancient distributions like RHEL 6 or Debian 8.
     'cryptography': '2.8',
@@ -226,6 +229,10 @@ def _write_requirements(dest_file, requirements, conflicts):
 ''')
 
     for req in requirements:
+        if req in AUTHORITATIVE_CONSTRAINTS:
+            # If requirement is in AUTHORITATIVE_CONSTRAINTS, take its value instead of the
+            # computed one to get any environment descriptor that would have been added.
+            req[1] = AUTHORITATIVE_CONSTRAINTS[req]
         subprocess.check_call(['hashin', '{0}=={1}'.format(req[0], req[1]),
                                '--requirements-file', dest_file])
 
