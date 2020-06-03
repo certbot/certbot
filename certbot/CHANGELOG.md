@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.5.0 - master
+## 1.6.0 - master
 
 ### Added
 
@@ -10,13 +10,29 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* Improved error message in apache installer when mod_ssl is not available.
 * Allow session tickets to be disabled in Apache when mod_ssl is statically linked.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.5.0 - 2020-06-02
+
+### Added
+
+* Require explicit confirmation of snap plugin permissions before connecting.
+
+### Changed
+
+* Improved error message in apache installer when mod_ssl is not available.
 
 ### Fixed
 
 * Add support for OCSP responses which use a public key hash ResponderID, fixing
   interoperability with Sectigo CAs.
+* Fix TLS-ALPN test that fails when run with newer versions of OpenSSL.
 
 More details about these changes can be found on our GitHub repo.
 
