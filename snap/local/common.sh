@@ -1,41 +1,28 @@
 #!/bin/bash
 # Common bash functions useful for cross-compiling Certbot snaps.
 
-# Returns the translation from Snap architecture to Docker architecture
-# Usage: GetQemuArch [amd64|arm64|armhf]
-GetDockerArch() {
-    SNAP_ARCH=$1
+# Resolve the Snap architecture to Docker architecture (DOCKER_ARCH variable)
+# and QEMU architecture (QEMU_ARCH variable).
+# Usage: ResolveArch [amd64|i386|arm64|armhf]
+ResolveArch() {
+    local SNAP_ARCH=$1
 
     case "${SNAP_ARCH}" in
         "amd64")
-            echo "amd64"
+            DOCKER_ARCH="amd64"
+            QEMU_ARCH="x86_64"
+            ;;
+        "i386")
+            DOCKER_ARCH="i386"
+            QEMU_ARCH="i386"
             ;;
         "arm64")
-            echo "arm64v8"
+            DOCKER_ARCH="arm64v8"
+            QEMU_ARCH="aarch64"
             ;;
         "armhf")
-            echo "arm32v7"
-            ;;
-        "*")
-            echo "Not supported build architecture '$1'." >&2
-            exit 1
-    esac
-}
-
-# Returns the translation from Snap architecture to QEMU architecture
-# Usage: GetQemuArch [amd64|arm64|armhf]
-GetQemuArch() {
-    SNAP_ARCH=$1
-
-    case "${SNAP_ARCH}" in
-        "amd64")
-            echo "x86_64"
-            ;;
-        "arm64")
-            echo "aarch64"
-            ;;
-        "armhf")
-            echo "arm"
+            DOCKER_ARCH="arm32v7"
+            QEMU_ARCH="arm"
             ;;
         "*")
             echo "Not supported build architecture '$1'." >&2
@@ -46,8 +33,10 @@ GetQemuArch() {
 # Downloads QEMU static binary file for architecture
 # Usage: DownloadQemuStatic [x86_64|aarch64|arm] DEST_DIR
 DownloadQemuStatic() {
-    QEMU_ARCH=$1
-    DEST_DIR=$2
+    local QEMU_ARCH=$1
+    local DEST_DIR=$2
+    local QEMU_DOWNLOAD_URL
+    local QEMU_LATEST_TAG
 
     if [ ! -f "${DIR}/qemu-${QEMU_ARCH}-static" ]; then
         QEMU_DOWNLOAD_URL="https://github.com/multiarch/qemu-user-static/releases/download"

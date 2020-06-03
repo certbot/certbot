@@ -24,8 +24,7 @@ CERTBOT_DIR="$(dirname "$(dirname "${DIR}")")"
 source "${DIR}/common.sh"
 
 RegisterQemuHandlers
-QEMU_ARCH=$(GetQemuArch "${SNAP_ARCH}")
-DOCKER_ARCH=$(GetDockerArch "${SNAP_ARCH}")
+ResolveArch "${SNAP_ARCH}"
 
 docker run --net=host -d --rm -v "${DIR}/packages:/data/packages" --name pypiserver pypiserver/pypiserver
 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > snap-constraints.txt
@@ -39,8 +38,8 @@ trap cleanup EXIT
 docker run \
   --rm \
   --net=host \
-  -v "${CERTBOT_DIR}:${CERTBOT_DIR}" \
-  -w "${CERTBOT_DIR}" \
+  -v "${CERTBOT_DIR}:/certbot" \
+  -w "/certbot" \
   -e "PIP_EXTRA_INDEX_URL=http://localhost:8080/simple" \
   "adferrand/snapcraft:${DOCKER_ARCH}-stable" \
   snapcraft
