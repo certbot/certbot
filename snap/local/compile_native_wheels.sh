@@ -10,7 +10,7 @@ TARGET_ARCHS="arm64 armhf"
 rm -f "${DIR}/packages/"*
 
 # shellcheck source=common.sh
-source "${DIR}/builder/common.sh"
+source "${DIR}/common.sh"
 
 RegisterQemuHandlers
 
