@@ -34,6 +34,7 @@ for ARCH in ${TARGET_ARCHS}; do
 && /build/venv/bin/pip wheel cryptography cffi -c snap-constraints.txt -w /build \
 && mkdir -p /workspace/packages \
 && mv /build/cryptography* /build/cffi* /workspace/packages \
-&& chmod -R 777 /workspace/packages
+&& chmod 775 /workspace/packages \
+&& chmod 664 /workspace/packages/*
 "
 done
