@@ -610,17 +610,25 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.config.renewal_configs_dir, "the-lineage.com-0001.conf")))
         self.assertTrue(os.path.exists(os.path.join(
             self.config.live_dir, "the-lineage.com-0001", "README")))
+        # Allow write to existing but empty dir
+        filesystem.mkdir(os.path.join(self.config.default_archive_dir, "the-lineage.com-0002"))
+        result = storage.RenewableCert.new_lineage(
+            "the-lineage.com", b"cert3", b"privkey3", b"chain3", self.config)
+        self.assertTrue(os.path.exists(os.path.join(
+            self.config.live_dir, "the-lineage.com-0002", "README")))
+        self.assertTrue(filesystem.check_mode(result.key_path, 0o600))
         # Now trigger the detection of already existing files
-        filesystem.mkdir(os.path.join(
-            self.config.live_dir, "the-lineage.com-0002"))
+        shutil.copytree(os.path.join(self.config.live_dir, "the-lineage.com"),
+                        os.path.join(self.config.live_dir, "the-lineage.com-0003"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage, "the-lineage.com",
-                          b"cert3", b"privkey3", b"chain3", self.config)
-        filesystem.mkdir(os.path.join(self.config.default_archive_dir, "other-example.com"))
+                          b"cert4", b"privkey4", b"chain4", self.config)
+        shutil.copytree(os.path.join(self.config.live_dir, "the-lineage.com"),
+                        os.path.join(self.config.live_dir, "other-example.com"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage,
-                          "other-example.com", b"cert4",
-                          b"privkey4", b"chain4", self.config)
+                          "other-example.com", b"cert5",
+                          b"privkey5", b"chain5", self.config)
         # Make sure it can accept renewal parameters
         result = storage.RenewableCert.new_lineage(
             "the-lineage.com", b"cert2", b"privkey2", b"chain2", self.config)

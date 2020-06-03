@@ -1,6 +1,7 @@
 """Tests for certbot.compat.filesystem"""
 import contextlib
 import errno
+import stat
 import unittest
 
 try:
@@ -278,6 +279,26 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         except OSError:
             pass
         self.assertEqual(original_mkdir, std_os.mkdir)
+
+
+# TODO: This test can be used both by Linux and Windows once on #7967
+@unittest.skipUnless(POSIX_MODE, reason='Needs umask to succeed, and Windows does not have it')
+class LinuxMkdirTests(test_util.TempDirTestCase):
+    """Unit tests for Linux mkdir + makedirs functions in filesystem module"""
+    def test_makedirs_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'dir')
+        subpath = os.path.join(path, 'subpath')
+
+        previous_umask = os.umask(0o022)
+
+        try:
+            filesystem.makedirs(subpath, 0o700)
+
+            import os as std_os  # pylint: disable=os-module-forbidden
+            assert stat.S_IMODE(std_os.stat(path).st_mode) == 0o700
+            assert stat.S_IMODE(std_os.stat(subpath).st_mode) == 0o700
+        finally:
+            os.umask(previous_umask)
 
 
 class CopyOwnershipAndModeTest(test_util.TempDirTestCase):

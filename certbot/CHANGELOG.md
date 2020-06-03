@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.5.0 - master
+## 1.6.0 - master
 
 ### Added
 
@@ -15,8 +15,25 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Cloudflare API Tokens may now be restricted to individual zones.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.5.0 - 2020-06-02
+
+### Added
+
+* Require explicit confirmation of snap plugin permissions before connecting.
+
+### Changed
+
+* Improved error message in apache installer when mod_ssl is not available.
+
+### Fixed
+
+
 * Add support for OCSP responses which use a public key hash ResponderID, fixing
   interoperability with Sectigo CAs.
+* Fix TLS-ALPN test that fails when run with newer versions of OpenSSL.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -42,6 +59,7 @@ More details about these changes can be found on our GitHub repo.
 * Stop asking interactively if the user would like to add a redirect.
 * `mock` dependency is now conditional on Python 2 in all of our packages.
 * Deprecate certbot-auto on Gentoo, macOS, and FreeBSD.
+* Allow existing but empty archive and live dir to be used when creating new lineage.
 
 ### Fixed
 

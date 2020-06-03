@@ -595,6 +595,11 @@ class ApacheConfigurator(common.Installer):
         # cert_key... can all be parsed appropriately
         self.prepare_server_https("443")
 
+        # If we haven't managed to enable mod_ssl by this point, error out
+        if "ssl_module" not in self.parser.modules:
+            raise errors.MisconfigurationError("Could not find ssl_module; "
+                "not installing certificate.")
+
         # Add directives and remove duplicates
         self._add_dummy_ssl_directives(vhost.path)
         self._clean_vhost(vhost)
@@ -608,21 +613,6 @@ class ApacheConfigurator(common.Installer):
         if chain_path is not None:
             path["chain_path"] = self.parser.find_dir(
                 "SSLCertificateChainFile", None, vhost.path)
-
-        # Handle errors when certificate/key directives cannot be found
-        if not path["cert_path"]:
-            logger.warning(
-                "Cannot find an SSLCertificateFile directive in %s. "
-                "VirtualHost was not modified", vhost.path)
-            raise errors.PluginError(
-                "Unable to find an SSLCertificateFile directive")
-        elif not path["cert_key"]:
-            logger.warning(
-                "Cannot find an SSLCertificateKeyFile directive for "
-                "certificate in %s. VirtualHost was not modified", vhost.path)
-            raise errors.PluginError(
-                "Unable to find an SSLCertificateKeyFile directive for "
-                "certificate")
 
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
