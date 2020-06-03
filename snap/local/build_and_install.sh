@@ -23,7 +23,7 @@ CERTBOT_DIR="$(dirname "$(dirname "${DIR}")")"
 # shellcheck source=common.sh
 source "${DIR}/common.sh"
 
-docker run --rm --privileged multiarch/qemu-user-static:register --reset
+RegisterQemuHandlers
 QEMU_ARCH=$(GetQemuArch "${SNAP_ARCH}")
 DOCKER_ARCH=$(GetDockerArch "${SNAP_ARCH}")
 
