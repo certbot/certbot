@@ -68,6 +68,7 @@ class RevocationChecker(object):
                 self.host_args = lambda host: ["Host", host]
 
     def ocsp_response_by_paths(self, cert_path, chain_path, timeout=10):
+        # type: (str, str, int) -> Optional[interfaces.OCSPResponse]
         """Obtains a validated OCSP response.
 
         The OCSP response could have any certificate status, however, if
@@ -89,6 +90,7 @@ class RevocationChecker(object):
         :rtype: interfaces.OCSPResponse or None
 
         """
+        return None
 
     def ocsp_revoked(self, cert):
         # type: (RenewableCert) -> bool
@@ -115,23 +117,36 @@ class RevocationChecker(object):
         :rtype: bool
 
         """
-        if self.broken:
+        url = self._query_prep(cert_path)
+        if not url:
             return False
+
+        if self.use_openssl_binary:
+            host = _host_from_url(url)
+            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, timeout)
+        return _check_ocsp_cryptography(cert_path, chain_path, url, timeout)
+
+    def _query_prep(self, cert_path):
+        # type: (str) -> Tuple[Optional[str], Optional[str]]
+        """Prepare to make an OCSP query for the given cert.
+
+        :param str cert_path: Certificate filepath
+        :rtype: str or None
+        :returns: OCSP server URL if an OCSP query can be performed,
+            otherwise, None
+
+        """
+        if self.broken:
+            return None
 
         # Let's Encrypt doesn't update OCSP for expired certificates,
         # so don't check OCSP if the cert is expired.
         # https://github.com/certbot/certbot/issues/7152
         now = pytz.UTC.fromutc(datetime.utcnow())
         if crypto_util.notAfter(cert_path) <= now:
-            return False
+            return None
 
-        url, host = _determine_ocsp_server(cert_path)
-        if not host or not url:
-            return False
-
-        if self.use_openssl_binary:
-            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, timeout)
-        return _check_ocsp_cryptography(cert_path, chain_path, url, timeout)
+        return _determine_ocsp_server(cert_path)
 
     def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, timeout):
         # type: (str, str, str, str, int) -> bool
@@ -180,8 +195,8 @@ def _determine_ocsp_server(cert_path):
     """Extract the OCSP server host from a certificate.
 
     :param str cert_path: Path to the cert we're checking OCSP for
-    :rtype tuple:
-    :returns: (OCSP server URL or None, OCSP server host or None)
+    :rtype: str or None
+    :returns: OCSP server URL or None
 
     """
     with open(cert_path, 'rb') as file_handler:
@@ -195,15 +210,24 @@ def _determine_ocsp_server(cert_path):
         url = descriptions[0].access_location.value
     except (x509.ExtensionNotFound, IndexError):
         logger.info("Cannot extract OCSP URI from %s", cert_path)
-        return None, None
+        return None
 
     url = url.rstrip()
-    host = url.partition("://")[2].rstrip("/")
 
+    # Determining the host here may not be needed anymore since things have
+    # been refactored since the initial version of this function, but just in
+    # case, I kept it here as a sanity check of the URL value.
+    host = _host_from_url(url)
     if host:
-        return url, host
+        return url
     logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
-    return None, None
+    return None
+
+
+def _host_from_url(url):
+    # type: (str) -> str
+    """Returns the hostname from a URL."""
+    return url.partition("://")[2].rstrip("/")
 
 
 def _check_ocsp_cryptography(cert_path, chain_path, url, timeout):

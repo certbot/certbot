@@ -88,7 +88,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         mock_na.return_value = now + timedelta(hours=2)
 
         self.checker.broken = True
-        mock_determine.return_value = ("", "")
+        mock_determine.return_value = ""
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
 
         self.checker.broken = False
@@ -96,7 +96,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
         self.assertEqual(mock_run.call_count, 0)
 
-        mock_determine.return_value = ("http://x.co", "x.co")
+        mock_determine.return_value = "http://x.co"
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
         mock_run.side_effect = errors.SubprocessError("Unable to load certificate launcher")
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
@@ -104,17 +104,18 @@ class OCSPTestOpenSSL(unittest.TestCase):
 
         # cert expired
         mock_na.return_value = now
-        mock_determine.return_value = ("", "")
+        mock_determine.return_value = ""
         count_before = mock_determine.call_count
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
         self.assertEqual(mock_determine.call_count, count_before)
 
-    def test_determine_ocsp_server(self):
+    def test_determine_ocsp_server_and_host_from_url(self):
         cert_path = test_util.vector_path('ocsp_certificate.pem')
 
         from certbot import ocsp
         result = ocsp._determine_ocsp_server(cert_path)
-        self.assertEqual(('http://ocsp.test4.buypass.com', 'ocsp.test4.buypass.com'), result)
+        self.assertEqual('http://ocsp.test4.buypass.com', result)
+        self.assertEqual(ocsp._host_from_url(result), 'ocsp.test4.buypass.com')
 
     @mock.patch('certbot.ocsp.logger')
     @mock.patch('certbot.util.run_script')
@@ -166,7 +167,7 @@ class OSCPTestCryptography(unittest.TestCase):
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.ocsp._check_ocsp_cryptography')
     def test_ensure_cryptography_toggled(self, mock_check, mock_determine):
-        mock_determine.return_value = ('http://example.com', 'example.com')
+        mock_determine.return_value = 'http://example.com'
         self.checker.ocsp_revoked(self.cert_obj)
 
         mock_check.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com', 10)
