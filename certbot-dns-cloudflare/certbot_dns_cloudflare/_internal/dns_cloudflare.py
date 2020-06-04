@@ -118,7 +118,7 @@ class _CloudflareClient(object):
             code = int(e)
             hint = None
 
-            if code == 10000:
+            if code == 1009:
                 hint = 'Does your API token have "Zone:DNS:Edit" permissions?'
 
             logger.error('Encountered CloudFlareAPIError adding TXT record: %d %s', e, e)
