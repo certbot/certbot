@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Make Certbot snap find externally snapped plugins
 
 ### Changed
 
