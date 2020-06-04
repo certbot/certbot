@@ -275,28 +275,25 @@ def makedirs(file_path, mode=0o777):
     :param int mode: POSIX mode to apply on leaf directory when created, Python defaults
                      will be applied if ``None``
     """
-    if POSIX_MODE:
-        # Since Python 3.7, os.makedirs does not set the given mode to the intermediate directories
-        # that could be created in the process. To keep things safe and consistent on all
-        # Python versions, we set the umask accordingly to have all directories (intermediate and
-        # leaf) created with the given mode.
-        current_umask = os.umask(0)
+    current_umask = umask(0)
+    try:
+        if POSIX_MODE:
+            # Since Python 3.7, os.makedirs does not set the given mode to the intermediate
+            # directories that could be created in the process. To keep things safe and consistent
+            # on all Python versions, we set the umask accordingly to have all directories
+            # (intermediate and leaf) created with the given mode.
+            umask(current_umask | 0o777 ^ mode)
+            return os.makedirs(file_path, mode)
+        orig_mkdir_fn = os.mkdir
         try:
-            os.umask(current_umask | 0o777 ^ mode)
+            # As we know that os.mkdir is called internally by os.makedirs, we will swap the function
+            # in os module for the time of makedirs execution on Windows.
+            os.mkdir = mkdir  # type: ignore
             return os.makedirs(file_path, mode)
         finally:
-            os.umask(current_umask)
-
-    # TODO: Windows does not support umask. A specific PR (#7967) is handling this, and will need
-    #       to add appropriate umask call for the Windows part of the logic below.
-    orig_mkdir_fn = os.mkdir
-    try:
-        # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
-        # os module for the time of makedirs execution on Windows.
-        os.mkdir = mkdir  # type: ignore
-        return os.makedirs(file_path, mode)
+            os.mkdir = orig_mkdir_fn
     finally:
-        os.mkdir = orig_mkdir_fn
+        umask(current_umask)
 
 
 def mkdir(file_path, mode=0o777):
