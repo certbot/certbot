@@ -189,6 +189,47 @@ class RevocationChecker(object):
 class _CryptographyOCSPResponse(interfaces.OCSPResponse):
     """Cryptography implementation of OCSPResponse interface."""
 
+    def __init__(self, ocsp_response):
+        """Initialize.
+
+        :param ocsp.OCSPResponse ocsp_response: OCSP response
+
+        """
+        self._ocsp_response = ocsp_response
+
+    @property
+    def certificate_status(self):
+        """Certificate status
+
+        :rtype: OCSPCertStatus
+
+        """
+        status = self._ocsp_response.certificate_status
+        if status == ocsp.OCSPCertStatus.GOOD:
+            return interfaces.OCSPCertStatus.GOOD
+        elif status == ocsp.OCSPCertStatus.REVOKED:
+            return interfaces.OCSPCertStatus.REVOKED
+        else:  # there is only one option left
+            return interfaces.OCSPCertStatus.UNKNOWN
+
+    @property
+    def next_update(self):
+        """Next update
+
+        :rtype: datetime.datetime
+
+        """
+        return self._ocsp_response.next_update
+
+    @property
+    def bytes(self):
+        """Raw bytes of the OCSP response
+
+        :rtype: bytes
+
+        """
+        return self._ocsp_response.public_bytes(serialization.Encoding.DER)
+
 
 def _determine_ocsp_server(cert_path):
     # type: (str) -> Tuple[Optional[str], Optional[str]]
