@@ -11,6 +11,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Allow session tickets to be disabled in Apache when mod_ssl is statically linked.
+* Read acmev1 Let's Encrypt server URL from renewal config as acmev2 URL to prepare
+  for impending acmev1 deprecation.
 
 ### Fixed
 
