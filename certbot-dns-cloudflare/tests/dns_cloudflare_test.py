@@ -175,6 +175,12 @@ class CloudflareClientTest(unittest.TestCase):
             self.cloudflare_client.add_txt_record,
             DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
+        self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(0, 'com.cloudflare.api.account.zone.list', '')
+        self.assertRaises(
+            errors.PluginError,
+            self.cloudflare_client.add_txt_record,
+            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
     def test_del_txt_record(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
         self.cf.zones.dns_records.get.return_value = [{'id': self.record_id}]
