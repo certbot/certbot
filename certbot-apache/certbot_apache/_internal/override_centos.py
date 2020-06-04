@@ -35,6 +35,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/httpd/conf.d",
+        bin=None,
     )
 
     def config_test(self):

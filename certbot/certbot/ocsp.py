@@ -256,7 +256,11 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
 
 def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
     """Verify an OCSP response signature against certificate issuer or responder"""
-    if response_ocsp.responder_name == issuer_cert.subject:
+    def _key_hash(cert):
+        return x509.SubjectKeyIdentifier.from_public_key(cert.public_key()).digest
+
+    if response_ocsp.responder_name == issuer_cert.subject or \
+       response_ocsp.responder_key_hash == _key_hash(issuer_cert):
         # Case where the OCSP responder is also the certificate issuer
         logger.debug('OCSP response for certificate %s is signed by the certificate\'s issuer.',
                      cert_path)
@@ -267,7 +271,8 @@ def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
                      cert_path)
 
         responder_certs = [cert for cert in response_ocsp.certificates
-                           if cert.subject == response_ocsp.responder_name]
+                           if response_ocsp.responder_name == cert.subject or \
+                              response_ocsp.responder_key_hash == _key_hash(cert)]
         if not responder_certs:
             raise AssertionError('no matching responder certificate could be found')
 
