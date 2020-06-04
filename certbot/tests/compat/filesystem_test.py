@@ -155,13 +155,13 @@ class UmaskTest(TempDirTestCase):
     def test_umask_on_dir(self):
         previous_umask = filesystem.umask(0o022)
 
-        dir1 = os.path.join(self.tempdir, 'probe1')
-        filesystem.mkdir(dir1)
-        self.assertTrue(filesystem.check_mode(dir1, 0o755))
-
-        filesystem.umask(0o077)
-
         try:
+            dir1 = os.path.join(self.tempdir, 'probe1')
+            filesystem.mkdir(dir1)
+            self.assertTrue(filesystem.check_mode(dir1, 0o755))
+
+            filesystem.umask(0o077)
+
             dir2 = os.path.join(self.tempdir, 'dir2')
             filesystem.mkdir(dir2)
             self.assertTrue(filesystem.check_mode(dir2, 0o700))
@@ -175,13 +175,13 @@ class UmaskTest(TempDirTestCase):
     def test_umask_on_file(self):
         previous_umask = filesystem.umask(0o022)
 
-        file1 = os.path.join(self.tempdir, 'probe1')
-        UmaskTest._create_file(file1)
-        self.assertTrue(filesystem.check_mode(file1, 0o755))
-
-        filesystem.umask(0o077)
-
         try:
+            file1 = os.path.join(self.tempdir, 'probe1')
+            UmaskTest._create_file(file1)
+            self.assertTrue(filesystem.check_mode(file1, 0o755))
+
+            filesystem.umask(0o077)
+
             file2 = os.path.join(self.tempdir, 'probe2')
             UmaskTest._create_file(file2)
             self.assertTrue(filesystem.check_mode(file2, 0o700))
