@@ -6,11 +6,15 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Function `certbot.compat.filesystem.umask` is a drop-in replacement for `os.umask`
+  implementing umask for both UNIX and Windows systems.
 
 ### Changed
 
 * Allow session tickets to be disabled in Apache when mod_ssl is statically linked.
+* Certbot behaves similarly on Windows than on UNIX systems regarding umask, and
+  the umask `022` is applied by default: all files/directories are not writable by anyone
+  other than the user running Certbot and the system/admin users.
 
 ### Fixed
 

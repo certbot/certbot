@@ -282,7 +282,7 @@ def makedirs(file_path, mode=0o777):
         # on all Python versions, we set the umask accordingly to have all directories
         # (intermediate and leaf) created with the given mode.
         umask(current_umask | 0o777 ^ mode)
-        
+
         if POSIX_MODE:
             return os.makedirs(file_path, mode)
 
