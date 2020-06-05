@@ -288,8 +288,8 @@ def makedirs(file_path, mode=0o777):
 
         orig_mkdir_fn = os.mkdir
         try:
-            # As we know that os.mkdir is called internally by os.makedirs, we will swap the function
-            # in os module for the time of makedirs execution on Windows.
+            # As we know that os.mkdir is called internally by os.makedirs, we will swap the
+            # function in os module for the time of makedirs execution on Windows.
             os.mkdir = mkdir  # type: ignore
             return os.makedirs(file_path, mode)
         finally:
