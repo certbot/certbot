@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Add minimal code to run Nginx plugin on NetBSD.
 
 ### Changed
 
@@ -23,7 +23,6 @@ More details about these changes can be found on our GitHub repo.
 ### Added
 
 * Require explicit confirmation of snap plugin permissions before connecting.
-* Support for NetBSD.
 
 ### Changed
 
