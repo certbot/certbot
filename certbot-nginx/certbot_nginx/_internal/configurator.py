@@ -324,7 +324,7 @@ class NginxConfigurator(common.Installer):
         if util.is_ipaddress(target_name):
             # ip address is currently doesn't work
             raise errors.MisconfigurationError(
-                "Currently nginx plugin doesn't support installing cert for ip address %s" % target_name)
+                "Current plugin doesn't support installing cert for ip address %s" % target_name)
 
         if util.is_wildcard_domain(target_name):
             # Ask user which VHosts to support.
