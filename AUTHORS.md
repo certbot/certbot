@@ -36,7 +36,7 @@ Authors
 * [Blake Griffith](https://github.com/cowlicks)
 * [Brad Warren](https://github.com/bmw)
 * [Brandon Kraft](https://github.com/kraftbj)
-* [Brandon Kreisel](https://github.com/kraftbj)
+* [Brandon Kreisel](https://github.com/BKreisel)
 * [Cameron Steel](https://github.com/Tugzrida)
 * [Ceesjan Luiten](https://github.com/quinox)
 * [Chad Whitacre](https://github.com/whit537)
