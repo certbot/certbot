@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Add minimal code to run Nginx plugin on NetBSD.
 
 ### Changed
 
