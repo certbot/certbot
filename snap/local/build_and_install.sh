@@ -6,6 +6,10 @@ if [[ -z "$TRAVIS" ]]; then
     exit 1
 fi
 
+# Add the current user to the lxd group so they can run `snapcraft --use-lxd`
+# without sudo since running the command without sudo is required by newer
+# versions of snapcraft.
+sudo usermod -aG lxd "$USER"
 sudo /snap/bin/lxd.migrate -yes
 sudo /snap/bin/lxd waitready
 sudo /snap/bin/lxd init --auto
