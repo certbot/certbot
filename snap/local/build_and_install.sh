@@ -26,15 +26,11 @@ source "${DIR}/common.sh"
 RegisterQemuHandlers
 ResolveArch "${SNAP_ARCH}"
 
+docker run --net=host -d --rm -v "${DIR}/packages:/data/packages" --name pypiserver pypiserver/pypiserver
 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > snap-constraints.txt
 
-pushd "${DIR}/packages"
-"${CERTBOT_DIR}/tools/simple_http_server.py" 8080 >/dev/null 2>&1 &
-HTTP_SERVER_PID="$!"
-popd
-
 function cleanup() {
-    kill "${HTTP_SERVER_PID}"
+    docker rm --force pypiserver
 }
 
 trap cleanup EXIT
@@ -44,7 +40,7 @@ docker run \
   --net=host \
   -v "${CERTBOT_DIR}:/certbot" \
   -w "/certbot" \
-  -e "PIP_EXTRA_INDEX_URL=http://localhost:8080" \
+  -e "PIP_EXTRA_INDEX_URL=http://localhost:8080/simple" \
   "adferrand/snapcraft:${DOCKER_ARCH}-stable" \
   snapcraft
 
