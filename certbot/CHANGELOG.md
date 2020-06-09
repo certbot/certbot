@@ -6,11 +6,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Add minimal code to run Nginx plugin on NetBSD.
 
 ### Changed
 
-*
+* Allow session tickets to be disabled in Apache when mod_ssl is statically linked.
 
 ### Fixed
 

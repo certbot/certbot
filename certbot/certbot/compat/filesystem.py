@@ -25,13 +25,14 @@ def chmod(file_path, mode):
     # type: (str, int) -> None
     """
     Apply a POSIX mode on given file_path:
-        * for Linux, the POSIX mode will be directly applied using chmod,
-        * for Windows, the POSIX mode will be translated into a Windows DACL that make sense for
-          Certbot context, and applied to the file using kernel calls.
+
+      - for Linux, the POSIX mode will be directly applied using chmod,
+      - for Windows, the POSIX mode will be translated into a Windows DACL that make sense for
+        Certbot context, and applied to the file using kernel calls.
 
     The definition of the Windows DACL that correspond to a POSIX mode, in the context of Certbot,
     is explained at https://github.com/certbot/certbot/issues/6356 and is implemented by the
-    method _generate_windows_flags().
+    method `_generate_windows_flags()`.
 
     :param str file_path: Path of the file
     :param int mode: POSIX mode to apply
@@ -57,6 +58,7 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
     Copy ownership (user and optionally group on Linux) from the source to the
     destination, then apply given mode in compatible way for Linux and Windows.
     This replaces the os.chown command.
+
     :param str src: Path of the source file
     :param str dst: Path of the destination file
     :param int mode: Permission mode to apply on the destination file
@@ -88,6 +90,7 @@ def copy_ownership_and_mode(src, dst, copy_user=True, copy_group=True):
     """
     Copy ownership (user and optionally group on Linux) and mode/DACL
     from the source to the destination.
+
     :param str src: Path of the source file
     :param str dst: Path of the destination file
     :param bool copy_user: Copy user if `True`
@@ -113,6 +116,7 @@ def check_mode(file_path, mode):
     Check if the given mode matches the permissions of the given file.
     On Linux, will make a direct comparison, on Windows, mode will be compared against
     the security model.
+
     :param str file_path: Path of the file
     :param int mode: POSIX mode to test
     :rtype: bool
@@ -128,6 +132,7 @@ def check_owner(file_path):
     # type: (str) -> bool
     """
     Check if given file is owned by current user.
+
     :param str file_path: File path to check
     :rtype: bool
     :return: True if given file is owned by current user, False otherwise.
@@ -150,6 +155,7 @@ def check_permissions(file_path, mode):
     # type: (str, int) -> bool
     """
     Check if given file has the given mode and is owned by current user.
+
     :param str file_path: File path to check
     :param int mode: POSIX mode to check
     :rtype: bool
@@ -163,6 +169,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     """
     Wrapper of original os.open function, that will ensure on Windows that given mode
     is correctly applied.
+
     :param str file_path: The file path to open
     :param int flags: Flags to apply on file while opened
     :param int mode: POSIX mode to apply on file when opened,
@@ -171,7 +178,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     :rtype: int
     :raise: OSError(errno.EEXIST) if the file already exists and os.O_CREAT & os.O_EXCL are set,
             OSError(errno.EACCES) on Windows if the file already exists and is a directory, and
-                os.O_CREAT is set.
+            os.O_CREAT is set.
     """
     if POSIX_MODE:
         # On Linux, invoke os.open directly.
@@ -232,6 +239,7 @@ def makedirs(file_path, mode=0o777):
     """
     Rewrite of original os.makedirs function, that will ensure on Windows that given mode
     is correctly applied.
+
     :param str file_path: The file path to open
     :param int mode: POSIX mode to apply on leaf directory when created, Python defaults
                      will be applied if ``None``
@@ -265,6 +273,7 @@ def mkdir(file_path, mode=0o777):
     """
     Rewrite of original os.mkdir function, that will ensure on Windows that given mode
     is correctly applied.
+
     :param str file_path: The file path to open
     :param int mode: POSIX mode to apply on directory when created, Python defaults
                      will be applied if ``None``
@@ -295,6 +304,7 @@ def replace(src, dst):
     # type: (str, str) -> None
     """
     Rename a file to a destination path and handles situations where the destination exists.
+
     :param str src: The current file path.
     :param str dst: The new file path.
     """
@@ -348,6 +358,7 @@ def is_executable(path):
     # type: (str) -> bool
     """
     Is path an executable file?
+
     :param str path: path to test
     :return: True if path is an executable file
     :rtype: bool
@@ -362,6 +373,7 @@ def has_world_permissions(path):
     # type: (str) -> bool
     """
     Check if everybody/world has any right (read/write/execute) on a file given its path
+
     :param str path: path to test
     :return: True if everybody/world has any right to the file
     :rtype: bool
@@ -383,6 +395,7 @@ def compute_private_key_mode(old_key, base_mode):
     # type: (str, int) -> int
     """
     Calculate the POSIX mode to apply to a private key given the previous private key
+
     :param str old_key: path to the previous private key
     :param int base_mode: the minimum modes to apply to a private key
     :return: the POSIX mode to apply
@@ -405,6 +418,7 @@ def has_same_ownership(path1, path2):
     """
     Return True if the ownership of two files given their respective path is the same.
     On Windows, ownership is checked against owner only, since files do not have a group owner.
+
     :param str path1: path to the first file
     :param str path2: path to the second file
     :return: True if both files have the same ownership, False otherwise
@@ -430,6 +444,7 @@ def has_min_permissions(path, min_mode):
     """
     Check if a file given its path has at least the permissions defined by the given minimal mode.
     On Windows, group permissions are ignored since files do not have a group owner.
+
     :param str path: path to the file to check
     :param int min_mode: the minimal permissions expected
     :return: True if the file matches the minimal permissions expectations, False otherwise
