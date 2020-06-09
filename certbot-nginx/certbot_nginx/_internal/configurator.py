@@ -321,6 +321,21 @@ class NginxConfigurator(common.Installer):
         :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
 
         """
+        # ip address is currently doesn't work for this plugin
+        try:
+            socket.inet_pton(socket.AF_INET, target_name)
+            # If this line runs it was ip address (ipv4)
+            raise errors.MisconfigurationError(
+                "Current plugin doesn't support installing cert for ip address %s" % target_name)
+        except socket.error:
+            # It wasn't an IPv4 address, so try ipv6
+            try:
+                socket.inet_pton(socket.AF_INET6, target_name)
+                raise errors.MisconfigurationError(
+                    "Current plugin doesn't support installing cert for ipv6 address %s" % target_name)
+            except socket.error:
+                pass
+
         if util.is_wildcard_domain(target_name):
             # Ask user which VHosts to support.
             vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
@@ -605,7 +620,7 @@ class NginxConfigurator(common.Installer):
             for addr in vhost.addrs:
                 host = addr.get_addr()
                 if common.hostname_regex.match(host):
-                    # If it's a hostname, add it to the names.
+                    # If it's a hostname, add it to the names.get_all_names
                     all_names.add(host)
                 elif not common.private_ips_regex.match(host):
                     # If it isn't a private IP, do a reverse DNS lookup

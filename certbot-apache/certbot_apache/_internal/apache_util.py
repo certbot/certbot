@@ -3,6 +3,7 @@ import binascii
 import fnmatch
 import logging
 import re
+import socket
 import subprocess
 
 import pkg_resources
@@ -132,6 +133,21 @@ def included_in_paths(filepath, paths):
 
     return any(fnmatch.fnmatch(filepath, path) for path in paths)
 
+def is_ipaddress(address):
+    """this function check if input name is actually an IP(v4 or v6) address.
+    while same function exist in certbot/util.py, it duplicated to keep
+     certbot_apaches backward compatibility"""
+    try:
+        socket.inet_pton(socket.AF_INET, address)
+        # If this line runs it was ip address (ipv4)
+        return True
+    except socket.error:
+        # It wasn't an IPv4 address, so try ipv6
+        try:
+            socket.inet_pton(socket.AF_INET6, address)
+            return True
+        except socket.error:
+            return False
 
 def parse_defines(apachectl):
     """
