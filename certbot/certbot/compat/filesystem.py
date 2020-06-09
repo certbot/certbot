@@ -39,13 +39,14 @@ def chmod(file_path, mode):
     # type: (str, int) -> None
     """
     Apply a POSIX mode on given file_path:
-        * for Linux, the POSIX mode will be directly applied using chmod,
-        * for Windows, the POSIX mode will be translated into a Windows DACL that make sense for
-          Certbot context, and applied to the file using kernel calls.
+
+      - for Linux, the POSIX mode will be directly applied using chmod,
+      - for Windows, the POSIX mode will be translated into a Windows DACL that make sense for
+        Certbot context, and applied to the file using kernel calls.
 
     The definition of the Windows DACL that correspond to a POSIX mode, in the context of Certbot,
     is explained at https://github.com/certbot/certbot/issues/6356 and is implemented by the
-    method _generate_windows_flags().
+    method `_generate_windows_flags()`.
 
     :param str file_path: Path of the file
     :param int mode: POSIX mode to apply
@@ -209,7 +210,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     :rtype: int
     :raise: OSError(errno.EEXIST) if the file already exists and os.O_CREAT & os.O_EXCL are set,
             OSError(errno.EACCES) on Windows if the file already exists and is a directory, and
-                os.O_CREAT is set.
+            os.O_CREAT is set.
     """
     if POSIX_MODE:
         # On Linux, invoke os.open directly.
