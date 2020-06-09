@@ -16,6 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Certbot behaves similarly on Windows to on UNIX systems regarding umask, and
   the umask `022` is applied by default: all files/directories are not writable by anyone
   other than the user running Certbot and the system/admin users.
+* Read acmev1 Let's Encrypt server URL from renewal config as acmev2 URL to prepare
+  for impending acmev1 deprecation.
 
 ### Fixed
 

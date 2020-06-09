@@ -19,6 +19,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot._internal import cli
+from certbot._internal import constants
 from certbot._internal import hooks
 from certbot._internal import storage
 from certbot._internal import updater
@@ -243,16 +244,28 @@ def _restore_int(name, value):
         raise errors.Error("Expected a numeric value for {0}".format(name))
 
 
-def _restore_str(unused_name, value):
+def _restore_str(name, value):
     """Restores a string key-value pair from a renewal config file.
 
-    :param str unused_name: option name
+    :param str name: option name
     :param str value: option value
 
     :returns: converted option value to be stored in the runtime config
     :rtype: str or None
 
     """
+    # Previous to v0.5.0, Certbot always stored the `server` URL in the renewal config,
+    # resulting in configs which explicitly use the deprecated ACMEv1 URL, today
+    # preventing an automatic transition to the default modern ACME URL.
+    # (https://github.com/certbot/certbot/issues/7978#issuecomment-625442870)
+    # As a mitigation, this function reinterprets the value of the `server` parameter if
+    # necessary, replacing the ACMEv1 URL with the default ACME URL. It is still possible
+    # to override this choice with the explicit `--server` CLI flag.
+    if name == "server" and value == constants.V1_URI:
+        logger.info("Using server %s instead of legacy %s",
+                    constants.CLI_DEFAULTS["server"], value)
+        return constants.CLI_DEFAULTS["server"]
+
     return None if value == "None" else value
 
 
