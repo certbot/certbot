@@ -14,5 +14,7 @@ sudo /snap/bin/lxd.migrate -yes
 sudo /snap/bin/lxd waitready
 sudo /snap/bin/lxd init --auto
 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > constraints.txt
-snapcraft --use-lxd
+# Run snapcraft with the lxd group since it has not been added to the current
+# shell.
+sg lxd -c 'snapcraft --use-lxd'
 sudo snap install --dangerous --classic *.snap
