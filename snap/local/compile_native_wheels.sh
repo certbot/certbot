@@ -35,7 +35,7 @@ for SNAP_ARCH in ${TARGET_ARCHS}; do
 && mkdir -p /workspace/packages/cffi /workspace/packages/cryptography \
 && mv /build/cryptography-* /workspace/packages/cryptography \
 && mv /build/cffi-* /workspace/packages/cffi \
-&& chmod 775 /workspace/packages /workspace/packages/cffi /workspace/packages/cryptography \
-&& chmod 664 /workspace/packages/cffi/* /workspace/packages/cryptography/*
+&& chmod 777 /workspace/packages /workspace/packages/cffi /workspace/packages/cryptography \
+&& chmod 666 /workspace/packages/cffi/* /workspace/packages/cryptography/*
 "
 done
