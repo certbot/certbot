@@ -21,6 +21,20 @@ else:
     POSIX_MODE = False
 
 
+# Windows umask implementation, since Windows does not have a concept of umask by default.
+# We choose 022 as initial value since it is the default one on most Linux distributions, and
+# it is a decent choice to not have write permissions for group owner and everybody by default.
+# We use a class here to avoid needing to define a global variable, and the potential mistakes
+# that could happen with this kind of pattern.
+class _WindowsUmask:
+    """Store the current umask to apply on Windows"""
+    def __init__(self):
+        self.mask = 0o022
+
+
+_WINDOWS_UMASK = _WindowsUmask()
+
+
 def chmod(file_path, mode):
     # type: (str, int) -> None
     """
@@ -41,6 +55,24 @@ def chmod(file_path, mode):
         os.chmod(file_path, mode)
     else:
         _apply_win_mode(file_path, mode)
+
+
+def umask(mask):
+    # type: (int) -> int
+    """
+    Set the current numeric umask and return the previous umask. On Linux, the built-in umask
+    method is used. On Windows, our Certbot-side implementation is used.
+
+    :param int mask: The user file-creation mode mask to apply.
+    :rtype: int
+    :return: The previous umask value.
+    """
+    if POSIX_MODE:
+        return os.umask(mask)
+
+    previous_umask = _WINDOWS_UMASK.mask
+    _WINDOWS_UMASK.mask = mask
+    return previous_umask
 
 
 # One could ask why there is no copy_ownership() function, or even a reimplementation
@@ -194,7 +226,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
         attributes = win32security.SECURITY_ATTRIBUTES()
         security = attributes.SECURITY_DESCRIPTOR
         user = _get_current_user()
-        dacl = _generate_dacl(user, mode)
+        dacl = _generate_dacl(user, mode, _WINDOWS_UMASK.mask)
         # We set second parameter to 0 (`False`) to say that this security descriptor is
         # NOT constructed from a default mechanism, but is explicitly set by the user.
         # See https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-setsecuritydescriptorowner  # pylint: disable=line-too-long
@@ -244,28 +276,27 @@ def makedirs(file_path, mode=0o777):
     :param int mode: POSIX mode to apply on leaf directory when created, Python defaults
                      will be applied if ``None``
     """
-    if POSIX_MODE:
-        # Since Python 3.7, os.makedirs does not set the given mode to the intermediate directories
-        # that could be created in the process. To keep things safe and consistent on all
-        # Python versions, we set the umask accordingly to have all directories (intermediate and
-        # leaf) created with the given mode.
-        current_umask = os.umask(0)
+    current_umask = umask(0)
+    try:
+        # Since Python 3.7, os.makedirs does not set the given mode to the intermediate
+        # directories that could be created in the process. To keep things safe and consistent
+        # on all Python versions, we set the umask accordingly to have all directories
+        # (intermediate and leaf) created with the given mode.
+        umask(current_umask | 0o777 ^ mode)
+
+        if POSIX_MODE:
+            return os.makedirs(file_path, mode)
+
+        orig_mkdir_fn = os.mkdir
         try:
-            os.umask(current_umask | 0o777 ^ mode)
+            # As we know that os.mkdir is called internally by os.makedirs, we will swap the
+            # function in os module for the time of makedirs execution on Windows.
+            os.mkdir = mkdir  # type: ignore
             return os.makedirs(file_path, mode)
         finally:
-            os.umask(current_umask)
-
-    # TODO: Windows does not support umask. A specific PR (#7967) is handling this, and will need
-    #       to add appropriate umask call for the Windows part of the logic below.
-    orig_mkdir_fn = os.mkdir
-    try:
-        # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
-        # os module for the time of makedirs execution on Windows.
-        os.mkdir = mkdir  # type: ignore
-        return os.makedirs(file_path, mode)
+            os.mkdir = orig_mkdir_fn
     finally:
-        os.mkdir = orig_mkdir_fn
+        umask(current_umask)
 
 
 def mkdir(file_path, mode=0o777):
@@ -284,7 +315,7 @@ def mkdir(file_path, mode=0o777):
     attributes = win32security.SECURITY_ATTRIBUTES()
     security = attributes.SECURITY_DESCRIPTOR
     user = _get_current_user()
-    dacl = _generate_dacl(user, mode)
+    dacl = _generate_dacl(user, mode, _WINDOWS_UMASK.mask)
     security.SetSecurityDescriptorOwner(user, False)
     security.SetSecurityDescriptorDacl(1, dacl, 0)
 
@@ -322,6 +353,10 @@ def realpath(file_path):
     """
     Find the real path for the given path. This method resolves symlinks, including
     recursive symlinks, and is protected against symlinks that creates an infinite loop.
+
+    :param str file_path: The path to resolve
+    :returns: The real path for the given path
+    :rtype: str
     """
     original_path = file_path
 
@@ -372,7 +407,7 @@ def is_executable(path):
 def has_world_permissions(path):
     # type: (str) -> bool
     """
-    Check if everybody/world has any right (read/write/execute) on a file given its path
+    Check if everybody/world has any right (read/write/execute) on a file given its path.
 
     :param str path: path to test
     :return: True if everybody/world has any right to the file
@@ -394,7 +429,7 @@ def has_world_permissions(path):
 def compute_private_key_mode(old_key, base_mode):
     # type: (str, int) -> int
     """
-    Calculate the POSIX mode to apply to a private key given the previous private key
+    Calculate the POSIX mode to apply to a private key given the previous private key.
 
     :param str old_key: path to the previous private key
     :param int base_mode: the minimum modes to apply to a private key
@@ -520,7 +555,9 @@ def _apply_win_mode(file_path, mode):
     win32security.SetFileSecurity(file_path, win32security.DACL_SECURITY_INFORMATION, security)
 
 
-def _generate_dacl(user_sid, mode):
+def _generate_dacl(user_sid, mode, mask=None):
+    if mask:
+        mode = mode & (0o777 - mask)
     analysis = _analyze_mode(mode)
 
     # Get standard accounts from "well-known" sid

@@ -12,7 +12,7 @@ version = '1.6.0.dev0'
 # acme/certbot version.
 install_requires = [
     'acme>=0.29.0',
-    'certbot>=1.1.0',
+    'certbot>=1.6.0.dev0',
     'python-augeas',
     'setuptools',
     'zope.component',
