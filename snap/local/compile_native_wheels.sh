@@ -32,9 +32,10 @@ for SNAP_ARCH in ${TARGET_ARCHS}; do
 && python3 -m venv /build/venv \
 && /build/venv/bin/pip install wheel \
 && /build/venv/bin/pip wheel cryptography cffi -c snap-constraints.txt -w /build \
-&& mkdir -p /workspace/packages \
-&& mv /build/cryptography* /build/cffi* /workspace/packages \
-&& chmod 775 /workspace/packages \
-&& chmod 664 /workspace/packages/*
+&& mkdir -p /workspace/packages/cffi /workspace/packages/cryptography \
+&& mv /build/cryptography-* /workspace/packages/cryptography \
+&& mv /build/cffi-* /workspace/packages/cffi \
+&& chmod 775 /workspace/packages /workspace/packages/cffi /workspace/packages/cryptography \
+&& chmod 664 /workspace/packages/cffi/* /workspace/packages/cryptography/*
 "
 done
