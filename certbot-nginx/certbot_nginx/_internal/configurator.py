@@ -332,7 +332,8 @@ class NginxConfigurator(common.Installer):
             try:
                 socket.inet_pton(socket.AF_INET6, target_name)
                 raise errors.MisconfigurationError(
-                    "Current plugin doesn't support installing cert for ipv6 address %s" % target_name)
+                    "Current plugin doesn't support \
+                    installing cert for ipv6 address %s" % target_name)
             except socket.error:
                 pass
 

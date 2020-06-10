@@ -237,7 +237,7 @@ class MultipleVhostsTest(util.ApacheTest):
             errors.PluginError, self.config.choose_vhost, "127.0.0.1")
 
     @mock.patch("certbot_apache._internal.display_ops.select_vhost")
-    def test_choose_vhost_ipaddress(self, mock_select):
+    def test_choose_vhost_ipv6(self, mock_select):
         self.assertRaises(
             errors.PluginError, self.config.choose_vhost, "::1")
 
