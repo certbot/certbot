@@ -7,7 +7,7 @@ set -ex
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 TARGET_ARCHS="i386 arm64 armhf"
 
-rm -f "${DIR}/packages/"*
+rm -rf "${DIR}/packages/"*
 
 # shellcheck source=common.sh
 source "${DIR}/common.sh"
