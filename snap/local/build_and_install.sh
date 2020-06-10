@@ -1,20 +1,53 @@
 #!/bin/bash
+# Cross-compile the Certbot snap from local sources for the specified architecture,
+# and install it if this architecture is also the the current machine one.
+# This script is designed for CI tests purpose.
+# Usage: build_and_install.sh [amd64,arm64,armhf]
 set -ex
 
-if [[ -z "$TRAVIS" ]]; then
+if [[ -z "${TRAVIS}" ]]; then
     echo "This script makes global changes to the system it is run on so should only be run in CI."
     exit 1
 fi
 
-# Add the current user to the lxd group so they can run `snapcraft --use-lxd`
-# without sudo since running the command without sudo is required by newer
-# versions of snapcraft.
-sudo usermod -aG lxd "$USER"
-sudo /snap/bin/lxd.migrate -yes
-sudo /snap/bin/lxd waitready
-sudo /snap/bin/lxd init --auto
-tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > constraints.txt
-# Run snapcraft with the lxd group since it has not been added to the current
-# shell.
-sg lxd -c 'snapcraft --use-lxd'
-sudo snap install --dangerous --classic *.snap
+SNAP_ARCH=$1
+
+if [[ -z "${SNAP_ARCH}" ]]; then
+    echo "You need to specify the target architecture"
+    exit 1
+fi
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+CERTBOT_DIR="$(dirname "$(dirname "${DIR}")")"
+
+# shellcheck source=common.sh
+source "${DIR}/common.sh"
+
+RegisterQemuHandlers
+ResolveArch "${SNAP_ARCH}"
+
+tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > snap-constraints.txt
+
+pushd "${DIR}/packages"
+"${CERTBOT_DIR}/tools/simple_http_server.py" 8080 >/dev/null 2>&1 &
+HTTP_SERVER_PID="$!"
+popd
+
+function cleanup() {
+    kill "${HTTP_SERVER_PID}"
+}
+
+trap cleanup EXIT
+
+docker run \
+  --rm \
+  --net=host \
+  -v "${CERTBOT_DIR}:/certbot" \
+  -w "/certbot" \
+  -e "PIP_EXTRA_INDEX_URL=http://localhost:8080" \
+  "adferrand/snapcraft:${DOCKER_ARCH}-stable" \
+  snapcraft
+
+if [[ "$(arch)" == "${QEMU_ARCH}" ]]; then
+    sudo snap install --dangerous --classic *.snap
+fi

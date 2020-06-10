@@ -46,13 +46,15 @@ parts:
     plugin: python
     source: .
     source-subdir: acme
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-version: python3
+    # To build cryptography and cffi if needed
+    build-packages: [libffi-dev, libssl-dev]
   certbot:
     plugin: python
     source: .
     source-subdir: certbot
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-version: python3
     after: [acme]
     override-pull: |
@@ -65,7 +67,7 @@ parts:
     plugin: python
     source: .
     source-subdir: certbot-apache
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-version: python3
     after: [python-augeas, certbot]
     stage-packages: [libaugeas0]
@@ -76,7 +78,7 @@ parts:
     plugin: python
     source: .
     source-subdir: certbot-nginx
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-version: python3
     # This is the last step, compile pycache now as there should be no conflicts.
     override-prime: |
