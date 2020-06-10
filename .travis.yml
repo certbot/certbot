@@ -211,10 +211,6 @@ matrix:
       env: ACME_SERVER=boulder-v2 TOXENV=integration
       <<: *extended-test-suite
     - sudo: required
-      env: TOXENV=le_auto_jessie
-      services: docker
-      <<: *extended-test-suite
-    - sudo: required
       env: TOXENV=le_auto_centos6
       services: docker
       <<: *extended-test-suite

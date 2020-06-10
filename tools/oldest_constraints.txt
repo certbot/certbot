@@ -26,15 +26,6 @@ zope.component==4.1.0
 zope.event==4.0.3
 zope.interface==4.0.5
 
-# Debian Jessie Backports constraints
-PyICU==1.8
-colorama==0.3.2
-enum34==1.0.3
-html5lib==0.999
-idna==2.0
-pbr==1.8.0
-pytz==2012rc0
-
 # Debian Buster constraints
 google-api-python-client==1.5.5
 

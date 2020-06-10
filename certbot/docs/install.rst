@@ -250,9 +250,6 @@ through a command like:
 They can be installed by running the same installation command above but
 replacing ``certbot`` with the name of the desired package.
 
-There are no Certbot packages available for Debian Jessie and Jessie users
-should instead use certbot-auto_.
-
 **Ubuntu**
 
 If you run Ubuntu Trusty, Xenial, or Bionic, certbot is available through the official PPA,
