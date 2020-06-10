@@ -7,6 +7,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 * Add minimal code to run Nginx plugin on NetBSD.
+* Make Certbot snap find externally snapped plugins
 * Function `certbot.compat.filesystem.umask` is a drop-in replacement for `os.umask`
   implementing umask for both UNIX and Windows systems.
 
