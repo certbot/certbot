@@ -12,5 +12,8 @@ join() {
 }
 
 paths=$(for plugin_snap in $(snap connections certbot|sed -n '2,$p'|awk '$1=="content[certbot-1]"{print $3}'|cut -d: -f1); do echo /snap/$plugin_snap/current/lib/python3.6/site-packages; done)
-export PYTHONPATH=$(join : "$PYTHONPATH $paths")
+export PYTHONPATH=$(join : $PYTHONPATH $paths)
+if [ -z "$PYTHONPATH" ]; then
+    unset PYTHONPATH
+fi
 exec certbot "$@"
