@@ -2,7 +2,49 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.4.0 - master
+## 1.6.0 - master
+
+### Added
+
+* Add minimal code to run Nginx plugin on NetBSD.
+* Make Certbot snap find externally snapped plugins
+* Function `certbot.compat.filesystem.umask` is a drop-in replacement for `os.umask`
+  implementing umask for both UNIX and Windows systems.
+
+### Changed
+
+* Allow session tickets to be disabled in Apache when mod_ssl is statically linked.
+* Certbot behaves similarly on Windows to on UNIX systems regarding umask, and
+  the umask `022` is applied by default: all files/directories are not writable by anyone
+  other than the user running Certbot and the system/admin users.
+* Read acmev1 Let's Encrypt server URL from renewal config as acmev2 URL to prepare
+  for impending acmev1 deprecation.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.5.0 - 2020-06-02
+
+### Added
+
+* Require explicit confirmation of snap plugin permissions before connecting.
+
+### Changed
+
+* Improved error message in apache installer when mod_ssl is not available.
+
+### Fixed
+
+* Add support for OCSP responses which use a public key hash ResponderID, fixing
+  interoperability with Sectigo CAs.
+* Fix TLS-ALPN test that fails when run with newer versions of OpenSSL.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.4.0 - 2020-05-05
 
 ### Added
 
@@ -15,11 +57,16 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Added TLS-ALPN-01 challenge support in the `acme` library. Support of this
   challenge in the Certbot client is planned to be added in a future release.
 * Added minimal proxy support for OCSP verification.
+* On Windows, hooks are now executed in a Powershell shell instead of a CMD shell,
+  allowing both `*.ps1` and `*.bat` as valid scripts for Certbot.
 
 ### Changed
 
+* Reorganized error message when a user entered an invalid email address.
 * Stop asking interactively if the user would like to add a redirect.
 * `mock` dependency is now conditional on Python 2 in all of our packages.
+* Deprecate certbot-auto on Gentoo, macOS, and FreeBSD.
+* Allow existing but empty archive and live dir to be used when creating new lineage.
 
 ### Fixed
 

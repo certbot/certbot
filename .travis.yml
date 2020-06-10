@@ -11,20 +11,23 @@ before_script:
   # Use Travis retry feature for farm tests since they are flaky
   - 'if [[ "$TOXENV" == "travis-test-farm"* ]]; then export TRAVIS_RETRY=travis_retry; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
+  - 'if [[ "$SNAP" == true ]]; then snap/local/build_and_install.sh $TARGET_ARCH; fi'
 
 # Only build pushes to the master branch, PRs, and branches beginning with
-# `test-`, `travis-test-`, or of the form `digit(s).digit(s).x`. This reduces
-# the number of simultaneous Travis runs, which speeds turnaround time on
-# review since there is a cap of on the number of simultaneous runs.
+# `test-`, `travis-test-`, or of the form `digit(s).digit(s).x` or
+# `vdigit(s).digit(s).digit(s)`. As documented at
+# https://docs.travis-ci.com/user/customizing-the-build/#safelisting-or-blocklisting-branches,
+# this includes tags so pushing tags of the form `vdigit(s).digit(s).digit(s)`
+# will also trigger tests. This reduces the number of simultaneous Travis runs,
+# which speeds turnaround time on review since there is a cap of on the number
+# of simultaneous runs.
 branches:
   # When changing these branches, please ensure the documentation under
   # "Running tests in CI" is still correct.
   only:
-    # apache-parser-v2 is a temporary branch for doing work related to
-    # rewriting the parser in the Apache plugin.
-    - apache-parser-v2
     - master
-    - /^\d+\.\d+\.x$/
+    - /^\d+\.\d+\.x$/  # this matches our point release branches
+    - /^v\d+\.\d+\.\d+$/  # this matches our release tags
     - /^(travis-)?test-.*$/
 
 # Jobs for the main test suite are always executed (including on PRs) except for pushes on master.
@@ -32,16 +35,61 @@ not-on-master: &not-on-master
   if: NOT (type = push AND branch = master)
 
 # Jobs for the extended test suite are executed for cron jobs and pushes to
-# non-development branches. See the explanation for apache-parser-v2 above.
+# non-development branches.
 extended-test-suite: &extended-test-suite
-  if: type = cron OR (type = push AND branch NOT IN (apache-parser-v2, master))
+  if: type = cron OR (type = push AND branch != master)
+
+# Common configuration for all snap tasks
+snap-config: &snap-config
+  dist: bionic
+  addons:
+    apt:
+      packages:
+      - nginx-light
+  git:
+    # By default, Travis clones the repo to a depth of 50 commits which can
+    # break the ability to use `git describe` to set the version of the
+    # snap. This setting removes the --depth flag from git commands solving
+    # this problem. See
+    # https://docs.travis-ci.com/user/customizing-the-build#git-clone-depth
+    # for more info.
+    depth: false
+  deploy:
+    # This section relies on credentials stored in a SNAP_TOKEN environment
+    # variable in Travis. See
+    # https://docs.travis-ci.com/user/deployment/snaps/ for more info.
+    # This credential has a maximum lifetime of 1 year and the current
+    # credential will expire on 4/22/2021. The value of SNAP_TOKEN will
+    # need to be updated to use a new credential before then to prevent
+    # automated deploys from breaking. Remembering to do this is also
+    # tracked by https://github.com/certbot/certbot/issues/7931.
+    'on':
+      # Deploy on release tags or nightly runs from any branch. We only try
+      # to deploy from the certbot/certbot repo to prevent errors if forks
+      # of this repo try to run tests.
+      all_branches: true
+      condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
+      repo: certbot/certbot
+    provider: snap
+    snap: certbot_*.snap
+    channel: edge
+    # skip_cleanup is needed to prevent Travis from deleting the snaps we
+    # just built and tested. See
+    # https://docs.travis-ci.com/user/deployment#uploading-files-and-skip_cleanup.
+    skip_cleanup: true
 
 matrix:
   include:
     # Main test suite
-    - python: "2.7"
+    - stage: "Test"
+      python: "2.7"
       env: ACME_SERVER=pebble TOXENV=integration
       <<: *not-on-master
+
+    # As documented at
+    # https://docs.travis-ci.com/user/build-stages/#how-to-define-build-stages,
+    # the previous stage will be automatically applied to all subsequent jobs
+    # until a new stage is defined.
 
     # This job is always executed, including on master
     - python: "3.8"
@@ -69,7 +117,6 @@ matrix:
     - sudo: required
       env: TOXENV=apache_compat
       services: docker
-      before_install:
       addons:
       <<: *not-on-master
     - sudo: required
@@ -87,7 +134,6 @@ matrix:
     - sudo: required
       env: TOXENV=nginx_compat
       services: docker
-      before_install:
       addons:
       <<: *extended-test-suite
     - python: "3.7"
@@ -223,6 +269,19 @@ matrix:
           packages:  # don't install nginx and apache
             - libaugeas0
       <<: *extended-test-suite
+    - stage: "Snap"
+      env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=amd64
+      <<: *snap-config
+      <<: *extended-test-suite
+    - env: SNAP=true TARGET_ARCH=i386
+      <<: *snap-config
+      <<: *extended-test-suite
+    - env: SNAP=true TARGET_ARCH=arm64
+      <<: *snap-config
+      <<: *extended-test-suite
+    - env: SNAP=true TARGET_ARCH=armhf
+      <<: *snap-config
+      <<: *extended-test-suite
 
 # container-based infrastructure
 sudo: false
@@ -252,7 +311,7 @@ install: 'tools/pip_install.py -I tox virtualenv'
 # script command. It is set only to `travis_retry` during farm tests, in
 # order to trigger the Travis retry feature, and compensate the inherent
 # flakiness of these specific tests.
-script: '$TRAVIS_RETRY tox'
+script: 'if [[ ! -z "$TOXENV" ]]; then $TRAVIS_RETRY tox; fi'
 
 notifications:
   email: false

@@ -51,3 +51,12 @@ tests/letstest/venv3/
 .certbot_test_workspace
 **/assets/pebble*
 **/assets/challtestsrv*
+
+# snap files
+.snapcraft
+parts
+prime
+stage
+*.snap
+snap-constraints.txt
+qemu-*

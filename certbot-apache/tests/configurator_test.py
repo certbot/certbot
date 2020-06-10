@@ -455,41 +455,6 @@ class MultipleVhostsTest(util.ApacheTest):
             "SSLCertificateChainFile", "two/cert_chain.pem",
             self.vh_truth[1].path))
 
-    def test_deploy_cert_invalid_vhost(self):
-        """For test cases where the `ApacheConfigurator` class' `_deploy_cert`
-        method is called with an invalid vhost parameter. Currently this tests
-        that a PluginError is appropriately raised when important directives
-        are missing in an SSL module."""
-        self.config.parser.modules["ssl_module"] = None
-        self.config.parser.modules["mod_ssl.c"] = None
-        self.config.parser.modules["socache_shmcb_module"] = None
-
-        def side_effect(*args):
-            """Mocks case where an SSLCertificateFile directive can be found
-            but an SSLCertificateKeyFile directive is missing."""
-            if "SSLCertificateFile" in args:
-                return ["example/cert.pem"]
-            return []
-
-        mock_find_dir = mock.MagicMock(return_value=[])
-        mock_find_dir.side_effect = side_effect
-
-        self.config.parser.find_dir = mock_find_dir
-
-        # Get the default 443 vhost
-        self.config.assoc["random.demo"] = self.vh_truth[1]
-
-        self.assertRaises(
-            errors.PluginError, self.config.deploy_cert, "random.demo",
-            "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
-
-        # Remove side_effect to mock case where both SSLCertificateFile
-        # and SSLCertificateKeyFile directives are missing
-        self.config.parser.find_dir.side_effect = None
-        self.assertRaises(
-            errors.PluginError, self.config.deploy_cert, "random.demo",
-            "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
-
     def test_is_name_vhost(self):
         addr = obj.Addr.fromstring("*:80")
         self.assertTrue(self.config.is_name_vhost(addr))
@@ -1349,6 +1314,16 @@ class MultipleVhostsTest(util.ApacheTest):
                 self.assertTrue(mock_add.called)
         shutil.rmtree(tmp_path)
 
+    def test_deploy_cert_no_mod_ssl(self):
+        # Create
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
+        self.config.parser.modules["socache_shmcb_module"] = None
+        self.config.prepare_server_https = mock.Mock()
+
+        self.assertRaises(errors.MisconfigurationError, self.config.deploy_cert,
+            "encryption-example.demo", "example/cert.pem", "example/key.pem",
+            "example/cert_chain.pem", "example/fullchain.pem")
+
     @mock.patch("certbot_apache._internal.parser.ApacheParser.parsed_in_original")
     def test_choose_vhost_and_servername_addition_parsed(self, mock_parsed):
         ret_vh = self.vh_truth[8]
@@ -1797,7 +1772,17 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             AH02556: "SSLOpenSSLConfCmd %s %s" applied to %s
             OpenSSL 1.0.2g  1 Mar 2016
             """
+        # ssl_module as a DSO
         self.config.parser.modules['ssl_module'] = '/fake/path'
+        with mock.patch("certbot_apache._internal.configurator."
+            "ApacheConfigurator._open_module_file") as mock_omf:
+            mock_omf.return_value = some_string_contents
+            self.assertEqual(self.config.openssl_version(), "1.0.2g")
+
+        # ssl_module statically linked
+        self.config._openssl_version = None
+        self.config.parser.modules['ssl_module'] = None
+        self.config.options['bin'] = '/fake/path/to/httpd'
         with mock.patch("certbot_apache._internal.configurator."
             "ApacheConfigurator._open_module_file") as mock_omf:
             mock_omf.return_value = some_string_contents
@@ -1824,11 +1809,20 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertEqual(self.config.openssl_version(), None)
             self.assertTrue("Could not find ssl_module" in mock_log.call_args[0][0])
 
+        # When no ssl_module is present at all
         self.config._openssl_version = None
-        self.config.parser.modules['ssl_module'] = None
+        self.assertTrue("ssl_module" not in self.config.parser.modules)
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
             self.assertEqual(self.config.openssl_version(), None)
             self.assertTrue("Could not find ssl_module" in mock_log.call_args[0][0])
+
+        # When ssl_module is statically linked but --apache-bin not provided
+        self.config._openssl_version = None
+        self.config.options['bin'] = None
+        self.config.parser.modules['ssl_module'] = None
+        with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
+            self.assertEqual(self.config.openssl_version(), None)
+            self.assertTrue("ssl_module is statically linked but" in mock_log.call_args[0][0])
 
         self.config.parser.modules['ssl_module'] = "/fake/path"
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:

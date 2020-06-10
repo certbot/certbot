@@ -12,6 +12,7 @@ VENV_NAME.
 
 from __future__ import print_function
 
+from distutils.version import LooseVersion
 import glob
 import os
 import re
@@ -131,6 +132,13 @@ def subprocess_with_print(cmd, env=None, shell=False):
     subprocess.check_call(cmd, env=env, shell=shell)
 
 
+def subprocess_output_with_print(cmd, env=None, shell=False):
+    if env is None:
+        env = os.environ
+    print('+ {0}'.format(subprocess.list2cmdline(cmd)) if isinstance(cmd, list) else cmd)
+    return subprocess.check_output(cmd, env=env, shell=shell)
+
+
 def get_venv_python_path(venv_path):
     python_linux = os.path.join(venv_path, 'bin/python')
     if os.path.isfile(python_linux):
@@ -191,9 +199,31 @@ def install_packages(venv_name, pip_args):
     # Using the python executable from venv, we ensure to execute following commands in this venv.
     py_venv = get_venv_python_path(venv_name)
     subprocess_with_print([py_venv, os.path.abspath('letsencrypt-auto-source/pieces/pipstrap.py')])
+    # We only use this value during pip install because:
+    # 1) We're really only adding it for installing cryptography, which happens here, and
+    # 2) There are issues with calling it along with VIRTUALENV_NO_DOWNLOAD, which applies at the
+    #    steps above, not during pip install.
+    env_pip_no_binary = os.environ.get('CERTBOT_PIP_NO_BINARY')
+    if env_pip_no_binary:
+        # Check OpenSSL version. If it's too low, don't apply the env variable.
+        openssl_version_string = str(subprocess_output_with_print(['openssl', 'version']))
+        matches = re.findall(r'OpenSSL ([^ ]+) ', openssl_version_string)
+        if not matches:
+            print('Could not find OpenSSL version, not setting PIP_NO_BINARY.')
+        else:
+            openssl_version = matches[0]
+
+            if LooseVersion(openssl_version) >= LooseVersion('1.0.2'):
+                print('Setting PIP_NO_BINARY to {0}'
+                      ' as specified in CERTBOT_PIP_NO_BINARY'.format(env_pip_no_binary))
+                os.environ['PIP_NO_BINARY'] = env_pip_no_binary
+            else:
+                print('Not setting PIP_NO_BINARY, as OpenSSL version is too old.')
     command = [py_venv, os.path.abspath('tools/pip_install.py')]
     command.extend(pip_args)
     subprocess_with_print(command)
+    if 'PIP_NO_BINARY' in os.environ:
+        del os.environ['PIP_NO_BINARY']
 
     if os.path.isdir(os.path.join(venv_name, 'bin')):
         # Linux/OSX specific

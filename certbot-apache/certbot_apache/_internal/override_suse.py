@@ -24,4 +24,5 @@ class OpenSUSEConfigurator(configurator.ApacheConfigurator):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2/vhosts.d",
+        bin=None,
     )
