@@ -74,9 +74,6 @@ jobs:
     steps:
       - script: |
           snap/local/build.sh ${ARCH}
-        displayName: Install dependencies
-      - script: |
-          snap/local/build_and_install.sh
           mv *.snap $(Build.ArtifactStagingDirectory)
         displayName: Build Certbot snap
       - task: PublishPipelineArtifact@1
