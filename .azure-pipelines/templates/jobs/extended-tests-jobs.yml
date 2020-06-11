@@ -97,4 +97,4 @@ jobs:
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
-      - template: steps/tox-steps.yml
+      - template: ../steps/tox-steps.yml
