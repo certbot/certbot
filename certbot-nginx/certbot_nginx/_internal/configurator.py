@@ -748,7 +748,7 @@ class NginxConfigurator(common.Installer):
 
             # if there is no separate SSL block, break the block into two and
             # choose the SSL block.
-            if vhost.ssl and any([not addr.ssl for addr in vhost.addrs]):
+            if vhost.ssl and any(not addr.ssl for addr in vhost.addrs):
                 _, vhost = self._split_block(vhost)
 
             header_directives = [
@@ -983,7 +983,7 @@ class NginxConfigurator(common.Installer):
             logger.warning("NGINX derivative %s is not officially supported by"
                            " certbot", product_name)
 
-        nginx_version = tuple([int(i) for i in product_version.split(".")])
+        nginx_version = tuple(int(i) for i in product_version.split("."))
 
         # nginx < 0.8.48 uses machine hostname as default server_name instead of
         # the empty string

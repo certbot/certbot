@@ -4,7 +4,10 @@ import signal
 import sys
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from certbot.compat import os
 
@@ -42,7 +45,7 @@ class ErrorHandlerTest(unittest.TestCase):
         from certbot._internal import error_handler
 
         self.init_func = mock.MagicMock()
-        self.init_args = set((42,))
+        self.init_args = {42,}
         self.init_kwargs = {'foo': 'bar'}
         self.handler = error_handler.ErrorHandler(self.init_func,
                                                   *self.init_args,

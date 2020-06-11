@@ -5,9 +5,9 @@ cffi==1.14.0
 cryptography==2.8
 docutils==0.15.2
 enum34==1.1.9
-Fabric==1.14.1
-futures==3.3.0
+Fabric==2.5.0
 ipaddress==1.0.23
+Invoke==1.4.1
 jmespath==0.9.5
 paramiko==2.7.1
 pycparser==2.19

@@ -42,7 +42,7 @@ class PluginStorage(object):
 
         :raises .errors.PluginStorageError: when unable to open or read the file
         """
-        data = dict()  # type: Dict[str, Any]
+        data = {}  # type: Dict[str, Any]
         filedata = ""
         try:
             with open(self._storagepath, 'r') as fh:
@@ -107,7 +107,7 @@ class PluginStorage(object):
             self._initialize_storage()
 
         if not self._classkey in self._data.keys():
-            self._data[self._classkey] = dict()
+            self._data[self._classkey] = {}
         self._data[self._classkey][key] = value
 
     def fetch(self, key):

@@ -114,9 +114,6 @@ the Qualys SSL Labs site, which Certbot will suggest
 when installing a certificate, to test your server and see whether it
 will be compatible with particular software versions.
 
-It will be possible to ask Certbot to instead apply (and track) Modern
-or Old configurations.
-
 The Let's Encrypt project expects to follow the Mozilla recommendations
 in the future as those recommendations are updated. (For example, some
 users have proposed prioritizing a new ciphersuite known as ``0xcc13``
@@ -159,51 +156,6 @@ welcome suggestions of other resources to add to this list. Please keep
 in mind that different recommendations may reflect different priorities
 or evaluations of trade-offs, especially related to compatibility!
 
-
-Changing your settings
-----------------------
-
-This will probably look something like
-
-.. code-block:: shell
-
-  certbot --cipher-recommendations mozilla-secure
-  certbot --cipher-recommendations mozilla-intermediate
-  certbot --cipher-recommendations mozilla-old
-
-to track Mozilla's *Secure*, *Intermediate*, or *Old* recommendations,
-and
-
-.. code-block:: shell
-
-  certbot --update-ciphers on
-
-to enable updating ciphers with each new Certbot release, or
-
-.. code-block:: shell
-
-  certbot --update-ciphers off
-
-to disable automatic configuration updates. These features have not yet
-been implemented and this syntax may change when they are implemented.
-
-
-TODO
-----
-
-The status of this feature is tracked as part of issue #1123 in our
-bug tracker.
-
-https://github.com/certbot/certbot/issues/1123
-
-Prior to implementation of #1123, the client does not actually modify
-ciphersuites (this is intended to be implemented as a "configuration
-enhancement", but the only configuration enhancement implemented
-so far is redirecting HTTP requests to HTTPS in web servers, the
-"redirect" enhancement). The changes here would probably be either a new
-"ciphersuite" enhancement in each plugin that provides an installer,
-or a family of enhancements, one per selectable ciphersuite configuration.
-
 Feedback
 ========
 We receive lots of feedback on the type of ciphersuites that Let's Encrypt supports and list some collated feedback below. This section aims to track suggestions and references that people have offered or identified to improve the ciphersuites that Let's Encrypt enables when configuring TLS on servers.
@@ -241,7 +193,7 @@ Mozilla
 
 Mozilla's general server configuration guidance is available at https://wiki.mozilla.org/Security/Server_Side_TLS
 
-Mozilla has also produced a configuration generator: https://mozilla.github.io/server-side-tls/ssl-config-generator/
+Mozilla has also produced a configuration generator: https://ssl-config.mozilla.org
 
 Dutch National Cyber Security Centre
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

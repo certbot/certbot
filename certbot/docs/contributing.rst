@@ -117,13 +117,11 @@ either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
 For debugging, we recommend putting
 ``import ipdb; ipdb.set_trace()`` statements inside the source code.
 
-Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
-run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
-2.7).
-
-Once all the unittests pass, check for sufficient test coverage using ``tox -e
-py27-cover``, and then check for code style with ``tox -e lint`` (all files) or
-``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
+Once you are done with your code changes, and the tests in ``foo_test.py``
+pass, run all of the unit tests for Certbot and check for coverage with ``tox
+-e py3-cover``. You should then check for code style with ``tox -e lint`` (all
+files) or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a
+time).
 
 Once all of the above is successful, you may run the full test suite using
 ``tox --skip-missing-interpreters``. We recommend running the commands above
@@ -170,7 +168,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv.py` contains two commands
+The virtual environment set up with `python tools/venv3.py` contains two commands
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -208,7 +206,7 @@ Certbot uses both Azure Pipelines and Travis to run continuous integration
 tests. If you are using our Azure and Travis setup, a branch whose name starts
 with `test-` will run all Azure and Travis tests on that branch. If the branch
 name starts with `azure-test-`, it will run all of our Azure tests and none of
-our Travis tests. If the branch stats with `travis-test-`, only our Travis
+our Travis tests. If the branch starts with `travis-test-`, only our Travis
 tests will be run.
 
 Code components and layout

@@ -9,6 +9,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import reverter
 from certbot._internal import hooks
+from certbot.compat import misc
 from certbot.compat import os
 from certbot.plugins import common
 
@@ -71,7 +72,7 @@ permitted by DNS standards.)
         super(Authenticator, self).__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
-        self.env = dict() \
+        self.env = {} \
         # type: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]]
         self.subsequent_dns_challenge = False
         self.subsequent_any_challenge = False
@@ -186,4 +187,4 @@ permitted by DNS standards.)
         self.reverter.recovery_routine()
 
     def _execute_hook(self, hook_name):
-        return hooks.execute(self.option_name(hook_name), self.conf(hook_name))
+        return misc.execute_command(self.option_name(hook_name), self.conf(hook_name))

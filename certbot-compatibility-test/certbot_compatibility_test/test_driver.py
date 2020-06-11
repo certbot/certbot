@@ -96,7 +96,7 @@ def test_authenticator(plugin, config, temp_dir):
 
 def _create_achalls(plugin):
     """Returns a list of annotated challenges to test on plugin"""
-    achalls = list()
+    achalls = []
     names = plugin.get_testable_domain_names()
     for domain in names:
         prefs = plugin.get_chall_pref(domain)

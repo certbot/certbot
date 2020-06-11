@@ -4,7 +4,10 @@ import threading
 import unittest
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import requests
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
@@ -85,6 +88,28 @@ class HTTP01ServerTest(unittest.TestCase):
     def test_http01_not_found(self):
         self.assertFalse(self._test_http01(add=False))
 
+    def test_timely_shutdown(self):
+        from acme.standalone import HTTP01Server
+        server = HTTP01Server(('', 0), resources=set(), timeout=0.05)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.start()
+
+        client = socket.socket()
+        client.connect(('localhost', server.socket.getsockname()[1]))
+
+        stop_thread = threading.Thread(target=server.shutdown)
+        stop_thread.start()
+        server_thread.join(5.)
+
+        is_hung = server_thread.is_alive()
+        try:
+            client.shutdown(socket.SHUT_RDWR)
+        except: # pragma: no cover, pylint: disable=bare-except
+            # may raise error because socket could already be closed
+            pass
+
+        self.assertFalse(is_hung, msg='Server shutdown should not be hung')
+
 
 @unittest.skipIf(not challenges.TLSALPN01.is_supported(), "pyOpenSSL too old")
 class TLSALPN01ServerTest(unittest.TestCase):
@@ -97,8 +122,8 @@ class TLSALPN01ServerTest(unittest.TestCase):
         )}
         # Use different certificate for challenge.
         self.challenge_certs = {b'localhost': (
-            test_util.load_pyopenssl_private_key('rsa1024_key.pem'),
-            test_util.load_cert('rsa1024_cert.pem'),
+            test_util.load_pyopenssl_private_key('rsa4096_key.pem'),
+            test_util.load_cert('rsa4096_cert.pem'),
         )}
         from acme.standalone import TLSALPN01Server
         self.server = TLSALPN01Server(("localhost", 0), certs=self.certs,

@@ -161,7 +161,7 @@ extra_preamble=pywin32_paths.py
 '''.format(certbot_version=certbot_version,
            installer_name=INSTALLER_NAME,
            python_bitness=PYTHON_BITNESS,
-           python_version='.'.join([str(item) for item in PYTHON_VERSION])))
+           python_version='.'.join(str(item) for item in PYTHON_VERSION)))
 
         return installer_cfg_path
 
@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
     if sys.version_info[:2] != PYTHON_VERSION[:2]:
         raise RuntimeError('This script must be run with Python {0}'
-                           .format('.'.join([str(item) for item in PYTHON_VERSION[0:2]])))
+                           .format('.'.join(str(item) for item in PYTHON_VERSION[0:2])))
 
     if struct.calcsize('P') * 8 != PYTHON_BITNESS:
         raise RuntimeError('This script must be run with a {0} bit version of Python.'

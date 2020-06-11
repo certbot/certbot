@@ -115,6 +115,7 @@ class ApacheConfigurator(common.Installer):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2",
+        bin=None
     )
 
     def option(self, key):
@@ -145,7 +146,7 @@ class ApacheConfigurator(common.Installer):
         """
         opts = ["enmod", "dismod", "le_vhost_ext", "server_root", "vhost_root",
                 "logs_root", "challenge_location", "handle_modules", "handle_sites",
-                "ctl"]
+                "ctl", "bin"]
         for o in opts:
             # Config options use dashes instead of underscores
             if self.conf(o.replace("_", "-")) is not None:
@@ -194,6 +195,8 @@ class ApacheConfigurator(common.Installer):
                  "(Only Ubuntu/Debian currently)")
         add("ctl", default=DEFAULTS["ctl"],
             help="Full path to Apache control script")
+        add("bin", default=DEFAULTS["bin"],
+            help="Full path to apache2/httpd binary")
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
@@ -208,12 +211,12 @@ class ApacheConfigurator(common.Installer):
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Add name_server association dict
-        self.assoc = dict()  # type: Dict[str, obj.VirtualHost]
+        self.assoc = {}  # type: Dict[str, obj.VirtualHost]
         # Outstanding challenges
         self._chall_out = set()  # type: Set[KeyAuthorizationAnnotatedChallenge]
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = dict()  # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_vhosts = {}  # type: Dict[str, List[obj.VirtualHost]]
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
         # Temporary state for AutoHSTS enhancement
@@ -269,18 +272,25 @@ class ApacheConfigurator(common.Installer):
         """
         if self._openssl_version:
             return self._openssl_version
-        # Step 1. Check for LoadModule directive
+        # Step 1. Determine the location of ssl_module
         try:
             ssl_module_location = self.parser.modules['ssl_module']
         except KeyError:
             if warn_on_no_mod_ssl:
                 logger.warning("Could not find ssl_module; not disabling session tickets.")
             return None
-        if not ssl_module_location:
-            logger.warning("Could not find ssl_module; not disabling session tickets.")
-            return None
-        ssl_module_location = self.parser.standard_path_from_server_root(ssl_module_location)
-        # Step 2. Grep in the .so for openssl version
+        if ssl_module_location:
+            # Possibility A: ssl_module is a DSO
+            ssl_module_location = self.parser.standard_path_from_server_root(ssl_module_location)
+        else:
+            # Possibility B: ssl_module is statically linked into Apache
+            if self.option("bin"):
+                ssl_module_location = self.option("bin")
+            else:
+                logger.warning("ssl_module is statically linked but --apache-bin is "
+                               "missing; not disabling session tickets.")
+                return None
+        # Step 2. Grep in the binary for openssl version
         contents = self._open_module_file(ssl_module_location)
         if not contents:
             logger.warning("Unable to read ssl_module file; not disabling session tickets.")
@@ -436,7 +446,7 @@ class ApacheConfigurator(common.Installer):
         """Initializes the ParserNode parser root instance."""
 
         if HAS_APACHECONFIG:
-            apache_vars = dict()
+            apache_vars = {}
             apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
             apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
             apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
@@ -548,7 +558,7 @@ class ApacheConfigurator(common.Installer):
 
         # Go through the vhosts, making sure that we cover all the names
         # present, but preferring the SSL vhosts
-        filtered_vhosts = dict()
+        filtered_vhosts = {}
         for vhost in vhosts:
             for name in vhost.get_names():
                 if vhost.ssl:
@@ -574,7 +584,7 @@ class ApacheConfigurator(common.Installer):
 
         # Make sure we create SSL vhosts for the ones that are HTTP only
         # if requested.
-        return_vhosts = list()
+        return_vhosts = []
         for vhost in dialog_output:
             if not vhost.ssl:
                 return_vhosts.append(self.make_vhost_ssl(vhost))
@@ -595,6 +605,11 @@ class ApacheConfigurator(common.Installer):
         # cert_key... can all be parsed appropriately
         self.prepare_server_https("443")
 
+        # If we haven't managed to enable mod_ssl by this point, error out
+        if "ssl_module" not in self.parser.modules:
+            raise errors.MisconfigurationError("Could not find ssl_module; "
+                "not installing certificate.")
+
         # Add directives and remove duplicates
         self._add_dummy_ssl_directives(vhost.path)
         self._clean_vhost(vhost)
@@ -608,21 +623,6 @@ class ApacheConfigurator(common.Installer):
         if chain_path is not None:
             path["chain_path"] = self.parser.find_dir(
                 "SSLCertificateChainFile", None, vhost.path)
-
-        # Handle errors when certificate/key directives cannot be found
-        if not path["cert_path"]:
-            logger.warning(
-                "Cannot find an SSLCertificateFile directive in %s. "
-                "VirtualHost was not modified", vhost.path)
-            raise errors.PluginError(
-                "Unable to find an SSLCertificateFile directive")
-        elif not path["cert_key"]:
-            logger.warning(
-                "Cannot find an SSLCertificateKeyFile directive for "
-                "certificate in %s. VirtualHost was not modified", vhost.path)
-            raise errors.PluginError(
-                "Unable to find an SSLCertificateKeyFile directive for "
-                "certificate")
 
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
@@ -1579,7 +1579,7 @@ class ApacheConfigurator(common.Installer):
                         result.append(comment)
                         sift = True
 
-                    result.append('\n'.join(['# ' + l for l in chunk]))
+                    result.append('\n'.join('# ' + l for l in chunk))
                 else:
                     result.append('\n'.join(chunk))
         return result, sift
@@ -1719,7 +1719,7 @@ class ApacheConfigurator(common.Installer):
         for addr in vhost.addrs:
             # In Apache 2.2, when a NameVirtualHost directive is not
             # set, "*" and "_default_" will conflict when sharing a port
-            addrs = set((addr,))
+            addrs = {addr,}
             if addr.get_addr() in ("*", "_default_"):
                 addrs.update(obj.Addr((a, addr.get_port(),))
                              for a in ("*", "_default_"))
@@ -1910,7 +1910,7 @@ class ApacheConfigurator(common.Installer):
         try:
             self._autohsts = self.storage.fetch("autohsts")
         except KeyError:
-            self._autohsts = dict()
+            self._autohsts = {}
 
     def _autohsts_save_state(self):
         """
@@ -2471,7 +2471,7 @@ class ApacheConfigurator(common.Installer):
         if len(matches) != 1:
             raise errors.PluginError("Unable to find Apache version")
 
-        return tuple([int(i) for i in matches[0].split(".")])
+        return tuple(int(i) for i in matches[0].split("."))
 
     def more_info(self):
         """Human-readable string to help understand the module"""
