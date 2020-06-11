@@ -5,11 +5,6 @@
 # Usage: build_and_install.sh [amd64,arm64,armhf]
 set -ex
 
-if [[ -z "$TRAVIS" && -z "$SYSTEM_TEAMFOUNDATIONSERVERURI" ]]; then
-    echo "This script makes global changes to the system it is run on so should only be run in CI."
-    exit 1
-fi
-
 SNAP_ARCH=$1
 
 if [[ -z "${SNAP_ARCH}" ]]; then
@@ -47,7 +42,3 @@ docker run \
   -e "PIP_EXTRA_INDEX_URL=http://localhost:8080" \
   "adferrand/snapcraft:${DOCKER_ARCH}-stable" \
   snapcraft
-
-if [[ "$(arch)" == "${QEMU_ARCH}" ]]; then
-    sudo snap install --dangerous --classic *.snap
-fi

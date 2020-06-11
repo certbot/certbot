@@ -59,14 +59,21 @@ jobs:
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
   - job: snap_build
+    strategy:
+      matrix:
+        amd64:
+          ARCH: amd64
+        i386:
+          ARCH: i386
+        arm64:
+          ARCH: arm64
+        armhf:
+          ARCH: armhf
     pool:
       vmImage: ubuntu-18.04
     steps:
       - script: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends snap
-          sudo snap install --classic snapcraft
-          sudo snap install lxd
+          snap/local/build.sh ${ARCH}
         displayName: Install dependencies
       - script: |
           snap/local/build_and_install.sh
@@ -75,7 +82,7 @@ jobs:
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
-          artifact: snap
+          artifact: snap-$(arch)
         displayName: Publish Snap
   - job: snap_run
     dependsOn: snap_build
@@ -91,11 +98,11 @@ jobs:
         displayName: Install dependencies
       - task: DownloadPipelineArtifact@2
         inputs:
-          artifact: snap
+          artifact: snap-amd64
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snap
       - script: |
-          sudo snap install --dangerous --classic snap/*.snap
+          sudo snap install --dangerous --classic snap-amd64/*.snap
         displayName: Install Certbot snap
       - script: |
           python -m tox
