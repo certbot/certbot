@@ -3,9 +3,9 @@ jobs:
     variables:
       - name: IMAGE_NAME
         value: ubuntu-18.04
-      ${{ if contains(variables['TOXENV'], 'test-farm') }}:
+    - ${{ if contains(variables['TOXENV'], 'test-farm') }}:
       - group: certbot-common
-      ${{ if contains(variables['TOXENV'], 'integration') }}:
+    - ${{ if contains(variables['TOXENV'], 'integration') }}:
       - name: PYTEST_ADDOPTS
         value: --numprocesses 4
     strategy:
