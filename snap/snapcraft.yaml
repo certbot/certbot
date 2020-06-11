@@ -7,7 +7,7 @@ description: |
  browser-trusted certificate, without any human intervention. This is
  accomplished by running a certificate management agent on the web
  server.
- 
+
  This agent is used to:
    - Automatically prove to the Let's Encrypt CA that you control the website
    - Obtain a browser-trusted certificate and set it up on your web server
@@ -20,7 +20,7 @@ adopt-info: certbot
 
 apps:
   certbot:
-    command: certbot
+    command: certbot.wrapper
     environment:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
       AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
@@ -32,9 +32,8 @@ apps:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
       AUGEAS_LENS_LIB: $SNAP/usr/share/augeas/lenses/dist
       LD_LIBRARY_PATH: "$SNAP/usr/lib/x86_64-linux-gnu/:$LD_LIBRARY_PATH"
-    passthrough:
-        # Run approximately twice a day with randomization
-        timer: 00:00~24:00/2
+    # Run approximately twice a day with randomization
+    timer: 00:00~24:00/2
 
 parts:
   python-augeas:
@@ -47,13 +46,15 @@ parts:
     plugin: python
     source: .
     source-subdir: acme
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-version: python3
+    # To build cryptography and cffi if needed
+    build-packages: [libffi-dev, libssl-dev]
   certbot:
     plugin: python
     source: .
     source-subdir: certbot
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-version: python3
     after: [acme]
     override-pull: |
@@ -66,7 +67,7 @@ parts:
     plugin: python
     source: .
     source-subdir: certbot-apache
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-version: python3
     after: [python-augeas, certbot]
     stage-packages: [libaugeas0]
@@ -77,7 +78,7 @@ parts:
     plugin: python
     source: .
     source-subdir: certbot-nginx
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-version: python3
     # This is the last step, compile pycache now as there should be no conflicts.
     override-prime: |
@@ -86,3 +87,13 @@ parts:
     # After certbot-apache to not rebuild duplicates (essentially sharing what was already staged,
     # like zope)
     after: [certbot-apache]
+  wrappers:
+    plugin: dump
+    source: .
+    stage: [certbot.wrapper]
+
+plugs:
+  plugin:
+    interface: content
+    content: certbot-1
+    target: $SNAP/certbot-plugin

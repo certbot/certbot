@@ -72,13 +72,13 @@ class HookTest(test_util.ConfigTestCase):
 
     @classmethod
     def _call_with_mock_execute(cls, *args, **kwargs):
-        """Calls self._call after mocking out certbot._internal.hooks.execute.
+        """Calls self._call after mocking out certbot.compat.misc.execute_command.
 
         The mock execute object is returned rather than the return value
         of self._call.
 
         """
-        with mock.patch("certbot._internal.hooks.execute") as mock_execute:
+        with mock.patch("certbot.compat.misc.execute_command") as mock_execute:
             mock_execute.return_value = ("", "")
             cls._call(*args, **kwargs)
         return mock_execute
@@ -292,7 +292,7 @@ class RenewalHookTest(HookTest):
     # pylint: disable=abstract-method
 
     def _call_with_mock_execute(self, *args, **kwargs):
-        """Calls self._call after mocking out certbot._internal.hooks.execute.
+        """Calls self._call after mocking out certbot.compat.misc.execute_command.
 
         The mock execute object is returned rather than the return value
         of self._call. The mock execute object asserts that environment
@@ -313,7 +313,7 @@ class RenewalHookTest(HookTest):
             self.assertEqual(os.environ["RENEWED_LINEAGE"], lineage)
             return ("", "")
 
-        with mock.patch("certbot._internal.hooks.execute") as mock_execute:
+        with mock.patch("certbot.compat.misc.execute_command") as mock_execute:
             mock_execute.side_effect = execute_side_effect
             self._call(*args, **kwargs)
         return mock_execute
@@ -416,42 +416,6 @@ class RenewHookTest(RenewalHookTest):
             self.config, ["example.org"], "/foo/bar")
         mock_execute.assert_any_call("deploy-hook", self.dir_hook)
         mock_execute.assert_called_with("deploy-hook", self.config.renew_hook)
-
-
-class ExecuteTest(unittest.TestCase):
-    """Tests for certbot._internal.hooks.execute."""
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot._internal.hooks import execute
-        return execute(*args, **kwargs)
-
-    def test_it(self):
-        for returncode in range(0, 2):
-            for stdout in ("", "Hello World!",):
-                for stderr in ("", "Goodbye Cruel World!"):
-                    self._test_common(returncode, stdout, stderr)
-
-    def _test_common(self, returncode, stdout, stderr):
-        given_command = "foo"
-        given_name = "foo-hook"
-        with mock.patch("certbot._internal.hooks.Popen") as mock_popen:
-            mock_popen.return_value.communicate.return_value = (stdout, stderr)
-            mock_popen.return_value.returncode = returncode
-            with mock.patch("certbot._internal.hooks.logger") as mock_logger:
-                self.assertEqual(self._call(given_name, given_command), (stderr, stdout))
-
-        executed_command = mock_popen.call_args[1].get(
-            "args", mock_popen.call_args[0][0])
-        self.assertEqual(executed_command, given_command)
-
-        mock_logger.info.assert_any_call("Running %s command: %s",
-                                         given_name, given_command)
-        if stdout:
-            mock_logger.info.assert_any_call(mock.ANY, mock.ANY,
-                                             mock.ANY, stdout)
-        if stderr or returncode:
-            self.assertTrue(mock_logger.error.called)
 
 
 class ListHooksTest(test_util.TempDirTestCase):

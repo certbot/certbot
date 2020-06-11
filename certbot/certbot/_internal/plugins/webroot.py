@@ -164,7 +164,7 @@ to serve all files under specified web root ({0})."""
             # Change the permissions to be writable (GH #1389)
             # Umask is used instead of chmod to ensure the client can also
             # run as non-root (GH #1795)
-            old_umask = os.umask(0o022)
+            old_umask = filesystem.umask(0o022)
             try:
                 # We ignore the last prefix in the next iteration,
                 # as it does not correspond to a folder path ('/' or 'C:')
@@ -191,7 +191,7 @@ to serve all files under specified web root ({0})."""
                             "Couldn't create root for {0} http-01 "
                             "challenge responses: {1}".format(name, exception))
             finally:
-                os.umask(old_umask)
+                filesystem.umask(old_umask)
 
     def _get_validation_path(self, root_path, achall):  # pylint: no-self-use
         return os.path.join(root_path, achall.chall.encode("token"))
@@ -204,13 +204,13 @@ to serve all files under specified web root ({0})."""
         logger.debug("Attempting to save validation to %s", validation_path)
 
         # Change permissions to be world-readable, owner-writable (GH #1795)
-        old_umask = os.umask(0o022)
+        old_umask = filesystem.umask(0o022)
 
         try:
             with safe_open(validation_path, mode="wb", chmod=0o644) as validation_file:
                 validation_file.write(validation.encode())
         finally:
-            os.umask(old_umask)
+            filesystem.umask(old_umask)
 
         self.performed[root_path].add(achall)
         return response

@@ -56,6 +56,16 @@ def chmod(*unused_args, **unused_kwargs):
                        'Use certbot.compat.filesystem.chmod() instead.')
 
 
+# Since there is no mode on Windows, there is no umask either, and so this method is a noop for
+# this platform. In order to have a consistent behavior between Linux and Windows on Certbot files
+# and directories, the filesystem umask method must be used instead, since it implements umask for
+# Windows.
+def umask(*unused_args, **unused_kwargs):
+    """Method os.chmod() is forbidden"""
+    raise RuntimeError('Usage of os.umask() is forbidden. '
+                       'Use certbot.compat.filesystem.umask() instead.')
+
+
 # Because uid is not a concept on Windows, chown is useless. In fact, it is not even available
 # on Python for Windows. So to be consistent on both platforms for Certbot, this method is
 # always forbidden.
