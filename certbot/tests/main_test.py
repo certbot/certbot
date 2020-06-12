@@ -1415,7 +1415,7 @@ class MainTest(test_util.ConfigTestCase):
                         self.assertTrue(
                             cb_client.acme.update_registration.called)
                         # and we saved the updated registration on disk
-                        self.assertTrue(mocked_storage.save_regr.called)
+                        self.assertTrue(mocked_storage.update.called)
                         self.assertTrue(
                             email in mock_utility().add_message.call_args[0][0])
                         self.assertTrue(mock_handle.called)

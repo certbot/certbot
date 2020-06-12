@@ -6,6 +6,7 @@ import logging
 import shutil
 import socket
 
+from acme.client import ClientBase
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
 import pyrfc3339
@@ -39,6 +40,12 @@ class Account(object):
 
         :ivar datetime.datetime creation_dt: Creation date and time (UTC).
         :ivar str creation_host: FQDN of host, where account has been created.
+        :ivar str will_register_to_eff: If not None, Certbot will register the provided email
+                                        without user interaction because they give their explicit
+                                        approval during the account registration.
+        :ivar str propose_eff_registration: If not None, Certbot will propose to register to EFF
+                                            the provided email when possible (typically when the first
+                                            certificate is issued).
 
         .. note:: ``creation_dt`` and ``creation_host`` are useful in
             cross-machine migration scenarios.
@@ -46,15 +53,18 @@ class Account(object):
         """
         creation_dt = acme_fields.RFC3339Field("creation_dt")
         creation_host = jose.Field("creation_host")
+        will_register_to_eff = jose.Field("will_register_to_eff")
+        propose_eff_registration = jose.Field("propose_eff_registration")
 
     def __init__(self, regr, key, meta=None):
         self.key = key
         self.regr = regr
         self.meta = self.Meta(
             # pyrfc3339 drops microseconds, make sure __eq__ is sane
-            creation_dt=datetime.datetime.now(
-                tz=pytz.UTC).replace(microsecond=0),
-            creation_host=socket.getfqdn()) if meta is None else meta
+            creation_dt=datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0),
+            creation_host=socket.getfqdn(),
+            will_register_to_eff=None,
+            propose_eff_registration=None) if meta is None else meta
 
         # try MD5, else use MD5 in non-security mode (e.g. for FIPS systems / RHEL)
         try:
@@ -242,15 +252,24 @@ class AccountFileStorage(interfaces.AccountStorage):
         return self._load_for_server_path(account_id, self.config.server_path)
 
     def save(self, account, client):
-        self._save(account, client, regr_only=False)
+        # type: (Account, ClientBase) -> None
+        """Create a new account resource.
 
-    def save_regr(self, account, acme):
-        """Save the registration resource.
-
-        :param Account account: account whose regr should be saved
+        :param Account account: account to create
+        :param ClientBase client: ACME client associated to the account
 
         """
-        self._save(account, acme, regr_only=True)
+        self._save(account, client, creation_mode=True)
+
+    def update(self, account, client):
+        # type: (Account, ClientBase) -> None
+        """Update an existing account resource.
+
+        :param Account account: account to update
+        :param ClientBase client: ACME client associated to the account
+
+        """
+        self._save(account, client, creation_mode=False)
 
     def delete(self, account_id):
         """Delete registration info from disk
@@ -318,7 +337,8 @@ class AccountFileStorage(interfaces.AccountStorage):
 
         return dir_path
 
-    def _save(self, account, acme, regr_only):
+    def _save(self, account, acme, creation_mode=True):
+        # type: (Account, ClientBase, bool) -> None
         account_dir_path = self._account_dir_path(account.id)
         util.make_or_verify_dir(account_dir_path, 0o700, self.config.strict_permissions)
         try:
@@ -338,12 +358,12 @@ class AccountFileStorage(interfaces.AccountStorage):
                         body={},
                         uri=regr.uri)
                 regr_file.write(regr.json_dumps())
-            if not regr_only:
+            with open(self._metadata_path(account_dir_path), "w") as metadata_file:
+                metadata_file.write(account.meta.json_dumps())
+            if creation_mode:
                 with util.safe_open(self._key_path(account_dir_path),
                                     "w", chmod=0o400) as key_file:
                     key_file.write(account.key.json_dumps())
-                with open(self._metadata_path(
-                        account_dir_path), "w") as metadata_file:
-                    metadata_file.write(account.meta.json_dumps())
         except IOError as error:
+            print(error)
             raise errors.AccountStorageError(error)

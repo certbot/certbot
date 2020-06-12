@@ -3,30 +3,54 @@ import logging
 
 import requests
 import zope.component
+from acme.client import Client, BackwardsCompatibleClientV2, ClientBase
 
 from certbot import interfaces
 from certbot._internal import constants
+from certbot._internal.account import Account, AccountFileStorage
+from certbot.interfaces import IConfig
 
 logger = logging.getLogger(__name__)
 
 
-def handle_subscription(config):
-    """High level function to take care of EFF newsletter subscriptions.
-
-    The user may be asked if they want to sign up for the newsletter if
-    they have not already specified.
-
-    :param .IConfig config: Client configuration.
-
-    """
-    if config.email is None:
-        if config.eff_email:
-            _report_failure("you didn't provide an e-mail address")
+def prepare_eff_subscription(config, acc, acme):
+    # type: (IConfig, Account, ClientBase) -> None
+    if config.eff_email is False:
         return
-    if config.eff_email is None:
-        config.eff_email = _want_subscription()
-    if config.eff_email:
-        subscribe(config.email)
+    if config.eff_email is True:
+        if config.email is None:
+            _report_failure("you didn't provide an e-mail address")
+        else:
+            acc.meta = acc.meta.update(will_register_to_eff=config.email)
+        return
+
+    # Case of no explicit approval or refusal
+    acc.meta = acc.meta.update(propose_eff_registration=config.email)
+
+    print(acc.meta)
+
+    if acc.meta.will_register_to_eff or acc.meta.propose_eff_registration:
+        print("To save")
+        storage = AccountFileStorage(config)
+        storage.update(acc, acme)
+
+
+def handle_subscription(config, acc, acme):
+    # type: (IConfig, Account, ClientBase) -> None
+    email_to_subscribe = None
+
+    if acc.meta.will_register_to_eff:
+        email_to_subscribe = acc.meta.will_register_to_eff
+    elif acc.meta.propose_eff_registration and _want_subscription():
+        email_to_subscribe = acc.meta.propose_eff_registration
+
+    if email_to_subscribe:
+        subscribe(email_to_subscribe)
+
+    if acc.meta.will_register_to_eff or acc.meta.propose_eff_registration:
+        acc.meta = acc.meta.update(will_register_to_eff=None, propose_eff_registration=None)
+        storage = AccountFileStorage(config)
+        storage.update(acc, acme)
 
 
 def _want_subscription():
