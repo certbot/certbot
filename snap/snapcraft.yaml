@@ -114,7 +114,7 @@ parts:
       - -**/*.so
       - -**/wheel
       - -lib64
-      - -**/certbot
+      - -**/certbot/
       # Prefer cffi
       - -lib/python3.8/site-packages/augeas.py
   certbot-nginx:
@@ -131,4 +131,6 @@ parts:
     after: [certbot-apache]
     python-packages:
       - wheel
+    stage:
+      - -**/certbot/
 
