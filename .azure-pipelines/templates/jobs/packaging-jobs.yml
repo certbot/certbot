@@ -99,7 +99,7 @@ jobs:
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snap
       - script: |
-          sudo snap install --dangerous --classic snap-amd64/*.snap
+          sudo snap install --dangerous --classic snap/*.snap
         displayName: Install Certbot snap
       - script: |
           python -m tox
