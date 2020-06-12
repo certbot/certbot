@@ -125,7 +125,7 @@ parts:
     # This is the last step, compile pycache now as there should be no conflicts.
     override-prime: |
       snapcraftctl prime
-      $SNAPCRAFT_PART_SRC/bin/python3 -m compileall -q .
+      ./bin/python3 -m compileall -q .
     # After certbot-apache to not rebuild duplicates (essentially sharing what was already staged,
     # like zope)
     after: [certbot-apache]
