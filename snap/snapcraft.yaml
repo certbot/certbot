@@ -67,7 +67,6 @@ parts:
       - -bin
       - -**/RECORD
       - -**/pycparser
-      - -**/cffi
       - -**/*.so
       - -**/wheel
       - -lib64
@@ -85,10 +84,8 @@ parts:
     stage:
       - -pyvenv.cfg
       - -**/__pycache__
-      - -bin
       - -**/RECORD
       - -**/pycparser
-      - -**/cffi
       - -**/*.so
       - -**/wheel
       - -lib64
@@ -110,8 +107,8 @@ parts:
       - -bin
       - -**/RECORD
       - -**/pycparser
-      - -**/cffi
-      - -**/*.so
+     # - -**/cffi
+     # - -**/*.so
       - -**/wheel
       - -lib64
       - -**/certbot/
@@ -133,6 +130,7 @@ parts:
       - wheel
     stage:
       - -**/certbot/
+      - -bin
     stage-packages:
       - python3-venv
 
