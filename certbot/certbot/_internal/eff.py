@@ -22,15 +22,11 @@ def prepare_eff_subscription(config, acc, acme):
             _report_failure("you didn't provide an e-mail address")
         else:
             acc.meta = acc.meta.update(will_register_to_eff=config.email)
-        return
-
-    # Case of no explicit approval or refusal
-    acc.meta = acc.meta.update(propose_eff_registration=config.email)
-
-    print(acc.meta)
+    else:
+        # Case of no explicit approval or refusal to subscribe to EFF
+        acc.meta = acc.meta.update(propose_eff_registration=config.email)
 
     if acc.meta.will_register_to_eff or acc.meta.propose_eff_registration:
-        print("To save")
         storage = AccountFileStorage(config)
         storage.update(acc, acme)
 
