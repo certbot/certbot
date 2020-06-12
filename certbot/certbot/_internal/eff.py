@@ -33,6 +33,9 @@ def prepare_subscription(config, acc, acme):
 
 def handle_subscription(config, acc, acme):
     # type: (IConfig, Account, ClientBase) -> None
+    if config.dry_run:
+        return
+
     email_to_subscribe = None
 
     if acc.meta.will_register_to_eff:
