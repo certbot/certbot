@@ -49,7 +49,6 @@ parts:
       - -**/__pycache__
       - -bin
       - -**/RECORD
-      - -**/*.so
       - -**/wheel
       - -lib64
   acme:
@@ -65,7 +64,7 @@ parts:
       - -bin
       - -**/RECORD
       - -**/pycparser
-      - -**/*.so
+      - -**/_cffi_backend*.so
       - -**/wheel
       - -**/cffi
       - -lib64
@@ -85,7 +84,7 @@ parts:
       - -**/__pycache__
       - -**/RECORD
       - -**/pycparser
-      - -**/*.so
+      - -**/_cffi_backend*.so
       - -**/wheel
       - -**/cffi
       - -lib64
@@ -109,7 +108,7 @@ parts:
       - -**/RECORD
       - -**/pycparser
       - -**/cffi
-     # - -**/*.so
+      - -**/_cffi_backend*.so
       - -**/wheel
       - -lib64
       - -**/certbot/
@@ -133,6 +132,7 @@ parts:
     stage:
       - -**/certbot/
       - -**/cffi
+      - -**/_cffi_backend*.so
       - -**/pycparser
     stage-packages:
       - python3-venv
