@@ -130,7 +130,6 @@ parts:
       - wheel
     stage:
       - -**/certbot/
-      - -bin
     stage-packages:
       - python3-venv
 
