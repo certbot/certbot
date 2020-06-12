@@ -26,7 +26,7 @@ apps:
       AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
       LD_LIBRARY_PATH: "$SNAP/usr/lib/x86_64-linux-gnu/:$LD_LIBRARY_PATH"
   renew:
-    command: certbot -q renew
+    command: bin/certbot -q renew
     daemon: oneshot
     environment:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
@@ -35,58 +35,42 @@ apps:
     # Run approximately twice a day with randomization
     timer: 00:00~24:00/2
 
+
 parts:
-  python-augeas:
-    plugin: python
-    source: git://github.com/basak/python-augeas
-    source-branch: snap
-    python-version: python3
-    build-packages: [libaugeas-dev]
-  acme:
-    plugin: python
-    source: .
-    source-subdir: acme
-    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
-    python-version: python3
-    # To build cryptography and cffi if needed
-    build-packages: [libffi-dev, libssl-dev]
   certbot:
     plugin: python
     source: .
-    source-subdir: certbot
     constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
-    python-version: python3
-    after: [acme]
-    override-pull: |
-        snapcraftctl pull
-        snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC && git describe|sed s/^v//`
-    # Workaround for lack of site-packages leading to empty sitecustomize.py
+    python-packages:
+      - git+https://github.com/basak/python-augeas.git@snap
+      - ./acme
+      - ./certbot
+      - ./certbot-apache
+      - ./certbot-nginx
     stage:
-      - -usr/lib/python3.8/sitecustomize.py
-  certbot-apache:
-    plugin: python
-    source: .
-    source-subdir: certbot-apache
-    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
-    python-version: python3
-    after: [python-augeas, certbot]
-    stage-packages: [libaugeas0]
-    stage:
+      - -usr/lib/python3.8/sitecustomize.py # maybe unnecessary
       # Prefer cffi
       - -lib/python3.8/site-packages/augeas.py
-  certbot-nginx:
-    plugin: python
-    source: .
-    source-subdir: certbot-nginx
-    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
-    python-version: python3
-    # This is the last step, compile pycache now as there should be no conflicts.
-    override-prime: |
-      snapcraftctl prime
-      ./usr/bin/python3 -m compileall -q .
-    # After certbot-apache to not rebuild duplicates (essentially sharing what was already staged,
-    # like zope)
-    after: [certbot-apache]
+    stage-packages:
+      - libaugeas0
+      # added to stage python:
+      - libpython3-stdlib
+      - libpython3.8-stdlib
+      - libpython3.8-minimal
+      - python3-pip
+      - python3-setuptools
+      - python3-wheel
+      - python3-venv
+      - python3-minimal
+      - python3-distutils
+      - python3-pkg-resources
+      - python3.8-minimal
+    # To build cryptography and cffi if needed
+    build-packages: [libffi-dev, libssl-dev, git, libaugeas-dev, python3-dev]
+    override-pull: |
+        snapcraftctl pull
+        snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC/certbot && git describe|sed s/^v//`
+
   wrappers:
     plugin: dump
     source: .
