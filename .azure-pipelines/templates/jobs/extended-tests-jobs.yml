@@ -1,5 +1,5 @@
 jobs:
-  - job: x_test
+  - job: test
     variables:
       - name: IMAGE_NAME
         value: ubuntu-18.04
