@@ -12,7 +12,7 @@ stages:
   - stage: Test
     jobs:
       - template: templates/jobs/standard-tests-jobs.yml
-  - stage: Advanced test
+  - stage: ExtendedTest
     jobs:
       - template: templates/jobs/extended-tests-jobs.yml
     dependsOn: []
