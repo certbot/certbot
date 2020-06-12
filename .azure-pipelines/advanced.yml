@@ -12,7 +12,7 @@ schedules:
     always: true
 
 stages:
-  - stage: Test&Package
+  - stage: Test_Package
     jobs:
       # Any addition here should be reflected in the advanced-test and release pipelines.
       # It is advised to declare all jobs here as templates to improve maintainability.
