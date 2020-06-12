@@ -23,7 +23,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Cloudflare API Tokens may now be restricted to individual zones.
 
 More details about these changes can be found on our GitHub repo.
 
