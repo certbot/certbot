@@ -89,6 +89,7 @@ parts:
       - -**/*.so
       - -**/wheel
       - -lib64
+      - -bin
       # Workaround for lack of site-packages leading to empty sitecustomize.py
       - -usr/lib/python3.8/sitecustomize.py
   certbot-apache:
