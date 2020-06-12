@@ -722,7 +722,7 @@ def update_account(config, unused_plugins):
     # so that we can also continue to use the account object with acmev1.
     acc.regr = acc.regr.update(uri=prev_regr_uri)
     account_storage.update(acc, acme)
-    eff.prepare_eff_subscription(config, acc, acme)
+    eff.prepare_subscription(config, acc, acme)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
     return None
 

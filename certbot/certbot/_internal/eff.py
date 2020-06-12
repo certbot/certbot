@@ -13,7 +13,7 @@ from certbot.interfaces import IConfig
 logger = logging.getLogger(__name__)
 
 
-def prepare_eff_subscription(config, acc, acme):
+def prepare_subscription(config, acc, acme):
     # type: (IConfig, Account, ClientBase) -> None
     if config.eff_email is False:
         return
@@ -22,7 +22,7 @@ def prepare_eff_subscription(config, acc, acme):
             _report_failure("you didn't provide an e-mail address")
         else:
             acc.meta = acc.meta.update(will_register_to_eff=config.email)
-    else:
+    elif config.email:
         # Case of no explicit approval or refusal to subscribe to EFF
         acc.meta = acc.meta.update(propose_eff_registration=config.email)
 
