@@ -20,13 +20,13 @@ adopt-info: certbot
 
 apps:
   certbot:
-    command: bin/python3 bin/certbot
+    command: certbot
     environment:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
       AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
       LD_LIBRARY_PATH: "$SNAP/usr/lib/x86_64-linux-gnu/:$LD_LIBRARY_PATH"
   renew:
-    command: bin/python3 bin/certbot -q renew
+    command: certbot -q renew
     daemon: oneshot
     environment:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
@@ -120,10 +120,10 @@ parts:
     source-subdir: certbot-nginx
     constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     # This is the last step, compile pycache now as there should be no conflicts.
-    override-prime: |
-      snapcraftctl prime
-      ./bin/nonexistent fail
-    #   ./bin/python3 -m compileall -q .
+    # override-prime: |
+    #   snapcraftctl prime
+    #   ./bin/nonexistent fail
+    # #   ./bin/python3 -m compileall -q .
     # After certbot-apache to not rebuild duplicates (essentially sharing what was already staged,
     # like zope)
     after: [certbot-apache]
