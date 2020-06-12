@@ -47,12 +47,13 @@ parts:
     stage:
       - -pyvenv.cfg
       - -**/__pycache__
-      - -bin/activate*
+      - -bin
       - -**/RECORD
       - -**/pycparser
       - -**/cffi
       - -**/*.so
       - -**/wheel
+      - -lib64
   acme:
     plugin: python
     source: .
@@ -63,12 +64,13 @@ parts:
     stage:
       - -pyvenv.cfg
       - -**/__pycache__
-      - -bin/activate*
+      - -bin
       - -**/RECORD
       - -**/pycparser
       - -**/cffi
       - -**/*.so
       - -**/wheel
+      - -lib64
   certbot:
     plugin: python
     source: .
@@ -83,12 +85,13 @@ parts:
     stage:
       - -pyvenv.cfg
       - -**/__pycache__
-      - -bin/activate*
+      - -bin
       - -**/RECORD
       - -**/pycparser
       - -**/cffi
       - -**/*.so
       - -**/wheel
+      - -lib64
       # Workaround for lack of site-packages leading to empty sitecustomize.py
       - -usr/lib/python3.8/sitecustomize.py
   certbot-apache:
@@ -104,12 +107,13 @@ parts:
     stage:
       - -pyvenv.cfg
       - -**/__pycache__
-      - -bin/activate*
+      - -bin
       - -**/RECORD
       - -**/pycparser
       - -**/cffi
       - -**/*.so
       - -**/wheel
+      - -lib64
       # Prefer cffi
       - -lib/python3.8/site-packages/augeas.py
   certbot-nginx:
@@ -120,7 +124,7 @@ parts:
     # This is the last step, compile pycache now as there should be no conflicts.
     override-prime: |
       snapcraftctl prime
-      $SNAPCRAFT_PYTHON_INTERPRETER -m compileall -q .
+      $SNAPCRAFT_PART_SRC/bin/python3 -m compileall -q .
     # After certbot-apache to not rebuild duplicates (essentially sharing what was already staged,
     # like zope)
     after: [certbot-apache]
