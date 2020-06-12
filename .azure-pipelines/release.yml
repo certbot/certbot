@@ -5,11 +5,11 @@ trigger:
       - v*
 pr: none
 
-# Any addition here should be reflected in the advanced and advanced-test pipelines.
-# It is advised to declare all jobs here as templates to improve maintainability.
 stage:
   - stage: Build_Test_Package
     jobs:
+      # Any addition here should be reflected in the advanced and advanced-test pipelines.
+      # It is advised to declare all jobs here as templates to improve maintainability.
       - template: templates/jobs/standard-tests-jobs.yml
       - template: templates/jobs/extended-tests-jobs.yml
       - template: templates/jobs/packaging-jobs.yml
