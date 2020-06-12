@@ -49,8 +49,6 @@ parts:
       - -**/__pycache__
       - -bin
       - -**/RECORD
-      - -**/pycparser
-      - -**/cffi
       - -**/*.so
       - -**/wheel
       - -lib64
@@ -69,6 +67,7 @@ parts:
       - -**/pycparser
       - -**/*.so
       - -**/wheel
+      - -**/cffi
       - -lib64
   certbot:
     plugin: python
@@ -88,6 +87,7 @@ parts:
       - -**/pycparser
       - -**/*.so
       - -**/wheel
+      - -**/cffi
       - -lib64
       - -bin
       # Workaround for lack of site-packages leading to empty sitecustomize.py
@@ -108,7 +108,7 @@ parts:
       - -bin
       - -**/RECORD
       - -**/pycparser
-     # - -**/cffi
+      - -**/cffi
      # - -**/*.so
       - -**/wheel
       - -lib64
@@ -121,8 +121,9 @@ parts:
     source-subdir: certbot-nginx
     constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     # This is the last step, compile pycache now as there should be no conflicts.
-    # override-prime: |
-    #   snapcraftctl prime
+    override-prime: |
+      snapcraftctl prime
+      ./bin/nonexistent fail
     #   ./bin/python3 -m compileall -q .
     # After certbot-apache to not rebuild duplicates (essentially sharing what was already staged,
     # like zope)
@@ -131,6 +132,8 @@ parts:
       - wheel
     stage:
       - -**/certbot/
+      - -**/cffi
+      - -**/pycparser
     stage-packages:
       - python3-venv
 
