@@ -53,8 +53,8 @@ class Account(object):
         """
         creation_dt = acme_fields.RFC3339Field("creation_dt")
         creation_host = jose.Field("creation_host")
-        will_register_to_eff = jose.Field("will_register_to_eff")
-        propose_eff_registration = jose.Field("propose_eff_registration")
+        will_register_to_eff = jose.Field("will_register_to_eff", omitempty=True)
+        propose_eff_registration = jose.Field("propose_eff_registration", omitempty=True)
 
     def __init__(self, regr, key, meta=None):
         self.key = key

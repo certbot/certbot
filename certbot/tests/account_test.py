@@ -58,6 +58,35 @@ class AccountTest(unittest.TestCase):
         self.assertTrue(repr(self.acc).startswith(
           "<Account(i_am_a_regr, 7adac10320f585ddf118429c0c4af2cd, Meta("))
 
+
+class MetaTest(unittest.TestCase):
+    """Tests for certbot._internal.account.Meta."""
+    def test_deserialize_partial(self):
+        from certbot._internal.account import Account
+        meta = Account.Meta.json_loads(
+            '{'
+            '   "creation_dt": "2020-06-13T07:46:45Z",'
+            '   "creation_host": "hyperion.localdomain"'
+            '}')
+        self.assertIsNotNone(meta.creation_dt)
+        self.assertIsNotNone(meta.creation_host)
+        self.assertIsNone(meta.propose_eff_registration)
+        self.assertIsNone(meta.will_register_to_eff)
+
+    def test_deserialize_full(self):
+        from certbot._internal.account import Account
+        meta = Account.Meta.json_loads(
+            '{'
+            '   "creation_dt": "2020-06-13T07:46:45Z",'
+            '   "creation_host": "hyperion.localdomain",'
+            '   "propose_eff_registration": "foo",'
+            '   "will_register_to_eff": "bar"'
+            '}')
+        self.assertIsNotNone(meta.creation_dt)
+        self.assertIsNotNone(meta.creation_host)
+        self.assertIsNotNone(meta.propose_eff_registration)
+        self.assertIsNotNone(meta.will_register_to_eff)
+
 class ReportNewAccountTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.account.report_new_account."""
 
