@@ -1223,6 +1223,7 @@ def certonly(config, plugins):
         cert_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
         _report_new_cert(config, cert_path, fullchain_path)
         _suggest_donation_if_appropriate(config)
+        eff.handle_subscription(config, le_client.account, le_client.acme)
         return
 
     domains, certname = _find_domains_or_certname(config, installer)
