@@ -1325,13 +1325,15 @@ class MainTest(test_util.ConfigTestCase):
 
         return mock_get_utility
 
-    def test_certonly_csr(self):
+    @mock.patch("certbot._internal.eff.handle_subscription")
+    def test_certonly_csr(self, mock_subscription):
         mock_get_utility = self._test_certonly_csr_common()
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
         self.assertTrue('fullchain.pem' in cert_msg)
         self.assertFalse('Your key file has been saved at' in cert_msg)
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
+        self.assertTrue(mock_subscription.called)
 
     def test_certonly_csr_dry_run(self):
         mock_get_utility = self._test_certonly_csr_common(['--dry-run'])
