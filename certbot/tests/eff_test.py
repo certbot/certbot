@@ -3,8 +3,8 @@ import datetime
 import unittest
 
 try:
-    import josepy
-except ImportError: # pragma: no cover
+    import mock
+except ImportError:  # pragma: no cover
     from unittest import mock
 import josepy
 import pytz
