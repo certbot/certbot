@@ -1,20 +1,20 @@
 """Tests for certbot._internal.eff."""
-import unittest
 import datetime
+import unittest
+
+import josepy
 import pytz
+import requests
+
+from acme import messages
+from certbot._internal import account
+from certbot._internal import constants
+import certbot.tests.util as test_util
 
 try:
     import mock
 except ImportError:  # pragma: no cover
     from unittest import mock
-import requests
-
-import josepy
-
-from acme import messages
-from certbot._internal import constants
-from certbot._internal import account
-import certbot.tests.util as test_util
 
 
 _KEY = josepy.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))

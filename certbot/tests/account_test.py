@@ -4,10 +4,6 @@ import json
 import unittest
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 import pytz
 
 from acme import messages
@@ -16,6 +12,12 @@ from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 

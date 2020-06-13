@@ -6,7 +6,6 @@ import logging
 import shutil
 import socket
 
-from acme.client import ClientBase
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
 import pyrfc3339
@@ -16,6 +15,7 @@ import zope.component
 
 from acme import fields as acme_fields
 from acme import messages
+from acme.client import ClientBase  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -44,8 +44,8 @@ class Account(object):
                                         without user interaction because they give their explicit
                                         approval during the account registration.
         :ivar str propose_eff_registration: If not None, Certbot will propose to register to EFF
-                                            the provided email when possible (typically when the first
-                                            certificate is issued).
+                                            the provided email when possible (typically when the
+                                            first certificate is issued).
 
         .. note:: ``creation_dt`` and ``creation_host`` are useful in
             cross-machine migration scenarios.

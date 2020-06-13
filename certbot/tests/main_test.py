@@ -13,10 +13,6 @@ import traceback
 import unittest
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 import pytz
 import six
 from six.moves import reload_module  # pylint: disable=import-error
@@ -38,6 +34,12 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import enhancements
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.vector_path('cert_512.pem')

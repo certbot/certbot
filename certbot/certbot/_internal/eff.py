@@ -3,18 +3,29 @@ import logging
 
 import requests
 import zope.component
-from acme.client import Client, BackwardsCompatibleClientV2, ClientBase
 
+from acme.client import ClientBase  # pylint: disable=unused-import
 from certbot import interfaces
 from certbot._internal import constants
-from certbot._internal.account import Account, AccountFileStorage
-from certbot.interfaces import IConfig
+from certbot._internal.account import Account  # pylint: disable=unused-import
+from certbot._internal.account import AccountFileStorage
+from certbot.interfaces import IConfig  # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 
 
 def prepare_subscription(config, acc, acme):
     # type: (IConfig, Account, ClientBase) -> None
+    """High level function to store potential EFF newsletter subscriptions.
+
+    Decision about EFF subscription will be stored in the account metadata:
+    it can be no subscription, propose to subscribe, or subscribe without prompt.
+
+    :param IConfig config: Client configuration.
+    :param Account acc: Current client account.
+    :param ClientBase acme: Current ACME client.
+
+    """
     if config.eff_email is False:
         return
     if config.eff_email is True:
@@ -33,6 +44,17 @@ def prepare_subscription(config, acc, acme):
 
 def handle_subscription(config, acc, acme):
     # type: (IConfig, Account, ClientBase) -> None
+    """High level function to take care of EFF newsletter subscriptions.
+
+    The user may be asked if they want to sign up for the newsletter if
+    they have not already specified. Once subscription is handled, it will
+    not be proposed again.
+
+    :param IConfig config: Client configuration.
+    :param Account acc: Current client account.
+    :param ClientBase acme: Current ACME client.
+
+    """
     if config.dry_run:
         return
 
