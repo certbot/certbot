@@ -721,7 +721,7 @@ def update_account(config, unused_plugins):
     # the v2 uri. Since it's the same object on disk, put it back to the v1 uri
     # so that we can also continue to use the account object with acmev1.
     acc.regr = acc.regr.update(uri=prev_regr_uri)
-    account_storage.update_regr(acc, acme)
+    account_storage.update_regr(acc, cb_client.acme)
     eff.prepare_subscription(config, acc)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
     return None
