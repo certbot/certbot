@@ -597,11 +597,15 @@ class OrderResource(ResourceWithURI):
         Fully-fetched AuthorizationResource objects.
     :ivar str fullchain_pem: The fetched contents of the certificate URL
         produced once the order was finalized, if it's present.
+    :ivar list of str alternative_fullchains_pem: The fetched contents of
+        alternative certificate chain URLs produced once the order was finalized,
+        if present and requested during finalization.
     """
     body = jose.Field('body', decoder=Order.from_json)
     csr_pem = jose.Field('csr_pem', omitempty=True)
     authorizations = jose.Field('authorizations')
     fullchain_pem = jose.Field('fullchain_pem', omitempty=True)
+    alternative_fullchains_pem = jose.Field('alternative_fullchains_pem', omitempty=True)
 
 @Directory.register
 class NewOrder(Order):

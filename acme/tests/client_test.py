@@ -263,7 +263,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         with mock.patch('acme.client.ClientV2') as mock_client:
             client = self._init()
             client.finalize_order(mock_orderr, mock_deadline)
-            mock_client().finalize_order.assert_called_once_with(mock_orderr, mock_deadline)
+            mock_client().finalize_order.assert_called_once_with(mock_orderr, mock_deadline, False)
 
     def test_revoke(self):
         self.response.json.return_value = DIRECTORY_V1.to_json()
@@ -841,6 +841,32 @@ class ClientV2Test(ClientTestBase):
     def test_finalize_order_timeout(self):
         deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
         self.assertRaises(errors.TimeoutError, self.client.finalize_order, self.orderr, deadline)
+
+    def test_finalize_order_alt_chains(self):
+        updated_order = self.order.update(
+            certificate='https://www.letsencrypt-demo.org/acme/cert/',
+        )
+        updated_orderr = self.orderr.update(body=updated_order,
+                                            fullchain_pem=CERT_SAN_PEM,
+                                            alternative_fullchains_pem=[CERT_SAN_PEM,
+                                                                        CERT_SAN_PEM])
+        self.response.json.return_value = updated_order.to_json()
+        self.response.text = CERT_SAN_PEM
+        self.response.headers['Link'] ='<https://example.com/acme/cert/1>;rel="alternate", ' + \
+            '<https://exaple.com/dir>;rel="index", ' + \
+            '<https://example.com/acme/cert/2>;title="foo";rel="alternate"'
+
+        deadline = datetime.datetime(9999, 9, 9)
+        resp = self.client.finalize_order(self.orderr, deadline, fetch_alternative_chains=True)
+        self.net.post.assert_any_call('https://example.com/acme/cert/1',
+                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+        self.net.post.assert_any_call('https://example.com/acme/cert/2',
+                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+        self.assertEqual(resp, updated_orderr)
+
+        del self.response.headers['Link']
+        resp = self.client.finalize_order(self.orderr, deadline, fetch_alternative_chains=True)
+        self.assertEqual(resp, updated_orderr.update(alternative_fullchains_pem=[]))
 
     def test_revoke(self):
         self.client.revoke(messages_test.CERT, self.rsn)
