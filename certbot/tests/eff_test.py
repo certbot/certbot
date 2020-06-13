@@ -1,63 +1,120 @@
 """Tests for certbot._internal.eff."""
 import unittest
+import datetime
+import pytz
 
 try:
     import mock
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     from unittest import mock
 import requests
 
+import josepy
+
+from acme import messages
 from certbot._internal import constants
+from certbot._internal import account
 import certbot.tests.util as test_util
 
 
-class HandleSubscriptionTest(test_util.ConfigTestCase):
-    """Tests for certbot._internal.eff.handle_subscription."""
+_KEY = josepy.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
+_DIRECTORY_V2 = messages.Directory({
+    'newAccount': 'https://www.letsencrypt-demo.org/acme/new-account',
+    'newNonce': 'https://www.letsencrypt-demo.org/acme/new-nonce',
+    'newOrder': 'https://www.letsencrypt-demo.org/acme/new-order',
+    'revokeCert': 'https://www.letsencrypt-demo.org/acme/revoke-cert',
+})
+
+
+class SubscriptionTest(test_util.ConfigTestCase):
+    """Abstract class for subscription tests."""
     def setUp(self):
-        super(HandleSubscriptionTest, self).setUp()
-        self.email = 'certbot@example.org'
-        self.config.email = self.email
+        super(SubscriptionTest, self).setUp()
+        self.account = account.Account(
+            regr=messages.RegistrationResource(
+                uri=None, body=messages.Registration(),
+                new_authzr_uri='hi'),
+            key=_KEY,
+            meta=account.Account.Meta(
+                creation_host='test.certbot.org',
+                creation_dt=datetime.datetime(
+                    2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC)))
+        self.client = mock.MagicMock()
+        self.client.directory = _DIRECTORY_V2
+        self.config.email = 'certbot@example.org'
         self.config.eff_email = None
 
+
+class PrepareSubscriptionTest(SubscriptionTest):
+    """Tests for certbot._internal.eff.prepare_subscription."""
     def _call(self):
-        from certbot._internal.eff import handle_subscription
-        return handle_subscription(self.config)
+        from certbot._internal.eff import prepare_subscription
+        prepare_subscription(self.config, self.account, self.client)
 
     @test_util.patch_get_utility()
-    @mock.patch('certbot._internal.eff.subscribe')
-    def test_failure(self, mock_subscribe, mock_get_utility):
+    def test_failure(self, mock_get_utility):
         self.config.email = None
         self.config.eff_email = True
         self._call()
-        self.assertFalse(mock_subscribe.called)
-        self.assertFalse(mock_get_utility().yesno.called)
         actual = mock_get_utility().add_message.call_args[0][0]
         expected_part = "because you didn't provide an e-mail address"
         self.assertTrue(expected_part in actual)
+        self.assertIsNone(self.account.meta.will_register_to_eff)
+        self.assertIsNone(self.account.meta.propose_eff_registration)
 
-    @mock.patch('certbot._internal.eff.subscribe')
-    def test_no_subscribe_with_no_prompt(self, mock_subscribe):
+    def test_no_subscribe(self):
         self.config.eff_email = False
-        with test_util.patch_get_utility() as mock_get_utility:
-            self._call()
+        self._call()
+        self.assertIsNone(self.account.meta.will_register_to_eff)
+        self.assertIsNone(self.account.meta.propose_eff_registration)
+
+    def test_will_subscribe(self):
+        self.config.eff_email = True
+        self._call()
+        self.assertEqual(self.account.meta.will_register_to_eff, 'certbot@example.org')
+        self.assertIsNone(self.account.meta.propose_eff_registration)
+
+    def test_may_subscribe(self):
+        self._call()
+        self.assertIsNone(self.account.meta.will_register_to_eff)
+        self.assertEqual(self.account.meta.propose_eff_registration, 'certbot@example.org')
+
+
+class HandleSubscriptionTest(SubscriptionTest):
+    """Tests for certbot._internal.eff.handle_subscription."""
+    def _call(self):
+        from certbot._internal.eff import handle_subscription
+        handle_subscription(self.config, self.account, self.client)
+
+    @test_util.patch_get_utility()
+    @mock.patch('certbot._internal.eff.subscribe')
+    def test_no_subscribe_with_no_prompt(self, mock_subscribe, mock_get_utility):
+        self._call()
         self.assertFalse(mock_subscribe.called)
         self._assert_no_get_utility_calls(mock_get_utility)
 
     @test_util.patch_get_utility()
     @mock.patch('certbot._internal.eff.subscribe')
     def test_subscribe_with_no_prompt(self, mock_subscribe, mock_get_utility):
-        self.config.eff_email = True
+        self.account.meta = self.account.meta.update(will_register_to_eff=self.config.email)
         self._call()
         self._assert_subscribed(mock_subscribe)
         self._assert_no_get_utility_calls(mock_get_utility)
 
-    def _assert_no_get_utility_calls(self, mock_get_utility):
-        self.assertFalse(mock_get_utility().yesno.called)
+    @test_util.patch_get_utility()
+    @mock.patch('certbot._internal.eff.subscribe')
+    def test_no_subscribe_with_prompt(self, mock_subscribe, mock_get_utility):
+        self.account.meta = self.account.meta.update(propose_eff_registration=self.config.email)
+        mock_get_utility().yesno.return_value = False
+        self._call()
+        self.assertFalse(mock_subscribe.called)
         self.assertFalse(mock_get_utility().add_message.called)
+        self._assert_correct_yesno_call(mock_get_utility)
 
     @test_util.patch_get_utility()
     @mock.patch('certbot._internal.eff.subscribe')
     def test_subscribe_with_prompt(self, mock_subscribe, mock_get_utility):
+        self.account.meta = self.account.meta.update(propose_eff_registration=self.config.email)
         mock_get_utility().yesno.return_value = True
         self._call()
         self._assert_subscribed(mock_subscribe)
@@ -66,16 +123,11 @@ class HandleSubscriptionTest(test_util.ConfigTestCase):
 
     def _assert_subscribed(self, mock_subscribe):
         self.assertTrue(mock_subscribe.called)
-        self.assertEqual(mock_subscribe.call_args[0][0], self.email)
+        self.assertEqual(mock_subscribe.call_args[0][0], self.config.email)
 
-    @test_util.patch_get_utility()
-    @mock.patch('certbot._internal.eff.subscribe')
-    def test_no_subscribe_with_prompt(self, mock_subscribe, mock_get_utility):
-        mock_get_utility().yesno.return_value = False
-        self._call()
-        self.assertFalse(mock_subscribe.called)
+    def _assert_no_get_utility_calls(self, mock_get_utility):
+        self.assertFalse(mock_get_utility().yesno.called)
         self.assertFalse(mock_get_utility().add_message.called)
-        self._assert_correct_yesno_call(mock_get_utility)
 
     def _assert_correct_yesno_call(self, mock_get_utility):
         self.assertTrue(mock_get_utility().yesno.called)
