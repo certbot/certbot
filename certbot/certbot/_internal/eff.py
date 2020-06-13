@@ -4,7 +4,6 @@ import logging
 import requests
 import zope.component
 
-from acme.client import ClientBase  # pylint: disable=unused-import
 from certbot import interfaces
 from certbot._internal import constants
 from certbot._internal.account import Account  # pylint: disable=unused-import
@@ -14,8 +13,8 @@ from certbot.interfaces import IConfig  # pylint: disable=unused-import
 logger = logging.getLogger(__name__)
 
 
-def prepare_subscription(config, acc, acme):
-    # type: (IConfig, Account, ClientBase) -> None
+def prepare_subscription(config, acc):
+    # type: (IConfig, Account) -> None
     """High level function to store potential EFF newsletter subscriptions.
 
     Decision about EFF subscription will be stored in the account metadata:
@@ -23,7 +22,6 @@ def prepare_subscription(config, acc, acme):
 
     :param IConfig config: Client configuration.
     :param Account acc: Current client account.
-    :param ClientBase acme: Current ACME client.
 
     """
     if config.eff_email is False:
@@ -39,11 +37,11 @@ def prepare_subscription(config, acc, acme):
 
     if acc.meta.will_register_to_eff or acc.meta.propose_eff_registration:
         storage = AccountFileStorage(config)
-        storage.update(acc, acme)
+        storage.update_meta(acc)
 
 
-def handle_subscription(config, acc, acme):
-    # type: (IConfig, Account, ClientBase) -> None
+def handle_subscription(config, acc):
+    # type: (IConfig, Account) -> None
     """High level function to take care of EFF newsletter subscriptions.
 
     The user may be asked if they want to sign up for the newsletter if
@@ -52,7 +50,6 @@ def handle_subscription(config, acc, acme):
 
     :param IConfig config: Client configuration.
     :param Account acc: Current client account.
-    :param ClientBase acme: Current ACME client.
 
     """
     if config.dry_run:
@@ -71,7 +68,7 @@ def handle_subscription(config, acc, acme):
     if acc.meta.will_register_to_eff or acc.meta.propose_eff_registration:
         acc.meta = acc.meta.update(will_register_to_eff=None, propose_eff_registration=None)
         storage = AccountFileStorage(config)
-        storage.update(acc, acme)
+        storage.update_meta(acc)
 
 
 def _want_subscription():

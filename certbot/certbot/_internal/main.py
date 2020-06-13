@@ -721,8 +721,8 @@ def update_account(config, unused_plugins):
     # the v2 uri. Since it's the same object on disk, put it back to the v1 uri
     # so that we can also continue to use the account object with acmev1.
     acc.regr = acc.regr.update(uri=prev_regr_uri)
-    account_storage.update(acc, acme)
-    eff.prepare_subscription(config, acc, acme)
+    account_storage.update_regr(acc, acme)
+    eff.prepare_subscription(config, acc)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
     return None
 
@@ -1117,7 +1117,7 @@ def run(config, plugins):
         display_ops.success_renewal(domains)
 
     _suggest_donation_if_appropriate(config)
-    eff.handle_subscription(config, le_client.account, le_client.acme)
+    eff.handle_subscription(config, le_client.account)
     return None
 
 
@@ -1223,7 +1223,7 @@ def certonly(config, plugins):
         cert_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
         _report_new_cert(config, cert_path, fullchain_path)
         _suggest_donation_if_appropriate(config)
-        eff.handle_subscription(config, le_client.account, le_client.acme)
+        eff.handle_subscription(config, le_client.account)
         return
 
     domains, certname = _find_domains_or_certname(config, installer)
@@ -1241,7 +1241,7 @@ def certonly(config, plugins):
     key_path = lineage.key_path if lineage else None
     _report_new_cert(config, cert_path, fullchain_path, key_path)
     _suggest_donation_if_appropriate(config)
-    eff.handle_subscription(config, le_client.account, le_client.acme)
+    eff.handle_subscription(config, le_client.account)
 
 
 def renew(config, unused_plugins):

@@ -169,13 +169,22 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
             regr = json.load(f)
         self.assertTrue("new_authzr_uri" in regr)
 
-    def test_update(self):
-        self.storage.update(self.acc, self.mock_client)
+    def test_update_regr(self):
+        self.storage.update_regr(self.acc, self.mock_client)
         account_path = os.path.join(self.config.accounts_dir, self.acc.id)
         self.assertTrue(os.path.exists(account_path))
         self.assertTrue(os.path.exists(os.path.join(account_path, "regr.json")))
+
+        self.assertFalse(os.path.exists(os.path.join(account_path, "meta.json")))
+        self.assertFalse(os.path.exists(os.path.join(account_path, "private_key.json")))
+
+    def test_update_meta(self):
+        self.storage.update_meta(self.acc)
+        account_path = os.path.join(self.config.accounts_dir, self.acc.id)
+        self.assertTrue(os.path.exists(account_path))
         self.assertTrue(os.path.exists(os.path.join(account_path, "meta.json")))
 
+        self.assertFalse(os.path.exists(os.path.join(account_path, "regr.json")))
         self.assertFalse(os.path.exists(os.path.join(account_path, "private_key.json")))
 
     def test_find_all(self):

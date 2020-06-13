@@ -18,12 +18,6 @@ except ImportError:  # pragma: no cover
 
 
 _KEY = josepy.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
-_DIRECTORY_V2 = messages.Directory({
-    'newAccount': 'https://www.letsencrypt-demo.org/acme/new-account',
-    'newNonce': 'https://www.letsencrypt-demo.org/acme/new-nonce',
-    'newOrder': 'https://www.letsencrypt-demo.org/acme/new-order',
-    'revokeCert': 'https://www.letsencrypt-demo.org/acme/revoke-cert',
-})
 
 
 class SubscriptionTest(test_util.ConfigTestCase):
@@ -39,8 +33,6 @@ class SubscriptionTest(test_util.ConfigTestCase):
                 creation_host='test.certbot.org',
                 creation_dt=datetime.datetime(
                     2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC)))
-        self.client = mock.MagicMock()
-        self.client.directory = _DIRECTORY_V2
         self.config.email = 'certbot@example.org'
         self.config.eff_email = None
 
@@ -49,7 +41,7 @@ class PrepareSubscriptionTest(SubscriptionTest):
     """Tests for certbot._internal.eff.prepare_subscription."""
     def _call(self):
         from certbot._internal.eff import prepare_subscription
-        prepare_subscription(self.config, self.account, self.client)
+        prepare_subscription(self.config, self.account)
 
     @test_util.patch_get_utility()
     def test_failure(self, mock_get_utility):
@@ -84,7 +76,7 @@ class HandleSubscriptionTest(SubscriptionTest):
     """Tests for certbot._internal.eff.handle_subscription."""
     def _call(self):
         from certbot._internal.eff import handle_subscription
-        handle_subscription(self.config, self.account, self.client)
+        handle_subscription(self.config, self.account)
 
     @test_util.patch_get_utility()
     @mock.patch('certbot._internal.eff.subscribe')

@@ -253,23 +253,46 @@ class AccountFileStorage(interfaces.AccountStorage):
 
     def save(self, account, client):
         # type: (Account, ClientBase) -> None
-        """Create a new account resource.
+        """Create a new account.
 
         :param Account account: account to create
         :param ClientBase client: ACME client associated to the account
 
         """
-        self._save(account, client, creation_mode=True)
+        try:
+            dir_path = self._prepare(account)
+            self._create(account, dir_path)
+            self._update_meta(account, dir_path)
+            self._update_regr(account, client, dir_path)
+        except IOError as error:
+            raise errors.AccountStorageError(error)
 
-    def update(self, account, client):
+    def update_regr(self, account, client):
         # type: (Account, ClientBase) -> None
-        """Update an existing account resource.
+        """Update the registration resource.
 
         :param Account account: account to update
         :param ClientBase client: ACME client associated to the account
 
         """
-        self._save(account, client, creation_mode=False)
+        try:
+            dir_path = self._prepare(account)
+            self._update_regr(account, client, dir_path)
+        except IOError as error:
+            raise errors.AccountStorageError(error)
+
+    def update_meta(self, account):
+        # type: (Account) -> None
+        """Update the meta resource.
+
+        :param Account account: account to update
+
+        """
+        try:
+            dir_path = self._prepare(account)
+            self._update_meta(account, dir_path)
+        except IOError as error:
+            raise errors.AccountStorageError(error)
 
     def delete(self, account_id):
         """Delete registration info from disk
@@ -337,33 +360,36 @@ class AccountFileStorage(interfaces.AccountStorage):
 
         return dir_path
 
-    def _save(self, account, acme, creation_mode=True):
-        # type: (Account, ClientBase, bool) -> None
+    def _prepare(self, account):
+        # type: (Account) -> str
         account_dir_path = self._account_dir_path(account.id)
         util.make_or_verify_dir(account_dir_path, 0o700, self.config.strict_permissions)
-        try:
-            with open(self._regr_path(account_dir_path), "w") as regr_file:
-                regr = account.regr
-                # If we have a value for new-authz, save it for forwards
-                # compatibility with older versions of Certbot. If we don't
-                # have a value for new-authz, this is an ACMEv2 directory where
-                # an older version of Certbot won't work anyway.
-                if hasattr(acme.directory, "new-authz"):
-                    regr = RegistrationResourceWithNewAuthzrURI(
-                        new_authzr_uri=acme.directory.new_authz,
-                        body={},
-                        uri=regr.uri)
-                else:
-                    regr = messages.RegistrationResource(
-                        body={},
-                        uri=regr.uri)
-                regr_file.write(regr.json_dumps())
-            with open(self._metadata_path(account_dir_path), "w") as metadata_file:
-                metadata_file.write(account.meta.json_dumps())
-            if creation_mode:
-                with util.safe_open(self._key_path(account_dir_path),
-                                    "w", chmod=0o400) as key_file:
-                    key_file.write(account.key.json_dumps())
-        except IOError as error:
-            print(error)
-            raise errors.AccountStorageError(error)
+        return account_dir_path
+
+    def _create(self, account, dir_path):
+        # type: (Account, str) -> None
+        with util.safe_open(self._key_path(dir_path), "w", chmod=0o400) as key_file:
+            key_file.write(account.key.json_dumps())
+
+    def _update_regr(self, account, acme, dir_path):
+        # type: (Account, ClientBase, str) -> None
+        with open(self._regr_path(dir_path), "w") as regr_file:
+            regr = account.regr
+            # If we have a value for new-authz, save it for forwards
+            # compatibility with older versions of Certbot. If we don't
+            # have a value for new-authz, this is an ACMEv2 directory where
+            # an older version of Certbot won't work anyway.
+            if hasattr(acme.directory, "new-authz"):
+                regr = RegistrationResourceWithNewAuthzrURI(
+                    new_authzr_uri=acme.directory.new_authz,
+                    body={},
+                    uri=regr.uri)
+            else:
+                regr = messages.RegistrationResource(
+                    body={},
+                    uri=regr.uri)
+            regr_file.write(regr.json_dumps())
+
+    def _update_meta(self, account, dir_path):
+        with open(self._metadata_path(dir_path), "w") as metadata_file:
+            metadata_file.write(account.meta.json_dumps())
