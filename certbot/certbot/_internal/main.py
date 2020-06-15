@@ -448,6 +448,8 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
 
     assert cert_path and fullchain_path, "No certificates saved to report."
 
+    logger.info('You have successfully obtained a certificate!')
+
     expiry = crypto_util.notAfter(cert_path).date()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     # Print the path to fullchain.pem because that's what modern webservers
