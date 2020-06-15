@@ -1007,18 +1007,18 @@ class RenewableCert(interfaces.RenewableCert):
         lineagename = lineagename_for_filename(config_filename)
         archive = full_archive_path(None, cli_config, lineagename)
         live_dir = _full_live_path(cli_config, lineagename)
-        if os.path.exists(archive):
+        if os.path.exists(archive) and (not os.path.isdir(archive) or os.listdir(archive)):
             config_file.close()
             raise errors.CertStorageError(
                 "archive directory exists for " + lineagename)
-        if os.path.exists(live_dir):
+        if os.path.exists(live_dir) and (not os.path.isdir(live_dir) or os.listdir(live_dir)):
             config_file.close()
             raise errors.CertStorageError(
                 "live directory exists for " + lineagename)
-        filesystem.mkdir(archive)
-        filesystem.mkdir(live_dir)
-        logger.debug("Archive directory %s and live "
-                     "directory %s created.", archive, live_dir)
+        for i in (archive, live_dir):
+            if not os.path.exists(i):
+                filesystem.makedirs(i)
+                logger.debug("Creating directory %s.", i)
 
         # Put the data into the appropriate files on disk
         target = {kind: os.path.join(live_dir, kind + ".pem") for kind in ALL_FOUR}

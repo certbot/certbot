@@ -24,4 +24,5 @@ class DarwinConfigurator(configurator.ApacheConfigurator):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2/other",
+        bin=None,
     )

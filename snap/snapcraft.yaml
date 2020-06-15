@@ -20,7 +20,7 @@ adopt-info: certbot
 
 apps:
   certbot:
-    command: bin/certbot
+    command: bin/certbot.wrapper
     environment:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
       AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
@@ -55,7 +55,7 @@ parts:
     plugin: python
     source: .
     source-subdir: acme
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-packages:
       - wheel
     stage:
@@ -68,11 +68,13 @@ parts:
       - -**/wheel
       - -**/cffi
       - -lib64
+    # To build cryptography and cffi if needed
+    build-packages: [libffi-dev, libssl-dev]
   certbot:
     plugin: python
     source: .
     source-subdir: certbot
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     after: [acme]
     override-pull: |
         snapcraftctl pull
@@ -95,7 +97,7 @@ parts:
     plugin: python
     source: .
     source-subdir: certbot-apache
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     after: [python-augeas, certbot]
     stage-packages:
       - libaugeas0
@@ -118,7 +120,7 @@ parts:
     plugin: python
     source: .
     source-subdir: certbot-nginx
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     # This is the last step, compile pycache now as there should be no conflicts.
     # override-prime: |
     #   snapcraftctl prime
@@ -137,3 +139,13 @@ parts:
     stage-packages:
       - python3-venv
 
+  wrappers:
+    plugin: dump
+    source: .
+    stage: [certbot.wrapper]
+
+plugs:
+  plugin:
+    interface: content
+    content: certbot-1
+    target: $SNAP/certbot-plugin
