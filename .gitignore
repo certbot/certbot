@@ -58,5 +58,3 @@ parts
 prime
 stage
 *.snap
-snap-constraints.txt
-qemu-*
