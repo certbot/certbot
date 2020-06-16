@@ -69,7 +69,7 @@ parts:
       - libaugeas0
       - python3-venv
     # To build cryptography and cffi if needed
-    build-packages: [libffi-dev, libssl-dev, git]
+    build-packages: [libffi-dev, libssl-dev, git, python3-wheel]
     override-pull: |
         snapcraftctl pull
         snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC/certbot && git describe|sed s/^v//`
