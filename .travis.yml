@@ -273,9 +273,6 @@ matrix:
       env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=amd64
       <<: *snap-config
       <<: *extended-test-suite
-    - env: SNAP=true TARGET_ARCH=i386
-      <<: *snap-config
-      <<: *extended-test-suite
     - env: SNAP=true TARGET_ARCH=arm64
       <<: *snap-config
       <<: *extended-test-suite
