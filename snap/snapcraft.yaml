@@ -67,7 +67,7 @@ parts:
       - -lib/python3.8/site-packages/augeas.py # maybe unnecessary
     stage-packages:
       - libaugeas0
-      - python3-venv
+      - python3-wget
     # To build cryptography and cffi if needed
     build-packages: [libffi-dev, libssl-dev, git]
     override-pull: |
