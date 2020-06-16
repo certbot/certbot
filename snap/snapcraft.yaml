@@ -51,93 +51,29 @@ parts:
       - -**/RECORD
       - -**/wheel
       - -lib64
-  acme:
-    plugin: python
-    source: .
-    source-subdir: acme
-    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
-    python-packages:
-      - wheel
-    stage:
-      - -pyvenv.cfg
-      - -**/__pycache__
-      - -bin
-      - -**/RECORD
-      - -**/pycparser
-      - -**/_cffi_backend*.so
-      - -**/wheel
-      - -**/cffi
-      - -lib64
-    # To build cryptography and cffi if needed
-    build-packages: [libffi-dev, libssl-dev]
   certbot:
     plugin: python
     source: .
-    source-subdir: certbot
     constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
-    after: [acme]
-    override-pull: |
-        snapcraftctl pull
-        snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC && git describe|sed s/^v//`
     python-packages:
       - wheel
+      - acme
+      - certbot
+      - certbot-apache
+      - certbot-nginx
     stage:
-      - -pyvenv.cfg
-      - -**/__pycache__
-      - -**/RECORD
-      - -**/pycparser
-      - -**/_cffi_backend*.so
-      - -**/wheel
-      - -**/cffi
-      - -lib64
-      - -bin
-      # Workaround for lack of site-packages leading to empty sitecustomize.py
-      - -usr/lib/python3.8/sitecustomize.py
-  certbot-apache:
-    plugin: python
-    source: .
-    source-subdir: certbot-apache
-    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
-    after: [python-augeas, certbot]
+      - -usr/lib/python3.8/sitecustomize.py # maybe unnecessary
+      # Prefer cffi
+      - -lib/python3.8/site-packages/augeas.py # maybe unnecessary
     stage-packages:
       - libaugeas0
-    python-packages:
-      - wheel
-    stage:
-      - -pyvenv.cfg
-      - -**/__pycache__
-      - -bin
-      - -**/RECORD
-      - -**/pycparser
-      - -**/cffi
-      - -**/_cffi_backend*.so
-      - -**/wheel
-      - -lib64
-      - -**/certbot/
-      # Prefer cffi
-      - -lib/python3.8/site-packages/augeas.py
-  certbot-nginx:
-    plugin: python
-    source: .
-    source-subdir: certbot-nginx
-    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
-    # This is the last step, compile pycache now as there should be no conflicts.
-    # override-prime: |
-    #   snapcraftctl prime
-    #   ./bin/nonexistent fail
-    # #   ./bin/python3 -m compileall -q .
-    # After certbot-apache to not rebuild duplicates (essentially sharing what was already staged,
-    # like zope)
-    after: [certbot-apache]
-    python-packages:
-      - wheel
-    stage:
-      - -**/certbot/
-      - -**/cffi
-      - -**/_cffi_backend*.so
-      - -**/pycparser
-    stage-packages:
       - python3-venv
+    # To build cryptography and cffi if needed
+    build-packages: [libffi-dev, libssl-dev]
+    override-pull: |
+        snapcraftctl pull
+        snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC/certbot && git describe|sed s/^v//`
+    after: [python-augeas]
 
   wrappers:
     plugin: dump
