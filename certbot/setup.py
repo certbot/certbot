@@ -89,7 +89,6 @@ dev_extras = [
     'pytest-xdist',
     'tox',
     'twine',
-    'wheel',
 ]
 
 dev3_extras = [
