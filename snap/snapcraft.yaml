@@ -57,10 +57,10 @@ parts:
     constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-packages:
       - wheel
-      - -e acme
-      - -e certbot
-      - -e certbot-apache
-      - -e certbot-nginx
+      - ./acme
+      - ./certbot
+      - ./certbot-apache
+      - ./certbot-nginx
     stage:
       - -usr/lib/python3.8/sitecustomize.py # maybe unnecessary
       # Prefer cffi
