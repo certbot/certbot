@@ -12,6 +12,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Function `certbot.compat.filesystem.umask` is a drop-in replacement for `os.umask`
   implementing umask for both UNIX and Windows systems.
 * Support for alternative certificate chains in the `acme` module.
+* The `--preferred-chain` parameter has been added. If a CA offers multiple certificate
+  chains during issuance or renewal, it may be used to indicate to Certbot which chain
+  should be preferred.
+  * e.g. `--preferred-chain "DST Root CA X3"` (issuer CN) or
+  `--preferred-chain aee4db3cacce9b50a717e51b8137997f20bc62fa` (issuer SKI).
 
 ### Changed
 

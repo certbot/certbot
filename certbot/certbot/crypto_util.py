@@ -7,6 +7,7 @@
 import hashlib
 import logging
 import warnings
+import codecs
 
 import re
 # See https://github.com/pyca/cryptography/issues/4275
@@ -530,3 +531,47 @@ def get_serial_from_cert(cert_path):
         x509 = crypto.load_certificate(crypto.FILETYPE_PEM,
                                                            f.read())
     return x509.get_serial_number()
+
+
+def find_chain_with_issuer(fullchains, issuer_cn_or_ski):
+    """Chooses the first certificate chain from fullchains which contains an
+    issuer matching issuer_cn_or_ski.
+
+    :param `list of str` fullchains: The list of fullchains in PEM chain format.
+    :param `str` issuer_cn_or_ski: The exact Subject Common Name, or hex-encoded
+        (without colons) Subject Key Identifier to match against any issuer in
+        the certificate chain.
+
+    :returns: The best-matching fullchain, PEM-encoded, or the first if none match.
+    :rtype: `str`
+    """
+    ski_bytes = None
+    try:
+        ski_bytes = codecs.decode(issuer_cn_or_ski, 'hex')
+    except ValueError:
+        # issuer_cn_or_ski is not an SKI, so we can avoid checking that extension
+        pass
+
+    for chain in fullchains:
+        certs = [x509.load_pem_x509_certificate(cert, default_backend()) \
+                 for cert in CERT_PEM_REGEX.findall(chain.encode())]
+        # Iterate the fullchain beginning from the leaf. For each certificate encountered,
+        # match against Issuer Subject CN and the Issuer SKI (i.e. certificate AKI).
+        for cert in certs:
+            issuer_cn = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+            if issuer_cn and issuer_cn[0].value == issuer_cn_or_ski:
+                return chain
+
+            if not ski_bytes:
+                continue
+            try:
+                aki_ext = cert.extensions.get_extension_for_class(x509.AuthorityKeyIdentifier)
+                if aki_ext and aki_ext.value.key_identifier == ski_bytes:
+                    return chain
+            except x509.ExtensionNotFound:
+                # The AKI extension should always be present for any CA, but we shouldn't
+                # raise an error if it isn't.
+                pass
+
+    # Nothing matched, return whatever was first in the list.
+    return fullchains[0]
