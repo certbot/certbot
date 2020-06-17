@@ -37,17 +37,6 @@ apps:
 
 
 parts:
-  python-augeas:
-    plugin: python
-    source: git://github.com/basak/python-augeas
-    source-branch: snap
-    build-packages: [libaugeas-dev]
-    stage:
-      - -pyvenv.cfg
-      - -**/__pycache__
-      - -bin
-      - -**/RECORD
-      - -lib64
   certbot:
     plugin: python
     source: .
@@ -80,7 +69,6 @@ parts:
     override-pull: |
         snapcraftctl pull
         snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC/certbot && git describe|sed s/^v//`
-    after: [python-augeas]
 
   wrappers:
     plugin: dump
