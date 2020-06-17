@@ -37,6 +37,7 @@ import time
 from acme.magic_typing import Dict, Union  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
+from certbot import interfaces
 from certbot import ocsp
 from certbot.plugins.enhancements import OCSPPrefetchEnhancement
 
@@ -153,25 +154,19 @@ class OCSPPrefetchMixin(object):
         # Ensure cert_path exists before trying to use it.
         if not os.path.isfile(cert_path):
             raise OCSPCertificateError("Certificate has been removed from the system.")
-        ocsp_workfile = os.path.join(
-            os.path.dirname(self._ocsp_work),
-            apache_util.certid_sha1_hex(cert_path))
         handler = ocsp.RevocationChecker()
-        try:
-            if handler.ocsp_revoked_by_paths(cert_path, chain_path, response_file=ocsp_workfile):
-                raise OCSPCertificateError("Certificate has been revoked.")
-            else:
-                # Guaranteed good response
-                cert_sha = apache_util.certid_sha1(cert_path)
-                # dbm.open automatically adds the file extension
-                self._write_to_dbm(self._ocsp_store, cert_sha,
-                                   self._ocsp_response_dbm(ocsp_workfile))
-        finally:
-            try:
-                os.remove(ocsp_workfile)
-            except OSError:
-                # The OCSP workfile did not exist because of an OCSP response fetching error
-                pass
+        ocsp_response = handler.ocsp_response_by_paths(cert_path, chain_path)
+        if ocsp_response is None:
+            raise errors.PluginError("Unable to obtain an OCSP response.")
+        elif ocsp_response.certificate_status == interfaces.OCSPCertStatus.REVOKED:
+            raise OCSPCertificateError("Certificate has been revoked.")
+        elif ocsp_response.certificate_status == interfaces.OCSPCertStatus.UNKNOWN:
+            raise OCSPCertificateError("Certificate is unknown to the OCSP responder.")
+        else:
+            # Guaranteed good response
+            cert_sha = apache_util.certid_sha1(cert_path)
+            # dbm.open automatically adds the file extension
+            self._write_to_dbm(self._ocsp_store, cert_sha, self._ocsp_response_dbm(ocsp_response))
 
     def _write_to_dbm(self, filename, key, value):
         """Helper method to write an OCSP response cache value to DBM.
@@ -237,10 +232,10 @@ class OCSPPrefetchMixin(object):
                         "Staple should not be prefetched.")
         raise errors.PluginError(suberror)
 
-    def _ocsp_response_dbm(self, workfile):
+    def _ocsp_response_dbm(self, ocsp_response):
         """Creates a dbm entry for OCSP response data
 
-        :param str workfile: File path for raw OCSP response
+        :param interfaces.OCSPResponse ocsp_response: Good OCSP response
 
         :raises .errors.PluginError: If the OCSP response should not be
             configured for use with Apache
@@ -249,13 +244,8 @@ class OCSPPrefetchMixin(object):
         :rtype: string
 
         """
-
-        handler = ocsp.RevocationChecker()
-        _, _, next_update = handler.ocsp_times(workfile)
-        ttl = self._ocsp_ttl(next_update)
-
-        with open(workfile, 'rb') as fh:
-            response = fh.read()
+        ttl = self._ocsp_ttl(ocsp_response.next_update)
+        response = ocsp_response.bytes
         return apache_util.get_apache_ocsp_struct(ttl, response)
 
     def _ocsp_prefetch_save(self, cert_path, chain_path):

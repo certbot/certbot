@@ -220,34 +220,23 @@ class OCSPPrefetchTest(util.ApacheTest):
 
     @mock.patch("certbot_apache._internal.constants.OCSP_INTERNAL_TTL", 0)
     def test_ocsp_prefetch_refresh(self):
-        def ocsp_req_mock(_cert, _chain, response_file):
-            """Method to mock the OCSP request and write response to file"""
-            with open(response_file, 'w') as fh:
-                fh.write("MOCKRESPONSE")
-            return False
-
-        ocsp_path = "certbot.ocsp.RevocationChecker.ocsp_revoked_by_paths"
-        with mock.patch(ocsp_path, side_effect=ocsp_req_mock):
-            with mock.patch('certbot.ocsp.RevocationChecker.ocsp_times') as mock_times:
-                produced_at = datetime.today() - timedelta(days=1)
-                this_update = datetime.today() - timedelta(days=2)
-                next_update = datetime.today() + timedelta(days=2)
-                mock_times.return_value = produced_at, this_update, next_update
-                self.call_mocked_py2(self.config.enable_ocsp_prefetch,
-                                     self.lineage, ["ocspvhost.com"])
+        ocsp_bytes = b'MOCKRESPONSE'
+        ocsp_path = "certbot.ocsp.RevocationChecker.ocsp_response_by_paths"
+        with mock.patch(ocsp_path) as mock_ocsp:
+            mock_ocsp.return_value.next_update = datetime.today() + timedelta(days=2)
+            mock_ocsp.return_value.bytes = b'MOCKRESPONSE'
+            self.call_mocked_py2(self.config.enable_ocsp_prefetch,
+                                 self.lineage, ["ocspvhost.com"])
         odbm = _read_dbm(self.db_path)
         self.assertEqual(len(odbm.keys()), 1)
         # The actual response data is prepended by Apache timestamp
-        self.assertTrue(odbm[list(odbm.keys())[0]].endswith(b'MOCKRESPONSE'))
+        self.assertTrue(odbm[list(odbm.keys())[0]].endswith(ocsp_bytes))
 
-        with mock.patch(ocsp_path, side_effect=ocsp_req_mock) as mock_ocsp:
-            with mock.patch('certbot.ocsp.RevocationChecker.ocsp_times') as mock_times:
-                produced_at = datetime.today() - timedelta(days=1)
-                this_update = datetime.today() - timedelta(days=2)
-                next_update = datetime.today() + timedelta(days=2)
-                mock_times.return_value = produced_at, this_update, next_update
-                self.call_mocked_py2(self.config.update_ocsp_prefetch, None)
-                self.assertTrue(mock_ocsp.called)
+        with mock.patch(ocsp_path) as mock_ocsp:
+            mock_ocsp.return_value.next_update = datetime.today() + timedelta(days=2)
+            mock_ocsp.return_value.bytes = b'MOCKRESPONSE'
+            self.call_mocked_py2(self.config.update_ocsp_prefetch, None)
+            self.assertTrue(mock_ocsp.called)
 
     def test_ocsp_prefetch_refresh_cert_deleted(self):
         self.config._ocsp_prefetch_save("nonexistent_cert_path", "irrelevant")
@@ -318,19 +307,16 @@ class OCSPPrefetchTest(util.ApacheTest):
 
     @mock.patch("certbot_apache._internal.prefetch_ocsp.OCSPPrefetchMixin.restart")
     def test_ocsp_prefetch_refresh_fail(self, _mock_restart):
-        ocsp_path = "certbot.ocsp.RevocationChecker.ocsp_revoked_by_paths"
-        log_path = "certbot_apache._internal.prefetch_ocsp.logger.warning"
+        ocsp_path = "certbot.ocsp.RevocationChecker.ocsp_response_by_paths"
         with mock.patch(ocsp_path) as mock_ocsp:
-            mock_ocsp.return_value = True
-            with mock.patch(log_path) as mock_log:
-                self.assertRaises(errors.PluginError,
-                                  self.call_mocked_py2,
-                                  self.config.enable_ocsp_prefetch,
-                                  self.lineage, ["ocspvhost.com"]
-                )
-                self.assertTrue(mock_log.called)
-                self.assertTrue(
-                    "trying to prefetch OCSP" in mock_log.call_args[0][0])
+            mock_ocsp.return_value = None
+            try:
+                self.call_mocked_py2(self.config.enable_ocsp_prefetch,
+                                     self.lineage, ["ocspvhost.com"])
+            except errors.PluginError as e:
+                self.assertIn("Unable to obtain an OCSP response.", str(e))
+            else:  # pragma: no cover
+                self.fail("errors.PluginError should have been raised")
 
     @mock.patch("certbot_apache._internal.override_debian.DebianConfigurator._ocsp_refresh_needed")
     def test_ocsp_prefetch_update_noop(self, mock_refresh):
