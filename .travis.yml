@@ -273,9 +273,6 @@ matrix:
       env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=amd64
       <<: *snap-config
       <<: *extended-test-suite
-    - env: SNAP=true TARGET_ARCH=i386
-      <<: *snap-config
-      <<: *extended-test-suite
     - env: SNAP=true TARGET_ARCH=arm64
       <<: *snap-config
       <<: *extended-test-suite
@@ -323,6 +320,5 @@ notifications:
       # https://github.com/travis-ci/travis.rb and running
       # `travis encrypt "chat.freenode.net#certbot-devel"`.
       - secure: "EWW66E2+KVPZyIPR8ViENZwfcup4Gx3/dlimmAZE0WuLwxDCshBBOd3O8Rf6pBokEoZlXM5eDT6XdyJj8n0DLslgjO62pExdunXpbcMwdY7l1ELxX2/UbnDTE6UnPYa09qVBHNG7156Z6yE0x2lH4M9Ykvp0G0cubjPQHylAwo0="
-    on_cancel: never
     on_success: never
     on_failure: always

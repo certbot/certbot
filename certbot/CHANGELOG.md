@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-* Certbot snaps are now available for the i386, arm64, and armhf architectures.
+* Certbot snaps are now available for the arm64 and armhf architectures.
 * Add minimal code to run Nginx plugin on NetBSD.
 * Make Certbot snap find externally snapped plugins
 * Function `certbot.compat.filesystem.umask` is a drop-in replacement for `os.umask`
@@ -23,7 +23,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Cloudflare API Tokens may now be restricted to individual zones.
 
 More details about these changes can be found on our GitHub repo.
 
