@@ -14,7 +14,8 @@ source "${DIR}/common.sh"
 
 RegisterQemuHandlers
 
-tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > "${DIR}/snap-constraints.txt"
+tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt \
+  | grep -v python-augeas > "${DIR}/snap-constraints.txt"
 for SNAP_ARCH in ${TARGET_ARCHS}; do
     ResolveArch "${SNAP_ARCH}"
     DownloadQemuStatic "${QEMU_ARCH}" "${DIR}"
