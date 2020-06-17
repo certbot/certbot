@@ -50,7 +50,7 @@ parts:
     stage:
       - -usr/lib/python3.8/sitecustomize.py # maybe unnecessary
       # Prefer cffi
-      - -lib/python3.8/site-packages/augeas.py # maybe unnecessary
+      - -lib/python3.8/site-packages/augeas.py
     stage-packages:
       - libaugeas0
       # added to stage python:
