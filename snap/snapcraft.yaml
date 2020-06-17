@@ -37,26 +37,12 @@ apps:
 
 
 parts:
-  python-augeas:
-    plugin: python
-    source: git://github.com/basak/python-augeas
-    source-branch: snap
-    build-packages: [libaugeas-dev]
-    python-packages:
-      - wheel
-    stage:
-      - -pyvenv.cfg
-      - -**/__pycache__
-      - -bin
-      - -**/RECORD
-      - -**/wheel
-      - -lib64
   certbot:
     plugin: python
     source: .
     constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-packages:
-      - wheel
+      - git+https://github.com/basak/python-augeas.git@snap
       - ./acme
       - ./certbot
       - ./certbot-apache
@@ -64,7 +50,7 @@ parts:
     stage:
       - -usr/lib/python3.8/sitecustomize.py # maybe unnecessary
       # Prefer cffi
-      - -lib/python3.8/site-packages/augeas.py # maybe unnecessary
+      - -lib/python3.8/site-packages/augeas.py
     stage-packages:
       - libaugeas0
       # added to stage python:
@@ -80,11 +66,10 @@ parts:
       - python3-pkg-resources
       - python3.8-minimal
     # To build cryptography and cffi if needed
-    build-packages: [libffi-dev, libssl-dev, git]
+    build-packages: [libffi-dev, libssl-dev, git, libaugeas-dev]
     override-pull: |
         snapcraftctl pull
         snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC/certbot && git describe|sed s/^v//`
-    after: [python-augeas]
 
   wrappers:
     plugin: dump

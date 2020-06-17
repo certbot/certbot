@@ -13,7 +13,8 @@ sudo usermod -aG lxd "$USER"
 sudo /snap/bin/lxd.migrate -yes
 sudo /snap/bin/lxd waitready
 sudo /snap/bin/lxd init --auto
-tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > snap-constraints.txt
+tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt \
+  | grep -v python-augeas > snap-constraints.txt
 # Run snapcraft with the lxd group since it has not been added to the current
 # shell.
 sg lxd -c 'snapcraft --use-lxd'
