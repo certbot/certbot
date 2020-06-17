@@ -42,12 +42,15 @@ parts:
     source: .
     constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-packages:
+      - git+https://github.com/basak/python-augeas.git@snap
       - ./acme
       - ./certbot
       - ./certbot-apache
       - ./certbot-nginx
     stage:
       - -usr/lib/python3.8/sitecustomize.py # maybe unnecessary
+      # Prefer cffi
+      - -lib/python3.8/site-packages/augeas.py # maybe unnecessary
     stage-packages:
       - libaugeas0
       # added to stage python:
