@@ -29,7 +29,7 @@ def prepare_subscription(config, acc):
     :param Account acc: Current client account.
 
     """
-    if config.eff_email is False or config.dry_run:
+    if config.eff_email is False:
         return
     if config.eff_email is True:
         if config.email is None:
@@ -54,6 +54,8 @@ def handle_subscription(config, acc):
     :param Account acc: Current client account.
 
     """
+    if config.dry_run:
+        return
     if acc.meta.register_to_eff:
         subscribe(acc.meta.register_to_eff)
 
