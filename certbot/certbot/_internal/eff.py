@@ -57,7 +57,7 @@ def handle_subscription(config, acc):
     if acc.meta.register_to_eff:
         subscribe(acc.meta.register_to_eff)
 
-        acc.meta = acc.meta.update(will_register_to_eff=None, propose_eff_registration=None)
+        acc.meta = acc.meta.update(register_to_eff=None)
         storage = AccountFileStorage(config)
         storage.update_meta(acc)
 
@@ -70,6 +70,7 @@ def _want_subscription():
     :rtype: bool
 
     """
+    print("prompt")
     prompt = (
         'Would you be willing, once your first certificate is successfully issued, '
         'to share your email address with the Electronic Frontier Foundation, a '
