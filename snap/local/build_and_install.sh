@@ -5,11 +5,6 @@
 # Usage: build_and_install.sh [amd64,arm64,armhf]
 set -ex
 
-if [[ -z "${TRAVIS}" ]]; then
-    echo "This script makes global changes to the system it is run on so should only be run in CI."
-    exit 1
-fi
-
 SNAP_ARCH=$1
 
 if [[ -z "${SNAP_ARCH}" ]]; then
