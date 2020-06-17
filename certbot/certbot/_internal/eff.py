@@ -70,7 +70,6 @@ def _want_subscription():
     :rtype: bool
 
     """
-    print("prompt")
     prompt = (
         'Would you be willing, once your first certificate is successfully issued, '
         'to share your email address with the Electronic Frontier Foundation, a '
