@@ -24,7 +24,6 @@ import pytz
 import requests
 
 from acme.magic_typing import Optional
-from acme.magic_typing import Tuple
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -150,7 +149,7 @@ class RevocationChecker(object):
         return resp.certificate_status == interfaces.OCSPCertStatus.REVOKED
 
     def _query_prep(self, cert_path):
-        # type: (str) -> Tuple[Optional[str], Optional[str]]
+        # type: (str) -> Optional[str]
         """Prepare to make an OCSP query for the given cert.
 
         :param str cert_path: Certificate filepath
@@ -255,7 +254,7 @@ class _CryptographyOCSPResponse(interfaces.OCSPResponse):
 
 
 def _determine_ocsp_server(cert_path):
-    # type: (str) -> Tuple[Optional[str], Optional[str]]
+    # type: (str) -> Optional[str]
     """Extract the OCSP server host from a certificate.
 
     :param str cert_path: Path to the cert we're checking OCSP for
