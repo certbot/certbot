@@ -3,7 +3,7 @@
 
 # Resolve the Snap architecture to Docker architecture (DOCKER_ARCH variable)
 # and QEMU architecture (QEMU_ARCH variable).
-# Usage: ResolveArch [amd64|i386|arm64|armhf]
+# Usage: ResolveArch [amd64|arm64|armhf]
 ResolveArch() {
     local SNAP_ARCH=$1
 
@@ -11,10 +11,6 @@ ResolveArch() {
         "amd64")
             DOCKER_ARCH="amd64"
             QEMU_ARCH="x86_64"
-            ;;
-        "i386")
-            DOCKER_ARCH="i386"
-            QEMU_ARCH="i386"
             ;;
         "arm64")
             DOCKER_ARCH="arm64v8"
