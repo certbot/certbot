@@ -140,40 +140,6 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(ocsp._translate_ocsp_query(*openssl_expired_ocsp_revoked), True)
         self.assertEqual(mock_log.info.call_count, 1)
 
-    @mock.patch('certbot.util.run_script')
-    def test_ocsp_response_get_times(self, mock_run):
-        mock_run.return_value = ocsp_times_example
-        producedAt, thisUpdate, nextUpdate = self.checker.ocsp_times("mocked")
-        self.assertEqual(producedAt, datetime(2020, 1, 24, 11, 10))
-        self.assertEqual(thisUpdate, datetime(2020, 1, 24, 11, 0))
-        self.assertEqual(nextUpdate, datetime(2020, 1, 31, 11, 0))
-
-    @mock.patch('certbot.util.run_script')
-    def test_ocsp_response_get_times_no_nextupdate(self, mock_run):
-        mock_run.return_value = ocsp_times_example_nonext
-        producedAt, thisUpdate, nextUpdate = self.checker.ocsp_times("mocked")
-        self.assertEqual(producedAt, datetime(2020, 1, 24, 11, 10))
-        self.assertEqual(thisUpdate, datetime(2020, 1, 24, 11, 0))
-        self.assertEqual(nextUpdate, None)
-
-    @mock.patch('certbot.util.run_script')
-    def test_ocsp_response_get_times_badoutput(self, mock_run):
-        mock_run.return_value = ("Something unparsable", "")
-        producedAt, thisUpdate, nextUpdate = self.checker.ocsp_times("mocked")
-        self.assertEqual(producedAt, None)
-        self.assertEqual(thisUpdate, None)
-        self.assertEqual(nextUpdate, None)
-
-    @mock.patch('certbot.ocsp.logger')
-    @mock.patch('certbot.util.run_script')
-    def test_ocsp_response_get_times_error(self, mock_run, mock_log):
-        mock_run.side_effect = errors.SubprocessError
-        producedAt, thisUpdate, nextUpdate = self.checker.ocsp_times("mocked")
-        self.assertEqual(producedAt, None)
-        self.assertEqual(thisUpdate, None)
-        self.assertEqual(nextUpdate, None)
-        self.assertEqual(mock_log.info.call_count, 1)
-
 
 @unittest.skipIf(not ocsp_lib,
                  reason='This class tests functionalities available only on cryptography>=2.5.0')
@@ -199,12 +165,11 @@ class OSCPTestCryptography(unittest.TestCase):
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.ocsp._check_ocsp_cryptography')
-    def test_ensure_cryptography_toggled(self, mock_revoke, mock_determine):
+    def test_ensure_cryptography_toggled(self, mock_check, mock_determine):
         mock_determine.return_value = ('http://example.com', 'example.com')
         self.checker.ocsp_revoked(self.cert_obj)
 
-        mock_revoke.assert_called_once_with(self.cert_path, self.chain_path,
-                                            'http://example.com', 10, None)
+        mock_check.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com', 10)
 
     def test_revoke(self):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
@@ -314,40 +279,6 @@ class OSCPTestCryptography(unittest.TestCase):
                     revoked = self.checker.ocsp_revoked(self.cert_obj)
         self.assertFalse(revoked)
 
-    def test_ocsp_times_cryptography(self):
-        with mock.patch('certbot.ocsp.open', mock.mock_open(read_data="")):
-            with mock.patch('cryptography.x509.ocsp.load_der_ocsp_response') as mock_load:
-                resp = mock.MagicMock()
-                resp.produced_at = datetime(2020, 1, 2, 9, 9)
-                resp.this_update = datetime(2020, 1, 2, 8, 8)
-                resp.next_update = datetime(2020, 1, 3, 4, 4)
-                mock_load.return_value = resp
-
-                produced_at, this_update, next_update = self.checker.ocsp_times("mocked")
-                self.assertEqual(produced_at, datetime(2020, 1, 2, 9, 9))
-                self.assertEqual(this_update, datetime(2020, 1, 2, 8, 8))
-                self.assertEqual(next_update, datetime(2020, 1, 3, 4, 4))
-
-    def test_ocsp_times_cryptography_no_nextupdate(self):
-        with mock.patch('certbot.ocsp.open', mock.mock_open(read_data="")):
-            with mock.patch('cryptography.x509.ocsp.load_der_ocsp_response') as mock_load:
-                resp = mock.MagicMock()
-                resp.produced_at = datetime(2020, 1, 2, 9, 9)
-                resp.this_update = datetime(2020, 1, 2, 8, 8)
-                resp.next_update = None
-                mock_load.return_value = resp
-
-                produced_at, this_update, next_update = self.checker.ocsp_times("mocked")
-                self.assertEqual(produced_at, datetime(2020, 1, 2, 9, 9))
-                self.assertEqual(this_update, datetime(2020, 1, 2, 8, 8))
-                self.assertEqual(next_update, None)
-
-    def test_ocsp_times_cryptography_error(self):
-        with mock.patch('certbot.ocsp.open', mock.mock_open(read_data="")) as mock_open:
-            mock_open.side_effect = OSError
-            produced_at, this_update, next_update = self.checker.ocsp_times("mocked")
-            self.assertEqual([produced_at, this_update, next_update], [None, None, None])
-
 
 @contextlib.contextmanager
 def _ocsp_mock(certificate_status, response_status,
@@ -446,17 +377,6 @@ revoked
 	Next Update: Apr 13 00:00:00 2016 GMT
 """,
 """Response verify OK""")
-
-ocsp_times_example = ("""
-    Produced At: Jan 24 11:10:00 2020 GMT
-    This Update: Jan 24 11:00:00 2020 GMT
-    Next Update: Jan 31 11:00:00 2020 GMT
-""", "")
-
-ocsp_times_example_nonext = ("""
-    Produced At: Jan 24 11:10:00 2020 GMT
-    This Update: Jan 24 11:00:00 2020 GMT
-""", "")
 
 
 if __name__ == '__main__':
