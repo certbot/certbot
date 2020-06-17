@@ -69,8 +69,7 @@ class MetaTest(unittest.TestCase):
             '}')
         self.assertIsNotNone(meta.creation_dt)
         self.assertIsNotNone(meta.creation_host)
-        self.assertIsNone(meta.propose_eff_registration)
-        self.assertIsNone(meta.will_register_to_eff)
+        self.assertIsNone(meta.register_to_eff)
 
     def test_deserialize_full(self):
         from certbot._internal.account import Account
@@ -78,13 +77,11 @@ class MetaTest(unittest.TestCase):
             '{'
             '   "creation_dt": "2020-06-13T07:46:45Z",'
             '   "creation_host": "hyperion.localdomain",'
-            '   "propose_eff_registration": "foo",'
-            '   "will_register_to_eff": "bar"'
+            '   "register_to_eff": "bar"'
             '}')
         self.assertIsNotNone(meta.creation_dt)
         self.assertIsNotNone(meta.creation_host)
-        self.assertIsNotNone(meta.propose_eff_registration)
-        self.assertIsNotNone(meta.will_register_to_eff)
+        self.assertIsNotNone(meta.register_to_eff)
 
 class ReportNewAccountTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.account.report_new_account."""

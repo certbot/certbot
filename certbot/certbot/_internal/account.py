@@ -40,12 +40,8 @@ class Account(object):
 
         :ivar datetime.datetime creation_dt: Creation date and time (UTC).
         :ivar str creation_host: FQDN of host, where account has been created.
-        :ivar str will_register_to_eff: If not None, Certbot will register the provided email
-                                        without user interaction because they give their explicit
-                                        approval during the account registration.
-        :ivar str propose_eff_registration: If not None, Certbot will propose to register to EFF
-                                            the provided email when possible (typically when the
-                                            first certificate is issued).
+        :ivar str register_to_eff: If not None, Certbot will register the provided
+                                        email during the account registration.
 
         .. note:: ``creation_dt`` and ``creation_host`` are useful in
             cross-machine migration scenarios.
@@ -53,8 +49,7 @@ class Account(object):
         """
         creation_dt = acme_fields.RFC3339Field("creation_dt")
         creation_host = jose.Field("creation_host")
-        will_register_to_eff = jose.Field("will_register_to_eff", omitempty=True)
-        propose_eff_registration = jose.Field("propose_eff_registration", omitempty=True)
+        register_to_eff = jose.Field("register_to_eff", omitempty=True)
 
     def __init__(self, regr, key, meta=None):
         self.key = key
@@ -63,8 +58,7 @@ class Account(object):
             # pyrfc3339 drops microseconds, make sure __eq__ is sane
             creation_dt=datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0),
             creation_host=socket.getfqdn(),
-            will_register_to_eff=None,
-            propose_eff_registration=None) if meta is None else meta
+            register_to_eff=None) if meta is None else meta
 
         # try MD5, else use MD5 in non-security mode (e.g. for FIPS systems / RHEL)
         try:
