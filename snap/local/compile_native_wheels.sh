@@ -25,7 +25,7 @@ for SNAP_ARCH in ${TARGET_ARCHS}; do
         -v "${DIR}/qemu-${QEMU_ARCH}-static:/usr/bin/qemu-${QEMU_ARCH}-static" \
         -v "${DIR}:/workspace" \
         -w "/workspace" \
-        "${DOCKER_ARCH}/ubuntu:18.04" \
+        "${DOCKER_ARCH}/ubuntu:20.04" \
         sh -c "\
    apt-get update \
 && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3 python3-venv python3-dev libffi-dev libssl-dev gcc \
