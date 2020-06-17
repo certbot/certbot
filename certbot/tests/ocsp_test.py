@@ -15,8 +15,10 @@ try:
 except ImportError: # pragma: no cover
     from unittest import mock
 import pytz
+import requests
 
 from certbot import errors
+from certbot import interfaces
 from certbot.tests import util as test_util
 
 try:
@@ -50,6 +52,9 @@ class OCSPTestOpenSSL(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+    def test_ocsp_response_by_paths(self):
+        self.assertIs(self.checker.ocsp_response_by_paths("cert", "chain"), None)
 
     @mock.patch('certbot.ocsp.logger.info')
     @mock.patch('certbot.ocsp.Popen')
@@ -234,6 +239,12 @@ class OSCPTestCryptography(unittest.TestCase):
 
     def test_revoke_resiliency(self):
         # Server return an invalid HTTP response
+        with _ocsp_mock(ocsp_lib.OCSPCertStatus.UNKNOWN,
+                        ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
+            mocks['mock_post'].side_effect = requests.exceptions.RequestException
+            revoked = self.checker.ocsp_revoked(self.cert_obj)
+        self.assertFalse(revoked)
+
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.UNKNOWN, ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
                         http_status_code=400):
             revoked = self.checker.ocsp_revoked(self.cert_obj)
@@ -302,6 +313,33 @@ class OSCPTestCryptography(unittest.TestCase):
                                     'Not found', x509.AuthorityInformationAccessOID.OCSP)):
                     revoked = self.checker.ocsp_revoked(self.cert_obj)
         self.assertFalse(revoked)
+
+    def test_response_certificate_status(self):
+        cryptography_to_certbot_status = {
+            ocsp_lib.OCSPCertStatus.GOOD: interfaces.OCSPCertStatus.GOOD,
+            ocsp_lib.OCSPCertStatus.REVOKED: interfaces.OCSPCertStatus.REVOKED,
+            ocsp_lib.OCSPCertStatus.UNKNOWN: interfaces.OCSPCertStatus.UNKNOWN,
+        }
+        for status in cryptography_to_certbot_status:
+            expected_status = cryptography_to_certbot_status[status]
+            with _ocsp_mock(status, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
+                response = self.checker.ocsp_response_by_paths(self.cert_path, self.chain_path)
+                self.assertEqual(response.certificate_status, expected_status)
+
+    def test_response_next_update(self):
+        with _ocsp_mock(ocsp_lib.OCSPCertStatus.GOOD,
+                        ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
+            expected_value = mocks['mock_response']().next_update
+            response = self.checker.ocsp_response_by_paths(self.cert_path, self.chain_path)
+            self.assertEqual(response.next_update, expected_value)
+
+    def test_response_bytes(self):
+        with _ocsp_mock(ocsp_lib.OCSPCertStatus.GOOD,
+                        ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
+            expected_bytes = b'foo'
+            mock_response = mocks['mock_response']().public_bytes.return_value = expected_bytes
+            response = self.checker.ocsp_response_by_paths(self.cert_path, self.chain_path)
+            self.assertEqual(response.bytes, expected_bytes)
 
 
 @contextlib.contextmanager
