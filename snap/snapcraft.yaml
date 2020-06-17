@@ -63,7 +63,7 @@ parts:
       - python3-pkg-resources
       - python3.8-minimal
     # To build cryptography and cffi if needed
-    build-packages: [libffi-dev, libssl-dev, git]
+    build-packages: [libffi-dev, libssl-dev, git, libaugeas-dev]
     override-pull: |
         snapcraftctl pull
         snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC/certbot && git describe|sed s/^v//`
