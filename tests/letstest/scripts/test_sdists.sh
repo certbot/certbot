@@ -34,7 +34,7 @@ fi
 VERSION=$("$PYTHON_NAME" letsencrypt-auto-source/version.py)
 
 # setup venv
-"$VENV_SCRIPT" --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
+CERTBOT_PIP_NO_BINARY=":all:" "$VENV_SCRIPT" --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
 . "$VENV_PATH/bin/activate"
 # pytest is needed to run tests on some of our packages so we install a pinned version here.
 tools/pip_install.py pytest

@@ -237,6 +237,7 @@ Authors
 * [Stefan Weil](https://github.com/stweil)
 * [Steve Desmond](https://github.com/stevedesmond-ca)
 * [sydneyli](https://github.com/sydneyli)
+* [taixx046](https://github.com/taixx046)
 * [Tan Jay Jun](https://github.com/jayjun)
 * [Tapple Gao](https://github.com/tapple)
 * [Telepenin Nikolay](https://github.com/telepenin)

@@ -122,8 +122,8 @@ class TLSALPN01ServerTest(unittest.TestCase):
         )}
         # Use different certificate for challenge.
         self.challenge_certs = {b'localhost': (
-            test_util.load_pyopenssl_private_key('rsa1024_key.pem'),
-            test_util.load_cert('rsa1024_cert.pem'),
+            test_util.load_pyopenssl_private_key('rsa4096_key.pem'),
+            test_util.load_cert('rsa4096_cert.pem'),
         )}
         from acme.standalone import TLSALPN01Server
         self.server = TLSALPN01Server(("localhost", 0), certs=self.certs,

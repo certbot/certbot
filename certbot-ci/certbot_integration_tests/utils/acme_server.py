@@ -86,7 +86,8 @@ class ACMEServer(object):
                                                 'alpine', 'rm', '-rf', '/workspace/boulder'])
                 process.wait()
         finally:
-            shutil.rmtree(self._workspace)
+            if os.path.exists(self._workspace):
+                shutil.rmtree(self._workspace)
         if self._stdout != sys.stdout:
             self._stdout.close()
         print('=> Test infrastructure stopped and cleaned up.')

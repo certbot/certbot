@@ -35,6 +35,7 @@ class DebianConfigurator(prefetch_ocsp.OCSPPrefetchMixin, configurator.ApacheCon
         handle_modules=True,
         handle_sites=True,
         challenge_location="/etc/apache2",
+        bin=None,
     )
 
     def enable_site(self, vhost):

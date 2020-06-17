@@ -88,7 +88,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         mock_na.return_value = now + timedelta(hours=2)
 
         self.checker.broken = True
-        mock_determine.return_value = ("", "")
+        mock_determine.return_value = ""
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
 
         self.checker.broken = False
@@ -96,7 +96,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
         self.assertEqual(mock_run.call_count, 0)
 
-        mock_determine.return_value = ("http://x.co", "x.co")
+        mock_determine.return_value = "http://x.co"
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
         mock_run.side_effect = errors.SubprocessError("Unable to load certificate launcher")
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
@@ -104,17 +104,18 @@ class OCSPTestOpenSSL(unittest.TestCase):
 
         # cert expired
         mock_na.return_value = now
-        mock_determine.return_value = ("", "")
+        mock_determine.return_value = ""
         count_before = mock_determine.call_count
         self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
         self.assertEqual(mock_determine.call_count, count_before)
 
-    def test_determine_ocsp_server(self):
+    def test_determine_ocsp_server_and_host_from_url(self):
         cert_path = test_util.vector_path('ocsp_certificate.pem')
 
         from certbot import ocsp
         result = ocsp._determine_ocsp_server(cert_path)
-        self.assertEqual(('http://ocsp.test4.buypass.com', 'ocsp.test4.buypass.com'), result)
+        self.assertEqual('http://ocsp.test4.buypass.com', result)
+        self.assertEqual(ocsp._host_from_url(result), 'ocsp.test4.buypass.com')
 
     @mock.patch('certbot.ocsp.logger')
     @mock.patch('certbot.util.run_script')
@@ -164,12 +165,12 @@ class OSCPTestCryptography(unittest.TestCase):
         self.addCleanup(self.mock_notAfter.stop)
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
-    @mock.patch('certbot.ocsp._check_ocsp_cryptography')
-    def test_ensure_cryptography_toggled(self, mock_check, mock_determine):
-        mock_determine.return_value = ('http://example.com', 'example.com')
+    @mock.patch('certbot.ocsp._get_cryptography_ocsp_response')
+    def test_ensure_cryptography_toggled(self, mock_get, mock_determine):
+        mock_determine.return_value = 'http://example.com'
         self.checker.ocsp_revoked(self.cert_obj)
 
-        mock_check.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com', 10)
+        mock_get.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com', 10)
 
     def test_revoke(self):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
@@ -182,13 +183,23 @@ class OSCPTestCryptography(unittest.TestCase):
 
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED,
                         ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
+            # OCSP response with ResponseID as Name
             mocks['mock_response'].return_value.responder_name = issuer.subject
+            mocks['mock_response'].return_value.responder_key_hash = None
             self.checker.ocsp_revoked(self.cert_obj)
+            # OCSP response with ResponseID as KeyHash
+            key_hash = x509.SubjectKeyIdentifier.from_public_key(issuer.public_key()).digest
+            mocks['mock_response'].return_value.responder_name = None
+            mocks['mock_response'].return_value.responder_key_hash = key_hash
+            self.checker.ocsp_revoked(self.cert_obj)
+
         # Here responder and issuer are the same. So only the signature of the OCSP
         # response is checked (using the issuer/responder public key).
-        self.assertEqual(mocks['mock_check'].call_count, 1)
-        self.assertEqual(mocks['mock_check'].call_args[0][0].public_numbers(),
-                         issuer.public_key().public_numbers())
+        self.assertEqual(mocks['mock_check'].call_count, 2)
+        self.assertEqual(mocks['mock_check'].call_args_list[0][0][0].public_numbers(),
+            issuer.public_key().public_numbers())
+        self.assertEqual(mocks['mock_check'].call_args_list[1][0][0].public_numbers(),
+            issuer.public_key().public_numbers())
 
     def test_responder_is_authorized_delegate(self):
         issuer = x509.load_pem_x509_certificate(
@@ -198,14 +209,27 @@ class OSCPTestCryptography(unittest.TestCase):
 
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED,
                         ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
+            # OCSP response with ResponseID as Name
+            mocks['mock_response'].return_value.responder_name = responder.subject
+            mocks['mock_response'].return_value.responder_key_hash = None
             self.checker.ocsp_revoked(self.cert_obj)
+            # OCSP response with ResponseID as KeyHash
+            key_hash = x509.SubjectKeyIdentifier.from_public_key(responder.public_key()).digest
+            mocks['mock_response'].return_value.responder_name = None
+            mocks['mock_response'].return_value.responder_key_hash = key_hash
+            self.checker.ocsp_revoked(self.cert_obj)
+
         # Here responder and issuer are not the same. Two signatures will be checked then,
         # first to verify the responder cert (using the issuer public key), second to
         # to verify the OCSP response itself (using the responder public key).
-        self.assertEqual(mocks['mock_check'].call_count, 2)
+        self.assertEqual(mocks['mock_check'].call_count, 4)
         self.assertEqual(mocks['mock_check'].call_args_list[0][0][0].public_numbers(),
                          issuer.public_key().public_numbers())
         self.assertEqual(mocks['mock_check'].call_args_list[1][0][0].public_numbers(),
+                         responder.public_key().public_numbers())
+        self.assertEqual(mocks['mock_check'].call_args_list[2][0][0].public_numbers(),
+                         issuer.public_key().public_numbers())
+        self.assertEqual(mocks['mock_check'].call_args_list[3][0][0].public_numbers(),
                          responder.public_key().public_numbers())
 
     def test_revoke_resiliency(self):

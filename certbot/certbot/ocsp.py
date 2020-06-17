@@ -1,4 +1,11 @@
-"""Tools for checking certificate revocation."""
+"""Tools for checking certificate revocation.
+
+.. data:: CRYPTOGRAPHY_OCSP_AVAILABLE
+
+    Boolean that is true if cryptography can be used for making OCSP
+    queries instead of shelling out to openssl.
+
+"""
 from datetime import datetime
 from datetime import timedelta
 import logging
@@ -17,9 +24,9 @@ import pytz
 import requests
 
 from acme.magic_typing import Optional
-from acme.magic_typing import Tuple
 from certbot import crypto_util
 from certbot import errors
+from certbot import interfaces
 from certbot import util
 from certbot.compat.os import getenv
 from certbot.interfaces import RenewableCert  # pylint: disable=unused-import
@@ -29,8 +36,9 @@ try:
     # and signature_hash_algorithm attribute in OCSPResponse class
     from cryptography.x509 import ocsp  # pylint: disable=ungrouped-imports
     getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
+    CRYPTOGRAPHY_OCSP_AVAILABLE = True
 except (ImportError, AttributeError):  # pragma: no cover
-    ocsp = None  # type: ignore
+    CRYPTOGRAPHY_OCSP_AVAILABLE = False
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +49,7 @@ class RevocationChecker(object):
 
     def __init__(self, enforce_openssl_binary_usage=False):
         self.broken = False
-        self.use_openssl_binary = enforce_openssl_binary_usage or not ocsp
+        self.use_openssl_binary = enforce_openssl_binary_usage or not CRYPTOGRAPHY_OCSP_AVAILABLE
 
         if self.use_openssl_binary:
             if not util.exe_exists("openssl"):
@@ -57,6 +65,38 @@ class RevocationChecker(object):
                 self.host_args = lambda host: ["Host=" + host]
             else:
                 self.host_args = lambda host: ["Host", host]
+
+    def ocsp_response_by_paths(self, cert_path, chain_path, timeout=10):
+        # type: (str, str, int) -> Optional[interfaces.OCSPResponse]
+        """Obtains a validated OCSP response.
+
+        The OCSP response could have any certificate status, however, if
+        an OCSP response is returned from this function, the caller
+        knows it is properly timestamped, signed, etc.
+
+        .. note:: This function currently only works when cryptography
+            is used for OCSP. Whether a new enough version of
+            cryptography with OCSP support is available can be checked
+            through CRYPTOGRAPHY_OCSP_AVAILABLE. If it is not available,
+            None is always returned by this function for now.
+
+        :param str cert_path: Certificate filepath
+        :param str chain_path: Certificate chain
+        :param int timeout: Timeout (in seconds) for the OCSP query
+
+        :returns: The OCSP response if it could be obtained and
+            validated, otherwise, None
+        :rtype: interfaces.OCSPResponse or None
+
+        """
+        if self.use_openssl_binary:
+            return None
+
+        url = self._query_prep(cert_path)
+        if not url:
+            return None
+
+        return _get_cryptography_ocsp_response(cert_path, chain_path, url, timeout)
 
     def ocsp_revoked(self, cert):
         # type: (RenewableCert) -> bool
@@ -83,23 +123,52 @@ class RevocationChecker(object):
         :rtype: bool
 
         """
-        if self.broken:
+        if self.use_openssl_binary:
+            return self._ocsp_revoked_by_paths_openssl(cert_path, chain_path, timeout)
+        else:
+            return self._ocsp_revoked_by_paths_cryptography(cert_path, chain_path, timeout)
+
+    def _ocsp_revoked_by_paths_openssl(self, cert_path, chain_path, timeout):
+        # type: (str, str, int) -> bool
+        """ocsp_revoked_by_paths implementation shelling out to openssl."""
+        url = self._query_prep(cert_path)
+        if not url:
             return False
+        host = _host_from_url(url)
+        return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, timeout)
+
+    def _ocsp_revoked_by_paths_cryptography(self, cert_path, chain_path, timeout):
+        # type: (str, str, int) -> bool
+        """ocsp_revoked_by_paths implementation using cryptography."""
+        resp = self.ocsp_response_by_paths(cert_path, chain_path, timeout)
+        if resp is None:
+            return False
+        # Check OCSP certificate status
+        logger.debug("OCSP certificate status for %s is: %s",
+                     cert_path, resp.certificate_status)
+        return resp.certificate_status == interfaces.OCSPCertStatus.REVOKED
+
+    def _query_prep(self, cert_path):
+        # type: (str) -> Optional[str]
+        """Prepare to make an OCSP query for the given cert.
+
+        :param str cert_path: Certificate filepath
+        :rtype: str or None
+        :returns: OCSP server URL if an OCSP query can be performed,
+            otherwise, None
+
+        """
+        if self.broken:
+            return None
 
         # Let's Encrypt doesn't update OCSP for expired certificates,
         # so don't check OCSP if the cert is expired.
         # https://github.com/certbot/certbot/issues/7152
         now = pytz.UTC.fromutc(datetime.utcnow())
         if crypto_util.notAfter(cert_path) <= now:
-            return False
+            return None
 
-        url, host = _determine_ocsp_server(cert_path)
-        if not host or not url:
-            return False
-
-        if self.use_openssl_binary:
-            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, timeout)
-        return _check_ocsp_cryptography(cert_path, chain_path, url, timeout)
+        return _determine_ocsp_server(cert_path)
 
     def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, timeout):
         # type: (str, str, str, str, int) -> bool
@@ -139,13 +208,58 @@ class RevocationChecker(object):
         return _translate_ocsp_query(cert_path, output, err)
 
 
+class _CryptographyOCSPResponse(interfaces.OCSPResponse):
+    """Cryptography implementation of OCSPResponse interface."""
+
+    def __init__(self, ocsp_response):
+        """Initialize.
+
+        :param ocsp.OCSPResponse ocsp_response: OCSP response
+
+        """
+        self._ocsp_response = ocsp_response
+
+    @property
+    def certificate_status(self):
+        """Certificate status
+
+        :rtype: OCSPCertStatus
+
+        """
+        status = self._ocsp_response.certificate_status
+        if status == ocsp.OCSPCertStatus.GOOD:
+            return interfaces.OCSPCertStatus.GOOD
+        elif status == ocsp.OCSPCertStatus.REVOKED:
+            return interfaces.OCSPCertStatus.REVOKED
+        else:  # there is only one option left
+            return interfaces.OCSPCertStatus.UNKNOWN
+
+    @property
+    def next_update(self):
+        """Next update
+
+        :rtype: datetime.datetime
+
+        """
+        return self._ocsp_response.next_update
+
+    @property
+    def bytes(self):
+        """Raw bytes of the OCSP response
+
+        :rtype: bytes
+
+        """
+        return self._ocsp_response.public_bytes(serialization.Encoding.DER)
+
+
 def _determine_ocsp_server(cert_path):
-    # type: (str) -> Tuple[Optional[str], Optional[str]]
+    # type: (str) -> Optional[str]
     """Extract the OCSP server host from a certificate.
 
     :param str cert_path: Path to the cert we're checking OCSP for
-    :rtype tuple:
-    :returns: (OCSP server URL or None, OCSP server host or None)
+    :rtype: str or None
+    :returns: OCSP server URL or None
 
     """
     with open(cert_path, 'rb') as file_handler:
@@ -159,19 +273,28 @@ def _determine_ocsp_server(cert_path):
         url = descriptions[0].access_location.value
     except (x509.ExtensionNotFound, IndexError):
         logger.info("Cannot extract OCSP URI from %s", cert_path)
-        return None, None
+        return None
 
     url = url.rstrip()
-    host = url.partition("://")[2].rstrip("/")
 
+    # Determining the host here may not be needed anymore since things have
+    # been refactored since the initial version of this function, but just in
+    # case, I kept it here as a sanity check of the URL value.
+    host = _host_from_url(url)
     if host:
-        return url, host
+        return url
     logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
-    return None, None
+    return None
 
 
-def _check_ocsp_cryptography(cert_path, chain_path, url, timeout):
-    # type: (str, str, str, int) -> bool
+def _host_from_url(url):
+    # type: (str) -> str
+    """Returns the hostname from a URL."""
+    return url.partition("://")[2].rstrip("/")
+
+
+def _get_cryptography_ocsp_response(cert_path, chain_path, url, timeout):
+    # type: (str, str, str, int) -> Optional[_CryptographyOCSPResponse]
     # Retrieve OCSP response
     with open(chain_path, 'rb') as file_handler:
         issuer = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
@@ -187,10 +310,10 @@ def _check_ocsp_cryptography(cert_path, chain_path, url, timeout):
                                  timeout=timeout)
     except requests.exceptions.RequestException:
         logger.info("OCSP check failed for %s (are we offline?)", cert_path, exc_info=True)
-        return False
+        return None
     if response.status_code != 200:
         logger.info("OCSP check failed for %s (HTTP status: %d)", cert_path, response.status_code)
-        return False
+        return None
 
     response_ocsp = ocsp.load_der_ocsp_response(response.content)
 
@@ -198,7 +321,7 @@ def _check_ocsp_cryptography(cert_path, chain_path, url, timeout):
     if response_ocsp.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
         logger.error("Invalid OCSP response status for %s: %s",
                      cert_path, response_ocsp.response_status)
-        return False
+        return None
 
     # Check OCSP signature
     try:
@@ -212,12 +335,10 @@ def _check_ocsp_cryptography(cert_path, chain_path, url, timeout):
     except AssertionError as error:
         logger.error('Invalid OCSP response for %s: %s.', cert_path, str(error))
     else:
-        # Check OCSP certificate status
-        logger.debug("OCSP certificate status for %s is: %s",
-                     cert_path, response_ocsp.certificate_status)
-        return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
+        wrapped_response = _CryptographyOCSPResponse(response_ocsp)
+        return wrapped_response
 
-    return False
+    return None
 
 
 def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
@@ -256,7 +377,11 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
 
 def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
     """Verify an OCSP response signature against certificate issuer or responder"""
-    if response_ocsp.responder_name == issuer_cert.subject:
+    def _key_hash(cert):
+        return x509.SubjectKeyIdentifier.from_public_key(cert.public_key()).digest
+
+    if response_ocsp.responder_name == issuer_cert.subject or \
+       response_ocsp.responder_key_hash == _key_hash(issuer_cert):
         # Case where the OCSP responder is also the certificate issuer
         logger.debug('OCSP response for certificate %s is signed by the certificate\'s issuer.',
                      cert_path)
@@ -267,7 +392,8 @@ def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
                      cert_path)
 
         responder_certs = [cert for cert in response_ocsp.certificates
-                           if cert.subject == response_ocsp.responder_name]
+                           if response_ocsp.responder_name == cert.subject or \
+                              response_ocsp.responder_key_hash == _key_hash(cert)]
         if not responder_certs:
             raise AssertionError('no matching responder certificate could be found')
 
