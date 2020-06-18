@@ -34,6 +34,7 @@ as usual. Plugin snaps are confined as normal; the Certbot snap is a classic
 snap and thus needs `--classic` during installation. For example:
 
     snap install --classic certbot
+    snap set certbot trust-plugin-with-root=ok
     snap install certbot-dns-dnsimple
 
 Then connect the plugin snap to the main certbot snap as follows. Note that
@@ -57,10 +58,11 @@ plugin snap) manually.
 
 These steps need to be done once to set up your VM and do not need to be run again to rebuild the snap.
 
- 1. Start with a Xenial VM. You need a full virtual machine using something like DigitalOcean, EC2, or VirtualBox. Docker won't work. Another version of Ubuntu can probably be used, but Xenial was used when writing these instructions.
+ 1. Start with a Focal VM. You need a full virtual machine using something like DigitalOcean, EC2, or VirtualBox. Docker won't work. Another version of Ubuntu can probably be used, but Focal was used when writing these instructions.
  2. Set up a user other than root with sudo privileges for use with snapcraft and run all of the following commands with it. A command to do this for a user named certbot looks like `adduser certbot && usermod -aG sudo certbot && su - certbot`.
- 3. Install git and python with `sudo apt update && sudo apt install git python`.
- 4. Set up lxd for use with snapcraft by running `sudo snap install lxd && sudo /snap/bin/lxd.migrate -yes && sudo /snap/bin/lxd waitready && sudo /snap/bin/lxd init --auto`
+ 3. Install git and python with `sudo apt update && sudo apt install -y git python`.
+ 4. Set up lxd for use with snapcraft by running `sudo snap install lxd && sudo /snap/bin/lxd.migrate -yes && sudo /snap/bin/lxd waitready && sudo /snap/bin/lxd init --auto` (errors here are ok; it may already
+ have been installed on your system).
  5. Add your current user to the lxd group and update your shell to have the new assignment by running `sudo usermod -a -G lxd ${USER} && newgrp lxd`.
  6. Install snapcraft with `sudo snap install --classic snapcraft`.
  7. `cd ~` (or any other directory where you want our source files to be)
@@ -71,7 +73,7 @@ These steps need to be done once to set up your VM and do not need to be run aga
 
 These are the steps to build and install the snaps. If you have run these steps before, you may want to run the commands in the section below to clean things up before building the snap again.
 
- 1. Run `tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > constraints.txt` (this is a workaround for https://github.com/certbot/certbot/issues/7957).
+ 1. Run `tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt | grep -v python-augeas > snap-constraints.txt` (this is a workaround for https://github.com/certbot/certbot/issues/7957).
  2. Run `snapcraft --use-lxd`.
  3. Install the generated snap with `sudo snap install --dangerous --classic certbot_*_amd64.snap`. You can transfer the snap to a different machine to run it there instead if you prefer.
  4. Run `tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > certbot-dns-dnsimple/constraints.txt`.
@@ -108,9 +110,9 @@ mechanism, so permission is effectively delegated to what interface connections
 the snap infrastucture will permit.
 
 We have approval from the snap team to use this design as long as we make it
-more explicit what a user is agreeing to when they connect a plugin to the
-Certbot snap. That work is tracked by
-https://github.com/certbot/certbot/issues/7667.
+explicit what a user is agreeing to when they connect a plugin to the
+Certbot snap. That work was completed in
+https://github.com/certbot/certbot/issues/8013.
 
 ## Outstanding issues
 
