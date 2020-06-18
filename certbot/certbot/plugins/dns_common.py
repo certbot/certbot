@@ -21,11 +21,11 @@ logger = logging.getLogger(__name__)
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
-class DNSAuthenticator2(common.Plugin):
+class DNSAuthenticator(common.Plugin):
     """Base class for DNS  Authenticators"""
 
     def __init__(self, config, name):
-        super(DNSAuthenticator2, self).__init__(config, name)
+        super(DNSAuthenticator, self).__init__(config, name)
 
         self._attempt_cleanup = False
 

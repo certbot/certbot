@@ -16,7 +16,7 @@ ACCOUNT_URL = 'https://dnsimple.com/user'
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
-class Authenticator(dns_common.DNSAuthenticator2):
+class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator for DNSimple
 
     This Authenticator uses the DNSimple v2 API to fulfill a dns-01 challenge.
