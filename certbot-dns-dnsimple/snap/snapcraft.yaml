@@ -10,7 +10,7 @@ parts:
   certbot-dns-dnsimple:
     plugin: python
     source: .
-    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-version: python3
     override-pull: |
         snapcraftctl pull

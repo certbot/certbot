@@ -76,7 +76,7 @@ These are the steps to build and install the snaps. If you have run these steps 
  1. Run `tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt | grep -v python-augeas > snap-constraints.txt` (this is a workaround for https://github.com/certbot/certbot/issues/7957).
  2. Run `snapcraft --use-lxd`.
  3. Install the generated snap with `sudo snap install --dangerous --classic certbot_*_amd64.snap`. You can transfer the snap to a different machine to run it there instead if you prefer.
- 4. Run `tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > certbot-dns-dnsimple/constraints.txt`.
+ 4. Run `tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > certbot-dns-dnsimple/snap-constraints.txt`.
  5. `cd certbot-dns-dnsimple`
  6. `snapcraft --use-lxd`
  7. Run `sudo snap set certbot trust-plugin-with-root=ok`.
