@@ -21,7 +21,7 @@ from certbot.tests import util as test_util
 class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
     # pylint: disable=protected-access
 
-    class _FakeDNSAuthenticator(dns_common.DNSAuthenticator):
+    class _FakeDNSAuthenticator(dns_common.DNSAuthenticator2):
         _setup_credentials = mock.MagicMock()
         _perform = mock.MagicMock()
         _cleanup = mock.MagicMock()
