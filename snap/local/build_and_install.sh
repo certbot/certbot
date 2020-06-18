@@ -21,7 +21,8 @@ source "${DIR}/common.sh"
 RegisterQemuHandlers
 ResolveArch "${SNAP_ARCH}"
 
-tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > snap-constraints.txt
+tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt \
+  | grep -v python-augeas > snap-constraints.txt
 
 pushd "${DIR}/packages"
 "${CERTBOT_DIR}/tools/simple_http_server.py" 8080 >/dev/null 2>&1 &
