@@ -1,0 +1,24 @@
+name: certbot-dns-dnsimple
+summary: DNSimple DNS Authenticator plugin for Certbot
+description: TBC
+confinement: strict
+grade: devel
+base: core18
+adopt-info: certbot-dns-dnsimple
+
+parts:
+  certbot-dns-dnsimple:
+    plugin: python
+    source: .
+    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
+    python-version: python3
+    override-pull: |
+        snapcraftctl pull
+        snapcraftctl set-version `grep ^version $SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"`
+
+slots:
+  certbot:
+    interface: content
+    content: certbot-1
+    read:
+      - $SNAP/lib/python3.6/site-packages
