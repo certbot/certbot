@@ -39,7 +39,7 @@ jobs:
         linux-py38-cover:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.8
-          TOXENV: py27-cover
+          TOXENV: py38-cover
         linux-py37-lint:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.7
@@ -56,6 +56,17 @@ jobs:
         apache-compat:
           IMAGE_NAME: ubuntu-18.04
           TOXENV: apache_compat
+        le-auto-xenial:
+          IMAGE_NAME: ubuntu-18.04
+          TOXENV: le_auto_xenial
+        apacheconftest:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 2.7
+          TOXENV: apacheconftest-with-pebble
+        nginxroundtrip:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 2.7
+          TOXENV: nginxroundtrip
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
