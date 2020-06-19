@@ -295,7 +295,8 @@ class Client(object):
         if get_alt_chains and orderr.alternative_fullchains_pem:
             fullchain = crypto_util.find_chain_with_issuer([fullchain] + \
                                                            orderr.alternative_fullchains_pem,
-                                                           self.config.preferred_chain)
+                                                           self.config.preferred_chain,
+                                                           not self.config.dry_run)
         cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 

@@ -533,7 +533,7 @@ def get_serial_from_cert(cert_path):
     return x509.get_serial_number()
 
 
-def find_chain_with_issuer(fullchains, issuer_cn):
+def find_chain_with_issuer(fullchains, issuer_cn, warn_on_no_match=False):
     """Chooses the first certificate chain from fullchains which contains an
     Issuer Subject Common Name matching issuer_cn.
 
@@ -555,4 +555,8 @@ def find_chain_with_issuer(fullchains, issuer_cn):
                 return chain
 
     # Nothing matched, return whatever was first in the list.
+    if warn_on_no_match:
+        logger.warning("Certbot has been configured to prefer certificate chains with "
+                       "issuer '%s', but no chain from the CA matched this issuer. Using "
+                       "the default certificate chain instead.", issuer_cn)
     return fullchains[0]
