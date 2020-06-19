@@ -1,13 +1,13 @@
-name: certbot-dns-dnsimple
-summary: DNSimple DNS Authenticator plugin for Certbot
-description: DNSimple DNS Authenticator plugin for Certbot
+name: certbot-dns-nsone
+summary: NS1 DNS Authenticator plugin for Certbot
+description: NS1 DNS Authenticator plugin for Certbot
 confinement: strict
 grade: devel
 base: core18
-adopt-info: certbot-dns-dnsimple
+adopt-info: certbot-dns-nsone
 
 parts:
-  certbot-dns-dnsimple:
+  certbot-dns-nsone:
     plugin: python
     source: .
     constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
