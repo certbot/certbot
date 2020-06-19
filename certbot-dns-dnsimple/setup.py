@@ -1,4 +1,4 @@
-from distutils.version import StrictVersion
+from distutils.version import LooseVersion
 import os
 import sys
 
@@ -25,7 +25,7 @@ elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Unset EXCLUDE_CERTBOT_DEPS when building wheels '
                        'to include certbot dependencies.')
 
-setuptools_known_environment_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
+setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
 if setuptools_known_environment_markers:
     install_requires.append('mock ; python_version < "3.3"')
 elif 'bdist_wheel' in sys.argv[1:]:
