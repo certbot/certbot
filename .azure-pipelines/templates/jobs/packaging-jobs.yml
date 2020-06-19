@@ -63,8 +63,6 @@ jobs:
       matrix:
         amd64:
           ARCH: amd64
-        i386:
-          ARCH: i386
         arm64:
           ARCH: arm64
         armhf:

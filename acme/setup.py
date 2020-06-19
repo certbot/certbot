@@ -1,4 +1,4 @@
-from distutils.version import StrictVersion
+from distutils.version import LooseVersion
 import sys
 
 from setuptools import __version__ as setuptools_version
@@ -27,7 +27,7 @@ install_requires = [
     'six>=1.9.0',  # needed for python_2_unicode_compatible
 ]
 
-setuptools_known_environment_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
+setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
 if setuptools_known_environment_markers:
     install_requires.append('mock ; python_version < "3.3"')
 elif 'bdist_wheel' in sys.argv[1:]:
