@@ -361,7 +361,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
-        [None, "certonly", "renew"],
+        [None, "certonly", "renew", "run"],
         "--preferred-chain", dest="preferred_chain",
         default=flag_default("preferred_chain"), help=config_help("preferred_chain")
     )
