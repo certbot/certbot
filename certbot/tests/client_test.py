@@ -273,7 +273,8 @@ class ClientTest(ClientTestCommon):
             self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, auth_count)
 
         self.acme.finalize_order.assert_called_once_with(
-            self.eg_order, mock.ANY)
+            self.eg_order, mock.ANY,
+            fetch_alternative_chains=self.config.preferred_chain is not None)
 
     @mock.patch("certbot._internal.client.crypto_util")
     @mock.patch("certbot._internal.client.logger")
