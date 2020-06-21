@@ -297,8 +297,7 @@ class ClientTest(ClientTestCommon):
         # and that the cert was obtained correctly
         self._check_obtain_certificate()
 
-        # Test that the same works when a --preferred-chain is configured
-        self.acme.finalize_order.reset_mock()
+        # Test that --preferred-chain results in chain selection
         self.config.preferred_chain = "some issuer"
         self.assertEqual(
             (mock.sentinel.cert, mock.sentinel.chain),
@@ -308,7 +307,6 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.find_chain_with_issuer.assert_called_once_with(
             [orderr.fullchain_pem] + orderr.alternative_fullchains_pem,
             "some issuer", True)
-        self._check_obtain_certificate()
         self.config.preferred_chain = None
 
         # Test for orderr=None
