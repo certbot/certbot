@@ -293,8 +293,23 @@ class ClientTest(ClientTestCommon):
             self.client.obtain_certificate_from_csr(
                 test_csr,
                 orderr=orderr))
+        mock_crypto_util.find_chain_with_issuer.assert_not_called()
         # and that the cert was obtained correctly
         self._check_obtain_certificate()
+
+        # Test that the same works when a --preferred-chain is configured
+        self.acme.finalize_order.reset_mock()
+        self.config.preferred_chain = "some issuer"
+        self.assertEqual(
+            (mock.sentinel.cert, mock.sentinel.chain),
+            self.client.obtain_certificate_from_csr(
+                test_csr,
+                orderr=orderr))
+        mock_crypto_util.find_chain_with_issuer.assert_called_once_with(
+            [orderr.fullchain_pem] + orderr.alternative_fullchains_pem,
+            "some issuer", True)
+        self._check_obtain_certificate()
+        self.config.preferred_chain = None
 
         # Test for orderr=None
         self.assertEqual(
