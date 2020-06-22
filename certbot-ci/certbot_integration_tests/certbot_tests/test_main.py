@@ -644,6 +644,7 @@ def test_preferred_chain(context):
 
     domain = context.get_domain('preferred-chain')
     cert_path = join(context.config_dir, 'live', domain, 'chain.pem')
+    conf_path = join(context.config_dir, 'renewal', '{}.conf'.format(domain))
 
     for (requested, expected) in [(n, n) for n in names] + [('nonexistent', names[0])]:
         args = ['certonly', '--cert-name', domain, '-d', domain,
@@ -653,3 +654,7 @@ def test_preferred_chain(context):
         dumped = misc.read_certificate(cert_path)
         assert 'Issuer: CN={}'.format(expected) in dumped, \
                'Expected chain issuer to be {} when preferring {}'.format(expected, requested)
+
+        with open(conf_path, 'r') as f:
+            assert 'preferred_chain = {}'.format(requested) in f.read(), \
+                   'Expected preferred_chain ''to be set in renewal config'
