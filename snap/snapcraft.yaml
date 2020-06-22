@@ -74,7 +74,9 @@ parts:
     build-packages: [libffi-dev, libssl-dev, git, libaugeas-dev, python3-dev]
     override-pull: |
         snapcraftctl pull
-        snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC/certbot && git describe|sed s/^v//`
+        cd $SNAPCRAFT_PART_SRC
+        python3 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt | grep -v python-augeas > snap-constraints.txt
+        snapcraftctl set-version `git describe|sed s/^v//`
 
   wrappers:
     plugin: dump
