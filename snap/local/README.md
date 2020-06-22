@@ -66,7 +66,7 @@ These steps need to be done once to set up your VM and do not need to be run aga
  5. Add your current user to the lxd group and update your shell to have the new assignment by running `sudo usermod -a -G lxd ${USER} && newgrp lxd`.
  6. Install snapcraft with `sudo snap install --classic snapcraft`.
  7. `cd ~` (or any other directory where you want our source files to be)
- 8. Run `git clone git://github.com/certbot/certbot -b snap-plugin`
+ 8. Run `git clone git://github.com/certbot/certbot`
  9. `cd certbot`
 
 ### Build the Snaps
