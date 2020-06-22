@@ -73,16 +73,15 @@ These steps need to be done once to set up your VM and do not need to be run aga
 
 These are the steps to build and install the snaps. If you have run these steps before, you may want to run the commands in the section below to clean things up before building the snap again.
 
- 1. Run `tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt | grep -v python-augeas > snap-constraints.txt` (this is a workaround for https://github.com/certbot/certbot/issues/7957).
- 2. Run `snapcraft --use-lxd`.
- 3. Install the generated snap with `sudo snap install --dangerous --classic certbot_*_amd64.snap`. You can transfer the snap to a different machine to run it there instead if you prefer.
- 4. Run `tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > certbot-dns-dnsimple/snap-constraints.txt`.
- 5. `cd certbot-dns-dnsimple`
- 6. `snapcraft --use-lxd`
- 7. Run `sudo snap set certbot trust-plugin-with-root=ok`.
- 8. Install the generated snap with `sudo snap install --dangerous certbot-dns-dnsimple_*_amd64.snap`. Again, you can transfer the snap to a different machine to run it there instead if you prefer.
- 9. Connect the plugin with `sudo snap connect certbot:plugin certbot-dns-dnsimple`.
- 10. Now you can run Certbot as normal. For example, `certbot plugins` should display the DNSimple plugin as installed.
+ 1. Run `snapcraft --use-lxd`.
+ 2. Install the generated snap with `sudo snap install --dangerous --classic certbot_*_amd64.snap`. You can transfer the snap to a different machine to run it there instead if you prefer.
+ 3. Run `tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > certbot-dns-dnsimple/snap-constraints.txt` (this is a workaround for https://github.com/certbot/certbot/issues/8100).
+ 4. `cd certbot-dns-dnsimple`
+ 5. `snapcraft --use-lxd`
+ 6. Run `sudo snap set certbot trust-plugin-with-root=ok`.
+ 7. Install the generated snap with `sudo snap install --dangerous certbot-dns-dnsimple_*_amd64.snap`. Again, you can transfer the snap to a different machine to run it there instead if you prefer.
+ 8. Connect the plugin with `sudo snap connect certbot:plugin certbot-dns-dnsimple`.
+ 9. Now you can run Certbot as normal. For example, `certbot plugins` should display the DNSimple plugin as installed.
 
 ### Reset the Environment
 
