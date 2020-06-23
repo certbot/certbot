@@ -15,7 +15,7 @@ summary: ${DESCRIPTION}
 description: ${DESCRIPTION}
 confinement: strict
 grade: devel
-base: core18
+base: core20
 adopt-info: ${PLUGIN}
 
 parts:
@@ -23,7 +23,6 @@ parts:
     plugin: python
     source: .
     constraints: [\$SNAPCRAFT_PART_SRC/snap-constraints.txt]
-    python-version: python3
     override-pull: |
         snapcraftctl pull
         snapcraftctl set-version \`grep ^version \$SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"\`
@@ -35,6 +34,6 @@ slots:
     interface: content
     content: certbot-1
     read:
-      - \$SNAP/lib/python3.6/site-packages
+      - \$SNAP/lib/python3.8/site-packages
 EOF
 done
