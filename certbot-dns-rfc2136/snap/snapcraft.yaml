@@ -1,13 +1,13 @@
-name: certbot-dns-dnsimple
-summary: DNSimple DNS Authenticator plugin for Certbot
-description: DNSimple DNS Authenticator plugin for Certbot
+name: certbot-dns-rfc2136
+summary: RFC 2136 DNS Authenticator plugin for Certbot
+description: RFC 2136 DNS Authenticator plugin for Certbot
 confinement: strict
 grade: devel
 base: core18
-adopt-info: certbot-dns-dnsimple
+adopt-info: certbot-dns-rfc2136
 
 parts:
-  certbot-dns-dnsimple:
+  certbot-dns-rfc2136:
     plugin: python
     source: .
     constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]

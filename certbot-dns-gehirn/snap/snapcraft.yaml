@@ -1,13 +1,13 @@
-name: certbot-dns-dnsimple
-summary: DNSimple DNS Authenticator plugin for Certbot
-description: DNSimple DNS Authenticator plugin for Certbot
+name: certbot-dns-gehirn
+summary: Gehirn Infrastructure Service DNS Authenticator plugin for Certbot
+description: Gehirn Infrastructure Service DNS Authenticator plugin for Certbot
 confinement: strict
 grade: devel
 base: core18
-adopt-info: certbot-dns-dnsimple
+adopt-info: certbot-dns-gehirn
 
 parts:
-  certbot-dns-dnsimple:
+  certbot-dns-gehirn:
     plugin: python
     source: .
     constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
