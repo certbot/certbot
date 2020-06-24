@@ -921,8 +921,7 @@ class NginxConfigurator(common.Installer):
 
         """
         try:
-            util.run_script([self.conf('ctl'), "-c", self.nginx_conf, "-t"],
-                            env=util.env_no_snap_for_external_calls())
+            util.run_script([self.conf('ctl'), "-c", self.nginx_conf, "-t"])
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 

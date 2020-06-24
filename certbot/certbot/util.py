@@ -74,12 +74,11 @@ def env_no_snap_for_external_calls():
     return env
 
 
-def run_script(params, log=logger.error, env=None):
+def run_script(params, log=logger.error):
     """Run the script with the given params.
 
     :param list params: List of parameters to pass to Popen
     :param callable log: Logger method to use for errors
-    :param dict env: Dict to pass through to Popen's env param
 
     """
     try:
@@ -87,7 +86,7 @@ def run_script(params, log=logger.error, env=None):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 universal_newlines=True,
-                                env=env)
+                                env=env_no_snap_for_external_calls())
 
     except (OSError, ValueError):
         msg = "Unable to run the command: %s" % " ".join(params)
