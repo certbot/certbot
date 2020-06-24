@@ -61,6 +61,19 @@ _INITIAL_PID = os.getpid()
 _LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
 
 
+def env_no_snap_for_external_calls():
+    """
+    Returns a modified env to pass to Popen
+    """
+    env = os.environ.copy()
+    if 'SNAP' not in env:
+        return env
+    for path_name in ('PATH', 'LD_LIBRARY_PATH'):
+        if path_name in env:
+            env[path_name] = ':'.join(x for x in env[path_name].split(':') if env['SNAP'] not in x)
+    return env
+
+
 def run_script(params, log=logger.error, env=None):
     """Run the script with the given params.
 

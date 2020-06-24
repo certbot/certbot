@@ -9,7 +9,6 @@ import pkg_resources
 
 from certbot import errors
 from certbot import util
-from certbot.plugins import util as plugins_util
 
 from certbot.compat import os
 
@@ -227,7 +226,7 @@ def _get_runtime_cfg(command):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
-            env=plugins_util.env_no_snap_for_external_calls())
+            env=util.env_no_snap_for_external_calls())
         stdout, stderr = proc.communicate()
 
     except (OSError, ValueError):

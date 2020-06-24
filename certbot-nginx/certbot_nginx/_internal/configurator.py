@@ -22,7 +22,6 @@ from certbot import interfaces
 from certbot import util
 from certbot.compat import os
 from certbot.plugins import common
-from certbot.plugins import util as plugins_util
 from certbot_nginx._internal import constants
 from certbot_nginx._internal import display_ops
 from certbot_nginx._internal import http_01
@@ -923,7 +922,7 @@ class NginxConfigurator(common.Installer):
         """
         try:
             util.run_script([self.conf('ctl'), "-c", self.nginx_conf, "-t"],
-                            env=plugins_util.env_no_snap_for_external_calls())
+                            env=util.env_no_snap_for_external_calls())
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -942,7 +941,7 @@ class NginxConfigurator(common.Installer):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
-                env=plugins_util.env_no_snap_for_external_calls())
+                env=util.env_no_snap_for_external_calls())
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError) as error:
             logger.debug(str(error), exc_info=True)
@@ -1173,7 +1172,7 @@ def nginx_restart(nginx_ctl, nginx_conf):
     """
     try:
         proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
-                                env=plugins_util.env_no_snap_for_external_calls())
+                                env=util.env_no_snap_for_external_calls())
         proc.communicate()
 
         if proc.returncode != 0:
@@ -1183,7 +1182,7 @@ def nginx_restart(nginx_ctl, nginx_conf):
             with tempfile.TemporaryFile() as out:
                 with tempfile.TemporaryFile() as err:
                     nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
-                        stdout=out, stderr=err, env=plugins_util.env_no_snap_for_external_calls())
+                        stdout=out, stderr=err, env=util.env_no_snap_for_external_calls())
                     nginx_proc.communicate()
                     if nginx_proc.returncode != 0:
                         # Enter recovery routine...

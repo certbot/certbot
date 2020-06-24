@@ -56,15 +56,3 @@ def path_surgery(cmd):
     logger.debug("Failed to find executable %s in%s PATH: %s", cmd,
                  expanded, path)
     return False
-
-def env_no_snap_for_external_calls():
-    """
-    Returns a modified env to pass to Popen
-    """
-    env = os.environ.copy()
-    if 'SNAP' not in env:
-        return env
-    for path_name in ('PATH', 'LD_LIBRARY_PATH'):
-        if path_name in env:
-            env[path_name] = ':'.join(x for x in env[path_name].split(':') if env['SNAP'] not in x)
-    return env
