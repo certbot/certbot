@@ -10,7 +10,6 @@ import subprocess
 import sys
 
 from certbot import errors
-from certbot import util
 from certbot.compat import os
 
 from acme.magic_typing import Tuple
@@ -117,7 +116,7 @@ def underscores_for_unsupported_characters_in_path(path):
     return drive + tail.replace(':', '_')
 
 
-def execute_command(cmd_name, shell_cmd):
+def execute_command(cmd_name, shell_cmd, env=None):
     # type: (str, str) -> Tuple[str, str]
     """
     Run a command:
@@ -126,6 +125,7 @@ def execute_command(cmd_name, shell_cmd):
 
     :param str cmd_name: the user facing name of the hook being run
     :param str shell_cmd: shell command to execute
+    :param dict env: environ to pass into Popen
 
     :returns: `tuple` (`str` stderr, `str` stdout)
     """
@@ -134,11 +134,11 @@ def execute_command(cmd_name, shell_cmd):
     if POSIX_MODE:
         cmd = subprocess.Popen(shell_cmd, shell=True, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, universal_newlines=True,
-                               env=util.env_no_snap_for_external_calls())
+                               env=env)
     else:
         line = ['powershell.exe', '-Command', shell_cmd]
         cmd = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               universal_newlines=True, env=util.env_no_snap_for_external_calls())
+                               universal_newlines=True, env=env)
 
     # universal_newlines causes Popen.communicate()
     # to return str objects instead of bytes in Python 3

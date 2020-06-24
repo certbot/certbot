@@ -8,6 +8,7 @@ from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter
+from certbot import util
 from certbot._internal import hooks
 from certbot.compat import misc
 from certbot.compat import os
@@ -187,4 +188,5 @@ permitted by DNS standards.)
         self.reverter.recovery_routine()
 
     def _execute_hook(self, hook_name):
-        return misc.execute_command(self.option_name(hook_name), self.conf(hook_name))
+        return misc.execute_command(self.option_name(hook_name), self.conf(hook_name),
+                                    env=util.env_no_snap_for_external_calls())
