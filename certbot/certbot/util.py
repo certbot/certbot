@@ -391,12 +391,14 @@ def get_python_os_info(pretty=False):
                 ["/usr/bin/sw_vers", "-productVersion"],
                 stdout=subprocess.PIPE,
                 universal_newlines=True,
+                env=env_no_snap_for_external_calls(),
             )
         except OSError:
             proc = subprocess.Popen(
                 ["sw_vers", "-productVersion"],
                 stdout=subprocess.PIPE,
                 universal_newlines=True,
+                env=env_no_snap_for_external_calls(),
             )
         os_ver = proc.communicate()[0].rstrip('\n')
     elif os_type.startswith('freebsd'):
