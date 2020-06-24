@@ -10,6 +10,7 @@ import subprocess
 import sys
 
 from certbot import errors
+from certbot import util
 from certbot.compat import os
 
 from acme.magic_typing import Tuple
@@ -132,11 +133,12 @@ def execute_command(cmd_name, shell_cmd):
 
     if POSIX_MODE:
         cmd = subprocess.Popen(shell_cmd, shell=True, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, universal_newlines=True)
+                               stderr=subprocess.PIPE, universal_newlines=True,
+                               env=util.env_no_snap_for_external_calls())
     else:
         line = ['powershell.exe', '-Command', shell_cmd]
         cmd = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               universal_newlines=True)
+                               universal_newlines=True, env=util.env_no_snap_for_external_calls())
 
     # universal_newlines causes Popen.communicate()
     # to return str objects instead of bytes in Python 3
