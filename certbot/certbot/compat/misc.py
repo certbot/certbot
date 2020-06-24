@@ -117,7 +117,7 @@ def underscores_for_unsupported_characters_in_path(path):
 
 
 def execute_command(cmd_name, shell_cmd, env=None):
-    # type: (str, str) -> Tuple[str, str]
+    # type: (str, str, dict) -> Tuple[str, str]
     """
     Run a command:
         - on Linux command will be run by the standard shell selected with Popen(shell=True)
