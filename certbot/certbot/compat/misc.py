@@ -125,7 +125,7 @@ def execute_command(cmd_name, shell_cmd, env=None):
 
     :param str cmd_name: the user facing name of the hook being run
     :param str shell_cmd: shell command to execute
-    :param dict env: environ to pass into Popen
+    :param dict env: environ to pass into Popen on Linux
 
     :returns: `tuple` (`str` stderr, `str` stdout)
     """
@@ -138,7 +138,7 @@ def execute_command(cmd_name, shell_cmd, env=None):
     else:
         line = ['powershell.exe', '-Command', shell_cmd]
         cmd = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               universal_newlines=True, env=env)
+                               universal_newlines=True)
 
     # universal_newlines causes Popen.communicate()
     # to return str objects instead of bytes in Python 3
