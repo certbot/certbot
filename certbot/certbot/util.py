@@ -61,18 +61,20 @@ _INITIAL_PID = os.getpid()
 _LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
 
 
-def run_script(params, log=logger.error):
+def run_script(params, log=logger.error, env=None):
     """Run the script with the given params.
 
     :param list params: List of parameters to pass to Popen
     :param callable log: Logger method to use for errors
+    :param dict env: Dict to pass through to Popen's env param
 
     """
     try:
         proc = subprocess.Popen(params,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
-                                universal_newlines=True)
+                                universal_newlines=True,
+                                env=env)
 
     except (OSError, ValueError):
         msg = "Unable to run the command: %s" % " ".join(params)
