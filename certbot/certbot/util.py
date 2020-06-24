@@ -68,7 +68,7 @@ def env_no_snap_for_external_calls():
     env = os.environ.copy()
     if 'SNAP' not in env:
         return env
-    for path_name in ('PATH', 'LD_LIBRARY_PATH'):
+    for path_name in ('PATH', 'LD_LIBRARY_PATH', 'PYTHONPATH'):
         if path_name in env:
             env[path_name] = ':'.join(x for x in env[path_name].split(':') if env['SNAP'] not in x)
     return env
