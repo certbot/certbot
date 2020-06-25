@@ -29,6 +29,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   to fix some packaging issues with libraries respecting PEP404 for version string,
   with doesn't match `StrictVersion` requirements.
 * Certbot output doesn't refer to SSL Labs due to confusing scoring behavior.
+* Fix paths when calling to programs outside of the Certbot Snap, fixing the apache and nginx
+  plugins on, e.g., CentOS 7.
 
 More details about these changes can be found on our GitHub repo.
 
