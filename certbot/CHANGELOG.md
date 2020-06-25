@@ -27,6 +27,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Don't use `StrictVersion`, but `LooseVersion` to check version requirements with setuptools,
   to fix some packaging issues with libraries respecting PEP404 for version string,
   with doesn't match `StrictVersion` requirements.
+* Fix paths when calling to programs outside of the Certbot Snap, fixing the apache and nginx
+  plugins on, e.g., CentOS 7.
 
 More details about these changes can be found on our GitHub repo.
 
