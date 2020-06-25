@@ -255,7 +255,7 @@ def success_renewal(domains):
     z_util(interfaces.IDisplay).notification(
         "Your existing certificate has been successfully renewed, and the "
         "new certificate has been installed.{1}{1}"
-        "The new certificate covers the following domains: {0}{1}{1}".format(
+        "The new certificate covers the following domains: {0}".format(
             _gen_https_names(domains),
             os.linesep,
             pause=False))
