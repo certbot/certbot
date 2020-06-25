@@ -242,8 +242,8 @@ def success_installation(domains):
     """
     z_util(interfaces.IDisplay).notification(
         "Congratulations! You have successfully enabled {0}".format(
-            _gen_https_names(domains),
-            pause=False))
+            _gen_https_names(domains)),
+        pause=False)
 
 
 def success_renewal(domains):
@@ -257,8 +257,8 @@ def success_renewal(domains):
         "new certificate has been installed.{1}{1}"
         "The new certificate covers the following domains: {0}".format(
             _gen_https_names(domains),
-            os.linesep,
-            pause=False))
+            os.linesep),
+        pause=False)
 
 
 def success_revocation(cert_path):
