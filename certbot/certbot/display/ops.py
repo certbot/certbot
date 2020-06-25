@@ -281,6 +281,7 @@ def _gen_ssl_lab_urls(domains):
     """
     return ["https://www.ssllabs.com/ssltest/analyze.html?d=%s" % dom for dom in domains]
 
+
 def _gen_https_names(domains):
     """Returns a string of the https domains.
 
