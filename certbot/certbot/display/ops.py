@@ -277,7 +277,9 @@ def success_revocation(cert_path):
 
 def _gen_ssl_lab_urls(domains):
     """Returns a list of urls.
+
     :param list domains: Each domain is a 'str'
+
     """
     return ["https://www.ssllabs.com/ssltest/analyze.html?d=%s" % dom for dom in domains]
 
