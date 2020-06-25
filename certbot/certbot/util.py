@@ -63,7 +63,18 @@ _LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
 
 def env_no_snap_for_external_calls():
     """
-    Returns a modified env to pass to Popen
+    When Certbot is run inside a Snap, certain environment variables
+    are modified. But Certbot sometimes calls out to external programs,
+    since it uses classic confinement. When we do that, we must modify
+    the env to remove our modifications so it will use the system's
+    libraries, since they may be incompatible with the versions of
+    libraries included in the Snap. For example, apachectl, Nginx, and
+    anything run from inside a hook should call this function and pass
+    the results into the ``env`` argument of ``subprocess.Popen``.
+
+    :returns: A modified copy of os.environ ready to pass to Popen
+    :rtype: dict
+
     """
     env = os.environ.copy()
     # Avoid accidentally modifying env
