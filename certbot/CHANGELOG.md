@@ -15,6 +15,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Allow session tickets to be disabled in Apache when mod_ssl is statically linked.
+* Generalize UI warning message on renewal rate limits
 * Certbot behaves similarly on Windows to on UNIX systems regarding umask, and
   the umask `022` is applied by default: all files/directories are not writable by anyone
   other than the user running Certbot and the system/admin users.
