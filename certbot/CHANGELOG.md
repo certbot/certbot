@@ -27,6 +27,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Don't use `StrictVersion`, but `LooseVersion` to check version requirements with setuptools,
   to fix some packaging issues with libraries respecting PEP404 for version string,
   with doesn't match `StrictVersion` requirements.
+* Certbot output doesn't refer to SSL Labs due to confusing scoring behavior.
 
 More details about these changes can be found on our GitHub repo.
 
