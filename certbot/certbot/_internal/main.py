@@ -209,7 +209,7 @@ def _handle_identical_cert_request(config, lineage):
     elif config.verb == "certonly":
         keep_opt = "Keep the existing certificate for now"
     choices = [keep_opt,
-               "Renew & replace the cert (limit ~5 per 7 days)"]
+               "Renew & replace the cert (may be subject to CA rate limits)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
     response = display.menu(question, choices,
