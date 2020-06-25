@@ -2,7 +2,6 @@
 import collections
 import itertools
 import logging
-import os
 import sys
 
 import pkg_resources
@@ -14,6 +13,7 @@ from acme.magic_typing import Dict
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
+from certbot.compat import os
 
 try:
     # Python 3.3+
