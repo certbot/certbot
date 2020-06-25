@@ -110,6 +110,14 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         self.assertRaises(
             errors.Error, self._call, self.config, renewalparams)
 
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
+    def test_ancient_server_renewal_conf(self, mock_set_by_cli):
+        from certbot._internal import constants
+        self.config.server = None
+        mock_set_by_cli.return_value = False
+        self._call(self.config, {'server': constants.V1_URI})
+        self.assertEqual(self.config.server, constants.CLI_DEFAULTS['server'])
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

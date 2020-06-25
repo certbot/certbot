@@ -6,16 +6,28 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+* Certbot snaps are now available for the arm64 and armhf architectures.
 * Add minimal code to run Nginx plugin on NetBSD.
+* Make Certbot snap find externally snapped plugins
+* Function `certbot.compat.filesystem.umask` is a drop-in replacement for `os.umask`
+  implementing umask for both UNIX and Windows systems.
 
 ### Changed
 
 * Allow session tickets to be disabled in Apache when mod_ssl is statically linked.
 * Generalize UI warning message on renewal rate limits
+* Certbot behaves similarly on Windows to on UNIX systems regarding umask, and
+  the umask `022` is applied by default: all files/directories are not writable by anyone
+  other than the user running Certbot and the system/admin users.
+* Read acmev1 Let's Encrypt server URL from renewal config as acmev2 URL to prepare
+  for impending acmev1 deprecation.
 
 ### Fixed
 
-*
+* Cloudflare API Tokens may now be restricted to individual zones.
+* Don't use `StrictVersion`, but `LooseVersion` to check version requirements with setuptools,
+  to fix some packaging issues with libraries respecting PEP404 for version string,
+  with doesn't match `StrictVersion` requirements.
 
 More details about these changes can be found on our GitHub repo.
 

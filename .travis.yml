@@ -11,7 +11,7 @@ before_script:
   # Use Travis retry feature for farm tests since they are flaky
   - 'if [[ "$TOXENV" == "travis-test-farm"* ]]; then export TRAVIS_RETRY=travis_retry; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
-  - 'if [[ "$SNAP" == true ]]; then snap/local/build_and_install.sh; fi'
+  - 'if [[ "$SNAP" == true ]]; then snap/local/build_and_install.sh $TARGET_ARCH; fi'
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-`, `travis-test-`, or of the form `digit(s).digit(s).x` or
@@ -38,6 +38,45 @@ not-on-master: &not-on-master
 # non-development branches.
 extended-test-suite: &extended-test-suite
   if: type = cron OR (type = push AND branch != master)
+
+# Common configuration for all snap tasks
+snap-config: &snap-config
+  dist: bionic
+  addons:
+    apt:
+      packages:
+      - nginx-light
+  git:
+    # By default, Travis clones the repo to a depth of 50 commits which can
+    # break the ability to use `git describe` to set the version of the
+    # snap. This setting removes the --depth flag from git commands solving
+    # this problem. See
+    # https://docs.travis-ci.com/user/customizing-the-build#git-clone-depth
+    # for more info.
+    depth: false
+  deploy:
+    # This section relies on credentials stored in a SNAP_TOKEN environment
+    # variable in Travis. See
+    # https://docs.travis-ci.com/user/deployment/snaps/ for more info.
+    # This credential has a maximum lifetime of 1 year and the current
+    # credential will expire on 4/22/2021. The value of SNAP_TOKEN will
+    # need to be updated to use a new credential before then to prevent
+    # automated deploys from breaking. Remembering to do this is also
+    # tracked by https://github.com/certbot/certbot/issues/7931.
+    'on':
+      # Deploy on release tags or nightly runs from any branch. We only try
+      # to deploy from the certbot/certbot repo to prevent errors if forks
+      # of this repo try to run tests.
+      all_branches: true
+      condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
+      repo: certbot/certbot
+    provider: snap
+    snap: certbot_*.snap
+    channel: edge
+    # skip_cleanup is needed to prevent Travis from deleting the snaps we
+    # just built and tested. See
+    # https://docs.travis-ci.com/user/deployment#uploading-files-and-skip_cleanup.
+    skip_cleanup: true
 
 matrix:
   include:
@@ -231,49 +270,14 @@ matrix:
             - libaugeas0
       <<: *extended-test-suite
     - stage: "Snap"
-      sudo: required
-      env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble
-      addons:
-        apt:
-          packages:
-          - nginx-light
-        snaps:
-          - name: snapcraft
-            channel: stable
-            confinement: classic
-          - name: lxd
-            channel: stable
-      git:
-        # By default, Travis clones the repo to a depth of 50 commits which can
-        # break the ability to use `git describe` to set the version of the
-        # snap. This setting removes the --depth flag from git commands solving
-        # this problem. See
-        # https://docs.travis-ci.com/user/customizing-the-build#git-clone-depth
-        # for more info.
-        depth: false
-      deploy:
-        # This section relies on credentials stored in a SNAP_TOKEN environment
-        # variable in Travis. See
-        # https://docs.travis-ci.com/user/deployment/snaps/ for more info.
-        # This credential has a maximum lifetime of 1 year and the current
-        # credential will expire on 4/22/2021. The value of SNAP_TOKEN will
-        # need to be updated to use a new credential before then to prevent
-        # automated deploys from breaking. Remembering to do this is also
-        # tracked by https://github.com/certbot/certbot/issues/7931.
-        'on':
-          # Deploy on release tags or nightly runs from any branch. We only try
-          # to deploy from the certbot/certbot repo to prevent errors if forks
-          # of this repo try to run tests.
-          all_branches: true
-          condition: -n $TRAVIS_TAG || $TRAVIS_EVENT_TYPE = cron
-          repo: certbot/certbot
-        provider: snap
-        snap: certbot_*.snap
-        channel: edge
-        # skip_cleanup is needed to prevent Travis from deleting the snaps we
-        # just built and tested. See
-        # https://docs.travis-ci.com/user/deployment#uploading-files-and-skip_cleanup.
-        skip_cleanup: true
+      env: SNAP=true TOXENV=integration-external,apacheconftest-external-with-pebble TARGET_ARCH=amd64
+      <<: *snap-config
+      <<: *extended-test-suite
+    - env: SNAP=true TARGET_ARCH=arm64
+      <<: *snap-config
+      <<: *extended-test-suite
+    - env: SNAP=true TARGET_ARCH=armhf
+      <<: *snap-config
       <<: *extended-test-suite
 
 # container-based infrastructure
@@ -304,7 +308,7 @@ install: 'tools/pip_install.py -I tox virtualenv'
 # script command. It is set only to `travis_retry` during farm tests, in
 # order to trigger the Travis retry feature, and compensate the inherent
 # flakiness of these specific tests.
-script: '$TRAVIS_RETRY tox'
+script: 'if [[ ! -z "$TOXENV" ]]; then $TRAVIS_RETRY tox; fi'
 
 notifications:
   email: false
@@ -316,6 +320,5 @@ notifications:
       # https://github.com/travis-ci/travis.rb and running
       # `travis encrypt "chat.freenode.net#certbot-devel"`.
       - secure: "EWW66E2+KVPZyIPR8ViENZwfcup4Gx3/dlimmAZE0WuLwxDCshBBOd3O8Rf6pBokEoZlXM5eDT6XdyJj8n0DLslgjO62pExdunXpbcMwdY7l1ELxX2/UbnDTE6UnPYa09qVBHNG7156Z6yE0x2lH4M9Ykvp0G0cubjPQHylAwo0="
-    on_cancel: never
     on_success: never
     on_failure: always
