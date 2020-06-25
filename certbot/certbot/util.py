@@ -66,7 +66,8 @@ def env_no_snap_for_external_calls():
     Returns a modified env to pass to Popen
     """
     env = os.environ.copy()
-    if 'SNAP' not in env:
+    # Avoid accidentally modifying env
+    if 'SNAP' not in env or 'CERTBOT_SNAPPED' not in env:
         return env
     for path_name in ('PATH', 'LD_LIBRARY_PATH'):
         if path_name in env:
