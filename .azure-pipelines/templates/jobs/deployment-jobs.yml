@@ -15,8 +15,12 @@ jobs:
           artifact: snap
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snap
+      - task: DownloadSecureFile@1
+        name: snapcraftCfg
+        inputs:
+          secureFile: snapcraft.cfg
       - bash: |
-          mkdir .snapcraft
-          echo $(SNAPCRAFT_LOGIN_FILE) | base64 --decode --ignore-garbage > .snapcraft/snapcraft.cfg
+          mkdir -p .snapcraft
+          ln -s .snapcraft/snapcraft.cfg $(snapcraftCfg.secureFilePath)
           snapcraft push --release=edge snap/*.snap
         displayName: Publish to Snap store
