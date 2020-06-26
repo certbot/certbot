@@ -5,7 +5,7 @@ trigger:
       - v*
 pr: none
 
-stage:
+stages:
   - stage: Test_Package
     jobs:
       # Any addition here should be reflected in the advanced and advanced-test pipelines.
