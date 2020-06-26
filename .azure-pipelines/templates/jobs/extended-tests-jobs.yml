@@ -1,9 +1,11 @@
 jobs:
   - job: x_test
     variables:
-      IMAGE_NAME: ubuntu-18.04
-      ${{ if contains(variables['TOXENV'], 'integration') }}:
-        PYTEST_ADDOPTS: --numprocesses 4
+      - name: IMAGE_NAME
+        value: ubuntu-18.04
+      - group: certbot-common
+      - ${{ if contains(variables['TOXENV'], 'integration') }}:
+          PYTEST_ADDOPTS: --numprocesses 4
     strategy:
       matrix:
         linux-py36:
@@ -78,36 +80,19 @@ jobs:
           TOXENV: le_auto_oraclelinux6
         dev:
           TOXENV: docker_dev
+        farmtest-apache2:
+          PYTHON_VERSION: 3.7
+          TOXENV: azure-test-farm-apache2
+        farmtest-leauto-upgrades:
+          PYTHON_VERSION: 3.7
+          TOXENV: azure-test-farm-leauto-upgrades
+        farmtest-certonly-standalone:
+          PYTHON_VERSION: 3.7
+          TOXENV: azure-test-farm-certonly-standalone
+        farmtest-sdists:
+          PYTHON_VERSION: 3.7
+          TOXENV: azure-test-farm-sdists
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
       - template: ../steps/tox-steps.yml
-  - job: farm_test
-    variables:
-      - group: certbot-common
-    strategy:
-      matrix:
-        apache2:
-          TOXENV: azure-test-farm-apache2
-        leauto-upgrades:
-          TOXENV: azure-test-farm-leauto-upgrades
-        certonly-standalone:
-          TOXENV: azure-test-farm-certonly-standalone
-        sdists:
-          TOXENV: azure-test-farm-sdists
-    steps:
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: 3.7
-          addToPath: true
-      - bash: |
-          python tools/pip_install.py -I tox virtualenv
-        displayName: Install runtime dependencies
-      - task: DownloadSecureFile@1
-        name: testFarmPem
-        inputs:
-          secureFile: azure-test-farm.pem
-      - bash: |
-          ln -s $(testFarmPem.secureFilePath) azure-test-farm.pem
-          exit 0
-        displayName: Run tox
