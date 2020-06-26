@@ -29,6 +29,6 @@ jobs:
           secureFile: snapcraft.cfg
       - bash: |
           mkdir -p .snapcraft
-          ln -s .snapcraft/snapcraft.cfg $(snapcraftCfg.secureFilePath)
+          ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
           snapcraft push --release=edge snap/*.snap
         displayName: Publish to Snap store
