@@ -51,4 +51,4 @@ RUN cp /home/lea/certbot/letsencrypt-auto-source/tests/${REDHAT_DIST_FLAVOR}6_te
 USER lea
 WORKDIR /home/lea
 
-CMD ["sudo", "script -c certbot/letsencrypt-auto-source/tests/redhat6_tests.sh"]
+CMD ["sudo", "script", "-c", "certbot/letsencrypt-auto-source/tests/redhat6_tests.sh"]
