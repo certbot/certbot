@@ -36,10 +36,6 @@ steps:
   - bash: |
       if [[ "${TOXENV}" == *"oldest"* ]]; then
         tools/run_oldest_tests.sh
-      elif command -v unbuffer >/dev/null 2>&1; then
-        # Call to unbuffer ensures that docker command can be run with
-        # -it while tox is not executed from an interactive console.
-        unbuffer -p python -m tox
       else
         python -m tox
       fi

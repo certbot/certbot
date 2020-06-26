@@ -32,4 +32,4 @@ COPY . /home/lea/certbot/letsencrypt-auto-source
 USER lea
 WORKDIR /home/lea
 
-CMD ["pytest", "-v", "-s", "certbot/letsencrypt-auto-source/tests"]
+CMD ["script", "-c", "pytest -v -s certbot/letsencrypt-auto-source/tests"]
