@@ -1,8 +1,5 @@
 jobs:
   - job: test
-    variables:
-      ${{ if contains(variables['TOXENV'], 'integration') }}:
-        PYTEST_ADDOPTS: --numprocesses 4
     strategy:
       matrix:
         macos-py27:

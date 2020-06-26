@@ -83,8 +83,6 @@ jobs:
     dependsOn: snap_build
     pool:
       vmImage: ubuntu-18.04
-    variables:
-      TOXENV: integration-external,apacheconftest-external-with-pebble
     steps:
       - script: |
           sudo apt-get update
@@ -100,5 +98,5 @@ jobs:
           sudo snap install --dangerous --classic snap/*.snap
         displayName: Install Certbot snap
       - script: |
-          python -m tox
+          python -m tox -e integration-external,apacheconftest-external-with-pebble
         displayName: Run tox

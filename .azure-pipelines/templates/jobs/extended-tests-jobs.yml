@@ -4,9 +4,6 @@ jobs:
       - name: IMAGE_NAME
         value: ubuntu-18.04
       - group: certbot-common
-      - ${{ if contains(variables['TOXENV'], 'integration') }}:
-          name: PYTEST_ADDOPTS
-          value: --numprocesses 4
     strategy:
       matrix:
         linux-py36:
