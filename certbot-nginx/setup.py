@@ -12,7 +12,7 @@ version = '1.6.0.dev0'
 # acme/certbot version.
 install_requires = [
     'acme>=1.4.0',
-    'certbot>=1.4.0',
+    'certbot>=1.6.0.dev0',
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support
     'setuptools',

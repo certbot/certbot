@@ -21,9 +21,6 @@ source "${DIR}/common.sh"
 RegisterQemuHandlers
 ResolveArch "${SNAP_ARCH}"
 
-tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt \
-  | grep -v python-augeas > snap-constraints.txt
-
 pushd "${DIR}/packages"
 "${CERTBOT_DIR}/tools/simple_http_server.py" 8080 >/dev/null 2>&1 &
 HTTP_SERVER_PID="$!"

@@ -2,6 +2,7 @@
 import collections
 import itertools
 import logging
+import sys
 
 import pkg_resources
 import six
@@ -12,6 +13,7 @@ from acme.magic_typing import Dict
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
+from certbot.compat import os
 
 try:
     # Python 3.3+
@@ -198,6 +200,12 @@ class PluginsRegistry(Mapping):
     def find_all(cls):
         """Find plugins using setuptools entry points."""
         plugins = {}  # type: Dict[str, PluginEntryPoint]
+        plugin_paths_string = os.getenv('CERTBOT_PLUGIN_PATH')
+        plugin_paths = plugin_paths_string.split(':') if plugin_paths_string else []
+        # XXX should ensure this only happens once
+        sys.path.extend(plugin_paths)
+        for plugin_path in plugin_paths:
+            pkg_resources.working_set.add_entry(plugin_path)
         entry_points = itertools.chain(
             pkg_resources.iter_entry_points(
                 constants.SETUPTOOLS_PLUGINS_ENTRY_POINT),
