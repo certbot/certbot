@@ -1,11 +1,11 @@
 jobs:
   - job: x_test
     variables:
-      IMAGE_NAME: ubuntu-18.04
-      FARMTEST_SECURE_KEY: key
-      FARMTEST_SECURE_IV: iv
-      ${{ if contains(variables['TOXENV'], 'integration') }}:
-        PYTEST_ADDOPTS: --numprocesses 4
+      - name: IMAGE_NAME
+        value: ubuntu-18.04
+      - group: certbot-common
+      - ${{ if contains(variables['TOXENV'], 'integration') }}:
+          PYTEST_ADDOPTS: --numprocesses 4
     strategy:
       matrix:
         linux-py36:
