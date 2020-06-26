@@ -78,7 +78,7 @@ jobs:
         inputs:
           path: $(Build.ArtifactStagingDirectory)
           artifact: snap-$(arch)
-        displayName: Publish Snap
+        displayName: Store snap artifact
   - job: snap_run
     dependsOn: snap_build
     pool:

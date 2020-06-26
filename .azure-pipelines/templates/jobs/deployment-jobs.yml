@@ -1,5 +1,13 @@
 jobs:
   - job: publish_snap
+    strategy:
+      matrix:
+        amd64:
+          ARCH: amd64
+        arm64:
+          ARCH: arm64
+        armhf:
+          ARCH: armhf
     pool:
       vmImage: ubuntu-18.04
     variables:
@@ -12,7 +20,7 @@ jobs:
         displayName: Install dependencies
       - task: DownloadPipelineArtifact@2
         inputs:
-          artifact: snap
+          artifact: snap-$(arch)
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snap
       - task: DownloadSecureFile@1
