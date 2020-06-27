@@ -1,4 +1,4 @@
-name: adferrand-certbot
+name: certbot
 summary: Automatically configure HTTPS using Let's Encrypt
 description: |
  The objective of Certbot, Let's Encrypt, and the ACME (Automated
