@@ -4,11 +4,6 @@ steps:
     condition: startswith(variables['IMAGE_NAME'], 'macOS')
     displayName: Install MacOS dependencies
   - bash: |
-      sudo bash -c 'cat > /usr/sbin/policy-rc.d << EOF
-      #!/bin/sh
-      echo "All runlevel operations denied by policy" >&2
-      exit 101
-      EOF'
       sudo apt-get update
       sudo apt-get install -y --no-install-recommends \
         python-dev \
