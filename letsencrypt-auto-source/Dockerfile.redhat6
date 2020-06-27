@@ -9,8 +9,8 @@ ARG REDHAT_DIST_FLAVOR
 RUN curl -O https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm \
  && rpm -ivh epel-release-latest-6.noarch.rpm
 
-# Install pip, sudo and additional utils:
-RUN yum install -y python-pip sudo util-linux-ng
+# Install pip and sudo:
+RUN yum install -y python-pip sudo
 # Update to a stable and tested version of pip.
 # We do not use pipstrap here because it no longer supports Python 2.6.
 RUN pip install pip==9.0.1 setuptools==29.0.1 wheel==0.29.0
@@ -51,4 +51,4 @@ RUN cp /home/lea/certbot/letsencrypt-auto-source/tests/${REDHAT_DIST_FLAVOR}6_te
 USER lea
 WORKDIR /home/lea
 
-CMD ["script", "-qec", "sudo certbot/letsencrypt-auto-source/tests/redhat6_tests.sh"]
+CMD ["sudo", "certbot/letsencrypt-auto-source/tests/redhat6_tests.sh"]
