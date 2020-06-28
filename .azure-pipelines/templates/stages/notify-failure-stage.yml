@@ -9,5 +9,5 @@ stages:
         steps:
           - bash: |
               MESSAGE="---\n##### Azure Pipeline - Pipeline: $(Build.DefinitionName) - Build: $(Build.BuildId)\n:warning: __[Build has failed](https://dev.azure.com/$(Build.Repository.ID)/_build/results?buildId=$(Build.BuildId)&view=results)__ :warning:\n\n---"
-              curl -i -X POST --data-urlencode 'payload={"text":"${MESSAGE}"}' "$(MATTERMOST_URL)"
+              curl -i -X POST --data-urlencode "payload={\"text\":\"${MESSAGE}\"}" "$(MATTERMOST_URL)"
     condition: failed()
