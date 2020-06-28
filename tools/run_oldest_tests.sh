@@ -15,22 +15,20 @@ trap cleanup EXIT
 DOCKERFILE=$(mktemp /tmp/Dockerfile.XXXXXX)
 
 cat << "EOF" >> "${DOCKERFILE}"
-FROM ubuntu:14.04
+FROM ubuntu:16.04
+COPY pipstrap.py /tmp/pipstrap.py
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-        python-dev python-pip git gcc libaugeas0 libssl-dev libffi-dev \
-        ca-certificates nginx-light openssl curl software-properties-common \
- && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5BB92C09DB82666C \
- && add-apt-repository ppa:fkrull/deadsnakes-python2.7 \
- && apt-get update \
- && apt-get upgrade -y \
+        python-dev python-pip python-setuptools \
+        gcc libaugeas0 libssl-dev libffi-dev \
+        git ca-certificates nginx-light openssl curl \
  && curl -fsSL https://get.docker.com | bash /dev/stdin \
- && python -m pip install --upgrade pip virtualenv wheel \
+ && python /tmp/pipstrap.py \
  && python -m pip install tox \
  && rm -rf /var/lib/apt/lists/*
 EOF
 
-docker build -f "${DOCKERFILE}" -t oldest-worker "${DIR}"
+docker build -f "${DOCKERFILE}" -t oldest-worker ./letsencrypt-auto-source/pieces
 docker run --rm --network=host -w "${PWD}" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "${PWD}:${PWD}" -v "${SCRIPT}:/script.sh" \
