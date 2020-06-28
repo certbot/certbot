@@ -28,7 +28,7 @@ steps:
   - task: DownloadSecureFile@1
     name: testFarmPem
     inputs:
-      secureFile: azure-test-farm.pem
+      secureFile: azure-test-farm.pem-nonexistent
     condition: contains(variables['TOXENV'], 'test-farm')
   - bash: |
       cp $(testFarmPem.secureFilePath) tests/letstest/azure-test-farm.pem
