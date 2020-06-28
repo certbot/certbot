@@ -35,6 +35,7 @@ steps:
       cp $(testFarmPem.secureFilePath) tests/letstest/azure-test-farm.pem
     condition: contains(variables['TOXENV'], 'test-farm')
   - bash: |
+      exit 1
       if [[ "${TOXENV}" == *"oldest"* ]]; then
         tools/run_oldest_tests.sh
       else
