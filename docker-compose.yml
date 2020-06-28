@@ -12,8 +12,8 @@ services:
       context: .
       dockerfile: Dockerfile-dev
     ports:
-      - "8080:80"
-      - "4443:443"
+      - "80:80"
+      - "443:443"
     volumes:
       - .:/opt/certbot/src
       - /opt/certbot/venv
