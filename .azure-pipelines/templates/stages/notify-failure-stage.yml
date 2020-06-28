@@ -8,6 +8,11 @@ stages:
           vmImage: ubuntu-latest
         steps:
           - bash: |
-              MESSAGE="---\n##### Azure Pipeline - Pipeline: $(Build.DefinitionName) - Build: $(Build.BuildId)\n:warning: __[Build has failed](https://dev.azure.com/$(Build.Repository.ID)/_build/results?buildId=$(Build.BuildId)&view=results)__ :warning:\n\n---"
+              MESSAGE="\
+              ---\n\
+              ##### Azure Pipeline
+              *Repo* $(Build.Repository.ID) - *Pipeline* $(Build.DefinitionName) #$(Build.BuildNumber) - *Branch/PR* $(Build.SourceBranchName)\n\
+              :warning: __Pipeline has failed__: [Link to the build](https://dev.azure.com/$(Build.Repository.ID)/_build/results?buildId=$(Build.BuildId)&view=results)\n\n\
+              ---"
               curl -i -X POST --data-urlencode "payload={\"text\":\"${MESSAGE}\"}" "$(MATTERMOST_URL)"
     condition: failed()
