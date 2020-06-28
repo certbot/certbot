@@ -32,7 +32,7 @@ steps:
       secureFile: azure-test-farm.pem
     condition: contains(variables['TOXENV'], 'test-farm')
   - bash: |
-      cp $(testFarmPem.secureFilePath) tests/letstest/azure-test-farm.pem
+      ln -s $(testFarmPem.secureFilePath) tests/letstest/azure-test-farm.pem
     condition: contains(variables['TOXENV'], 'test-farm')
   - bash: |
       if [[ "${TOXENV}" == *"oldest"* ]]; then
