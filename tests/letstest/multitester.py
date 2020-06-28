@@ -95,7 +95,8 @@ cl_args = parser.parse_args()
 #-------------------------------------------------------------------------------
 # assumes naming: <key_filename> = <keyname>.pem
 KEYFILE = cl_args.key_file
-KEYNAME = os.path.split(cl_args.key_file)[1].split('.pem')[0]
+#KEYNAME = os.path.split(cl_args.key_file)[1].split('.pem')[0]
+KEYNAME = 'travis-test-farm'
 PROFILE = None if cl_args.aws_profile == 'SET_BY_ENV' else cl_args.aws_profile
 
 # Globals
