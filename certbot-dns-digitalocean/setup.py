@@ -20,7 +20,7 @@ install_requires = [
 if not os.environ.get('EXCLUDE_CERTBOT_DEPS'):
     install_requires.extend([
         'acme>=0.29.0',
-        'certbot>=1.1.0',
+        'certbot>=1.6.0.dev0',
     ])
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Unset EXCLUDE_CERTBOT_DEPS when building wheels '

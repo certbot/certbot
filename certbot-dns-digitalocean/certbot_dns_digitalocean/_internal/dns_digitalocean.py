@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
-class Authenticator(dns_common.DNSAuthenticator):
+class Authenticator(dns_common.DNSAuthenticator2):
     """DNS Authenticator for DigitalOcean
 
     This Authenticator uses the DigitalOcean API to fulfill a dns-01 challenge.
