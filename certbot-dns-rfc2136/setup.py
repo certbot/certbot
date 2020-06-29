@@ -1,4 +1,5 @@
 from distutils.version import LooseVersion
+import os
 import sys
 
 from setuptools import __version__ as setuptools_version
