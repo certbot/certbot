@@ -791,7 +791,7 @@ class ApacheConfigurator(common.Installer):
     def _non_default_vhosts(self, vhosts):
         """Return all non _default_ only vhosts."""
         nonDefaultHosts = []
-        for vh in vhosts[0]:
+        for vh in vhosts:
             if not vh.addrs.get_addr() == "_default_":
                 nonDefaultHosts.append(vh)
         return nonDefaultHosts
