@@ -536,7 +536,8 @@ def find_chain_with_issuer(fullchains, issuer_cn, warn_on_no_match=False):
     """Chooses the first certificate chain from fullchains which contains an
     Issuer Subject Common Name matching issuer_cn.
 
-    :param `list of str` fullchains: The list of fullchains in PEM chain format.
+    :param fullchains: The list of fullchains in PEM chain format.
+    :type fullchains: `list` of `str`
     :param `str` issuer_cn: The exact Subject Common Name to match against any
         issuer in the certificate chain.
 
