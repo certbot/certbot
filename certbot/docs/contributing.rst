@@ -137,7 +137,7 @@ of output can make it hard to find specific failures when they happen.
 Running automated integration tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generally it is sufficient to open a pull request and let Github and Travis run
+Generally it is sufficient to open a pull request and let Github and Azure Pipelines run
 integration tests for you. However, you may want to run them locally before submitting
 your pull request. You need Docker and docker-compose installed and working.
 
@@ -202,12 +202,8 @@ using an HTTP-01 challenge on a machine with Python 3:
 Running tests in CI
 ~~~~~~~~~~~~~~~~~~~
 
-Certbot uses both Azure Pipelines and Travis to run continuous integration
-tests. If you are using our Azure and Travis setup, a branch whose name starts
-with `test-` will run all Azure and Travis tests on that branch. If the branch
-name starts with `azure-test-`, it will run all of our Azure tests and none of
-our Travis tests. If the branch starts with `travis-test-`, only our Travis
-tests will be run.
+Certbot uses Azure Pipelines to run continuous integration tests. If you are using our
+Azure setup, a branch whose name starts with `test-` will run all tests on that branch.
 
 Code components and layout
 ==========================
@@ -455,7 +451,7 @@ Steps:
    containing your pull request to squash or amend commits. We use `squash
    merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
    rewriting commits makes changes harder to track between reviews.
-6. Did your tests pass on Travis? If they didn't, fix any errors.
+6. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
 
 .. _ask for help:
 

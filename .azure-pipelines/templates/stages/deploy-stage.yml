@@ -1,6 +1,13 @@
 stages:
   - stage: Deploy
     jobs:
+      # This job relies on a snapcraft.yaml preconfigured with credential,
+      # stored as a secure file in Azure Pipeline.
+      # This credential has a maximum lifetime of 1 year and the current
+      # credential will expire on 4/22/2021. The content of snapcraft.yaml
+      # will need to be updated to use a new credential before then to
+      # prevent automated deploys from breaking. Remembering to do this is
+      # also tracked by https://github.com/certbot/certbot/issues/7931.
       - job: publish_snap
         strategy:
           matrix:
