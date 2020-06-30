@@ -80,16 +80,16 @@ jobs:
           TOXENV: docker_dev
         farmtest-apache2:
           PYTHON_VERSION: 3.7
-          TOXENV: azure-test-farm-apache2
+          TOXENV: test-farm-apache2
         farmtest-leauto-upgrades:
           PYTHON_VERSION: 3.7
-          TOXENV: azure-test-farm-leauto-upgrades
+          TOXENV: test-farm-leauto-upgrades
         farmtest-certonly-standalone:
           PYTHON_VERSION: 3.7
-          TOXENV: azure-test-farm-certonly-standalone
+          TOXENV: test-farm-certonly-standalone
         farmtest-sdists:
           PYTHON_VERSION: 3.7
-          TOXENV: azure-test-farm-sdists
+          TOXENV: test-farm-sdists
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
