@@ -76,7 +76,7 @@ jobs:
           TOXENV: le_auto_centos6
         le-auto-oraclelinux6:
           TOXENV: le_auto_oraclelinux6
-        dev:
+        docker-dev:
           TOXENV: docker_dev
         farmtest-apache2:
           PYTHON_VERSION: 3.7
