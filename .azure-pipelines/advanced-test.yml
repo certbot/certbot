@@ -9,5 +9,5 @@ pr: none
 stages:
   - template: templates/stages/test-and-package-stage.yml
   # Notify failures only for release branches.
-  - ${{ if endsWith(variables['Build.SourceBranchName'], '.x') }}:
+  - ${{ if startsWith(variables['Build.SourceBranchName'], 'test-') }}:
     - template: templates/stages/notify-failure-stage.yml
