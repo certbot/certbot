@@ -13,8 +13,7 @@ steps:
         libffi-dev \
         ca-certificates \
         nginx-light \
-        openssl \
-        expect
+        openssl
       sudo systemctl stop nginx
     condition: startswith(variables['IMAGE_NAME'], 'ubuntu')
     displayName: Install Linux dependencies
