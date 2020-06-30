@@ -566,9 +566,11 @@ class Revocation(ResourceMixin, jose.JSONObjectWithFields):
 class Order(ResourceBody):
     """Order Resource Body.
 
-    :ivar list of .Identifier: List of identifiers for the certificate.
+    :ivar identifiers: List of identifiers for the certificate.
+    :vartype identifiers: `list` of `.Identifier`
     :ivar acme.messages.Status status:
-    :ivar list of str authorizations: URLs of authorizations.
+    :ivar authorizations: URLs of authorizations.
+    :vartype authorizations: `list` of `str`
     :ivar str certificate: URL to download certificate as a fullchain PEM.
     :ivar str finalize: URL to POST to to request issuance once all
         authorizations have "valid" status.
@@ -593,13 +595,14 @@ class OrderResource(ResourceWithURI):
 
     :ivar acme.messages.Order body:
     :ivar str csr_pem: The CSR this Order will be finalized with.
-    :ivar list of acme.messages.AuthorizationResource authorizations:
-        Fully-fetched AuthorizationResource objects.
+    :ivar authorizations: Fully-fetched AuthorizationResource objects.
+    :vartype authorizations: `list` of `acme.messages.AuthorizationResource`
     :ivar str fullchain_pem: The fetched contents of the certificate URL
         produced once the order was finalized, if it's present.
-    :ivar list of str alternative_fullchains_pem: The fetched contents of
-        alternative certificate chain URLs produced once the order was finalized,
-        if present and requested during finalization.
+    :ivar alternative_fullchains_pem: The fetched contents of alternative certificate
+        chain URLs produced once the order was finalized, if present and requested during
+        finalization.
+    :vartype alternative_fullchains_pem: `list` of `str`
     """
     body = jose.Field('body', decoder=Order.from_json)
     csr_pem = jose.Field('csr_pem', omitempty=True)
