@@ -63,8 +63,6 @@ parser.add_argument('aws_profile',
 parser.add_argument('test_script',
                     default='test_letsencrypt_auto_certonly_standalone.sh',
                     help='path of bash script in to deploy and run')
-parser.add_argument('--path',
-                    help='if set, this path will be used as the tested project instead of a remote GIT repo')
 parser.add_argument('--repo',
                     default='https://github.com/letsencrypt/letsencrypt.git',
                     help='certbot git repo to use')
@@ -235,27 +233,21 @@ def block_until_instance_ready(booting_instance, wait_time=5, extra_wait_time=20
 
 # Fabric Routines
 #-------------------------------------------------------------------------------
-def local_copy(local_cxn, path):
-    """copy a local certbot workspace"""
-    local_cxn.local('cd %s && if [ -d /tmp/letsencrypt ]; then rm -rf /tmp/letsencrypt; fi' % LOGDIR)
-    local_cxn.local('cd %s && cp -a %s /tmp/letsencrypt && mv -f /tmp/letsencrypt letsencrypt' % (LOGDIR, path))
-    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
-
 def local_git_clone(local_cxn, repo_url):
-    "clones master of repo_url"
+    """clones master of repo_url"""
     local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
     local_cxn.local('cd %s && git clone %s letsencrypt'% (LOGDIR, repo_url))
     local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt'% LOGDIR)
 
 def local_git_branch(local_cxn, repo_url, branch_name):
-    "clones branch <branch_name> of repo_url"
+    """clones branch <branch_name> of repo_url"""
     local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
     local_cxn.local('cd %s && git clone %s letsencrypt --branch %s --single-branch'%
         (LOGDIR, repo_url, branch_name))
     local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
 
 def local_git_PR(local_cxn, repo_url, PRnumstr, merge_master=True):
-    "clones specified pull request from repo_url and optionally merges into master"
+    """clones specified pull request from repo_url and optionally merges into master"""
     local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
     local_cxn.local('cd %s && git clone %s letsencrypt' % (LOGDIR, repo_url))
     local_cxn.local('cd %s && cd letsencrypt && '
@@ -268,20 +260,20 @@ def local_git_PR(local_cxn, repo_url, PRnumstr, merge_master=True):
     local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
 
 def local_repo_to_remote(cxn):
-    "copies local tarball of repo to remote"
+    """copies local tarball of repo to remote"""
     filename = 'le.tar.gz'
     local_path = os.path.join(LOGDIR, filename)
     cxn.put(local=local_path, remote='')
     cxn.run('tar xzf %s' % filename)
 
 def local_repo_clean(local_cxn):
-    "delete tarball"
+    """delete tarball"""
     filename = 'le.tar.gz'
     local_path = os.path.join(LOGDIR, filename)
     local_cxn.local('rm %s' % local_path)
 
 def deploy_script(cxn, scriptpath, *args):
-    "copies to remote and executes local script"
+    """copies to remote and executes local script"""
     cxn.put(local=scriptpath, remote='', preserve_mode=True)
     scriptfile = os.path.split(scriptpath)[1]
     args_str = ' '.join(args)
@@ -424,30 +416,26 @@ def main():
     # no network connection, so don't worry about closing this one.
     local_cxn = Connection('localhost', config=fab_config)
 
-    # Set up local copy of git repo or of a local project
+    # Set up local copy of git repo
     #-------------------------------------------------------------------------------
     print("Making local dir for test repo and logs: %s"%LOGDIR)
     local_cxn.local('mkdir %s'%LOGDIR)
 
     try:
-        if cl_args.path:
-            print('Testing with local project %s' % cl_args.path)
-            local_copy(local_cxn, cl_args.path)
+        # figure out what git object to test and locally create it in LOGDIR
+        print("Making local git repo")
+        if cl_args.pull_request != '~':
+            print('Testing PR %s ' % cl_args.pull_request,
+                  "MERGING into master" if cl_args.merge_master else "")
+            local_git_PR(local_cxn, cl_args.repo, cl_args.pull_request, cl_args.merge_master)
+        elif cl_args.branch != '~':
+            print('Testing branch %s of %s' % (cl_args.branch, cl_args.repo))
+            local_git_branch(local_cxn, cl_args.repo, cl_args.branch)
         else:
-            # figure out what git object to test and locally create it in LOGDIR
-            print("Making local git repo")
-            if cl_args.pull_request != '~':
-                print('Testing PR %s '%cl_args.pull_request,
-                      "MERGING into master" if cl_args.merge_master else "")
-                local_git_PR(local_cxn, cl_args.repo, cl_args.pull_request, cl_args.merge_master)
-            elif cl_args.branch != '~':
-                print('Testing branch %s of %s'%(cl_args.branch, cl_args.repo))
-                local_git_branch(local_cxn, cl_args.repo, cl_args.branch)
-            else:
-                print('Testing master of %s'%cl_args.repo)
-                local_git_clone(local_cxn, cl_args.repo)
+            print('Testing current branch of %s' % cl_args.repo)
+            local_git_clone(local_cxn, cl_args.repo)
     except BaseException:
-        print("FAIL: trouble with git repo or local project")
+        print("FAIL: trouble with git repo")
         traceback.print_exc()
         exit(1)
 
