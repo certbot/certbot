@@ -39,7 +39,7 @@ steps:
       secureFile: azure-test-farm.pem
     condition: contains(variables['TOXENV'], 'test-farm')
   - bash: |
-      export AWS_C2_PEM_FILE="$(testFarmPem.secureFilePath)"
+      ln -s $(testFarmPem.secureFilePath) tests/letstest/test-farm.pem
     condition: contains(variables['TOXENV'], 'test-farm')
   - bash: |
       if [[ "${TOXENV}" == *"oldest"* ]]; then
