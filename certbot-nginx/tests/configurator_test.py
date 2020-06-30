@@ -1,7 +1,10 @@
 """Test for certbot_nginx._internal.configurator."""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import OpenSSL
 
 from acme import challenges
@@ -36,7 +39,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(11, len(self.config.parser.parsed))
+        self.assertEqual(12, len(self.config.parser.parsed))
 
     @mock.patch("certbot_nginx._internal.configurator.util.exe_exists")
     @mock.patch("certbot_nginx._internal.configurator.subprocess.Popen")
@@ -76,15 +79,17 @@ class NginxConfiguratorTest(util.NginxTest):
         else:  # pragma: no cover
             self.fail("Exception wasn't raised!")
 
+    @mock.patch("certbot_nginx._internal.configurator.socket.gethostname")
     @mock.patch("certbot_nginx._internal.configurator.socket.gethostbyaddr")
-    def test_get_all_names(self, mock_gethostbyaddr):
+    def test_get_all_names(self, mock_gethostbyaddr, mock_gethostname):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
+        mock_gethostname.return_value = ('example.net')
         names = self.config.get_all_names()
         self.assertEqual(names, {
             "155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
              "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com",
-             "headers.com"})
+             "headers.com", "example.net"})
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'ensure-http-header', 'staple-ocsp'],
@@ -102,7 +107,7 @@ class NginxConfiguratorTest(util.NginxTest):
         filep = self.config.parser.abs_path('sites-enabled/example.com')
         mock_vhost = obj.VirtualHost(filep,
                                      None, None, None,
-                                     set(['.example.com', 'example.*']),
+                                     {'.example.com', 'example.*'},
                                      None, [0])
         self.config.parser.add_server_directives(
             mock_vhost,
@@ -148,11 +153,11 @@ class NginxConfiguratorTest(util.NginxTest):
         self._test_choose_vhosts_common('ipv6.com', 'ipv6_conf')
 
     def _test_choose_vhosts_common(self, name, conf):
-        conf_names = {'localhost_conf': set(['localhost', r'~^(www\.)?(example|bar)\.']),
-                 'server_conf': set(['somename', 'another.alias', 'alias']),
-                 'example_conf': set(['.example.com', 'example.*']),
-                 'foo_conf': set(['*.www.foo.com', '*.www.example.com']),
-                 'ipv6_conf': set(['ipv6.com'])}
+        conf_names = {'localhost_conf': {'localhost', r'~^(www\.)?(example|bar)\.'},
+                 'server_conf': {'somename', 'another.alias', 'alias'},
+                 'example_conf': {'.example.com', 'example.*'},
+                 'foo_conf': {'*.www.foo.com', '*.www.example.com'},
+                 'ipv6_conf': {'ipv6.com'}}
 
         conf_path = {'localhost': "etc_nginx/nginx.conf",
                    'alias': "etc_nginx/nginx.conf",
@@ -175,7 +180,7 @@ class NginxConfiguratorTest(util.NginxTest):
             self.assertTrue(vhost.ipv6_enabled())
             # Make sure that we have SSL enabled also for IPv6 addr
             self.assertTrue(
-                any([True for x in vhost.addrs if x.ssl and x.ipv6]))
+                any(True for x in vhost.addrs if x.ssl and x.ipv6))
 
     def test_choose_vhosts_bad(self):
         bad_results = ['www.foo.com', 'example', 't.www.bar.co',
@@ -924,7 +929,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                                 prefer_ssl=False,
                                                 no_ssl_filter_port='80')
             # Check that the dialog was called with only port 80 vhosts
-            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 5)
+            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 6)
 
 
 class InstallSslOptionsConfTest(util.NginxTest):

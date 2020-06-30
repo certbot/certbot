@@ -1,7 +1,10 @@
 """Tests for certbot.errors."""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from acme import messages
 from certbot import achallenges

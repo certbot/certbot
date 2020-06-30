@@ -1,8 +1,18 @@
 """ Utility functions for certbot-apache plugin """
 import binascii
+import fnmatch
+import logging
+import re
+import subprocess
 
+import pkg_resources
+
+from certbot import errors
 from certbot import util
+
 from certbot.compat import os
+
+logger = logging.getLogger(__name__)
 
 
 def get_mod_deps(mod_name):
@@ -105,3 +115,143 @@ def parse_define_file(filepath, varname):
 def unique_id():
     """ Returns an unique id to be used as a VirtualHost identifier"""
     return binascii.hexlify(os.urandom(16)).decode("utf-8")
+
+
+def included_in_paths(filepath, paths):
+    """
+    Returns true if the filepath is included in the list of paths
+    that may contain full paths or wildcard paths that need to be
+    expanded.
+
+    :param str filepath: Filepath to check
+    :params list paths: List of paths to check against
+
+    :returns: True if included
+    :rtype: bool
+    """
+
+    return any(fnmatch.fnmatch(filepath, path) for path in paths)
+
+
+def parse_defines(apachectl):
+    """
+    Gets Defines from httpd process and returns a dictionary of
+    the defined variables.
+
+    :param str apachectl: Path to apachectl executable
+
+    :returns: dictionary of defined variables
+    :rtype: dict
+    """
+
+    variables = {}
+    define_cmd = [apachectl, "-t", "-D",
+                  "DUMP_RUN_CFG"]
+    matches = parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
+    try:
+        matches.remove("DUMP_RUN_CFG")
+    except ValueError:
+        return {}
+
+    for match in matches:
+        if match.count("=") > 1:
+            logger.error("Unexpected number of equal signs in "
+                         "runtime config dump.")
+            raise errors.PluginError(
+                "Error parsing Apache runtime variables")
+        parts = match.partition("=")
+        variables[parts[0]] = parts[2]
+
+    return variables
+
+
+def parse_includes(apachectl):
+    """
+    Gets Include directives from httpd process and returns a list of
+    their values.
+
+    :param str apachectl: Path to apachectl executable
+
+    :returns: list of found Include directive values
+    :rtype: list of str
+    """
+
+    inc_cmd = [apachectl, "-t", "-D",
+               "DUMP_INCLUDES"]
+    return parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
+
+
+def parse_modules(apachectl):
+    """
+    Get loaded modules from httpd process, and return the list
+    of loaded module names.
+
+    :param str apachectl: Path to apachectl executable
+
+    :returns: list of found LoadModule module names
+    :rtype: list of str
+    """
+
+    mod_cmd = [apachectl, "-t", "-D",
+               "DUMP_MODULES"]
+    return parse_from_subprocess(mod_cmd, r"(.*)_module")
+
+
+def parse_from_subprocess(command, regexp):
+    """Get values from stdout of subprocess command
+
+    :param list command: Command to run
+    :param str regexp: Regexp for parsing
+
+    :returns: list parsed from command output
+    :rtype: list
+
+    """
+    stdout = _get_runtime_cfg(command)
+    return re.compile(regexp).findall(stdout)
+
+
+def _get_runtime_cfg(command):
+    """
+    Get runtime configuration info.
+
+    :param command: Command to run
+
+    :returns: stdout from command
+
+    """
+    try:
+        proc = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            env=util.env_no_snap_for_external_calls())
+        stdout, stderr = proc.communicate()
+
+    except (OSError, ValueError):
+        logger.error(
+            "Error running command %s for runtime parameters!%s",
+            command, os.linesep)
+        raise errors.MisconfigurationError(
+            "Error accessing loaded Apache parameters: {0}".format(
+                command))
+    # Small errors that do not impede
+    if proc.returncode != 0:
+        logger.warning("Error in checking parameter list: %s", stderr)
+        raise errors.MisconfigurationError(
+            "Apache is unable to check whether or not the module is "
+            "loaded because Apache is misconfigured.")
+
+    return stdout
+
+def find_ssl_apache_conf(prefix):
+    """
+    Find a TLS Apache config file in the dedicated storage.
+    :param str prefix: prefix of the TLS Apache config file to find
+    :return: the path the TLS Apache config file
+    :rtype: str
+    """
+    return pkg_resources.resource_filename(
+        "certbot_apache",
+        os.path.join("_internal", "tls_configs", "{0}-options-ssl-apache.conf".format(prefix)))

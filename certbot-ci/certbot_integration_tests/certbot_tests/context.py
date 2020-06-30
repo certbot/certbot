@@ -1,5 +1,4 @@
 """Module to handle the context of integration tests."""
-import logging
 import os
 import shutil
 import sys

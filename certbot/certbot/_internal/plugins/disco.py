@@ -2,16 +2,18 @@
 import collections
 import itertools
 import logging
+import sys
 
 import pkg_resources
 import six
 import zope.interface
 import zope.interface.verify
 
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
+from certbot.compat import os
 
 try:
     # Python 3.3+
@@ -192,17 +194,18 @@ class PluginsRegistry(Mapping):
         # This prevents deadlock caused by plugins acquiring a lock
         # and ensures at least one concurrent Certbot instance will run
         # successfully.
-
-        # Pylint checks for super init, but also claims the super
-        # has no __init__member
-        # pylint: disable=super-init-not-called
         self._plugins = collections.OrderedDict(sorted(six.iteritems(plugins)))
 
     @classmethod
     def find_all(cls):
         """Find plugins using setuptools entry points."""
         plugins = {}  # type: Dict[str, PluginEntryPoint]
-        # pylint: disable=not-callable
+        plugin_paths_string = os.getenv('CERTBOT_PLUGIN_PATH')
+        plugin_paths = plugin_paths_string.split(':') if plugin_paths_string else []
+        # XXX should ensure this only happens once
+        sys.path.extend(plugin_paths)
+        for plugin_path in plugin_paths:
+            pkg_resources.working_set.add_entry(plugin_path)
         entry_points = itertools.chain(
             pkg_resources.iter_entry_points(
                 constants.SETUPTOOLS_PLUGINS_ENTRY_POINT),
@@ -212,7 +215,6 @@ class PluginsRegistry(Mapping):
             plugin_ep = PluginEntryPoint(entry_point)
             assert plugin_ep.name not in plugins, (
                 "PREFIX_FREE_DISTRIBUTIONS messed up")
-            # providedBy | pylint: disable=no-member
             if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
                 plugins[plugin_ep.name] = plugin_ep
             else:  # pragma: no cover

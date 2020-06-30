@@ -1,7 +1,7 @@
 """Module contains classes used by the Apache Configurator."""
 import re
 
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set
 from certbot.plugins import common
 
 
@@ -124,7 +124,7 @@ class VirtualHost(object):
     strip_name = re.compile(r"^(?:.+://)?([^ :$]*)")
 
     def __init__(self, filep, path, addrs, ssl, enabled, name=None,
-                 aliases=None, modmacro=False, ancestor=None):
+                 aliases=None, modmacro=False, ancestor=None, node=None):
 
         """Initialize a VH."""
         self.filep = filep
@@ -136,6 +136,7 @@ class VirtualHost(object):
         self.enabled = enabled
         self.modmacro = modmacro
         self.ancestor = ancestor
+        self.node = node
 
     def get_names(self):
         """Return a set of all names."""

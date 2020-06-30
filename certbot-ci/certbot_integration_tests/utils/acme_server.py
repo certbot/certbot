@@ -40,7 +40,7 @@ class ACMEServer(object):
         :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
         :param list nodes: list of node names that will be setup by pytest xdist
         :param bool http_proxy: if False do not start the HTTP proxy
-        :param bool stdout: if True stream subprocesses stdout to standard stdout
+        :param bool stdout: if True stream all subprocesses stdout to standard stdout
         :param str dns_server: if set, Pebble/Boulder will use it to resolve domains
         """
         self._construct_acme_xdist(acme_server, nodes)
@@ -90,7 +90,8 @@ class ACMEServer(object):
                                                 'alpine', 'rm', '-rf', '/workspace/boulder'])
                 process.wait()
         finally:
-            shutil.rmtree(self._workspace)
+            if os.path.exists(self._workspace):
+                shutil.rmtree(self._workspace)
         if self._stdout != sys.stdout:
             self._stdout.close()
         print('=> Test infrastructure stopped and cleaned up.')
@@ -144,7 +145,7 @@ class ACMEServer(object):
                  '-tlsalpn01', '""', '-https01', '""'])
 
         self._launch_process(
-            [pebble_path, '-config', pebble_config_path, '-dnsserver', dns_server],
+            [pebble_path, '-config', pebble_config_path, '-dnsserver', dns_server, '-strict'],
             env=environ)
 
         # pebble_ocsp_server is imported here and not at the top of module in order to avoid a useless
@@ -171,8 +172,8 @@ class ACMEServer(object):
         process.wait()
 
         # Allow Boulder to ignore usual limit rate policies, useful for tests.
-        # os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
-        #           join(instance_path, 'test/rate-limit-policies.yml'))
+        os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
+                  join(instance_path, 'test/rate-limit-policies.yml'))
 
         if self._dns_server:
             # Change Boulder config to use the provided DNS server
@@ -182,18 +183,25 @@ class ACMEServer(object):
             with open(join(instance_path, 'test/config/va.json'), 'w') as file_h:
                 file_h.write(json.dumps(config, indent=2, separators=(',', ': ')))
 
-        # Launch the Boulder server
-        self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
+        try:
+            # Launch the Boulder server
+            self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
 
-        # Wait for the ACME CA server to be up.
-        print('=> Waiting for boulder instance to respond...')
-        misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=240)
+            # Wait for the ACME CA server to be up.
+            print('=> Waiting for boulder instance to respond...')
+            misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=300)
 
-        if not self._dns_server:
-            # Configure challtestsrv to answer any A record request with ip of the docker host.
-            response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),
-                                     json={'ip': '10.77.77.1'})
-            response.raise_for_status()
+	        if not self._dns_server:
+	            # Configure challtestsrv to answer any A record request with ip of the docker host.
+	            response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),
+	                                     json={'ip': '10.77.77.1'})
+	            response.raise_for_status()
+        except BaseException:
+            # If we failed to set up boulder, print its logs.
+            print('=> Boulder setup failed. Boulder logs are:')
+            process = self._launch_process(['docker-compose', 'logs'], cwd=instance_path, force_stderr=True)
+            process.wait()
+            raise
 
         print('=> Finished boulder instance deployment.')
 
@@ -206,11 +214,12 @@ class ACMEServer(object):
         self._launch_process(command)
         print('=> Finished configuring the HTTP proxy.')
 
-    def _launch_process(self, command, cwd=os.getcwd(), env=None):
+    def _launch_process(self, command, cwd=os.getcwd(), env=None, force_stderr=False):
         """Launch silently a subprocess OS command"""
         if not env:
             env = os.environ
-        process = subprocess.Popen(command, stdout=self._stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env)
+        stdout = sys.stderr if force_stderr else self._stdout
+        process = subprocess.Popen(command, stdout=stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env)
         self._processes.append(process)
         return process
 

@@ -3,6 +3,7 @@
 # Some dev package versions specified here may be overridden by higher level constraints
 # files during tests (eg. letsencrypt-auto-source/pieces/dependency-requirements.txt).
 alabaster==0.7.10
+apacheconfig==0.3.2
 apipkg==1.4
 appnope==0.1.0
 asn1crypto==0.22.0
@@ -13,27 +14,26 @@ backports.functools-lru-cache==1.5
 backports.shutil-get-terminal-size==1.0.0
 backports.ssl-match-hostname==3.7.0.1
 bcrypt==3.1.6
-boto3==1.9.36
-botocore==1.12.36
+boto3==1.11.7
+botocore==1.14.7
 cached-property==1.5.1
-cloudflare==1.5.1
-codecov==2.0.15
+cloudflare==2.3.1
 configparser==3.7.4
 contextlib2==0.6.0.post1
 coverage==4.5.4
 decorator==4.4.1
-dns-lexicon==3.2.1
+dns-lexicon==3.3.17
 dnspython==1.15.0
 docker==3.7.2
 docker-compose==1.25.0
 docker-pycreds==0.4.0
 dockerpty==0.4.1
 docopt==0.6.2
-docutils==0.12
+docutils==0.15.2
 execnet==1.5.0
 functools32==3.2.3.post2
 future==0.16.0
-futures==3.1.1
+futures==3.3.0
 filelock==3.0.12
 google-api-python-client==1.5.5
 httplib2==0.10.3
@@ -44,7 +44,7 @@ ipython==5.8.0
 ipython-genutils==0.2.0
 isort==4.3.21
 Jinja2==2.9.6
-jmespath==0.9.3
+jmespath==0.9.4
 josepy==1.1.0
 jsonschema==2.6.0
 lazy-object-proxy==1.4.3
@@ -64,6 +64,7 @@ pexpect==4.7.0
 pickleshare==0.7.5
 pkginfo==1.4.2
 pluggy==0.13.0
+ply==3.4
 prompt-toolkit==1.0.18
 ptyprocess==0.6.0
 py==1.8.0
@@ -81,7 +82,7 @@ pytest-forked==0.2
 pytest-xdist==1.22.5
 pytest-sugar==0.9.2
 pytest-rerunfailures==4.2
-python-dateutil==2.6.1
+python-dateutil==2.8.1
 python-digitalocean==1.11
 pywin32==227
 PyYAML==3.13
@@ -89,7 +90,7 @@ repoze.sphinx.autointerface==0.8
 requests-file==1.4.2
 requests-toolbelt==0.8.0
 rsa==3.4.2
-s3transfer==0.1.11
+s3transfer==0.3.1
 scandir==1.10.0
 simplegeneric==0.8.1
 singledispatch==3.4.0.3

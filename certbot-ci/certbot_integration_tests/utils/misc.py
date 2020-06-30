@@ -140,13 +140,12 @@ def generate_test_file_hooks(config_dir, hook_probe):
             entrypoint_script = '''\
 #!/usr/bin/env bash
 set -e
-"{0}" "{1}" "{2}" "{3}"
+"{0}" "{1}" "{2}" >> "{3}"
 '''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
         else:
-            entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.bat')
+            entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.ps1')
             entrypoint_script = '''\
-@echo off
-"{0}" "{1}" "{2}" "{3}"
+& "{0}" "{1}" "{2}" >> "{3}"
             '''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
 
         with open(entrypoint_script_path, 'w') as file_h:
@@ -236,7 +235,7 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
         file_h.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
 
     req = crypto.X509Req()
-    san = ', '.join(['DNS:{0}'.format(item) for item in domains])
+    san = ', '.join('DNS:{0}'.format(item) for item in domains)
     san_constraint = crypto.X509Extension(b'subjectAltName', False, san.encode('utf-8'))
     req.add_extensions([san_constraint])
 

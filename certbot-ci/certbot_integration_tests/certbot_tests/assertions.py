@@ -1,4 +1,5 @@
 """This module contains advanced assertions for the certbot integration tests."""
+import io
 import os
 
 try:
@@ -21,7 +22,8 @@ def assert_hook_execution(probe_path, probe_content):
     :param probe_path: path to the file that received the hook output
     :param probe_content: content expected when the hook is executed
     """
-    with open(probe_path, 'r') as file:
+    encoding = 'utf-8' if POSIX_MODE else 'utf-16'
+    with io.open(probe_path, 'rt', encoding=encoding) as file:
         data = file.read()
 
     lines = [line.strip() for line in data.splitlines()]

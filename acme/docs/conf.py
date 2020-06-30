@@ -13,7 +13,6 @@
 # serve to show the default.
 
 import os
-import shlex
 import sys
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -113,7 +112,7 @@ pygments_style = 'sphinx'
 #keep_warnings = False
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = True
+todo_include_todos = False
 
 
 # -- Options for HTML output ----------------------------------------------

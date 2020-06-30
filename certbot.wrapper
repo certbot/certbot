@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+join() {
+    sep=$1
+    first=$2
+    if [ "$first" != "" ]; then
+        shift 2
+        echo -n "${first}"
+        for item in "$@"; do echo -n "${sep}${item}"; done
+        echo
+    fi
+}
+
+paths=$(for plugin_snap in $(snap connections certbot|sed -n '2,$p'|awk '$1=="content[certbot-1]"{print $3}'|cut -d: -f1); do echo /snap/$plugin_snap/current/lib/python3.8/site-packages; done)
+export CERTBOT_PLUGIN_PATH=$(join : $paths)
+exec certbot "$@"

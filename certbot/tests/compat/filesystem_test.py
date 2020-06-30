@@ -1,9 +1,13 @@
 """Tests for certbot.compat.filesystem"""
 import contextlib
 import errno
+import stat
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from certbot import util
 from certbot._internal import lock
@@ -13,11 +17,9 @@ import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
 
 try:
-    # pylint: disable=import-error
     import win32api
     import win32security
     import ntsecuritycon
-    # pylint: enable=import-error
     POSIX_MODE = False
 except ImportError:
     POSIX_MODE = True
@@ -147,6 +149,57 @@ class WindowsChmodTests(TempDirTestCase):
         # We expect only two ACE: one for admins, one for system,
         # since the user is also the admins group
         self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 2)
+
+
+class UmaskTest(TempDirTestCase):
+    def test_umask_on_dir(self):
+        previous_umask = filesystem.umask(0o022)
+
+        try:
+            dir1 = os.path.join(self.tempdir, 'probe1')
+            filesystem.mkdir(dir1)
+            self.assertTrue(filesystem.check_mode(dir1, 0o755))
+
+            filesystem.umask(0o077)
+
+            dir2 = os.path.join(self.tempdir, 'dir2')
+            filesystem.mkdir(dir2)
+            self.assertTrue(filesystem.check_mode(dir2, 0o700))
+
+            dir3 = os.path.join(self.tempdir, 'dir3')
+            filesystem.mkdir(dir3, mode=0o777)
+            self.assertTrue(filesystem.check_mode(dir3, 0o700))
+        finally:
+            filesystem.umask(previous_umask)
+
+    def test_umask_on_file(self):
+        previous_umask = filesystem.umask(0o022)
+
+        try:
+            file1 = os.path.join(self.tempdir, 'probe1')
+            UmaskTest._create_file(file1)
+            self.assertTrue(filesystem.check_mode(file1, 0o755))
+
+            filesystem.umask(0o077)
+
+            file2 = os.path.join(self.tempdir, 'probe2')
+            UmaskTest._create_file(file2)
+            self.assertTrue(filesystem.check_mode(file2, 0o700))
+
+            file3 = os.path.join(self.tempdir, 'probe3')
+            UmaskTest._create_file(file3)
+            self.assertTrue(filesystem.check_mode(file3, 0o700))
+        finally:
+            filesystem.umask(previous_umask)
+
+    @staticmethod
+    def _create_file(path, mode=0o777):
+        file_desc = None
+        try:
+            file_desc = filesystem.open(path, flags=os.O_CREAT, mode=mode)
+        finally:
+            if file_desc:
+                os.close(file_desc)
 
 
 class ComputePrivateKeyModeTest(TempDirTestCase):
@@ -279,14 +332,31 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         self.assertEqual(original_mkdir, std_os.mkdir)
 
 
-class OwnershipTest(test_util.TempDirTestCase):
-    """Tests about copy_ownership_and_apply_mode and has_same_ownership"""
+class MakedirsTests(test_util.TempDirTestCase):
+    """Unit tests for makedirs function in filesystem module"""
+    def test_makedirs_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'dir')
+        subpath = os.path.join(path, 'subpath')
+
+        previous_umask = filesystem.umask(0o022)
+
+        try:
+            filesystem.makedirs(subpath, 0o700)
+
+            assert filesystem.check_mode(path, 0o700)
+            assert filesystem.check_mode(subpath, 0o700)
+        finally:
+            filesystem.umask(previous_umask)
+
+
+class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
+    """Tests about copy_ownership_and_apply_mode, copy_ownership_and_mode and has_same_ownership"""
     def setUp(self):
-        super(OwnershipTest, self).setUp()
+        super(CopyOwnershipAndModeTest, self).setUp()
         self.probe_path = _create_probe(self.tempdir)
 
     @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
-    def test_copy_ownership_windows(self):
+    def test_copy_ownership_and_apply_mode_windows(self):
         system = win32security.ConvertStringSidToSid(SYSTEM_SID)
         security = win32security.SECURITY_ATTRIBUTES().SECURITY_DESCRIPTOR
         security.SetSecurityDescriptorOwner(system, False)
@@ -312,7 +382,7 @@ class OwnershipTest(test_util.TempDirTestCase):
                           if dacl.GetAce(index)[2] == everybody])
 
     @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
-    def test_copy_ownership_linux(self):
+    def test_copy_ownership_and_apply_mode_linux(self):
         with mock.patch('os.chown') as mock_chown:
             with mock.patch('os.chmod') as mock_chmod:
                 with mock.patch('os.stat') as mock_stat:
@@ -332,6 +402,24 @@ class OwnershipTest(test_util.TempDirTestCase):
         util.safe_open(path2, 'w').close()
 
         self.assertTrue(filesystem.has_same_ownership(path1, path2))
+
+    @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
+    def test_copy_ownership_and_mode_windows(self):
+        src = self.probe_path
+        dst = _create_probe(self.tempdir, name='dst')
+
+        filesystem.chmod(src, 0o700)
+        self.assertTrue(filesystem.check_mode(src, 0o700))
+        self.assertTrue(filesystem.check_mode(dst, 0o744))
+
+        # Checking an actual change of owner is tricky during a unit test, since we do not know
+        # if any user exists beside the current one. So we mock _copy_win_ownership. It's behavior
+        # have been checked theoretically with test_copy_ownership_and_apply_mode_windows.
+        with mock.patch('certbot.compat.filesystem._copy_win_ownership') as mock_copy_owner:
+            filesystem.copy_ownership_and_mode(src, dst)
+
+        mock_copy_owner.assert_called_once_with(src, dst)
+        self.assertTrue(filesystem.check_mode(dst, 0o700))
 
 
 class CheckPermissionsTest(test_util.TempDirTestCase):
@@ -473,8 +561,8 @@ class IsExecutableTest(test_util.TempDirTestCase):
 
         from certbot.compat.filesystem import _generate_dacl
 
-        def _execute_mock(user_sid, mode):
-            dacl = _generate_dacl(user_sid, mode)
+        def _execute_mock(user_sid, mode, mask=None):
+            dacl = _generate_dacl(user_sid, mode, mask)
             for _ in range(1, dacl.GetAceCount()):
                 dacl.DeleteAce(1)  # DeleteAce dynamically updates the internal index mapping.
             return dacl
@@ -536,9 +624,9 @@ def _set_owner(target, security_owner, user):
         target, win32security.OWNER_SECURITY_INFORMATION, security_owner)
 
 
-def _create_probe(tempdir):
+def _create_probe(tempdir, name='probe'):
     filesystem.chmod(tempdir, 0o744)
-    probe_path = os.path.join(tempdir, 'probe')
+    probe_path = os.path.join(tempdir, name)
     util.safe_open(probe_path, 'w', chmod=0o744).close()
     return probe_path
 

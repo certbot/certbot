@@ -5,7 +5,7 @@ import argparse
 import atexit
 import collections
 from collections import OrderedDict
-import distutils.version  # pylint: disable=import-error,no-name-in-module
+import distutils.version
 import errno
 import logging
 import platform
@@ -17,19 +17,17 @@ import sys
 import configargparse
 import six
 
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Tuple
+from acme.magic_typing import Union
 from certbot import errors
 from certbot._internal import constants
 from certbot._internal import lock
 from certbot.compat import filesystem
 from certbot.compat import os
 
-if sys.platform.startswith('linux'):
-    import distro  # pylint: disable=import-error
-    _USE_DISTRO = True
-else:
-    _USE_DISTRO = False
+_USE_DISTRO = sys.platform.startswith('linux')
+if _USE_DISTRO:
+    import distro
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +61,31 @@ _INITIAL_PID = os.getpid()
 _LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
 
 
+def env_no_snap_for_external_calls():
+    """
+    When Certbot is run inside a Snap, certain environment variables
+    are modified. But Certbot sometimes calls out to external programs,
+    since it uses classic confinement. When we do that, we must modify
+    the env to remove our modifications so it will use the system's
+    libraries, since they may be incompatible with the versions of
+    libraries included in the Snap. For example, apachectl, Nginx, and
+    anything run from inside a hook should call this function and pass
+    the results into the ``env`` argument of ``subprocess.Popen``.
+
+    :returns: A modified copy of os.environ ready to pass to Popen
+    :rtype: dict
+
+    """
+    env = os.environ.copy()
+    # Avoid accidentally modifying env
+    if 'SNAP' not in env or 'CERTBOT_SNAPPED' not in env:
+        return env
+    for path_name in ('PATH', 'LD_LIBRARY_PATH'):
+        if path_name in env:
+            env[path_name] = ':'.join(x for x in env[path_name].split(':') if env['SNAP'] not in x)
+    return env
+
+
 def run_script(params, log=logger.error):
     """Run the script with the given params.
 
@@ -74,7 +97,8 @@ def run_script(params, log=logger.error):
         proc = subprocess.Popen(params,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
-                                universal_newlines=True)
+                                universal_newlines=True,
+                                env=env_no_snap_for_external_calls())
 
     except (OSError, ValueError):
         msg = "Unable to run the command: %s" % " ".join(params)
@@ -379,12 +403,14 @@ def get_python_os_info(pretty=False):
                 ["/usr/bin/sw_vers", "-productVersion"],
                 stdout=subprocess.PIPE,
                 universal_newlines=True,
+                env=env_no_snap_for_external_calls(),
             )
         except OSError:
             proc = subprocess.Popen(
                 ["sw_vers", "-productVersion"],
                 stdout=subprocess.PIPE,
                 universal_newlines=True,
+                env=env_no_snap_for_external_calls(),
             )
         os_ver = proc.communicate()[0].rstrip('\n')
     elif os_type.startswith('freebsd'):

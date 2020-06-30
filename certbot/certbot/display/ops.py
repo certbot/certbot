@@ -30,7 +30,7 @@ def get_email(invalid=False, optional=True):
 
     """
     invalid_prefix = "There seem to be problems with that address. "
-    msg = "Enter email address (used for urgent renewal and security notices)"
+    msg = "Enter email address (used for urgent renewal and security notices)\n"
     unsafe_suggestion = ("\n\nIf you really want to skip this, you can run "
                          "the client with --register-unsafely-without-email "
                          "but make sure you then backup your account key from "
@@ -64,7 +64,7 @@ def get_email(invalid=False, optional=True):
         if util.safe_email(email):
             return email
         if suggest_unsafe:
-            msg += unsafe_suggestion
+            msg = unsafe_suggestion + msg
             suggest_unsafe = False  # add this message at most once
 
         invalid = bool(email)
@@ -107,7 +107,7 @@ def choose_names(installer, question=None):
     :param installer: An installer object
     :type installer: :class:`certbot.interfaces.IInstaller`
 
-    :param `str` question: Overriding dialog question to ask the user if asked
+    :param `str` question: Overriding default question to ask the user if asked
         to choose from domain names.
 
     :returns: List of selected names
@@ -195,7 +195,7 @@ def _choose_names_manually(prompt_prefix=""):
         cli_flag="--domains", force_interactive=True)
 
     if code == display_util.OK:
-        invalid_domains = dict()
+        invalid_domains = {}
         retry_message = ""
         try:
             domain_list = display_util.separate_list_input(input_)
@@ -241,11 +241,8 @@ def success_installation(domains):
 
     """
     z_util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully enabled {0}{1}{1}"
-        "You should test your configuration at:{1}{2}".format(
-            _gen_https_names(domains),
-            os.linesep,
-            os.linesep.join(_gen_ssl_lab_urls(domains))),
+        "Congratulations! You have successfully enabled {0}".format(
+            _gen_https_names(domains)),
         pause=False)
 
 
@@ -258,12 +255,11 @@ def success_renewal(domains):
     z_util(interfaces.IDisplay).notification(
         "Your existing certificate has been successfully renewed, and the "
         "new certificate has been installed.{1}{1}"
-        "The new certificate covers the following domains: {0}{1}{1}"
-        "You should test your configuration at:{1}{2}".format(
+        "The new certificate covers the following domains: {0}".format(
             _gen_https_names(domains),
-            os.linesep,
-            os.linesep.join(_gen_ssl_lab_urls(domains))),
+            os.linesep),
         pause=False)
+
 
 def success_revocation(cert_path):
     """Display a box confirming a certificate has been revoked.
