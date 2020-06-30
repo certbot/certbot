@@ -1,0 +1,36 @@
+stages:
+  - stage: Deploy
+    jobs:
+      - job: publish_snap
+        strategy:
+          matrix:
+            amd64:
+              ARCH: amd64
+            arm64:
+              ARCH: arm64
+            armhf:
+              ARCH: armhf
+        pool:
+          vmImage: ubuntu-18.04
+        variables:
+          - group: certbot-common
+        steps:
+          - bash: |
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends snap
+              sudo snap install --classic snapcraft
+            displayName: Install dependencies
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: snap-$(arch)
+              path: $(Build.SourcesDirectory)/snap
+            displayName: Retrieve Certbot snap
+          - task: DownloadSecureFile@1
+            name: snapcraftCfg
+            inputs:
+              secureFile: snapcraft.cfg
+          - bash: |
+              mkdir -p .snapcraft
+              ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
+              snapcraft push --release=edge snap/*.snap
+            displayName: Publish to Snap store
