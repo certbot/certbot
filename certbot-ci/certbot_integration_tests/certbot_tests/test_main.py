@@ -657,4 +657,4 @@ def test_preferred_chain(context):
 
         with open(conf_path, 'r') as f:
             assert 'preferred_chain = {}'.format(requested) in f.read(), \
-                   'Expected preferred_chain ''to be set in renewal config'
+                   'Expected preferred_chain to be set in renewal config'
