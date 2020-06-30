@@ -3,10 +3,10 @@ set -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-pushd "${DIR}/../" || exit 1
+pushd "${DIR}/../"
 
 function cleanup() {
-  rm -f "${SCRIPT}"
+  rm -f "${DOCKERFILE}"
   popd
 }
 
@@ -31,7 +31,6 @@ EOF
 docker build -f "${DOCKERFILE}" -t oldest-worker ./letsencrypt-auto-source/pieces
 docker run --rm --network=host -w "${PWD}" \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v "${PWD}:${PWD}" -v "${SCRIPT}:/script.sh" \
-  -v /tmp:/tmp \
+  -v "${PWD}:${PWD}" -v /tmp:/tmp \
   -e TOXENV -e ACME_SERVER -e PYTEST_ADDOPTS \
   oldest-worker python -m tox
