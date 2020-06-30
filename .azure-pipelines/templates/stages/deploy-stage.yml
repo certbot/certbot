@@ -17,7 +17,7 @@ stages:
         steps:
           - bash: |
               sudo apt-get update
-              sudo apt-get install -y --no-install-recommends snap
+              sudo apt-get install -y --no-install-recommends snapd
               sudo snap install --classic snapcraft
             displayName: Install dependencies
           - task: DownloadPipelineArtifact@2
