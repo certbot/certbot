@@ -1,7 +1,7 @@
 stages:
   - stage: Deploy
     jobs:
-      # This job relies on a snapcraft.yaml preconfigured with credential,
+      # This job relies on a snapcraft.cfg preconfigured with credential,
       # stored as a secure file in Azure Pipeline.
       # This credential has a maximum lifetime of 1 year and the current
       # credential will expire on 6/25/2021. The content of snapcraft.cfg
