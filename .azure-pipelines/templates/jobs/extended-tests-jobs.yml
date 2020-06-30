@@ -16,16 +16,16 @@ jobs:
           PYTHON_VERSION: 3.7
           TOXENV: py37
           CERTBOT_NO_PIN: 1
-        linux-boulder-v1-integration-certbot:
+        linux-boulder-v1-integration-certbot-oldest:
           TOXENV: integration-certbot-oldest
           ACME_SERVER: boulder-v1
-        linux-boulder-v2-integration-certbot:
+        linux-boulder-v2-integration-certbot-oldest:
           TOXENV: integration-certbot-oldest
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-integration-nginx:
+        linux-boulder-v1-integration-nginx-oldest:
           TOXENV: integration-nginx-oldest
           ACME_SERVER: boulder-v1
-        linux-boulder-v2-integration-nginx:
+        linux-boulder-v2-integration-nginx-oldest:
           TOXENV: integration-nginx-oldest
           ACME_SERVER: boulder-v2
         linux-boulder-v1-py27-integration:
