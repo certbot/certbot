@@ -22,7 +22,7 @@ steps:
     inputs:
       versionSpec: $(PYTHON_VERSION)
       addToPath: true
-    condition: not(eq(variables['PYTHON_VERSION'], ''))
+    condition: ne(variables['PYTHON_VERSION'], '')
   - bash: |
       python tools/pip_install.py -I tox virtualenv
     displayName: Install runtime dependencies
