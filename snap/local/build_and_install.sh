@@ -5,11 +5,6 @@
 # Usage: build_and_install.sh [amd64,arm64,armhf]
 set -ex
 
-if [[ -z "${TRAVIS}" ]]; then
-    echo "This script makes global changes to the system it is run on so should only be run in CI."
-    exit 1
-fi
-
 SNAP_ARCH=$1
 
 if [[ -z "${SNAP_ARCH}" ]]; then
@@ -25,8 +20,6 @@ source "${DIR}/common.sh"
 
 RegisterQemuHandlers
 ResolveArch "${SNAP_ARCH}"
-
-tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > snap-constraints.txt
 
 pushd "${DIR}/packages"
 "${CERTBOT_DIR}/tools/simple_http_server.py" 8080 >/dev/null 2>&1 &

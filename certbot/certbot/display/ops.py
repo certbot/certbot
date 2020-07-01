@@ -241,11 +241,8 @@ def success_installation(domains):
 
     """
     z_util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully enabled {0}{1}{1}"
-        "You should test your configuration at:{1}{2}".format(
-            _gen_https_names(domains),
-            os.linesep,
-            os.linesep.join(_gen_ssl_lab_urls(domains))),
+        "Congratulations! You have successfully enabled {0}".format(
+            _gen_https_names(domains)),
         pause=False)
 
 
@@ -258,12 +255,11 @@ def success_renewal(domains):
     z_util(interfaces.IDisplay).notification(
         "Your existing certificate has been successfully renewed, and the "
         "new certificate has been installed.{1}{1}"
-        "The new certificate covers the following domains: {0}{1}{1}"
-        "You should test your configuration at:{1}{2}".format(
+        "The new certificate covers the following domains: {0}".format(
             _gen_https_names(domains),
-            os.linesep,
-            os.linesep.join(_gen_ssl_lab_urls(domains))),
+            os.linesep),
         pause=False)
+
 
 def success_revocation(cert_path):
     """Display a box confirming a certificate has been revoked.
