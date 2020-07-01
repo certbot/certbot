@@ -288,8 +288,16 @@ class Client(object):
             orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
 
         deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
-        orderr = self.acme.finalize_order(orderr, deadline)
-        cert, chain = crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
+        get_alt_chains = self.config.preferred_chain is not None
+        orderr = self.acme.finalize_order(orderr, deadline,
+                                          fetch_alternative_chains=get_alt_chains)
+        fullchain = orderr.fullchain_pem
+        if get_alt_chains and orderr.alternative_fullchains_pem:
+            fullchain = crypto_util.find_chain_with_issuer([fullchain] + \
+                                                           orderr.alternative_fullchains_pem,
+                                                           self.config.preferred_chain,
+                                                           not self.config.dry_run)
+        cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 
     def obtain_certificate(self, domains, old_keypath=None):
