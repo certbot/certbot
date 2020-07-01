@@ -23,8 +23,8 @@ if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | se
     INITIAL_VERSION="0.20.0"
     RUN_RHEL6_TESTS=1
 else
-    # 0.37.x is the oldest version of letsencrypt-auto that works on RHEL 8.
-    INITIAL_VERSION="0.37.1"
+    # 0.39.0 is the oldest version of letsencrypt-auto that works on CentOS 8.
+    INITIAL_VERSION="0.39.0"
 fi
 
 git checkout -f "v$INITIAL_VERSION" letsencrypt-auto
