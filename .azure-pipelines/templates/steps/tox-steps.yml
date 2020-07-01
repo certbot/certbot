@@ -51,4 +51,8 @@ steps:
       AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
       AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
       AWS_EC2_PEM_FILE: $(testFarmPem.secureFilePath)
+      ${{ if variables['System.PullRequest.TargetBranch'] }}:
+        TARGET_BRANCH: $(System.PullRequest.TargetBranch)
+      ${{ if not(variables['System.PullRequest.TargetBranch']) }}:
+        TARGET_BRANCH: $(Build.SourceBranchName)
     displayName: Run tox
