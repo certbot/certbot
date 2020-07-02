@@ -6,6 +6,7 @@ if [ -z "$first_install" ]; then
     exit 0
 fi
 
+ls "$SNAP/certbot-exec"
 cb_installed=$(grep -oP "__requires__ = 'certbot==\K.*(?=')" $SNAP/certbot-exec)
 echo "cb_installed $cb_installed"
 snapctl set cb-installed="$cb_installed"
