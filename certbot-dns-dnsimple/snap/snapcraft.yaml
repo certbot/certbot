@@ -36,4 +36,4 @@ plugs:
 
 hooks:
   post-refresh:
-    plugs: [content, certbot-version]
+    plugs: [certbot-version]
