@@ -1,5 +1,4 @@
-trigger:
-  - master
+trigger: none
 pr:
   - master
   - '*.x'
