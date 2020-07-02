@@ -1,15 +1,12 @@
 #!/bin/sh -e
 
-first_install="$(snapctl get first-install)"
-if [ -z "$first_install" ]; then
-    snapctl set first-install="false"
+# get certbot version
+cb_installed="$(snapctl get cb-installed)"
+
+if [ -z "$cb_installed" ]; then
     exit 0
 fi
 
-ls $SNAP/certbot-version
-
-# get certbot version
-cb_installed=$(grep -oP 'installed:\s+\K\d+.\d+.\d(?=-)' $SNAP/certbot-version/certbot)
 # get required certbot version for plugin
 cb_required=$(grep -oP "certbot>=\K.*(?=')" $SNAP/setup.py)
 
