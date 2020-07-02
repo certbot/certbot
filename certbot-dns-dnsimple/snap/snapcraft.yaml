@@ -38,3 +38,6 @@ hooks:
   post-refresh:
     plugs:
       - certbot-version
+  pre-refresh:
+    plugs:
+      - certbot-version
