@@ -6,6 +6,8 @@ if [ -z "$first_install" ]; then
     exit 0
 fi
 
+ls $SNAP/certbot-version
+
 # get certbot version
 cb_installed=$(grep -oP 'installed:\s+\K\d+.\d+.\d(?=-)' $SNAP/certbot-version/certbot)
 # get required certbot version for plugin
