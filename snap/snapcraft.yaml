@@ -90,3 +90,9 @@ plugs:
     interface: content
     content: certbot-1
     target: $SNAP/certbot-plugin
+
+slots:
+  version:
+    interface: content
+    content: version-1
+    read: $SNAP/bin/certbot

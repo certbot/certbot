@@ -27,3 +27,11 @@ slots:
     content: certbot-1
     read:
       - $SNAP/lib/python3.8/site-packages
+
+hooks:
+  post-refresh:
+    plugs:
+      certbot-version:
+        interface: content
+        content: version-1
+        target: $SNAP/certbot-version
