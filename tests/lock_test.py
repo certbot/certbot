@@ -59,9 +59,9 @@ def set_up():
     command = set_up_command(config_dir, logs_dir, work_dir, nginx_dir)
 
     dirs = [logs_dir, config_dir, work_dir]
-    # Travis and Circle CI set CI to true so we
-    # will always test Nginx's lock during CI
-    if os.environ.get('CI') == 'true' or util.exe_exists('nginx'):
+    # If Nginx is installed, do the test, otherwise skip it.
+    # Issue https://github.com/certbot/certbot/issues/8121 tracks the work to remove this control.
+    if util.exe_exists('nginx'):
         dirs.append(nginx_dir)
     else:
         logger.warning('Skipping Nginx lock tests')

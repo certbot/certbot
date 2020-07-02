@@ -32,8 +32,7 @@ jobs:
       vmImage: $(imageName)
     steps:
       - powershell: |
-          $currentVersion = $PSVersionTable.PSVersion
-          if ($currentVersion.Major -ne 5) {
+          if ($PSVersionTable.PSVersion.Major -ne 5) {
               throw "Powershell version is not 5.x"
           }
         condition: eq(variables['imageName'], 'vs2017-win2016')
@@ -59,3 +58,45 @@ jobs:
           set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
+  - job: snap_build
+    strategy:
+      matrix:
+        amd64:
+          ARCH: amd64
+        arm64:
+          ARCH: arm64
+        armhf:
+          ARCH: armhf
+    pool:
+      vmImage: ubuntu-18.04
+    steps:
+      - script: |
+          snap/local/build.sh ${ARCH}
+          mv *.snap $(Build.ArtifactStagingDirectory)
+        displayName: Build Certbot snap
+      - task: PublishPipelineArtifact@1
+        inputs:
+          path: $(Build.ArtifactStagingDirectory)
+          artifact: snap-$(arch)
+        displayName: Store snap artifact
+  - job: snap_run
+    dependsOn: snap_build
+    pool:
+      vmImage: ubuntu-18.04
+    steps:
+      - script: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends nginx-light snapd
+          python tools/pip_install.py -U tox
+        displayName: Install dependencies
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          artifact: snap-amd64
+          path: $(Build.SourcesDirectory)/snap
+        displayName: Retrieve Certbot snap
+      - script: |
+          sudo snap install --dangerous --classic snap/*.snap
+        displayName: Install Certbot snap
+      - script: |
+          python -m tox -e integration-external,apacheconftest-external-with-pebble
+        displayName: Run tox
