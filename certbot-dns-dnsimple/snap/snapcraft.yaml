@@ -37,4 +37,4 @@ plugs:
 hooks:
   post-refresh:
     plugs:
-      - certbot-version[version-1]
+      - certbot-version
