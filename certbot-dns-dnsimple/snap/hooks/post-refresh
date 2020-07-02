@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
-snapctl get first-install
-if [ "$?" -eq "1"]; then
+first_install=$(snapctl get first-install)
+if [ "$first_install" -ne "false"]; then
     snapctl set first-install="false"
     exit 0
 fi
