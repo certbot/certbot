@@ -1,11 +1,17 @@
 #!/bin/sh -e
 
+snapctl get first_install
+if [ "$?" -eq "true"]; then
+    snapctl set first_install="false"
+    exit 0
+fi
+
 # get certbot version
 cb_installed=$(grep -oP 'installed:\s+\K\d+.\d+.\d(?=-)' $SNAP/certbot-version/certbot)
 # get required certbot version for plugin
 cb_required=$(grep -oP "certbot>=\K.*(?=')" $SNAP/setup.py)
 
-If [ "$cb_installed" -lt "$cb_required" ]; then
+if [ "$cb_installed" -lt "$cb_required" ]; then
     echo "Certbot needs to be updated before this plugin can be updated; will try again on next refresh."
     exit 1
 fi
