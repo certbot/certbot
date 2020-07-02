@@ -32,7 +32,7 @@ plugs:
   certbot-version:
     interface: content
     content: version-1
-    target: $SNAP/certbot-version
+    target: $SNAP/certbot-exec
 
 hooks:
   post-refresh:
