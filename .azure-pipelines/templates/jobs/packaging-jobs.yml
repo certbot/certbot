@@ -71,7 +71,7 @@ jobs:
       vmImage: ubuntu-18.04
     steps:
       - script: |
-          snap/local/build.sh ${ARCH}
+          tools/snap/build.sh ${ARCH}
           mv *.snap $(Build.ArtifactStagingDirectory)
         displayName: Build Certbot snap
       - task: PublishPipelineArtifact@1
@@ -79,6 +79,27 @@ jobs:
           path: $(Build.ArtifactStagingDirectory)
           artifact: snap-$(arch)
         displayName: Store snap artifact
+  - job: snap_dns_build
+    strategy:
+      matrix:
+        amd64:
+          ARCH: amd64
+#        arm64:
+#          ARCH: arm64
+#        armhf:
+#          ARCH: armhf
+    pool:
+      vmImage: ubuntu-18.04
+    steps:
+      - script: |
+          tools/snap/build_dns.sh ${ARCH} ALL
+          mv certbot-dns-*/*.snap $(Build.ArtifactStagingDirectory)
+        displayName: Build Certbot DNS snaps
+      - task: PublishPipelineArtifact@1
+        inputs:
+          path: $(Build.ArtifactStagingDirectory)
+          artifact: dns-snap-$(arch)
+        displayName: Store snaps artifacts
   - job: snap_run
     dependsOn: snap_build
     pool:
