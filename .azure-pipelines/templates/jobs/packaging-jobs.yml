@@ -64,7 +64,8 @@ jobs:
         amd64:
           ARCH: amd64
         # Do not run the QEMU jobs for the full-test-suite pipeline
-        ${{ if eq(variables['System.DefinitionId'], 1 )}}:
+        # TODO: currently set to pr-test-suite for dev purpose, must be set back to 4
+        ${{ if ne(variables['System.DefinitionId'], 1 )}}:
           arm64:
             ARCH: arm64
           armhf:
@@ -87,7 +88,8 @@ jobs:
         amd64:
           ARCH: amd64
         # Do not run the QEMU jobs for the full-test-suite pipeline
-        ${{ if eq(variables['System.DefinitionId'], 1 )}}:
+        # TODO: currently set to pr-test-suite for dev purpose, must be set back to 4
+        ${{ if ne(variables['System.DefinitionId'], 1 )}}:
           arm64:
             ARCH: arm64
           armhf:
