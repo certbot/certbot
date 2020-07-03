@@ -84,10 +84,10 @@ jobs:
       matrix:
         amd64:
           ARCH: amd64
-#        arm64:
-#          ARCH: arm64
-#        armhf:
-#          ARCH: armhf
+        arm64:
+          ARCH: arm64
+        armhf:
+          ARCH: armhf
     pool:
       vmImage: ubuntu-18.04
     steps:
