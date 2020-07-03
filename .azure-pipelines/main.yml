@@ -4,4 +4,5 @@ pr:
   - '*.x'
 
 jobs:
+  # TODO: revert to templates/jobs/standard-tests-jobs.yml
   - template: templates/jobs/packaging-jobs.yml
