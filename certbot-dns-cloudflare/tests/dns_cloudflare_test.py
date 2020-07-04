@@ -3,7 +3,10 @@
 import unittest
 
 import CloudFlare
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import os
@@ -130,7 +133,7 @@ class CloudflareClientTest(unittest.TestCase):
     def test_add_txt_record_error(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
 
-        self.cf.zones.dns_records.post.side_effect = CloudFlare.exceptions.CloudFlareAPIError(9109, '', '')
+        self.cf.zones.dns_records.post.side_effect = CloudFlare.exceptions.CloudFlareAPIError(1009, '', '')
 
         self.assertRaises(
             errors.PluginError,
@@ -167,6 +170,12 @@ class CloudflareClientTest(unittest.TestCase):
             DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
         self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(9109, '', '')
+        self.assertRaises(
+            errors.PluginError,
+            self.cloudflare_client.add_txt_record,
+            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
+        self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(0, 'com.cloudflare.api.account.zone.list', '')
         self.assertRaises(
             errors.PluginError,
             self.cloudflare_client.add_txt_record,

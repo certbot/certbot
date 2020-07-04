@@ -2,7 +2,10 @@
 import sys
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import six
 
 from acme import challenges
@@ -72,16 +75,23 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = (
             '{0} -c "from __future__ import print_function;'
-            'from certbot.compat import os;  print(os.environ.get(\'CERTBOT_DOMAIN\'));'
+            'from certbot.compat import os;'
+            'print(os.environ.get(\'CERTBOT_DOMAIN\'));'
             'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'
-            'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));"'
+            'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));'
+            'print(os.environ.get(\'CERTBOT_ALL_DOMAINS\'));'
+            'print(os.environ.get(\'CERTBOT_REMAINING_CHALLENGES\'));"'
             .format(sys.executable))
-        dns_expected = '{0}\n{1}\n{2}'.format(
+        dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
             self.dns_achall.domain, 'notoken',
-            self.dns_achall.validation(self.dns_achall.account_key))
-        http_expected = '{0}\n{1}\n{2}'.format(
+            self.dns_achall.validation(self.dns_achall.account_key),
+            ','.join(achall.domain for achall in self.achalls),
+            len(self.achalls) - self.achalls.index(self.dns_achall) - 1)
+        http_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
             self.http_achall.domain, self.http_achall.chall.encode('token'),
-            self.http_achall.validation(self.http_achall.account_key))
+            self.http_achall.validation(self.http_achall.account_key),
+            ','.join(achall.domain for achall in self.achalls),
+            len(self.achalls) - self.achalls.index(self.http_achall) - 1)
 
         self.assertEqual(
             self.auth.perform(self.achalls),

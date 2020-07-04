@@ -2,7 +2,10 @@
 import sys
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 
 class MagicTypingTest(unittest.TestCase):
@@ -18,7 +21,7 @@ class MagicTypingTest(unittest.TestCase):
         sys.modules['typing'] = typing_class_mock
         if 'acme.magic_typing' in sys.modules:
             del sys.modules['acme.magic_typing'] # pragma: no cover
-        from acme.magic_typing import Text # pylint: disable=no-name-in-module
+        from acme.magic_typing import Text
         self.assertEqual(Text, text_mock)
         del sys.modules['acme.magic_typing']
         sys.modules['typing'] = temp_typing
@@ -31,7 +34,7 @@ class MagicTypingTest(unittest.TestCase):
         sys.modules['typing'] = None
         if 'acme.magic_typing' in sys.modules:
             del sys.modules['acme.magic_typing'] # pragma: no cover
-        from acme.magic_typing import Text # pylint: disable=no-name-in-module
+        from acme.magic_typing import Text
         self.assertTrue(Text is None)
         del sys.modules['acme.magic_typing']
         sys.modules['typing'] = temp_typing

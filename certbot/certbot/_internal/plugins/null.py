@@ -18,7 +18,7 @@ class Installer(common.Plugin):
     description = "Null Installer"
     hidden = True
 
-    # pylint: disable=missing-docstring,no-self-use
+    # pylint: disable=missing-function-docstring
 
     def prepare(self):
         pass  # pragma: no cover

@@ -280,6 +280,7 @@ pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN
 proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
+dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -291,6 +292,7 @@ dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 .. _external-auth: https://github.com/EnigmaBridge/certbot-external-auth
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
+.. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -383,7 +385,7 @@ certificate exists alongside any previously obtained certificates, whether
 or not the previous certificates have expired. The generation of a new
 certificate counts against several rate limits that are intended to prevent
 abuse of the ACME protocol, as described
-`here <https://community.letsencrypt.org/t/rate-limits-for-lets-encrypt/6769>`__.
+`here <https://letsencrypt.org/docs/rate-limits/>`__.
 
 .. _changing:
 
@@ -484,43 +486,6 @@ If you want your hook to run only after a successful renewal, use
 ``--deploy-hook`` in a command like this.
 
 ``certbot renew --deploy-hook /path/to/deploy-hook-script``
-
-For example, if you have a daemon that does not read its certificates as the
-root user, a deploy hook like this can copy them to the correct location and
-apply appropriate file permissions.
-
-/path/to/deploy-hook-script
-
-.. code-block:: none
-
-   #!/bin/sh
-
-   set -e
-
-   for domain in $RENEWED_DOMAINS; do
-           case $domain in
-           example.com)
-                   daemon_cert_root=/etc/some-daemon/certs
-
-                   # Make sure the certificate and private key files are
-                   # never world readable, even just for an instant while
-                   # we're copying them into daemon_cert_root.
-                   umask 077
-
-                   cp "$RENEWED_LINEAGE/fullchain.pem" "$daemon_cert_root/$domain.cert"
-                   cp "$RENEWED_LINEAGE/privkey.pem" "$daemon_cert_root/$domain.key"
-
-                   # Apply the proper file ownership and permissions for
-                   # the daemon to read its certificate and key.
-                   chown some-daemon "$daemon_cert_root/$domain.cert" \
-                           "$daemon_cert_root/$domain.key"
-                   chmod 400 "$daemon_cert_root/$domain.cert" \
-                           "$daemon_cert_root/$domain.key"
-
-                   service some-daemon restart >/dev/null
-                   ;;
-           esac
-   done
 
 You can also specify hooks by placing files in subdirectories of Certbot's
 configuration directory. Assuming your configuration directory is
@@ -686,6 +651,17 @@ your (web) server configuration directly to those files (or create
 symlinks). During the renewal_, ``/etc/letsencrypt/live`` is updated
 with the latest necessary files.
 
+For historical reasons, the containing directories are created with
+permissions of ``0700`` meaning that certificates are accessible only
+to servers that run as the root user.  **If you will never downgrade
+to an older version of Certbot**, then you can safely fix this using
+``chmod 0755 /etc/letsencrypt/{live,archive}``.
+
+For servers that drop root privileges before attempting to read the
+private key file, you will also need to use ``chgrp`` and ``chmod
+0640`` to allow the server to read
+``/etc/letsencrypt/live/$domain/privkey.pem``.
+
 .. note:: ``/etc/letsencrypt/archive`` and ``/etc/letsencrypt/keys``
    contain all previous keys and certificates, while
    ``/etc/letsencrypt/live`` symlinks to the latest versions.
@@ -762,8 +738,10 @@ the ``cleanup.sh`` script. Additionally certbot will pass relevant environment
 variables to these scripts:
 
 - ``CERTBOT_DOMAIN``: The domain being authenticated
-- ``CERTBOT_VALIDATION``: The validation string (HTTP-01 and DNS-01 only)
+- ``CERTBOT_VALIDATION``: The validation string
 - ``CERTBOT_TOKEN``: Resource name part of the HTTP-01 challenge (HTTP-01 only)
+- ``CERTBOT_REMAINING_CHALLENGES``: Number of challenges remaining after the current challenge
+- ``CERTBOT_ALL_DOMAINS``: A comma-separated list of all domains challenged for the current certificate
 
 Additionally for cleanup:
 
@@ -868,17 +846,15 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
 Changing the ACME Server
 ========================
 
-By default, Certbot uses Let's Encrypt's initial production server at
-https://acme-v01.api.letsencrypt.org/. You can tell Certbot to use a
+By default, Certbot uses Let's Encrypt's production server at
+https://acme-v02.api.letsencrypt.org/. You can tell Certbot to use a
 different CA by providing ``--server`` on the command line or in a
 :ref:`configuration file <config-file>` with the URL of the server's
 ACME directory. For example, if you would like to use Let's Encrypt's
-new ACMEv2 server, you would add ``--server
-https://acme-v02.api.letsencrypt.org/directory`` to the command line.
-Certbot will automatically select which version of the ACME protocol to
-use based on the contents served at the provided URL.
+staging server, you would add ``--server
+https://acme-staging-v02.api.letsencrypt.org/directory`` to the command line.
 
-If you use ``--server`` to specify an ACME CA that implements a newer
+If you use ``--server`` to specify an ACME CA that implements the standardized
 version of the spec, you may be able to obtain a certificate for a
 wildcard domain. Some CAs (such as Let's Encrypt) require that domain
 validation for wildcard domains must be done through modifications to

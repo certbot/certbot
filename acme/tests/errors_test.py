@@ -1,7 +1,10 @@
 """Tests for acme.errors."""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 
 class BadNonceTest(unittest.TestCase):
@@ -35,7 +38,7 @@ class PollErrorTest(unittest.TestCase):
     def setUp(self):
         from acme.errors import PollError
         self.timeout = PollError(
-            exhausted=set([mock.sentinel.AR]),
+            exhausted={mock.sentinel.AR},
             updated={})
         self.invalid = PollError(exhausted=set(), updated={
             mock.sentinel.AR: mock.sentinel.AR2})

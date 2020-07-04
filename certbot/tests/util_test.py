@@ -4,7 +4,10 @@ import errno
 import sys
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
@@ -12,6 +15,40 @@ from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
+
+
+class EnvNoSnapForExternalCallsTest(unittest.TestCase):
+    """Tests for certbot.util.env_no_snap_for_external_calls."""
+    @classmethod
+    def _call(cls):
+        from certbot.util import env_no_snap_for_external_calls
+        return env_no_snap_for_external_calls()
+
+    def test_removed(self):
+        original_path = os.environ['PATH']
+        env_copy_dict = os.environ.copy()
+        env_copy_dict['PATH'] = 'RANDOM_NONSENSE_GARBAGE/blah/blah:' + original_path
+        env_copy_dict['SNAP'] = 'RANDOM_NONSENSE_GARBAGE'
+        env_copy_dict['CERTBOT_SNAPPED'] = 'True'
+        with mock.patch('certbot.compat.os.environ.copy', return_value=env_copy_dict):
+            self.assertEqual(self._call()['PATH'], original_path)
+
+    def test_noop(self):
+        env_copy_dict_unmodified = os.environ.copy()
+        env_copy_dict_unmodified['PATH'] = 'RANDOM_NONSENSE_GARBAGE/blah/blah:' \
+            + env_copy_dict_unmodified['PATH']
+        env_copy_dict = env_copy_dict_unmodified.copy()
+        with mock.patch('certbot.compat.os.environ.copy', return_value=env_copy_dict):
+            # contains neither necessary key
+            env_copy_dict.pop('SNAP', None)
+            env_copy_dict.pop('CERTBOT_SNAPPED', None)
+            self.assertEqual(self._call()['PATH'], env_copy_dict_unmodified['PATH'])
+            # contains only one necessary key
+            env_copy_dict['SNAP'] = 'RANDOM_NONSENSE_GARBAGE'
+            self.assertEqual(self._call()['PATH'], env_copy_dict_unmodified['PATH'])
+            del env_copy_dict['SNAP']
+            env_copy_dict['CERTBOT_SNAPPED'] = 'True'
+            self.assertEqual(self._call()['PATH'], env_copy_dict_unmodified['PATH'])
 
 
 class RunScriptTest(unittest.TestCase):

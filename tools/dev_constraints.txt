@@ -3,6 +3,7 @@
 # Some dev package versions specified here may be overridden by higher level constraints
 # files during tests (eg. letsencrypt-auto-source/pieces/dependency-requirements.txt).
 alabaster==0.7.10
+apacheconfig==0.3.2
 apipkg==1.4
 appnope==0.1.0
 asn1crypto==0.22.0
@@ -17,7 +18,6 @@ boto3==1.11.7
 botocore==1.14.7
 cached-property==1.5.1
 cloudflare==2.3.1
-codecov==2.0.15
 configparser==3.7.4
 contextlib2==0.6.0.post1
 coverage==4.5.4
@@ -64,6 +64,7 @@ pexpect==4.7.0
 pickleshare==0.7.5
 pkginfo==1.4.2
 pluggy==0.13.0
+ply==3.4
 prompt-toolkit==1.0.18
 ptyprocess==0.6.0
 py==1.8.0

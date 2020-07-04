@@ -2,7 +2,10 @@
 
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot_nginx._internal.parser_obj import COMMENT_BLOCK
 from certbot_nginx._internal.parser_obj import parse_raw
@@ -80,7 +83,7 @@ class ParsingHooksTest(unittest.TestCase):
         fake_parser1.should_parse = lambda x: False
         parsing_hooks.return_value = (fake_parser1,)
         self.assertRaises(errors.MisconfigurationError, parse_raw, [])
-        parsing_hooks.return_value = tuple()
+        parsing_hooks.return_value = ()
         self.assertRaises(errors.MisconfigurationError, parse_raw, [])
 
     def test_parse_raw_passes_add_spaces(self):
