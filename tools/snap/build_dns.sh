@@ -54,6 +54,7 @@ IFS=","
 for DNS_PLUGIN in ${DNS_PLUGINS}; do
   pushd "${DNS_PLUGIN}"
   cp /snap-constraints.txt .
+  snapcraft clean
   snapcraft
   popd
 done
