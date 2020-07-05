@@ -55,9 +55,17 @@ class PluginEntryPoint(object):
         self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
         self.plugin_cls = entry_point.load()
         self.entry_point = entry_point
+        self.warning_message = None
         self._initialized = None
         self._prepared = None
         self._hidden = False
+
+    def check_name(self, name):
+        if name == self.name:
+            if self.warning_message:
+                logger.warning(self.warning_message)
+            return True
+        return False
 
     @classmethod
     def entry_point_to_plugin_name(cls, entry_point, with_prefix):
@@ -217,10 +225,13 @@ class PluginsRegistry(Mapping):
             pkg_resources.iter_entry_points(
                 constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
         for entry_point in entry_points:
-            cls._load_entry_point(entry_point, plugins, False)
+            plugin_ep = cls._load_entry_point(entry_point, plugins, False)
             if entry_point.dist.key not in PREFIX_FREE_DISTRIBUTIONS:
-                plugin_ep = cls._load_entry_point(entry_point, plugins, True)
-                plugin_ep.hidden = True
+                prefixed_plugin_ep = cls._load_entry_point(entry_point, plugins, True)
+                prefixed_plugin_ep.hidden = True
+                prefixed_plugin_ep.warning_message = (
+                    "Plugin legacy name {0} may be removed in a future version. "
+                    "Please use {1} instead.").format(prefixed_plugin_ep.name, plugin_ep.name)
 
         return cls(plugins)
 
@@ -228,7 +239,9 @@ class PluginsRegistry(Mapping):
     def _load_entry_point(cls, entry_point, plugins, with_prefix):
         plugin_ep = PluginEntryPoint(entry_point, with_prefix)
         if plugin_ep.name in plugins:
-            raise Exception("Duplicate plugin name: {!r}.".format(plugin_ep.name))
+            other_ep = plugins[plugin_ep.name]
+            raise Exception("Duplicate plugin name {0} from {1} and {2}.".format(
+                plugin_ep.name, plugin_ep.entry_point.dist.key, other_ep.entry_point.dist.key))
         if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
             plugins[plugin_ep.name] = plugin_ep
         else:  # pragma: no cover
