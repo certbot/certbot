@@ -23,47 +23,48 @@ except ImportError:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
+PREFIX_FREE_DISTRIBUTIONS = [
+    "certbot",
+    "certbot-apache",
+    "certbot-dns-cloudflare",
+    "certbot-dns-cloudxns",
+    "certbot-dns-digitalocean",
+    "certbot-dns-dnsimple",
+    "certbot-dns-dnsmadeeasy",
+    "certbot-dns-gehirn",
+    "certbot-dns-google",
+    "certbot-dns-linode",
+    "certbot-dns-luadns",
+    "certbot-dns-nsone",
+    "certbot-dns-ovh",
+    "certbot-dns-rfc2136",
+    "certbot-dns-route53",
+    "certbot-dns-sakuracloud",
+    "certbot-nginx",
+]
+"""Distributions for which prefix will be omitted."""
+
 
 class PluginEntryPoint(object):
     """Plugin entry point."""
 
-    PREFIX_FREE_DISTRIBUTIONS = [
-        "certbot",
-        "certbot-apache",
-        "certbot-dns-cloudflare",
-        "certbot-dns-cloudxns",
-        "certbot-dns-digitalocean",
-        "certbot-dns-dnsimple",
-        "certbot-dns-dnsmadeeasy",
-        "certbot-dns-gehirn",
-        "certbot-dns-google",
-        "certbot-dns-linode",
-        "certbot-dns-luadns",
-        "certbot-dns-nsone",
-        "certbot-dns-ovh",
-        "certbot-dns-rfc2136",
-        "certbot-dns-route53",
-        "certbot-dns-sakuracloud",
-        "certbot-nginx",
-    ]
-    """Distributions for which prefix will be omitted."""
-
     # this object is mutable, don't allow it to be hashed!
     __hash__ = None  # type: ignore
 
-    def __init__(self, entry_point):
-        self.name = self.entry_point_to_plugin_name(entry_point)
+    def __init__(self, entry_point, with_prefix=False):
+        self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
         self.plugin_cls = entry_point.load()
         self.entry_point = entry_point
         self._initialized = None
         self._prepared = None
+        self._hidden = False
 
     @classmethod
-    def entry_point_to_plugin_name(cls, entry_point):
+    def entry_point_to_plugin_name(cls, entry_point, with_prefix):
         """Unique plugin name for an ``entry_point``"""
-        if entry_point.dist.key in cls.PREFIX_FREE_DISTRIBUTIONS:
-            return entry_point.name
-        return entry_point.dist.key + ":" + entry_point.name
+        if with_prefix:
+            return entry_point.dist.key + ":" + entry_point.name
+        return entry_point.name
 
     @property
     def description(self):
@@ -86,7 +87,11 @@ class PluginEntryPoint(object):
     @property
     def hidden(self):
         """Should this plugin be hidden from UI?"""
-        return getattr(self.plugin_cls, "hidden", False)
+        return self._hidden or getattr(self.plugin_cls, "hidden", False)
+
+    @hidden.setter
+    def hidden(self, hide):
+        self._hidden = hide
 
     def ifaces(self, *ifaces_groups):
         """Does plugin implements specified interface groups?"""
@@ -212,15 +217,25 @@ class PluginsRegistry(Mapping):
             pkg_resources.iter_entry_points(
                 constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
         for entry_point in entry_points:
-            plugin_ep = PluginEntryPoint(entry_point)
-            assert plugin_ep.name not in plugins, (
-                "PREFIX_FREE_DISTRIBUTIONS messed up")
-            if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
-                plugins[plugin_ep.name] = plugin_ep
-            else:  # pragma: no cover
-                logger.warning(
-                    "%r does not provide IPluginFactory, skipping", plugin_ep)
+            cls._load_entry_point(entry_point, plugins, False)
+            if entry_point.dist.key not in PREFIX_FREE_DISTRIBUTIONS:
+                plugin_ep = cls._load_entry_point(entry_point, plugins, True)
+                plugin_ep.hidden = True
+
         return cls(plugins)
+
+    @classmethod
+    def _load_entry_point(cls, entry_point, plugins, with_prefix):
+        plugin_ep = PluginEntryPoint(entry_point, with_prefix)
+        if plugin_ep.name in plugins:
+            raise Exception("Duplicate plugin name: {!r}.".format(plugin_ep.name))
+        if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
+            plugins[plugin_ep.name] = plugin_ep
+        else:  # pragma: no cover
+            logger.warning(
+                "%r does not provide IPluginFactory, skipping", plugin_ep)
+
+        return plugin_ep
 
     def __getitem__(self, name):
         return self._plugins[name]
