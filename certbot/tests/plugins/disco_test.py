@@ -58,7 +58,7 @@ class PluginEntryPointTest(unittest.TestCase):
 
         for entry_point, name in six.iteritems(names):
             self.assertEqual(
-                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, False))
+                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, with_prefix=False))
 
     def test_entry_point_to_plugin_name_prefixed(self):
         from certbot._internal.plugins.disco import PluginEntryPoint
@@ -72,7 +72,7 @@ class PluginEntryPointTest(unittest.TestCase):
 
         for entry_point, name in six.iteritems(names):
             self.assertEqual(
-                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, True))
+                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, with_prefix=True))
 
     def test_description(self):
         self.assertTrue("temporary webserver" in self.plugin_ep.description)

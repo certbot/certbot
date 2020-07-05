@@ -225,9 +225,9 @@ class PluginsRegistry(Mapping):
             pkg_resources.iter_entry_points(
                 constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
         for entry_point in entry_points:
-            plugin_ep = cls._load_entry_point(entry_point, plugins, False)
+            plugin_ep = cls._load_entry_point(entry_point, plugins, with_prefix=False)
             if entry_point.dist.key not in PREFIX_FREE_DISTRIBUTIONS:
-                prefixed_plugin_ep = cls._load_entry_point(entry_point, plugins, True)
+                prefixed_plugin_ep = cls._load_entry_point(entry_point, plugins, with_prefix=True)
                 prefixed_plugin_ep.hidden = True
                 prefixed_plugin_ep.warning_message = (
                     "Plugin legacy name {0} may be removed in a future version. "
