@@ -62,6 +62,7 @@ class PluginEntryPoint(object):
         self._long_description = None
 
     def check_name(self, name):
+        """Check if the name refers to this plugin."""
         if name == self.name:
             if self.warning_message:
                 logger.warning(self.warning_message)
