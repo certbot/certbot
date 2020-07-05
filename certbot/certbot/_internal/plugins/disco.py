@@ -59,6 +59,7 @@ class PluginEntryPoint(object):
         self._initialized = None
         self._prepared = None
         self._hidden = False
+        self._long_description = None
 
     def check_name(self, name):
         if name == self.name:
@@ -87,10 +88,16 @@ class PluginEntryPoint(object):
     @property
     def long_description(self):
         """Long description of the plugin."""
+        if self._long_description:
+            return self._long_description
         try:
             return self.plugin_cls.long_description
         except AttributeError:
             return self.description
+
+    @long_description.setter
+    def long_description(self, description):
+        self._long_description = description
 
     @property
     def hidden(self):
@@ -229,9 +236,12 @@ class PluginsRegistry(Mapping):
             if entry_point.dist.key not in PREFIX_FREE_DISTRIBUTIONS:
                 prefixed_plugin_ep = cls._load_entry_point(entry_point, plugins, with_prefix=True)
                 prefixed_plugin_ep.hidden = True
-                prefixed_plugin_ep.warning_message = (
+                message = (
                     "Plugin legacy name {0} may be removed in a future version. "
                     "Please use {1} instead.").format(prefixed_plugin_ep.name, plugin_ep.name)
+                prefixed_plugin_ep.warning_message = message
+                prefixed_plugin_ep.long_description = "(WARNING: {0}) {1}".format(
+                    message, prefixed_plugin_ep.long_description)
 
         return cls(plugins)
 
