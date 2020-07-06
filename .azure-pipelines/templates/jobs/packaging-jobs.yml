@@ -64,11 +64,11 @@ jobs:
         amd64:
           ARCH: amd64
         # Do not run the QEMU jobs for the full-test-suite pipeline
-#        ${{ if ne(variables['System.DefinitionId'], 4 )}}:
-#          arm64:
-#            ARCH: arm64
-#          armhf:
-#            ARCH: armhf
+        ${{ if ne(variables['System.DefinitionId'], 4 )}}:
+          arm64:
+            ARCH: arm64
+          armhf:
+            ARCH: armhf
     pool:
       vmImage: ubuntu-18.04
     steps:
@@ -87,11 +87,11 @@ jobs:
         amd64:
           ARCH: amd64
         # Do not run the QEMU jobs for the full-test-suite pipeline
-#        ${{ if ne(variables['System.DefinitionId'], 4 )}}:
-#          arm64:
-#            ARCH: arm64
-#          armhf:
-#            ARCH: armhf
+        ${{ if ne(variables['System.DefinitionId'], 4 )}}:
+          arm64:
+            ARCH: arm64
+          armhf:
+            ARCH: armhf
     pool:
       vmImage: ubuntu-18.04
     steps:
