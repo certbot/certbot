@@ -38,4 +38,4 @@ docker run \
   -w "/certbot" \
   -e "PIP_EXTRA_INDEX_URL=http://localhost:8080" \
   "adferrand/snapcraft:${DOCKER_ARCH}-stable" \
-  /bin/bash -c "snapcraft clean && snapcraft"
+  bash -c "snapcraft clean && snapcraft"

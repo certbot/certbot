@@ -8,6 +8,7 @@ except ImportError:
     from BaseHTTPServer import HTTPServer
     from SimpleHTTPServer import SimpleHTTPRequestHandler
 
+
 def serve_forever(port=0):
     """Spins up an HTTP server on all interfaces and the given port.
 
