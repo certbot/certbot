@@ -2,7 +2,7 @@
 # Cross-compile the Certbot snap from local sources for the specified architecture,
 # and install it if this architecture is also the the current machine one.
 # This script is designed for CI tests purpose.
-# Usage: build_and_install.sh [amd64,arm64,armhf]
+# Usage: build.sh [amd64,arm64,armhf]
 set -ex
 
 SNAP_ARCH=$1
@@ -39,8 +39,4 @@ docker run \
   -w "/certbot" \
   -e "PIP_EXTRA_INDEX_URL=http://localhost:8080" \
   "adferrand/snapcraft:${DOCKER_ARCH}-stable" \
-  snapcraft
-
-if [[ "$(arch)" == "${QEMU_ARCH}" ]]; then
-    sudo snap install --dangerous --classic *.snap
-fi
+  bash -c "snapcraft clean && snapcraft"

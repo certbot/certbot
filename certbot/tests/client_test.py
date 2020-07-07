@@ -274,7 +274,8 @@ class ClientTest(ClientTestCommon):
             self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, auth_count)
 
         self.acme.finalize_order.assert_called_once_with(
-            self.eg_order, mock.ANY)
+            self.eg_order, mock.ANY,
+            fetch_alternative_chains=self.config.preferred_chain is not None)
 
     @mock.patch("certbot._internal.client.crypto_util")
     @mock.patch("certbot._internal.client.logger")
@@ -293,8 +294,21 @@ class ClientTest(ClientTestCommon):
             self.client.obtain_certificate_from_csr(
                 test_csr,
                 orderr=orderr))
+        mock_crypto_util.find_chain_with_issuer.assert_not_called()
         # and that the cert was obtained correctly
         self._check_obtain_certificate()
+
+        # Test that --preferred-chain results in chain selection
+        self.config.preferred_chain = "some issuer"
+        self.assertEqual(
+            (mock.sentinel.cert, mock.sentinel.chain),
+            self.client.obtain_certificate_from_csr(
+                test_csr,
+                orderr=orderr))
+        mock_crypto_util.find_chain_with_issuer.assert_called_once_with(
+            [orderr.fullchain_pem] + orderr.alternative_fullchains_pem,
+            "some issuer", True)
+        self.config.preferred_chain = None
 
         # Test for orderr=None
         self.assertEqual(

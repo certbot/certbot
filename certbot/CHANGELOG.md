@@ -11,6 +11,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Make Certbot snap find externally snapped plugins
 * Function `certbot.compat.filesystem.umask` is a drop-in replacement for `os.umask`
   implementing umask for both UNIX and Windows systems.
+* Support for alternative certificate chains in the `acme` module.
+* Added `--preferred-chain <issuer CN>`. If a CA offers multiple certificate chains,
+  it may be  used to indicate to Certbot which chain should be preferred.
+  * e.g. `--preferred-chain "DST Root CA X3"`
 
 ### Changed
 

@@ -134,6 +134,7 @@ class ACMEServer(object):
         environ['PEBBLE_VA_NOSLEEP'] = '1'
         environ['PEBBLE_WFE_NONCEREJECT'] = '0'
         environ['PEBBLE_AUTHZREUSE'] = '100'
+        environ['PEBBLE_ALTERNATE_ROOTS'] = str(PEBBLE_ALTERNATE_ROOTS)
 
         if self._dns_server:
             dns_server = self._dns_server

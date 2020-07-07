@@ -57,7 +57,7 @@ def validate_scripts_content(repo_path, temp_cwd):
             'letsencrypt-auto-source/pieces/fetch.py')), temp_cwd)
 
         # Compare file against current version in the target branch
-        branch = os.environ.get('TRAVIS_BRANCH', 'master')
+        branch = os.environ.get('TARGET_BRANCH', 'master')
         url = (
             'https://raw.githubusercontent.com/certbot/certbot/{0}/certbot-auto'
             .format(branch))

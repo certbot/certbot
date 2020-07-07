@@ -19,14 +19,28 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
+from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import crypto
 import pkg_resources
 import requests
 from six.moves import SimpleHTTPServer
 from six.moves import socketserver
 
+from certbot_integration_tests.utils.constants import \
+     PEBBLE_ALTERNATE_ROOTS, PEBBLE_MANAGEMENT_URL
+
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
+
+
+def _suppress_x509_verification_warnings():
+    try:
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    except ImportError:
+        # Handle old versions of request with vendorized urllib3
+        from requests.packages.urllib3.exceptions import InsecureRequestWarning
+        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 def check_until_timeout(url, attempts=30):
@@ -37,14 +51,7 @@ def check_until_timeout(url, attempts=30):
     :param int attempts: the number of times to try to connect to the URL
     :raise ValueError: exception raised if unable to reach the URL
     """
-    try:
-        import urllib3
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    except ImportError:
-        # Handle old versions of request with vendorized urllib3
-        from requests.packages.urllib3.exceptions import InsecureRequestWarning
-        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
+    _suppress_x509_verification_warnings()
     for _ in range(attempts):
         time.sleep(1)
         try:
@@ -299,3 +306,23 @@ def echo(keyword, path=None):
                          .format(keyword))
     return '{0} -c "from __future__ import print_function; print(\'{1}\')"{2}'.format(
         os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
+
+
+def get_acme_issuers(context):
+    """Gets the list of one or more issuer certificates from the ACME server used by the
+    context.
+    :param context: the testing context.
+    :return: the `list of x509.Certificate` representing the list of issuers.
+    """
+    # TODO: in fact, Boulder has alternate chains in config-next/, just not yet in config/.
+    if context.acme_server != "pebble":
+        raise NotImplementedError()
+
+    _suppress_x509_verification_warnings()
+
+    issuers = []
+    for i in range(PEBBLE_ALTERNATE_ROOTS + 1):
+        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/{}'.format(i), verify=False)
+        issuers.append(load_pem_x509_certificate(request.content, default_backend()))
+
+    return issuers

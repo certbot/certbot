@@ -1,0 +1,96 @@
+jobs:
+  - job: extended_test
+    variables:
+      - name: IMAGE_NAME
+        value: ubuntu-18.04
+      - group: certbot-common
+    strategy:
+      matrix:
+        linux-py36:
+          PYTHON_VERSION: 3.6
+          TOXENV: py36
+        linux-py37:
+          PYTHON_VERSION: 3.7
+          TOXENV: py37
+        linux-py37-nopin:
+          PYTHON_VERSION: 3.7
+          TOXENV: py37
+          CERTBOT_NO_PIN: 1
+        linux-boulder-v1-integration-certbot-oldest:
+          TOXENV: integration-certbot-oldest
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-integration-certbot-oldest:
+          TOXENV: integration-certbot-oldest
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-integration-nginx-oldest:
+          TOXENV: integration-nginx-oldest
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-integration-nginx-oldest:
+          TOXENV: integration-nginx-oldest
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-py27-integration:
+          PYTHON_VERSION: 2.7
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py27-integration:
+          PYTHON_VERSION: 2.7
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-py35-integration:
+          PYTHON_VERSION: 3.5
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py35-integration:
+          PYTHON_VERSION: 3.5
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-py36-integration:
+          PYTHON_VERSION: 3.6
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py36-integration:
+          PYTHON_VERSION: 3.6
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-py37-integration:
+          PYTHON_VERSION: 3.7
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py37-integration:
+          PYTHON_VERSION: 3.7
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-py38-integration:
+          PYTHON_VERSION: 3.8
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py38-integration:
+          PYTHON_VERSION: 3.8
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        nginx-compat:
+          TOXENV: nginx_compat
+        le-auto-jessie:
+          TOXENV: le_auto_jessie
+        le-auto-centos6:
+          TOXENV: le_auto_centos6
+        le-auto-oraclelinux6:
+          TOXENV: le_auto_oraclelinux6
+        docker-dev:
+          TOXENV: docker_dev
+        farmtest-apache2:
+          PYTHON_VERSION: 3.7
+          TOXENV: test-farm-apache2
+        farmtest-leauto-upgrades:
+          PYTHON_VERSION: 3.7
+          TOXENV: test-farm-leauto-upgrades
+        farmtest-certonly-standalone:
+          PYTHON_VERSION: 3.7
+          TOXENV: test-farm-certonly-standalone
+        farmtest-sdists:
+          PYTHON_VERSION: 3.7
+          TOXENV: test-farm-sdists
+    pool:
+      vmImage: $(IMAGE_NAME)
+    steps:
+      - template: ../steps/tox-steps.yml

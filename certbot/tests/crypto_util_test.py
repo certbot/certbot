@@ -27,6 +27,10 @@ SS_CERT = test_util.load_vector('cert_2048.pem')
 P256_KEY = test_util.load_vector('nistp256_key.pem')
 P256_CERT_PATH = test_util.vector_path('cert-nosans_nistp256.pem')
 P256_CERT = test_util.load_vector('cert-nosans_nistp256.pem')
+# CERT_LEAF is signed by CERT_ISSUER. CERT_ALT_ISSUER is a cross-sign of CERT_ISSUER.
+CERT_LEAF = test_util.load_vector('cert_leaf.pem')
+CERT_ISSUER = test_util.load_vector('cert_intermediate_1.pem')
+CERT_ALT_ISSUER = test_util.load_vector('cert_intermediate_2.pem')
 
 class InitSaveKeyTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_key."""
@@ -405,6 +409,43 @@ class CertAndChainFromFullchainTest(unittest.TestCase):
             self.assertEqual(chain_out, chain_pem)
 
         self.assertRaises(errors.Error, cert_and_chain_from_fullchain, cert_pem)
+
+
+class FindChainWithIssuerTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.find_chain_with_issuer"""
+
+    @classmethod
+    def _call(cls, fullchains, issuer_cn, **kwargs):
+        from certbot.crypto_util import find_chain_with_issuer
+        return find_chain_with_issuer(fullchains, issuer_cn, kwargs)
+
+    def _all_fullchains(self):
+        return [CERT_LEAF.decode() + CERT_ISSUER.decode(),
+                CERT_LEAF.decode() + CERT_ALT_ISSUER.decode()]
+
+    def test_positive_match(self):
+        """Correctly pick the chain based on the root's CN"""
+        fullchains = self._all_fullchains()
+        matched = self._call(fullchains, "Pebble Root CA 0cc6f0")
+        self.assertEqual(matched, fullchains[1])
+
+    @mock.patch('certbot.crypto_util.logger.info')
+    def test_no_match(self, mock_info):
+        fullchains = self._all_fullchains()
+        matched = self._call(fullchains, "non-existent issuer")
+        self.assertEqual(matched, fullchains[0])
+        mock_info.assert_not_called()
+
+    @mock.patch('certbot.crypto_util.logger.info')
+    def test_warning_on_no_match(self, mock_info):
+        fullchains = self._all_fullchains()
+        matched = self._call(fullchains, "non-existent issuer",
+                             warn_on_no_match=True)
+        self.assertEqual(matched, fullchains[0])
+        mock_info.assert_called_once_with("Certbot has been configured to prefer "
+            "certificate chains with issuer '%s', but no chain from the CA matched "
+            "this issuer. Using the default certificate chain instead.",
+            "non-existent issuer")
 
 
 if __name__ == '__main__':
