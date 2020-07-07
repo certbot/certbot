@@ -1,4 +1,5 @@
-from distutils.version import StrictVersion
+from distutils.version import LooseVersion
+import os
 import sys
 
 from setuptools import __version__ as setuptools_version
@@ -10,14 +11,21 @@ version = '1.6.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    'acme>=0.31.0',
-    'certbot>=1.1.0',
     'dns-lexicon>=2.1.22',
     'setuptools',
     'zope.interface',
 ]
 
-setuptools_known_environment_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
+if not os.environ.get('EXCLUDE_CERTBOT_DEPS'):
+    install_requires.extend([
+        'acme>=0.31.0',
+        'certbot>=1.1.0',
+    ])
+elif 'bdist_wheel' in sys.argv[1:]:
+    raise RuntimeError('Unset EXCLUDE_CERTBOT_DEPS when building wheels '
+                       'to include certbot dependencies.')
+
+setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
 if setuptools_known_environment_markers:
     install_requires.append('mock ; python_version < "3.3"')
 elif 'bdist_wheel' in sys.argv[1:]:

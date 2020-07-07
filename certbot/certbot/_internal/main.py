@@ -209,7 +209,7 @@ def _handle_identical_cert_request(config, lineage):
     elif config.verb == "certonly":
         keep_opt = "Keep the existing certificate for now"
     choices = [keep_opt,
-               "Renew & replace the cert (limit ~5 per 7 days)"]
+               "Renew & replace the cert (may be subject to CA rate limits)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
     response = display.menu(question, choices,
@@ -721,10 +721,11 @@ def update_account(config, unused_plugins):
     # the v2 uri. Since it's the same object on disk, put it back to the v1 uri
     # so that we can also continue to use the account object with acmev1.
     acc.regr = acc.regr.update(uri=prev_regr_uri)
-    account_storage.save_regr(acc, cb_client.acme)
-    eff.handle_subscription(config)
+    account_storage.update_regr(acc, cb_client.acme)
+    eff.prepare_subscription(config, acc)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
     return None
+
 
 def _install_cert(config, le_client, domains, lineage=None):
     """Install a cert
@@ -1116,6 +1117,7 @@ def run(config, plugins):
         display_ops.success_renewal(domains)
 
     _suggest_donation_if_appropriate(config)
+    eff.handle_subscription(config, le_client.account)
     return None
 
 
@@ -1189,6 +1191,7 @@ def renew_cert(config, plugins, lineage):
         notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                config.installer, lineage.fullchain), pause=False)
 
+
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.
 
@@ -1220,6 +1223,7 @@ def certonly(config, plugins):
         cert_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
         _report_new_cert(config, cert_path, fullchain_path)
         _suggest_donation_if_appropriate(config)
+        eff.handle_subscription(config, le_client.account)
         return
 
     domains, certname = _find_domains_or_certname(config, installer)
@@ -1237,6 +1241,8 @@ def certonly(config, plugins):
     key_path = lineage.key_path if lineage else None
     _report_new_cert(config, cert_path, fullchain_path, key_path)
     _suggest_donation_if_appropriate(config)
+    eff.handle_subscription(config, le_client.account)
+
 
 def renew(config, unused_plugins):
     """Renew previously-obtained certificates.

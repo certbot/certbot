@@ -1,0 +1,43 @@
+stages:
+  - stage: Deploy
+    jobs:
+      # This job relies on a snapcraft.cfg preconfigured with credential,
+      # stored as a secure file in Azure Pipeline.
+      # This credential has a maximum lifetime of 1 year and the current
+      # credential will expire on 6/25/2021. The content of snapcraft.cfg
+      # will need to be updated to use a new credential before then to
+      # prevent automated deploys from breaking. Remembering to do this is
+      # also tracked by https://github.com/certbot/certbot/issues/7931.
+      - job: publish_snap
+        strategy:
+          matrix:
+            amd64:
+              ARCH: amd64
+            arm64:
+              ARCH: arm64
+            armhf:
+              ARCH: armhf
+        pool:
+          vmImage: ubuntu-18.04
+        variables:
+          - group: certbot-common
+        steps:
+          - bash: |
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends snapd
+              sudo snap install --classic snapcraft
+            displayName: Install dependencies
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: snap-$(arch)
+              path: $(Build.SourcesDirectory)/snap
+            displayName: Retrieve Certbot snap
+          - task: DownloadSecureFile@1
+            name: snapcraftCfg
+            inputs:
+              secureFile: snapcraft.cfg
+          - bash: |
+              mkdir -p .snapcraft
+              ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
+              snapcraft push --release=edge snap/*.snap
+            displayName: Publish to Snap store

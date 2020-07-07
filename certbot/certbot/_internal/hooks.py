@@ -228,7 +228,7 @@ def _run_hook(cmd_name, shell_cmd):
     :type shell_cmd: `list` of `str` or `str`
 
     :returns: stderr if there was any"""
-    err, _ = misc.execute_command(cmd_name, shell_cmd)
+    err, _ = misc.execute_command(cmd_name, shell_cmd, env=util.env_no_snap_for_external_calls())
     return err
 
 

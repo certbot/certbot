@@ -63,6 +63,7 @@ CLI_DEFAULTS = dict(
     uir=None,
     staple=None,
     strict_permissions=False,
+    preferred_chain=None,
     pref_challs=[],
     validate_hooks=True,
     directory_hooks=True,

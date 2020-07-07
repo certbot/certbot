@@ -85,6 +85,7 @@ Authors
 * [Felix Schwarz](https://github.com/FelixSchwarz)
 * [Felix Yan](https://github.com/felixonmars)
 * [Filip Ochnik](https://github.com/filipochnik)
+* [Florian Klink](https://github.com/flokli)
 * [Francois Marier](https://github.com/fmarier)
 * [Frank](https://github.com/Frankkkkk)
 * [Frederic BLANC](https://github.com/fblanc)

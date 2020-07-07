@@ -2,13 +2,8 @@
 # Cross-compile the Certbot snap from local sources for the specified architecture,
 # and install it if this architecture is also the the current machine one.
 # This script is designed for CI tests purpose.
-# Usage: build_and_install.sh [amd64,arm64,armhf]
+# Usage: build.sh [amd64,arm64,armhf]
 set -ex
-
-if [[ -z "${TRAVIS}" ]]; then
-    echo "This script makes global changes to the system it is run on so should only be run in CI."
-    exit 1
-fi
 
 SNAP_ARCH=$1
 
@@ -25,8 +20,6 @@ source "${DIR}/common.sh"
 
 RegisterQemuHandlers
 ResolveArch "${SNAP_ARCH}"
-
-tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > snap-constraints.txt
 
 pushd "${DIR}/packages"
 "${CERTBOT_DIR}/tools/simple_http_server.py" 8080 >/dev/null 2>&1 &
@@ -46,8 +39,4 @@ docker run \
   -w "/certbot" \
   -e "PIP_EXTRA_INDEX_URL=http://localhost:8080" \
   "adferrand/snapcraft:${DOCKER_ARCH}-stable" \
-  snapcraft
-
-if [[ "$(arch)" == "${QEMU_ARCH}" ]]; then
-    sudo snap install --dangerous --classic *.snap
-fi
+  bash -c "snapcraft clean && snapcraft"

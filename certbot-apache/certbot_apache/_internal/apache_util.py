@@ -225,7 +225,8 @@ def _get_runtime_cfg(command):
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True)
+            universal_newlines=True,
+            env=util.env_no_snap_for_external_calls())
         stdout, stderr = proc.communicate()
 
     except (OSError, ValueError):
