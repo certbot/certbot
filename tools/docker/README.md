@@ -59,7 +59,7 @@ This script will locally build all Dockers for the given version using the same 
 This can be used to test the build process before invoking the actual publication workflow.
 
 ```
-./deploy [VERSION]
+./deploy.sh [VERSION]
 ```
 
 This script will trigger the publication of all Dockers for the given version to DockerHub. To do so, this script will:
