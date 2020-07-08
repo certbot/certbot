@@ -84,19 +84,139 @@ jobs:
   - job: snap_dns_build
     strategy:
       matrix:
-        amd64:
+        amd64-certbot-dns-cloudflare:
           ARCH: amd64
+          DNS_PLUGIN: certbot-dns-cloudflare
+        amd64-certbot-dns-cloudxns:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-cloudxns
+        amd64-certbot-dns-digitalocean:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-digitalocean
+        amd64-certbot-dns-dnsimple:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-dnsimple
+        amd64-certbot-dns-dnsmadeeasy:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-dnsmadeeasy
+        amd64-certbot-dns-gehirn:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-gehirn
+        amd64-certbot-dns-google:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-google
+        amd64-certbot-dns-linode:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-linode
+        amd64-certbot-dns-luadns:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-luadns
+        amd64-certbot-dns-nsone:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-nsone
+        amd64-certbot-dns-ovh:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-ovh
+        amd64-certbot-dns-rfc2136:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-rfc2136
+        amd64-certbot-dns-route53:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-route53
+        amd64-certbot-dns-sakuracloud:
+          ARCH: amd64
+          DNS_PLUGIN: certbot-dns-sakuracloud
         # Do not run the QEMU jobs for test branches
         ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-          arm64:
+          arm64-certbot-dns-cloudflare:
             ARCH: arm64
-          armhf:
+            DNS_PLUGIN: certbot-dns-cloudflare
+          arm64-certbot-dns-cloudxns:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-cloudxns
+          arm64-certbot-dns-digitalocean:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-digitalocean
+          arm64-certbot-dns-dnsimple:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-dnsimple
+          arm64-certbot-dns-dnsmadeeasy:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-dnsmadeeasy
+          arm64-certbot-dns-gehirn:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-gehirn
+          arm64-certbot-dns-google:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-google
+          arm64-certbot-dns-linode:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-linode
+          arm64-certbot-dns-luadns:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-luadns
+          arm64-certbot-dns-nsone:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-nsone
+          arm64-certbot-dns-ovh:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-ovh
+          arm64-certbot-dns-rfc2136:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-rfc2136
+          arm64-certbot-dns-route53:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-route53
+          arm64-certbot-dns-sakuracloud:
+            ARCH: arm64
+            DNS_PLUGIN: certbot-dns-sakuracloud
+          armhf-certbot-dns-cloudflare:
             ARCH: armhf
+            DNS_PLUGIN: certbot-dns-cloudflare
+          armhf-certbot-dns-cloudxns:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-cloudxns
+          armhf-certbot-dns-digitalocean:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-digitalocean
+          armhf-certbot-dns-dnsimple:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-dnsimple
+          armhf-certbot-dns-dnsmadeeasy:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-dnsmadeeasy
+          armhf-certbot-dns-gehirn:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-gehirn
+          armhf-certbot-dns-google:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-google
+          armhf-certbot-dns-linode:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-linode
+          armhf-certbot-dns-luadns:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-luadns
+          armhf-certbot-dns-nsone:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-nsone
+          armhf-certbot-dns-ovh:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-ovh
+          armhf-certbot-dns-rfc2136:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-rfc2136
+          armhf-certbot-dns-route53:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-route53
+          armhf-certbot-dns-sakuracloud:
+            ARCH: armhf
+            DNS_PLUGIN: certbot-dns-sakuracloud
     pool:
       vmImage: ubuntu-18.04
     steps:
       - script: |
-          tools/snap/build_dns.sh ${ARCH} ALL
+          tools/snap/build_dns.sh ${ARCH} ${DNS_PLUGIN}
           mv certbot-dns-*/*.snap $(Build.ArtifactStagingDirectory)
         displayName: Build Certbot DNS snaps
       - task: PublishPipelineArtifact@1
