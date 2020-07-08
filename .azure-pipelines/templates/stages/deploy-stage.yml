@@ -39,5 +39,5 @@ stages:
           - bash: |
               mkdir -p .snapcraft
               ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
-              snapcraft push --release=edge snap/*.snap
+              snapcraft upload --release=edge snap/*.snap
             displayName: Publish to Snap store
