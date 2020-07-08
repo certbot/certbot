@@ -126,7 +126,9 @@ jobs:
           python -m tox -e integration-external,apacheconftest-external-with-pebble
         displayName: Run tox
   - job: snap_dns_run
-    dependsOn: snap_dns_build
+    dependsOn:
+      - snap_build
+      - snap_dns_build
     pool:
       vmImage: ubuntu-18.04
     steps:
