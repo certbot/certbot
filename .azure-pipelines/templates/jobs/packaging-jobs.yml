@@ -63,8 +63,8 @@ jobs:
       matrix:
         amd64:
           ARCH: amd64
-        # Do not run the QEMU jobs for the full-test-suite pipeline
-        ${{ if ne(variables['System.DefinitionId'], 4 )}}:
+        # Do not run the QEMU jobs for test branches
+        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
           arm64:
             ARCH: arm64
           armhf:
@@ -86,8 +86,8 @@ jobs:
       matrix:
         amd64:
           ARCH: amd64
-        # Do not run the QEMU jobs for the full-test-suite pipeline
-        ${{ if ne(variables['System.DefinitionId'], 4 )}}:
+        # Do not run the QEMU jobs for test branches
+        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
           arm64:
             ARCH: arm64
           armhf:
