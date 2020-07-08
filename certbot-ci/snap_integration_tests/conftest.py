@@ -36,5 +36,5 @@ def pytest_generate_tests(metafunc):
     Generate (multiple) parametrized calls to a test function.
     """
     if "dns_snap_path" in metafunc.fixturenames:
-        snap_dns_path_list = glob.glob(os.path.join(metafunc.config.snap_folder, 'certbot-dns-*_*.snap'))
-        metafunc.parametrize("snap_dns_path", snap_dns_path_list)
+        snap_dns_path_list = glob.glob(os.path.join(metafunc.config.getoption('snap_folder'), 'certbot-dns-*_*.snap'))
+        metafunc.parametrize("dns_snap_path", snap_dns_path_list)

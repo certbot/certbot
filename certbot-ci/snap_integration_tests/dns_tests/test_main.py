@@ -11,7 +11,8 @@ def install_certbot_snap(request):
     with pytest.raises(Exception):
         subprocess.check_call(['certbot', '--version'])
     try:
-        snap_path = glob.glob(os.path.join(request.config.snap_folder, 'certbot_*.snap'))[0]
+        snap_path = glob.glob(os.path.join(request.config.getoption("snap_folder"),
+                                           'certbot_*.snap'))[0]
         subprocess.check_call(['snap', 'install', '--classic', '--dangerous', snap_path])
         subprocess.check_call(['certbot', '--version'])
         yield
@@ -21,8 +22,8 @@ def install_certbot_snap(request):
 
 def test_dns_plugin_install(dns_snap_path):
     """
-    Test that each DNS plugin Certbot snap available in SNAP_FOLDER
-    can be installed and is usable with the Certbot snap.
+    Test that each DNS plugin Certbot snap can be installed
+    and is usable with the Certbot snap.
     """
     plugin_name = re.match(r'^certbot-(dns-\w+)_.*\.snap$',
                            os.path.basename(dns_snap_path)).group(1)
