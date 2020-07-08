@@ -23,7 +23,7 @@ def _list_dns_snaps_paths():
 
 
 def _extract_plugin_name(dns_snap_path):
-    return re.match(r'^.*certbot-(dns-\w+)_.*\.snap$', dns_snap_path).group(1)
+    return re.match(r'^certbot-(dns-\w+)_.*\.snap$', os.path.basename(dns_snap_path)).group(1)
 
 
 @pytest.fixture(autouse=True, scope="module")
