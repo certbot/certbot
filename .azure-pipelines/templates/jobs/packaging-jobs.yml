@@ -151,7 +151,7 @@ jobs:
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot DNS plugins snaps
       - script: |
-          sudo python3 -m pip install pytest
+          sudo tools/pip_install.py pytest
           sudo -E pytest tests/certbot_dns_snap_test.py
         displayName: Test DNS plugins snaps
         env:
