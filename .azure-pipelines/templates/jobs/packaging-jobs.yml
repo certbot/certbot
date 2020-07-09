@@ -72,6 +72,8 @@ jobs:
         inputs:
           secureFile: credentials
       - script: |
+          git config --global user.email "$(Build.RequestedForEmail)"
+          git config --global user.name "$(Build.RequestedFor)"
           mkdir -p ~/.local/share/snapcraft/provider/launchpad
           cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
           tools/snap/build_remote.sh amd64,arm64,armhf
@@ -96,6 +98,8 @@ jobs:
         inputs:
           secureFile: credentials
       - script: |
+          git config --global user.email "$(Build.RequestedForEmail)"
+          git config --global user.name "$(Build.RequestedFor)"
           mkdir -p ~/.local/share/snapcraft/provider/launchpad
           cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
           tools/snap/build_dns_remote.sh amd64,arm64,armhf ALL
