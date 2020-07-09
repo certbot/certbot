@@ -67,6 +67,7 @@ jobs:
       - script: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends snapd
+          sudo snap install --classic snapcraft
         displayName: Install dependencies
       - task: DownloadSecureFile@1
         name: snapcraftCfg
@@ -92,6 +93,7 @@ jobs:
       - script: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends snapd
+          sudo snap install --classic snapcraft
         displayName: Install dependencies
       - task: DownloadSecureFile@1
         name: snapcraftCfg

@@ -18,7 +18,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 CERTBOT_DIR="$(dirname "$(dirname "${DIR}")")"
 
 if [[ "${DNS_PLUGINS}" = "ALL" ]]; then
-    DNS_PLUGINS=$(find . -maxdepth 1 -type d -name "${CERTBOT_DIR}/certbot-dns-*" -exec basename {} \; | paste -sd "," -)
+    DNS_PLUGINS=$(find ${CERTBOT_DIR} -maxdepth 1 -type d -name "certbot-dns-*" -exec basename {} \; | paste -sd "," -)
 fi
 
 trap popd EXIT
