@@ -1,6 +1,6 @@
 """
 General conftest for pytest execution of all integration tests lying
-in the window_installer_integration tests package.
+in the snap_installer_integration tests package.
 As stated by pytest documentation, conftest module is used to set on
 for a directory a specific configuration using built-in pytest hooks.
 
