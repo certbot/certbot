@@ -61,8 +61,6 @@ jobs:
   - job: snap_build
     pool:
       vmImage: ubuntu-18.04
-    variables:
-      - group: certbot-common
     steps:
       - script: |
           sudo apt-get update
@@ -70,12 +68,12 @@ jobs:
           sudo snap install --classic snapcraft
         displayName: Install dependencies
       - task: DownloadSecureFile@1
-        name: snapcraftCfg
+        name: credentials
         inputs:
-          secureFile: snapcraft.cfg
+          secureFile: credentials
       - script: |
-          mkdir -p .snapcraft
-          ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
+          mkdir -p .local/share/snapcraft/provider/launchpad
+          ln -s $(credentials.secureFilePath) .local/share/snapcraft/provider/launchpad/credentials
           tools/snap/build_remote.sh amd64,arm64,armhf
           mv *.snap $(Build.ArtifactStagingDirectory)
         displayName: Build Certbot snap
@@ -87,8 +85,6 @@ jobs:
   - job: snap_dns_build
     pool:
       vmImage: ubuntu-18.04
-    variables:
-      - group: certbot-common
     steps:
       - script: |
           sudo apt-get update
@@ -96,12 +92,12 @@ jobs:
           sudo snap install --classic snapcraft
         displayName: Install dependencies
       - task: DownloadSecureFile@1
-        name: snapcraftCfg
+        name: credentials
         inputs:
-          secureFile: snapcraft.cfg
+          secureFile: credentials
       - script: |
-          mkdir -p .snapcraft
-          ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
+          mkdir -p .local/share/snapcraft/provider/launchpad
+          ln -s $(credentials.secureFilePath) .local/share/snapcraft/provider/launchpad/credentials
           tools/snap/build_dns_remote.sh amd64,arm64,armhf ALL
           mv certbot-dns-*/*.snap $(Build.ArtifactStagingDirectory)
         displayName: Build Certbot DNS snaps
