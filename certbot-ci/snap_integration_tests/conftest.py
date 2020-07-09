@@ -27,7 +27,7 @@ def pytest_configure(config):
     :param config: the current pytest configuration
     """
     if not config.option.allow_persistent_changes:
-        raise RuntimeError('This integration test would install Certbot snap on your machine. '
+        raise RuntimeError('This integration test would install the Certbot snap on your machine. '
                            'Please run it again with the `--allow-persistent-changes` flag set to acknowledge.')
 
 
