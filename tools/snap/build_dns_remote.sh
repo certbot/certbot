@@ -23,10 +23,17 @@ fi
 
 trap popd EXIT
 
-IFS=","
-for DNS_PLUGIN in ${DNS_PLUGINS}; do
+function run() {
+    local DNS_PLUGIN=$1
     pushd "${CERTBOT_DIR}/${DNS_PLUGIN}"
     python3 ../tools/strip_hashes.py ../letsencrypt-auto-source/pieces/dependency-requirements.txt | grep -v python-augeas > snap-constraints.txt
     snapcraft remote-build --launchpad-accept-public-upload --build-on="${SNAP_ARCHS}"
     popd
+}
+
+IFS=","
+for DNS_PLUGIN in ${DNS_PLUGINS}; do
+    run "${DNS_PLUGIN}" &
 done
+
+wait
