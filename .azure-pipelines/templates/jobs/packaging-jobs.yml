@@ -72,8 +72,8 @@ jobs:
         inputs:
           secureFile: credentials
       - script: |
-          mkdir -p .local/share/snapcraft/provider/launchpad
-          ln -s $(credentials.secureFilePath) .local/share/snapcraft/provider/launchpad/credentials
+          mkdir -p $(Agent.HomeDirectory)/.local/share/snapcraft/provider/launchpad
+          cp $(credentials.secureFilePath) $(Agent.HomeDirectory)/.local/share/snapcraft/provider/launchpad/credentials
           tools/snap/build_remote.sh amd64,arm64,armhf
           mv *.snap $(Build.ArtifactStagingDirectory)
         displayName: Build Certbot snap
@@ -96,8 +96,8 @@ jobs:
         inputs:
           secureFile: credentials
       - script: |
-          mkdir -p .local/share/snapcraft/provider/launchpad
-          ln -s $(credentials.secureFilePath) .local/share/snapcraft/provider/launchpad/credentials
+          mkdir -p $(Agent.HomeDirectory)/.local/share/snapcraft/provider/launchpad
+          cp $(credentials.secureFilePath) $(Agent.HomeDirectory)/.local/share/snapcraft/provider/launchpad/credentials
           tools/snap/build_dns_remote.sh amd64,arm64,armhf ALL
           mv certbot-dns-*/*.snap $(Build.ArtifactStagingDirectory)
         displayName: Build Certbot DNS snaps
