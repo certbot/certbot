@@ -63,12 +63,10 @@ jobs:
       matrix:
         amd64:
           ARCH: amd64
-        # Do not run the QEMU jobs for test branches
-        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-          arm64:
-            ARCH: arm64
-          armhf:
-            ARCH: armhf
+        arm64:
+          ARCH: arm64
+        armhf:
+          ARCH: armhf
     pool:
       vmImage: ubuntu-18.04
     steps:
@@ -86,12 +84,10 @@ jobs:
       matrix:
         amd64:
           ARCH: amd64
-        # Do not run the QEMU jobs for test branches
-        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-          arm64:
-            ARCH: arm64
-          armhf:
-            ARCH: armhf
+        arm64:
+          ARCH: arm64
+        armhf:
+          ARCH: armhf
     pool:
       vmImage: ubuntu-18.04
     steps:
