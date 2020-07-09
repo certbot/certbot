@@ -1,13 +1,13 @@
-# Advanced pipeline for running our full test suite on demand.
+# Advanced pipeline for running our full test suite on demand and for release branches.
 trigger:
+  - '*.x'
   # When changing these triggers, please ensure the documentation under
   # "Running tests in CI" is still correct.
-  - azure-test-*
   - test-*
 pr: none
 
-jobs:
-  # Any addition here should be reflected in the advanced and release pipelines.
-  # It is advised to declare all jobs here as templates to improve maintainability.
-  - template: templates/tests-suite.yml
-  - template: templates/installer-tests.yml
+stages:
+  - template: templates/stages/test-and-package-stage.yml
+  # Notify failures only for release branches.
+  - ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
+    - template: templates/stages/notify-failure-stage.yml

@@ -110,8 +110,7 @@ to most-backwards compatible). The client will follow the Mozilla defaults
 for the *Intermediate* configuration by default, at least with regards to
 ciphersuites and TLS versions. Mozilla's web site describes which client
 software will be compatible with each configuration. You can also use
-the Qualys SSL Labs site, which Certbot will suggest
-when installing a certificate, to test your server and see whether it
+the Qualys SSL Labs site to test your server and see whether it
 will be compatible with particular software versions.
 
 The Let's Encrypt project expects to follow the Mozilla recommendations

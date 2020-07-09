@@ -1,0 +1,25 @@
+name: certbot-dns-luadns
+summary: LuaDNS Authenticator plugin for Certbot
+description: LuaDNS Authenticator plugin for Certbot
+confinement: strict
+grade: devel
+base: core20
+adopt-info: certbot-dns-luadns
+
+parts:
+  certbot-dns-luadns:
+    plugin: python
+    source: .
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
+    override-pull: |
+        snapcraftctl pull
+        snapcraftctl set-version `grep ^version $SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"`
+    build-environment:
+      - EXCLUDE_CERTBOT_DEPS: "True"
+
+slots:
+  certbot:
+    interface: content
+    content: certbot-1
+    read:
+      - $SNAP/lib/python3.8/site-packages

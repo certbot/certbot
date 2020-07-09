@@ -530,3 +530,33 @@ def get_serial_from_cert(cert_path):
         x509 = crypto.load_certificate(crypto.FILETYPE_PEM,
                                                            f.read())
     return x509.get_serial_number()
+
+
+def find_chain_with_issuer(fullchains, issuer_cn, warn_on_no_match=False):
+    """Chooses the first certificate chain from fullchains which contains an
+    Issuer Subject Common Name matching issuer_cn.
+
+    :param fullchains: The list of fullchains in PEM chain format.
+    :type fullchains: `list` of `str`
+    :param `str` issuer_cn: The exact Subject Common Name to match against any
+        issuer in the certificate chain.
+
+    :returns: The best-matching fullchain, PEM-encoded, or the first if none match.
+    :rtype: `str`
+    """
+    for chain in fullchains:
+        certs = [x509.load_pem_x509_certificate(cert, default_backend()) \
+                 for cert in CERT_PEM_REGEX.findall(chain.encode())]
+        # Iterate the fullchain beginning from the leaf. For each certificate encountered,
+        # match against Issuer Subject CN.
+        for cert in certs:
+            cert_issuer_cn = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+            if cert_issuer_cn and cert_issuer_cn[0].value == issuer_cn:
+                return chain
+
+    # Nothing matched, return whatever was first in the list.
+    if warn_on_no_match:
+        logger.info("Certbot has been configured to prefer certificate chains with "
+                    "issuer '%s', but no chain from the CA matched this issuer. Using "
+                    "the default certificate chain instead.", issuer_cn)
+    return fullchains[0]
