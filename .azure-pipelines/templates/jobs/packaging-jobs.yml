@@ -59,50 +59,54 @@ jobs:
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
   - job: snap_build
-    strategy:
-      matrix:
-        amd64:
-          ARCH: amd64
-        # Do not run the QEMU jobs for test branches
-        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-          arm64:
-            ARCH: arm64
-          armhf:
-            ARCH: armhf
     pool:
       vmImage: ubuntu-18.04
+    variables:
+      - group: certbot-common
     steps:
       - script: |
-          tools/snap/build.sh ${ARCH}
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends snapd
+        displayName: Install dependencies
+      - task: DownloadSecureFile@1
+        name: snapcraftCfg
+        inputs:
+          secureFile: snapcraft.cfg
+      - script: |
+          mkdir -p .snapcraft
+          ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
+          tools/snap/build_remote.sh amd64,arm64,armhf
           mv *.snap $(Build.ArtifactStagingDirectory)
         displayName: Build Certbot snap
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
-          artifact: snap-$(arch)
-        displayName: Store snap artifact
+          artifact: snaps
+        displayName: Store snaps artifacts
   - job: snap_dns_build
-    strategy:
-      matrix:
-        amd64:
-          ARCH: amd64
-        # Do not run the QEMU jobs for test branches
-        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-          arm64:
-            ARCH: arm64
-          armhf:
-            ARCH: armhf
     pool:
       vmImage: ubuntu-18.04
+    variables:
+      - group: certbot-common
     steps:
       - script: |
-          tools/snap/build_dns.sh ${ARCH} ALL
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends snapd
+        displayName: Install dependencies
+      - task: DownloadSecureFile@1
+        name: snapcraftCfg
+        inputs:
+          secureFile: snapcraft.cfg
+      - script: |
+          mkdir -p .snapcraft
+          ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
+          tools/snap/build_dns_remote.sh amd64,arm64,armhf ALL
           mv certbot-dns-*/*.snap $(Build.ArtifactStagingDirectory)
         displayName: Build Certbot DNS snaps
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
-          artifact: dns-snap-$(arch)
+          artifact: dns-snaps
         displayName: Store snaps artifacts
   - job: snap_run
     dependsOn: snap_build
@@ -116,11 +120,11 @@ jobs:
         displayName: Install dependencies
       - task: DownloadPipelineArtifact@2
         inputs:
-          artifact: snap-amd64
+          artifact: snaps
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snap
       - script: |
-          sudo snap install --dangerous --classic snap/*.snap
+          sudo snap install --dangerous --classic snap/*_amd64.snap
         displayName: Install Certbot snap
       - script: |
           python -m tox -e integration-external,apacheconftest-external-with-pebble
@@ -142,12 +146,12 @@ jobs:
           addToPath: true
       - task: DownloadPipelineArtifact@2
         inputs:
-          artifact: snap-amd64
+          artifact: snaps
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snap
       - task: DownloadPipelineArtifact@2
         inputs:
-          artifact: dns-snap-amd64
+          artifact: dns-snaps
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot DNS plugins snaps
       - script: |
@@ -155,5 +159,5 @@ jobs:
           venv/bin/python tools/pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
       - script: |
-          sudo -E venv/bin/pytest certbot-ci/snap_integration_tests/dns_tests --allow-persistent-changes --snap-folder $(Build.SourcesDirectory)/snap
+          sudo -E venv/bin/pytest certbot-ci/snap_integration_tests/dns_tests --allow-persistent-changes --snap-folder $(Build.SourcesDirectory)/snap --snap-arch amd64
         displayName: Test DNS plugins snaps

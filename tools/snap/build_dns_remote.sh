@@ -1,21 +1,25 @@
 #!/bin/bash
 set -ex
 
-DNS_PLUGINS=$1
-SNAP_ARCHS=$2
-
-if [[ -z "${DNS_PLUGINS}" ]]; then
-    echo "You need to specify the DNS plugins"
-    exit 1
-fi
+SNAP_ARCHS=$1
+DNS_PLUGINS=$2
 
 if [[ -z "${SNAP_ARCHS}" ]]; then
     echo "You need to specify at least one target architecture"
     exit 1
 fi
 
+if [[ -z "${DNS_PLUGINS}" ]]; then
+    echo "You need to specify the DNS plugins"
+    exit 1
+fi
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 CERTBOT_DIR="$(dirname "$(dirname "${DIR}")")"
+
+if [[ "${DNS_PLUGINS}" = "ALL" ]]; then
+    DNS_PLUGINS=$(find . -maxdepth 1 -type d -name "${CERTBOT_DIR}/certbot-dns-*" -exec basename {} \; | paste -sd "," -)
+fi
 
 trap popd EXIT
 

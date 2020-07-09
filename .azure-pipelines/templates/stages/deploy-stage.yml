@@ -9,14 +9,6 @@ stages:
       # prevent automated deploys from breaking. Remembering to do this is
       # also tracked by https://github.com/certbot/certbot/issues/7931.
       - job: publish_snap
-        strategy:
-          matrix:
-            amd64:
-              ARCH: amd64
-            arm64:
-              ARCH: arm64
-            armhf:
-              ARCH: armhf
         pool:
           vmImage: ubuntu-18.04
         variables:
@@ -29,12 +21,12 @@ stages:
             displayName: Install dependencies
           - task: DownloadPipelineArtifact@2
             inputs:
-              artifact: snap-$(arch)
+              artifact: snaps
               path: $(Build.SourcesDirectory)/snap
-            displayName: Retrieve Certbot snap
+            displayName: Retrieve Certbot snaps
           - task: DownloadPipelineArtifact@2
             inputs:
-              artifact: dns-snap-$(arch)
+              artifact: dns-snaps
               path: $(Build.SourcesDirectory)/snap
             displayName: Retrieve DNS plugins snaps
           - task: DownloadSecureFile@1

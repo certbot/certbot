@@ -17,6 +17,8 @@ def pytest_addoption(parser):
     """
     parser.addoption('--snap-folder', required=True,
                      help='set the folder path where snaps to test are located')
+    parser.addoption('--snap-arch', default='amd64',
+                    help='set the architecture do test (default: amd64)')
     parser.addoption('--allow-persistent-changes', action='store_true',
                      help='needs to be set, and confirm that the test will make persistent changes on this machine')
 
@@ -36,5 +38,8 @@ def pytest_generate_tests(metafunc):
     Generate (multiple) parametrized calls to a test function.
     """
     if "dns_snap_path" in metafunc.fixturenames:
-        snap_dns_path_list = glob.glob(os.path.join(metafunc.config.getoption('snap_folder'), 'certbot-dns-*_*.snap'))
+        snap_arch = metafunc.config.getoption('snap_arch')
+        snap_folder = metafunc.config.getoption('snap_folder')
+        snap_dns_path_list = glob.glob(os.path.join(snap_folder, 
+                                                    'certbot-dns-*_{0}.snap'.format(snap_arch)))
         metafunc.parametrize("dns_snap_path", snap_dns_path_list)
