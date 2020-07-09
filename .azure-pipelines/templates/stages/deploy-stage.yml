@@ -32,6 +32,11 @@ stages:
               artifact: snap-$(arch)
               path: $(Build.SourcesDirectory)/snap
             displayName: Retrieve Certbot snap
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: dns-snap-$(arch)
+              path: $(Build.SourcesDirectory)/snap
+            displayName: Retrieve DNS plugins snaps
           - task: DownloadSecureFile@1
             name: snapcraftCfg
             inputs:
@@ -39,5 +44,7 @@ stages:
           - bash: |
               mkdir -p .snapcraft
               ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
-              snapcraft upload --release=edge snap/*.snap
+              for SNAP_FILE in snap/*.snap; do
+                snapcraft upload --release=edge "${SNAP_FILE}"
+              done
             displayName: Publish to Snap store
