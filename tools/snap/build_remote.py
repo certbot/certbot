@@ -40,7 +40,7 @@ def _build_snap(target, archs):
     return {target: status}
 
 
-def _dump_result(targets, archs, results):
+def _dump_results(targets, archs, results):
     for target in targets:
         for arch in archs:
             build_output = results[target][arch]
@@ -74,12 +74,14 @@ def main():
     targets = set(args.targets)
 
     pool = multiprocessing.Pool(processes=len(targets))
-    async_results = [pool.apply_async(_dump_result, (target, archs)) for target in targets]
+    async_results = [pool.apply_async(_build_snap, (target, archs)) for target in targets]
 
     results = {}
 
     for async_result in async_results:
         results.update(async_result.get())
+
+    _dump_results(targets, archs, results)
 
 
 if __name__ == '__main__':
