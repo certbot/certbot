@@ -6,7 +6,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Third-party plugins can be used without prefix (`plugin_name` instead of `dist_name:plugin_name`):
+  this concerns the plugin name, CLI flags, and keys in credential files.
+  The prefixed form is still supported but is deprecated, and will be removed in a future release.
 
 ### Changed
 
