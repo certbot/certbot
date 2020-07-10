@@ -1,6 +1,5 @@
 #!/bin/bash
-# Cross-compile the Certbot snap from local sources for the specified architecture,
-# and install it if this architecture is also the the current machine one.
+# Cross-compile the Certbot snap from local sources for the specified architecture.
 # This script is designed for CI tests purpose.
 # Usage: build.sh [amd64,arm64,armhf]
 set -ex
@@ -39,4 +38,4 @@ docker run \
   -w "/certbot" \
   -e "PIP_EXTRA_INDEX_URL=http://localhost:8080" \
   "adferrand/snapcraft:${DOCKER_ARCH}-stable" \
-  snapcraft
+  bash -c "snapcraft clean && snapcraft"

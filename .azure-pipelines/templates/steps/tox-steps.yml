@@ -38,9 +38,6 @@ steps:
       secureFile: azure-test-farm.pem
     condition: contains(variables['TOXENV'], 'test-farm')
   - bash: |
-      ln -s $(testFarmPem.secureFilePath) tests/letstest/test-farm.pem
-    condition: contains(variables['TOXENV'], 'test-farm')
-  - bash: |
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
       [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
       env

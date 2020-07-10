@@ -2,7 +2,25 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.6.0 - master
+## 1.7.0 - master
+
+### Added
+
+* Third-party plugins can be used without prefix (`plugin_name` instead of `dist_name:plugin_name`):
+  this concerns the plugin name, CLI flags, and keys in credential files.
+  The prefixed form is still supported but is deprecated, and will be removed in a future release.
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.6.0 - 2020-07-07
 
 ### Added
 
@@ -15,9 +33,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Added `--preferred-chain <issuer CN>`. If a CA offers multiple certificate chains,
   it may be  used to indicate to Certbot which chain should be preferred.
   * e.g. `--preferred-chain "DST Root CA X3"`
-* Third-party plugins can be used without prefix (`plugin_name` instead of `dist_name:plugin_name`):
-  this concerns the plugin name, CLI flags, and keys in credential files.
-  The prefixed form is still supported but is deprecated, and will be removed in a future release.
 
 ### Changed
 
