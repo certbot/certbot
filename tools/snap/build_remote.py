@@ -17,11 +17,15 @@ def _build_snap(target, archs):
         workspace = CERTBOT_DIR
     else:
         workspace = join(CERTBOT_DIR, target)
+        subprocess.check_output(
+            ('"{0}" tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt '
+             '| grep -v python-augeas > "{1}/snap-constraints.txt"').format(sys.executable, workspace),
+            shell=True, cwd=workspace)
 
     try:
         subprocess.check_call([
             'snapcraft', 'remote-build', '--launchpad-accept-public-upload',
-             '--build-on', ','.join(archs)
+            '--build-on', ','.join(archs)
         ], universal_newlines=True, cwd=workspace)
     except subprocess.CalledProcessError as e:
         # Will be handled after
@@ -56,6 +60,8 @@ def _dump_results(targets, archs, results):
 
     print('Build summary')
     print('=============')
+    targets = list(targets)
+    targets.sort()
     for target in targets:
         print('Builds for target={0}: {1}'.format(
             target,
