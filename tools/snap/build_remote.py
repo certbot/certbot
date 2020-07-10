@@ -103,8 +103,8 @@ def main():
 
     failures = _dump_results(targets, archs, results)
 
-    sys.exit(1 if failures else 0)
+    return 1 if failures else 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
