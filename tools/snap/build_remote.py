@@ -69,7 +69,7 @@ def _dump_results(targets, archs, results):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('targets', nargs='+', choices=['certbot', *PLUGINS],
+    parser.add_argument('targets', nargs='+', choices=['ALL', 'DNS_PLUGINS', 'certbot', *PLUGINS],
                         help='the list of snaps to build')
     parser.add_argument('--archs', nargs='+', choices=['amd64', 'arm64', 'armhf'], default='amd64',
                         help='the architectures for which snaps are built')
@@ -77,6 +77,14 @@ def main():
 
     archs = set(args.archs)
     targets = set(args.targets)
+
+    if 'ALL' in targets:
+        targets.remove('ALL')
+        targets.update(['certbot', 'DNS_PLUGINS'])
+
+    if 'DNS_PLUGINS' in targets:
+        targets.remove('DNS_PLUGINS')
+        targets.update(PLUGINS)
 
     pool = multiprocessing.Pool(processes=len(targets))
     async_results = [pool.apply_async(_build_snap, (target, archs)) for target in targets]

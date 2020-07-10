@@ -24,11 +24,6 @@ stages:
               artifact: snaps
               path: $(Build.SourcesDirectory)/snap
             displayName: Retrieve Certbot snaps
-          - task: DownloadPipelineArtifact@2
-            inputs:
-              artifact: dns-snaps
-              path: $(Build.SourcesDirectory)/snap
-            displayName: Retrieve DNS plugins snaps
           - task: DownloadSecureFile@1
             name: snapcraftCfg
             inputs:
