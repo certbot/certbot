@@ -4,6 +4,7 @@ import glob
 import multiprocessing
 import re
 import subprocess
+import sys
 from os.path import join, realpath, dirname, basename
 
 
@@ -21,7 +22,7 @@ def _build_snap(target, archs):
         subprocess.check_call([
             'snapcraft', 'remote-build', '--launchpad-accept-public-upload',
              '--build-on', ','.join(archs)
-        ], universal_newlines=True)
+        ], universal_newlines=True, cwd=workspace)
     except subprocess.CalledProcessError as e:
         # Will be handled after
         pass
@@ -32,7 +33,7 @@ def _build_snap(target, archs):
         with open(join(workspace, '{0}_{1}.txt'.format(target, arch))) as file_h:
             build_output = file_h.read()
 
-        if not re.match(r'Snapped {0}_.*_{1}\.snap'.format(target, arch), build_output):
+        if not re.search(r'Snapped {0}_.*_{1}\.snap'.format(target, arch), build_output):
             status[arch] = build_output
         else:
             status[arch] = None
@@ -41,17 +42,19 @@ def _build_snap(target, archs):
 
 
 def _dump_results(targets, archs, results):
+    failures = False
     for target in targets:
         for arch in archs:
             build_output = results[target][arch]
             if build_output:
+                failures = True
                 print('Output for failed build target={0} arch={1}'.format(target, arch))
                 print('-------------------------------------------')
                 print(build_output)
                 print('-------------------------------------------')
 
-    print('Summary')
-    print('=======')
+    print('Build summary')
+    print('=============')
     for target in targets:
         print('Builds for target={0}: {1}'.format(
             target,
@@ -60,6 +63,8 @@ def _dump_results(targets, archs, results):
                 for arch in archs
             ])
         ))
+
+    return failures
 
 
 def main():
@@ -81,7 +86,9 @@ def main():
     for async_result in async_results:
         results.update(async_result.get())
 
-    _dump_results(targets, archs, results)
+    failures = _dump_results(targets, archs, results)
+
+    sys.exit(1 if failures else 0)
 
 
 if __name__ == '__main__':
