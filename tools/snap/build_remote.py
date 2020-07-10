@@ -36,7 +36,7 @@ def _build_snap(target, archs):
     for arch in archs:
         status[arch] = None
         build_file = join(workspace, '{0}_{1}.txt'.format(target, arch))
-        if build_file:
+        if exists(build_file):
             with open(build_file) as file_h:
                 build_output = file_h.read()
 
