@@ -20,7 +20,7 @@ def _build_snap(target, archs):
         subprocess.check_output(
             ('"{0}" tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt '
              '| grep -v python-augeas > "{1}/snap-constraints.txt"').format(sys.executable, workspace),
-            shell=True, cwd=workspace)
+            shell=True, cwd=CERTBOT_DIR)
 
     try:
         subprocess.check_call([
