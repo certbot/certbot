@@ -112,6 +112,10 @@ class OCSPPrefetchMixin(object):
 
         :raises: errors.NotSupportedError
         """
+        if not ocsp.CRYPTOGRAPHY_OCSP_AVAILABLE:
+            raise errors.NotSupportedError(
+                "You need version 2.5+ of the Python library cryptography to"
+                " use this feature.")
         try:
             import bsddb  # pylint: disable=unused-variable
         except ImportError:

@@ -18,6 +18,7 @@ import six  # pylint: disable=unused-import
 from acme.magic_typing import Dict, List, Set, Union  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
+from certbot import ocsp
 
 from certbot.compat import os
 import util
@@ -83,6 +84,36 @@ class Mockdb(object):
             fh.write(json.dumps(self._data))
 
 
+class OldCryptographyOCSPPrefetchTest(util.ApacheTest):
+    """Tests for OCSP Prefetch with an old version of cryptography."""
+
+    def setUp(self):  # pylint: disable=arguments-differ
+        super(OldCryptographyOCSPPrefetchTest, self).setUp()
+
+        with mock.patch('certbot.ocsp.CRYPTOGRAPHY_OCSP_AVAILABLE', False):
+            self.config = util.get_apache_configurator(
+                self.config_path, self.vhost_path, self.config_dir, self.work_dir,
+                os_info="debian")
+
+    def test_enable(self):
+        with mock.patch('certbot.ocsp.CRYPTOGRAPHY_OCSP_AVAILABLE', False):
+            self.assertRaises(
+                errors.NotSupportedError,
+                self.config.enable_ocsp_prefetch,
+                mock.MagicMock(),
+                ['example.org'])
+
+    @mock.patch('certbot_apache._internal.configurator.ApacheConfigurator.restart')
+    def test_restart(self, mock_restart):
+        with mock.patch('certbot.ocsp') as mock_ocsp:
+            mock_ocsp.CRYPTOGRAPHY_OCSP_AVAILABLE = False
+            self.config.restart()
+            mock_restart.assert_called_once_with()
+            # assert nothing in mock_ocsp was ever called
+            self.assertFalse(mock_ocsp.mock_calls)
+
+
+@unittest.skipIf(not ocsp.CRYPTOGRAPHY_OCSP_AVAILABLE, "cryptography is too old")
 class OCSPPrefetchTest(util.ApacheTest):
     """Tests for OCSP Prefetch feature"""
     # pylint: disable=protected-access
