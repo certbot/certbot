@@ -5,7 +5,7 @@ import multiprocessing
 import re
 import subprocess
 import sys
-from os.path import join, realpath, dirname, basename
+from os.path import join, realpath, dirname, basename, exists
 
 
 CERTBOT_DIR = dirname(dirname(dirname(realpath(__file__))))
@@ -30,13 +30,14 @@ def _build_snap(target, archs):
     status = {}
 
     for arch in archs:
-        with open(join(workspace, '{0}_{1}.txt'.format(target, arch))) as file_h:
-            build_output = file_h.read()
+        status[arch] = None
+        build_file = join(workspace, '{0}_{1}.txt'.format(target, arch))
+        if build_file:
+            with open(build_file) as file_h:
+                build_output = file_h.read()
 
-        if not re.search(r'Snapped {0}_.*_{1}\.snap'.format(target, arch), build_output):
-            status[arch] = build_output
-        else:
-            status[arch] = None
+            if not re.search(r'Snapped {0}_.*_{1}\.snap'.format(target, arch), build_output):
+                status[arch] = build_output
 
     return {target: status}
 
