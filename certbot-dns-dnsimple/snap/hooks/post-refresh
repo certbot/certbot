@@ -1,16 +1,22 @@
 #!/bin/sh -e
 
+cb_version="$(snapctl get internal-certbot-version)"
+cb_version_2="$(snapctl get internal-certbot-version-2)"
+
+echo "post cb_version $cb_version"
+echo "post cb_version_2 $cb_version_2"
+
 # get certbot version
-cb_installed="$(snapctl get cb-installed)"
+# cb_installed="$(snapctl get cb-installed)"
 
-if [ -z "$cb_installed" ]; then
-    exit 0
-fi
+# if [ -z "$cb_installed" ]; then
+#     exit 0
+# fi
 
-# get required certbot version for plugin
-cb_required=$(grep -oP "certbot>=\K.*(?=')" $SNAP/setup.py)
+# # get required certbot version for plugin
+# cb_required=$(grep -oP "certbot>=\K.*(?=')" $SNAP/setup.py)
 
-if [ "$cb_installed" -lt "$cb_required" ]; then
-    echo "Certbot needs to be updated before this plugin can be updated; will try again on next refresh."
-    exit 1
-fi
+# if [ "$cb_installed" -lt "$cb_required" ]; then
+#     echo "Certbot needs to be updated before this plugin can be updated; will try again on next refresh."
+#     exit 1
+# fi

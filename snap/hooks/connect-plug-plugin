@@ -1,0 +1,6 @@
+#!/bin/sh -e
+
+
+
+snapctl set :plugin certbot-version="test1"
+snapctl set :certbot-version certbot-version="test2"
