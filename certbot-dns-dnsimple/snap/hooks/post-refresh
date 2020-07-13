@@ -1,10 +1,8 @@
 #!/bin/sh -e
 
 cb_version="$(snapctl get internal-certbot-version)"
-cb_version_2="$(snapctl get internal-certbot-version-2)"
 
 echo "post cb_version $cb_version"
-echo "post cb_version_2 $cb_version_2"
 
 # get certbot version
 # cb_installed="$(snapctl get cb-installed)"

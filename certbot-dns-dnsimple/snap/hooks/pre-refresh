@@ -1,12 +1,9 @@
 #!/bin/sh -e
 
 cb_version="$(snapctl get :certbot certbot-version)"
-cb_version_2="$(snapctl get :certbot-version certbot-version)"
 snapctl set internal-cb-version=$cb_version
-snapctl set internal-cb-version_2=$cb_version_2
 
 echo "pre cb_version $cb_version"
-echo "pre cb_version_2 $cb_version_2"
 
 # first_install="$(snapctl get first-install)"
 # if [ -z "$first_install" ]; then
