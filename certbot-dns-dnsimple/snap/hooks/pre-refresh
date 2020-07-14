@@ -9,6 +9,6 @@ fi
 
 echo "ls $SNAP/certbot-shared:" > "$SNAP_DATA/debuglog"
 ls $SNAP/certbot-shared
-cb_installed=$(grep -oP "__requires__ = 'certbot==\K.*(?=')" $SNAP/certbot-shared/__init__.py)
+cb_installed=$(grep -oP "__version__ = '\K.*(?=')" $SNAP/certbot-shared/__init__.py)
 echo "cb_installed: $cb_installed" > "$SNAP_DATA/debuglog"
 snapctl set cb-installed="$cb_installed"
