@@ -13,6 +13,7 @@ parts:
     constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     override-pull: |
         snapcraftctl pull
+        mkdir $SNAPCRAFT_PART_SRC/certbot-exec
         snapcraftctl set-version `grep ^version $SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"`
     build-environment:
       - EXCLUDE_CERTBOT_DEPS: "True"
@@ -20,6 +21,10 @@ parts:
     plugin: dump
     source: .
     stage: [setup.py]
+  shared:
+    plugin: dump
+    source: .
+    stage: [certbot-exec]
 
 slots:
   certbot:
