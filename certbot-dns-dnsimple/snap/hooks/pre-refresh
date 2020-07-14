@@ -3,12 +3,12 @@
 first_install="$(snapctl get first-install)"
 if [ -z "$first_install" ]; then
     snapctl set first-install="false"
-    echo "first install, not doing any version comparison checks"
+    echo "first install, not doing any version comparison checks" > "$SNAP_DATA/debuglog"
     exit 0
 fi
 
-echo "ls $SNAP/certbot-shared:"
+echo "ls $SNAP/certbot-shared:" > "$SNAP_DATA/debuglog"
 ls $SNAP/certbot-shared
-cb_installed=$(grep -oP "__requires__ = 'certbot==\K.*(?=')" $SNAP/certbot-shared)
-echo "cb_installed: $cb_installed"
+cb_installed=$(grep -oP "__requires__ = 'certbot==\K.*(?=')" $SNAP/certbot-shared/__init__.py)
+echo "cb_installed: $cb_installed" > "$SNAP_DATA/debuglog"
 snapctl set cb-installed="$cb_installed"
