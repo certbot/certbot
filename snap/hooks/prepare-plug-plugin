@@ -3,7 +3,6 @@
 if [ "$(snapctl get trust-plugin-with-root)" = "ok" ]; then
     # allow the connection, but reset config to allow for other slots to go through this auth flow
     snapctl unset trust-plugin-with-root
-    snapctl set :plugin certbot-version="test1"
     exit 0
 else
     echo "Only connect this interface if you trust the plugin author to have root on the system"
