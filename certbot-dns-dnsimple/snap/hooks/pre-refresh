@@ -1,13 +1,13 @@
 #!/bin/sh -e
 
-echo "ls $SNAP/certbot-shared:" >> "$SNAP_DATA/debuglog"
-ls $SNAP/certbot-shared >> "$SNAP_DATA/debuglog"
+# echo "ls $SNAP/certbot-shared:" >> "$SNAP_DATA/debuglog"
+# ls $SNAP/certbot-shared >> "$SNAP_DATA/debuglog"
 
-if [ ! -f "$SNAP/certbot-shared/__init__.py" ]; then
-    echo "No certbot version available; not doing version comparison check" >> "$SNAP_DATA/debuglog"
-    exit 0
-fi
+# if [ ! -f "$SNAP/certbot-shared/__init__.py" ]; then
+#     echo "No certbot version available; not doing version comparison check" >> "$SNAP_DATA/debuglog"
+#     exit 0
+# fi
 
-cb_installed=$(grep -oP "__version__ = '\K.*(?=')" $SNAP/certbot-shared/__init__.py)
-echo "cb_installed: $cb_installed" >> "$SNAP_DATA/debuglog"
-snapctl set cb-installed="$cb_installed"
+# cb_installed=$(grep -oP "__version__ = '\K.*(?=')" $SNAP/certbot-shared/__init__.py)
+# echo "cb_installed: $cb_installed" >> "$SNAP_DATA/debuglog"
+# snapctl set cb-installed="$cb_installed"

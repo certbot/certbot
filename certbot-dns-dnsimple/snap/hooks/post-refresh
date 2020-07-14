@@ -1,13 +1,19 @@
 #!/bin/sh -e
 
 # get certbot version
-cb_installed="$(snapctl get cb-installed)"
+# cb_installed="$(snapctl get cb-installed)"
 
-if [ -z "$cb_installed" ]; then
-    echo "cb_installed not set, not doing version comparison check" >> "$SNAP_DATA/debuglog"
+# if [ -z "$cb_installed" ]; then
+#     echo "cb_installed not set, not doing version comparison check" >> "$SNAP_DATA/debuglog"
+#     exit 0
+# fi
+
+if [ ! -f "$SNAP/certbot-shared/__init__.py" ]; then
+    echo "No certbot version available; not doing version comparison check" >> "$SNAP_DATA/debuglog"
     exit 0
 fi
 
+cb_installed=$(grep -oP "__version__ = '\K.*(?=')" $SNAP/certbot-shared/__init__.py)
 echo "cb_installed: $cb_installed" >> "$SNAP_DATA/debuglog"
 
 # get required certbot version for plugin
