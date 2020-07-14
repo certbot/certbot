@@ -79,11 +79,16 @@ parts:
         cd $SNAPCRAFT_PART_SRC
         python3 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt | grep -v python-augeas > snap-constraints.txt
         snapcraftctl set-version `git describe|sed s/^v//`
-
   wrappers:
     plugin: dump
     source: .
     stage: [certbot.wrapper]
+  shared-version:
+    plugin: dump
+    source: .
+    stage: [certbot-version/__init__.py]
+    organize:
+      $SNAPCRAFT_PART_SRC/certbot/certbot/__init__.py: certbot-version/__init__.py
 
 plugs:
   plugin:
@@ -95,4 +100,4 @@ slots:
   certbot-version:
     interface: content
     content: version-1
-    read: [$SNAP/bin/certbot]
+    read: [$SNAP/certbot-version]
