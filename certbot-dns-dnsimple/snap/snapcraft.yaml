@@ -8,7 +8,7 @@ adopt-info: certbot-dns-dnsimple
 
 apps:
   bash:
-    command: bash
+    command: run-bash
 
 parts:
   certbot-dns-dnsimple:
@@ -31,6 +31,10 @@ parts:
     override-pull: |
         snapcraftctl pull
         mkdir $SNAPCRAFT_PART_SRC/certbot-exec
+  test:
+    plugin: dump
+    source: .
+    stage: [run-bash]
 
 slots:
   certbot:
