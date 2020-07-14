@@ -6,6 +6,10 @@ grade: devel
 base: core20
 adopt-info: certbot-dns-dnsimple
 
+apps:
+  bash:
+    command: bash
+
 parts:
   certbot-dns-dnsimple:
     plugin: python
