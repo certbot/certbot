@@ -8,6 +8,8 @@ if [ -z "$cb_installed" ]; then
     exit 0
 fi
 
+echo "cb_installed: $cb_installed"
+
 # get required certbot version for plugin
 cb_required=$(grep -oP "certbot>=\K.*(?=')" $SNAP/setup.py)
 echo "cb_required: $cb_required" > "$SNAP_DATA/debuglog"
