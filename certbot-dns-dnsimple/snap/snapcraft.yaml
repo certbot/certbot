@@ -30,7 +30,7 @@ parts:
     stage: [certbot-shared]
     override-pull: |
         snapcraftctl pull
-        mkdir $SNAPCRAFT_PART_SRC/certbot-shared
+        mkdir -p $SNAPCRAFT_PART_SRC/certbot-shared
   test:
     plugin: dump
     source: .
