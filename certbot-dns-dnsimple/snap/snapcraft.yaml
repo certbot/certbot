@@ -6,10 +6,6 @@ grade: devel
 base: core20
 adopt-info: certbot-dns-dnsimple
 
-apps:
-  bash:
-    command: run-bash
-
 parts:
   certbot-dns-dnsimple:
     plugin: python
@@ -51,8 +47,5 @@ plugs:
 
 hooks:
   post-refresh:
-    plugs:
-      - certbot-version
-  pre-refresh:
     plugs:
       - certbot-version
