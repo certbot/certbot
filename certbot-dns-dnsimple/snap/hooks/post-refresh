@@ -7,11 +7,13 @@ if [ ! -f "$SNAP/certbot-shared/__init__.py" ]; then
 fi
 
 cb_installed=$(grep -oP "__version__ = '\K.*(?=')" $SNAP/certbot-shared/__init__.py)
-echo "cb_installed: $cb_installed" >> "$SNAP_DATA/debuglog"
+echo "cb_installed: $cb_installed" >> "$SNAP_DATA/debuglog" # if we succeed
+echo "cb_installed: $cb_installed" # if we fail
 
 # get required certbot version for plugin
 cb_required=$(grep -oP "certbot>=\K.*(?=')" $SNAP/setup.py)
 echo "cb_required: $cb_required" >> "$SNAP_DATA/debuglog"
+echo "cb_required: $cb_required"
 
 python3 -c 'from distutils.version import LooseVersion;\
   exit(1) if LooseVersion("$cb_installed") < LooseVersion("$cb_required") else exit(0)'
