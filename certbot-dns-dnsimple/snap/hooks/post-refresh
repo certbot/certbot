@@ -2,8 +2,8 @@
 
 # get certbot version
 if [ ! -f "$SNAP/certbot-shared/__init__.py" ]; then
-    echo "No certbot version available; not doing version comparison check" >> "$SNAP_DATA/debuglog"
-    exit 0
+  echo "No certbot version available; not doing version comparison check" >> "$SNAP_DATA/debuglog"
+  exit 0
 fi
 
 cb_installed=$(grep -oP "__version__ = '\K.*(?=')" $SNAP/certbot-shared/__init__.py)
@@ -13,8 +13,11 @@ echo "cb_installed: $cb_installed" >> "$SNAP_DATA/debuglog"
 cb_required=$(grep -oP "certbot>=\K.*(?=')" $SNAP/setup.py)
 echo "cb_required: $cb_required" >> "$SNAP_DATA/debuglog"
 
-if [ "$cb_installed" -lt "$cb_required" ]; then
-    echo "Certbot is version $cb_installed but needs to be at least $cb_required before \
+python -c 'from distutils.version import LooseVersion;\
+  exit(1) if LooseVersion("$cb_installed") < LooseVersion("$cb_required") else exit(0)'
+
+if [ "$?" -eq 1 ]; then
+  echo "Certbot is version $cb_installed but needs to be at least $cb_required before \
     this plugin can be updated; will try again on next refresh."
-    exit 1
+  exit 1
 fi
