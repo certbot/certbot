@@ -15,11 +15,11 @@ cb_required=$(grep -oP "certbot>=\K.*(?=')" $SNAP/setup.py)
 echo "cb_required: $cb_required" >> "$SNAP_DATA/debuglog"
 echo "cb_required: $cb_required"
 
-python3 -c 'from distutils.version import LooseVersion;\
-  exit(1) if LooseVersion("$cb_installed") < LooseVersion("$cb_required") else exit(0)'
+python3 -c "from distutils.version import LooseVersion; exit(1) if LooseVersion('$cb_installed')\
+  < LooseVersion('$cb_required') else exit(0)" || exit_code=$?
 
-if [ "$?" -eq 1 ]; then
-  echo "Certbot is version $cb_installed but needs to be at least $cb_required before \
-    this plugin can be updated; will try again on next refresh."
+if [ "$exit_code" -eq 1 ]; then
+  echo "Certbot is version $cb_installed but needs to be at least $cb_required before" \
+    "this plugin can be updated; will try again on next refresh."
   exit 1
 fi
