@@ -36,8 +36,3 @@ plugs:
     interface: content
     content: version-1
     target: $SNAP/certbot-shared
-
-hooks:
-  post-refresh:
-    plugs:
-      - certbot-version
