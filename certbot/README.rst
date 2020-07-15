@@ -73,9 +73,9 @@ ACME working area in github: https://github.com/ietf-wg-acme/acme
 
 |build-status|
 
-.. |build-status| image:: https://travis-ci.com/certbot/certbot.svg?branch=master
-   :target: https://travis-ci.com/certbot/certbot
-   :alt: Travis CI status
+.. |build-status| image:: https://img.shields.io/azure-devops/build/certbot/ba534f81-a483-4b9b-9b4e-a60bec8fee72/5/master
+   :target: https://dev.azure.com/certbot/certbot/_build?definitionId=5
+   :alt: Azure Pipelines CI status
 
 .. Do not modify this comment unless you know what you're doing. tag:links-end
 
