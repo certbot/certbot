@@ -85,9 +85,11 @@ parts:
   shared-metadata:
     plugin: dump
     source: .
-    stage: [certbot-metadata/__init__.py]
-    organize:
-      $SNAPCRAFT_PART_SRC/certbot/certbot/__init__.py: certbot-metadata/__init__.py
+    override-pull: |
+      snapcraftctl pull
+      mkdir -p certbot-metadata
+      grep -oP "__version__ = '\K.*(?=')" $SNAPCRAFT_PART_SRC/certbot/certbot/__init__.py > certbot-metadata/certbot-version.txt
+    stage: [certbot-metadata/certbot-version.txt]
 
 plugs:
   plugin:
