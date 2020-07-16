@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
 # get certbot version
-if [ ! -f "$SNAP/certbot-shared/__init__.py" ]; then
+if [ ! -f "$SNAP/certbot-shared/certbot-version" ]; then
   echo "No certbot version available; not doing version comparison check" >> "$SNAP_DATA/debuglog"
   exit 0
 fi
