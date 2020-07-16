@@ -81,9 +81,11 @@ jobs:
           mkdir -p ~/.local/share/snapcraft/provider/launchpad
           cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
           python3 tools/snap/build_remote.py ALL --archs amd64 arm64 armhf
+        displayName: Build Certbot + DNS plugins snaps
+      - script: |
           mv *.snap $(Build.ArtifactStagingDirectory)
           mv certbot-dns-*/*.snap $(Build.ArtifactStagingDirectory)
-        displayName: Build Certbot + DNS plugins snaps
+        displayName: Build prepare artifacts
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
