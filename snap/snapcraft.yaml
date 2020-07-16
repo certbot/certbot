@@ -82,12 +82,12 @@ parts:
     plugin: dump
     source: .
     stage: [certbot.wrapper]
-  shared-version:
+  shared-metadata:
     plugin: dump
     source: .
-    stage: [certbot-version/__init__.py]
+    stage: [certbot-metadata/__init__.py]
     organize:
-      $SNAPCRAFT_PART_SRC/certbot/certbot/__init__.py: certbot-version/__init__.py
+      $SNAPCRAFT_PART_SRC/certbot/certbot/__init__.py: certbot-metadata/__init__.py
 
 plugs:
   plugin:
@@ -96,7 +96,7 @@ plugs:
     target: $SNAP/certbot-plugin
 
 slots:
-  certbot-version:
+  certbot-metadata:
     interface: content
-    content: version-1
-    read: [$SNAP/certbot-version]
+    content: metadata-1
+    read: [$SNAP/certbot-metadata]
