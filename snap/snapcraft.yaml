@@ -77,6 +77,7 @@ parts:
         snapcraftctl pull
         cd $SNAPCRAFT_PART_SRC
         python3 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt | grep -v python-augeas > snap-constraints.txt
+        echo "wheel==0.34.2" >> snap-constraints.txt
         snapcraftctl set-version `git describe|sed s/^v//`
 
   wrappers:
