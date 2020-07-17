@@ -63,6 +63,7 @@ parts:
       - libpython3-stdlib
       - libpython3.8-stdlib
       - libpython3.8-minimal
+      - libpython3.8-dev
       - python3-pip
       - python3-setuptools
       - python3-wheel
@@ -79,7 +80,6 @@ parts:
         snapcraftctl pull
         cd $SNAPCRAFT_PART_SRC
         python3 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt | grep -v python-augeas > snap-constraints.txt
-        echo "wheel==0.34.2" >> snap-constraints.txt
         snapcraftctl set-version `git describe|sed s/^v//`
 
   wrappers:
