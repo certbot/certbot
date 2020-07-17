@@ -80,7 +80,9 @@ jobs:
           git config --global user.name "$(Build.RequestedFor)"
           mkdir -p ~/.local/share/snapcraft/provider/launchpad
           cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
+          export TERM=linux
           python3 tools/snap/build_remote.py ALL --archs amd64 arm64 armhf
+          find . -iname *.snap
         displayName: Build Certbot + DNS plugins snaps
       - script: |
           mv *.snap $(Build.ArtifactStagingDirectory)
