@@ -14,7 +14,18 @@ CERTBOT_DIR = dirname(dirname(dirname(realpath(__file__))))
 PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*'))]
 
 
-def _build_remote_snap(target, archs, status):
+def _execute_build(target, archs, status, workspace):
+    process = subprocess.Popen([
+        'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover', '--build-on', ','.join(archs)
+    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, cwd=workspace)
+
+    line = process.stdout.readline()
+    while line:
+        _extract_state(target, line, status)
+        line = process.stdout.readline()
+
+
+def _build_snap(target, archs, status):
     status[target] = {arch: '...' for arch in archs}
 
     if target == 'certbot':
@@ -26,19 +37,18 @@ def _build_remote_snap(target, archs, status):
              '| grep -v python-augeas > "{1}/snap-constraints.txt"').format(sys.executable, workspace),
             shell=True, cwd=CERTBOT_DIR)
 
-    process = subprocess.Popen([
-        'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover', '--build-on', ','.join(archs)
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, cwd=workspace)
+    retry = 3
+    while retry:
+        _execute_build(target, archs, status, workspace)
+        if not [status[target] for arch in archs if status[target][arch] == '...']:
+            break
 
-    line = process.stdout.readline()
-    while line:
-        _extract_remote_state(target, line, status)
-        line = process.stdout.readline()
+        retry = retry - 1
 
     return {target: workspace}
 
 
-def _extract_remote_state(project, output, status):
+def _extract_state(project, output, status):
     match = re.match(r'^.*arch=(\w+)\s+state=([\w ]+).*$', output)
     if match:
         arch = match.group(1)
@@ -48,7 +58,7 @@ def _extract_remote_state(project, output, status):
         status[project] = state
 
 
-def _dump_remote_status(archs, status, final=False):
+def _dump_status(archs, status, final=False):
     while True:
         if final:
             print('Results for remote build finished at {0}'.format(datetime.datetime.now()))
@@ -69,7 +79,7 @@ def _dump_remote_status(archs, status, final=False):
         time.sleep(10)
 
 
-def _dump_remote_results(targets, archs, status, workspaces):
+def _dump_results(targets, archs, status, workspaces):
     failures = False
     for target in targets:
         for arch in archs:
@@ -116,11 +126,11 @@ def main():
 
     status = Manager().dict()
 
-    state_process = Process(target=_dump_remote_status, args=(archs, status,))
+    state_process = Process(target=_dump_status, args=(archs, status,))
     state_process.start()
 
     pool = Pool(processes=len(targets))
-    async_results = [pool.apply_async(_build_remote_snap, (target, archs, status)) for target in targets]
+    async_results = [pool.apply_async(_build_snap, (target, archs, status)) for target in targets]
 
     workspaces = {}
     for async_result in async_results:
@@ -128,8 +138,8 @@ def main():
 
     state_process.terminate()
 
-    failures = _dump_remote_results(targets, archs, status, workspaces)
-    _dump_remote_status(archs, status, final=True)
+    failures = _dump_results(targets, archs, status, workspaces)
+    _dump_status(archs, status, final=True)
 
     return 1 if failures else 0
 
