@@ -76,6 +76,9 @@ def _dump_status(archs, status, final=False):
 
         sys.stdout.flush()
 
+        if final:
+            break
+
         time.sleep(10)
 
 
