@@ -61,6 +61,7 @@ jobs:
   - job: snaps_build
     pool:
       vmImage: ubuntu-18.04
+    timeoutInMinutes: 0
     steps:
       - script: |
           sudo apt-get update

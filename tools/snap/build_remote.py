@@ -15,7 +15,8 @@ PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*
 
 
 def _build_remote_snap(target, archs, status):
-    status[target] = {}
+    status[target] = {arch: '...' for arch in archs}
+
     if target == 'certbot':
         workspace = CERTBOT_DIR
     else:
@@ -31,7 +32,6 @@ def _build_remote_snap(target, archs, status):
 
     line = process.stdout.readline()
     while line:
-        print(line)
         _extract_remote_state(target, line, status)
         line = process.stdout.readline()
 
@@ -48,24 +48,20 @@ def _extract_remote_state(project, output, status):
         status[project] = state
 
 
-def _dump_remote_status(status, final=False):
+def _dump_remote_status(archs, status, final=False):
     while True:
         if final:
             print('Results for remote build finished at {0}'.format(datetime.datetime.now()))
         else:
             print('Remote build status at {0}'.format(datetime.datetime.now()))
-        print(' project                     amd64                         arm64                         armhf                       ')
-        print('---------------------------+-----------------------------+-----------------------------+-----------------------------')
+        print(' project                    {0}'.format(''.join('| {0}                       '.format(arch)
+                                                               for arch in archs)))
+        print('----------------------------{0}'.format('+-----------------------------' * len(archs)))
         for project, states in sorted(status.items()):
-            state_amd64 = states.get('amd64', '...')
-            state_arm64 = states.get('arm64', '...')
-            state_armhf = states.get('armhf', '...')
-            print(' {0} | {1} | {2} | {3} '.format(
+            print(' {0} {1}'.format(
                 project + ' ' * (25 - len(project)),
-                state_amd64 + ' ' * (27 - len(state_amd64)),
-                state_arm64 + ' ' * (27 - len(state_arm64)),
-                state_armhf + ' ' * (27 - len(state_armhf))))
-        print('---------------------------+-----------------------------+-----------------------------+-----------------------------')
+                ''.join(' | {0}'.format(states[arch] + ' ' * (27 - len(states[arch]))) for arch in archs)))
+        print('----------------------------{0}'.format('+-----------------------------' * len(archs)))
         print()
 
         sys.stdout.flush()
@@ -120,7 +116,7 @@ def main():
 
     status = Manager().dict()
 
-    state_process = Process(target=_dump_remote_status, args=(status,))
+    state_process = Process(target=_dump_remote_status, args=(archs, status,))
     state_process.start()
 
     pool = Pool(processes=len(targets))
@@ -133,7 +129,7 @@ def main():
     state_process.terminate()
 
     failures = _dump_remote_results(targets, archs, status, workspaces)
-    _dump_remote_status(status, final=True)
+    _dump_remote_status(archs, status, final=True)
 
     return 1 if failures else 0
 
