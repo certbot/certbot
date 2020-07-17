@@ -63,3 +63,10 @@ dns-lexicon==2.2.1
 # Tracking at https://github.com/certbot/certbot/issues/6473
 boto3==1.4.7
 botocore==1.7.41
+
+# Old certbot[dev] constraints
+# Old versions of certbot[dev] required ipdb and our normally pinned version of
+# ipython which ipdb depends on doesn't support Python 2 so we pin an older
+# version here to keep tests working while we have Python 2 support.
+ipython==5.8.0
+prompt-toolkit==1.0.18

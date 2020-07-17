@@ -83,7 +83,6 @@ elif sys.version_info < (3,3):
 
 dev_extras = [
     'coverage',
-    'ipdb',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
@@ -94,6 +93,7 @@ dev_extras = [
 
 dev3_extras = [
     'astroid',
+    'ipdb',
     'mypy',
     'pylint',
 ]
