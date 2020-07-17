@@ -17,7 +17,7 @@ parts:
     build-environment:
       - EXCLUDE_CERTBOT_DEPS: "True"
     # To build cryptography and cffi if needed
-    build-packages: [libffi-dev, libssl-dev, python3-dev]
+    build-packages: [gcc, libffi-dev, libssl-dev, python3-dev]
 
 slots:
   certbot:
