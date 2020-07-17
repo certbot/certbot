@@ -59,32 +59,17 @@ def _extract_state(project, output, status):
 
 
 def _dump_status(status):
-    stdscr = curses.initscr()
-    curses.noecho()
-    try:
-        curses.cbreak()
-    except:
-        pass
+    while True:
+        print('Build status at {0}'.format(datetime.datetime.now()))
+        print('W = wait, B = building, U = uploading, F = fail, S = success')
+        print(' project                     amd64   arm64   armhf ')
+        print('---------------------------+-------+-------+-------')
+        for project, states in status.items():
+            print(' {0} |   {1}   |   {2}   |   {3}   '.format(
+                project + ' ' * (25 - len(project)), states.get('arm64', 'W'),
+                states.get('arm64', 'W'), states.get('armhf', 'W')))
 
-    try:
-        while True:
-            stdscr.addstr(0, 0, 'Build status at {0}'.format(datetime.datetime.now()))
-            stdscr.addstr(1, 0, 'W = wait, B = building, U = uploading, F = fail, S = success')
-            stdscr.addstr(2, 0, ' project                     amd64   arm64   armhf ')
-            stdscr.addstr(3, 0, '---------------------------+-------+-------+-------')
-            idx = 4
-            for project, states in status.items():
-                stdscr.addstr(idx, 0, ' {0} |   {1}   |   {2}   |   {3}   '.format(
-                    project + ' ' * (25 - len(project)), states.get('arm64', 'W'),
-                    states.get('arm64', 'W'), states.get('armhf', 'W')))
-                idx = idx + 1
-
-            stdscr.refresh()
-            time.sleep(1)
-    finally:
-        curses.echo()
-        curses.nocbreak()
-        curses.endwin()
+        time.sleep(5)
 
 
 def _dump_results(targets, archs, status, workspaces):
