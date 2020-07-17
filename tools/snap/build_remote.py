@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-import curses
 import glob
 import datetime
 from multiprocessing import Pool, Process, Manager
@@ -61,13 +60,16 @@ def _extract_state(project, output, status):
 def _dump_status(status):
     while True:
         print('Build status at {0}'.format(datetime.datetime.now()))
-        print('W = wait, B = building, U = uploading, F = fail, S = success')
+        print('W = waiting, B = building, U = uploading, F = fail, S = success')
         print(' project                     amd64   arm64   armhf ')
         print('---------------------------+-------+-------+-------')
         for project, states in status.items():
             print(' {0} |   {1}   |   {2}   |   {3}   '.format(
                 project + ' ' * (25 - len(project)), states.get('arm64', 'W'),
                 states.get('arm64', 'W'), states.get('armhf', 'W')))
+        print('---------------------------+-------+-------+-------\n')
+
+        sys.stdout.flush()
 
         time.sleep(5)
 
@@ -87,7 +89,12 @@ def _dump_results(targets, archs, status, workspaces):
                 print('Output for failed build target={0} arch={1}'.format(target, arch))
                 print('-------------------------------------------')
                 print(build_output)
-                print('-------------------------------------------')
+                print('-------------------------------------------\n')
+
+    if not failures:
+        print('All builds succeeded.')
+    else:
+        print('Some builds failed.')
 
     return failures
 
