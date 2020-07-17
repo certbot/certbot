@@ -81,7 +81,7 @@ jobs:
       - task: DownloadSecureFile@1
         name: credentials
         inputs:
-          secureFile: credentials
+          secureFile: snapcraftRemoteBuildCredentials
       - script: |
           git config --global user.email "$(Build.RequestedForEmail)"
           git config --global user.name "$(Build.RequestedFor)"
