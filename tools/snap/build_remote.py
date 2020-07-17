@@ -61,7 +61,10 @@ def _extract_state(project, output, status):
 def _dump_status(status):
     stdscr = curses.initscr()
     curses.noecho()
-    curses.cbreak()
+    try:
+        curses.cbreak()
+    except:
+        pass
 
     try:
         while True:
