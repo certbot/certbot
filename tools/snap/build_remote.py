@@ -14,7 +14,7 @@ CERTBOT_DIR = dirname(dirname(dirname(realpath(__file__))))
 PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*'))]
 
 
-def _build_snap(target, archs, status):
+def _build_remote_snap(target, archs, status):
     status[target] = {}
     if target == 'certbot':
         workspace = CERTBOT_DIR
@@ -31,13 +31,13 @@ def _build_snap(target, archs, status):
 
     line = process.stdout.readline()
     while line:
-        _extract_state(target, line, status)
+        _extract_remote_state(target, line, status)
         line = process.stdout.readline()
 
     return {target: workspace}
 
 
-def _extract_state(project, output, status):
+def _extract_remote_state(project, output, status):
     match = re.match(r'^.*arch=(\w+)\s+state=([\w ]+).*$', output)
     if match:
         arch = match.group(1)
@@ -57,13 +57,17 @@ def _extract_state(project, output, status):
         status[project] = state
 
 
-def _dump_status(status):
+def _dump_remote_status(status, final=False):
     while True:
-        print('Build status at {0}'.format(datetime.datetime.now()))
-        print('W = waiting, B = building, U = uploading, F = fail, S = success')
+        if final:
+            print('Results for remote build finished at {0}'.format(datetime.datetime.now()))
+            print('F = fail, S = success')
+        else:
+            print('Remote build status at {0}'.format(datetime.datetime.now()))
+            print('W = waiting, B = building, U = uploading, F = fail, S = success')
         print(' project                     amd64   arm64   armhf ')
         print('---------------------------+-------+-------+-------')
-        for project, states in status.items():
+        for project, states in sorted(status.items()):
             print(' {0} |   {1}   |   {2}   |   {3}   '.format(
                 project + ' ' * (25 - len(project)), states.get('arm64', 'W'),
                 states.get('arm64', 'W'), states.get('armhf', 'W')))
@@ -71,10 +75,10 @@ def _dump_status(status):
 
         sys.stdout.flush()
 
-        time.sleep(5)
+        time.sleep(10)
 
 
-def _dump_results(targets, archs, status, workspaces):
+def _dump_remote_results(targets, archs, status, workspaces):
     failures = False
     for target in targets:
         for arch in archs:
@@ -120,11 +124,11 @@ def main():
 
     status = Manager().dict()
 
-    state_process = Process(target=_dump_status, args=(status,))
+    state_process = Process(target=_dump_remote_status, args=(status,))
     state_process.start()
 
     pool = Pool(processes=len(targets))
-    async_results = [pool.apply_async(_build_snap, (target, archs, status)) for target in targets]
+    async_results = [pool.apply_async(_build_remote_snap, (target, archs, status)) for target in targets]
 
     workspaces = {}
     for async_result in async_results:
@@ -132,7 +136,8 @@ def main():
 
     state_process.terminate()
 
-    failures = _dump_results(targets, archs, status, workspaces)
+    failures = _dump_remote_results(targets, archs, status, workspaces)
+    _dump_remote_status(status, final=True)
 
     return 1 if failures else 0
 
