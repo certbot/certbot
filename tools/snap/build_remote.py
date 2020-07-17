@@ -31,6 +31,7 @@ def _build_remote_snap(target, archs, status):
 
     line = process.stdout.readline()
     while line:
+        print(line)
         _extract_remote_state(target, line, status)
         line = process.stdout.readline()
 
@@ -41,18 +42,8 @@ def _extract_remote_state(project, output, status):
     match = re.match(r'^.*arch=(\w+)\s+state=([\w ]+).*$', output)
     if match:
         arch = match.group(1)
-        state_str = match.group(2)
         state = status[project]
-        if state_str == 'Successfully built':
-            state[arch] = 'S'
-        elif state_str == 'Failed to build':
-            state[arch] = 'F'
-        elif state_str == 'Uploading build':
-            state[arch] = 'U'
-        elif state_str == 'Currently building':
-            state[arch] = 'B'
-        elif state_str == 'Needs building':
-            state[arch] = 'W'
+        state[arch] = match.group(2)
 
         status[project] = state
 
@@ -61,17 +52,21 @@ def _dump_remote_status(status, final=False):
     while True:
         if final:
             print('Results for remote build finished at {0}'.format(datetime.datetime.now()))
-            print('F = fail, S = success')
         else:
             print('Remote build status at {0}'.format(datetime.datetime.now()))
-            print('W = waiting, B = building, U = uploading, F = fail, S = success')
-        print(' project                     amd64   arm64   armhf ')
-        print('---------------------------+-------+-------+-------')
+        print(' project                     amd64                         arm64                         armhf                       ')
+        print('---------------------------+-----------------------------+-----------------------------+-----------------------------')
         for project, states in sorted(status.items()):
-            print(' {0} |   {1}   |   {2}   |   {3}   '.format(
-                project + ' ' * (25 - len(project)), states.get('arm64', 'W'),
-                states.get('arm64', 'W'), states.get('armhf', 'W')))
-        print('---------------------------+-------+-------+-------\n')
+            state_amd64 = states.get('amd64', '...')
+            state_arm64 = states.get('arm64', '...')
+            state_armhf = states.get('armhf', '...')
+            print(' {0} | {1} | {2} | {3} '.format(
+                project + ' ' * (25 - len(project)),
+                state_amd64 + ' ' * (27 - len(state_amd64)),
+                state_arm64 + ' ' * (27 - len(state_arm64)),
+                state_armhf + ' ' * (27 - len(state_armhf))))
+        print('---------------------------+-----------------------------+-----------------------------+-----------------------------')
+        print()
 
         sys.stdout.flush()
 
@@ -84,7 +79,7 @@ def _dump_remote_results(targets, archs, status, workspaces):
         for arch in archs:
             result = status[target][arch]
 
-            if result == 'F':
+            if result != 'Successfully built':
                 failures = True
 
                 with open(join(workspaces[target], '{0}_{1}.txt'.format(target, arch))) as file_h:
@@ -93,7 +88,8 @@ def _dump_remote_results(targets, archs, status, workspaces):
                 print('Output for failed build target={0} arch={1}'.format(target, arch))
                 print('-------------------------------------------')
                 print(build_output)
-                print('-------------------------------------------\n')
+                print('-------------------------------------------')
+                print()
 
     if not failures:
         print('All builds succeeded.')
