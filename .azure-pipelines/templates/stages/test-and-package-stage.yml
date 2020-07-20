@@ -1,6 +1,6 @@
 stages:
   - stage: TestAndPackage
     jobs:
-      - template: ../jobs/standard-tests-jobs.yml
-      - template: ../jobs/extended-tests-jobs.yml
+#      - template: ../jobs/standard-tests-jobs.yml
+#      - template: ../jobs/extended-tests-jobs.yml
       - template: ../jobs/packaging-jobs.yml
