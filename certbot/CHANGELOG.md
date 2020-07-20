@@ -12,7 +12,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* The Linode DNS plugin now waits 120 seconds for DNS propagation, instead of 1200,
+  due to https://www.linode.com/blog/linode/linode-turns-17/
 
 ### Fixed
 
