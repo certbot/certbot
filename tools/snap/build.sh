@@ -32,7 +32,7 @@ function cleanup() {
 trap cleanup EXIT
 
 # NB: We use ARCH-stable-save tag instead of ARCH-stable, because recent versions of snapcraft images
-# behave badly on QEMU for armhf architecture. This should be fixed either by a new version of the
+# behave badly on QEMU for arm64 architecture. This should be fixed either by a new version of the
 # image that does not have this problem anymore, or the migration to snapcraft remote builds.
 docker run \
   --rm \
