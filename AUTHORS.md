@@ -237,6 +237,7 @@ Authors
 * [Spencer Bliven](https://github.com/sbliven)
 * [Stacey Sheldon](https://github.com/solidgoldbomb)
 * [Stavros Korokithakis](https://github.com/skorokithakis)
+* [Ștefan Talpalaru](https://github.com/stefantalpalaru)
 * [Stefan Weil](https://github.com/stweil)
 * [Steve Desmond](https://github.com/stevedesmond-ca)
 * [sydneyli](https://github.com/sydneyli)
