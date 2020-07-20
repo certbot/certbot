@@ -281,6 +281,7 @@ proxmox_           N    Y    Install certificates in Proxmox Virtualization serv
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
+dns-inwx           Y    Y    DNS Authentication for INWX through the XML API
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -293,6 +294,7 @@ dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
+.. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 

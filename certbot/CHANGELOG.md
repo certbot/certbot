@@ -6,11 +6,14 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Third-party plugins can be used without prefix (`plugin_name` instead of `dist_name:plugin_name`):
+  this concerns the plugin name, CLI flags, and keys in credential files.
+  The prefixed form is still supported but is deprecated, and will be removed in a future release.
 
 ### Changed
 
-*
+* The Linode DNS plugin now waits 120 seconds for DNS propagation, instead of 1200,
+  due to https://www.linode.com/blog/linode/linode-turns-17/
 
 ### Fixed
 
