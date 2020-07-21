@@ -127,13 +127,12 @@ def main():
         targets.remove('DNS_PLUGINS')
         targets.update(PLUGINS)
 
-    with Manager() as manager:
+    with Manager() as manager, Pool(processes=len(targets)) as pool:
         status = manager.dict()
 
         state_process = Process(target=_dump_status, args=(archs, status,))
         state_process.start()
 
-        pool = Pool(processes=len(targets))
         async_results = [pool.apply_async(_build_snap, (target, archs, status)) for target in targets]
 
         workspaces = {}
