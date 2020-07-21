@@ -31,6 +31,5 @@ if [ "\$exit_code" -eq 1 ]; then
     "this plugin can be updated; will try again on next refresh."
   exit 1
 fi
-
 EOF
 done
