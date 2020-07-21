@@ -66,12 +66,12 @@ def _extract_state(project, output, status):
 
 
 def _dump_status_helper(archs, status):
-    headers = ["project", *archs]
-    print("".join(f"| {item:<25}" for item in headers))
-    print(f"|{'-' * 26}" * len(headers))
+    headers = ['project', *archs]
+    print(''.join(f'| {item:<25}' for item in headers))
+    print(f'|{"-" * 26}' * len(headers))
     for project, states in sorted(status.items()):
-        print("".join(f"| {item:<25}" for item in [project, *[states[arch] for arch in archs]]))
-    print(f"|{'-' * 26}" * len(headers))
+        print(''.join(f'| {item:<25}' for item in [project, *[states[arch] for arch in archs]]))
+    print(f'|{"-" * 26}' * len(headers))
     print()
 
     sys.stdout.flush()
