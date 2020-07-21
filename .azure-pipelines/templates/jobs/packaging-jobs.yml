@@ -112,7 +112,7 @@ jobs:
         inputs:
           artifact: snaps
           path: $(Build.SourcesDirectory)/snap
-        displayName: Retrieve Certbot snap
+        displayName: Retrieve Certbot snaps
       - script: |
           sudo snap install --dangerous --classic snap/certbot_*_amd64.snap
         displayName: Install Certbot snap
