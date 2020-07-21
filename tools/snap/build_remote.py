@@ -6,7 +6,6 @@ from multiprocessing import Pool, Process, Manager, Event
 import re
 import subprocess
 import sys
-import time
 from os.path import join, realpath, dirname, basename
 
 
@@ -24,6 +23,8 @@ def _execute_build(target, archs, status, workspace):
         _extract_state(target, line, status)
         line = process.stdout.readline()
 
+    return process.returncode
+
 
 def _build_snap(target, archs, status):
     status[target] = {arch: '...' for arch in archs}
@@ -39,8 +40,9 @@ def _build_snap(target, archs, status):
 
     retry = 3
     while retry:
-        _execute_build(target, archs, status, workspace)
-        if not [status[target] for arch in archs if status[target][arch] == '...']:
+        exit_code = _execute_build(target, archs, status, workspace)
+        # Do not retry if the snapcraft remote-build command has not been interrupted.
+        if exit_code == 0:
             break
 
         retry = retry - 1
