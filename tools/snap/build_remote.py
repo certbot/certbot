@@ -127,24 +127,25 @@ def main():
         targets.remove('DNS_PLUGINS')
         targets.update(PLUGINS)
 
-    status = Manager().dict()
+    with Manager() as manager:
+        status = manager.dict()
 
-    state_process = Process(target=_dump_status, args=(archs, status,))
-    state_process.start()
+        state_process = Process(target=_dump_status, args=(archs, status,))
+        state_process.start()
 
-    pool = Pool(processes=len(targets))
-    async_results = [pool.apply_async(_build_snap, (target, archs, status)) for target in targets]
+        pool = Pool(processes=len(targets))
+        async_results = [pool.apply_async(_build_snap, (target, archs, status)) for target in targets]
 
-    workspaces = {}
-    for async_result in async_results:
-        workspaces.update(async_result.get())
+        workspaces = {}
+        for async_result in async_results:
+            workspaces.update(async_result.get())
 
-    state_process.terminate()
+        state_process.terminate()
 
-    failures = _dump_results(targets, archs, status, workspaces)
-    _dump_status(archs, status, final=True)
+        failures = _dump_results(targets, archs, status, workspaces)
+        _dump_status(archs, status, final=True)
 
-    return 1 if failures else 0
+        return 1 if failures else 0
 
 
 if __name__ == '__main__':
