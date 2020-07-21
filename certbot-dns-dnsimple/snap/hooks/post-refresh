@@ -7,8 +7,9 @@ if [ ! -f "$SNAP/certbot-shared/certbot-version.txt" ]; then
 fi
 cb_installed=$(cat $SNAP/certbot-shared/certbot-version.txt)
 
-# get required certbot version for plugin
-cb_required=$(grep -oP "certbot>=\K.*(?=')" $SNAP/setup.py)
+# get required certbot version for plugin. certbot version must be at least the plugin's
+# version. note that this is not the required version in setup.py, but the version number itself.
+cb_required=$(grep -oP "version = '\K.*(?=')" $SNAP/setup.py)
 
 
 python3 -c "import sys; from packaging import version; sys.exit(1) if\
