@@ -133,6 +133,11 @@ def main():
         targets.remove('DNS_PLUGINS')
         targets.update(PLUGINS)
 
+    print('Start remote snap builds...')
+    print(f' - archs: {", ".join(archs)}')
+    print(f' - projects: {", ".join(sorted(targets))}')
+    print()
+
     with Manager() as manager, Pool(processes=len(targets)) as pool:
         status = manager.dict()
 
