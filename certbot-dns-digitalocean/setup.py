@@ -18,14 +18,16 @@ install_requires = [
     'zope.interface',
 ]
 
-if not os.environ.get('EXCLUDE_CERTBOT_DEPS'):
+if not os.environ.get('SNAP_BUILD'):
     install_requires.extend([
         'acme>=0.29.0',
         'certbot>=1.1.0',
     ])
 elif 'bdist_wheel' in sys.argv[1:]:
-    raise RuntimeError('Unset EXCLUDE_CERTBOT_DEPS when building wheels '
+    raise RuntimeError('Unset SNAP_BUILD when building wheels '
                        'to include certbot dependencies.')
+if os.environ.get('SNAP_BUILD'):
+    install_requires.append('packaging')
 
 setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
 if setuptools_known_environment_markers:

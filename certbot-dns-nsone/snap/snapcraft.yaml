@@ -16,7 +16,7 @@ parts:
         snapcraftctl pull
         snapcraftctl set-version `grep ^version $SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"`
     build-environment:
-      - EXCLUDE_CERTBOT_DEPS: "True"
+      - SNAP_BUILD: "True"
   certbot-metadata:
     plugin: dump
     source: .
