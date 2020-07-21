@@ -136,7 +136,7 @@ jobs:
         inputs:
           artifact: snaps
           path: $(Build.SourcesDirectory)/snap
-        displayName: Retrieve Certbot snap
+        displayName: Retrieve Certbot snaps
       - script: |
           python3 -m venv venv
           venv/bin/python tools/pip_install.py -e certbot-ci
