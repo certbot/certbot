@@ -28,6 +28,13 @@ parts:
         snapcraftctl set-version \`grep ^version \$SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"\`
     build-environment:
       - EXCLUDE_CERTBOT_DEPS: "True"
+  certbot-metadata:
+    plugin: dump
+    source: .
+    stage: [setup.py, certbot-shared]
+    override-pull: |
+        snapcraftctl pull
+        mkdir -p \$SNAPCRAFT_PART_SRC/certbot-shared
 
 slots:
   certbot:
@@ -35,5 +42,11 @@ slots:
     content: certbot-1
     read:
       - \$SNAP/lib/python3.8/site-packages
+
+plugs:
+  certbot-metadata:
+    interface: content
+    content: metadata-1
+    target: \$SNAP/certbot-shared
 EOF
 done
