@@ -8,6 +8,6 @@ __version__ = '1.7.0.dev0'
 if sys.version_info[:2] == (3, 5):
     warnings.warn(
             "Python 3.5 support will be dropped in the next release of "
-            "acme. Please upgrade your Python version.",
+            "certbot. Please upgrade your Python version.",
             PendingDeprecationWarning,
     )  # pragma: no cover
