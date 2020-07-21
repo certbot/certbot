@@ -60,11 +60,11 @@ parts:
       # effect so we now stage the file to keep the auto-generated cffi file.
     stage-packages:
       - libaugeas0
+      - libpython3.8-dev
       # added to stage python:
       - libpython3-stdlib
       - libpython3.8-stdlib
       - libpython3.8-minimal
-      - libpython3.8-dev
       - python3-pip
       - python3-setuptools
       - python3-wheel
