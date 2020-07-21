@@ -66,29 +66,25 @@ def _extract_state(project, output, status):
 
 
 def _dump_status_helper(archs, status):
-    print(' project                    {0}'.format(''.join('| {0}                       '.format(arch)
-                                                           for arch in archs)))
-    print('----------------------------{0}'.format('+-----------------------------' * len(archs)))
+    headers = ["project", *archs]
+    print("".join(f"| {item:<25}" for item in headers))
+    print(f"|{'-' * 26}" * len(headers))
     for project, states in sorted(status.items()):
-        print(' {0} {1}'.format(
-            project + ' ' * (25 - len(project)),
-            ''.join(' | {0}'.format(states[arch] + ' ' * (27 - len(states[arch]))) for arch in archs)))
-    print('----------------------------{0}'.format('+-----------------------------' * len(archs)))
+        print("".join(f"| {item:<25}" for item in [project, *[states[arch] for arch in archs]]))
+    print(f"|{'-' * 26}" * len(headers))
     print()
 
     sys.stdout.flush()
 
 
 def _dump_status(archs, status, stop_event):
-    print('Results for remote build finished at {0}'.format(datetime.datetime.now()))
-
     while not stop_event.wait(10):
+        print('Remote build status at {0}'.format(datetime.datetime.now()))
         _dump_status_helper(archs, status)
 
 
 def _dump_status_final(archs, status):
-    print('Remote build status at {0}'.format(datetime.datetime.now()))
-
+    print('Results for remote build finished at {0}'.format(datetime.datetime.now()))
     _dump_status_helper(archs, status)
 
 
