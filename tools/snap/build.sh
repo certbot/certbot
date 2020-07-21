@@ -31,11 +31,14 @@ function cleanup() {
 
 trap cleanup EXIT
 
+# NB: We use ARCH-stable-save tag instead of ARCH-stable, because recent versions of snapcraft images
+# behave badly on QEMU for arm64 architecture. This should be fixed either by a new version of the
+# image that does not have this problem anymore, or the migration to snapcraft remote builds.
 docker run \
   --rm \
   --net=host \
   -v "${CERTBOT_DIR}:/certbot" \
   -w "/certbot" \
   -e "PIP_EXTRA_INDEX_URL=http://localhost:8080" \
-  "adferrand/snapcraft:${DOCKER_ARCH}-stable" \
+  "adferrand/snapcraft:${DOCKER_ARCH}-stable-save" \
   bash -c "snapcraft clean && snapcraft"
