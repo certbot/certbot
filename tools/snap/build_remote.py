@@ -2,7 +2,7 @@
 import argparse
 import glob
 import datetime
-from multiprocessing import Pool, Process, Manager
+from multiprocessing import Pool, Process, Manager, Event
 import re
 import subprocess
 import sys
@@ -55,31 +55,39 @@ def _extract_state(project, output, status):
         state = status[project]
         state[arch] = match.group(2)
 
+        # You need to reassign the value of status[project] here (rather than doing
+        # something like status[project][arch] = match.group(2)) for the state change
+        # to propagate to other processes. See
+        # https://docs.python.org/3.8/library/multiprocessing.html#proxy-objects for
+        # more info.
         status[project] = state
 
 
-def _dump_status(archs, status, final=False):
-    while True:
-        if final:
-            print('Results for remote build finished at {0}'.format(datetime.datetime.now()))
-        else:
-            print('Remote build status at {0}'.format(datetime.datetime.now()))
-        print(' project                    {0}'.format(''.join('| {0}                       '.format(arch)
-                                                               for arch in archs)))
-        print('----------------------------{0}'.format('+-----------------------------' * len(archs)))
-        for project, states in sorted(status.items()):
-            print(' {0} {1}'.format(
-                project + ' ' * (25 - len(project)),
-                ''.join(' | {0}'.format(states[arch] + ' ' * (27 - len(states[arch]))) for arch in archs)))
-        print('----------------------------{0}'.format('+-----------------------------' * len(archs)))
-        print()
+def _dump_status_helper(archs, status):
+    print(' project                    {0}'.format(''.join('| {0}                       '.format(arch)
+                                                           for arch in archs)))
+    print('----------------------------{0}'.format('+-----------------------------' * len(archs)))
+    for project, states in sorted(status.items()):
+        print(' {0} {1}'.format(
+            project + ' ' * (25 - len(project)),
+            ''.join(' | {0}'.format(states[arch] + ' ' * (27 - len(states[arch]))) for arch in archs)))
+    print('----------------------------{0}'.format('+-----------------------------' * len(archs)))
+    print()
 
-        sys.stdout.flush()
+    sys.stdout.flush()
 
-        if final:
-            break
 
-        time.sleep(10)
+def _dump_status(archs, status, stop_event):
+    print('Results for remote build finished at {0}'.format(datetime.datetime.now()))
+
+    while not stop_event.wait(10):
+        _dump_status_helper(archs, status)
+
+
+def _dump_status_final(archs, status):
+    print('Remote build status at {0}'.format(datetime.datetime.now()))
+
+    _dump_status_helper(archs, status)
 
 
 def _dump_results(targets, archs, status, workspaces):
@@ -130,7 +138,8 @@ def main():
     with Manager() as manager, Pool(processes=len(targets)) as pool:
         status = manager.dict()
 
-        state_process = Process(target=_dump_status, args=(archs, status,))
+        stop_event = Event()
+        state_process = Process(target=_dump_status, args=(archs, status, stop_event))
         state_process.start()
 
         async_results = [pool.apply_async(_build_snap, (target, archs, status)) for target in targets]
@@ -139,10 +148,11 @@ def main():
         for async_result in async_results:
             workspaces.update(async_result.get())
 
-        state_process.terminate()
+        stop_event.set()
+        state_process.join()
 
         failures = _dump_results(targets, archs, status, workspaces)
-        _dump_status(archs, status, final=True)
+        _dump_status_final(archs, status)
 
         return 1 if failures else 0
 
