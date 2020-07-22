@@ -18,14 +18,10 @@ def _execute_build(target, archs, status, workspace):
         'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover', '--build-on', ','.join(archs)
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, cwd=workspace)
 
-    while True:
-        output = process.stdout.readline()
-        if not output and process.poll() is not None:
-            break
-        if output:
-            _extract_state(target, output, status)
+    for line in process.stdout:
+        _extract_state(target, line, status)
 
-    return process.poll()
+    return process.wait()
 
 
 def _build_snap(target, archs, status):
@@ -44,7 +40,7 @@ def _build_snap(target, archs, status):
     while retry:
         exit_code = _execute_build(target, archs, status, workspace)
 
-        print(f'Build {target} for {"".join(archs)} (attempt {4-retry}/3) ended with exit code {exit_code}.')
+        print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with exit code {exit_code}.')
         sys.stdout.flush()
 
         # Retry if the snapcraft remote-build command has been interrupted.
