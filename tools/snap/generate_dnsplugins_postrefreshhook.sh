@@ -3,7 +3,7 @@
 set -eu
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-CERTBOT_DIR="$(dirname "${DIR}")"
+CERTBOT_DIR="$(dirname "$(dirname "${DIR}")")"
 
 for PLUGIN_PATH in "${CERTBOT_DIR}"/certbot-dns-*; do
   PLUGIN=$(basename "${PLUGIN_PATH}")
