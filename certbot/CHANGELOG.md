@@ -9,7 +9,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Third-party plugins can be used without prefix (`plugin_name` instead of `dist_name:plugin_name`):
   this concerns the plugin name, CLI flags, and keys in credential files.
   The prefixed form is still supported but is deprecated, and will be removed in a future release.
-* Added `--nginx-sleep-seconds` (default `1`) for environments where nginx take a long time to reload.
+* Added `--nginx-sleep-seconds` (default `1`) for environments where nginx takes a long time to reload.
 
 ### Changed
 
