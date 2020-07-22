@@ -18,12 +18,14 @@ def _execute_build(target, archs, status, workspace):
         'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover', '--build-on', ','.join(archs)
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, cwd=workspace)
 
-    line = process.stdout.readline()
-    while line:
-        _extract_state(target, line, status)
-        line = process.stdout.readline()
+    while True:
+        output = process.stdout.readline()
+        if not output and process.poll() is not None:
+            break
+        if output:
+            _extract_state(target, output, status)
 
-    return process.returncode
+    return process.poll()
 
 
 def _build_snap(target, archs, status):
