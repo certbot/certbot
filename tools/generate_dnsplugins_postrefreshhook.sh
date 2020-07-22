@@ -27,7 +27,7 @@ cb_required=\$(grep -oP "version = '\K.*(?=')" \$SNAP/setup.py)
 $SNAP/bin/python3 -c "import sys; from setuptools._vendor.packaging import version; sys.exit(1) if\
   version.parse('\$cb_installed') < version.parse('\$cb_required') else sys.exit(0)" || exit_code=\$?
 if [ "\$exit_code" -eq 1 ]; then
-  echo "Certbot is version \$cb_installed but needs to be at least \$cb_required before" \
+  echo "Certbot is version \$cb_installed but needs to be at least \$cb_required before" \\
     "this plugin can be updated; will try again on next refresh."
   exit 1
 fi
