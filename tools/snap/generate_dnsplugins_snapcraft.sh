@@ -3,7 +3,7 @@
 set -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-CERTBOT_DIR="$(dirname "${DIR}")"
+CERTBOT_DIR="$(dirname "$(dirname "${DIR}")")"
 
 for PLUGIN_PATH in "${CERTBOT_DIR}"/certbot-dns-*; do
   PLUGIN=$(basename "${PLUGIN_PATH}")
@@ -29,6 +29,8 @@ parts:
         snapcraftctl set-version \`grep ^version \$SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"\`
     build-environment:
       - SNAP_BUILD: "True"
+    # To build cryptography and cffi if needed
+    build-packages: [gcc, libffi-dev, libssl-dev, python3-dev]
   certbot-metadata:
     plugin: dump
     source: .
