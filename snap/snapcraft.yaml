@@ -15,6 +15,7 @@ description: |
    - Help you revoke the certificate if that ever becomes necessary.
 confinement: classic
 base: core20
+grade: stable
 adopt-info: certbot
 
 apps:

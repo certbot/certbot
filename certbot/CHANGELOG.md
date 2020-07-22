@@ -12,7 +12,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* The Linode DNS plugin now waits 120 seconds for DNS propagation, instead of 1200,
+  due to https://www.linode.com/blog/linode/linode-turns-17/
+* We deprecated support for Python 3.5 in Certbot and its ACME library.
+  Support for Python 3.5 will be removed in the next major release of Certbot.
 
 ### Fixed
 

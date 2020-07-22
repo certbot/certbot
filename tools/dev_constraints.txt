@@ -10,6 +10,7 @@ asn1crypto==0.22.0
 astroid==2.3.3
 attrs==17.3.0
 Babel==2.5.1
+backcall==0.2.0
 backports.functools-lru-cache==1.5
 backports.shutil-get-terminal-size==1.0.0
 backports.ssl-match-hostname==3.7.0.1
@@ -40,9 +41,10 @@ httplib2==0.10.3
 imagesize==0.7.1
 importlib-metadata==0.23
 ipdb==0.12.3
-ipython==5.8.0
+ipython==7.9.0
 ipython-genutils==0.2.0
 isort==4.3.21
+jedi==0.17.1
 Jinja2==2.9.6
 jmespath==0.9.4
 josepy==1.1.0
@@ -59,13 +61,14 @@ ndg-httpsclient==0.3.2
 oauth2client==4.0.0
 packaging==19.2
 paramiko==2.4.2
+parso==0.7.0
 pathlib2==2.3.5
 pexpect==4.7.0
 pickleshare==0.7.5
 pkginfo==1.4.2
 pluggy==0.13.0
 ply==3.4
-prompt-toolkit==1.0.18
+prompt-toolkit==2.0.10
 ptyprocess==0.6.0
 py==1.8.0
 pyasn1==0.1.9

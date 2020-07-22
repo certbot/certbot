@@ -60,6 +60,9 @@ for DNS_PLUGIN in ${DNS_PLUGINS}; do
 done
 EOF
 
+# NB: We use ARCH-stable-save tag instead of ARCH-stable, because recent versions of snapcraft images
+# behave badly on QEMU for arm64 architecture. This should be fixed either by a new version of the
+# image that does not have this problem anymore, or the migration to snapcraft remote builds.
 docker run \
   --rm \
   --net=host \
@@ -69,5 +72,5 @@ docker run \
   -w "/certbot" \
   -e "DNS_PLUGINS=${DNS_PLUGINS}" \
   -e "PIP_EXTRA_INDEX_URL=http://localhost:8080" \
-  "adferrand/snapcraft:${DOCKER_ARCH}-stable" \
+  "adferrand/snapcraft:${DOCKER_ARCH}-stable-save" \
   /script.sh
