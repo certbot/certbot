@@ -16,6 +16,8 @@ parts:
         snapcraftctl set-version `grep ^version $SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"`
     build-environment:
       - EXCLUDE_CERTBOT_DEPS: "True"
+    # To build cryptography and cffi if needed
+    build-packages: [gcc, libffi-dev, libssl-dev, python3-dev]
 
 slots:
   certbot:

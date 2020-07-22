@@ -11,8 +11,9 @@ def install_certbot_snap(request):
     with pytest.raises(Exception):
         subprocess.check_call(['certbot', '--version'])
     try:
-        snap_path = glob.glob(os.path.join(request.config.getoption("snap_folder"),
-                                           'certbot_*.snap'))[0]
+        snap_folder = request.config.getoption("snap_folder")
+        snap_arch = request.config.getoption("snap_arch")
+        snap_path = glob.glob(os.path.join(snap_folder, 'certbot_*_{0}.snap'.format(snap_arch)))[0]
         subprocess.check_call(['snap', 'install', '--classic', '--dangerous', snap_path])
         subprocess.check_call(['certbot', '--version'])
         yield

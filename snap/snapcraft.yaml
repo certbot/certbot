@@ -60,6 +60,7 @@ parts:
       # effect so we now stage the file to keep the auto-generated cffi file.
     stage-packages:
       - libaugeas0
+      - libpython3.8-dev
       # added to stage python:
       - libpython3-stdlib
       - libpython3.8-stdlib
@@ -73,7 +74,9 @@ parts:
       - python3-pkg-resources
       - python3.8-minimal
     # To build cryptography and cffi if needed
-    build-packages: [libffi-dev, libssl-dev, git, libaugeas-dev, python3-dev]
+    build-packages: [gcc, libffi-dev, libssl-dev, git, libaugeas-dev, python3-dev]
+    build-environment:
+      - SNAPCRAFT_PYTHON_VENV_ARGS: --system-site-packages
     override-pull: |
         snapcraftctl pull
         cd $SNAPCRAFT_PART_SRC
