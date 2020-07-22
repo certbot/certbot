@@ -1170,6 +1170,8 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
         before restart.
 
     :param str nginx_ctl: Path to the Nginx binary.
+    :param str nginx_conf: Path to the Nginx configuration file.
+    :param int sleep_duration: How long to sleep after sending the reload signal.
 
     """
     try:
