@@ -41,6 +41,8 @@ def _build_snap(target, archs, status):
     retry = 3
     while retry:
         exit_code = _execute_build(target, archs, status, workspace)
+        print(f'Build {target} for {"".join(archs)} (attempt {4-retry}/3) ended with exit code {exit_code}.')
+        sys.stdout.flush()
         # Do not retry if the snapcraft remote-build command has not been interrupted.
         if exit_code == 0:
             break
