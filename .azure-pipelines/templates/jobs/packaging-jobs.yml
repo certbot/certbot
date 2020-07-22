@@ -63,11 +63,7 @@ jobs:
       vmImage: ubuntu-18.04
     timeoutInMinutes: 0
     variables:
-      # Do not run the heavy non-amd64 builds for test branches
-      ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
         ARCHS: amd64 arm64 armhf
-      ${{ if startsWith(variables['Build.SourceBranchName'], 'test-') }}:
-        ARCHS: amd64
     steps:
       - script: |
           sudo apt-get update
