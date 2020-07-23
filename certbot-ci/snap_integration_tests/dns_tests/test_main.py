@@ -39,5 +39,8 @@ def test_dns_plugin_install(dns_snap_path):
 
         assert plugin_name in subprocess.check_output(['certbot', 'plugins', '--prepare'],
                                                       universal_newlines=True)
+        subprocess.check_call(['snap', 'connect', snap_name + ':certbot-metadata',
+            'certbot:certbot-metadata'])
+        subprocess.check_call(['snap', 'install', '--dangerous', dns_snap_path])
     finally:
         subprocess.call(['snap', 'remove', 'plugin_name'])
