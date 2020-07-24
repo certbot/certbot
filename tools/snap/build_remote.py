@@ -2,7 +2,7 @@
 import argparse
 import glob
 import datetime
-from multiprocessing import Pool, Process, Manager, Event, Lock
+from multiprocessing import Pool, Process, Manager, Event
 import re
 import subprocess
 import sys
@@ -168,7 +168,7 @@ def main():
 
     with Manager() as manager, Pool(processes=len(targets)) as pool:
         status = manager.dict()
-        lock = Lock()
+        lock = manager.Lock()
 
         stop_event = Event()
         state_process = Process(target=_dump_status, args=(archs, status, stop_event))
