@@ -6,7 +6,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 CERTBOT_DIR="$(dirname "$(dirname "${DIR}")")"
 
 for PLUGIN_PATH in "${CERTBOT_DIR}"/certbot-dns-*; do
-  PLUGIN=$(basename "${PLUGIN_PATH}")
   mkdir -p "${PLUGIN_PATH}/snap/hooks"
   cat <<EOF > "${PLUGIN_PATH}/snap/hooks/post-refresh"
 #!/bin/sh -e
