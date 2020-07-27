@@ -340,7 +340,10 @@ only work for users who have Certbot installed from OS packages or via
 pip. Users who run `certbot-auto` are currently unable to use third-party
 plugins. It's technically possible to install third-party plugins into
 the virtualenv used by `certbot-auto`, but they will be wiped away when
-`certbot-auto` upgrades.
+`certbot-auto` upgrades. If you'd like your plugin to be used alongside
+the Certbot snap, you will also have to publish your plugin as a snap.
+Certbot's DNS plugins and the README file in ``tools/snap/`` provide a
+starting reference for how to do this.
 
 .. _`setuptools entry points`:
     http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
