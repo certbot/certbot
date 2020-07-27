@@ -61,7 +61,7 @@ def _build_snap(target, archs, status, lock):
                 # We expect for each failed builds to have a build output, or something bad happened.
                 missing_outputs = False
                 for arch in failed_archs:
-                    if not exists(join(workspace, f'{target}_{failed_archs}.txt')):
+                    if not exists(join(workspace, f'{target}_{arch}.txt')):
                         missing_outputs = True
                         print(f'Missing output on a failed build {target} for {arch}.')
                 if missing_outputs:
