@@ -1,33 +1,54 @@
 """A mixin class for OCSP response prefetching for Apache plugin.
 
 The OCSP prefetching functionality solves multiple issues in Apache httpd
-that make using OCSP must-staple error prone.
+that make using OCSP must-staple error prone. See
+https://blog.hboeck.de/archives/886-The-Problem-with-OCSP-Stapling-and-Must-Staple-and-why-Certificate-Revocation-is-still-broken.html
+for more details on what these problems are, however, the solution implemented
+here is to have Certbot fetch the OCSP response for Apache to staple. This
+happens whenever a certificate is obtained or updated and periodically when
+`certbot renew` is run even if the certificate is not renewed.
 
-The prefetching functionality works by storing a value to PluginStorage,
-noting certificates that Certbot should keep OCSP staples (OCSP responses)
-updated for alongside of the information when the last response was
-updated by Certbot.
+The prefetching functionality works by storing values using
+certbot.plugins.storage noting which certificates Certbot should keep OCSP
+staples (OCSP responses) updated for alongside of the information when the last
+response was updated by Certbot.
 
 When Certbot is invoked, typically by scheduled "certbot renew" and the
-TTL from "lastupdate" value in PluginStorage entry has expired,
+TTL from the "lastupdate" value in PluginStorage entry has expired,
 Certbot then proceeds to fetch a new OCSP response from the OCSP servers
-pointed by the certificate.
+pointed by the certificate. The OCSP response is validated and if valid, stored
+for Apache to use.
 
-The OCSP response is validated and if valid, stored to Apache DBM
-cache. A high internal cache expiry value is set for Apache in order
-to make it to not to discard the stored response and try to renew
-the staple itself letting Certbot to renew it on its subsequent run
-instead.
+Apache is configured to cache the OCSP responses it has stapled in a DBM file.
+This file was not intended to be modified by external programs so much of the
+knowledge here is based on testing and reading the Apache source code. This
+fact also complicates things like handling race conditions and compatibility
+with the different DBM formats that Apache can use as described below.
 
-The DBM cache file used by Apache is a lightweight key-value storage.
-For OCSP response caching, the sha1 hash of certificate fingerprint
-is used as a key. The value consists of expiry time as timestamp
-in microseconds, \x01 delimiter and the raw OCSP response.
+The DBM cache file used by Apache is a lightweight key-value storage.  For OCSP
+response caching, the sha1 hash of certificate fingerprint is used as a key.
+The value consists of expiry time as timestamp in microseconds, \x01 delimiter
+and the raw OCSP response.
+
+When Certbot modifies to this file, a high internal cache expiry value is set
+for Apache in order to make it to not to discard the stored response and try to
+renew the staple itself letting Certbot to renew it on its subsequent run
+instead. When this file is read or modified by Certbot, extra care is taken to
+try and avoid race conditions with Apache the best we can. Apache does not need
+to be reloaded/restarted to pick up changes to this file.
 
 When restarting Apache, Certbot backups the current OCSP response
 cache, and restores it after the restart has happened. This is
 done because Apache deletes and then recreates the file upon
 restart.
+
+There are multiple incompatible libraries for DBM files which Apache can be
+configured to use. To deal with this, as of writing this, this mixin is only
+used in the Debian specific override classes and we expect Apache to use the
+DBM libaries it was configured to use in the Debian Apache packages at the time
+this feature was written. Python itself may or may not have support for this
+DBM format and if it does not, this feature is not offered to the user.
+
 """
 
 from datetime import datetime
