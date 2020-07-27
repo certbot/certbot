@@ -16,7 +16,7 @@ PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*
 def _execute_build(target, archs, status, workspace):
     process = subprocess.Popen([
         'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover', '--build-on', ','.join(archs)
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, cwd=workspace)
+    ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, cwd=workspace)
 
     process_output = []
     for line in process.stdout:
@@ -58,10 +58,10 @@ def _build_snap(target, archs, status, lock):
                     break
 
             if failed_archs:
-                # We expect for each failed builds to have a build output, or something bad happened.
+                # We expect each failed build to have a log file, or something bad happened.
                 missing_outputs = False
                 for arch in failed_archs:
-                    if not exists(join(workspace, f'{target}_{failed_archs}.txt')):
+                    if not exists(join(workspace, f'{target}_{arch}.txt')):
                         missing_outputs = True
                         print(f'Missing output on a failed build {target} for {arch}.')
                 if missing_outputs:
