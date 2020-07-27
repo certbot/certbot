@@ -74,7 +74,9 @@ def safe_copy(source, target):
     some uses of this function.
 
     After the permissions are applied, a check is done that the copied
-    file matches the source file.
+    file matches the source file. This original use for this behavior was for
+    Certbot to try and safely read the OCSP DBM cache file used by Apache when
+    we have no way synchronize reads and writes with the server.
 
     If any of this process fails, it will be retried twice before an
     exception is raised.
