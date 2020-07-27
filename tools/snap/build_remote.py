@@ -16,7 +16,7 @@ PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*
 def _execute_build(target, archs, status, workspace):
     process = subprocess.Popen([
         'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover', '--build-on', ','.join(archs)
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, cwd=workspace)
+    ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, cwd=workspace)
 
     process_output = []
     for line in process.stdout:
