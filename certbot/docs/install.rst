@@ -67,10 +67,10 @@ Snap
 ----
 
 Most modern Linux distributions (basically any that use systemd) can install
-Certbot packaged as a snap. Support for the Certbot snap is currently in its
-beta phase and limited to the x86_64 architecture, but it provides an easy way
-to ensure you have the latest version of Certbot with features like automated
-certificate renewal preconfigured.
+Certbot packaged as a snap. Snaps are available for x86_64, ARMv7 and ARMv8
+architectures. Support for the Certbot snap is currently in its beta phase, but
+it provides an easy way to ensure you have the latest version of Certbot with
+features like automated certificate renewal preconfigured.
 
 You can find instructions for installing the Certbot snap at
 https://certbot.eff.org/instructions by selecting your server software and then
