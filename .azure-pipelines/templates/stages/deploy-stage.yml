@@ -1,13 +1,24 @@
 stages:
   - stage: Deploy
     jobs:
-      # This job relies on a snapcraft.cfg preconfigured with credential,
-      # stored as a secure file in Azure Pipeline.
-      # This credential has a maximum lifetime of 1 year and the current
-      # credential will expire on 6/25/2021. The content of snapcraft.cfg
-      # will need to be updated to use a new credential before then to
-      # prevent automated deploys from breaking. Remembering to do this is
-      # also tracked by https://github.com/certbot/certbot/issues/7931.
+      # This job relies on credentials used to publish the Certbot snaps. This
+      # credential file was created by running:
+      #
+      #   snapcraft logout
+      #   snapcraft login (provide the shared snapcraft credentials when prompted)
+      #   snapcraft export-login --channels=beta,edge snapcraft.cfg
+      #
+      # Then the file was added as a secure file in Azure pipelines
+      # with the name snapcraft.cfg by following the instructions at
+      # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/secure-files?view=azure-devops
+      # including authorizing the file in all pipelines as described at
+      # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/secure-files?view=azure-devops#how-do-i-authorize-a-secure-file-for-use-in-all-pipelines.
+      #
+      # This file has a maximum lifetime of one year and the current
+      # file will expire on 2021-07-28 which is also tracked by
+      # https://github.com/certbot/certbot/issues/7931. The file will
+      # need to be updated before then to prevent automated deploys
+      # from breaking.
       - job: publish_snap
         pool:
           vmImage: ubuntu-18.04
