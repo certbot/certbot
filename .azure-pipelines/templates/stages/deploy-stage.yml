@@ -1,3 +1,11 @@
+parameters:
+- name: snapReleaseChannel
+  type: string
+  default: edge
+  values:
+  - edge
+  - beta
+
 stages:
   - stage: Deploy
     jobs:
@@ -43,6 +51,6 @@ stages:
               mkdir -p .snapcraft
               ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
               for SNAP_FILE in snap/*.snap; do
-                snapcraft upload --release=edge "${SNAP_FILE}"
+                snapcraft upload --release=${{ snapReleaseChannel }} "${SNAP_FILE}"
               done
             displayName: Publish to Snap store
