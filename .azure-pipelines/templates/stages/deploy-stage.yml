@@ -51,6 +51,6 @@ stages:
               mkdir -p .snapcraft
               ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
               for SNAP_FILE in snap/*.snap; do
-                snapcraft upload --release=${{ snapReleaseChannel }} "${SNAP_FILE}"
+                snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
               done
             displayName: Publish to Snap store
