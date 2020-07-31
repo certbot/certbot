@@ -291,39 +291,19 @@ Optionally to install the Certbot Apache plugin, you can use:
 
 **Gentoo**
 
-The official Certbot client is available in Gentoo Portage. If you
-want to use the Apache plugin, it has to be installed separately:
+The official Certbot client is available in Gentoo Portage. From the 
+official Certbot plugins, three of them are also available in Portage. 
+They need to be installed separately if you require their functionality.
 
 .. code-block:: shell
 
    emerge -av app-crypt/certbot
    emerge -av app-crypt/certbot-apache
+   emerge -av app-crypt/certbot-nginx
+   emerge -av app-crypt/certbot-dns-nsone
 
-When using the Apache plugin, you will run into a "cannot find an
-SSLCertificateFile directive" or "cannot find an SSLCertificateKeyFile
-directive for certificate" error if you're sporting the default Gentoo
-``httpd.conf``. You can fix this by commenting out two lines in
-``/etc/apache2/httpd.conf`` as follows:
-
-Change
-
-.. code-block:: shell
-
-   <IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   </IfDefine>
-
-to
-
-.. code-block:: shell
-
-   #<IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   #</IfDefine>
-
-For the time being, this is the only way for the Apache plugin to recognise
-the appropriate directives when installing the certificate.
-Note: this change is not required for the other plugins.
+.. Note:: the ``app-crypt/certbot-dns-nsone`` package has a different 
+   maintainer than the other packages and can lag behind in version.
 
 **NetBSD**
 
