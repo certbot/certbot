@@ -853,7 +853,7 @@ class ClientV2Test(ClientTestBase):
         self.response.json.return_value = updated_order.to_json()
         self.response.text = CERT_SAN_PEM
         self.response.headers['Link'] ='<https://example.com/acme/cert/1>;rel="alternate", ' + \
-            '<https://exaple.com/dir>;rel="index", ' + \
+            '<https://example.com/dir>;rel="index", ' + \
             '<https://example.com/acme/cert/2>;title="foo";rel="alternate"'
 
         deadline = datetime.datetime(9999, 9, 9)
