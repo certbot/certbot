@@ -1,4 +1,5 @@
-# Release pipeline to build and deploy Certbot for Windows for GitHub release tags
+# Release pipeline to run our full test suite, build artifacts, and deploy them
+# for GitHub release tags.
 trigger:
   tags:
     include:
