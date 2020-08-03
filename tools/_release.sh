@@ -7,6 +7,24 @@ if [ "$RELEASE_DIR" = "" ]; then
     exit 1
 fi
 
+ExitWarning() {
+    exit_status="$?"
+    if [ "$exit_status" != 0 ]; then
+        # Don't print each command before executing it because it will disrupt
+        # the desired output.
+        set +x
+        echo '******************************'
+        echo '*                            *'
+        echo '* THE RELEASE SCRIPT FAILED! *'
+        echo '*                            *'
+        echo '******************************'
+        set -x
+    fi
+    exit "$exit_status"
+}
+
+trap ExitWarning EXIT
+
 version="$1"
 echo Releasing production version "$version"...
 nextversion="$2"
@@ -41,7 +59,7 @@ mv "dist.$version" "dist.$version.$(date +%s).bak" || true
 git tag --delete "$tag" || true
 
 tmpvenv=$(mktemp -d)
-VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages -p python2 $tmpvenv
+python3 -m venv "$tmpvenv"
 . $tmpvenv/bin/activate
 # update setuptools/pip just like in other places in the repo
 pip install -U setuptools
@@ -67,7 +85,6 @@ git checkout "$RELEASE_BRANCH"
 # Update changelog
 sed -i "s/master/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
 git add certbot/CHANGELOG.md
-git diff --cached
 git commit -m "Update changelog for $version release"
 
 for pkg_dir in $SUBPKGS certbot-compatibility-test
@@ -140,10 +157,10 @@ done
 echo "Testing packages"
 cd "dist.$version"
 # start local PyPI
-python -m SimpleHTTPServer $PORT &
+python -m http.server $PORT &
 # cd .. is NOT done on purpose: we make sure that all subpackages are
 # installed from local PyPI rather than current directory (repo root)
-VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages ../venv
+VIRTUALENV_NO_DOWNLOAD=1 virtualenv ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip
@@ -185,7 +202,7 @@ done
 # pin pip hashes of the things we just built
 for pkg in $SUBPKGS_IN_AUTO ; do
     echo $pkg==$version \\
-    pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
+    pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python -c 'from sys import stdin; input = stdin.read(); print("   ", input.replace("\n--hash", " \\\n    --hash"), end="")'
 done > letsencrypt-auto-source/pieces/certbot-requirements.txt
 deactivate
 
@@ -230,7 +247,6 @@ cp -p letsencrypt-auto-source/letsencrypt-auto certbot-auto
 cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
 
 git add certbot-auto letsencrypt-auto letsencrypt-auto-source certbot/docs/cli-help.txt
-git diff --cached
 while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
     echo "Unable to sign the release commit using git."
     echo "You may have to configure git to use gpg2 by running:"
@@ -258,7 +274,6 @@ $body
 
 $footer" > certbot/CHANGELOG.md
 git add certbot/CHANGELOG.md
-git diff --cached
 git commit -m "Add contents to certbot/CHANGELOG.md for next version"
 
 echo "New root: $root"
@@ -273,6 +288,5 @@ if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
     letsencrypt-auto-source/build.py
     git add letsencrypt-auto-source/letsencrypt-auto
-    git diff
     git commit -m "Bump version to $nextversion"
 fi

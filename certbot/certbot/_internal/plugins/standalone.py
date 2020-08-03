@@ -11,12 +11,12 @@ import zope.interface
 
 from acme import challenges
 from acme import standalone as acme_standalone
-from acme.magic_typing import DefaultDict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import TYPE_CHECKING  # pylint: disable=unused-import, no-name-in-module
-from certbot import achallenges  # pylint: disable=unused-import
+from acme.magic_typing import DefaultDict
+from acme.magic_typing import Dict
+from acme.magic_typing import Set
+from acme.magic_typing import Tuple
+from acme.magic_typing import TYPE_CHECKING
+from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import common
@@ -139,20 +139,20 @@ class Authenticator(common.Plugin):
     def add_parser_arguments(cls, add):
         pass  # No additional argument for the standalone plugin parser
 
-    def more_info(self):  # pylint: disable=missing-docstring
+    def more_info(self):  # pylint: disable=missing-function-docstring
         return("This authenticator creates its own ephemeral TCP listener "
                "on the necessary port in order to respond to incoming "
                "http-01 challenges from the certificate authority. Therefore, "
                "it does not rely on any existing server program.")
 
-    def prepare(self):  # pylint: disable=missing-docstring
+    def prepare(self):  # pylint: disable=missing-function-docstring
         pass
 
     def get_chall_pref(self, domain):
-        # pylint: disable=unused-argument,missing-docstring
+        # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01]
 
-    def perform(self, achalls):  # pylint: disable=missing-docstring
+    def perform(self, achalls):  # pylint: disable=missing-function-docstring
         return [self._try_perform_single(achall) for achall in achalls]
 
     def _try_perform_single(self, achall):
@@ -177,7 +177,7 @@ class Authenticator(common.Plugin):
         self.http_01_resources.add(resource)
         return servers, response
 
-    def cleanup(self, achalls):  # pylint: disable=missing-docstring
+    def cleanup(self, achalls):  # pylint: disable=missing-function-docstring
         # reduce self.served and close servers if no challenges are served
         for unused_servers, server_achalls in self.served.items():
             for achall in achalls:

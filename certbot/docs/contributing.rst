@@ -117,13 +117,11 @@ either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
 For debugging, we recommend putting
 ``import ipdb; ipdb.set_trace()`` statements inside the source code.
 
-Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
-run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
-2.7).
-
-Once all the unittests pass, check for sufficient test coverage using ``tox -e
-py27-cover``, and then check for code style with ``tox -e lint`` (all files) or
-``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
+Once you are done with your code changes, and the tests in ``foo_test.py``
+pass, run all of the unit tests for Certbot and check for coverage with ``tox
+-e py3-cover``. You should then check for code style with ``tox -e lint`` (all
+files) or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a
+time).
 
 Once all of the above is successful, you may run the full test suite using
 ``tox --skip-missing-interpreters``. We recommend running the commands above
@@ -139,7 +137,7 @@ of output can make it hard to find specific failures when they happen.
 Running automated integration tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generally it is sufficient to open a pull request and let Github and Travis run
+Generally it is sufficient to open a pull request and let Github and Azure Pipelines run
 integration tests for you. However, you may want to run them locally before submitting
 your pull request. You need Docker and docker-compose installed and working.
 
@@ -170,7 +168,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv.py` contains two commands
+The virtual environment set up with `python tools/venv3.py` contains two commands
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -200,6 +198,12 @@ using an HTTP-01 challenge on a machine with Python 3:
     run_acme_server &
     certbot_test certonly --standalone -d test.example.com
     # To stop Pebble, launch `fg` to get back the background job, then press CTRL+C
+
+Running tests in CI
+~~~~~~~~~~~~~~~~~~~
+
+Certbot uses Azure Pipelines to run continuous integration tests. If you are using our
+Azure setup, a branch whose name starts with `test-` will run all tests on that branch.
 
 Code components and layout
 ==========================
@@ -237,8 +241,8 @@ built-in Standalone authenticator, implement just one interface.
 There are also `~certbot.interfaces.IDisplay` plugins,
 which can change how prompts are displayed to a user.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
+.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/plugins/common.py#L45
 
 
 Authenticators
@@ -300,6 +304,16 @@ configuration checkpoints and rollback.
 Writing your own plugin
 ~~~~~~~~~~~~~~~~~~~~~~~
 
+.. note:: The Certbot team is not currently accepting any new DNS plugins
+    because we want to rethink our approach to the challenge and resolve some
+    issues like `#6464 <https://github.com/certbot/certbot/issues/6464>`_,
+    `#6503 <https://github.com/certbot/certbot/issues/6503>`_, and `#6504
+    <https://github.com/certbot/certbot/issues/6504>`_ first.
+
+    In the meantime, you're welcome to release it as a third-party plugin. See
+    `certbot-dns-ispconfig <https://github.com/m42e/certbot-dns-ispconfig>`_
+    for one example of that.
+
 Certbot client supports dynamic discovery of plugins through the
 `setuptools entry points`_ using the `certbot.plugins` group. This
 way you can, for example, create a custom implementation of
@@ -326,13 +340,10 @@ only work for users who have Certbot installed from OS packages or via
 pip. Users who run `certbot-auto` are currently unable to use third-party
 plugins. It's technically possible to install third-party plugins into
 the virtualenv used by `certbot-auto`, but they will be wiped away when
-`certbot-auto` upgrades.
-
-.. warning:: Please be aware though that as this client is still in a
-   developer-preview stage, the API may undergo a few changes. If you
-   believe the plugin will be beneficial to the community, please
-   consider submitting a pull request to the repo and we will update
-   it with any necessary API changes.
+`certbot-auto` upgrades. If you'd like your plugin to be used alongside
+the Certbot snap, you will also have to publish your plugin as a snap.
+Certbot's DNS plugins and the README file in ``tools/snap/`` provide a
+starting reference for how to do this.
 
 .. _`setuptools entry points`:
     http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
@@ -443,7 +454,7 @@ Steps:
    containing your pull request to squash or amend commits. We use `squash
    merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
    rewriting commits makes changes harder to track between reviews.
-6. Did your tests pass on Travis? If they didn't, fix any errors.
+6. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
 
 .. _ask for help:
 
@@ -520,19 +531,22 @@ during the next release.
 Updating the documentation
 ==========================
 
-In order to generate the Sphinx documentation, run the following
-commands:
+Many of the packages in the Certbot repository have documentation in a
+``docs/`` directory. This directory is located under the top level directory
+for the package. For instance, Certbot's documentation is under
+``certbot/docs``.
+
+To build the documentation of a package, make sure you have followed the
+instructions to set up a `local copy`_ of Certbot including activating the
+virtual environment. After that, ``cd`` to the docs directory you want to build
+and run the command:
 
 .. code-block:: shell
 
-   make -C docs clean html man
+   make clean html
 
-This should generate documentation in the ``docs/_build/html``
-directory.
-
-.. note:: If you skipped the "Getting Started" instructions above,
-  run ``pip install -e "certbot[docs]"`` to install Certbot's docs extras modules.
-
+This would generate the HTML documentation in ``_build/html`` in your current
+``docs/`` directory.
 
 .. _docker-dev:
 
@@ -579,7 +593,7 @@ OS-level dependencies can be installed like so:
 In general...
 
 * ``sudo`` is required as a suggested way of running privileged process
-* `Python`_ 2.7 or 3.4+ is required
+* `Python`_ 2.7 or 3.5+ is required
 * `Augeas`_ is required for the Python bindings
 * ``virtualenv`` is used for managing other Python library dependencies
 

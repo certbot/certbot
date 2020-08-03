@@ -3,7 +3,10 @@ import os
 import shutil
 import subprocess
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import zope.interface
 
 from certbot import errors as le_errors

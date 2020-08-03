@@ -1,7 +1,10 @@
 """Tests for certbot._internal.renewal"""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from acme import challenges
 from certbot import errors
@@ -106,6 +109,14 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         renewalparams = {'must_staple': 'maybe'}
         self.assertRaises(
             errors.Error, self._call, self.config, renewalparams)
+
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
+    def test_ancient_server_renewal_conf(self, mock_set_by_cli):
+        from certbot._internal import constants
+        self.config.server = None
+        mock_set_by_cli.return_value = False
+        self._call(self.config, {'server': constants.V1_URI})
+        self.assertEqual(self.config.server, constants.CLI_DEFAULTS['server'])
 
 
 if __name__ == "__main__":

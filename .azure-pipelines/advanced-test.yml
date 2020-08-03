@@ -1,0 +1,12 @@
+# Advanced pipeline for running our full test suite on demand.
+trigger:
+  # When changing these triggers, please ensure the documentation under
+  # "Running tests in CI" is still correct.
+  - test-*
+pr: none
+
+stages:
+  - template: templates/stages/test-and-package-stage.yml
+  # Notify failures only for release branches.
+  - ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
+    - template: templates/stages/notify-failure-stage.yml

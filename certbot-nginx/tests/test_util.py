@@ -4,7 +4,10 @@ import shutil
 import tempfile
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import pkg_resources
 import zope.component
 
@@ -14,9 +17,10 @@ from certbot.plugins import common
 from certbot.tests import util as test_util
 from certbot_nginx._internal import configurator
 from certbot_nginx._internal import nginxparser
+import test_log_util
 
 
-class NginxTest(test_util.ConfigTestCase):
+class NginxTest(test_log_util.AssertLogsMixin, test_util.ConfigTestCase):
 
     def setUp(self):
         super(NginxTest, self).setUp()
@@ -52,6 +56,7 @@ class NginxTest(test_util.ConfigTestCase):
         backups = os.path.join(work_dir, "backups")
 
         self.configuration.nginx_server_root = config_path
+        self.configuration.nginx_sleep_seconds = 0.1234
         self.configuration.le_vhost_ext = "-le-ssl.conf"
         self.configuration.config_dir = config_dir
         self.configuration.work_dir = work_dir

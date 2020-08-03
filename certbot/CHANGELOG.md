@@ -2,15 +2,186 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.1.0 - master
+## 1.7.0 - master
 
 ### Added
 
+
 * added nslookup command info to show if the TXT record is deployed to DNS
+* Third-party plugins can be used without prefix (`plugin_name` instead of `dist_name:plugin_name`):
+  this concerns the plugin name, CLI flags, and keys in credential files.
+  The prefixed form is still supported but is deprecated, and will be removed in a future release.
+* Added `--nginx-sleep-seconds` (default `1`) for environments where nginx takes a long time to reload.
 
 ### Changed
 
+* The Linode DNS plugin now waits 120 seconds for DNS propagation, instead of 1200,
+  due to https://www.linode.com/blog/linode/linode-turns-17/
+* We deprecated support for Python 3.5 in Certbot and its ACME library.
+  Support for Python 3.5 will be removed in the next major release of Certbot.
+
+### Fixed
+
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.6.0 - 2020-07-07
+
+### Added
+
+* Certbot snaps are now available for the arm64 and armhf architectures.
+* Add minimal code to run Nginx plugin on NetBSD.
+* Make Certbot snap find externally snapped plugins
+* Function `certbot.compat.filesystem.umask` is a drop-in replacement for `os.umask`
+  implementing umask for both UNIX and Windows systems.
+* Support for alternative certificate chains in the `acme` module.
+* Added `--preferred-chain <issuer CN>`. If a CA offers multiple certificate chains,
+  it may be  used to indicate to Certbot which chain should be preferred.
+  * e.g. `--preferred-chain "DST Root CA X3"`
+
+### Changed
+
+* Allow session tickets to be disabled in Apache when mod_ssl is statically linked.
+* Generalize UI warning message on renewal rate limits
+* Certbot behaves similarly on Windows to on UNIX systems regarding umask, and
+  the umask `022` is applied by default: all files/directories are not writable by anyone
+  other than the user running Certbot and the system/admin users.
+* Read acmev1 Let's Encrypt server URL from renewal config as acmev2 URL to prepare
+  for impending acmev1 deprecation.
+
+### Fixed
+
+* Cloudflare API Tokens may now be restricted to individual zones.
+* Don't use `StrictVersion`, but `LooseVersion` to check version requirements with setuptools,
+  to fix some packaging issues with libraries respecting PEP404 for version string,
+  with doesn't match `StrictVersion` requirements.
+* Certbot output doesn't refer to SSL Labs due to confusing scoring behavior.
+* Fix paths when calling to programs outside of the Certbot Snap, fixing the apache and nginx
+  plugins on, e.g., CentOS 7.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.5.0 - 2020-06-02
+
+### Added
+
+* Require explicit confirmation of snap plugin permissions before connecting.
+
+### Changed
+
+* Improved error message in apache installer when mod_ssl is not available.
+
+### Fixed
+
+* Add support for OCSP responses which use a public key hash ResponderID, fixing
+  interoperability with Sectigo CAs.
+* Fix TLS-ALPN test that fails when run with newer versions of OpenSSL.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.4.0 - 2020-05-05
+
+### Added
+
+* Turn off session tickets for apache plugin by default when appropriate.
+* Added serial number of certificate to the output of `certbot certificates`
+* Expose two new environment variables in the authenticator and cleanup scripts used by
+  the `manual` plugin: `CERTBOT_REMAINING_CHALLENGES` is equal to the number of challenges
+  remaining after the current challenge, `CERTBOT_ALL_DOMAINS` is a comma-separated list
+  of all domains challenged for the current certificate.
+* Added TLS-ALPN-01 challenge support in the `acme` library. Support of this
+  challenge in the Certbot client is planned to be added in a future release.
+* Added minimal proxy support for OCSP verification.
+* On Windows, hooks are now executed in a Powershell shell instead of a CMD shell,
+  allowing both `*.ps1` and `*.bat` as valid scripts for Certbot.
+
+### Changed
+
+* Reorganized error message when a user entered an invalid email address.
+* Stop asking interactively if the user would like to add a redirect.
+* `mock` dependency is now conditional on Python 2 in all of our packages.
+* Deprecate certbot-auto on Gentoo, macOS, and FreeBSD.
+* Allow existing but empty archive and live dir to be used when creating new lineage.
+
+### Fixed
+
+* When using an RFC 8555 compliant endpoint, the `acme` library no longer sends the
+  `resource` field in any requests or the `type` field when responding to challenges.
+* Fix nginx plugin crash when non-ASCII configuration file is being read (instead,
+  the user will be warned that UTF-8 must be used).
+* Fix hanging OCSP queries during revocation checking - added a 10 second timeout.
+* Standalone servers now have a default socket timeout of 30 seconds, fixing
+  cases where an idle connection can cause the standalone plugin to hang.
+* Parsing of the RFC 8555 application/pem-certificate-chain now tolerates CRLF line
+  endings. This should fix interoperability with Buypass' services.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.3.0 - 2020-03-03
+
+### Added
+
+* Added certbot.ocsp Certbot's API. The certbot.ocsp module can be used to
+  determine the OCSP status of certificates.
+* Don't verify the existing certificate in HTTP01Response.simple_verify, for
+  compatibility with the real-world ACME challenge checks.
+* Added support for `$hostname` in nginx `server_name` directive
+
+### Changed
+
+* Certbot will now renew certificates early if they have been revoked according
+  to OCSP.
+* Fix acme module warnings when response Content-Type includes params (e.g. charset).
+* Fixed issue where webroot plugin would incorrectly raise `Read-only file system`
+  error when creating challenge directories (issue #7165).
+
+### Fixed
+
+* Fix Apache plugin to use less restrictive umask for making the challenge directory when a restrictive umask was set when certbot was started.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.2.0 - 2020-02-04
+
+### Added
+
+* Added support for Cloudflare's limited-scope API Tokens
+
+### Changed
+
+* Add directory field to error message when field is missing.
+* If MD5 hasher is not available, try it in non-security mode (fix for FIPS systems) -- [#1948](https://github.com/certbot/certbot/issues/1948)
+* Disable old SSL versions and ciphersuites and remove `SSLCompression off` setting to follow Mozilla recommendations in Apache.
+* Remove ECDHE-RSA-AES128-SHA from NGINX ciphers list now that Windows 2008 R2 and Windows 7 are EOLed
+* Support for Python 3.4 has been removed.
+
+### Fixed
+
+* Fix collections.abc imports for Python 3.9.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.1.0 - 2020-01-14
+
+### Added
+
+*
+
+### Changed
+
+* Removed the fallback introduced with 0.34.0 in `acme` to retry a POST-as-GET
+  request as a GET request when the targeted ACME CA server seems to not support
+  POST-as-GET requests.
+* certbot-auto no longer supports architectures other than x86_64 on RHEL 6
+  based systems. Existing certbot-auto installations affected by this will
+  continue to work, but they will no longer receive updates. To install a
+  newer version of Certbot on these systems, you should update your OS.
+* Support for Python 3.4 in Certbot and its ACME library is deprecated and will be
+  removed in the next release of Certbot. certbot-auto users on x86_64 systems running
+  RHEL 6 or derivatives will be asked to enable Software Collections (SCL) repository
+  so Python 3.6 can be installed. certbot-auto can enable the SCL repo for you on CentOS 6
+  while users on other RHEL 6 based systems will be asked to do this manually.
 
 ### Fixed
 
@@ -221,7 +392,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* dns_rfc2136 plugin now supports explicitly specifing an authorative
+* dns_rfc2136 plugin now supports explicitly specifying an authoritative
   base domain for cases when the automatic method does not work (e.g.
   Split horizon DNS)
 
@@ -605,7 +776,7 @@ https://github.com/certbot/certbot/milestone/62?closed=1
 * Log warning about TLS-SNI deprecation in Certbot
 * Stop preferring TLS-SNI in the Apache, Nginx, and standalone plugins
 * OVH DNS plugin now relies on Lexicon>=2.7.14 to support HTTP proxies
-* Default time the Linode plugin waits for DNS changes to propogate is now 1200 seconds.
+* Default time the Linode plugin waits for DNS changes to propagate is now 1200 seconds.
 
 ### Fixed
 
@@ -724,7 +895,7 @@ https://github.com/certbot/certbot/milestone/58?closed=1
   increased over time. The max-age value is not increased to a large value
   until you've successfully managed to renew your certificate. This enhancement
   can be requested with the --auto-hsts flag.
-* New official DNS plugins have been created for Gehirn Infrastracture Service,
+* New official DNS plugins have been created for Gehirn Infrastructure Service,
   Linode, OVH, and Sakura Cloud. These plugins can be found on our Docker Hub
   page at https://hub.docker.com/u/certbot and on PyPI.
 * The ability to reuse ACME accounts from Let's Encrypt's ACMEv1 endpoint on

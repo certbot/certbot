@@ -3,14 +3,17 @@ import functools
 import string
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError:  # pragma: no cover
+    from unittest import mock
 import pkg_resources
 import six
 import zope.interface
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot import interfaces
+from certbot._internal.plugins import null
 from certbot._internal.plugins import standalone
 from certbot._internal.plugins import webroot
 
@@ -42,7 +45,22 @@ class PluginEntryPointTest(unittest.TestCase):
         from certbot._internal.plugins.disco import PluginEntryPoint
         self.plugin_ep = PluginEntryPoint(EP_SA)
 
-    def test_entry_point_to_plugin_name(self):
+    def test_entry_point_to_plugin_name_not_prefixed(self):
+        from certbot._internal.plugins.disco import PluginEntryPoint
+
+        names = {
+            self.ep1: "ep1",
+            self.ep1prim: "ep1",
+            self.ep2: "ep2",
+            self.ep3: "ep3",
+            EP_SA: "sa",
+        }
+
+        for entry_point, name in six.iteritems(names):
+            self.assertEqual(
+                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, with_prefix=False))
+
+    def test_entry_point_to_plugin_name_prefixed(self):
         from certbot._internal.plugins.disco import PluginEntryPoint
 
         names = {
@@ -50,12 +68,11 @@ class PluginEntryPointTest(unittest.TestCase):
             self.ep1prim: "p2:ep1",
             self.ep2: "p2:ep2",
             self.ep3: "p3:ep3",
-            EP_SA: "sa",
         }
 
         for entry_point, name in six.iteritems(names):
             self.assertEqual(
-                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point))
+                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, with_prefix=True))
 
     def test_description(self):
         self.assertTrue("temporary webserver" in self.plugin_ep.description)
@@ -195,17 +212,28 @@ class PluginsRegistryTest(unittest.TestCase):
         self.plugin_ep.__hash__.side_effect = TypeError
         self.plugins = {self.plugin_ep.name: self.plugin_ep}
         self.reg = self._create_new_registry(self.plugins)
+        self.ep1 = pkg_resources.EntryPoint(
+            "ep1", "p1.ep1", dist=mock.MagicMock(key="p1"))
 
     def test_find_all(self):
         from certbot._internal.plugins.disco import PluginsRegistry
         with mock.patch("certbot._internal.plugins.disco.pkg_resources") as mock_pkg:
-            mock_pkg.iter_entry_points.side_effect = [iter([EP_SA]),
-                                                      iter([EP_WR])]
-            plugins = PluginsRegistry.find_all()
+            mock_pkg.iter_entry_points.side_effect = [
+                iter([EP_SA]), iter([EP_WR, self.ep1])
+            ]
+            with mock.patch.object(pkg_resources.EntryPoint, 'load') as mock_load:
+                mock_load.side_effect = [
+                    standalone.Authenticator, webroot.Authenticator,
+                    null.Installer, null.Installer]
+                plugins = PluginsRegistry.find_all()
         self.assertTrue(plugins["sa"].plugin_cls is standalone.Authenticator)
         self.assertTrue(plugins["sa"].entry_point is EP_SA)
         self.assertTrue(plugins["wr"].plugin_cls is webroot.Authenticator)
         self.assertTrue(plugins["wr"].entry_point is EP_WR)
+        self.assertTrue(plugins["ep1"].plugin_cls is null.Installer)
+        self.assertTrue(plugins["ep1"].entry_point is self.ep1)
+        self.assertTrue(plugins["p1:ep1"].plugin_cls is null.Installer)
+        self.assertTrue(plugins["p1:ep1"].entry_point is self.ep1)
 
     def test_getitem(self):
         self.assertEqual(self.plugin_ep, self.reg["mock"])

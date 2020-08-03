@@ -5,7 +5,10 @@ import unittest
 import dns.flags
 import dns.rcode
 import dns.tsig
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import os

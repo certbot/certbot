@@ -3,7 +3,10 @@
 import unittest
 
 import CloudFlare
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import os
@@ -12,6 +15,9 @@ from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
 API_ERROR = CloudFlare.exceptions.CloudFlareAPIError(1000, '', '')
+
+API_TOKEN = 'an-api-token'
+
 API_KEY = 'an-api-key'
 EMAIL = 'example@example.com'
 
@@ -49,6 +55,50 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
+    def test_api_token(self):
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN},
+                              self.config.cloudflare_credentials)
+        self.auth.perform([self.achall])
+
+        expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
+        self.assertEqual(expected, self.mock_client.mock_calls)
+
+    def test_no_creds(self):
+        dns_test_common.write({}, self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+    def test_missing_email_or_key(self):
+        dns_test_common.write({"cloudflare_api_key": API_KEY}, self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+        dns_test_common.write({"cloudflare_email": EMAIL}, self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+    def test_email_or_key_with_token(self):
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_email": EMAIL},
+                              self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_api_key": API_KEY},
+                              self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_email": EMAIL,
+                               "cloudflare_api_key": API_KEY}, self.config.cloudflare_credentials)
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
 
 class CloudflareClientTest(unittest.TestCase):
     record_name = "foo"
@@ -83,7 +133,7 @@ class CloudflareClientTest(unittest.TestCase):
     def test_add_txt_record_error(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
 
-        self.cf.zones.dns_records.post.side_effect = API_ERROR
+        self.cf.zones.dns_records.post.side_effect = CloudFlare.exceptions.CloudFlareAPIError(1009, '', '')
 
         self.assertRaises(
             errors.PluginError,
@@ -101,6 +151,31 @@ class CloudflareClientTest(unittest.TestCase):
     def test_add_txt_record_zone_not_found(self):
         self.cf.zones.get.return_value = []
 
+        self.assertRaises(
+            errors.PluginError,
+            self.cloudflare_client.add_txt_record,
+            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
+    def test_add_txt_record_bad_creds(self):
+        self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(6003, '', '')
+        self.assertRaises(
+            errors.PluginError,
+            self.cloudflare_client.add_txt_record,
+            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
+        self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(9103, '', '')
+        self.assertRaises(
+            errors.PluginError,
+            self.cloudflare_client.add_txt_record,
+            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
+        self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(9109, '', '')
+        self.assertRaises(
+            errors.PluginError,
+            self.cloudflare_client.add_txt_record,
+            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
+        self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(0, 'com.cloudflare.api.account.zone.list', '')
         self.assertRaises(
             errors.PluginError,
             self.cloudflare_client.add_txt_record,

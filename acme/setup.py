@@ -1,10 +1,12 @@
+from distutils.version import LooseVersion
 import sys
 
+from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-version = '1.1.0.dev0'
+version = '1.7.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -15,9 +17,8 @@ install_requires = [
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
-    'mock',
-    # Connection.set_tlsext_host_name (>=0.13)
-    'PyOpenSSL>=0.13.1',
+    # Connection.set_tlsext_host_name (>=0.13) + matching Xenial requirements (>=0.15.1)
+    'PyOpenSSL>=0.15.1',
     'pyrfc3339',
     'pytz',
     'requests[security]>=2.6.0',  # security extras added in 2.4.1
@@ -25,6 +26,15 @@ install_requires = [
     'setuptools',
     'six>=1.9.0',  # needed for python_2_unicode_compatible
 ]
+
+setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
+if setuptools_known_environment_markers:
+    install_requires.append('mock ; python_version < "3.3"')
+elif 'bdist_wheel' in sys.argv[1:]:
+    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
+                       'of setuptools. Version 36.2+ of setuptools is required.')
+elif sys.version_info < (3,3):
+    install_requires.append('mock')
 
 dev_extras = [
     'pytest',
@@ -61,7 +71,7 @@ setup(
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
@@ -70,7 +80,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',

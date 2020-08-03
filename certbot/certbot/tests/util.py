@@ -1,8 +1,4 @@
-"""Test utilities.
-
-.. warning:: This module is not part of the public API.
-
-"""
+"""Test utilities."""
 import logging
 from multiprocessing import Event
 from multiprocessing import Process
@@ -14,11 +10,14 @@ import unittest
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import OpenSSL
 import pkg_resources
 import six
-from six.moves import reload_module  # pylint: disable=import-error
+from six.moves import reload_module
 
 from certbot import interfaces
 from certbot import util

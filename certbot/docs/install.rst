@@ -28,7 +28,7 @@ your system.
 System Requirements
 ===================
 
-Certbot currently requires Python 2.7 or 3.4+ running on a UNIX-like operating
+Certbot currently requires Python 2.7 or 3.5+ running on a UNIX-like operating
 system. By default, it requires root access in order to write to
 ``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
 bind to port 80 (if you use the ``standalone`` plugin) and to read and
@@ -61,6 +61,23 @@ Alternate installation methods
 If you are offline or your operating system doesn't provide a package, you can use
 an alternate method for installing ``certbot``.
 
+.. _snap-install:
+
+Snap
+----
+
+Most modern Linux distributions (basically any that use systemd) can install
+Certbot packaged as a snap. Snaps are available for x86_64, ARMv7 and ARMv8
+architectures. The Certbot snap provides an easy way to ensure you have the
+latest version of Certbot with features like automated certificate renewal
+preconfigured.
+
+You can find instructions for installing the Certbot snap at
+https://certbot.eff.org/instructions by selecting your server software and then
+choosing "snapd" in the "System" dropdown menu. (You should select "snapd"
+regardless of your operating system, as our instructions are the same across
+all systems.)
+
 .. _certbot-auto:
 
 Certbot-Auto
@@ -70,11 +87,13 @@ The ``certbot-auto`` wrapper script installs Certbot, obtaining some dependencie
 from your web server OS and putting others in a python virtual environment. You can
 download and run it as follows::
 
-  user@webserver:~$ wget https://dl.eff.org/certbot-auto
-  user@webserver:~$ sudo mv certbot-auto /usr/local/bin/certbot-auto
-  user@webserver:~$ sudo chown root /usr/local/bin/certbot-auto
-  user@webserver:~$ chmod 0755 /usr/local/bin/certbot-auto
-  user@webserver:~$ /usr/local/bin/certbot-auto --help
+  wget https://dl.eff.org/certbot-auto
+  sudo mv certbot-auto /usr/local/bin/certbot-auto
+  sudo chown root /usr/local/bin/certbot-auto
+  sudo chmod 0755 /usr/local/bin/certbot-auto
+  /usr/local/bin/certbot-auto --help
+
+To remove certbot-auto, just delete it and the files it places under /opt/eff.org, along with any cronjob or systemd timer you may have created.
 
 To check the integrity of the ``certbot-auto`` script,
 you can use these steps::
