@@ -27,6 +27,11 @@ stages:
       # https://github.com/certbot/certbot/issues/7931. The file will
       # need to be updated before then to prevent automated deploys
       # from breaking.
+      #
+      # Revoking these credentials can be done by changing the password of the
+      # account used to generate the credentials. See
+      # https://forum.snapcraft.io/t/revoking-exported-credentials/19031 for
+      # more info.
       - job: publish_snap
         pool:
           vmImage: ubuntu-18.04
