@@ -7,25 +7,18 @@ ARG QEMU_ARCH
 ENV QEMU_ARCH=${QEMU_ARCH}
 COPY qemu-${QEMU_ARCH}-static /usr/bin/
 
-ARG CERTBOT_VERSION
-ENV CERTBOT_VERSION=${CERTBOT_VERSION}
-
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
 VOLUME /etc/letsencrypt /var/lib/letsencrypt
 WORKDIR /opt/certbot
 
-# Retrieve certbot code
-RUN mkdir -p src \
- && wget -O certbot-${CERTBOT_VERSION}.tar.gz https://github.com/certbot/certbot/archive/v${CERTBOT_VERSION}.tar.gz \
- && tar xf certbot-${CERTBOT_VERSION}.tar.gz \
- && cp certbot-${CERTBOT_VERSION}/CHANGELOG.md certbot-${CERTBOT_VERSION}/README.rst src/ \
- && cp certbot-${CERTBOT_VERSION}/letsencrypt-auto-source/pieces/dependency-requirements.txt . \
- && cp certbot-${CERTBOT_VERSION}/letsencrypt-auto-source/pieces/pipstrap.py . \
- && cp -r certbot-${CERTBOT_VERSION}/tools tools \
- && cp -r certbot-${CERTBOT_VERSION}/acme src/acme \
- && cp -r certbot-${CERTBOT_VERSION}/certbot src/certbot \
- && rm -rf certbot-${CERTBOT_VERSION}.tar.gz certbot-${CERTBOT_VERSION}
+# Copy certbot code
+COPY CHANGELOG.md README.rst src/
+COPY letsencrypt-auto-source/pieces/dependency-requirements.txt .
+COPY letsencrypt-auto-source/pieces/pipstrap.py .
+COPY tools tools
+COPY acme src/acme
+COPY certbot src/certbot
 
 # Generate constraints file to pin dependency versions
 RUN cat dependency-requirements.txt | tools/strip_hashes.py > unhashed_requirements.txt \
