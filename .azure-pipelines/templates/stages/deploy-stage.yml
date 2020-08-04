@@ -5,6 +5,9 @@ parameters:
   values:
   - edge
   - beta
+- name: dockerTag
+  type: string
+  default: nightly
 
 stages:
   - stage: Deploy
@@ -59,3 +62,16 @@ stages:
                 snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
               done
             displayName: Publish to Snap store
+      - job: docker
+        pool:
+          vmImage: ubuntu-18.04
+        steps:
+          - task: Docker@2
+            inputs:
+              command: login
+              containerRegistry: docker-hub
+            displayName: Login to Docker Hub
+          - bash: |
+              tools/docker/build.sh  ${{ parameters.dockerTag }}
+              tools/docker/deploy.sh ${{ parameters.dockerTag }}
+            displayName: Build and deploy the Docker images
