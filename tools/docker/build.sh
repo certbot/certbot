@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -euxo pipefail
 IFS=$'\n\t'
 
 # This script builds certbot docker and certbot dns plugins docker using the

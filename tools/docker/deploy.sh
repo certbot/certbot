@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -euxo pipefail
 IFS=$'\n\t'
 
 # This script deploys new versions of Certbot and Certbot plugin docker images.
