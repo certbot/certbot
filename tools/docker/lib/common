@@ -155,6 +155,6 @@ PushDockerImageAliases() {
         fi
     fi
     if [ "${ARCH}" == "${DEFAULT_ARCH}" ]; then
-        docker tag push "${DOCKER_REPO}:${DOCKER_TAG}"
+        docker push "${DOCKER_REPO}:${DOCKER_TAG}"
     fi
 }
