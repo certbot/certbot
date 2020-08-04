@@ -12,12 +12,6 @@ IFS=$'\n\t'
 #   only the base of the tag because the things like the CPU architecture are
 #   also added to the full tag.
 
-trap Cleanup 1 2 3 6
-
-Cleanup() {
-    popd 2> /dev/null || true
-}
-
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 Deploy() {

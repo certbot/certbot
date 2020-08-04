@@ -14,13 +14,15 @@ IFS=$'\n\t'
 
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 REPO_ROOT="$(dirname "$(dirname "${WORK_DIR}")")"
+source "$WORK_DIR/lib/common"
 
-trap Cleanup 1 2 3 6
+trap Cleanup EXIT
 
 Cleanup() {
-    rm -rf "$WORK_DIR"/core/qemu-*-static || true
-    rm -rf "$WORK_DIR"/plugin/qemu-*-static || true
-    popd 2> /dev/null || true
+    rm -rf "$REPO_ROOT"/qemu-*-static || true
+    for plugin in "${CERTBOT_PLUGINS[@]}"; do
+        rm -rf "$REPO_ROOT/certbot-$plugin"/qemu-*-static || true
+    done
 }
 
 Build() {
@@ -36,7 +38,6 @@ Build() {
 }
 
 TAG_BASE="$1"
-source "$WORK_DIR/lib/common"
 
 # Step 1: Certbot core Docker
 Build "$DOCKER_HUB_ORG/certbot" "$TAG_BASE" "$REPO_ROOT" "$WORK_DIR/core"
