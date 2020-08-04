@@ -7,6 +7,24 @@ export ALL_TARGET_ARCH=(amd64 arm32v6 arm64v8)
 # Architecture used in tags with no architecture specified (certbot/certbot:latest, certbot/certbot:v0.35.0, ...)
 export DEFAULT_ARCH=amd64
 
+# List of Certbot plugins
+export CERTBOT_PLUGINS=(
+    "dns-dnsmadeeasy"
+    "dns-dnsimple"
+    "dns-ovh"
+    "dns-cloudflare"
+    "dns-cloudxns"
+    "dns-digitalocean"
+    "dns-google"
+    "dns-luadns"
+    "dns-nsone"
+    "dns-rfc2136"
+    "dns-route53"
+    "dns-gehirn"
+    "dns-linode"
+    "dns-sakuracloud"
+)
+
 # Returns the translation from Docker to QEMU architecture
 # Usage: GetQemuArch [amd64|arm32v6|arm64v8]
 GetQemuArch() {

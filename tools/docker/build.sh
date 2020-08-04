@@ -8,9 +8,9 @@ IFS=$'\n\t'
 
 # Usage: ./build.sh [TAG]
 #   with [TAG] corresponding the base of the tag to give the Docker images.
-#   Values will usually be something like `v0.34.0` or `nightly`. The given
-#   value is only the base of the tag because the things like the CPU
-#   architecture are also added to the full tag.
+#   Values should be something like `v0.34.0` or `nightly`. The given value is
+#   only the base of the tag because the things like the CPU architecture are
+#   also added to the full tag.
 
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 REPO_ROOT="$(dirname "$(dirname "${WORK_DIR}")")"
@@ -40,24 +40,8 @@ TAG_BASE="$1"
 # Step 1: Certbot core Docker
 Build "certbot/certbot" "$TAG_BASE" "$REPO_ROOT" "$WORK_DIR/core"
 
-# Step 2: Certbot dns plugins Dockers
-CERTBOT_PLUGINS=(
-    "dns-dnsmadeeasy"
-    "dns-dnsimple"
-    "dns-ovh"
-    "dns-cloudflare"
-    "dns-cloudxns"
-    "dns-digitalocean"
-    "dns-google"
-    "dns-luadns"
-    "dns-nsone"
-    "dns-rfc2136"
-    "dns-route53"
-    "dns-gehirn"
-    "dns-linode"
-    "dns-sakuracloud"
-)
-
+# Step 2: Certbot DNS plugins Docker images
+source "$WORK_DIR/lib/common"
 for plugin in "${CERTBOT_PLUGINS[@]}"; do
     Build "certbot/$plugin" "$TAG_BASE" "$REPO_ROOT/certbot-$plugin" "$WORK_DIR/plugin"
 done
