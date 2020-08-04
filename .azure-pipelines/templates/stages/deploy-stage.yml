@@ -71,7 +71,7 @@ stages:
               command: login
               containerRegistry: docker-hub
             displayName: Login to Docker Hub
-          - bash: |
-              tools/docker/build.sh  ${{ parameters.dockerTag }}
-              tools/docker/deploy.sh ${{ parameters.dockerTag }}
-            displayName: Build and deploy the Docker images
+          - bash: tools/docker/build.sh  ${{ parameters.dockerTag }}
+            displayName: Build the Docker images
+          - bash: tools/docker/deploy.sh ${{ parameters.dockerTag }}
+            displayName: Deploy the Docker images
