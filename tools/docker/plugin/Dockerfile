@@ -1,7 +1,6 @@
-# Docker Arch (amd64, arm32v6, ...)
-ARG TARGET_ARCH
-ARG TAG_BASE
-FROM certbot/certbot:${TARGET_ARCH}-${TAG_BASE}
+# Certbot image to build on (e.g. certbot/certbot:amd64-v0.35.0)
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 # Qemu Arch (x86_64, arm, ...)
 ARG QEMU_ARCH

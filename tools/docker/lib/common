@@ -7,6 +7,13 @@ export ALL_TARGET_ARCH=(amd64 arm32v6 arm64v8)
 # Architecture used in tags with no architecture specified (certbot/certbot:latest, certbot/certbot:v0.35.0, ...)
 export DEFAULT_ARCH=amd64
 
+# Name of the Certbot Docker organizaation on GitHub. After creating
+# repositories with the same names (e.g. "certbot", "dns-dnsmadeeasy", etc.)
+# using a different account on Docker Hub, you can change this value to have
+# the scripts modify those Docker repositories rather than the repositories for
+# the official Certbot Docker images.
+export DOCKER_HUB_ORG="certbot"
+
 # List of Certbot plugins
 export CERTBOT_PLUGINS=(
     "dns-dnsmadeeasy"
@@ -89,10 +96,10 @@ BuildDockerPluginImage() {
     ARCH=$1
 
     QEMU=$(GetQemuArch "$ARCH")
+    BASE_IMAGE="${DOCKER_HUB_ORG}/certbot:${TARGET_ARCH}-${DOCKER_TAG}"
     docker build \
-        --build-arg TARGET_ARCH="${ARCH}" \
+        --build-arg BASE_IMAGE="${BASE_IMAGE}" \
         --build-arg QEMU_ARCH="${QEMU}" \
-        --build-arg TAG_BASE="${TAG_BASE}" \
         -f "${DOCKERFILE_PATH}" \
         -t "${DOCKER_REPO}:${ARCH}-${DOCKER_TAG}" \
         .

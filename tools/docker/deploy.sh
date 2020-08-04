@@ -30,12 +30,12 @@ Deploy() {
 }
 
 TAG_BASE="$1"  # Eg. v0.35.0 or nightly
+source "$WORK_DIR/lib/common"
 
 # Step 1: Certbot core Docker
-Deploy "certbot/certbot" "$TAG_BASE" "$WORK_DIR/core"
+Deploy "$DOCKER_HUB_ORG/certbot" "$TAG_BASE" "$WORK_DIR/core"
 
 # Step 2: Certbot DNS plugins Docker images
-source "$WORK_DIR/lib/common"
 for plugin in "${CERTBOT_PLUGINS[@]}"; do
-    Deploy "certbot/$plugin" "$TAG_BASE" "$WORK_DIR/plugin"
+    Deploy "$DOCKER_HUB_ORG/$plugin" "$TAG_BASE" "$WORK_DIR/plugin"
 done

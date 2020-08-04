@@ -36,14 +36,14 @@ Build() {
 }
 
 TAG_BASE="$1"
+source "$WORK_DIR/lib/common"
 
 # Step 1: Certbot core Docker
-Build "certbot/certbot" "$TAG_BASE" "$REPO_ROOT" "$WORK_DIR/core"
+Build "$DOCKER_HUB_ORG/certbot" "$TAG_BASE" "$REPO_ROOT" "$WORK_DIR/core"
 
 # Step 2: Certbot DNS plugins Docker images
-source "$WORK_DIR/lib/common"
 for plugin in "${CERTBOT_PLUGINS[@]}"; do
-    Build "certbot/$plugin" "$TAG_BASE" "$REPO_ROOT/certbot-$plugin" "$WORK_DIR/plugin"
+    Build "$DOCKER_HUB_ORG/$plugin" "$TAG_BASE" "$REPO_ROOT/certbot-$plugin" "$WORK_DIR/plugin"
 done
 
 Cleanup
