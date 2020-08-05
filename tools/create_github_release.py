@@ -1,3 +1,23 @@
+#!/usr/bin/env python
+"""
+Post-release script to download artifacts from azure pipelines and use them to create
+a GitHub release.
+
+Setup:
+ - Create an azure personal access token
+   - https://docs.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate
+   - You'll need read scope
+   - Save the token to somewhere like ~/.ssh/azurepat.txt
+ - Create a github personal access token
+   - https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token#creating-a-token
+   - You'll need repo scope
+   - Save the token to somewhere like ~/.ssh/githubpat.txt
+
+Run:
+
+python tools/create_github_release.py 1.7.0 ~/.ssh/azurepat.txt ~/.ssh/githubpat.txt
+"""
+
 import requests
 import sys
 import tempfile
@@ -8,15 +28,13 @@ from azure.devops.connection import Connection
 from github import Github
 from msrest.authentication import BasicAuthentication
 
-# Create an azure personal access token
-# https://docs.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate
-# you'll need read scope (I just made a token with all the reads)
-
-# Create a github personal access token
-# https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token#creating-a-token
-# you'll need repo scope
-
 def download_azure_artifacts(azure_access_token, tempdir):
+    """Download and unzip build artifacts from Azure pipelines.
+
+    :param str azure_access_token: string containing azure access token
+    :param str path: path to a temporary directory to save the files
+
+    """
     # Create a connection to the azure org
     organization_url = 'https://dev.azure.com/certbot'
     credentials = BasicAuthentication('', azure_access_token)
@@ -38,6 +56,13 @@ def download_azure_artifacts(azure_access_token, tempdir):
            zipObj.extractall(tempdir)
 
 def create_github_release(github_access_token, tempdir, version):
+    """Download and unzip build artifacts from Azure pipelines.
+
+    :param str github_access_token: string containing github access token
+    :param str path: path to a temporary directory where azure artifacts are located
+    :param str version: Certbot version number, e.g. 1.7.0
+
+    """
     # Create release
     g = Github(github_access_token)
     repo = g.get_user('certbot').get_repo('certbot')
