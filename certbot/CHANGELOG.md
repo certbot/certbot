@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* letsencryot-auto: Added support for use of Oracle Linux 8's preferred Python 3.
+* letsencrypt-auto: Added support for use of Oracle Linux 8's preferred Python 3.
 
 ### Fixed
 
