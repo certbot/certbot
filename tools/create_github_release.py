@@ -63,10 +63,12 @@ def create_github_release(github_access_token, tempdir, version):
     release_notes = open(tempdir + '/changelog/release_notes.md', 'r').read()
     release= repo.create_git_release('v{0}'.format(version),
                                      'Certbot {0}'.format(version),
-                                     release_notes)
+                                     release_notes,
+                                     draft=True)
 
     # Upload windows installer to release
     release.upload_asset(tempdir + '/windows-installer/certbot-beta-installer-win32.exe')
+    release.update_release(release.title, release.body, draft=False)
 
 def main(args):
     version = args[0]
@@ -75,8 +77,8 @@ def main(args):
     github_access_token = open(github_access_token_file, 'r').read().rstrip()
 
     with tempfile.TemporaryDirectory() as tempdir:
-        download_azure_artifacts(tempdir)
-        create_github_release(github_access_token, tempdir, version)
+        download_azure_artifacts(tempdir.name)
+        create_github_release(github_access_token, tempdir.name, version)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
