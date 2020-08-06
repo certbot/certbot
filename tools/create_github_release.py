@@ -21,7 +21,6 @@ from zipfile import ZipFile
 
 from azure.devops.connection import Connection
 from github import Github
-from msrest.authentication import BasicAuthentication
 
 def download_azure_artifacts(tempdir):
     """Download and unzip build artifacts from Azure pipelines.
