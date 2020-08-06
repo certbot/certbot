@@ -43,6 +43,7 @@ def download_azure_artifacts(tempdir):
     for filename in ('windows-installer', 'changelog'):
         url = build_client.get_artifact('certbot', build_id, filename).resource.download_url
         r = requests.get(url)
+        r.raise_for_status()
         with open(tempdir + '/' + filename + '.zip', 'wb') as f:
             f.write(r.content)
         with ZipFile(tempdir + '/' + filename + '.zip', 'r') as zipObj:
