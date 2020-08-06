@@ -81,8 +81,8 @@ def main(args):
     github_access_token = open(github_access_token_file, 'r').read().rstrip()
 
     with tempfile.TemporaryDirectory() as tempdir:
-        version = download_azure_artifacts(tempdir.name)
-        create_github_release(github_access_token, tempdir.name, version)
+        version = download_azure_artifacts(tempdir)
+        create_github_release(github_access_token, tempdir, version)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
