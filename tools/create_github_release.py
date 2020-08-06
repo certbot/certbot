@@ -4,10 +4,6 @@ Post-release script to download artifacts from azure pipelines and use them to c
 a GitHub release.
 
 Setup:
- - Create an azure personal access token
-   - https://docs.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate
-   - You'll need read scope
-   - Save the token to somewhere like ~/.ssh/azurepat.txt
  - Create a github personal access token
    - https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token#creating-a-token
    - You'll need repo scope
@@ -15,7 +11,7 @@ Setup:
 
 Run:
 
-python tools/create_github_release.py 1.7.0 ~/.ssh/azurepat.txt ~/.ssh/githubpat.txt
+python tools/create_github_release.py 1.7.0 ~/.ssh/githubpat.txt
 """
 
 import requests
@@ -28,17 +24,15 @@ from azure.devops.connection import Connection
 from github import Github
 from msrest.authentication import BasicAuthentication
 
-def download_azure_artifacts(azure_access_token, tempdir):
+def download_azure_artifacts(tempdir):
     """Download and unzip build artifacts from Azure pipelines.
 
-    :param str azure_access_token: string containing azure access token
     :param str path: path to a temporary directory to save the files
 
     """
     # Create a connection to the azure org
     organization_url = 'https://dev.azure.com/certbot'
-    credentials = BasicAuthentication('', azure_access_token)
-    connection = Connection(base_url=organization_url, creds=credentials)
+    connection = Connection(base_url=organization_url)
 
     # Find the build artifacts
     build_client = connection.clients.get_build_client()
@@ -76,14 +70,12 @@ def create_github_release(github_access_token, tempdir, version):
 
 def main(args):
     version = args[0]
-    azure_access_token_file = args[1]
-    github_access_token_file = args[2]
+    github_access_token_file = args[1]
 
-    azure_access_token = open(azure_access_token_file, 'r').read()
     github_access_token = open(github_access_token_file, 'r').read().rstrip()
 
     with tempfile.TemporaryDirectory() as tempdir:
-        download_azure_artifacts(azure_access_token, tempdir)
+        download_azure_artifacts(tempdir)
         create_github_release(github_access_token, tempdir, version)
 
 if __name__ == "__main__":
