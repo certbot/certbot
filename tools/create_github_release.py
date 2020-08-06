@@ -80,7 +80,7 @@ def main(args):
     github_access_token_file = args[2]
 
     azure_access_token = open(azure_access_token_file, 'r').read()
-    github_access_token = open(github_access_token_file, 'r').read()
+    github_access_token = open(github_access_token_file, 'r').read().rstrip()
 
     with tempfile.TemporaryDirectory() as tempdir:
         download_azure_artifacts(azure_access_token, tempdir)
