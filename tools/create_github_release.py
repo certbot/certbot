@@ -56,7 +56,7 @@ def download_azure_artifacts(azure_access_token, tempdir):
            zipObj.extractall(tempdir)
 
 def create_github_release(github_access_token, tempdir, version):
-    """Download and unzip build artifacts from Azure pipelines.
+    """Use build artifacts to create a github release, including uploading additional assets
 
     :param str github_access_token: string containing github access token
     :param str path: path to a temporary directory where azure artifacts are located
