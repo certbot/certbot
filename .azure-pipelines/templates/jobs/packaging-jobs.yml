@@ -18,6 +18,7 @@ jobs:
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
+          # If we change the artifact's name, it should also be changed in tools/create_github_release.py
           artifact: windows-installer
         displayName: Publish Windows installer
   - job: installer_run
