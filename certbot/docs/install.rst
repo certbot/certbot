@@ -302,7 +302,7 @@ They need to be installed separately if you require their functionality.
    emerge -av app-crypt/certbot-nginx
    emerge -av app-crypt/certbot-dns-nsone
 
-.. Note:: the ``app-crypt/certbot-dns-nsone`` package has a different 
+.. Note:: The ``app-crypt/certbot-dns-nsone`` package has a different 
    maintainer than the other packages and can lag behind in version.
 
 **NetBSD**
