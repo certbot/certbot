@@ -18,6 +18,7 @@ jobs:
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
+          # If we change the artifact's name, it should also be changed in tools/create_github_release.py
           artifact: windows-installer
         displayName: Publish Windows installer
   - job: installer_run
@@ -50,6 +51,7 @@ jobs:
           py -3 -m venv venv
           venv\Scripts\python tools\pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
+      # If we change the output filename from `certbot-beta-installer-win32.exe`, it should also be changed in tools/create_github_release.py
       - script: |
           set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
           venv\Scripts\python -m pytest certbot-ci\windows_installer_integration_tests --allow-persistent-changes --installer-path $(Build.SourcesDirectory)\bin\certbot-beta-installer-win32.exe
