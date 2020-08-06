@@ -11,7 +11,7 @@ Setup:
 
 Run:
 
-python tools/create_github_release.py 1.7.0 ~/.ssh/githubpat.txt
+python tools/create_github_release.py ~/.ssh/githubpat.txt
 """
 
 import requests
@@ -27,6 +27,9 @@ def download_azure_artifacts(tempdir):
     """Download and unzip build artifacts from Azure pipelines.
 
     :param str path: path to a temporary directory to save the files
+
+    :returns: released certbot version number as a prefix-free string
+    :rtype: str
 
     """
     # Create a connection to the azure org
@@ -48,6 +51,9 @@ def download_azure_artifacts(tempdir):
             f.write(r.content)
         with ZipFile(tempdir + '/' + filename + '.zip', 'r') as zipObj:
            zipObj.extractall(tempdir)
+
+    version = build_client.get_build('certbot', build_id).source_branch.split('v')[1]
+    return version
 
 def create_github_release(github_access_token, tempdir, version):
     """Use build artifacts to create a github release, including uploading additional assets
@@ -71,13 +77,12 @@ def create_github_release(github_access_token, tempdir, version):
     release.update_release(release.title, release.body, draft=False)
 
 def main(args):
-    version = args[0]
-    github_access_token_file = args[1]
+    github_access_token_file = args[0]
 
     github_access_token = open(github_access_token_file, 'r').read().rstrip()
 
     with tempfile.TemporaryDirectory() as tempdir:
-        download_azure_artifacts(tempdir.name)
+        version = download_azure_artifacts(tempdir.name)
         create_github_release(github_access_token, tempdir.name, version)
 
 if __name__ == "__main__":
