@@ -17,7 +17,6 @@ python tools/create_github_release.py 1.7.0 ~/.ssh/githubpat.txt
 import requests
 import sys
 import tempfile
-import urllib.parse
 from zipfile import ZipFile
 
 from azure.devops.connection import Connection
