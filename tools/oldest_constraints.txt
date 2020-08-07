@@ -27,7 +27,7 @@ zope.interface==4.0.5
 
 # Debian Jessie Backports constraints
 # Debian Jessie has reached end of life. However:
-# When updating these dependencies, you should only update them to the oldest version of the package found
+# When it becomes necessary to upgrade any of these dependencies, you should only update them to the oldest version of the package found
 # in a non-EOL'd version of CentOS, Debian, or Ubuntu that has Certbot packages in their OS repositories.
 PyICU==1.8
 colorama==0.3.2
