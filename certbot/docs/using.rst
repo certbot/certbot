@@ -631,7 +631,6 @@ systemd timers (`systemctl list-timers`).
    :header: "Distribution Name", "Distribution Version", "Automation Method"
 
    "CentOS", "EPEL 7", "systemd"
-   "Debian", "jessie", "cron, systemd"
    "Debian", "stretch", "cron, systemd"
    "Debian", "testing/sid", "cron, systemd"
    "Fedora", "26", "systemd"
