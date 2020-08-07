@@ -70,8 +70,6 @@ jobs:
           ACME_SERVER: boulder-v2
         nginx-compat:
           TOXENV: nginx_compat
-        le-auto-jessie:
-          TOXENV: le_auto_jessie
         le-auto-centos6:
           TOXENV: le_auto_centos6
         le-auto-oraclelinux6:
