@@ -22,7 +22,8 @@ High-level behavior
 
 Running `./build.sh <TAG> && ./deploy.sh <TAG>` causes the Docker images to be
 built and deployed to Docker Hub where `<TAG>` is the base of the tag that
-should be given to the given images. The given tag is only the base of the tag
+should be given to the given images. The tag should either be `nightly` or a
+git version tag like `v0.34.0`. The given tag is only the base of the tag
 because the CPU architecture is also added to the tag.
 
 Configuration
