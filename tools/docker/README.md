@@ -31,5 +31,5 @@ Configuration
 
 To run these scripts you need:
 
-1. An x86_64 machine with Docker installed and the Docker daemon running.
+1. An x86_64 machine with Docker installed and the Docker daemon running. You probably don't want to use the docker snap as these scripts have failed when using that in the past.
 2. To be logged into Docker Hub with an account able to push to the Certbot and Certbot DNS Docker images on Docker Hub.
