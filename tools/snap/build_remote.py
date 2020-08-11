@@ -46,6 +46,8 @@ def _build_snap(target, archs, status, lock):
         sys.stdout.flush()
 
         with lock:
+            print('Output was:')
+            print('\n'.join(process_output))
             failed_archs = [arch for arch in archs if status[target][arch] == 'Failed to build']
             if exit_code == 0 and not failed_archs:
                 # We expect to have all target snaps available, or something bad happened.
