@@ -12,4 +12,5 @@ stages:
   - template: templates/stages/deploy-stage.yml
     parameters:
       snapReleaseChannel: beta
+      dockerTag: ${{variables['Build.SourceBranchName']}}
   - template: templates/stages/notify-failure-stage.yml

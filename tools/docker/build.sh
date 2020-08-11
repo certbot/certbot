@@ -1,63 +1,63 @@
 #!/bin/bash
-set -euo pipefail
+set -euxo pipefail
 IFS=$'\n\t'
 
-# This script builds certbot docker and certbot dns plugins docker against a given release version of certbot.
-# The build is done following the environment used by Dockerhub to handle its autobuild feature, and so can be
-# used as a pre-deployment validation test.
+# This script builds certbot docker and certbot dns plugins docker using the
+# local Certbot files.  The build is currently done following the environment used by
+# Dockerhub since this code previously used Docker Hub's automated build feature.
 
-# Usage: ./build.sh [VERSION]
-#   with [VERSION] corresponding to a released version of certbot, like `v0.34.0`
+# Usage: ./build.sh [TAG]
+#   with [TAG] corresponding the base of the tag to give the Docker images.
+#   Values should be something like `v0.34.0` or `nightly`. The given value is
+#   only the base of the tag because the things like the CPU architecture are
+#   also added to the full tag.
 
-trap Cleanup 1 2 3 6
+# As of writing this, runs of this script consistently fail in Azure
+# Pipelines, but they are fixed by using Docker BuildKit. A log of the failures
+# that were occurring can be seen at
+# https://gist.github.com/2227a05622299ce17bff9b0da714a1ff. Since using
+# BuildKit is supposed to offer benefits anyway (see
+# https://docs.docker.com/develop/develop-images/build_enhancements/ for more
+# information), let's use it.
+#
+# This variable is set inside the script itself rather than in something like
+# the CI config to have a consistent experience when this script is run
+# locally.
+export DOCKER_BUILDKIT=1
+
+WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+REPO_ROOT="$(dirname "$(dirname "${WORK_DIR}")")"
+source "$WORK_DIR/lib/common"
+
+trap Cleanup EXIT
 
 Cleanup() {
-    if [ ! -z "$WORK_DIR" ]; then
-        rm -rf "$WORK_DIR"/core/qemu-*-static || true
-        rm -rf "$WORK_DIR"/plugin/qemu-*-static || true
-    fi
-    popd 2> /dev/null || true
+    rm -rf "$REPO_ROOT"/qemu-*-static || true
+    for plugin in "${CERTBOT_PLUGINS[@]}"; do
+        rm -rf "$REPO_ROOT/certbot-$plugin"/qemu-*-static || true
+    done
 }
 
 Build() {
     DOCKER_REPO="$1"
-    CERTBOT_VERSION="$2"
+    TAG_BASE="$2"
     CONTEXT_PATH="$3"
-    DOCKERFILE_PATH="$CONTEXT_PATH/Dockerfile"
-    DOCKER_TAG="$CERTBOT_VERSION"
+    DOCKERFILE_DIR="$4"
+    DOCKERFILE_PATH="$DOCKERFILE_DIR/Dockerfile"
     pushd "$CONTEXT_PATH"
-        DOCKER_TAG="$DOCKER_TAG" DOCKER_REPO="$DOCKER_REPO" DOCKERFILE_PATH="$DOCKERFILE_PATH" bash hooks/pre_build
-        DOCKER_TAG="$DOCKER_TAG" DOCKER_REPO="$DOCKER_REPO" DOCKERFILE_PATH="$DOCKERFILE_PATH" bash hooks/build
+        DOCKER_TAG="$TAG_BASE" DOCKER_REPO="$DOCKER_REPO" DOCKERFILE_PATH="$DOCKERFILE_PATH" bash "$DOCKERFILE_DIR/hooks/pre_build"
+        DOCKER_TAG="$TAG_BASE" DOCKER_REPO="$DOCKER_REPO" DOCKERFILE_PATH="$DOCKERFILE_PATH" bash "$DOCKERFILE_DIR/hooks/build"
     popd
 }
 
-WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-
-CERTBOT_VERSION="$1"
+TAG_BASE="$1"
 
 # Step 1: Certbot core Docker
-Build "certbot/certbot" "$CERTBOT_VERSION" "$WORK_DIR/core"
+Build "$DOCKER_HUB_ORG/certbot" "$TAG_BASE" "$REPO_ROOT" "$WORK_DIR/core"
 
-# Step 2: Certbot dns plugins Dockers
-CERTBOT_PLUGINS_DOCKER_REPOS=(
-    "certbot/dns-dnsmadeeasy"
-    "certbot/dns-dnsimple"
-    "certbot/dns-ovh"
-    "certbot/dns-cloudflare"
-    "certbot/dns-cloudxns"
-    "certbot/dns-digitalocean"
-    "certbot/dns-google"
-    "certbot/dns-luadns"
-    "certbot/dns-nsone"
-    "certbot/dns-rfc2136"
-    "certbot/dns-route53"
-    "certbot/dns-gehirn"
-    "certbot/dns-linode"
-    "certbot/dns-sakuracloud"
-)
-
-for DOCKER_REPO in "${CERTBOT_PLUGINS_DOCKER_REPOS[@]}"; do
-    Build "${DOCKER_REPO}" "$CERTBOT_VERSION" "$WORK_DIR/plugin"
+# Step 2: Certbot DNS plugins Docker images
+for plugin in "${CERTBOT_PLUGINS[@]}"; do
+    Build "$DOCKER_HUB_ORG/$plugin" "$TAG_BASE" "$REPO_ROOT/certbot-$plugin" "$WORK_DIR/plugin"
 done
 
 Cleanup
