@@ -40,18 +40,15 @@ fi
 cd letsencrypt
 
 echo "Bootstrapping dependencies..."
-letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+sudo tests/letstest/scripts/bootstrap_os_packages.sh
 if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-# This script sets the environment variables PYTHON_NAME, VENV_PATH, and
-# VENV_SCRIPT based on the version of Python available on the system. For
-# instance, Fedora uses Python 3 and Python 2 is not installed.
 . tests/letstest/scripts/set_python_envvars.sh
 
-"$VENV_SCRIPT" -e acme[dev] -e certbot[dev,docs] -e certbot-apache
-sudo "$VENV_PATH/bin/certbot" -v --debug --text --agree-tos \
+tools/venv3.py -e acme[dev] -e certbot[dev,docs] -e certbot-apache
+sudo "venv3/bin/certbot" -v --debug --text --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
 if [ $? -ne 0 ] ; then
@@ -68,7 +65,7 @@ elif [ "$OS_TYPE" = "centos" ]; then
 fi
 OPENSSL_VERSION=$(strings "$MOD_SSL_LOCATION" | egrep -o -m1 '^OpenSSL ([0-9]\.[^ ]+) ' | tail -c +9)
 APACHE_VERSION=$(sudo $APACHE_NAME -v | egrep -o 'Apache/([0-9]\.[^ ]+)' | tail -c +8)
-"$PYTHON_NAME" tests/letstest/scripts/test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
+"venv3/bin/python" tests/letstest/scripts/test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
 if [ $? -ne 0 ] ; then
     FAIL=1
 fi
@@ -76,7 +73,7 @@ fi
 
 if [ "$OS_TYPE" = "ubuntu" ] ; then
     export SERVER="$BOULDER_URL"
-    "$VENV_PATH/bin/tox" -e apacheconftest
+    "$venv3/bin/tox" -e apacheconftest
 else
     echo Not running hackish apache tests on $OS_TYPE
 fi

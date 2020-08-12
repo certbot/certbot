@@ -2,7 +2,7 @@
 #
 # Download and run the latest release version of the Certbot client.
 
-set -e  # Work even if somebody does "sh thisscript.sh".
+set -ex  # Work even if somebody does "sh thisscript.sh".
 
 error() {
     echo "$@"
