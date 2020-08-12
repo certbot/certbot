@@ -4,9 +4,8 @@ jobs:
       vmImage: ubuntu-18.04
     steps:
       - bash: |
-          docker images
-          tools/docker/build.sh nightly
-          docker images
+          tools/docker/build.sh $(dockerTag)
+          docker images --filter reference='*/dns-*' --filter reference='*/certbot'
         displayName: Build the Docker images
   - job: installer_build
     pool:
