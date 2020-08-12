@@ -13,6 +13,10 @@ IFS=$'\n\t'
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 TAG_BASE="$1"  # Eg. v0.35.0 or nightly
+if [ -z "$TAG_BASE" ]; then
+    echo "We cannot tag Docker images with an empty string!" >&2
+    exit 1
+fi
 source "$WORK_DIR/lib/common"
 
 # Creates and pushes all Docker images aliases for all architectures.

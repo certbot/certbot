@@ -97,6 +97,10 @@ ParseRequestedArch() {
 }
 
 TAG_BASE="$1"
+if [ -z "$TAG_BASE" ]; then
+    echo "We cannot tag Docker images with an empty string!" >&2
+    exit 1
+fi
 ParseRequestedArch "${2}"
 
 # Register QEMU handlers
