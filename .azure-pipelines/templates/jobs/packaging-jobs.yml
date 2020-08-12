@@ -1,4 +1,13 @@
 jobs:
+  - job: docker_build
+    pool:
+      vmImage: ubuntu-18.04
+    steps:
+      - bash: |
+          docker images
+          tools/docker/build.sh nightly
+          docker images
+        displayName: Build the Docker images
   - job: installer_build
     pool:
       vmImage: vs2017-win2016
