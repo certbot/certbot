@@ -24,6 +24,10 @@ Deploy() {
 }
 
 TAG_BASE="$1"  # Eg. v0.35.0 or nightly
+if [ -z "$TAG_BASE" ]; then
+    echo "We cannot tag Docker images with an empty string!" >&2
+    exit 1
+fi
 source "$WORK_DIR/lib/common"
 
 # Step 1: Certbot core Docker
