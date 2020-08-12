@@ -5,9 +5,6 @@ parameters:
   values:
   - edge
   - beta
-- name: dockerTag
-  type: string
-  default: nightly
 
 stages:
   - stage: Deploy
@@ -65,23 +62,8 @@ stages:
       - job: publish_docker
         pool:
           vmImage: ubuntu-18.04
+        variables:
+          builtDockerTag: $[ stageDependencies.TestAndPackage.docker_build.outputs['foo.bar'] ]
         steps:
-          - task: Docker@2
-            inputs:
-              command: login
-              # The credentials used here are for the shared certbotbot account
-              # on Docker Hub. The credentials are stored in a service account
-              # which was created by following the instructions at
-              # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#sep-docreg.
-              # The name given to this service account must match the value
-              # given to containerRegistry below. "Grant access to all
-              # pipelines" should also be checked.  To revoke these
-              # credentials, we can change the password on the certbotbot
-              # Docker Hub account or remove the account from the
-              # Certbot organization on Docker Hub.
-              containerRegistry: docker-hub
-            displayName: Login to Docker Hub
-          - bash: tools/docker/build.sh  ${{ parameters.dockerTag }}
-            displayName: Build the Docker images
-          - bash: tools/docker/deploy.sh ${{ parameters.dockerTag }}
+          - bash: echo $(builtDockerTag)
             displayName: Deploy the Docker images

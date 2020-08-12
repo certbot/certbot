@@ -1,4 +1,11 @@
+parameters:
+- name: dockerTag
+  type: string
+  default: nightly
+
 stages:
+  # If this stage name is changed, the value of builtDockerTag in the deploy
+  # stage needs to be updated.
   - stage: TestAndPackage
     jobs:
       - template: ../jobs/standard-tests-jobs.yml

@@ -1,12 +1,17 @@
+parameters:
+- name: dockerTag
+  type: string
+
 jobs:
+  # If this job name is changed, the value of builtDockerTag in the deploy
+  # stage needs to be updated.
   - job: docker_build
     pool:
       vmImage: ubuntu-18.04
     steps:
       - bash: |
-          docker images
-          tools/docker/build.sh nightly
-          docker images
+          tools/docker/build.sh ${{ parameters.dockerTag }}
+          echo "##vso[task.setvariable variable=builtDockerTag;isOutput=true]${{ parameters.dockerTag }}"
         displayName: Build the Docker images
   - job: installer_build
     pool:
