@@ -197,10 +197,7 @@ want to use. For example, to use Certbot's plugin for Amazon Route 53,
 you'd use ``certbot/dns-route53``. You may also need to add flags to
 Certbot and/or mount additional directories to provide access to your
 DNS API credentials as specified in the :ref:`DNS plugin documentation
-<dns_plugins>`. If you would like to obtain a wildcard certificate from
-Let's Encrypt's ACMEv2 server, you'll need to include ``--server
-https://acme-v02.api.letsencrypt.org/directory`` on the command line as
-well.
+<dns_plugins>`.
 
 For more information about the layout
 of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
