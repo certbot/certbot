@@ -40,14 +40,11 @@ fi
 cd letsencrypt
 
 echo "Bootstrapping dependencies..."
-sudo tests/letstest/scripts/bootstrap_os_packages.sh
+sudo tests/letstest/scripts/bootstrap_os_packages.sh . "tools/venv3.py -e acme[dev] -e certbot[dev,docs] -e certbot-apache"
 if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-. tests/letstest/scripts/set_python_envvars.sh
-
-tools/venv3.py -e acme[dev] -e certbot[dev,docs] -e certbot-apache
 sudo "venv3/bin/certbot" -v --debug --text --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL

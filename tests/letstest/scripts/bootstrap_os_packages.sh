@@ -46,6 +46,7 @@ BootstrapDebCommon() {
     openssl \
     libffi-dev \
     ca-certificates \
+    make # needed on debian 9 arm64 which doesn't have a python3 pynacl wheel
 
 }
 
