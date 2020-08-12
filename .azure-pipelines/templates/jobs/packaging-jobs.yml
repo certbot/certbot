@@ -3,7 +3,7 @@ jobs:
     pool:
       vmImage: ubuntu-18.04
     steps:
-      - bash: tools/docker/build.sh ${{ variables.dockerTag }}
+      - bash: tools/docker/build.sh $(dockerTag)
         displayName: Build the Docker images
       # We don't filter for the Docker Hub organization to continue to allow
       # easy testing of these scripts on forks.
