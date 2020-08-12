@@ -13,12 +13,9 @@ VENV_NAME=venv3
 BOOTSTRAP_SCRIPT="$REPO_ROOT/tests/letstest/scripts/bootstrap_os_packages.sh"
 VENV_SCRIPT="tools/venv3.py"
 
-sudo $BOOTSTRAP_SCRIPT
+sudo $BOOTSTRAP_SCRIPT $REPO_ROOT $VENV_SCRIPT
 
 cd $REPO_ROOT
-
-
-$VENV_SCRIPT
 . $VENV_NAME/bin/activate
 "$PIP_INSTALL" pytest
 

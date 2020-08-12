@@ -201,3 +201,6 @@ elif [ -f /etc/redhat-release ]; then
 fi
 
 Bootstrap
+
+cd $1
+$2
