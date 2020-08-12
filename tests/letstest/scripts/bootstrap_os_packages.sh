@@ -8,14 +8,27 @@ error() {
     echo "$@"
 }
 
+if command -v command > /dev/null 2>&1 ; then
+  export EXISTS="command -v"
+elif which which > /dev/null 2>&1 ; then
+  export EXISTS="which"
+else
+  error "Cannot find command nor which... please install one!"
+  exit 1
+fi
+
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version.
 DeterminePythonVersion() {
   # If no Python is found, PYVER is set to 0.
-  for LE_PYTHON in "$LE_PYTHON" python3; do
+  for LE_PYTHON in python3 python2.7 python27 python2 python; do
     # Break (while keeping the LE_PYTHON value) if found.
     $EXISTS "$LE_PYTHON" > /dev/null && break
   done
+  if [ "$?" != "0" ]; then
+    PYVER=0
+    return 0
+  fi
 
   PYVER=$("$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//')
 }
@@ -170,6 +183,7 @@ if [ -f /etc/debian_version ]; then
     BootstrapDebCommon
   }
 elif [ -f /etc/redhat-release ]; then
+  DeterminePythonVersion
   # Handle legacy RPM distributions
   if [ "$PYVER" -eq 26 ]; then
     Bootstrap() {
