@@ -66,6 +66,12 @@ stages:
         pool:
           vmImage: ubuntu-18.04
         steps:
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: docker_images
+              path: $(Build.SourcesDirectory)
+            displayName: Retrieve Docker images
+          - bash: docker load --input $(Build.SourcesDirectory)/docker_images.tar
           - task: Docker@2
             inputs:
               command: login
@@ -81,7 +87,5 @@ stages:
               # Certbot organization on Docker Hub.
               containerRegistry: docker-hub
             displayName: Login to Docker Hub
-          - bash: tools/docker/build.sh  ${{ parameters.dockerTag }} all
-            displayName: Build the Docker images
-          - bash: tools/docker/deploy.sh ${{ parameters.dockerTag }}
+          - bash: tools/docker/deploy.sh $(dockerTag)
             displayName: Deploy the Docker images

@@ -3,7 +3,7 @@ jobs:
     pool:
       vmImage: ubuntu-18.04
     steps:
-      - bash: tools/docker/build.sh $(dockerTag)
+      - bash: tools/docker/build.sh $(dockerTag) all
         displayName: Build the Docker images
       # We don't filter for the Docker Hub organization to continue to allow
       # easy testing of these scripts on forks.
@@ -11,6 +11,8 @@ jobs:
           DOCKER_IMAGES=$(docker images --quiet --filter reference='*/dns-*' --filter reference='*/certbot')
           docker save --output docker_images.tar $DOCKER_IMAGES
         displayName: Save the Docker images
+      # If the name of the tar file or artifact changes, the deploy stage will
+      # also need to be updated.
       - bash: mv docker_images.tar $(Build.ArtifactStagingDirectory)
         displayName: Prepare Docker artifact
       - task: PublishPipelineArtifact@1
