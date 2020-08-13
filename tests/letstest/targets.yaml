@@ -47,6 +47,10 @@ targets:
     type: centos
     virt: hvm
     user: ec2-user
+    userdata: |
+      #cloud-config
+      runcmd:
+        - yum-config-manager --enable rhui-REGION-rhel-server-extras rhui-REGION-rhel-server-optional
   - ami: ami-0c322300a1dd5dc79
     name: RHEL8
     type: centos
