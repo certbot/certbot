@@ -56,11 +56,15 @@ def find_python_executable(python_major):
     """
     Find the relevant python executable that is of the given python major version.
     Will test, in decreasing priority order:
+
     * the current Python interpreter
     * 'pythonX' executable in PATH (with X the given major version) if available
     * 'python' executable in PATH if available
     * Windows Python launcher 'py' executable in PATH if available
-    Incompatible python versions for Certbot will be evicted (eg. Python < 3.5 on Windows)
+
+    Incompatible python versions for Certbot will be evicted (e.g. Python 3
+    versions less than 3.6).
+
     :param int python_major: the Python major version to target (2 or 3)
     :rtype: str
     :return: the relevant python executable path
@@ -113,10 +117,8 @@ def _check_version(version_str, major_version):
     version = (int(search.group(1)), int(search.group(2)))
 
     minimal_version_supported = (2, 7)
-    if major_version == 3 and os.name == 'nt':
-        minimal_version_supported = (3, 5)
-    elif major_version == 3:
-        minimal_version_supported = (3, 4)
+    if major_version == 3:
+        minimal_version_supported = (3, 6)
 
     if version >= minimal_version_supported:
         return True
