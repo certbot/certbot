@@ -193,5 +193,5 @@ fi
 
 Bootstrap
 
-cd $1
-$2
+cd $1 # REPO_ROOT
+$2 # Call the venv setup script here so we don't have to activate Python36SCL in the parent
