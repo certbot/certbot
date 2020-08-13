@@ -163,6 +163,7 @@ BootstrapRpmPython3() {
 
   python_pkgs="python3
     python3-devel
+    python3-devel.x86_64
   "
 
   BootstrapRpmCommonBase "$python_pkgs"
