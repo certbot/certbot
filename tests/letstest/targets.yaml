@@ -82,8 +82,8 @@ targets:
       runcmd:
         - yum install -y epel-release
         - iptables -F
-  # - ami: ami-01ca03df4a6012157
-  #   name: centos8
-  #   type: centos
-  #   virt: hvm
-  #   user: centos
+  - ami: ami-01ca03df4a6012157
+    name: centos8
+    type: centos
+    virt: hvm
+    user: centos
