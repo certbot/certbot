@@ -8,7 +8,7 @@ jobs:
       # We don't filter for the Docker Hub organization to continue to allow
       # easy testing of these scripts on forks.
       - bash: |
-          DOCKER_IMAGES=$(docker images --quiet --filter reference='*/dns-*' --filter reference='*/certbot')
+          DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
           docker save --output docker_images.tar $DOCKER_IMAGES
         displayName: Save the Docker images
       # If the name of the tar file or artifact changes, the deploy stage will
