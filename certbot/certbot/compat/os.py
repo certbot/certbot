@@ -6,8 +6,8 @@ This module is intended to replace standard os module throughout certbot project
 This module has the same API as the os module in the Python standard library
 except for the functions defined below.
 
-isort:skip_file
 """
+# isort:skip_file
 # pylint: disable=function-redefined
 from __future__ import absolute_import
 
