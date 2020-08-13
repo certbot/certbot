@@ -7,7 +7,6 @@ VENV_PATH=venv3
 
 # bootstrap and setup venv
 sudo $BOOTSTRAP_SCRIPT
-CERTBOT_PIP_NO_BINARY=:all: tools/venv3.py --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
 
 if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
   # RHEL/CentOS 6 will need a special treatment, so we need to detect that environment
@@ -15,6 +14,7 @@ if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | se
   PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
 fi
 
+CERTBOT_PIP_NO_BINARY=:all: tools/venv3.py --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
 . "$VENV_PATH/bin/activate"
 # pytest is needed to run tests on some of our packages so we install a pinned version here.
 tools/pip_install.py pytest
@@ -32,6 +32,7 @@ for pkg_dir in acme certbot $PLUGINS; do
     cd -
 done
 
+VERSION=$(python letsencrypt-auto-source/version.py)
 # test sdists
 cd $TEMP_DIR
 for pkg in acme certbot $PLUGINS; do
