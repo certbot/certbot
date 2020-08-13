@@ -69,6 +69,7 @@ stages:
               path: $(Build.SourcesDirectory)
             displayName: Retrieve Docker images
           - bash: docker load --input $(Build.SourcesDirectory)/docker_images.tar
+            displayName: Load Docker images
           - task: Docker@2
             inputs:
               command: login
