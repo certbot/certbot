@@ -38,26 +38,79 @@ Cleanup() {
     done
 }
 
-Build() {
-    DOCKER_REPO="$1"
-    TAG_BASE="$2"
-    CONTEXT_PATH="$3"
-    DOCKERFILE_DIR="$4"
-    DOCKERFILE_PATH="$DOCKERFILE_DIR/Dockerfile"
-    pushd "$CONTEXT_PATH"
-        DOCKER_TAG="$TAG_BASE" DOCKER_REPO="$DOCKER_REPO" DOCKERFILE_PATH="$DOCKERFILE_PATH" bash "$DOCKERFILE_DIR/hooks/pre_build"
-        DOCKER_TAG="$TAG_BASE" DOCKER_REPO="$DOCKER_REPO" DOCKERFILE_PATH="$DOCKERFILE_PATH" bash "$DOCKERFILE_DIR/hooks/build"
-    popd
+# Returns the translation from Docker to QEMU architecture
+# Usage: GetQemuArch [amd64|arm32v6|arm64v8]
+GetQemuArch() {
+    ARCH=$1
+
+    case "$ARCH" in
+        "amd64")
+            echo "x86_64"
+            ;;
+        "arm32v6")
+            echo "arm"
+            ;;
+        "arm64v8")
+            echo "aarch64"
+            ;;
+        "*")
+            echo "Not supported build architecture '$1'." >&2
+            exit -1
+    esac
+}
+
+# Downloads QEMU static binary file for architecture
+# Usage: DownloadQemuStatic [x86_64|arm|aarch64]
+DownloadQemuStatic() {
+    ARCH=$1
+
+    QEMU_ARCH=$(GetQemuArch "$ARCH")
+    if [ ! -f "qemu-${QEMU_ARCH}-static" ]; then
+        QEMU_DOWNLOAD_URL="https://github.com/multiarch/qemu-user-static/releases/download"
+        QEMU_LATEST_TAG=$(curl -s https://api.github.com/repos/multiarch/qemu-user-static/tags \
+            | grep 'name.*v[0-9]' \
+            | head -n 1 \
+            | cut -d '"' -f 4)
+        curl -SL "${QEMU_DOWNLOAD_URL}/${QEMU_LATEST_TAG}/x86_64_qemu-$QEMU_ARCH-static.tar.gz" \
+            | tar xzv
+    fi
 }
 
 TAG_BASE="$1"
 
+# Register QEMU handlers
+docker run --rm --privileged multiarch/qemu-user-static:register --reset
+
 # Step 1: Certbot core Docker
-Build "$DOCKER_HUB_ORG/certbot" "$TAG_BASE" "$REPO_ROOT" "$WORK_DIR/core"
+DOCKER_REPO="${DOCKER_HUB_ORG}/certbot"
+for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
+    pushd "${REPO_ROOT}"
+    DownloadQemuStatic "${TARGET_ARCH}"
+    QEMU_ARCH=$(GetQemuArch "${TARGET_ARCH}")
+    docker build \
+        --build-arg TARGET_ARCH="${TARGET_ARCH}" \
+        --build-arg QEMU_ARCH="${QEMU_ARCH}" \
+        -f "${WORK_DIR}/core/Dockerfile" \
+        -t "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" \
+        .
+    popd
+done
 
 # Step 2: Certbot DNS plugins Docker images
 for plugin in "${CERTBOT_PLUGINS[@]}"; do
-    Build "$DOCKER_HUB_ORG/$plugin" "$TAG_BASE" "$REPO_ROOT/certbot-$plugin" "$WORK_DIR/plugin"
+    DOCKER_REPO="${DOCKER_HUB_ORG}/${plugin}"
+    pushd "${REPO_ROOT}/certbot-${plugin}"
+    # Copy QEMU static binaries downloaded when building the core Certbot image
+    cp ../qemu-*-static .
+    for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
+        QEMU_ARCH=$(GetQemuArch "${TARGET_ARCH}")
+        BASE_IMAGE="${DOCKER_HUB_ORG}/certbot:${TARGET_ARCH}-${TAG_BASE}"
+        docker build \
+            --build-arg BASE_IMAGE="${BASE_IMAGE}" \
+            --build-arg QEMU_ARCH="${QEMU_ARCH}" \
+            -f "${WORK_DIR}/plugin/Dockerfile" \
+            -t "${DOCKER_REPO}:${ARCH}-${TAG_BASE}" \
+            .
+    done
+    popd
 done
-
-Cleanup
