@@ -11,6 +11,8 @@ jobs:
           DOCKER_IMAGES=$(docker images --quiet --filter reference='*/dns-*' --filter reference='*/certbot')
           docker save --output docker_images.tar $DOCKER_IMAGES
         displayName: Save the Docker images
+      # If the name of the tar file or artifact changes, the deploy stage will
+      # also need to be updated.
       - bash: mv docker_images.tar $(Build.ArtifactStagingDirectory)
         displayName: Prepare Docker artifact
       - task: PublishPipelineArtifact@1
