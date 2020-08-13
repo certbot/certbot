@@ -5,9 +5,6 @@ parameters:
   values:
   - edge
   - beta
-- name: dockerTag
-  type: string
-  default: nightly
 
 stages:
   - stage: Deploy
