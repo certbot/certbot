@@ -55,7 +55,7 @@ GetQemuArch() {
             ;;
         "*")
             echo "Not supported build architecture '$1'." >&2
-            exit -1
+            exit 1
     esac
 }
 
