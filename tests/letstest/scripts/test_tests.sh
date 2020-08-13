@@ -13,9 +13,16 @@ VENV_NAME=venv3
 BOOTSTRAP_SCRIPT="$REPO_ROOT/tests/letstest/scripts/bootstrap_os_packages.sh"
 VENV_SCRIPT="tools/venv3.py"
 
-sudo $BOOTSTRAP_SCRIPT $REPO_ROOT $VENV_SCRIPT
+sudo $BOOTSTRAP_SCRIPT
+
+if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
+  # RHEL/CentOS 6 will need a special treatment, so we need to detect that environment
+  # Enable the SCL Python 3.6 installed by letsencrypt-auto bootstrap
+  PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
+fi
 
 cd $REPO_ROOT
+$VENV_SCRIPT
 . $VENV_NAME/bin/activate
 "$PIP_INSTALL" pytest
 

@@ -6,7 +6,15 @@ BOOTSTRAP_SCRIPT="tests/letstest/scripts/bootstrap_os_packages.sh"
 VENV_PATH=venv3
 
 # bootstrap and setup venv
-sudo $BOOTSTRAP_SCRIPT . "CERTBOT_PIP_NO_BINARY=:all: $VENV_SCRIPT --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt"
+sudo $BOOTSTRAP_SCRIPT
+CERTBOT_PIP_NO_BINARY=:all: tools/venv3.py --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
+
+if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
+  # RHEL/CentOS 6 will need a special treatment, so we need to detect that environment
+  # Enable the SCL Python 3.6 installed by letsencrypt-auto bootstrap
+  PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
+fi
+
 . "$VENV_PATH/bin/activate"
 # pytest is needed to run tests on some of our packages so we install a pinned version here.
 tools/pip_install.py pytest
