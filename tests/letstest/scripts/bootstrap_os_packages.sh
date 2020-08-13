@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Download and run the latest release version of the Certbot client.
+# Install OS dependencies for test farm tests.
 
 set -ex  # Work even if somebody does "sh thisscript.sh".
 
@@ -50,13 +50,7 @@ BootstrapDebCommon() {
 
 }
 
-# If new packages are installed by BootstrapRpmCommonBase below, version
-# numbers in rpm_common.sh and rpm_python3.sh must be increased.
-
 # Sets TOOL to the name of the package manager
-# Note: this function is called both while selecting the bootstrap scripts and
-# during the actual bootstrap. Some things like prompting to user can be done in the latter
-# case, but not in the former one.
 InitializeRPMCommonBase() {
   if type dnf 2>/dev/null
   then
@@ -75,7 +69,7 @@ InitializeRPMCommonBase() {
 BootstrapRpmCommonBase() {
   # Arguments: whitespace-delimited python packages to install
 
-  InitializeRPMCommonBase # This call is superfluous in practice
+  InitializeRPMCommonBase
 
   pkgs="
     gcc
@@ -102,22 +96,6 @@ BootstrapRpmCommonBase() {
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
-}
-
-# Try to enable rh-python36 from SCL if it is necessary and possible.
-EnablePython36SCL() {
-  if "$EXISTS" python3.6 > /dev/null 2> /dev/null; then
-      return 0
-  fi
-  if [ ! -f /opt/rh/rh-python36/enable ]; then
-      return 0
-  fi
-  set +e
-  if ! . /opt/rh/rh-python36/enable; then
-    error 'Unable to enable rh-python36!'
-    exit 1
-  fi
-  set -e
 }
 
 # This bootstrap concerns old RedHat-based distributions that do not ship by default
@@ -153,9 +131,6 @@ BootstrapRpmPython3Legacy() {
   fi
 
   BootstrapRpmCommonBase "${python_pkgs}"
-
-  # Enable SCL rh-python36 after bootstrapping.
-  EnablePython36SCL
 }
 
 BootstrapRpmPython3() {
@@ -181,9 +156,6 @@ elif [ -f /etc/redhat-release ]; then
     Bootstrap() {
       BootstrapRpmPython3Legacy
     }
-    # Try now to enable SCL rh-python36 for systems already bootstrapped
-    # NB: EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
-    EnablePython36SCL
   else
     Bootstrap() {
       BootstrapRpmPython3
