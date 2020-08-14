@@ -81,7 +81,7 @@ stages:
               # Certbot organization on Docker Hub.
               containerRegistry: docker-hub
             displayName: Login to Docker Hub
-          - bash: tools/docker/build.sh  ${{ parameters.dockerTag }}
+          - bash: tools/docker/build.sh  ${{ parameters.dockerTag }} all
             displayName: Build the Docker images
           - bash: tools/docker/deploy.sh ${{ parameters.dockerTag }}
             displayName: Deploy the Docker images
