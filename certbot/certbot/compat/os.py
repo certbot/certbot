@@ -28,9 +28,9 @@ ourselves = std_sys.modules[__name__]
 # building the documentation.
 if not std_os.environ.get("CERTBOT_DOCS") == "1":
     for attribute in dir(std_os):
-        # Check if the attribute does not already exist in our module. It could be internal attributes
-        # of the module (__name__, __doc__), or attributes from standard os already imported with
-        # `from os import *`.
+        # Check if the attribute does not already exist in our module. It could
+        # be internal attributes of the module (__name__, __doc__), or
+        # attributes from standard os already imported with `from os import *`.
         if not hasattr(ourselves, attribute):
             setattr(ourselves, attribute, getattr(std_os, attribute))
 
