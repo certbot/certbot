@@ -1,0 +1,9 @@
+#!/bin/bash
+set -ex
+
+WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+source "$WORK_DIR/../../lib/common"
+
+for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
+    BuildDockerPluginImage "${TARGET_ARCH}"
+done

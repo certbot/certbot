@@ -197,10 +197,7 @@ want to use. For example, to use Certbot's plugin for Amazon Route 53,
 you'd use ``certbot/dns-route53``. You may also need to add flags to
 Certbot and/or mount additional directories to provide access to your
 DNS API credentials as specified in the :ref:`DNS plugin documentation
-<dns_plugins>`. If you would like to obtain a wildcard certificate from
-Let's Encrypt's ACMEv2 server, you'll need to include ``--server
-https://acme-v02.api.letsencrypt.org/directory`` on the command line as
-well.
+<dns_plugins>`.
 
 For more information about the layout
 of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
@@ -250,9 +247,6 @@ through a command like:
 They can be installed by running the same installation command above but
 replacing ``certbot`` with the name of the desired package.
 
-There are no Certbot packages available for Debian Jessie and Jessie users
-should instead use certbot-auto_.
-
 **Ubuntu**
 
 If you run Ubuntu Trusty, Xenial, or Bionic, certbot is available through the official PPA,
@@ -291,39 +285,19 @@ Optionally to install the Certbot Apache plugin, you can use:
 
 **Gentoo**
 
-The official Certbot client is available in Gentoo Portage. If you
-want to use the Apache plugin, it has to be installed separately:
+The official Certbot client is available in Gentoo Portage. From the 
+official Certbot plugins, three of them are also available in Portage. 
+They need to be installed separately if you require their functionality.
 
 .. code-block:: shell
 
    emerge -av app-crypt/certbot
    emerge -av app-crypt/certbot-apache
+   emerge -av app-crypt/certbot-nginx
+   emerge -av app-crypt/certbot-dns-nsone
 
-When using the Apache plugin, you will run into a "cannot find an
-SSLCertificateFile directive" or "cannot find an SSLCertificateKeyFile
-directive for certificate" error if you're sporting the default Gentoo
-``httpd.conf``. You can fix this by commenting out two lines in
-``/etc/apache2/httpd.conf`` as follows:
-
-Change
-
-.. code-block:: shell
-
-   <IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   </IfDefine>
-
-to
-
-.. code-block:: shell
-
-   #<IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   #</IfDefine>
-
-For the time being, this is the only way for the Apache plugin to recognise
-the appropriate directives when installing the certificate.
-Note: this change is not required for the other plugins.
+.. Note:: The ``app-crypt/certbot-dns-nsone`` package has a different 
+   maintainer than the other packages and can lag behind in version.
 
 **NetBSD**
 

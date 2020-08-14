@@ -93,8 +93,10 @@ dev_extras = [
 
 dev3_extras = [
     'astroid',
+    'azure-devops',
     'ipdb',
     'mypy',
+    'PyGithub',
     'pylint',
 ]
 
