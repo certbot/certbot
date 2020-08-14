@@ -12,14 +12,19 @@ then
     # For apache 2.4, set up ServerName
     sudo sed -i '/ServerName/ s/#ServerName/ServerName/' $CONFFILE
     sudo sed -i '/ServerName/ s/www.example.com/'$PUBLIC_HOSTNAME'/' $CONFFILE
-    # Upgrade python version
-    sudo apt install -y make git zlib1g-dev
+    # Upgrade python version using pyenv because py3.5 is deprecated
+    sudo apt-get install -y make gcc build-essential libssl-dev zlib1g-dev libbz2-dev \
+      libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
+      xz-utils tk-dev libffi-dev liblzma-dev python-openssl git # pyenv deps
     curl https://pyenv.run | bash
     export PATH="/home/admin/.pyenv/bin:$PATH"
-    eval "$(pyenv init -)"
-    eval "$(pyenv virtualenv-init -)"
+    pyenv init -
+    pyenv virtualenv-init -
     pyenv install 3.8.5
     pyenv global 3.8.5
+    # you do, in fact need to run these again, exactly like this.
+    eval "$(pyenv init -)"
+    eval "$(pyenv virtualenv-init -)"
 elif [ "$OS_TYPE" = "centos" ]
 then
     CONFFILE=/etc/httpd/conf/httpd.conf
