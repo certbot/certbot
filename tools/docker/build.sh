@@ -76,14 +76,35 @@ DownloadQemuStatic() {
     fi
 }
 
+# Parses the requested architecture string and sets ALL_REQUESTED_ARCH to
+# result.
+# Usage: ParseRequestedArch [all|amd64|arm32v6|arm64v8]
+ParseRequestedArch() {
+    REQUESTED_ARCH="${1}"
+    if [[ "${REQUESTED_ARCH}" == "all" ]]; then
+        ALL_REQUESTED_ARCH=("${ALL_TARGET_ARCH[@]}")
+        return 0
+    fi
+    for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
+        if [[ "${TARGET_ARCH}" == "${REQUESTED_ARCH}" ]]; then
+            ALL_REQUESTED_ARCH=("${REQUESTED_ARCH}")
+            return 0
+        fi
+    done
+    # If we didn't return above, REQUESTED_ARCH has an unexpected value.
+    echo "Unexpected target architecture \"${REQUESTED_ARCH}\"". >&2
+    exit 1
+}
+
 TAG_BASE="$1"
+ParseRequestedArch "${2}"
 
 # Register QEMU handlers
 docker run --rm --privileged multiarch/qemu-user-static:register --reset
 
 # Step 1: Certbot core Docker
 DOCKER_REPO="${DOCKER_HUB_ORG}/certbot"
-for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
+for TARGET_ARCH in "${ALL_REQUESTED_ARCH[@]}"; do
     pushd "${REPO_ROOT}"
     DownloadQemuStatic "${TARGET_ARCH}"
     QEMU_ARCH=$(GetQemuArch "${TARGET_ARCH}")
@@ -102,7 +123,7 @@ for plugin in "${CERTBOT_PLUGINS[@]}"; do
     pushd "${REPO_ROOT}/certbot-${plugin}"
     # Copy QEMU static binaries downloaded when building the core Certbot image
     cp ../qemu-*-static .
-    for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
+    for TARGET_ARCH in "${ALL_REQUESTED_ARCH[@]}"; do
         QEMU_ARCH=$(GetQemuArch "${TARGET_ARCH}")
         BASE_IMAGE="${DOCKER_HUB_ORG}/certbot:${TARGET_ARCH}-${TAG_BASE}"
         docker build \
