@@ -11,7 +11,7 @@ import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
-from acme.magic_typing import Union
+from acme.magic_typing import Union, List
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -703,17 +703,16 @@ def update_account(config, unused_plugins):
 
     if not accounts:
         return "Could not find an existing account to update."
-    if config.email is None:
-        if config.register_unsafely_without_email:
-            return ("--register-unsafely-without-email provided, however, a "
-                    "new e-mail address must\ncurrently be provided when "
-                    "updating a registration.")
+    if config.email is None and not config.register_unsafely_without_email:
         config.email = display_ops.get_email(optional=False)
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
+    # Empty list of contacts in case the user is removing all emails
+    acc_contacts = []  # type: List[str]
+    if config.email:
+        acc_contacts = ['mailto:' + email for email in config.email.split(',')]
     # We rely on an exception to interrupt this process if it didn't work.
-    acc_contacts = ['mailto:' + email for email in config.email.split(',')]
     prev_regr_uri = acc.regr.uri
     acc.regr = cb_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=acc_contacts)))
@@ -722,8 +721,18 @@ def update_account(config, unused_plugins):
     # so that we can also continue to use the account object with acmev1.
     acc.regr = acc.regr.update(uri=prev_regr_uri)
     account_storage.update_regr(acc, cb_client.acme)
-    eff.prepare_subscription(config, acc)
-    add_msg("Your e-mail address was updated to {0}.".format(config.email))
+
+    if config.email is None:
+        add_msg(
+            ("Your e-mail address was removed. "
+            "Make sure you backup your account key stored in {0}\n".format(
+                os.path.join(misc.get_default_folder('config'), 'accounts')
+            ))
+        )
+    else:
+        eff.prepare_subscription(config, acc)
+        add_msg("Your e-mail address was updated to {0}.".format(config.email))
+
     return None
 
 
