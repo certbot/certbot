@@ -5,11 +5,12 @@ IFS=$'\n\t'
 # This script builds certbot docker and certbot dns plugins docker using the
 # local Certbot files.
 
-# Usage: ./build.sh [TAG]
-#   with [TAG] corresponding the base of the tag to give the Docker images.
-#   Values should be something like `v0.34.0` or `nightly`. The given value is
-#   only the base of the tag because the things like the CPU architecture are
-#   also added to the full tag.
+# Usage: ./build.sh [TAG] [all|amd64|arm32v6|arm64v8]
+#   with the [TAG] value corresponding the base of the tag to give the Docker
+#   images and the 2nd value being the architecture to build snaps for.
+#   Values for the tag should be something like `v0.34.0` or `nightly`. The
+#   given value is only the base of the tag because the things like the CPU
+#   architecture are also added to the full tag.
 
 # As of writing this, runs of this script consistently fail in Azure
 # Pipelines, but they are fixed by using Docker BuildKit. A log of the failures
