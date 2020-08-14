@@ -3,8 +3,7 @@ set -euxo pipefail
 IFS=$'\n\t'
 
 # This script builds certbot docker and certbot dns plugins docker using the
-# local Certbot files.  The build is currently done following the environment used by
-# Dockerhub since this code previously used Docker Hub's automated build feature.
+# local Certbot files.
 
 # Usage: ./build.sh [TAG]
 #   with [TAG] corresponding the base of the tag to give the Docker images.

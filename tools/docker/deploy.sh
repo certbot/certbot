@@ -3,8 +3,6 @@ set -euxo pipefail
 IFS=$'\n\t'
 
 # This script deploys new versions of Certbot and Certbot plugin docker images.
-# This process is currently done using a similar approach to Docker Hub since
-# this code previously used Docker Hub's automated build feature.
 
 # Usage: ./deploy.sh [TAG]
 #   with [TAG] corresponding the base of the tag to give the Docker images.
