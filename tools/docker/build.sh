@@ -108,7 +108,7 @@ for plugin in "${CERTBOT_PLUGINS[@]}"; do
             --build-arg BASE_IMAGE="${BASE_IMAGE}" \
             --build-arg QEMU_ARCH="${QEMU_ARCH}" \
             -f "${WORK_DIR}/plugin/Dockerfile" \
-            -t "${DOCKER_REPO}:${ARCH}-${TAG_BASE}" \
+            -t "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" \
             .
     done
     popd
