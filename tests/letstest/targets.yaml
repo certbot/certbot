@@ -8,6 +8,12 @@ targets:
     type: ubuntu
     virt: hvm
     user: ubuntu
+  - ami: ami-008680ee60f23c94b
+    name: ubuntu20.04_arm64
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+    machine_type: a1.medium
   - ami: ami-0545f7036167eb3aa
     name: ubuntu19.10
     type: ubuntu
