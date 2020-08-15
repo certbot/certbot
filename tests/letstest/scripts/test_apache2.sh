@@ -12,19 +12,25 @@ then
     # For apache 2.4, set up ServerName
     sudo sed -i '/ServerName/ s/#ServerName/ServerName/' $CONFFILE
     sudo sed -i '/ServerName/ s/www.example.com/'$PUBLIC_HOSTNAME'/' $CONFFILE
-    # Upgrade python version using pyenv because py3.5 is deprecated
-    sudo apt-get install -y make gcc build-essential libssl-dev zlib1g-dev libbz2-dev \
-      libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
-      xz-utils tk-dev libffi-dev liblzma-dev python-openssl git # pyenv deps
-    curl https://pyenv.run | bash
-    export PATH="~/.pyenv/bin:$PATH"
-    pyenv init -
-    pyenv virtualenv-init -
-    pyenv install 3.8.5
-    pyenv global 3.8.5
-    # you do, in fact need to run these again, exactly like this.
-    eval "$(pyenv init -)"
-    eval "$(pyenv virtualenv-init -)"
+    if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -ne 38 ]
+    then
+        # Upgrade python version using pyenv because py3.5 is deprecated
+        # Don't upgrade if it's already 3.8 because pyenv doesn't work great on arm, and
+        # our arm representative happens to be ubuntu20, which already has a perfectly
+        # good version of python.
+        sudo apt-get install -y make gcc build-essential libssl-dev zlib1g-dev libbz2-dev \
+          libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
+          xz-utils tk-dev libffi-dev liblzma-dev python-openssl git # pyenv deps
+        curl https://pyenv.run | bash
+        export PATH="~/.pyenv/bin:$PATH"
+        pyenv init -
+        pyenv virtualenv-init -
+        pyenv install 3.8.5
+        pyenv global 3.8.5
+        # you do, in fact need to run these again, exactly like this.
+        eval "$(pyenv init -)"
+        eval "$(pyenv virtualenv-init -)"
+    fi
 elif [ "$OS_TYPE" = "centos" ]
 then
     CONFFILE=/etc/httpd/conf/httpd.conf
