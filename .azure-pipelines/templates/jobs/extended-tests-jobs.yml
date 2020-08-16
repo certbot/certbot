@@ -36,14 +36,6 @@ jobs:
           PYTHON_VERSION: 2.7
           TOXENV: integration
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-py35-integration:
-          PYTHON_VERSION: 3.5
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
-        linux-boulder-v2-py35-integration:
-          PYTHON_VERSION: 3.5
-          TOXENV: integration
-          ACME_SERVER: boulder-v2
         linux-boulder-v1-py36-integration:
           PYTHON_VERSION: 3.6
           TOXENV: integration

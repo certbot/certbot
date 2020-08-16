@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Support for Python 3.5 has been removed.
 
 ### Fixed
 
