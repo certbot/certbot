@@ -2,23 +2,31 @@ jobs:
   - job: docker_build
     pool:
       vmImage: ubuntu-18.04
+    strategy:
+      matrix:
+        amd64:
+          DOCKER_ARCH: amd64
+        arm32v6:
+          DOCKER_ARCH: arm32v6
+        arm64v8:
+          DOCKER_ARCH: arm64v8
     steps:
-      - bash: tools/docker/build.sh $(dockerTag) all
+      - bash: tools/docker/build.sh $(dockerTag) $DOCKER_ARCH
         displayName: Build the Docker images
       # We don't filter for the Docker Hub organization to continue to allow
       # easy testing of these scripts on forks.
       - bash: |
           DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
-          docker save --output docker_images.tar $DOCKER_IMAGES
+          docker save --output images.tar $DOCKER_IMAGES
         displayName: Save the Docker images
       # If the name of the tar file or artifact changes, the deploy stage will
       # also need to be updated.
-      - bash: mv docker_images.tar $(Build.ArtifactStagingDirectory)
+      - bash: mv images.tar $(Build.ArtifactStagingDirectory)
         displayName: Prepare Docker artifact
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
-          artifact: docker_images
+          artifact: docker_$(DOCKER_ARCH)
         displayName: Store Docker artifact
   - job: installer_build
     pool:
