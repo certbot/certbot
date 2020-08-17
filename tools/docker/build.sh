@@ -76,26 +76,6 @@ DownloadQemuStatic() {
     fi
 }
 
-# Parses the requested architecture string and sets ALL_REQUESTED_ARCH to
-# result.
-# Usage: ParseRequestedArch [all|amd64|arm32v6|arm64v8]
-ParseRequestedArch() {
-    REQUESTED_ARCH="${1}"
-    if [[ "${REQUESTED_ARCH}" == "all" ]]; then
-        ALL_REQUESTED_ARCH=("${ALL_TARGET_ARCH[@]}")
-        return 0
-    fi
-    for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
-        if [[ "${TARGET_ARCH}" == "${REQUESTED_ARCH}" ]]; then
-            ALL_REQUESTED_ARCH=("${REQUESTED_ARCH}")
-            return 0
-        fi
-    done
-    # If we didn't return above, REQUESTED_ARCH has an unexpected value.
-    echo "Unexpected target architecture \"${REQUESTED_ARCH}\"". >&2
-    exit 1
-}
-
 TAG_BASE="$1"
 if [ -z "$TAG_BASE" ]; then
     echo "We cannot tag Docker images with an empty string!" >&2
