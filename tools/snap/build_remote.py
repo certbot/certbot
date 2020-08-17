@@ -37,7 +37,7 @@ def _build_snap(target, archs, status, lock):
         with tempfile.NamedTemporaryFile() as f:
             subprocess.check_output(
                 ('"{0}" tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt '
-                 '| grep -v python-augeas > "{1}"').format(sys.executable, f.name),
+                 '> "{1}"').format(sys.executable, f.name),
             shell=True, cwd=CERTBOT_DIR)
             subprocess.check_output(
                 ('"{0}" tools/merge_requirements.py tools/dev_constraints.txt '
