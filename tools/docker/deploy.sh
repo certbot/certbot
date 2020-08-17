@@ -30,7 +30,7 @@ source "$WORK_DIR/lib/common"
 # For other tags such as "nightly", aliases are only created for the default
 # architecture where the tag "nightly" would be used without an architecture
 # part.
-# Usage: TagAndPush [IMAGE NAME]
+# Usage: TagAndPushForAllArch [IMAGE NAME]
 #   where [IMAGE NAME] is the name of the Docker image in the Docker repository
 #   such as "certbot" or "dns-cloudflare".
 # Read globals:
