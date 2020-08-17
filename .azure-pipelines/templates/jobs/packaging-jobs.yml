@@ -6,8 +6,8 @@ jobs:
       matrix:
         amd64:
           DOCKER_ARCH: amd64
-      # Do not run the heavy non-amd64 builds for test branches
-      ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
+        # Do not run the heavy non-amd64 builds for test branches
+        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
           arm32v6:
             DOCKER_ARCH: arm32v6
           arm64v8:
