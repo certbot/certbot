@@ -6,6 +6,7 @@ from multiprocessing import Pool, Process, Manager, Event
 import re
 import subprocess
 import sys
+import tempfile
 from os.path import join, realpath, dirname, basename, exists
 
 
@@ -33,9 +34,14 @@ def _build_snap(target, archs, status, lock):
         workspace = CERTBOT_DIR
     else:
         workspace = join(CERTBOT_DIR, target)
-        subprocess.check_output(
-            ('"{0}" tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt '
-             '| grep -v python-augeas > "{1}/snap-constraints.txt"').format(sys.executable, workspace),
+        with tempfile.NamedTemporaryFile() as f:
+            subprocess.check_output(
+                ('"{0}" tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt '
+                 '| grep -v python-augeas > "{1}"').format(sys.executable, f.name),
+            shell=True, cwd=CERTBOT_DIR)
+            subprocess.check_output(
+                ('"{0}" tools/merge_requirements.py tools/dev_constraints.txt '
+                 '"{1}" > "{2}/snap-constraints.txt"').format(sys.executable, f.name, workspace),
             shell=True, cwd=CERTBOT_DIR)
 
     retry = 3
