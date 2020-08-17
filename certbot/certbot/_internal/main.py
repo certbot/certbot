@@ -11,7 +11,7 @@ import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
-from acme.magic_typing import Union, List
+from acme.magic_typing import Union, Iterable
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -590,7 +590,7 @@ def _init_le_client(config, authenticator, installer):
     :type config: interfaces.IConfig
 
     :param authenticator: Acme authentication handler
-    :type authenticator: interfaces.IAuthenticator
+    :type authenticator: Optional[interfaces.IAuthenticator]
     :param installer: Installer object
     :type installer: interfaces.IInstaller
 
@@ -709,7 +709,8 @@ def update_account(config, unused_plugins):
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
     # Empty list of contacts in case the user is removing all emails
-    acc_contacts = []  # type: List[str]
+
+    acc_contacts = () # type: Iterable
     if config.email:
         acc_contacts = ['mailto:' + email for email in config.email.split(',')]
     # We rely on an exception to interrupt this process if it didn't work.

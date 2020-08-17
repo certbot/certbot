@@ -1407,14 +1407,20 @@ class MainTest(test_util.ConfigTestCase):
     def test_update_account_remove_email(self):
         with mock.patch('certbot._internal.eff.prepare_subscription') as mock_prepare:
             with mock.patch('certbot._internal.main._determine_account') as mocked_det:
-                with mock.patch('certbot._internal.main.account') as mocked_account:
+                with mock.patch('certbot._internal.main.account') as mocked_account_module:
                     with mock.patch('certbot._internal.main.client') as mocked_client:
                         mocked_storage = mock.MagicMock()
-                        mocked_account.AccountFileStorage.return_value = mocked_storage
-                        mocked_storage.find_all.return_value = ["an account"]
-                        mocked_det.return_value = (mock.MagicMock(), "foo")
                         cb_client = mock.MagicMock()
+                        mocked_account = mock.MagicMock()
+                        mock_regr_body = mock.MagicMock()
+
+                        mocked_account_module.AccountFileStorage.return_value = mocked_storage
+                        mocked_storage.find_all.return_value = [mocked_account]
+                        mocked_det.return_value = (mocked_account, "foo")
                         mocked_client.Client.return_value = cb_client
+                        # mocked_account.regr is overwritten in update, requiring an odd mock setup
+                        mocked_account.regr.body = mock_regr_body
+
                         x = self._call_no_clientmock(
                             ["update_account", "--register-unsafely-without-email"])
                         # When update succeeds, the return value of register() is None
@@ -1423,6 +1429,10 @@ class MainTest(test_util.ConfigTestCase):
                         # the server
                         self.assertTrue(
                             cb_client.acme.update_registration.called)
+
+                        self.assertTrue(mock_regr_body.update.called)
+                        self.assertTrue('contact' in mock_regr_body.update.call_args[1])
+                        self.assertEqual(mock_regr_body.update.call_args[1]['contact'], ())
                         # and we saved the updated registration on disk
                         self.assertTrue(mocked_storage.update_regr.called)
                         # ensure we didn't try to subscribe (no email after all)

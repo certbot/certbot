@@ -315,7 +315,7 @@ class Registration(ResourceBody):
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
     key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
-    contact = jose.Field('contact', omitempty=True, default=())
+    contact = fields.UnFalseyField('contact', omitempty=True)
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
     terms_of_service_agreed = jose.Field('termsOfServiceAgreed', omitempty=True)

@@ -62,3 +62,10 @@ class Resource(jose.Field):
                 'Wrong resource type: {0} instead of {1}'.format(
                     value, self.resource_type))
         return value
+
+class UnFalseyField(jose.Field):
+    """Field where only a value of None is considered empty"""
+
+    @classmethod
+    def _empty(cls, value):
+        return value is None
