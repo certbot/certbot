@@ -141,7 +141,9 @@ BootstrapRpmPython3() {
   "
 
   if ! $TOOL list python3-devel >/dev/null 2>&1; then
+    set +e
     yum-config-manager --enable rhui-REGION-rhel-server-extras rhui-REGION-rhel-server-optional
+    set -e
   fi
 
   BootstrapRpmCommonBase "$python_pkgs"
