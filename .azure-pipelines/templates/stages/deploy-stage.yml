@@ -62,13 +62,21 @@ stages:
       - job: publish_docker
         pool:
           vmImage: ubuntu-18.04
+        strategy:
+          matrix:
+            amd64:
+              DOCKER_ARCH: amd64
+            arm32v6:
+              DOCKER_ARCH: arm32v6
+            arm64v8:
+              DOCKER_ARCH: arm64v8
         steps:
           - task: DownloadPipelineArtifact@2
             inputs:
-              artifact: docker_images
+              artifact: docker_$(DOCKER_ARCH)
               path: $(Build.SourcesDirectory)
             displayName: Retrieve Docker images
-          - bash: docker load --input $(Build.SourcesDirectory)/docker_images.tar
+          - bash: docker load --input $(Build.SourcesDirectory)/images.tar
             displayName: Load Docker images
           - task: Docker@2
             inputs:
@@ -85,5 +93,5 @@ stages:
               # Certbot organization on Docker Hub.
               containerRegistry: docker-hub
             displayName: Login to Docker Hub
-          - bash: tools/docker/deploy.sh $(dockerTag)
+          - bash: tools/docker/deploy.sh $(dockerTag) $DOCKER_ARCH
             displayName: Deploy the Docker images
