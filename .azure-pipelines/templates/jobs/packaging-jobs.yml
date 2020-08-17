@@ -6,10 +6,12 @@ jobs:
       matrix:
         amd64:
           DOCKER_ARCH: amd64
-        arm32v6:
-          DOCKER_ARCH: arm32v6
-        arm64v8:
-          DOCKER_ARCH: arm64v8
+      # Do not run the heavy non-amd64 builds for test branches
+      ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
+          arm32v6:
+            DOCKER_ARCH: arm32v6
+          arm64v8:
+            DOCKER_ARCH: arm64v8
     steps:
       - bash: tools/docker/build.sh $(dockerTag) $DOCKER_ARCH
         displayName: Build the Docker images
