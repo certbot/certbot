@@ -5,11 +5,12 @@ IFS=$'\n\t'
 # This script builds certbot docker and certbot dns plugins docker using the
 # local Certbot files.
 
-# Usage: ./build.sh [TAG]
-#   with [TAG] corresponding the base of the tag to give the Docker images.
-#   Values should be something like `v0.34.0` or `nightly`. The given value is
-#   only the base of the tag because the things like the CPU architecture are
-#   also added to the full tag.
+# Usage: ./build.sh [TAG] [all|amd64|arm32v6|arm64v8]
+#   with the [TAG] value corresponding the base of the tag to give the Docker
+#   images and the 2nd value being the architecture to build snaps for.
+#   Values for the tag should be something like `v0.34.0` or `nightly`. The
+#   given value is only the base of the tag because the things like the CPU
+#   architecture are also added to the full tag.
 
 # As of writing this, runs of this script consistently fail in Azure
 # Pipelines, but they are fixed by using Docker BuildKit. A log of the failures
@@ -76,13 +77,18 @@ DownloadQemuStatic() {
 }
 
 TAG_BASE="$1"
+if [ -z "$TAG_BASE" ]; then
+    echo "We cannot tag Docker images with an empty string!" >&2
+    exit 1
+fi
+ParseRequestedArch "${2}"
 
 # Register QEMU handlers
 docker run --rm --privileged multiarch/qemu-user-static:register --reset
 
 # Step 1: Certbot core Docker
 DOCKER_REPO="${DOCKER_HUB_ORG}/certbot"
-for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
+for TARGET_ARCH in "${ALL_REQUESTED_ARCH[@]}"; do
     pushd "${REPO_ROOT}"
     DownloadQemuStatic "${TARGET_ARCH}"
     QEMU_ARCH=$(GetQemuArch "${TARGET_ARCH}")
@@ -101,7 +107,7 @@ for plugin in "${CERTBOT_PLUGINS[@]}"; do
     pushd "${REPO_ROOT}/certbot-${plugin}"
     # Copy QEMU static binaries downloaded when building the core Certbot image
     cp ../qemu-*-static .
-    for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
+    for TARGET_ARCH in "${ALL_REQUESTED_ARCH[@]}"; do
         QEMU_ARCH=$(GetQemuArch "${TARGET_ARCH}")
         BASE_IMAGE="${DOCKER_HUB_ORG}/certbot:${TARGET_ARCH}-${TAG_BASE}"
         docker build \
