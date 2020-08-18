@@ -1404,39 +1404,45 @@ class MainTest(test_util.ConfigTestCase):
                  "user@example.org"])
             self.assertTrue("Could not find an existing account" in x[0])
 
-    def test_update_account_remove_email(self):
-        with mock.patch('certbot._internal.eff.prepare_subscription') as mock_prepare:
-            with mock.patch('certbot._internal.main._determine_account') as mocked_det:
-                with mock.patch('certbot._internal.main.account') as mocked_account_module:
-                    with mock.patch('certbot._internal.main.client') as mocked_client:
-                        mocked_storage = mock.MagicMock()
-                        cb_client = mock.MagicMock()
-                        mocked_account = mock.MagicMock()
-                        mock_regr_body = mock.MagicMock()
+    @mock.patch('certbot._internal.main._determine_account')
+    @mock.patch('certbot._internal.eff.prepare_subscription')
+    @mock.patch('certbot._internal.main.account')
+    def test_update_account_remove_email(self, mocked_account_module, mock_prepare, mock_det_acc):
+        with mock.patch('certbot._internal.main.client') as mocked_client:
+            # Mock account storage and the account object returned
+            mocked_storage = mock.MagicMock()
+            mocked_account = mock.MagicMock()
 
-                        mocked_account_module.AccountFileStorage.return_value = mocked_storage
-                        mocked_storage.find_all.return_value = [mocked_account]
-                        mocked_det.return_value = (mocked_account, "foo")
-                        mocked_client.Client.return_value = cb_client
-                        # mocked_account.regr is overwritten in update, requiring an odd mock setup
-                        mocked_account.regr.body = mock_regr_body
+            mocked_account_module.AccountFileStorage.return_value = mocked_storage
+            mocked_storage.find_all.return_value = [mocked_account]
+            mock_det_acc.return_value = (mocked_account, "foo")
 
-                        x = self._call_no_clientmock(
-                            ["update_account", "--register-unsafely-without-email"])
-                        # When update succeeds, the return value of register() is None
-                        self.assertTrue(x[0] is None)
-                        # and we got supposedly did update the registration from
-                        # the server
-                        self.assertTrue(
-                            cb_client.acme.update_registration.called)
+            # Mock client and mock registration body to verify calls are made
+            cb_client = mock.MagicMock()
+            mock_regr_body = mock.MagicMock()
 
-                        self.assertTrue(mock_regr_body.update.called)
-                        self.assertTrue('contact' in mock_regr_body.update.call_args[1])
-                        self.assertEqual(mock_regr_body.update.call_args[1]['contact'], ())
-                        # and we saved the updated registration on disk
-                        self.assertTrue(mocked_storage.update_regr.called)
-                        # ensure we didn't try to subscribe (no email after all)
-                        self.assertFalse(mock_prepare.called)
+            mocked_client.Client.return_value = cb_client
+            # mocked_account.regr is overwritten in update, requiring an odd mock setup
+            mocked_account.regr.body = mock_regr_body
+
+            x = self._call_no_clientmock(
+                ["update_account", "--register-unsafely-without-email"])
+
+
+            # When update succeeds, the return value of register() is None
+            self.assertTrue(x[0] is None)
+            # and we got supposedly did update the registration from
+            # the server
+            self.assertTrue(
+                cb_client.acme.update_registration.called)
+
+            self.assertTrue(mock_regr_body.update.called)
+            self.assertTrue('contact' in mock_regr_body.update.call_args[1])
+            self.assertEqual(mock_regr_body.update.call_args[1]['contact'], ())
+            # and we saved the updated registration on disk
+            self.assertTrue(mocked_storage.update_regr.called)
+            # ensure we didn't try to subscribe (no email to subscribe with)
+            self.assertFalse(mock_prepare.called)
 
     @mock.patch('certbot._internal.main.display_ops.get_email')
     @test_util.patch_get_utility()
