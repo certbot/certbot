@@ -70,7 +70,7 @@ jobs:
           TOXENV: docker_dev
         farmtest-apache2:
           IMAGE_NAME: macOS-10.14
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.8
           TOXENV: test-farm-apache2
         farmtest-leauto-upgrades:
           PYTHON_VERSION: 3.7
