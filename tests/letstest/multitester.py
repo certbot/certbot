@@ -99,7 +99,6 @@ PROFILE = None if cl_args.aws_profile == 'SET_BY_ENV' else cl_args.aws_profile
 # Globals
 #-------------------------------------------------------------------------------
 BOULDER_AMI = 'ami-072a9534772bec854' # premade shared boulder AMI 18.04LTS us-east-1
-LOGDIR = "letest-%d"%int(time.time()) #points to logging / working directory
 SECURITY_GROUP_NAME = 'certbot-security-group'
 SENTINEL = None #queue kill signal
 SUBNET_NAME = 'certbot-subnet'
@@ -233,43 +232,43 @@ def block_until_instance_ready(booting_instance, wait_time=5, extra_wait_time=20
 
 # Fabric Routines
 #-------------------------------------------------------------------------------
-def local_git_clone(local_cxn, repo_url):
+def local_git_clone(local_cxn, repo_url, log_dir):
     """clones master of repo_url"""
-    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
-    local_cxn.local('cd %s && git clone %s letsencrypt'% (LOGDIR, repo_url))
-    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt'% LOGDIR)
+    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % log_dir)
+    local_cxn.local('cd %s && git clone %s letsencrypt'% (log_dir, repo_url))
+    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt'% log_dir)
 
-def local_git_branch(local_cxn, repo_url, branch_name):
+def local_git_branch(local_cxn, repo_url, branch_name, log_dir):
     """clones branch <branch_name> of repo_url"""
-    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
+    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % log_dir)
     local_cxn.local('cd %s && git clone %s letsencrypt --branch %s --single-branch'%
-        (LOGDIR, repo_url, branch_name))
-    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
+        (log_dir, repo_url, branch_name))
+    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % log_dir)
 
-def local_git_PR(local_cxn, repo_url, PRnumstr, merge_master=True):
+def local_git_PR(local_cxn, repo_url, PRnumstr, log_dir, merge_master=True):
     """clones specified pull request from repo_url and optionally merges into master"""
-    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % LOGDIR)
-    local_cxn.local('cd %s && git clone %s letsencrypt' % (LOGDIR, repo_url))
+    local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % log_dir)
+    local_cxn.local('cd %s && git clone %s letsencrypt' % (log_dir, repo_url))
     local_cxn.local('cd %s && cd letsencrypt && '
-        'git fetch origin pull/%s/head:lePRtest' % (LOGDIR, PRnumstr))
-    local_cxn.local('cd %s && cd letsencrypt && git checkout lePRtest' % LOGDIR)
+        'git fetch origin pull/%s/head:lePRtest' % (log_dir, PRnumstr))
+    local_cxn.local('cd %s && cd letsencrypt && git checkout lePRtest' % log_dir)
     if merge_master:
-        local_cxn.local('cd %s && cd letsencrypt && git remote update origin' % LOGDIR)
+        local_cxn.local('cd %s && cd letsencrypt && git remote update origin' % log_dir)
         local_cxn.local('cd %s && cd letsencrypt && '
-            'git merge origin/master -m "testmerge"' % LOGDIR)
-    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % LOGDIR)
+            'git merge origin/master -m "testmerge"' % log_dir)
+    local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % log_dir)
 
-def local_repo_to_remote(cxn):
+def local_repo_to_remote(cxn, log_dir):
     """copies local tarball of repo to remote"""
     filename = 'le.tar.gz'
-    local_path = os.path.join(LOGDIR, filename)
+    local_path = os.path.join(log_dir, filename)
     cxn.put(local=local_path, remote='')
     cxn.run('tar xzf %s' % filename)
 
-def local_repo_clean(local_cxn):
+def local_repo_clean(local_cxn, log_dir):
     """delete tarball"""
     filename = 'le.tar.gz'
-    local_path = os.path.join(LOGDIR, filename)
+    local_path = os.path.join(log_dir, filename)
     local_cxn.local('rm %s' % local_path)
 
 def deploy_script(cxn, scriptpath, *args):
@@ -289,8 +288,8 @@ def config_and_launch_boulder(cxn, instance):
         deploy_script(cxn, 'scripts/boulder_config.sh')
         run_boulder(cxn)
 
-def install_and_launch_certbot(cxn, instance, boulder_url, target):
-    local_repo_to_remote(cxn)
+def install_and_launch_certbot(cxn, instance, boulder_url, target, log_dir):
+    local_repo_to_remote(cxn, log_dir)
     # This needs to be like this, I promise. 1) The env argument to run doesn't work.
     # See https://github.com/fabric/fabric/issues/1744. 2) prefix() sticks an && between
     # the commands, so it needs to be exports rather than no &&s in between for the script subshell.
@@ -339,7 +338,7 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id):
                          userdata=userdata)
 
 
-def test_client_process(fab_config, inqueue, outqueue, boulder_url):
+def test_client_process(fab_config, inqueue, outqueue, boulder_url, log_dir):
     cur_proc = mp.current_process()
     for inreq in iter(inqueue.get, SENTINEL):
         ii, instance_id, target = inreq
@@ -351,7 +350,7 @@ def test_client_process(fab_config, inqueue, outqueue, boulder_url):
         instance = ec2_client.Instance(id=instance_id)
 
         #save all stdout to log file
-        sys.stdout = open(LOGDIR+'/'+'%d_%s.log'%(ii,target['name']), 'w')
+        sys.stdout = open(log_dir+'/'+'%d_%s.log'%(ii,target['name']), 'w')
 
         print("[%s : client %d %s %s]" % (cur_proc.name, ii, target['ami'], target['name']))
         instance = block_until_instance_ready(instance)
@@ -361,7 +360,7 @@ def test_client_process(fab_config, inqueue, outqueue, boulder_url):
 
         with Connection(host_string, config=fab_config) as cxn:
             try:
-                install_and_launch_certbot(cxn, instance, boulder_url, target)
+                install_and_launch_certbot(cxn, instance, boulder_url, target, log_dir)
                 outqueue.put((ii, target, Status.PASS))
                 print("%s - %s SUCCESS"%(target['ami'], target['name']))
             except:
@@ -380,8 +379,8 @@ def test_client_process(fab_config, inqueue, outqueue, boulder_url):
                 pass
 
 
-def cleanup(cl_args, instances, targetlist, boulder_server):
-    print('Logs in ', LOGDIR)
+def cleanup(cl_args, instances, targetlist, boulder_server, log_dir):
+    print('Logs in ', log_dir)
     # If lengths of instances and targetlist aren't equal, instances failed to
     # start before running tests so leaving instances running for debugging
     # isn't very useful. Let's cleanup after ourselves instead.
@@ -418,22 +417,24 @@ def main():
 
     # Set up local copy of git repo
     #-------------------------------------------------------------------------------
-    print("Making local dir for test repo and logs: %s"%LOGDIR)
-    local_cxn.local('mkdir %s'%LOGDIR)
+    log_dir = "letest-%d"%int(time.time()) #points to logging / working directory
+    print("Making local dir for test repo and logs: %s"%log_dir)
+    local_cxn.local('mkdir %s'%log_dir)
 
     try:
-        # figure out what git object to test and locally create it in LOGDIR
+        # figure out what git object to test and locally create it in log_dir
         print("Making local git repo")
         if cl_args.pull_request != '~':
             print('Testing PR %s ' % cl_args.pull_request,
                   "MERGING into master" if cl_args.merge_master else "")
-            local_git_PR(local_cxn, cl_args.repo, cl_args.pull_request, cl_args.merge_master)
+            local_git_PR(local_cxn, cl_args.repo, cl_args.pull_request, log_dir,
+                         cl_args.merge_master)
         elif cl_args.branch != '~':
             print('Testing branch %s of %s' % (cl_args.branch, cl_args.repo))
-            local_git_branch(local_cxn, cl_args.repo, cl_args.branch)
+            local_git_branch(local_cxn, cl_args.repo, cl_args.branch, log_dir)
         else:
-            print('Testing current branch of %s' % cl_args.repo)
-            local_git_clone(local_cxn, cl_args.repo)
+            print('Testing current branch of %s' % cl_args.repo, log_dir)
+            local_git_clone(local_cxn, cl_args.repo, log_dir)
     except BaseException:
         print("FAIL: trouble with git repo")
         traceback.print_exc()
@@ -537,7 +538,7 @@ def main():
         # Install and launch client scripts in parallel
         #-------------------------------------------------------------------------------
         print("Uploading and running test script in parallel: %s"%cl_args.test_script)
-        print("Output routed to log files in %s"%LOGDIR)
+        print("Output routed to log files in %s"%log_dir)
         # (Advice: always use Manager.Queue, never regular multiprocessing.Queue
         # the latter has implementation flaws that deadlock it in some circumstances)
         manager = Manager()
@@ -550,8 +551,9 @@ def main():
 
 
         # initiate process execution
+        client_process_args=(fab_config, inqueue, outqueue, boulder_url, log_dir)
         for i in range(num_processes):
-            p = mp.Process(target=test_client_process, args=(fab_config, inqueue, outqueue, boulder_url))
+            p = mp.Process(target=test_client_process, args=client_process_args)
             jobs.append(p)
             p.daemon = True  # kills subprocesses if parent is killed
             p.start()
@@ -575,10 +577,10 @@ def main():
         outqueue.put(SENTINEL)
 
         # clean up
-        local_repo_clean(local_cxn)
+        local_repo_clean(local_cxn, log_dir)
 
         # print and save summary results
-        results_file = open(LOGDIR+'/results', 'w')
+        results_file = open(log_dir+'/results', 'w')
         outputs = [outq for outq in iter(outqueue.get, SENTINEL)]
         outputs.sort(key=lambda x: x[0])
         failed = False
@@ -600,7 +602,7 @@ def main():
             sys.exit(1)
 
     finally:
-        cleanup(cl_args, instances, targetlist, boulder_server)
+        cleanup(cl_args, instances, targetlist, boulder_server, log_dir)
 
 
 if __name__ == '__main__':
