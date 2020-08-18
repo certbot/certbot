@@ -1,4 +1,5 @@
 #!/bin/sh -xe
+env
 
 cd letsencrypt
 
