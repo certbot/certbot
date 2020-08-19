@@ -45,7 +45,7 @@ def _reconstitute(config, full_path):
 
     """
     renewal_candidate = storage.get_renewable_cert(full_path, config)
-    if not renewable_candidate:
+    if not renewal_candidate:
         # TODO(dmw) log here or only in get_renewable_cert?
         return None
     if "renewalparams" not in renewal_candidate.configuration:

@@ -123,12 +123,12 @@ def lineage_for_certname(cli_config, certname):
         renewal_file = storage.renewal_file_for_certname(cli_config, certname)
     except errors.CertStorageError:
         return None
-    try:
-        return storage.get_renewable_cert(renewal_file, cli_config)
-    except (errors.CertStorageError, IOError):
-        logger.debug("Renewal conf file %s is broken.", renewal_file)
-        logger.debug("Traceback was:\n%s", traceback.format_exc())
+
+    renewable_cert = storage.get_renewable_cert(renewal_file, cli_config)
+    if not renewable_cert:
         return None
+    else:
+        return renewable_cert
 
 
 def domains_for_certname(config, certname):

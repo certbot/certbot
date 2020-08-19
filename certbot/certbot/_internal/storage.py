@@ -267,9 +267,7 @@ def _relevant(namespaces, option):
 
     :rtype: bool
     """
-    from certbot._internal import renewal
-
-    return (option in renewal.CONFIG_ITEMS or
+    return (option in CONFIG_ITEMS or
             any(option.startswith(namespace) for namespace in namespaces))
 
 
@@ -401,6 +399,163 @@ def delete_files(config, certname):
         logger.debug("Unable to remove %s", archive_path)
 
 
+def _restore_webroot_config(config, renewalparams):
+    """
+    webroot_map is, uniquely, a dict, and the general-purpose configuration
+    restoring logic is not able to correctly parse it from the serialized
+    form.
+    """
+    if "webroot_map" in renewalparams and not cli.set_by_cli("webroot_map"):
+        config.webroot_map = renewalparams["webroot_map"]
+    # To understand why webroot_path and webroot_map processing are not mutually exclusive,
+    # see https://github.com/certbot/certbot/pull/7095
+    if "webroot_path" in renewalparams and not cli.set_by_cli("webroot_path"):
+        wp = renewalparams["webroot_path"]
+        if isinstance(wp, six.string_types):  # prior to 0.1.0, webroot_path was a string
+            wp = [wp]
+        config.webroot_path = wp
+
+
+def _restore_plugin_configs(config, renewalparams):
+    """Sets plugin specific values in config from renewalparams
+
+    :param configuration.NamespaceConfig config: configuration for the
+        current lineage
+    :param configobj.Section renewalparams: Parameters from the renewal
+        configuration file that defines this lineage
+
+    """
+    # Now use parser to get plugin-prefixed items with correct types
+    # XXX: the current approach of extracting only prefixed items
+    #      related to the actually-used installer and authenticator
+    #      works as long as plugins don't need to read plugin-specific
+    #      variables set by someone else (e.g., assuming Apache
+    #      configurator doesn't need to read webroot_ variables).
+    # Note: if a parameter that used to be defined in the parser is no
+    #      longer defined, stored copies of that parameter will be
+    #      deserialized as strings by this logic even if they were
+    #      originally meant to be some other type.
+    plugin_prefixes = []  # type: List[str]
+    if renewalparams["authenticator"] == "webroot":
+        _restore_webroot_config(config, renewalparams)
+    else:
+        plugin_prefixes.append(renewalparams["authenticator"])
+
+    if renewalparams.get("installer") is not None:
+        plugin_prefixes.append(renewalparams["installer"])
+
+    for plugin_prefix in set(plugin_prefixes):
+        plugin_prefix = plugin_prefix.replace('-', '_')
+        for config_item, config_value in six.iteritems(renewalparams):
+            if config_item.startswith(plugin_prefix + "_") and not cli.set_by_cli(config_item):
+                # Values None, True, and False need to be treated specially,
+                # As their types aren't handled correctly by configobj
+                if config_value in ("None", "True", "False"):
+                    # bool("False") == True
+                    # pylint: disable=eval-used
+                    setattr(config, config_item, eval(config_value))
+                else:
+                    cast = cli.argparse_type(config_item)
+                    setattr(config, config_item, cast(config_value))
+
+
+def restore_required_config_elements(config, renewalparams):
+    """Sets non-plugin specific values in config from renewalparams
+
+    :param configuration.NamespaceConfig config: configuration for the
+        current lineage
+    :param configobj.Section renewalparams: parameters from the renewal
+        configuration file that defines this lineage
+
+    """
+    required_items = itertools.chain(
+        (("pref_challs", _restore_pref_challs),),
+        six.moves.zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
+        six.moves.zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
+        six.moves.zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
+    for item_name, restore_func in required_items:
+        if item_name in renewalparams and not cli.set_by_cli(item_name):
+            value = restore_func(item_name, renewalparams[item_name])
+            logger.debug("Restoring config setting '%s' to '%s'", item_name, value)
+            setattr(config, item_name, value)
+
+
+def _restore_pref_challs(unused_name, value):
+    """Restores preferred challenges from a renewal config file.
+
+    If value is a `str`, it should be a single challenge type.
+
+    :param str unused_name: option name
+    :param value: option value
+    :type value: `list` of `str` or `str`
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: `list` of `str`
+
+    :raises errors.Error: if value can't be converted to a bool
+
+    """
+    # If pref_challs has only one element, configobj saves the value
+    # with a trailing comma so it's parsed as a list. If this comma is
+    # removed by the user, the value is parsed as a str.
+    value = [value] if isinstance(value, six.string_types) else value
+    return cli.parse_preferred_challenges(value)
+
+
+def _restore_bool(name, value):
+    """Restores a boolean key-value pair from a renewal config file.
+
+    :param str name: option name
+    :param str value: option value
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: bool
+
+    :raises errors.Error: if value can't be converted to a bool
+
+    """
+    lowercase_value = value.lower()
+    if lowercase_value not in ("true", "false"):
+        raise errors.Error(
+            "Expected True or False for {0} but found {1}".format(name, value))
+    return lowercase_value == "true"
+
+
+def _restore_int(name, value):
+    """Restores an integer key-value pair from a renewal config file.
+
+    :param str name: option name
+    :param str value: option value
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: int
+
+    :raises errors.Error: if value can't be converted to an int
+
+    """
+    if name == "http01_port" and value == "None":
+        logger.info("updating legacy http01_port value")
+        return cli.flag_default("http01_port")
+
+    try:
+        return int(value)
+    except ValueError:
+        raise errors.Error("Expected a numeric value for {0}".format(name))
+
+
+def _restore_str(unused_name, value):
+    """Restores a string key-value pair from a renewal config file.
+
+    :param str unused_name: option name
+    :param str value: option value
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: str or None
+
+    """
+    return None if value == "None" else value
+
+
 def get_renewable_cert(full_path, cli_config, update_symlinks=False):
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
@@ -412,157 +567,6 @@ def get_renewable_cert(full_path, cli_config, update_symlinks=False):
     :returns: the RenewableCert object or None if a fatal error occurred
     :rtype: `storage.RenewableCert` or NoneType
     """
-
-    def _restore_webroot_config(config, renewalparams):
-        """
-        webroot_map is, uniquely, a dict, and the general-purpose configuration
-        restoring logic is not able to correctly parse it from the serialized
-        form.
-        """
-        if "webroot_map" in renewalparams and not cli.set_by_cli("webroot_map"):
-            config.webroot_map = renewalparams["webroot_map"]
-        # To understand why webroot_path and webroot_map processing are not mutually exclusive,
-        # see https://github.com/certbot/certbot/pull/7095
-        if "webroot_path" in renewalparams and not cli.set_by_cli("webroot_path"):
-            wp = renewalparams["webroot_path"]
-            if isinstance(wp, six.string_types):  # prior to 0.1.0, webroot_path was a string
-                wp = [wp]
-            config.webroot_path = wp
-
-    def _restore_plugin_configs(config, renewalparams):
-        """Sets plugin specific values in config from renewalparams
-
-        :param configuration.NamespaceConfig config: configuration for the
-            current lineage
-        :param configobj.Section renewalparams: Parameters from the renewal
-            configuration file that defines this lineage
-
-        """
-        # Now use parser to get plugin-prefixed items with correct types
-        # XXX: the current approach of extracting only prefixed items
-        #      related to the actually-used installer and authenticator
-        #      works as long as plugins don't need to read plugin-specific
-        #      variables set by someone else (e.g., assuming Apache
-        #      configurator doesn't need to read webroot_ variables).
-        # Note: if a parameter that used to be defined in the parser is no
-        #      longer defined, stored copies of that parameter will be
-        #      deserialized as strings by this logic even if they were
-        #      originally meant to be some other type.
-        plugin_prefixes = []  # type: List[str]
-        if renewalparams["authenticator"] == "webroot":
-            _restore_webroot_config(config, renewalparams)
-        else:
-            plugin_prefixes.append(renewalparams["authenticator"])
-
-        if renewalparams.get("installer") is not None:
-            plugin_prefixes.append(renewalparams["installer"])
-
-        for plugin_prefix in set(plugin_prefixes):
-            plugin_prefix = plugin_prefix.replace('-', '_')
-            for config_item, config_value in six.iteritems(renewalparams):
-                if config_item.startswith(plugin_prefix + "_") and not cli.set_by_cli(config_item):
-                    # Values None, True, and False need to be treated specially,
-                    # As their types aren't handled correctly by configobj
-                    if config_value in ("None", "True", "False"):
-                        # bool("False") == True
-                        # pylint: disable=eval-used
-                        setattr(config, config_item, eval(config_value))
-                    else:
-                        cast = cli.argparse_type(config_item)
-                        setattr(config, config_item, cast(config_value))
-
-    def restore_required_config_elements(config, renewalparams):
-        """Sets non-plugin specific values in config from renewalparams
-
-        :param configuration.NamespaceConfig config: configuration for the
-            current lineage
-        :param configobj.Section renewalparams: parameters from the renewal
-            configuration file that defines this lineage
-
-        """
-        required_items = itertools.chain(
-            (("pref_challs", _restore_pref_challs),),
-            six.moves.zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
-            six.moves.zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
-            six.moves.zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
-        for item_name, restore_func in required_items:
-            if item_name in renewalparams and not cli.set_by_cli(item_name):
-                value = restore_func(item_name, renewalparams[item_name])
-                logger.debug("Restoring config setting '%s' to '%s'", item_name, value)
-                setattr(config, item_name, value)
-
-    def _restore_pref_challs(unused_name, value):
-        """Restores preferred challenges from a renewal config file.
-
-        If value is a `str`, it should be a single challenge type.
-
-        :param str unused_name: option name
-        :param value: option value
-        :type value: `list` of `str` or `str`
-
-        :returns: converted option value to be stored in the runtime config
-        :rtype: `list` of `str`
-
-        :raises errors.Error: if value can't be converted to a bool
-
-        """
-        # If pref_challs has only one element, configobj saves the value
-        # with a trailing comma so it's parsed as a list. If this comma is
-        # removed by the user, the value is parsed as a str.
-        value = [value] if isinstance(value, six.string_types) else value
-        return cli.parse_preferred_challenges(value)
-
-    def _restore_bool(name, value):
-        """Restores a boolean key-value pair from a renewal config file.
-
-        :param str name: option name
-        :param str value: option value
-
-        :returns: converted option value to be stored in the runtime config
-        :rtype: bool
-
-        :raises errors.Error: if value can't be converted to a bool
-
-        """
-        lowercase_value = value.lower()
-        if lowercase_value not in ("true", "false"):
-            raise errors.Error(
-                "Expected True or False for {0} but found {1}".format(name, value))
-        return lowercase_value == "true"
-
-    def _restore_int(name, value):
-        """Restores an integer key-value pair from a renewal config file.
-
-        :param str name: option name
-        :param str value: option value
-
-        :returns: converted option value to be stored in the runtime config
-        :rtype: int
-
-        :raises errors.Error: if value can't be converted to an int
-
-        """
-        if name == "http01_port" and value == "None":
-            logger.info("updating legacy http01_port value")
-            return cli.flag_default("http01_port")
-
-        try:
-            return int(value)
-        except ValueError:
-            raise errors.Error("Expected a numeric value for {0}".format(name))
-
-    def _restore_str(unused_name, value):
-        """Restores a string key-value pair from a renewal config file.
-
-        :param str unused_name: option name
-        :param str value: option value
-
-        :returns: converted option value to be stored in the runtime config
-        :rtype: str or None
-
-        """
-        return None if value == "None" else value
-
     try:
         renewal_candidate = RenewableCert(full_path, cli_config)
     # TODO(dmw) Determine should allow exception to propagate to
