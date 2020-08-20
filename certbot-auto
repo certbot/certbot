@@ -930,7 +930,7 @@ else
     error "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     error
     error "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
-    error "Please see https://certbot.eff.org/docs/contributing.html#prerequisites"
+    error "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     error "for more info."
     exit 1
   }
