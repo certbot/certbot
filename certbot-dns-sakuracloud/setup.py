@@ -1,4 +1,5 @@
-from distutils.version import StrictVersion
+from distutils.version import LooseVersion
+import os
 import sys
 
 from setuptools import __version__ as setuptools_version
@@ -6,18 +7,27 @@ from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-version = '1.5.0.dev0'
+version = '1.8.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    'acme>=0.31.0',
-    'certbot>=1.1.0',
     'dns-lexicon>=2.1.23',
     'setuptools',
     'zope.interface',
 ]
 
-setuptools_known_environment_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
+if not os.environ.get('SNAP_BUILD'):
+    install_requires.extend([
+        'acme>=0.31.0',
+        'certbot>=1.1.0',
+    ])
+elif 'bdist_wheel' in sys.argv[1:]:
+    raise RuntimeError('Unset SNAP_BUILD when building wheels '
+                       'to include certbot dependencies.')
+if os.environ.get('SNAP_BUILD'):
+    install_requires.append('packaging')
+
+setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
 if setuptools_known_environment_markers:
     install_requires.append('mock ; python_version < "3.3"')
 elif 'bdist_wheel' in sys.argv[1:]:
@@ -53,7 +63,7 @@ setup(
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
@@ -64,7 +74,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',

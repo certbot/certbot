@@ -180,9 +180,9 @@ Certbot's DNS plugins.
 
 These plugins are not included in a default Certbot installation and must be
 installed separately. While the DNS plugins cannot currently be used with
-``certbot-auto``, they are available in many OS package managers and as Docker
-images. Visit https://certbot.eff.org to learn the best way to use the DNS
-plugins on your system.
+``certbot-auto``, they are available in many OS package managers, as Docker
+images, and as snaps. Visit https://certbot.eff.org to learn the best way to use
+the DNS plugins on your system.
 
 Once installed, you can find documentation on how to use each plugin at:
 
@@ -281,6 +281,7 @@ proxmox_           N    Y    Install certificates in Proxmox Virtualization serv
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
+dns-inwx           Y    Y    DNS Authentication for INWX through the XML API
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -293,6 +294,7 @@ dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
+.. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -629,7 +631,6 @@ systemd timers (`systemctl list-timers`).
    :header: "Distribution Name", "Distribution Version", "Automation Method"
 
    "CentOS", "EPEL 7", "systemd"
-   "Debian", "jessie", "cron, systemd"
    "Debian", "stretch", "cron, systemd"
    "Debian", "testing/sid", "cron, systemd"
    "Fedora", "26", "systemd"

@@ -8,6 +8,7 @@ from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter
+from certbot import util
 from certbot._internal import hooks
 from certbot.compat import misc
 from certbot.compat import os
@@ -36,8 +37,8 @@ class Authenticator(common.Plugin):
         'is the validation string, and $CERTBOT_TOKEN is the filename of the '
         'resource requested when performing an HTTP-01 challenge. An additional '
         'cleanup script can also be provided and can use the additional variable '
-        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script.'
-        'For both authenticator and cleanup script, on HTTP-01 and DNS-01 challenges,'
+        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script. '
+        'For both authenticator and cleanup script, on HTTP-01 and DNS-01 challenges, '
         '$CERTBOT_REMAINING_CHALLENGES will be equal to the number of challenges that '
         'remain after the current one, and $CERTBOT_ALL_DOMAINS contains a comma-separated '
         'list of all domains that are challenged for the current certificate.')
@@ -187,4 +188,5 @@ permitted by DNS standards.)
         self.reverter.recovery_routine()
 
     def _execute_hook(self, hook_name):
-        return misc.execute_command(self.option_name(hook_name), self.conf(hook_name))
+        return misc.execute_command(self.option_name(hook_name), self.conf(hook_name),
+                                    env=util.env_no_snap_for_external_calls())

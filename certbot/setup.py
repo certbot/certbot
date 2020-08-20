@@ -1,5 +1,5 @@
 import codecs
-from distutils.version import StrictVersion
+from distutils.version import LooseVersion
 import os
 import re
 import sys
@@ -36,7 +36,7 @@ version = meta['version']
 # specified here to avoid masking the more specific request requirements in
 # acme. See https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
-    'acme>=1.4.0',
+    'acme>=1.6.0',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
@@ -61,7 +61,7 @@ install_requires = [
 # So this dependency is not added for old Linux distributions with old setuptools,
 # in order to allow these systems to build certbot from sources.
 pywin32_req = 'pywin32>=227'  # do not forget to edit pywin32 dependency accordingly in windows-installer/construct.py
-setuptools_known_environment_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
+setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
 if setuptools_known_environment_markers:
     install_requires.append(pywin32_req + " ; sys_platform == 'win32'")
 elif 'bdist_wheel' in sys.argv[1:]:
@@ -83,7 +83,6 @@ elif sys.version_info < (3,3):
 
 dev_extras = [
     'coverage',
-    'ipdb',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
@@ -94,7 +93,10 @@ dev_extras = [
 
 dev3_extras = [
     'astroid',
+    'azure-devops',
+    'ipdb',
     'mypy',
+    'PyGithub',
     'pylint',
 ]
 
@@ -131,7 +133,7 @@ setup(
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -143,7 +145,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
