@@ -169,7 +169,7 @@ class ApacheHttp01(common.ChallengePerformer):
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
-            old_umask = os.umask(0o022)
+            old_umask = filesystem.umask(0o022)
             try:
                 filesystem.makedirs(self.challenge_dir, 0o755)
             except OSError as exception:
@@ -177,7 +177,7 @@ class ApacheHttp01(common.ChallengePerformer):
                     raise errors.PluginError(
                         "Couldn't create root for http-01 challenge")
             finally:
-                os.umask(old_umask)
+                filesystem.umask(old_umask)
 
         responses = []
         for achall in self.achalls:

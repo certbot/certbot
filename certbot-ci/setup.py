@@ -1,4 +1,4 @@
-from distutils.version import StrictVersion
+from distutils.version import LooseVersion
 import sys
 
 from setuptools import __version__ as setuptools_version
@@ -26,7 +26,7 @@ install_requires = [
 # However environment markers are supported only with setuptools >= 36.2.
 # So this dependency is not added for old Linux distributions with old setuptools,
 # in order to allow these systems to build certbot from sources.
-if StrictVersion(setuptools_version) >= StrictVersion('36.2'):
+if LooseVersion(setuptools_version) >= LooseVersion('36.2'):
     install_requires.append("pywin32>=224 ; sys_platform == 'win32'")
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Error, you are trying to build certbot wheels using an old version '

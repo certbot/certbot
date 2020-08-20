@@ -1,4 +1,5 @@
-from distutils.version import StrictVersion
+from distutils.version import LooseVersion
+import os
 import sys
 
 from setuptools import __version__ as setuptools_version
@@ -6,19 +7,28 @@ from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-version = '1.5.0.dev0'
+version = '1.7.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'acme>=0.31.0',
-    'certbot>=1.1.0',
     'dns-lexicon>=2.2.1',  # Support for >1 TXT record per name
     'setuptools',
     'zope.interface',
 ]
 
-setuptools_known_environment_markers = (StrictVersion(setuptools_version) >= StrictVersion('36.2'))
+if not os.environ.get('SNAP_BUILD'):
+    install_requires.extend([
+        'acme>=0.31.0',
+        'certbot>=1.1.0',
+    ])
+elif 'bdist_wheel' in sys.argv[1:]:
+    raise RuntimeError('Unset SNAP_BUILD when building wheels '
+                       'to include certbot dependencies.')
+if os.environ.get('SNAP_BUILD'):
+    install_requires.append('packaging')
+
+setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
 if setuptools_known_environment_markers:
     install_requires.append('mock ; python_version < "3.3"')
 elif 'bdist_wheel' in sys.argv[1:]:

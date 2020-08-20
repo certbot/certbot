@@ -63,6 +63,7 @@ CLI_DEFAULTS = dict(
     uir=None,
     staple=None,
     strict_permissions=False,
+    preferred_chain=None,
     pref_challs=[],
     validate_hooks=True,
     directory_hooks=True,
@@ -119,6 +120,8 @@ CLI_DEFAULTS = dict(
 
 )
 STAGING_URI = "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+V1_URI = "https://acme-v01.api.letsencrypt.org/directory"
 
 # The set of reasons for revoking a certificate is defined in RFC 5280 in
 # section 5.3.1. The reasons that users are allowed to submit are restricted to

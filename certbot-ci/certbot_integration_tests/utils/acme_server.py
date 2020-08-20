@@ -130,6 +130,7 @@ class ACMEServer(object):
         environ['PEBBLE_VA_NOSLEEP'] = '1'
         environ['PEBBLE_WFE_NONCEREJECT'] = '0'
         environ['PEBBLE_AUTHZREUSE'] = '100'
+        environ['PEBBLE_ALTERNATE_ROOTS'] = str(PEBBLE_ALTERNATE_ROOTS)
 
         self._launch_process(
             [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053', '-strict'],
