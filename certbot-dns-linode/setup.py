@@ -5,7 +5,6 @@ import sys
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
-from setuptools.command.test import test as TestCommand
 
 version = '1.8.0.dev0'
 
@@ -40,20 +39,6 @@ docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
 ]
-
-class PyTest(TestCommand):
-    user_options = []
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.pytest_args = ''
-
-    def run_tests(self):
-        import shlex
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(shlex.split(self.pytest_args))
-        sys.exit(errno)
 
 setup(
     name='certbot-dns-linode',
@@ -96,7 +81,4 @@ setup(
             'dns-linode = certbot_dns_linode._internal.dns_linode:Authenticator',
         ],
     },
-    tests_require=["pytest"],
-    test_suite='certbot_dns_linode',
-    cmdclass={"test": PyTest},
 )
