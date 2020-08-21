@@ -38,7 +38,7 @@ class ACMEServer(object):
         :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
         :param list nodes: list of node names that will be setup by pytest xdist
         :param bool http_proxy: if False do not start the HTTP proxy
-        :param bool stdout: if True stream subprocesses stdout to standard stdout
+        :param bool stdout: if True stream all subprocesses stdout to standard stdout
         """
         self._construct_acme_xdist(acme_server, nodes)
 
@@ -86,7 +86,8 @@ class ACMEServer(object):
                                                 'alpine', 'rm', '-rf', '/workspace/boulder'])
                 process.wait()
         finally:
-            shutil.rmtree(self._workspace)
+            if os.path.exists(self._workspace):
+                shutil.rmtree(self._workspace)
         if self._stdout != sys.stdout:
             self._stdout.close()
         print('=> Test infrastructure stopped and cleaned up.')
@@ -129,9 +130,10 @@ class ACMEServer(object):
         environ['PEBBLE_VA_NOSLEEP'] = '1'
         environ['PEBBLE_WFE_NONCEREJECT'] = '0'
         environ['PEBBLE_AUTHZREUSE'] = '100'
+        environ['PEBBLE_ALTERNATE_ROOTS'] = str(PEBBLE_ALTERNATE_ROOTS)
 
         self._launch_process(
-            [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053'],
+            [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053', '-strict'],
             env=environ)
 
         self._launch_process(
@@ -165,17 +167,24 @@ class ACMEServer(object):
         os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
                   join(instance_path, 'test/rate-limit-policies.yml'))
 
-        # Launch the Boulder server
-        self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
+        try:
+            # Launch the Boulder server
+            self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
 
-        # Wait for the ACME CA server to be up.
-        print('=> Waiting for boulder instance to respond...')
-        misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=240)
+            # Wait for the ACME CA server to be up.
+            print('=> Waiting for boulder instance to respond...')
+            misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=300)
 
-        # Configure challtestsrv to answer any A record request with ip of the docker host.
-        response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),
-                                 json={'ip': '10.77.77.1'})
-        response.raise_for_status()
+            # Configure challtestsrv to answer any A record request with ip of the docker host.
+            response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),
+                                     json={'ip': '10.77.77.1'})
+            response.raise_for_status()
+        except BaseException:
+            # If we failed to set up boulder, print its logs.
+            print('=> Boulder setup failed. Boulder logs are:')
+            process = self._launch_process(['docker-compose', 'logs'], cwd=instance_path, force_stderr=True)
+            process.wait()
+            raise
 
         print('=> Finished boulder instance deployment.')
 
@@ -188,11 +197,12 @@ class ACMEServer(object):
         self._launch_process(command)
         print('=> Finished configuring the HTTP proxy.')
 
-    def _launch_process(self, command, cwd=os.getcwd(), env=None):
+    def _launch_process(self, command, cwd=os.getcwd(), env=None, force_stderr=False):
         """Launch silently a subprocess OS command"""
         if not env:
             env = os.environ
-        process = subprocess.Popen(command, stdout=self._stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env)
+        stdout = sys.stderr if force_stderr else self._stdout
+        process = subprocess.Popen(command, stdout=stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env)
         self._processes.append(process)
         return process
 

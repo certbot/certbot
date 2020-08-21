@@ -18,6 +18,7 @@ Windows, you'll need to set up a (virtual) machine running an OS such as Linux
 and continue with these instructions on that UNIX-like OS.
 
 .. _local copy:
+.. _prerequisites:
 
 Running a local copy of the client
 ----------------------------------
@@ -117,13 +118,11 @@ either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
 For debugging, we recommend putting
 ``import ipdb; ipdb.set_trace()`` statements inside the source code.
 
-Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
-run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
-2.7).
-
-Once all the unittests pass, check for sufficient test coverage using ``tox -e
-py27-cover``, and then check for code style with ``tox -e lint`` (all files) or
-``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
+Once you are done with your code changes, and the tests in ``foo_test.py``
+pass, run all of the unit tests for Certbot and check for coverage with ``tox
+-e py3-cover``. You should then check for code style with ``tox -e lint`` (all
+files) or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a
+time).
 
 Once all of the above is successful, you may run the full test suite using
 ``tox --skip-missing-interpreters``. We recommend running the commands above
@@ -139,7 +138,7 @@ of output can make it hard to find specific failures when they happen.
 Running automated integration tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generally it is sufficient to open a pull request and let Github and Travis run
+Generally it is sufficient to open a pull request and let Github and Azure Pipelines run
 integration tests for you. However, you may want to run them locally before submitting
 your pull request. You need Docker and docker-compose installed and working.
 
@@ -170,7 +169,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv.py` contains two commands
+The virtual environment set up with `python tools/venv3.py` contains two commands
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -204,12 +203,8 @@ using an HTTP-01 challenge on a machine with Python 3:
 Running tests in CI
 ~~~~~~~~~~~~~~~~~~~
 
-Certbot uses both Azure Pipelines and Travis to run continuous integration
-tests. If you are using our Azure and Travis setup, a branch whose name starts
-with `test-` will run all Azure and Travis tests on that branch. If the branch
-name starts with `azure-test-`, it will run all of our Azure tests and none of
-our Travis tests. If the branch stats with `travis-test-`, only our Travis
-tests will be run.
+Certbot uses Azure Pipelines to run continuous integration tests. If you are using our
+Azure setup, a branch whose name starts with `test-` will run all tests on that branch.
 
 Code components and layout
 ==========================
@@ -247,8 +242,8 @@ built-in Standalone authenticator, implement just one interface.
 There are also `~certbot.interfaces.IDisplay` plugins,
 which can change how prompts are displayed to a user.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
+.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/plugins/common.py#L45
 
 
 Authenticators
@@ -346,7 +341,10 @@ only work for users who have Certbot installed from OS packages or via
 pip. Users who run `certbot-auto` are currently unable to use third-party
 plugins. It's technically possible to install third-party plugins into
 the virtualenv used by `certbot-auto`, but they will be wiped away when
-`certbot-auto` upgrades.
+`certbot-auto` upgrades. If you'd like your plugin to be used alongside
+the Certbot snap, you will also have to publish your plugin as a snap.
+Certbot's DNS plugins and the README file in ``tools/snap/`` provide a
+starting reference for how to do this.
 
 .. _`setuptools entry points`:
     http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
@@ -457,7 +455,7 @@ Steps:
    containing your pull request to squash or amend commits. We use `squash
    merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
    rewriting commits makes changes harder to track between reviews.
-6. Did your tests pass on Travis? If they didn't, fix any errors.
+6. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
 
 .. _ask for help:
 
@@ -581,33 +579,3 @@ effect. To do this, run::
 Now running the check for linting errors described above is as easy as::
 
   tox -e lint
-
-.. _prerequisites:
-
-Notes on OS dependencies
-========================
-
-OS-level dependencies can be installed like so:
-
-.. code-block:: shell
-
-   ./certbot-auto --debug --os-packages-only
-
-In general...
-
-* ``sudo`` is required as a suggested way of running privileged process
-* `Python`_ 2.7 or 3.5+ is required
-* `Augeas`_ is required for the Python bindings
-* ``virtualenv`` is used for managing other Python library dependencies
-
-.. _Python: https://wiki.python.org/moin/BeginnersGuide/Download
-.. _Augeas: http://augeas.net/
-.. _Virtualenv: https://virtualenv.pypa.io
-
-
-FreeBSD
--------
-
-FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
-above), you will need a compatible shell, e.g. ``pkg install bash &&
-bash``.

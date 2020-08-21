@@ -6,7 +6,10 @@ import stat
 import unittest
 
 import configobj
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import pytz
 import six
 
@@ -608,17 +611,25 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.config.renewal_configs_dir, "the-lineage.com-0001.conf")))
         self.assertTrue(os.path.exists(os.path.join(
             self.config.live_dir, "the-lineage.com-0001", "README")))
+        # Allow write to existing but empty dir
+        filesystem.mkdir(os.path.join(self.config.default_archive_dir, "the-lineage.com-0002"))
+        result = storage.RenewableCert.new_lineage(
+            "the-lineage.com", b"cert3", b"privkey3", b"chain3", self.config)
+        self.assertTrue(os.path.exists(os.path.join(
+            self.config.live_dir, "the-lineage.com-0002", "README")))
+        self.assertTrue(filesystem.check_mode(result.key_path, 0o600))
         # Now trigger the detection of already existing files
-        filesystem.mkdir(os.path.join(
-            self.config.live_dir, "the-lineage.com-0002"))
+        shutil.copytree(os.path.join(self.config.live_dir, "the-lineage.com"),
+                        os.path.join(self.config.live_dir, "the-lineage.com-0003"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage, "the-lineage.com",
-                          b"cert3", b"privkey3", b"chain3", self.config)
-        filesystem.mkdir(os.path.join(self.config.default_archive_dir, "other-example.com"))
+                          b"cert4", b"privkey4", b"chain4", self.config)
+        shutil.copytree(os.path.join(self.config.live_dir, "the-lineage.com"),
+                        os.path.join(self.config.live_dir, "other-example.com"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage,
-                          "other-example.com", b"cert4",
-                          b"privkey4", b"chain4", self.config)
+                          "other-example.com", b"cert5",
+                          b"privkey5", b"chain5", self.config)
         # Make sure it can accept renewal parameters
         result = storage.RenewableCert.new_lineage(
             "the-lineage.com", b"cert2", b"privkey2", b"chain2", self.config)
@@ -673,10 +684,35 @@ class RenewableCertTests(BaseRenewableCertTest):
             errors.CertStorageError,
             self.test_rc._update_link_to, "elephant", 17)
 
-    def test_ocsp_revoked(self):
-        # XXX: This is currently hardcoded to False due to a lack of an
-        #      OCSP server to test against.
-        self.assertFalse(self.test_rc.ocsp_revoked())
+    @mock.patch("certbot.ocsp.RevocationChecker.ocsp_revoked_by_paths")
+    def test_ocsp_revoked(self, mock_checker):
+        # Write out test files
+        for kind in ALL_FOUR:
+            self._write_out_kind(kind, 1)
+        version = self.test_rc.latest_common_version()
+        expected_cert_path = self.test_rc.version("cert", version)
+        expected_chain_path = self.test_rc.version("chain", version)
+
+        # Test with cert revoked
+        mock_checker.return_value = True
+        self.assertTrue(self.test_rc.ocsp_revoked(version))
+        self.assertEqual(mock_checker.call_args[0][0], expected_cert_path)
+        self.assertEqual(mock_checker.call_args[0][1], expected_chain_path)
+
+        # Test with cert not revoked
+        mock_checker.return_value = False
+        self.assertFalse(self.test_rc.ocsp_revoked(version))
+        self.assertEqual(mock_checker.call_args[0][0], expected_cert_path)
+        self.assertEqual(mock_checker.call_args[0][1], expected_chain_path)
+
+        # Test with error
+        mock_checker.side_effect = ValueError
+        with mock.patch("certbot._internal.storage.logger.warning") as logger:
+            self.assertFalse(self.test_rc.ocsp_revoked(version))
+        self.assertEqual(mock_checker.call_args[0][0], expected_cert_path)
+        self.assertEqual(mock_checker.call_args[0][1], expected_chain_path)
+        log_msg = logger.call_args[0][0]
+        self.assertIn("An error occurred determining the OCSP status", log_msg)
 
     def test_add_time_interval(self):
         from certbot._internal import storage
@@ -918,9 +954,7 @@ class RenewalTest(test_util.ConfigTestCase):
         lineage = storage.RenewableCert(rc_path, config)
         renewalparams = lineage.configuration['renewalparams']
         # pylint: disable=protected-access
-        #from certbot._internal import renewal
         storage._restore_webroot_config(config, renewalparams)
-        #renewal._restore_webroot_config(config, renewalparams)
         self.assertEqual(config.webroot_path, ['/var/www/'])
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
@@ -929,7 +963,6 @@ class RenewalTest(test_util.ConfigTestCase):
         # certbot._internal.plugins.webroot_test::
         #   WebrootActionTest::test_webroot_map_partial_without_perform
         from certbot._internal import storage
-        #from certbot._internal import renewal
         mock_set_by_cli.return_value = False
 
         renewalparams = {
@@ -937,7 +970,6 @@ class RenewalTest(test_util.ConfigTestCase):
             'webroot_path': ['/var/www/test', '/var/www/other'],
         }
         storage._restore_webroot_config(self.config, renewalparams)  # pylint: disable=protected-access
-        #renewal._restore_webroot_config(self.config, renewalparams)  # pylint: disable=protected-access
         self.assertEqual(self.config.webroot_map, {'test.example.com': '/var/www/test'})
         self.assertEqual(self.config.webroot_path, ['/var/www/test', '/var/www/other'])
 
@@ -946,7 +978,6 @@ class RenewalTest(test_util.ConfigTestCase):
             'webroot_path': '/var/www/test',
         }
         storage._restore_webroot_config(self.config, renewalparams)  # pylint: disable=protected-access
-        #renewal._restore_webroot_config(self.config, renewalparams)  # pylint: disable=protected-access
         self.assertEqual(self.config.webroot_map, {})
         self.assertEqual(self.config.webroot_path, ['/var/www/test'])
 
@@ -1005,6 +1036,14 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         renewalparams = {'must_staple': 'maybe'}
         self.assertRaises(
             errors.Error, self._call, self.config, renewalparams)
+
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
+    def test_ancient_server_renewal_conf(self, mock_set_by_cli):
+        from certbot._internal import constants
+        self.config.server = None
+        mock_set_by_cli.return_value = False
+        self._call(self.config, {'server': constants.V1_URI})
+        self.assertEqual(self.config.server, constants.CLI_DEFAULTS['server'])
 
 
 if __name__ == "__main__":

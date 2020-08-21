@@ -12,7 +12,6 @@ ndg-httpsclient==0.3.2
 ply==3.4
 pyasn1==0.1.9
 pycparser==2.14
-pyOpenSSL==0.13.1
 pyRFC3339==1.0
 python-augeas==0.5.0
 oauth2client==4.0.0
@@ -27,6 +26,9 @@ zope.event==4.0.3
 zope.interface==4.0.5
 
 # Debian Jessie Backports constraints
+# Debian Jessie has reached end of life. However:
+# When it becomes necessary to upgrade any of these dependencies, you should only update them to the oldest version of the package found
+# in a non-EOL'd version of CentOS, Debian, or Ubuntu that has Certbot packages in their OS repositories.
 PyICU==1.8
 colorama==0.3.2
 enum34==1.0.3
@@ -39,7 +41,7 @@ pytz==2012rc0
 google-api-python-client==1.5.5
 
 # Our setup.py constraints
-apacheconfig==0.3.1
+apacheconfig==0.3.2
 cloudflare==1.5.1
 cryptography==1.2.3
 parsedatetime==1.3
@@ -49,6 +51,7 @@ requests[security]==2.6.0
 
 # Ubuntu Xenial constraints
 ConfigArgParse==0.10.0
+pyOpenSSL==0.15.1
 funcsigs==0.4
 zope.hookable==4.0.4
 
@@ -63,3 +66,10 @@ dns-lexicon==2.2.1
 # Tracking at https://github.com/certbot/certbot/issues/6473
 boto3==1.4.7
 botocore==1.7.41
+
+# Old certbot[dev] constraints
+# Old versions of certbot[dev] required ipdb and our normally pinned version of
+# ipython which ipdb depends on doesn't support Python 2 so we pin an older
+# version here to keep tests working while we have Python 2 support.
+ipython==5.8.0
+prompt-toolkit==1.0.18

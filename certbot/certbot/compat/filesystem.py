@@ -6,8 +6,6 @@ import os  # pylint: disable=os-module-forbidden
 import stat
 
 from acme.magic_typing import List
-from acme.magic_typing import Tuple  # pylint: disable=unused-import
-from acme.magic_typing import Union  # pylint: disable=unused-import
 
 try:
     import ntsecuritycon
@@ -17,24 +15,38 @@ try:
     import win32file
     import pywintypes
     import winerror
-    # pylint: enable=import-error
 except ImportError:
     POSIX_MODE = True
 else:
     POSIX_MODE = False
 
 
+# Windows umask implementation, since Windows does not have a concept of umask by default.
+# We choose 022 as initial value since it is the default one on most Linux distributions, and
+# it is a decent choice to not have write permissions for group owner and everybody by default.
+# We use a class here to avoid needing to define a global variable, and the potential mistakes
+# that could happen with this kind of pattern.
+class _WindowsUmask:
+    """Store the current umask to apply on Windows"""
+    def __init__(self):
+        self.mask = 0o022
+
+
+_WINDOWS_UMASK = _WindowsUmask()
+
+
 def chmod(file_path, mode):
     # type: (str, int) -> None
     """
     Apply a POSIX mode on given file_path:
-        * for Linux, the POSIX mode will be directly applied using chmod,
-        * for Windows, the POSIX mode will be translated into a Windows DACL that make sense for
-          Certbot context, and applied to the file using kernel calls.
+
+      - for Linux, the POSIX mode will be directly applied using chmod,
+      - for Windows, the POSIX mode will be translated into a Windows DACL that make sense for
+        Certbot context, and applied to the file using kernel calls.
 
     The definition of the Windows DACL that correspond to a POSIX mode, in the context of Certbot,
     is explained at https://github.com/certbot/certbot/issues/6356 and is implemented by the
-    method _generate_windows_flags().
+    method `_generate_windows_flags()`.
 
     :param str file_path: Path of the file
     :param int mode: POSIX mode to apply
@@ -43,6 +55,24 @@ def chmod(file_path, mode):
         os.chmod(file_path, mode)
     else:
         _apply_win_mode(file_path, mode)
+
+
+def umask(mask):
+    # type: (int) -> int
+    """
+    Set the current numeric umask and return the previous umask. On Linux, the built-in umask
+    method is used. On Windows, our Certbot-side implementation is used.
+
+    :param int mask: The user file-creation mode mask to apply.
+    :rtype: int
+    :return: The previous umask value.
+    """
+    if POSIX_MODE:
+        return os.umask(mask)
+
+    previous_umask = _WINDOWS_UMASK.mask
+    _WINDOWS_UMASK.mask = mask
+    return previous_umask
 
 
 # One could ask why there is no copy_ownership() function, or even a reimplementation
@@ -60,6 +90,7 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
     Copy ownership (user and optionally group on Linux) from the source to the
     destination, then apply given mode in compatible way for Linux and Windows.
     This replaces the os.chown command.
+
     :param str src: Path of the source file
     :param str dst: Path of the destination file
     :param int mode: Permission mode to apply on the destination file
@@ -81,12 +112,43 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
     chmod(dst, mode)
 
 
+# Quite similar to copy_ownership_and_apply_mode, but this time the DACL is copied from
+# the source file on Windows. The DACL stays consistent with the dynamic rights of the
+# equivalent POSIX mode, because ownership and mode are copied altogether on the destination
+# file, so no recomputing of the DACL against the new owner is needed, as it would be
+# for a copy_ownership alone method.
+def copy_ownership_and_mode(src, dst, copy_user=True, copy_group=True):
+    # type: (str, str, bool, bool) -> None
+    """
+    Copy ownership (user and optionally group on Linux) and mode/DACL
+    from the source to the destination.
+
+    :param str src: Path of the source file
+    :param str dst: Path of the destination file
+    :param bool copy_user: Copy user if `True`
+    :param bool copy_group: Copy group if `True` on Linux (has no effect on Windows)
+    """
+    if POSIX_MODE:
+        # On Linux, we just delegate to chown and chmod.
+        stats = os.stat(src)
+        user_id = stats.st_uid if copy_user else -1
+        group_id = stats.st_gid if copy_group else -1
+        os.chown(dst, user_id, group_id)
+        chmod(dst, stats.st_mode)
+    else:
+        if copy_user:
+            # There is no group handling in Windows
+            _copy_win_ownership(src, dst)
+        _copy_win_mode(src, dst)
+
+
 def check_mode(file_path, mode):
     # type: (str, int) -> bool
     """
     Check if the given mode matches the permissions of the given file.
     On Linux, will make a direct comparison, on Windows, mode will be compared against
     the security model.
+
     :param str file_path: Path of the file
     :param int mode: POSIX mode to test
     :rtype: bool
@@ -102,6 +164,7 @@ def check_owner(file_path):
     # type: (str) -> bool
     """
     Check if given file is owned by current user.
+
     :param str file_path: File path to check
     :rtype: bool
     :return: True if given file is owned by current user, False otherwise.
@@ -124,6 +187,7 @@ def check_permissions(file_path, mode):
     # type: (str, int) -> bool
     """
     Check if given file has the given mode and is owned by current user.
+
     :param str file_path: File path to check
     :param int mode: POSIX mode to check
     :rtype: bool
@@ -137,6 +201,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     """
     Wrapper of original os.open function, that will ensure on Windows that given mode
     is correctly applied.
+
     :param str file_path: The file path to open
     :param int flags: Flags to apply on file while opened
     :param int mode: POSIX mode to apply on file when opened,
@@ -145,7 +210,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     :rtype: int
     :raise: OSError(errno.EEXIST) if the file already exists and os.O_CREAT & os.O_EXCL are set,
             OSError(errno.EACCES) on Windows if the file already exists and is a directory, and
-                os.O_CREAT is set.
+            os.O_CREAT is set.
     """
     if POSIX_MODE:
         # On Linux, invoke os.open directly.
@@ -161,7 +226,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
         attributes = win32security.SECURITY_ATTRIBUTES()
         security = attributes.SECURITY_DESCRIPTOR
         user = _get_current_user()
-        dacl = _generate_dacl(user, mode)
+        dacl = _generate_dacl(user, mode, _WINDOWS_UMASK.mask)
         # We set second parameter to 0 (`False`) to say that this security descriptor is
         # NOT constructed from a default mechanism, but is explicitly set by the user.
         # See https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-setsecuritydescriptorowner  # pylint: disable=line-too-long
@@ -206,21 +271,32 @@ def makedirs(file_path, mode=0o777):
     """
     Rewrite of original os.makedirs function, that will ensure on Windows that given mode
     is correctly applied.
+
     :param str file_path: The file path to open
     :param int mode: POSIX mode to apply on leaf directory when created, Python defaults
                      will be applied if ``None``
     """
-    if POSIX_MODE:
-        return os.makedirs(file_path, mode)
-
-    orig_mkdir_fn = os.mkdir
+    current_umask = umask(0)
     try:
-        # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
-        # os module for the time of makedirs execution on Windows.
-        os.mkdir = mkdir  # type: ignore
-        return os.makedirs(file_path, mode)
+        # Since Python 3.7, os.makedirs does not set the given mode to the intermediate
+        # directories that could be created in the process. To keep things safe and consistent
+        # on all Python versions, we set the umask accordingly to have all directories
+        # (intermediate and leaf) created with the given mode.
+        umask(current_umask | 0o777 ^ mode)
+
+        if POSIX_MODE:
+            return os.makedirs(file_path, mode)
+
+        orig_mkdir_fn = os.mkdir
+        try:
+            # As we know that os.mkdir is called internally by os.makedirs, we will swap the
+            # function in os module for the time of makedirs execution on Windows.
+            os.mkdir = mkdir  # type: ignore
+            return os.makedirs(file_path, mode)
+        finally:
+            os.mkdir = orig_mkdir_fn
     finally:
-        os.mkdir = orig_mkdir_fn
+        umask(current_umask)
 
 
 def mkdir(file_path, mode=0o777):
@@ -228,6 +304,7 @@ def mkdir(file_path, mode=0o777):
     """
     Rewrite of original os.mkdir function, that will ensure on Windows that given mode
     is correctly applied.
+
     :param str file_path: The file path to open
     :param int mode: POSIX mode to apply on directory when created, Python defaults
                      will be applied if ``None``
@@ -238,7 +315,7 @@ def mkdir(file_path, mode=0o777):
     attributes = win32security.SECURITY_ATTRIBUTES()
     security = attributes.SECURITY_DESCRIPTOR
     user = _get_current_user()
-    dacl = _generate_dacl(user, mode)
+    dacl = _generate_dacl(user, mode, _WINDOWS_UMASK.mask)
     security.SetSecurityDescriptorOwner(user, False)
     security.SetSecurityDescriptorDacl(1, dacl, 0)
 
@@ -258,12 +335,14 @@ def replace(src, dst):
     # type: (str, str) -> None
     """
     Rename a file to a destination path and handles situations where the destination exists.
+
     :param str src: The current file path.
     :param str dst: The new file path.
     """
     if hasattr(os, 'replace'):
-        # Use replace if possible. On Windows, only Python >= 3.5 is supported
-        # so we can assume that os.replace() is always available for this platform.
+        # Use replace if possible. Since we don't support Python 2 on Windows
+        # and os.replace() was added in Python 3.3, we can assume that
+        # os.replace() is always available on Windows.
         getattr(os, 'replace')(src, dst)
     else:
         # Otherwise, use os.rename() that behaves like os.replace() on Linux.
@@ -275,6 +354,10 @@ def realpath(file_path):
     """
     Find the real path for the given path. This method resolves symlinks, including
     recursive symlinks, and is protected against symlinks that creates an infinite loop.
+
+    :param str file_path: The path to resolve
+    :returns: The real path for the given path
+    :rtype: str
     """
     original_path = file_path
 
@@ -311,6 +394,7 @@ def is_executable(path):
     # type: (str) -> bool
     """
     Is path an executable file?
+
     :param str path: path to test
     :return: True if path is an executable file
     :rtype: bool
@@ -324,7 +408,8 @@ def is_executable(path):
 def has_world_permissions(path):
     # type: (str) -> bool
     """
-    Check if everybody/world has any right (read/write/execute) on a file given its path
+    Check if everybody/world has any right (read/write/execute) on a file given its path.
+
     :param str path: path to test
     :return: True if everybody/world has any right to the file
     :rtype: bool
@@ -345,7 +430,8 @@ def has_world_permissions(path):
 def compute_private_key_mode(old_key, base_mode):
     # type: (str, int) -> int
     """
-    Calculate the POSIX mode to apply to a private key given the previous private key
+    Calculate the POSIX mode to apply to a private key given the previous private key.
+
     :param str old_key: path to the previous private key
     :param int base_mode: the minimum modes to apply to a private key
     :return: the POSIX mode to apply
@@ -368,6 +454,7 @@ def has_same_ownership(path1, path2):
     """
     Return True if the ownership of two files given their respective path is the same.
     On Windows, ownership is checked against owner only, since files do not have a group owner.
+
     :param str path1: path to the first file
     :param str path2: path to the second file
     :return: True if both files have the same ownership, False otherwise
@@ -393,6 +480,7 @@ def has_min_permissions(path, min_mode):
     """
     Check if a file given its path has at least the permissions defined by the given minimal mode.
     On Windows, group permissions are ignored since files do not have a group owner.
+
     :param str path: path to the file to check
     :param int min_mode: the minimal permissions expected
     :return: True if the file matches the minimal permissions expectations, False otherwise
@@ -468,7 +556,9 @@ def _apply_win_mode(file_path, mode):
     win32security.SetFileSecurity(file_path, win32security.DACL_SECURITY_INFORMATION, security)
 
 
-def _generate_dacl(user_sid, mode):
+def _generate_dacl(user_sid, mode, mask=None):
+    if mask:
+        mode = mode & (0o777 - mask)
     analysis = _analyze_mode(mode)
 
     # Get standard accounts from "well-known" sid
@@ -518,6 +608,9 @@ def _analyze_mode(mode):
 
 
 def _copy_win_ownership(src, dst):
+    # Resolve symbolic links
+    src = realpath(src)
+
     security_src = win32security.GetFileSecurity(src, win32security.OWNER_SECURITY_INFORMATION)
     user_src = security_src.GetSecurityDescriptorOwner()
 
@@ -527,6 +620,19 @@ def _copy_win_ownership(src, dst):
     security_dst.SetSecurityDescriptorOwner(user_src, False)
 
     win32security.SetFileSecurity(dst, win32security.OWNER_SECURITY_INFORMATION, security_dst)
+
+
+def _copy_win_mode(src, dst):
+    # Resolve symbolic links
+    src = realpath(src)
+
+    # Copy the DACL from src to dst.
+    security_src = win32security.GetFileSecurity(src, win32security.DACL_SECURITY_INFORMATION)
+    dacl = security_src.GetSecurityDescriptorDacl()
+
+    security_dst = win32security.GetFileSecurity(dst, win32security.DACL_SECURITY_INFORMATION)
+    security_dst.SetSecurityDescriptorDacl(1, dacl, 0)
+    win32security.SetFileSecurity(dst, win32security.DACL_SECURITY_INFORMATION, security_dst)
 
 
 def _generate_windows_flags(rights_desc):

@@ -1,12 +1,7 @@
-trigger:
-  # apache-parser-v2 is a temporary branch for doing work related to
-  # rewriting the parser in the Apache plugin.
-  - apache-parser-v2
-  - master
+trigger: none
 pr:
-  - apache-parser-v2
   - master
   - '*.x'
 
 jobs:
-  - template: templates/tests-suite.yml
+  - template: templates/jobs/standard-tests-jobs.yml

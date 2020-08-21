@@ -5,6 +5,8 @@ import logging
 import re
 import subprocess
 
+import pkg_resources
+
 from certbot import errors
 from certbot import util
 
@@ -128,7 +130,7 @@ def included_in_paths(filepath, paths):
     :rtype: bool
     """
 
-    return any([fnmatch.fnmatch(filepath, path) for path in paths])
+    return any(fnmatch.fnmatch(filepath, path) for path in paths)
 
 
 def parse_defines(apachectl):
@@ -142,7 +144,7 @@ def parse_defines(apachectl):
     :rtype: dict
     """
 
-    variables = dict()
+    variables = {}
     define_cmd = [apachectl, "-t", "-D",
                   "DUMP_RUN_CFG"]
     matches = parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
@@ -223,7 +225,8 @@ def _get_runtime_cfg(command):
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True)
+            universal_newlines=True,
+            env=util.env_no_snap_for_external_calls())
         stdout, stderr = proc.communicate()
 
     except (OSError, ValueError):
@@ -241,3 +244,14 @@ def _get_runtime_cfg(command):
             "loaded because Apache is misconfigured.")
 
     return stdout
+
+def find_ssl_apache_conf(prefix):
+    """
+    Find a TLS Apache config file in the dedicated storage.
+    :param str prefix: prefix of the TLS Apache config file to find
+    :return: the path the TLS Apache config file
+    :rtype: str
+    """
+    return pkg_resources.resource_filename(
+        "certbot_apache",
+        os.path.join("_internal", "tls_configs", "{0}-options-ssl-apache.conf".format(prefix)))

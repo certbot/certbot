@@ -9,6 +9,8 @@ import shutil
 import subprocess
 import time
 
+from cryptography.x509 import NameOID
+
 import pytest
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
@@ -595,6 +597,23 @@ def test_ocsp_status_live(context):
     assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
 
 
+def test_ocsp_renew(context):
+    """Test that revoked certificates are renewed."""
+    # Obtain a certificate
+    certname = context.get_domain('ocsp-renew')
+    context.certbot(['--domains', certname])
+
+    # Test that "certbot renew" does not renew the certificate
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+    context.certbot(['renew'], force_renew=False)
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
+    # Revoke the certificate and test that it does renew the certificate
+    context.certbot(['revoke', '--cert-name', certname, '--no-delete-after-revoke'])
+    context.certbot(['renew'], force_renew=False)
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+
+
 def test_dry_run_deactivate_authzs(context):
     """Test that Certbot deactivates authorizations when performing a dry run"""
 
@@ -611,3 +630,31 @@ def test_dry_run_deactivate_authzs(context):
     context.certbot(args)
     with open(join(context.workspace, 'logs', 'letsencrypt.log'), 'r') as f:
         assert log_line in f.read(), 'Second order should have been recreated due to authz reuse'
+
+
+def test_preferred_chain(context):
+    """Test that --preferred-chain results in the correct chain.pem being produced"""
+    try:
+        issuers = misc.get_acme_issuers(context)
+    except NotImplementedError:
+        pytest.skip('This ACME server does not support alternative issuers.')
+
+    names = [i.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value \
+             for i in issuers]
+
+    domain = context.get_domain('preferred-chain')
+    cert_path = join(context.config_dir, 'live', domain, 'chain.pem')
+    conf_path = join(context.config_dir, 'renewal', '{}.conf'.format(domain))
+
+    for (requested, expected) in [(n, n) for n in names] + [('nonexistent', names[0])]:
+        args = ['certonly', '--cert-name', domain, '-d', domain,
+                '--preferred-chain', requested, '--force-renewal']
+        context.certbot(args)
+
+        dumped = misc.read_certificate(cert_path)
+        assert 'Issuer: CN={}'.format(expected) in dumped, \
+               'Expected chain issuer to be {} when preferring {}'.format(expected, requested)
+
+        with open(conf_path, 'r') as f:
+            assert 'preferred_chain = {}'.format(requested) in f.read(), \
+                   'Expected preferred_chain to be set in renewal config'

@@ -17,6 +17,7 @@ import certbot
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
+from certbot import ocsp
 from certbot import util
 from certbot._internal import cli
 from certbot._internal import constants
@@ -39,7 +40,8 @@ BASE_PRIVKEY_MODE = 0o600
 # the renewal configuration process loses this information.
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
-                    "renew_hook", "pre_hook", "post_hook", "http01_address"]
+                    "renew_hook", "pre_hook", "post_hook", "http01_address",
+                    "preferred_chain"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "http01_port"]
 BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key",
                      "autorenew"]
@@ -476,6 +478,7 @@ def restore_required_config_elements(config, renewalparams):
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])
+            # TODO(dmw) remove if unnecessary
             logger.debug("Restoring config setting '%s' to '%s'", item_name, value)
             setattr(config, item_name, value)
 
@@ -543,16 +546,28 @@ def _restore_int(name, value):
         raise errors.Error("Expected a numeric value for {0}".format(name))
 
 
-def _restore_str(unused_name, value):
+def _restore_str(name, value):
     """Restores a string key-value pair from a renewal config file.
 
-    :param str unused_name: option name
+    :param str name: option name
     :param str value: option value
 
     :returns: converted option value to be stored in the runtime config
     :rtype: str or None
 
     """
+    # Previous to v0.5.0, Certbot always stored the `server` URL in the renewal config,
+    # resulting in configs which explicitly use the deprecated ACMEv1 URL, today
+    # preventing an automatic transition to the default modern ACME URL.
+    # (https://github.com/certbot/certbot/issues/7978#issuecomment-625442870)
+    # As a mitigation, this function reinterprets the value of the `server` parameter if
+    # necessary, replacing the ACMEv1 URL with the default ACME URL. It is still possible
+    # to override this choice with the explicit `--server` CLI flag.
+    if name == "server" and value == constants.V1_URI:
+        logger.info("Using server %s instead of legacy %s",
+                    constants.CLI_DEFAULTS["server"], value)
+        return constants.CLI_DEFAULTS["server"]
+
     return None if value == "None" else value
 
 
@@ -1098,27 +1113,33 @@ class RenewableCert(interfaces.RenewableCert):
         with open(target) as f:
             return crypto_util.get_names_from_cert(f.read())
 
-    def ocsp_revoked(self, version=None):
-        # pylint: disable=unused-argument
+    def ocsp_revoked(self, version):
         """Is the specified cert version revoked according to OCSP?
 
-        Also returns True if the cert version is declared as intended
-        to be revoked according to Let's Encrypt OCSP extensions.
-        (If no version is specified, uses the current version.)
-
-        This method is not yet implemented and currently always returns
-        False.
+        Also returns True if the cert version is declared as revoked
+        according to OCSP. If OCSP status could not be determined, False
+        is returned.
 
         :param int version: the desired version number
 
-        :returns: whether the certificate is or will be revoked
+        :returns: True if the certificate is revoked, otherwise, False
         :rtype: bool
 
         """
-        # XXX: This query and its associated network service aren't
-        # implemented yet, so we currently return False (indicating that the
-        # certificate is not revoked).
-        return False
+        cert_path = self.version("cert", version)
+        chain_path = self.version("chain", version)
+        # While the RevocationChecker should return False if it failed to
+        # determine the OCSP status, let's ensure we don't crash Certbot by
+        # catching all exceptions here.
+        try:
+            return ocsp.RevocationChecker().ocsp_revoked_by_paths(cert_path,
+                                                                  chain_path)
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning(
+                "An error occurred determining the OCSP status of %s.",
+                cert_path)
+            logger.debug(str(e))
+            return False
 
     def autorenewal_is_enabled(self):
         """Is automatic renewal enabled for this cert?
@@ -1216,18 +1237,18 @@ class RenewableCert(interfaces.RenewableCert):
         lineagename = lineagename_for_filename(config_filename)
         archive = full_archive_path(None, cli_config, lineagename)
         live_dir = _full_live_path(cli_config, lineagename)
-        if os.path.exists(archive):
+        if os.path.exists(archive) and (not os.path.isdir(archive) or os.listdir(archive)):
             config_file.close()
             raise errors.CertStorageError(
                 "archive directory exists for " + lineagename)
-        if os.path.exists(live_dir):
+        if os.path.exists(live_dir) and (not os.path.isdir(live_dir) or os.listdir(live_dir)):
             config_file.close()
             raise errors.CertStorageError(
                 "live directory exists for " + lineagename)
-        filesystem.mkdir(archive)
-        filesystem.mkdir(live_dir)
-        logger.debug("Archive directory %s and live "
-                     "directory %s created.", archive, live_dir)
+        for i in (archive, live_dir):
+            if not os.path.exists(i):
+                filesystem.makedirs(i)
+                logger.debug("Creating directory %s.", i)
 
         # Put the data into the appropriate files on disk
         target = {kind: os.path.join(live_dir, kind + ".pem") for kind in ALL_FOUR}

@@ -38,6 +38,7 @@ def pick_authenticator(
     return pick_plugin(
         config, default, plugins, question, (interfaces.IAuthenticator,))
 
+
 def get_unprepared_installer(config, plugins):
     """
     Get an unprepared interfaces.IInstaller object.
@@ -53,7 +54,7 @@ def get_unprepared_installer(config, plugins):
     _, req_inst = cli_plugin_requests(config)
     if not req_inst:
         return None
-    installers = plugins.filter(lambda p_ep: p_ep.name == req_inst)
+    installers = plugins.filter(lambda p_ep: p_ep.check_name(req_inst))
     installers.init(config)
     installers = installers.verify((interfaces.IInstaller,))
     if len(installers) > 1:
@@ -66,6 +67,7 @@ def get_unprepared_installer(config, plugins):
         return inst.init(config)
     raise errors.PluginSelectionError(
         "Could not select or initialize the requested installer %s." % req_inst)
+
 
 def pick_plugin(config, default, plugins, question, ifaces):
     """Pick plugin.
@@ -84,7 +86,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
     """
     if default is not None:
         # throw more UX-friendly error if default not in plugins
-        filtered = plugins.filter(lambda p_ep: p_ep.name == default)
+        filtered = plugins.filter(lambda p_ep: p_ep.check_name(default))
     else:
         if config.noninteractive_mode:
             # it's really bad to auto-select the single available plugin in
@@ -138,7 +140,7 @@ def choose_plugin(prepared, question):
 
     while True:
         disp = z_util(interfaces.IDisplay)
-        if "CERTBOT_AUTO" in os.environ and names == set(("apache", "nginx")):
+        if "CERTBOT_AUTO" in os.environ and names == {"apache", "nginx"}:
             # The possibility of being offered exactly apache and nginx here
             # is new interactivity brought by https://github.com/certbot/certbot/issues/4079,
             # so set apache as a default for those kinds of non-interactive use

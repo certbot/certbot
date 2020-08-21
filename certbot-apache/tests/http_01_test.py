@@ -1,10 +1,13 @@
 """Test for certbot_apache._internal.http_01."""
 import unittest
+import errno
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from acme import challenges
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
 from certbot.compat import filesystem
@@ -40,8 +43,8 @@ class ApacheHttp01Test(util.ApacheTest):
 
         modules = ["ssl", "rewrite", "authz_core", "authz_host"]
         for mod in modules:
-            self.config.parser.modules.add("mod_{0}.c".format(mod))
-            self.config.parser.modules.add(mod + "_module")
+            self.config.parser.modules["mod_{0}.c".format(mod)] = None
+            self.config.parser.modules[mod + "_module"] = None
 
         from certbot_apache._internal.http_01 import ApacheHttp01
         self.http = ApacheHttp01(self.config)
@@ -52,24 +55,24 @@ class ApacheHttp01Test(util.ApacheTest):
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_2(self, mock_enmod):
         self.config.version = (2, 2)
-        self.config.parser.modules.remove("authz_host_module")
-        self.config.parser.modules.remove("mod_authz_host.c")
+        del self.config.parser.modules["authz_host_module"]
+        del self.config.parser.modules["mod_authz_host.c"]
 
         enmod_calls = self.common_enable_modules_test(mock_enmod)
         self.assertEqual(enmod_calls[0][0][0], "authz_host")
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_4(self, mock_enmod):
-        self.config.parser.modules.remove("authz_core_module")
-        self.config.parser.modules.remove("mod_authz_core.c")
+        del self.config.parser.modules["authz_core_module"]
+        del self.config.parser.modules["mod_authz_host.c"]
 
         enmod_calls = self.common_enable_modules_test(mock_enmod)
         self.assertEqual(enmod_calls[0][0][0], "authz_core")
 
     def common_enable_modules_test(self, mock_enmod):
         """Tests enabling mod_rewrite and other modules."""
-        self.config.parser.modules.remove("rewrite_module")
-        self.config.parser.modules.remove("mod_rewrite.c")
+        del self.config.parser.modules["rewrite_module"]
+        del self.config.parser.modules["mod_rewrite.c"]
 
         self.http.prepare_http01_modules()
 
@@ -196,6 +199,12 @@ class ApacheHttp01Test(util.ApacheTest):
             self.assertEqual(len(matches), 1)
 
         self.assertTrue(os.path.exists(challenge_dir))
+
+    @mock.patch("certbot_apache._internal.http_01.filesystem.makedirs")
+    def test_failed_makedirs(self, mock_makedirs):
+        mock_makedirs.side_effect = OSError(errno.EACCES, "msg")
+        self.http.add_chall(self.achalls[0])
+        self.assertRaises(errors.PluginError, self.http.perform)
 
     def _test_challenge_conf(self):
         with open(self.http.challenge_conf_pre) as f:

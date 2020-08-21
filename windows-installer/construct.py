@@ -123,6 +123,8 @@ imp.load_dynamic('pythoncom', pcom)
     certbot_version = subprocess.check_output([sys.executable, '-c', 'import certbot; print(certbot.__version__)'],
                                               universal_newlines=True, cwd=certbot_pkg_path).strip()
 
+    # If we change the installer name from `certbot-beta-installer-win32.exe`, it should
+    # also be changed in tools/create_github_release.py
     with open(installer_cfg_path, 'w') as file_h:
         file_h.write('''\
 [Application]
@@ -153,7 +155,7 @@ extra_preamble=pywin32_paths.py
 '''.format(certbot_version=certbot_version,
            installer_suffix='win_amd64' if PYTHON_BITNESS == 64 else 'win32',
            python_bitness=PYTHON_BITNESS,
-           python_version='.'.join([str(item) for item in PYTHON_VERSION])))
+           python_version='.'.join(str(item) for item in PYTHON_VERSION)))
 
         return installer_cfg_path
 
@@ -184,7 +186,7 @@ if __name__ == '__main__':
 
     if sys.version_info[:2] != PYTHON_VERSION[:2]:
         raise RuntimeError('This script must be run with Python {0}'
-                           .format('.'.join([str(item) for item in PYTHON_VERSION[0:2]])))
+                           .format('.'.join(str(item) for item in PYTHON_VERSION[0:2])))
 
     if struct.calcsize('P') * 8 != PYTHON_BITNESS:
         raise RuntimeError('This script must be run with a {0} bit version of Python.'

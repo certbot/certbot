@@ -18,7 +18,7 @@ Certbot is packaged for many common operating systems and web servers. Check whe
 certbot.eff.org_, where you will also find the correct installation instructions for
 your system.
 
-.. Note:: Unless you have very specific requirements, we kindly suggest that you use the Certbot packages provided by your package manager (see certbot.eff.org_). If such packages are not available, we recommend using ``certbot-auto``, which automates the process of installing Certbot on your system.
+.. Note:: Unless you have very specific requirements, we kindly suggest that you use the installation instructions for your system found at certbot.eff.org_.
 
 .. _certbot.eff.org: https://certbot.eff.org
 
@@ -28,7 +28,7 @@ your system.
 System Requirements
 ===================
 
-Certbot currently requires Python 2.7 or 3.5+ running on a UNIX-like operating
+Certbot currently requires Python 2.7 or 3.6+ running on a UNIX-like operating
 system. By default, it requires root access in order to write to
 ``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
 bind to port 80 (if you use the ``standalone`` plugin) and to read and
@@ -60,6 +60,23 @@ Alternate installation methods
 
 If you are offline or your operating system doesn't provide a package, you can use
 an alternate method for installing ``certbot``.
+
+.. _snap-install:
+
+Snap
+----
+
+Most modern Linux distributions (basically any that use systemd) can install
+Certbot packaged as a snap. Snaps are available for x86_64, ARMv7 and ARMv8
+architectures. The Certbot snap provides an easy way to ensure you have the
+latest version of Certbot with features like automated certificate renewal
+preconfigured.
+
+You can find instructions for installing the Certbot snap at
+https://certbot.eff.org/instructions by selecting your server software and then
+choosing "snapd" in the "System" dropdown menu. (You should select "snapd"
+regardless of your operating system, as our instructions are the same across
+all systems.)
 
 .. _certbot-auto:
 
@@ -139,18 +156,17 @@ certificate. However, this mode of operation is unable to install
 certificates or configure your webserver, because our installer
 plugins cannot reach your webserver from inside the Docker container.
 
-Most users should use the operating system packages (see instructions at
-certbot.eff.org_) or, as a fallback, ``certbot-auto``. You should only
-use Docker if you are sure you know what you are doing and have a
-good reason to do so.
+Most users should use the instructions at certbot.eff.org_. You should only use
+Docker if you are sure you know what you are doing and have a good reason to do
+so.
 
 You should definitely read the :ref:`where-certs` section, in order to
 know how to manage the certs
 manually. `Our ciphersuites page <ciphers.html>`__
 provides some information about recommended ciphersuites. If none of
-these make much sense to you, you should definitely use the
-certbot-auto_ method, which enables you to use installer plugins
-that cover both of those hard topics.
+these make much sense to you, you should definitely use the installation method
+recommended for your system at certbot.eff.org_, which enables you to use
+installer plugins that cover both of those hard topics.
 
 If you're still not convinced and have decided to use this method, from
 the server that the domain you're requesting a certficate for resolves
@@ -180,10 +196,7 @@ want to use. For example, to use Certbot's plugin for Amazon Route 53,
 you'd use ``certbot/dns-route53``. You may also need to add flags to
 Certbot and/or mount additional directories to provide access to your
 DNS API credentials as specified in the :ref:`DNS plugin documentation
-<dns_plugins>`. If you would like to obtain a wildcard certificate from
-Let's Encrypt's ACMEv2 server, you'll need to include ``--server
-https://acme-v02.api.letsencrypt.org/directory`` on the command line as
-well.
+<dns_plugins>`.
 
 For more information about the layout
 of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
@@ -233,9 +246,6 @@ through a command like:
 They can be installed by running the same installation command above but
 replacing ``certbot`` with the name of the desired package.
 
-There are no Certbot packages available for Debian Jessie and Jessie users
-should instead use certbot-auto_.
-
 **Ubuntu**
 
 If you run Ubuntu Trusty, Xenial, or Bionic, certbot is available through the official PPA,
@@ -274,39 +284,19 @@ Optionally to install the Certbot Apache plugin, you can use:
 
 **Gentoo**
 
-The official Certbot client is available in Gentoo Portage. If you
-want to use the Apache plugin, it has to be installed separately:
+The official Certbot client is available in Gentoo Portage. From the 
+official Certbot plugins, three of them are also available in Portage. 
+They need to be installed separately if you require their functionality.
 
 .. code-block:: shell
 
    emerge -av app-crypt/certbot
    emerge -av app-crypt/certbot-apache
+   emerge -av app-crypt/certbot-nginx
+   emerge -av app-crypt/certbot-dns-nsone
 
-When using the Apache plugin, you will run into a "cannot find an
-SSLCertificateFile directive" or "cannot find an SSLCertificateKeyFile
-directive for certificate" error if you're sporting the default Gentoo
-``httpd.conf``. You can fix this by commenting out two lines in
-``/etc/apache2/httpd.conf`` as follows:
-
-Change
-
-.. code-block:: shell
-
-   <IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   </IfDefine>
-
-to
-
-.. code-block:: shell
-
-   #<IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   #</IfDefine>
-
-For the time being, this is the only way for the Apache plugin to recognise
-the appropriate directives when installing the certificate.
-Note: this change is not required for the other plugins.
+.. Note:: The ``app-crypt/certbot-dns-nsone`` package has a different 
+   maintainer than the other packages and can lag behind in version.
 
 **NetBSD**
 

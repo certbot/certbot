@@ -1,5 +1,6 @@
 """A class that performs HTTP-01 challenges for Apache"""
 import logging
+import errno
 
 from acme.magic_typing import List
 from acme.magic_typing import Set
@@ -168,7 +169,15 @@ class ApacheHttp01(common.ChallengePerformer):
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
-            filesystem.makedirs(self.challenge_dir, 0o755)
+            old_umask = filesystem.umask(0o022)
+            try:
+                filesystem.makedirs(self.challenge_dir, 0o755)
+            except OSError as exception:
+                if exception.errno not in (errno.EEXIST, errno.EISDIR):
+                    raise errors.PluginError(
+                        "Couldn't create root for http-01 challenge")
+            finally:
+                filesystem.umask(old_umask)
 
         responses = []
         for achall in self.achalls:

@@ -5,15 +5,15 @@ from socket import errno as socket_errors  # type: ignore
 import unittest
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import OpenSSL.crypto  # pylint: disable=unused-import
 import six
 
 from acme import challenges
 from acme import standalone as acme_standalone  # pylint: disable=unused-import
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Tuple  # pylint: disable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
 from certbot.tests import acme_util
@@ -164,7 +164,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         self.auth.cleanup(["chall1"])
         self.assertEqual(self.auth.served, {
-            "server1": set(), "server2": set(["chall2", "chall3"])})
+            "server1": set(), "server2": {"chall2", "chall3"}})
         self.auth.servers.stop.assert_called_once_with(1)
 
         self.auth.servers.running.return_value = {
@@ -172,12 +172,12 @@ class AuthenticatorTest(unittest.TestCase):
         }
         self.auth.cleanup(["chall2"])
         self.assertEqual(self.auth.served, {
-            "server1": set(), "server2": set(["chall3"])})
+            "server1": set(), "server2": {"chall3"}})
         self.assertEqual(1, self.auth.servers.stop.call_count)
 
         self.auth.cleanup(["chall3"])
         self.assertEqual(self.auth.served, {
-            "server1": set(), "server2": set([])})
+            "server1": set(), "server2": set()})
         self.auth.servers.stop.assert_called_with(2)
 
 

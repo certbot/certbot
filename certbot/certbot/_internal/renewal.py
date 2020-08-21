@@ -18,6 +18,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot._internal import cli
+from certbot._internal import constants
 from certbot._internal import hooks
 from certbot._internal import storage
 from certbot._internal import updater

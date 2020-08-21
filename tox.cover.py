@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import argparse
 import os
 import subprocess
@@ -12,7 +14,7 @@ DEFAULT_PACKAGES = [
     'certbot_dns_sakuracloud', 'certbot_nginx']
 
 COVER_THRESHOLDS = {
-    'certbot': {'linux': 96, 'windows': 96},
+    'certbot': {'linux': 95, 'windows': 96},
     'acme': {'linux': 100, 'windows': 99},
     'certbot_apache': {'linux': 100, 'windows': 100},
     'certbot_dns_cloudflare': {'linux': 98, 'windows': 98},
@@ -48,18 +50,23 @@ def cover(package):
 
     subprocess.check_call([sys.executable, '-m', 'pytest',
                            '--cov', pkg_dir, '--cov-append', '--cov-report=', pkg_dir])
-    subprocess.check_call([
-        sys.executable, '-m', 'coverage', 'report', '--fail-under', str(threshold), '--include',
-        '{0}/*'.format(pkg_dir), '--show-missing'])
+    try:
+        subprocess.check_call([
+            sys.executable, '-m', 'coverage', 'report', '--fail-under',
+            str(threshold), '--include', '{0}/*'.format(pkg_dir),
+            '--show-missing'])
+    except subprocess.CalledProcessError as err:
+        print(err)
+        print('Test coverage on', pkg_dir,
+              'did not meet threshold of {0}%.'.format(threshold))
+        sys.exit(1)
 
 
 def main():
     description = """
 This script is used by tox.ini (and thus by Travis CI and Azure Pipelines) in
 order to generate separate stats for each package. It should be removed once
-those packages are moved to a separate repo.
-
-Option -e makes sure we fail fast and don't submit to codecov."""
+those packages are moved to a separate repo."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--packages', nargs='+')
 
