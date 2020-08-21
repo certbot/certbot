@@ -315,7 +315,7 @@ class Registration(ResourceBody):
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
     key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
-    contact = fields.UnFalseyField('contact', omitempty=True)
+    contact = fields.UnFalseyField('contact', omitempty=True, default=())
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
     terms_of_service_agreed = jose.Field('termsOfServiceAgreed', omitempty=True)
@@ -340,10 +340,44 @@ class Registration(ResourceBody):
 
         return cls(**kwargs)
 
+    def __init__(self, **kwargs):
+        """Note if the user provides a value for the `contact` member."""
+        if 'contact' not in kwargs:
+            # Avoid the __setattr__ used by jose.TypedJSONObjectWithFields
+            object.__setattr__(self, '_remove_contact', True)
+        super(Registration, self).__init__(**kwargs)
+
     def _filter_contact(self, prefix):
         return tuple(
             detail[len(prefix):] for detail in self.contact  # pylint: disable=not-an-iterable
             if detail.startswith(prefix))
+
+    def _filter_fields_for_serialization(self, jobj):
+        """
+        The `contact` member of Registration objects should behave as if its
+        default value is (), but should not serialize that value unless it was
+        explicitly provided.
+
+        :param jobj: Dictionary containing this Registrations' data
+        :type jobj: dict
+
+        :returns: Dictionary containing Registrations data to transmit to the server
+        :rtype: dict
+        """
+        if getattr(self, '_remove_contact', False):
+            jobj.pop('contact', None)
+
+        return jobj
+
+    def to_partial_json(self):
+        """Modify josepy.JSONDeserializable.to_partial_json()"""
+        jobj = super(Registration, self).to_partial_json()
+        return self._filter_fields_for_serialization(jobj)
+
+    def fields_to_partial_json(self):
+        """Modify josepy.JSONObjectWithFields.fields_to_partial_json()"""
+        jobj = super(Registration, self).fields_to_partial_json()
+        return self._filter_fields_for_serialization(jobj)
 
     @property
     def phones(self):

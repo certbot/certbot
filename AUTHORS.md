@@ -61,6 +61,7 @@ Authors
 * [Daniel Albers](https://github.com/AID)
 * [Daniel Aleksandersen](https://github.com/da2x)
 * [Daniel Convissor](https://github.com/convissor)
+* [Daniel "Drex" Drexler](https://github.com/aeturnum)
 * [Daniel Huang](https://github.com/dhuang)
 * [Dave Guarino](https://github.com/daguar)
 * [David cz](https://github.com/dave-cz)

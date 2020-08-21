@@ -724,12 +724,7 @@ def update_account(config, unused_plugins):
     account_storage.update_regr(acc, cb_client.acme)
 
     if config.email is None:
-        add_msg(
-            ("Your e-mail address was removed. "
-            "Make sure you backup your account key stored in {0}\n".format(
-                os.path.join(misc.get_default_folder('config'), 'accounts')
-            ))
-        )
+        add_msg("Any contact information associated with this account has been removed.")
     else:
         eff.prepare_subscription(config, acc)
         add_msg("Your e-mail address was updated to {0}.".format(config.email))
