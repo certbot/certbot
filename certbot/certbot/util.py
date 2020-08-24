@@ -5,6 +5,7 @@ import argparse
 import atexit
 import collections
 from collections import OrderedDict
+from contextlib import contextmanager
 import distutils.version
 import errno
 import logging
@@ -14,12 +15,10 @@ import socket
 import subprocess
 import sys
 
-from contextlib import contextmanager
-from typing import Iterator
-
 import configargparse
 import six
 
+from acme.magic_typing import Iterator
 from acme.magic_typing import Tuple
 from acme.magic_typing import Union
 from certbot import errors
