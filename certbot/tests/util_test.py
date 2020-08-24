@@ -191,6 +191,26 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
             self.assertRaises(OSError, self._call, "bar", 12312312)
 
 
+class UmaskTest(test_util.TempDirTestCase):
+    """Tests for certbot.util.umask."""
+
+    def setUp(self):
+        super(UmaskTest, self).setUp()
+        self.default_name = os.path.join(self.tempdir, "foo.txt")
+
+    def _call(self, temp_mask):
+        from certbot.util import umask
+        with umask(temp_mask):
+            with open(self.default_name, 'w'):
+                pass
+
+    def test_umask(self):
+        perm_mask = filesystem.umask(0o777)
+        self._call(0o0)
+        self.assertTrue(filesystem.check_mode(self.default_name, 0o666))
+        self.assertEqual(filesystem.umask(perm_mask), 0o777)
+
+
 class UniqueFileTest(test_util.TempDirTestCase):
     """Tests for certbot.util.unique_file."""
 

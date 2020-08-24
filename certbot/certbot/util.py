@@ -14,6 +14,9 @@ import socket
 import subprocess
 import sys
 
+from contextlib import contextmanager
+from typing import Iterator
+
 import configargparse
 import six
 
@@ -205,6 +208,21 @@ def make_or_verify_dir(directory, mode=0o755, strict=False):
                     " permissions %s" % (directory, oct(mode)))
         else:
             raise
+
+
+@contextmanager
+def umask(temp_mask):
+    # type: (int) -> Iterator[None]
+    """Context manager to set umask and restore previous value
+
+    :param int temp_mask: Same as `mask` for `filesystem.umask`.
+
+    """
+    perm_mask = filesystem.umask(temp_mask)
+    try:
+        yield
+    finally:
+        filesystem.umask(perm_mask)
 
 
 def safe_open(path, mode="w", chmod=None):
