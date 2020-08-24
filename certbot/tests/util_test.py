@@ -207,7 +207,7 @@ class UmaskTest(test_util.TempDirTestCase):
 
     def test_umask(self):
         self._call(0o0)
-        self.assertTrue(filesystem.check_mode(self.default_name, 0o666))
+        self.assertFalse(filesystem.check_mode(self.default_name, 0o0))
         self.assertEqual(filesystem.umask(self.perm_mask), 0o777)
 
     def tearDown(self):
