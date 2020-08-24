@@ -196,7 +196,8 @@ class UmaskTest(test_util.TempDirTestCase):
 
     def setUp(self):
         super(UmaskTest, self).setUp()
-        self.default_name = os.path.join(self.tempdir, "foo.txt")
+        self.default_name = os.path.join(self.tempdir, "UmaskTest.txt")
+        self.perm_mask = filesystem.umask(0o777)
 
     def _call(self, temp_mask):
         from certbot.util import umask
@@ -205,10 +206,12 @@ class UmaskTest(test_util.TempDirTestCase):
                 pass
 
     def test_umask(self):
-        perm_mask = filesystem.umask(0o777)
         self._call(0o0)
         self.assertTrue(filesystem.check_mode(self.default_name, 0o666))
-        self.assertEqual(filesystem.umask(perm_mask), 0o777)
+        self.assertEqual(filesystem.umask(self.perm_mask), 0o777)
+
+    def tearDown(self):
+        filesystem.umask(self.perm_mask)
 
 
 class UniqueFileTest(test_util.TempDirTestCase):
