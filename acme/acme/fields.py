@@ -62,4 +62,3 @@ class Resource(jose.Field):
                 'Wrong resource type: {0} instead of {1}'.format(
                     value, self.resource_type))
         return value
-
