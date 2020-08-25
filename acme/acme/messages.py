@@ -315,7 +315,7 @@ class Registration(ResourceBody):
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
     key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
-    contact = fields.UnFalseyField('contact', omitempty=True, default=())
+    contact = jose.Field('contact', omitempty=True, default=())
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
     terms_of_service_agreed = jose.Field('termsOfServiceAgreed', omitempty=True)
@@ -342,9 +342,9 @@ class Registration(ResourceBody):
 
     def __init__(self, **kwargs):
         """Note if the user provides a value for the `contact` member."""
-        if 'contact' not in kwargs:
+        if 'contact' in kwargs:
             # Avoid the __setattr__ used by jose.TypedJSONObjectWithFields
-            object.__setattr__(self, '_remove_contact', True)
+            object.__setattr__(self, '_add_contact', True)
         super(Registration, self).__init__(**kwargs)
 
     def _filter_contact(self, prefix):
@@ -354,9 +354,9 @@ class Registration(ResourceBody):
 
     def _filter_fields_for_serialization(self, jobj):
         """
-        The `contact` member of Registration objects should behave as if its
-        default value is (), but should not serialize that value unless it was
-        explicitly provided.
+        The `contact` member of Registration objects should not be required when
+        de-serializing (as it would be if the Fields' `omitempty` flag were `False`), but
+        it should be included in serializations when it was explicitly provided.
 
         :param jobj: Dictionary containing this Registrations' data
         :type jobj: dict
@@ -364,8 +364,8 @@ class Registration(ResourceBody):
         :returns: Dictionary containing Registrations data to transmit to the server
         :rtype: dict
         """
-        if getattr(self, '_remove_contact', False):
-            jobj.pop('contact', None)
+        if getattr(self, '_add_contact', False):
+            jobj['contact'] = self.contact
 
         return jobj
 
