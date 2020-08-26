@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* The problem causing the Apache plugin in the Certbot snap on ARM systems to
+  fail to load the Augeas library it depends on has been fixed.
 
 More details about these changes can be found on our GitHub repo.
 
