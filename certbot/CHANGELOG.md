@@ -27,6 +27,8 @@ More details about these changes can be found on our GitHub repo.
   this concerns the plugin name, CLI flags, and keys in credential files.
   The prefixed form is still supported but is deprecated, and will be removed in a future release.
 * Added `--nginx-sleep-seconds` (default `1`) for environments where nginx takes a long time to reload.
+* Added the ability to remove email and phone contact information from an account 
+  using `update_account --register-unsafely-without-email`
 
 ### Changed
 
@@ -37,7 +39,8 @@ More details about these changes can be found on our GitHub repo.
 
 ### Fixed
 
-*
+* The `acme` library can now tell the ACME server to clear contact information by passing an empty
+  `tuple` to the `contact` field of a `Registration` message. 
 
 More details about these changes can be found on our GitHub repo.
 
