@@ -330,22 +330,27 @@ class Registration(ResourceBody):
 
     @classmethod
     def from_data(cls, phone=None, email=None, external_account_binding=None, **kwargs):
-        """Create registration resource from contact details."""
-        # extra variable to detect non-null empty lists or tuples
-        details_provided = 'contact' in kwargs and kwargs['contact'] is not None
+        """
+        Create registration resource from contact details.
 
+        The `contact` keyword being passed to a Registration object is meaningful, so
+        this function represents empty iterables in its kwargs by passing on an empty
+        `tuple`.
+        """
+
+        # Note if `contact` was in kwargs.
+        contact_provided = 'contact' in kwargs
+
+        # Pop `contact` from kwargs and add formatted email or phone numbers
         details = list(kwargs.pop('contact', ()))
         if phone is not None:
             details.append(cls.phone_prefix + phone)
         if email is not None:
             details.extend([cls.email_prefix + mail for mail in email.split(',')])
 
-        # Serialization behavior change based on providing `contacts` to the constructor
-        # So we add the `contact` argument if:
-        # - `phone` or `email` or `contact` `kwargs` are passed with values
-        # - a empty list or tuple is provided in the `kwargs`
-        # Note that `contact` must be a tuple not a list for serialization purposes
-        if details or details_provided:
+        # Insert formatted contact information back into kwargs
+        # or insert an empty tuple if `contact` provided.
+        if details or contact_provided:
             kwargs['contact'] = tuple(details)
 
         if external_account_binding:
@@ -355,7 +360,7 @@ class Registration(ResourceBody):
 
     def __init__(self, **kwargs):
         """Note if the user provides a value for the `contact` member."""
-        if 'contact' in kwargs and kwargs['contact'] is not None:
+        if 'contact' in kwargs:
             # Avoid the __setattr__ used by jose.TypedJSONObjectWithFields
             object.__setattr__(self, '_add_contact', True)
         super(Registration, self).__init__(**kwargs)

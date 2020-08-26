@@ -1416,7 +1416,7 @@ class MainTest(test_util.ConfigTestCase):
         mocked_storage.find_all.return_value = [mocked_account]
         mock_det_acc.return_value = (mocked_account, "foo")
 
-        # Mock client and mock registration body to verify calls are made
+        # Mock registration body to verify calls are made
         mock_regr_body = mock.MagicMock()
 
         # mocked_account.regr is overwritten in update, requiring an odd mock setup
@@ -1431,8 +1431,7 @@ class MainTest(test_util.ConfigTestCase):
         # and we got supposedly did update the registration from
         # the server
         client_mock = x[3]
-
-        self.assertEqual(client_mock.mock_calls[1][0], 'Client().acme.update_registration')
+        self.assertTrue(client_mock.Client().acme.update_registration.called)
 
         self.assertTrue(mock_regr_body.update.called)
         self.assertTrue('contact' in mock_regr_body.update.call_args[1])
