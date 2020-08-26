@@ -397,7 +397,7 @@ def test_reuse_key(context):
     """Test various scenarios where a key is reused."""
     certname = context.get_domain('reusekey')
     context.certbot(['--domains', certname, '--reuse-key'])
-    context.certbot(['renew', '--cert-name', certname])
+    context.certbot(['renew', '--reuse-key', '--cert-name', certname])
 
     with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname), 'r') as file:
         privkey1 = file.read()
