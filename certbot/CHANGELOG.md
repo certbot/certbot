@@ -38,7 +38,8 @@ More details about these changes can be found on our GitHub repo.
 
 ### Fixed
 
-*
+* The `acme` library can now tell the ACME server to clear contact information by passing an empty
+  `tuple` to the `contact` field of a `Registration` message. 
 
 More details about these changes can be found on our GitHub repo.
 

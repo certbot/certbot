@@ -710,7 +710,7 @@ def update_account(config, unused_plugins):
     cb_client = client.Client(config, acc, None, None, acme=acme)
     # Empty list of contacts in case the user is removing all emails
 
-    acc_contacts = () # type: Iterable
+    acc_contacts = () # type: Iterable[str]
     if config.email:
         acc_contacts = ['mailto:' + email for email in config.email.split(',')]
     # We rely on an exception to interrupt this process if it didn't work.
