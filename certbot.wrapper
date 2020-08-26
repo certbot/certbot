@@ -3,6 +3,10 @@ set -e
 
 # This code is based on snapcraft's own patch to work around this problem at
 # https://github.com/snapcore/snapcraft/blob/a97fb5c7ea553a1bd20f4887a7c3393e75761890/patches/ctypes_init.diff.
+# We may not build the Certbot snap for all of these architectures (and as of
+# writing this we do not), but we keep the code for them to avoid having to
+# solve this problem again in the future if we add support for new
+# architectures.
 case "${SNAP_ARCH}" in
     'arm64')
         ARCH_TRIPLET='aarch64-linux-gnu';;
