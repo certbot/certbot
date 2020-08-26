@@ -1,4 +1,5 @@
 """Renewable certificates storage."""
+# pylint: disable=too-many-lines
 import datetime
 import glob
 import itertools
@@ -13,6 +14,7 @@ import parsedatetime
 import pytz
 import six
 
+from acme.magic_typing import List
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -43,8 +45,7 @@ STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "renew_hook", "pre_hook", "post_hook", "http01_address",
                     "preferred_chain"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "http01_port"]
-BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key",
-                     "autorenew"]
+BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "autorenew"]
 
 CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
@@ -583,7 +584,11 @@ def get_renewable_cert(full_path, cli_config, update_symlinks=False):
     :rtype: `storage.RenewableCert` or NoneType
     """
     try:
-        renewal_candidate = RenewableCert(full_path, cli_config)
+        renewal_candidate = RenewableCert(
+            full_path,
+            cli_config,
+            update_symlinks=update_symlinks
+        )
     # TODO(dmw) Determine should allow exception to propagate to
     # preserve prior behavior vs. catch here.
     except (errors.CertStorageError, IOError):

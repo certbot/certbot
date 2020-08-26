@@ -13,7 +13,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot import ocsp
 from certbot import util
-from certbot._internal import renewal
 from certbot._internal import storage
 from certbot.compat import os
 from certbot.display import util as display_util
