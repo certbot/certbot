@@ -8,12 +8,6 @@ targets:
     type: ubuntu
     virt: hvm
     user: ubuntu
-  - ami: ami-008680ee60f23c94b
-    name: ubuntu20.04_arm64
-    type: ubuntu
-    virt: hvm
-    user: ubuntu
-    machine_type: a1.medium
   - ami: ami-0545f7036167eb3aa
     name: ubuntu19.10
     type: ubuntu
@@ -31,6 +25,12 @@ targets:
     type: ubuntu
     virt: hvm
     user: admin
+  - ami: ami-0dcd54b7d2fff584f
+    name: debian10_arm64
+    type: ubuntu
+    virt: hvm
+    user: admin
+    machine_type: a1.medium
   #-----------------------------------------------------------------------------
   # Other Redhat Distros
   - ami: ami-0916c408cb02e310b
