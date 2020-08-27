@@ -316,7 +316,14 @@ def renew_cert(config, domains, le_client, lineage):
         domains = lineage.names()
     # The private key is the existing lineage private key if reuse_key is set.
     # Otherwise, generate a fresh private key by passing None.
-    new_key = os.path.normpath(lineage.privkey) if config.reuse_key else None
+    if config.reuse_key:
+        new_key = os.path.normpath(lineage.privkey)
+        # Rather than doing this, I think we probably want to actually inspect
+        # the key since https://github.com/certbot/certbot/issues/7694 shows
+        # that the current value may not be reliable.
+        config.rsa_key_size = renewal_params.get("rsa_key_size", cli.flag_default("rsa_key_size"))
+    else:
+        new_key = None
     new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
