@@ -173,7 +173,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         help="Specifying this flag enables registering an account with no "
              "email address. This is strongly discouraged, because you will be "
              "unable to receive notice about impending expiration or "
-             "revocation of your certificates.")
+             "revocation of your certificates or problems with your Certbot "
+             "installation that will lead to failure to renew.")
     helpful.add(
         ["register", "update_account", "unregister", "automation"], "-m", "--email",
         default=flag_default("email"),

@@ -34,7 +34,8 @@ def get_email(invalid=False, optional=True):
                          "the client with --register-unsafely-without-email "
                          "but you will then be unable to receive notice about "
                          "impending expiration or revocation of your "
-                         "certificates.\n\n")
+                         "certificates or problems with your Certbot "
+                         "installation that will lead to failure to renew.\n\n")
     if optional:
         if invalid:
             msg += unsafe_suggestion
