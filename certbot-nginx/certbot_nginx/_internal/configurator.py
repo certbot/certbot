@@ -1199,7 +1199,7 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
                     raise errors.MisconfigurationError(
                         "nginx restart failed:\n%s" % out.read().decode("utf-8"))
 
-    except (OSError, ValueError) as e:
+    except (OSError, ValueError):
         raise errors.MisconfigurationError("nginx restart failed")
     # Nginx can take a significant duration of time to fully apply a new config, depending
     # on size and contents (https://github.com/certbot/certbot/issues/7422). Lacking a way
