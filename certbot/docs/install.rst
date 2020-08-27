@@ -18,7 +18,7 @@ Certbot is packaged for many common operating systems and web servers. Check whe
 certbot.eff.org_, where you will also find the correct installation instructions for
 your system.
 
-.. Note:: Unless you have very specific requirements, we kindly suggest that you use the Certbot packages provided by your package manager (see certbot.eff.org_). If such packages are not available, we recommend using ``certbot-auto``, which automates the process of installing Certbot on your system.
+.. Note:: Unless you have very specific requirements, we kindly suggest that you use the installation instructions for your system found at certbot.eff.org_.
 
 .. _certbot.eff.org: https://certbot.eff.org
 
@@ -28,7 +28,7 @@ your system.
 System Requirements
 ===================
 
-Certbot currently requires Python 2.7 or 3.5+ running on a UNIX-like operating
+Certbot currently requires Python 2.7 or 3.6+ running on a UNIX-like operating
 system. By default, it requires root access in order to write to
 ``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
 bind to port 80 (if you use the ``standalone`` plugin) and to read and
@@ -156,18 +156,17 @@ certificate. However, this mode of operation is unable to install
 certificates or configure your webserver, because our installer
 plugins cannot reach your webserver from inside the Docker container.
 
-Most users should use the operating system packages (see instructions at
-certbot.eff.org_) or, as a fallback, ``certbot-auto``. You should only
-use Docker if you are sure you know what you are doing and have a
-good reason to do so.
+Most users should use the instructions at certbot.eff.org_. You should only use
+Docker if you are sure you know what you are doing and have a good reason to do
+so.
 
 You should definitely read the :ref:`where-certs` section, in order to
 know how to manage the certs
 manually. `Our ciphersuites page <ciphers.html>`__
 provides some information about recommended ciphersuites. If none of
-these make much sense to you, you should definitely use the
-certbot-auto_ method, which enables you to use installer plugins
-that cover both of those hard topics.
+these make much sense to you, you should definitely use the installation method
+recommended for your system at certbot.eff.org_, which enables you to use
+installer plugins that cover both of those hard topics.
 
 If you're still not convinced and have decided to use this method, from
 the server that the domain you're requesting a certficate for resolves

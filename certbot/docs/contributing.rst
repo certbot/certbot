@@ -18,6 +18,7 @@ Windows, you'll need to set up a (virtual) machine running an OS such as Linux
 and continue with these instructions on that UNIX-like OS.
 
 .. _local copy:
+.. _prerequisites:
 
 Running a local copy of the client
 ----------------------------------
@@ -578,33 +579,3 @@ effect. To do this, run::
 Now running the check for linting errors described above is as easy as::
 
   tox -e lint
-
-.. _prerequisites:
-
-Notes on OS dependencies
-========================
-
-OS-level dependencies can be installed like so:
-
-.. code-block:: shell
-
-   ./certbot-auto --debug --os-packages-only
-
-In general...
-
-* ``sudo`` is required as a suggested way of running privileged process
-* `Python`_ 2.7 or 3.5+ is required
-* `Augeas`_ is required for the Python bindings
-* ``virtualenv`` is used for managing other Python library dependencies
-
-.. _Python: https://wiki.python.org/moin/BeginnersGuide/Download
-.. _Augeas: http://augeas.net/
-.. _Virtualenv: https://virtualenv.pypa.io
-
-
-FreeBSD
--------
-
-FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
-above), you will need a compatible shell, e.g. ``pkg install bash &&
-bash``.
