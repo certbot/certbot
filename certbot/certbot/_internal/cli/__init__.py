@@ -171,13 +171,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         default=flag_default("register_unsafely_without_email"),
         help="Specifying this flag enables registering an account with no "
-             "email address. This is strongly discouraged, because in the "
-             "event of key loss or account compromise you will irrevocably "
-             "lose access to your account. You will also be unable to receive "
-             "notice about impending expiration or revocation of your "
-             "certificates. Updates to the Subscriber Agreement will still "
-             "affect you, and will be effective 14 days after posting an "
-             "update to the web site.")
+             "email address. This is strongly discouraged, because you will be "
+             "unable to receive notice about impending expiration or "
+             "revocation of your certificates or problems with your Certbot "
+             "installation that will lead to failure to renew.")
     helpful.add(
         ["register", "update_account", "unregister", "automation"], "-m", "--email",
         default=flag_default("email"),

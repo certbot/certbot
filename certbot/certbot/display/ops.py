@@ -6,7 +6,6 @@ import zope.component
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import util as display_util
 
@@ -33,9 +32,10 @@ def get_email(invalid=False, optional=True):
     msg = "Enter email address (used for urgent renewal and security notices)\n"
     unsafe_suggestion = ("\n\nIf you really want to skip this, you can run "
                          "the client with --register-unsafely-without-email "
-                         "but make sure you then backup your account key from "
-                         "{0}\n\n".format(os.path.join(
-                             misc.get_default_folder('config'), 'accounts')))
+                         "but you will then be unable to receive notice about "
+                         "impending expiration or revocation of your "
+                         "certificates or problems with your Certbot "
+                         "installation that will lead to failure to renew.\n\n")
     if optional:
         if invalid:
             msg += unsafe_suggestion
