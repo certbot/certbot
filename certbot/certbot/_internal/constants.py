@@ -30,6 +30,7 @@ CLI_DEFAULTS = dict(
     domains=[],
     certname=None,
     dry_run=False,
+    dry_run_deploy_hooks=False,
     register_unsafely_without_email=False,
     email=None,
     eff_email=None,

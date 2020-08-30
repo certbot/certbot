@@ -261,6 +261,11 @@ class HelpfulArgumentParser(object):
                 parsed_args.tos = True
                 parsed_args.register_unsafely_without_email = True
 
+        if parsed_args.dry_run_deploy_hooks:
+            if self.verb not in ["renew"]:
+                raise errors.Error("--dry-run-deploy-hooks currently only works with the "
+                                   "'renew' subcommand (%r)" % self.verb)
+
     def handle_csr(self, parsed_args):
         """Process a --csr flag."""
         if parsed_args.verb != "certonly":

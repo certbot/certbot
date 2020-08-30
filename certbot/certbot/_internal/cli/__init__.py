@@ -168,6 +168,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              " if they are defined because they may be necessary to accurately simulate"
              " renewal. --deploy-hook commands are not called.")
     helpful.add(
+        ["renew"],
+        "--dry-run-deploy-hooks", action="store_true", dest="dry_run_deploy_hooks",
+        default=flag_default("dry_run_deploy_hooks"),
+        help="If used together with --dry-run, then deploy-hooks are"
+             " run.")
+    helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         default=flag_default("register_unsafely_without_email"),
         help="Specifying this flag enables registering an account with no "

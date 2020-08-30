@@ -160,8 +160,9 @@ def deploy_hook(config, domains, lineage_path):
 
     """
     if config.deploy_hook:
+        deploy_hooks_disabled = config.dry_run and not config.dry_run_deploy_hooks
         _run_deploy_hook(config.deploy_hook, domains,
-                         lineage_path, config.dry_run)
+                         lineage_path, deploy_hooks_disabled)
 
 
 def renew_hook(config, domains, lineage_path):
@@ -182,9 +183,11 @@ def renew_hook(config, domains, lineage_path):
 
     """
     executed_dir_hooks = set()
+    deploy_hooks_disabled = config.dry_run and not config.dry_run_deploy_hooks
+
     if config.directory_hooks:
         for hook in list_hooks(config.renewal_deploy_hooks_dir):
-            _run_deploy_hook(hook, domains, lineage_path, config.dry_run)
+            _run_deploy_hook(hook, domains, lineage_path, deploy_hooks_disabled)
             executed_dir_hooks.add(hook)
 
     if config.renew_hook:
@@ -193,7 +196,7 @@ def renew_hook(config, domains, lineage_path):
                         config.renew_hook)
         else:
             _run_deploy_hook(config.renew_hook, domains,
-                             lineage_path, config.dry_run)
+                             lineage_path, deploy_hooks_disabled)
 
 
 def _run_deploy_hook(command, domains, lineage_path, dry_run):
