@@ -4,7 +4,7 @@ import unittest
 
 try:
     import mock
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     from unittest import mock
 import OpenSSL
 import zope.component
@@ -31,6 +31,7 @@ P256_CERT = test_util.load_vector('cert-nosans_nistp256.pem')
 CERT_LEAF = test_util.load_vector('cert_leaf.pem')
 CERT_ISSUER = test_util.load_vector('cert_intermediate_1.pem')
 CERT_ALT_ISSUER = test_util.load_vector('cert_intermediate_2.pem')
+
 
 class InitSaveKeyTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_key."""
@@ -174,11 +175,54 @@ class ImportCSRFileTest(unittest.TestCase):
 class MakeKeyTest(unittest.TestCase):
     """Tests for certbot.crypto_util.make_key."""
 
-    def test_it(self):  # pylint: disable=no-self-use
+    def test_rsa(self):  # pylint: disable=no-self-use
+        # RSA Key Type Test
         from certbot.crypto_util import make_key
         # Do not test larger keys as it takes too long.
+        OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
+
+    def test_ec(self):  # pylint: disable=no-self-use
+        # ECDSA Key Type Tests
+        from certbot.crypto_util import make_key
+        # Do not test larger keys as it takes too long.
+
+        # Try a good key size for ECDSA
         OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
+            OpenSSL.crypto.FILETYPE_PEM, make_key(elliptic_curve="secp256r1", key_type='ecdsa'))
+
+    def test_bad_key_sizes(self):
+        from certbot.crypto_util import make_key
+        # Try a bad key size for RSA and ECDSA
+        with self.assertRaises(errors.Error) as e:
+            make_key(bits=512, key_type='rsa')
+        self.assertEqual(
+            "Unsupported RSA key length: 512",
+            str(e.exception),
+            "Unsupported RSA key length: 512"
+        )
+
+    def test_bad_elliptic_curve_name(self):
+        from certbot.crypto_util import make_key
+        with self.assertRaises(errors.Error) as e:
+            make_key(elliptic_curve="nothere", key_type='ecdsa')
+        self.assertEqual(
+            "Unsupported elliptic curve: nothere",
+            str(e.exception),
+            "Unsupported elliptic curve: nothere"
+        )
+
+    def test_bad_key_type(self):
+        from certbot.crypto_util import make_key
+
+        # Try a bad --key-type
+        with self.assertRaises(errors.Error) as e:
+            OpenSSL.crypto.load_privatekey(
+                OpenSSL.crypto.FILETYPE_PEM, make_key(1024, key_type='unf'))
+        self.assertEqual(
+            "Invalid key_type specified: unf.  Use [rsa|ecdsa]",
+            str(e.exception),
+            "Invalid key_type specified: unf.  Use [rsa|ecdsa]",
+        )
 
 
 class VerifyCertSetup(unittest.TestCase):

@@ -80,8 +80,8 @@ its preferences in accordance with its own policy or its administrators'
 preferences, and use different cryptographic mechanisms or parameters,
 or a different priority order, than the defaults provided by Certbot.
 
-If you don't use Certbot to configure your server directly, because the 
-client doesn't integrate with your server software or because you chose 
+If you don't use Certbot to configure your server directly, because the
+client doesn't integrate with your server software or because you chose
 not to use this integration, then the cryptographic defaults haven't been
 modified, and the cryptography chosen by the server will still be whatever
 the default for your software was.  For example, if you obtain a
@@ -254,7 +254,7 @@ https://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/elb-secur
 U.S. Government 18F
 ~~~~~~~~~~~~~~~~~~~
 
-The 18F site (https://18f.gsa.gov/) is using 
+The 18F site (https://18f.gsa.gov/) is using
 
 ::
 

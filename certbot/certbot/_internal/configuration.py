@@ -1,6 +1,9 @@
 """Certbot user-supplied configuration."""
 import copy
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from six.moves.urllib import parse
 import zope.interface
 
@@ -10,6 +13,7 @@ from certbot import util
 from certbot._internal import constants
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.errors import NotSupportedError
 
 
 @zope.interface.implementer(interfaces.IConfig)
@@ -137,6 +141,27 @@ class NamespaceConfig(object):
         """Path to the post-hook directory for the renew subcommand."""
         return os.path.join(self.renewal_hooks_dir,
                             constants.RENEWAL_POST_HOOKS_DIR)
+
+    @property
+    def key_type(self):
+        # type: () -> str
+        """
+        :return: The key type of the configuration. This is dynamically computed.
+        """
+        try:
+            with open(os.path.join(self.live_dir, 'privkey.pem'), 'rb') as file_h:
+                key = load_pem_private_key(
+                    file_h.read(),
+                    password=None,
+                    backend=default_backend(),
+                )
+            if isinstance(key, rsa.RSAPrivateKey):
+                return "rsa"
+            elif isinstance(key, ec.EllipticCurvePrivateKey):
+                return "ecdsa"
+            raise NotSupportedError("This key type is not supported by Certbot")
+        except IOError:
+            return 'rsa'
 
 
 def check_config_sanity(config):

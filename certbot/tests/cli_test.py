@@ -359,6 +359,21 @@ class ParseTest(unittest.TestCase):
         self.assertFalse(cli.option_was_set(
             'authenticator', cli.flag_default('authenticator')))
 
+    def test_ecdsa_key_option(self):
+        elliptic_curve_option = 'elliptic_curve'
+        elliptic_curve_option_value = cli.flag_default(elliptic_curve_option)
+        self.parse('--elliptic-curve {0}'.format(elliptic_curve_option_value).split())
+        self.assertIs(cli.option_was_set(elliptic_curve_option, elliptic_curve_option_value), True)
+
+    def test_invalid_key_type(self):
+        key_type_option = 'key_type'
+        key_type_value = cli.flag_default(key_type_option)
+        self.parse('--key-type {0}'.format(key_type_value).split())
+        self.assertIs(cli.option_was_set(key_type_option, key_type_value), True)
+
+        with self.assertRaises(SystemExit):
+            self.parse("--key-type foo")
+
     def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
             namespace = self.parse(['--reason', reason])
