@@ -1009,6 +1009,7 @@ def delete(config, unused_plugins):
     """
     cert_manager.delete(config)
 
+
 def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
 
@@ -1023,6 +1024,7 @@ def certificates(config, unused_plugins):
 
     """
     cert_manager.certificates(config)
+
 
 # TODO: coop with renewal config
 def revoke(config, unused_plugins):
@@ -1155,6 +1157,7 @@ def _csr_get_and_save_cert(config, le_client):
         cert, chain, os.path.normpath(config.cert_path),
         os.path.normpath(config.chain_path), os.path.normpath(config.fullchain_path))
     return cert_path, fullchain_path
+
 
 def renew_cert(config, plugins, lineage):
     """Renew & save an existing cert. Do not install it.

@@ -319,6 +319,7 @@ This returns information in the following format::
       Domains: example.com, www.example.com
       Expiry Date: 2017-02-19 19:53:00+00:00 (VALID: 30 days)
       Certificate Path: /etc/letsencrypt/live/example.com/fullchain.pem
+      Key Type: RSA
       Private Key Path: /etc/letsencrypt/live/example.com/privkey.pem
 
 ``Certificate Name`` shows the name of the certificate. Pass this name
@@ -345,7 +346,6 @@ The ``--force-renewal``, ``--duplicate``, and ``--expand`` options
 control Certbot's behavior when re-creating
 a certificate with the same name as an existing certificate.
 If you don't specify a requested behavior, Certbot may ask you what you intended.
-
 
 ``--force-renewal`` tells Certbot to request a new certificate
 with the same domains as an existing certificate. Each domain
@@ -380,7 +380,6 @@ If you prefer, you can specify the domains individually like this:
 Consider using ``--cert-name`` instead of ``--expand``, as it gives more control
 over which certificate is modified and it lets you remove domains as well as adding them.
 
-
 ``--allow-subset-of-names`` tells Certbot to continue with certificate generation if
 only some of the specified domain authorizations can be obtained. This may
 be useful if some domains specified in a certificate no longer point at this
@@ -410,6 +409,19 @@ replace that set entirely::
 
   certbot certonly --cert-name example.com -d example.org,www.example.org
 
+
+Migrating to certificates based on ECDSA keys
+---------------------------------------------
+
+As of version 1.10, Certbot supports two types of private key algorithms:
+``rsa`` and ``ecdsa``.  You may freely upgrade an existing certificate with a
+new private key. This requires issuing a new command, or changing the renewal
+file for the certificates so it will happen on the next renewal. The two
+options that you need for the renewal command are ``--key-type`` and
+``--elliptic-curve <name>`` in case you either want to be explicit or want to
+use something else than the default curve ``secp256r1``::
+
+  certbot renew --key-type ecdsa --cert-name example.com -d example.org,www.example.org
 
 Revoking certificates
 ---------------------
