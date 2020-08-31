@@ -1,4 +1,5 @@
 """Tests for certbot._internal.renewal"""
+import logging
 import unittest
 
 try:
@@ -73,6 +74,29 @@ class RenewalTest(test_util.ConfigTestCase):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
         assert self.config.rsa_key_size == 2048
+
+    def test_reuse_ec_key_renewal_params(self):
+        self.config.elliptic_curve = 'INVALID_CURVE'
+        self.config.reuse_key = True
+        self.config.dry_run = True
+        self.config.key_type = 'ecdsa'
+        config = configuration.NamespaceConfig(self.config)
+
+        rc_path = test_util.make_lineage(
+            self.config.config_dir,
+            'sample-renewal-ec.conf',
+            ec=True,
+        )
+        lineage = storage.RenewableCert(rc_path, config)
+
+        le_client = mock.MagicMock()
+        le_client.obtain_certificate.return_value = (None, None, None, None)
+
+        from certbot._internal import renewal
+
+        with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
+            renewal.renew_cert(self.config, None, le_client, lineage)
+        assert self.config.elliptic_curve == 'secp256r1'
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):

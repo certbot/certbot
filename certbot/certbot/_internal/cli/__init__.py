@@ -314,6 +314,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     helpful.add(
+        "security", "--key-type", choices=['rsa', 'ecdsa'], type=str,
+        default=flag_default("key_type"), help=config_help("key_type"))
+    helpful.add(
+        "security", "--elliptic-curve", type=str, choices=[
+            'secp256r1',
+            'secp384r1',
+            'secp521r1',
+        ], metavar="N",
+        default=flag_default("elliptic_curve"), help=config_help("elliptic_curve"))
+    helpful.add(
         "security", "--must-staple", action="store_true",
         dest="must_staple", default=flag_default("must_staple"),
         help=config_help("must_staple"))

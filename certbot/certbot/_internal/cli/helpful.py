@@ -230,6 +230,10 @@ class HelpfulArgumentParser(object):
             raise errors.Error(
                 "Parameters --hsts and --auto-hsts cannot be used simultaneously.")
 
+        if isinstance(parsed_args.key_type, list) and len(parsed_args.key_type) > 1:
+            raise errors.Error(
+                "Only *one* --key-type type may be provided at this time.")
+
         return parsed_args
 
     def set_test_server(self, parsed_args):

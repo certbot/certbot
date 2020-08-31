@@ -8,7 +8,12 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Added timeout to DNS query function calls for dns-rfc2136 plugin.
 * Confirmation when deleting certificates
-*
+* CLI flag `--key-type` has been added to specify 'rsa' or 'ecdsa' (default 'rsa').
+  Only accepts a single value at this time.
+* CLI flag `--elliptic-curve` has been added which takes an NIST/SECG elliptic curve. Either of
+  `secp256r1`, `secp284r1` and `secp521r1` are accepted values.
+* The command `certbot certficates` lists the which type of the private key that was used
+  for the private key.
 
 ### Changed
 
@@ -55,7 +60,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* Added the ability to remove email and phone contact information from an account 
+* Added the ability to remove email and phone contact information from an account
   using `update_account --register-unsafely-without-email`
 
 ### Changed
@@ -67,7 +72,7 @@ More details about these changes can be found on our GitHub repo.
 * The problem causing the Apache plugin in the Certbot snap on ARM systems to
   fail to load the Augeas library it depends on has been fixed.
 * The `acme` library can now tell the ACME server to clear contact information by passing an empty
-  `tuple` to the `contact` field of a `Registration` message. 
+  `tuple` to the `contact` field of a `Registration` message.
 * Fixed the `*** stack smashing detected ***` error in the Certbot snap on some systems.
 
 More details about these changes can be found on our GitHub repo.
