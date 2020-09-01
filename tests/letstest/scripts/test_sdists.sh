@@ -40,7 +40,9 @@ for pkg in acme certbot $PLUGINS; do
     tar -xvf "$pkg-$VERSION.tar.gz"
     cd "$pkg-$VERSION"
     python setup.py build
-    pytest
-    python setup.py install
+    cd build/lib
+    python -m pytest ../../tests
     cd -
+    python setup.py install
+    cd $TEMP_DIR
 done
