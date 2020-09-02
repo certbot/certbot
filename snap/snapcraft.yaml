@@ -75,6 +75,7 @@ parts:
     build-packages: [gcc, libffi-dev, libssl-dev, git, libaugeas-dev, python3-dev]
     build-environment:
       - SNAPCRAFT_PYTHON_VENV_ARGS: --system-site-packages
+      - PIP_NO_BUILD_ISOLATION: "no"
     override-pull: |
         snapcraftctl pull
         cd $SNAPCRAFT_PART_SRC
