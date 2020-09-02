@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 set -e
 
 # This code is based on snapcraft's own patch to work around this problem at
