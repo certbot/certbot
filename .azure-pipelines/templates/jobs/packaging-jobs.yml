@@ -99,7 +99,7 @@ jobs:
       ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
         ARCHS: amd64 arm64 armhf
       ${{ if startsWith(variables['Build.SourceBranchName'], 'test-') }}:
-        ARCHS: amd64
+        ARCHS: amd64 arm64 armhf
     steps:
       - script: |
           sudo apt-get update
