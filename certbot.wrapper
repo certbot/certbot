@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh -x
 set -e
 
 # This code is based on snapcraft's own patch to work around this problem at
@@ -27,25 +27,9 @@ case "${SNAP_ARCH}" in
         exit 1
 esac
 
-snap_connections=$(snap connections certbot)
+export CERTBOT_AUGEAS_PATH="${SNAP}/usr/lib/${ARCH_TRIPLET}/libaugeas.so.0"
 
-PARTIAL_LIBRARY_PATH="${SNAP}/usr/lib/${ARCH_TRIPLET}/"
-export LD_LIBRARY_PATH="${PARTIAL_LIBRARY_PATH}:${LD_LIBRARY_PATH}"
-export CERTBOT_AUGEAS_PATH="${PARTIAL_LIBRARY_PATH}libaugeas.so.0"
+CERTBOT_PLUGIN_PATH="$(curl -s --unix /run/snapd.socket "http://localhost/v2/connections?snap=certbot&interface=content" | jq -r  '.result.established | map(select(.plug.plug == "plugin" and ."plug-attrs".content == "certbot-1") | "/snap/"+.slot.snap+"/current/lib/python3.8/site-packages" ) | join(":")')"
+export CERTBOT_PLUGIN_PATH
 
-# Below this line, all invoked programs must be provided by the snap rather than the host (#8245)
-
-join() {
-    sep=$1
-    first=$2
-    if [ "$first" != "" ]; then
-        shift 2
-        echo -n "${first}"
-        for item in "$@"; do echo -n "${sep}${item}"; done
-        echo
-    fi
-}
-
-paths=$(for plugin_snap in $(gawk 'NR>1 { if ($1 == "content[certbot-1]") { split($3,a,":"); print a[1]; } }'<<<"$snap_connections"); do echo /snap/$plugin_snap/current/lib/python3.8/site-packages; done)
-export CERTBOT_PLUGIN_PATH=$(join : $paths)
 exec certbot "$@"
