@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 if [ "$(snapctl get trust-plugin-with-root)" = "ok" ]; then
     # allow the connection, but reset config to allow for other slots to go through this auth flow

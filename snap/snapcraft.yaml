@@ -71,6 +71,8 @@ parts:
       - python3-distutils
       - python3-pkg-resources
       - python3.8-minimal
+      # added for certbot.wrapper script:
+      - gawk
     # To build cryptography and cffi if needed
     build-packages: [gcc, libffi-dev, libssl-dev, git, libaugeas-dev, python3-dev]
     build-environment:
