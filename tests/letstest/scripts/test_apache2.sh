@@ -12,7 +12,7 @@ then
     # For apache 2.4, set up ServerName
     sudo sed -i '/ServerName/ s/#ServerName/ServerName/' $CONFFILE
     sudo sed -i '/ServerName/ s/www.example.com/'$PUBLIC_HOSTNAME'/' $CONFFILE
-    if [ $(python3 -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -ne 38 ]
+    if [ $(python3 -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -lt 36 ]
     then
         # Upgrade python version using pyenv because py3.5 is deprecated
         # Don't upgrade if it's already 3.8 because pyenv doesn't work great on arm, and

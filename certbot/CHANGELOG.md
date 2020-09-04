@@ -6,7 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added the ability to remove email and phone contact information from an account 
+  using `update_account --register-unsafely-without-email`
 
 ### Changed
 
@@ -14,7 +15,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* The problem causing the Apache plugin in the Certbot snap on ARM systems to
+  fail to load the Augeas library it depends on has been fixed.
+* The `acme` library can now tell the ACME server to clear contact information by passing an empty
+  `tuple` to the `contact` field of a `Registration` message. 
+* Fixed the `*** stack smashing detected ***` error in the Certbot snap on some systems.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -36,7 +41,6 @@ More details about these changes can be found on our GitHub repo.
 
 ### Fixed
 
-*
 
 More details about these changes can be found on our GitHub repo.
 

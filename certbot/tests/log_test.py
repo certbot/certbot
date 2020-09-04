@@ -306,7 +306,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         self.log_path = 'foo.log'
 
     def test_base_exception(self):
-        exc_type = KeyboardInterrupt
+        exc_type = BaseException
         mock_logger, output = self._test_common(exc_type, debug=False)
         self._assert_exception_logged(mock_logger.error, exc_type)
         self._assert_logfile_output(output)
@@ -341,6 +341,11 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         mock_logger, output = self._test_common(exc_type, debug=False)
         self._assert_exception_logged(mock_logger.debug, exc_type)
         self._assert_quiet_output(mock_logger, output)
+
+    def test_keyboardinterrupt(self):
+        exc_type = KeyboardInterrupt
+        mock_logger, output = self._test_common(exc_type, debug=False)
+        mock_logger.error.assert_called_once_with('Exiting due to user request.')
 
     def _test_common(self, error_type, debug):
         """Returns the mocked logger and stderr output."""
