@@ -6,15 +6,14 @@ import os
 import re
 import socket
 
-from OpenSSL import crypto
-from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
 import josepy as jose
+from OpenSSL import crypto
+from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 
 from acme import errors
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Callable, Union, Tuple, Optional
-# pylint: enable=unused-import, no-name-in-module
-
+from acme.magic_typing import Callable
+from acme.magic_typing import Tuple
+from acme.magic_typing import Union
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +27,15 @@ logger = logging.getLogger(__name__)
 _DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD  # type: ignore
 
 
+class _DefaultCertSelection(object):
+    def __init__(self, certs):
+        self.certs = certs
+
+    def __call__(self, connection):
+        server_name = connection.get_servername()
+        return self.certs.get(server_name, None)
+
+
 class SSLSocket(object):  # pylint: disable=too-few-public-methods
     """SSL wrapper for sockets.
 
@@ -35,12 +43,25 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     :ivar dict certs: Mapping from domain names (`bytes`) to
         `OpenSSL.crypto.X509`.
     :ivar method: See `OpenSSL.SSL.Context` for allowed values.
+    :ivar alpn_selection: Hook to select negotiated ALPN protocol for
+        connection.
+    :ivar cert_selection: Hook to select certificate for connection. If given,
+        `certs` parameter would be ignored, and therefore must be empty.
 
     """
-    def __init__(self, sock, certs, method=_DEFAULT_SSL_METHOD):
+    def __init__(self, sock, certs=None,
+            method=_DEFAULT_SSL_METHOD, alpn_selection=None,
+            cert_selection=None):
         self.sock = sock
-        self.certs = certs
+        self.alpn_selection = alpn_selection
         self.method = method
+        if not cert_selection and not certs:
+            raise ValueError("Neither cert_selection or certs specified.")
+        if cert_selection and certs:
+            raise ValueError("Both cert_selection and certs specified.")
+        if cert_selection is None:
+            cert_selection = _DefaultCertSelection(certs)
+        self.cert_selection = cert_selection
 
     def __getattr__(self, name):
         return getattr(self.sock, name)
@@ -57,24 +78,25 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
         :type connection: :class:`OpenSSL.Connection`
 
         """
-        server_name = connection.get_servername()
-        try:
-            key, cert = self.certs[server_name]
-        except KeyError:
-            logger.debug("Server name (%s) not recognized, dropping SSL",
-                         server_name)
+        pair = self.cert_selection(connection)
+        if pair is None:
+            logger.debug("Certificate selection for server name %s failed, dropping SSL",
+                         connection.get_servername())
             return
+        key, cert = pair
         new_context = SSL.Context(self.method)
         new_context.set_options(SSL.OP_NO_SSLv2)
         new_context.set_options(SSL.OP_NO_SSLv3)
         new_context.use_privatekey(key)
         new_context.use_certificate(cert)
+        if self.alpn_selection is not None:
+            new_context.set_alpn_select_callback(self.alpn_selection)
         connection.set_context(new_context)
 
     class FakeConnection(object):
         """Fake OpenSSL.SSL.Connection."""
 
-        # pylint: disable=too-few-public-methods,missing-docstring
+        # pylint: disable=missing-function-docstring
 
         def __init__(self, connection):
             self._wrapped = connection
@@ -86,13 +108,15 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
             # OpenSSL.SSL.Connection.shutdown doesn't accept any args
             return self._wrapped.shutdown()
 
-    def accept(self):  # pylint: disable=missing-docstring
+    def accept(self):  # pylint: disable=missing-function-docstring
         sock, addr = self.sock.accept()
 
         context = SSL.Context(self.method)
         context.set_options(SSL.OP_NO_SSLv2)
         context.set_options(SSL.OP_NO_SSLv3)
         context.set_tlsext_servername_callback(self._pick_certificate_cb)
+        if self.alpn_selection is not None:
+            context.set_alpn_select_callback(self.alpn_selection)
 
         ssl_sock = self.FakeConnection(SSL.Connection(context, sock))
         ssl_sock.set_accept_state()
@@ -108,8 +132,9 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
         return ssl_sock, addr
 
 
-def probe_sni(name, host, port=443, timeout=300,
-              method=_DEFAULT_SSL_METHOD, source_address=('', 0)):
+def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-arguments
+              method=_DEFAULT_SSL_METHOD, source_address=('', 0),
+              alpn_protocols=None):
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the
@@ -121,6 +146,8 @@ def probe_sni(name, host, port=443, timeout=300,
     :param tuple source_address: Enables multi-path probing (selection
         of source interface). See `socket.creation_connection` for more
         info. Available only in Python 2.7+.
+    :param alpn_protocols: Protocols to request using ALPN.
+    :type alpn_protocols: `list` of `bytes`
 
     :raises acme.errors.Error: In case of any problems.
 
@@ -150,6 +177,8 @@ def probe_sni(name, host, port=443, timeout=300,
         client_ssl = SSL.Connection(context, client)
         client_ssl.set_connect_state()
         client_ssl.set_tlsext_host_name(name)  # pyOpenSSL>=0.13
+        if alpn_protocols is not None:
+            client_ssl.set_alpn_protos(alpn_protocols)
         try:
             client_ssl.do_handshake()
             client_ssl.shutdown()
@@ -240,12 +269,14 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
 
 
 def gen_ss_cert(key, domains, not_before=None,
-                validity=(7 * 24 * 60 * 60), force_san=True):
+                validity=(7 * 24 * 60 * 60), force_san=True, extensions=None):
     """Generate new self-signed certificate.
 
     :type domains: `list` of `unicode`
     :param OpenSSL.crypto.PKey key:
     :param bool force_san:
+    :param extensions: List of additional extensions to include in the cert.
+    :type extensions: `list` of `OpenSSL.crypto.X509Extension`
 
     If more than one domain is provided, all of the domains are put into
     ``subjectAltName`` X.509 extension and first domain is set as the
@@ -258,10 +289,13 @@ def gen_ss_cert(key, domains, not_before=None,
     cert.set_serial_number(int(binascii.hexlify(os.urandom(16)), 16))
     cert.set_version(2)
 
-    extensions = [
+    if extensions is None:
+        extensions = []
+
+    extensions.append(
         crypto.X509Extension(
             b"basicConstraints", True, b"CA:TRUE, pathlen:0"),
-    ]
+    )
 
     cert.get_subject().CN = domains[0]
     # TODO: what to put into cert.get_subject()?
@@ -298,7 +332,6 @@ def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
 
     def _dump_cert(cert):
         if isinstance(cert, jose.ComparableX509):
-            # pylint: disable=protected-access
             cert = cert.wrapped
         return crypto.dump_certificate(filetype, cert)
 

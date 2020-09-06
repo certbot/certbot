@@ -1,0 +1,14 @@
+# Advanced pipeline for running our full test suite on demand.
+trigger:
+  # When changing these triggers, please ensure the documentation under
+  # "Running tests in CI" is still correct.
+  - test-*
+pr: none
+
+variables:
+  # We don't publish our Docker images in this pipeline, but when building them
+  # for testing, let's use the nightly tag.
+  dockerTag: nightly
+
+stages:
+  - template: templates/stages/test-and-package-stage.yml

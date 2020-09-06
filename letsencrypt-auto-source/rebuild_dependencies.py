@@ -26,14 +26,14 @@ import argparse
 
 # The list of docker distributions to test dependencies against with.
 DISTRIBUTION_LIST = [
-    'ubuntu:18.04', 'ubuntu:14.04',
-    'debian:stretch', 'debian:jessie',
+    'ubuntu:18.04', 'ubuntu:16.04',
+    'debian:stretch',
     'centos:7', 'centos:6',
     'opensuse/leap:15',
     'fedora:29',
 ]
 
-# Theses constraints will be added while gathering dependencies on each distribution.
+# These constraints will be added while gathering dependencies on each distribution.
 # It can be used because a particular version for a package is required for any reason,
 # or to solve a version conflict between two distributions requirements.
 AUTHORITATIVE_CONSTRAINTS = {
@@ -44,10 +44,13 @@ AUTHORITATIVE_CONSTRAINTS = {
     'python-augeas': '0.5.0',
     # Package enum34 needs to be explicitly limited to Python2.x, in order to avoid
     # certbot-auto failures on Python 3.6+ which enum34 doesn't support. See #5456.
-    # TODO: hashin seems to overwrite environment markers in dependencies. This needs to be fixed.
-    'enum34': '1.1.6 ; python_version < \'3.4\''
+    'enum34': '1.1.10; python_version < \'3.4\'',
+    # Cryptography 2.9+ drops support for OpenSSL 1.0.1, but we still want to support it
+    # for officially supported non-x86_64 ancient distributions like RHEL 6.
+    'cryptography': '2.8',
+    # Parsedatetime 2.6 is broken on Python 2.7, see https://github.com/bear/parsedatetime/issues/246
+    'parsedatetime': '2.5',
 }
-
 
 # ./certbot/letsencrypt-auto-source/rebuild_dependencies.py (2 levels from certbot root path)
 CERTBOT_REPO_PATH = dirname(dirname(abspath(__file__)))
@@ -57,10 +60,9 @@ CERTBOT_REPO_PATH = dirname(dirname(abspath(__file__)))
 #   - then this venv is used to consistently construct an empty new venv
 #   - once pipstraped, this new venv pip-installs certbot runtime (including apache/nginx),
 #     without pinned dependencies, and respecting input authoritative requirements
-#   - `certbot plugins` is called to check we have an healthy environment
+#   - `certbot plugins` is called to check we have a healthy environment
 #   - finally current set of dependencies is extracted out of the docker using pip freeze
-SCRIPT = """\
-#!/bin/sh
+SCRIPT = r"""#!/bin/sh
 set -e
 
 cd /tmp/certbot
@@ -70,7 +72,7 @@ PYVER=`/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cu
 /opt/eff.org/certbot/venv/bin/python letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "$PYVER" 1
 
 /tmp/venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
-/tmp/venv/bin/pip install -e acme -e . -e certbot-apache -e certbot-nginx -c /tmp/constraints.txt
+/tmp/venv/bin/pip install -e acme -e certbot -e certbot-apache -e certbot-nginx -c /tmp/constraints.txt
 /tmp/venv/bin/certbot plugins
 /tmp/venv/bin/pip freeze >> /tmp/workspace/requirements.txt
 """
@@ -104,7 +106,7 @@ def _requirements_from_one_distribution(distribution, verbose):
         os.chmod(script, 0o755)
 
         _write_to(authoritative_constraints, '\n'.join(
-            ['{0}=={1}'.format(package, version) for package, version in AUTHORITATIVE_CONSTRAINTS.items()]))
+            '{0}=={1}'.format(package, version) for package, version in AUTHORITATIVE_CONSTRAINTS.items()))
 
         command = ['docker', 'run', '--rm', '--cidfile', cid_file,
                    '-v', '{0}:/tmp/certbot'.format(CERTBOT_REPO_PATH),
@@ -227,6 +229,10 @@ def _write_requirements(dest_file, requirements, conflicts):
 ''')
 
     for req in requirements:
+        if req[0] in AUTHORITATIVE_CONSTRAINTS:
+            # If requirement is in AUTHORITATIVE_CONSTRAINTS, take its value instead of the
+            # computed one to get any environment descriptor that would have been added.
+            req = (req[0], AUTHORITATIVE_CONSTRAINTS[req[0]])
         subprocess.check_call(['hashin', '{0}=={1}'.format(req[0], req[1]),
                                '--requirements-file', dest_file])
 

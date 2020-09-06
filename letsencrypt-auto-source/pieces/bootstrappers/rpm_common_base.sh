@@ -3,7 +3,9 @@
 
 # Sets TOOL to the name of the package manager
 # Sets appropriate values for YES_FLAG and QUIET_FLAG based on $ASSUME_YES and $QUIET_FLAG.
-# Enables EPEL if applicable and possible.
+# Note: this function is called both while selecting the bootstrap scripts and
+# during the actual bootstrap. Some things like prompting to user can be done in the latter
+# case, but not in the former one.
 InitializeRPMCommonBase() {
   if type dnf 2>/dev/null
   then
@@ -22,26 +24,6 @@ InitializeRPMCommonBase() {
   fi
   if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='--quiet'
-  fi
-
-  if ! $TOOL list *virtualenv >/dev/null 2>&1; then
-    echo "To use Certbot, packages from the EPEL repository need to be installed."
-    if ! $TOOL list epel-release >/dev/null 2>&1; then
-      error "Enable the EPEL repository and try running Certbot again."
-      exit 1
-    fi
-    if [ "$ASSUME_YES" = 1 ]; then
-      /bin/echo -n "Enabling the EPEL repository in 3 seconds..."
-      sleep 1s
-      /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
-      sleep 1s
-      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 second..."
-      sleep 1s
-    fi
-    if ! $TOOL install $YES_FLAG $QUIET_FLAG epel-release; then
-      error "Could not enable EPEL. Aborting bootstrap!"
-      exit 1
-    fi
   fi
 }
 

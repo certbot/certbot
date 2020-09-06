@@ -3,13 +3,16 @@ import os
 import shutil
 import subprocess
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import zope.interface
 
-from certbot import configuration
 from certbot import errors as le_errors
 from certbot import util as certbot_util
-from certbot_apache import entrypoint
+from certbot._internal import configuration
+from certbot_apache._internal import entrypoint
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util
@@ -18,7 +21,6 @@ from certbot_compatibility_test.configurators import common as configurators_com
 
 @zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(configurators_common.Proxy):
-    # pylint: disable=too-many-instance-attributes
     """A common base for Apache test configurators"""
 
     def __init__(self, args):
@@ -28,7 +30,7 @@ class Proxy(configurators_common.Proxy):
 
         self.modules = self.server_root = self.test_conf = self.version = None
         patch = mock.patch(
-            "certbot_apache.configurator.display_ops.select_vhost")
+            "certbot_apache._internal.configurator.display_ops.select_vhost")
         mock_display = patch.start()
         mock_display.side_effect = le_errors.PluginError(
             "Unable to determine vhost")

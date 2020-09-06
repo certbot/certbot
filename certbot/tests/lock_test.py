@@ -1,7 +1,17 @@
-"""Tests for certbot.lock."""
+"""Tests for certbot._internal.lock."""
 import functools
 import multiprocessing
 import unittest
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
+from certbot import errors
+from certbot.compat import os
+from certbot.tests import util as test_util
+
 try:
     import fcntl  # pylint: disable=import-error,unused-import
 except ImportError:
@@ -9,18 +19,14 @@ except ImportError:
 else:
     POSIX_MODE = True
 
-import mock
 
-from certbot import errors
-from certbot.compat import os
-from certbot.tests import util as test_util
 
 
 class LockDirTest(test_util.TempDirTestCase):
-    """Tests for certbot.lock.lock_dir."""
+    """Tests for certbot._internal.lock.lock_dir."""
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.lock import lock_dir
+        from certbot._internal.lock import lock_dir
         return lock_dir(*args, **kwargs)
 
     def test_it(self):
@@ -31,10 +37,10 @@ class LockDirTest(test_util.TempDirTestCase):
 
 
 class LockFileTest(test_util.TempDirTestCase):
-    """Tests for certbot.lock.LockFile."""
+    """Tests for certbot._internal.lock.LockFile."""
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.lock import LockFile
+        from certbot._internal.lock import LockFile
         return LockFile(*args, **kwargs)
 
     def setUp(self):
@@ -82,7 +88,10 @@ class LockFileTest(test_util.TempDirTestCase):
         'Race conditions on lock are specific to the non-blocking file access approach on Linux.')
     def test_race(self):
         should_delete = [True, False]
-        stat = os.stat
+        # Normally os module should not be imported in certbot codebase except in certbot.compat
+        # for the sake of compatibility over Windows and Linux.
+        # We make an exception here, since test_race is a test function called only on Linux.
+        from os import stat  # pylint: disable=os-module-forbidden
 
         def delete_and_stat(path):
             """Wrap os.stat and maybe delete the file first."""
@@ -90,7 +99,7 @@ class LockFileTest(test_util.TempDirTestCase):
                 os.remove(path)
             return stat(path)
 
-        with mock.patch('certbot.lock.os.stat') as mock_stat:
+        with mock.patch('certbot._internal.lock.filesystem.os.stat') as mock_stat:
             mock_stat.side_effect = delete_and_stat
             self._call(self.lock_path)
         self.assertFalse(should_delete)
@@ -102,9 +111,9 @@ class LockFileTest(test_util.TempDirTestCase):
 
     def test_unexpected_lockf_or_locking_err(self):
         if POSIX_MODE:
-            mocked_function = 'certbot.lock.fcntl.lockf'
+            mocked_function = 'certbot._internal.lock.fcntl.lockf'
         else:
-            mocked_function = 'certbot.lock.msvcrt.locking'
+            mocked_function = 'certbot._internal.lock.msvcrt.locking'
         msg = 'hi there'
         with mock.patch(mocked_function) as mock_lock:
             mock_lock.side_effect = IOError(msg)
@@ -117,9 +126,9 @@ class LockFileTest(test_util.TempDirTestCase):
 
     def test_unexpected_os_err(self):
         if POSIX_MODE:
-            mock_function = 'certbot.lock.os.stat'
+            mock_function = 'certbot._internal.lock.filesystem.os.stat'
         else:
-            mock_function = 'certbot.lock.msvcrt.locking'
+            mock_function = 'certbot._internal.lock.msvcrt.locking'
         # The only expected errno are ENOENT and EACCES in lock module.
         msg = 'hi there'
         with mock.patch(mock_function) as mock_os:

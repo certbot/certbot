@@ -1,9 +1,12 @@
 """Tests for certbot_compatibility_test.validator."""
 import unittest
-import requests
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import OpenSSL
+import requests
 
 from acme import errors as acme_errors
 from certbot_compatibility_test import validator
@@ -39,7 +42,7 @@ class ValidatorTest(unittest.TestCase):
             cert, "test.com", "127.0.0.1"))
 
     @mock.patch("certbot_compatibility_test.validator.requests.get")
-    def test_succesful_redirect(self, mock_get_request):
+    def test_successful_redirect(self, mock_get_request):
         mock_get_request.return_value = create_response(
             301, {"location": "https://test.com"})
         self.assertTrue(self.validator.redirect("test.com"))

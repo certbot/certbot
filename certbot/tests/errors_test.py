@@ -1,10 +1,12 @@
 """Tests for certbot.errors."""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
 from acme import messages
-
 from certbot import achallenges
 from certbot.tests import acme_util
 
@@ -14,25 +16,27 @@ class FailedChallengesTest(unittest.TestCase):
 
     def setUp(self):
         from certbot.errors import FailedChallenges
-        self.error = FailedChallenges(set([achallenges.DNS(
+        self.error = FailedChallenges({achallenges.DNS(
             domain="example.com", challb=messages.ChallengeBody(
                 chall=acme_util.DNS01, uri=None,
-                error=messages.Error(typ="tls", detail="detail")))]))
+                error=messages.Error.with_code("tls", detail="detail")))})
 
     def test_str(self):
         self.assertTrue(str(self.error).startswith(
-            "Failed authorization procedure. example.com (dns-01): tls"))
+            "Failed authorization procedure. example.com (dns-01): "
+            "urn:ietf:params:acme:error:tls"))
 
     def test_unicode(self):
         from certbot.errors import FailedChallenges
         arabic_detail = u'\u0639\u062f\u0627\u0644\u0629'
-        arabic_error = FailedChallenges(set([achallenges.DNS(
+        arabic_error = FailedChallenges({achallenges.DNS(
             domain="example.com", challb=messages.ChallengeBody(
                 chall=acme_util.DNS01, uri=None,
-                error=messages.Error(typ="tls", detail=arabic_detail)))]))
+                error=messages.Error.with_code("tls", detail=arabic_detail)))})
 
         self.assertTrue(str(arabic_error).startswith(
-            "Failed authorization procedure. example.com (dns-01): tls"))
+            "Failed authorization procedure. example.com (dns-01): "
+            "urn:ietf:params:acme:error:tls"))
 
 
 class StandaloneBindErrorTest(unittest.TestCase):

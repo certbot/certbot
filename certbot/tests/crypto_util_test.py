@@ -2,15 +2,19 @@
 import logging
 import unittest
 
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import OpenSSL
-import mock
 import zope.component
 
-import certbot.tests.util as test_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import filesystem
 from certbot.compat import os
+import certbot.tests.util as test_util
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
@@ -23,11 +27,18 @@ SS_CERT = test_util.load_vector('cert_2048.pem')
 P256_KEY = test_util.load_vector('nistp256_key.pem')
 P256_CERT_PATH = test_util.vector_path('cert-nosans_nistp256.pem')
 P256_CERT = test_util.load_vector('cert-nosans_nistp256.pem')
+# CERT_LEAF is signed by CERT_ISSUER. CERT_ALT_ISSUER is a cross-sign of CERT_ISSUER.
+CERT_LEAF = test_util.load_vector('cert_leaf.pem')
+CERT_ISSUER = test_util.load_vector('cert_intermediate_1.pem')
+CERT_ALT_ISSUER = test_util.load_vector('cert_intermediate_2.pem')
 
 class InitSaveKeyTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_key."""
     def setUp(self):
         super(InitSaveKeyTest, self).setUp()
+
+        self.workdir = os.path.join(self.tempdir, 'workdir')
+        filesystem.mkdir(self.workdir, mode=0o700)
 
         logging.disable(logging.CRITICAL)
         zope.component.provideUtility(
@@ -46,15 +57,15 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
         mock_make.return_value = b'key_pem'
-        key = self._call(1024, self.tempdir)
+        key = self._call(1024, self.workdir)
         self.assertEqual(key.pem, b'key_pem')
         self.assertTrue('key-certbot.pem' in key.file)
-        self.assertTrue(os.path.exists(os.path.join(self.tempdir, key.file)))
+        self.assertTrue(os.path.exists(os.path.join(self.workdir, key.file)))
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_key_failure(self, mock_make):
         mock_make.side_effect = ValueError
-        self.assertRaises(ValueError, self._call, 431, self.tempdir)
+        self.assertRaises(ValueError, self._call, 431, self.workdir)
 
 
 class InitSaveCSRTest(test_util.TempDirTestCase):
@@ -160,7 +171,7 @@ class ImportCSRFileTest(unittest.TestCase):
                           test_util.load_vector('cert_512.pem'))
 
 
-class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
+class MakeKeyTest(unittest.TestCase):
     """Tests for certbot.crypto_util.make_key."""
 
     def test_it(self):  # pylint: disable=no-self-use
@@ -177,15 +188,15 @@ class VerifyCertSetup(unittest.TestCase):
         super(VerifyCertSetup, self).setUp()
 
         self.renewable_cert = mock.MagicMock()
-        self.renewable_cert.cert = SS_CERT_PATH
-        self.renewable_cert.chain = SS_CERT_PATH
-        self.renewable_cert.privkey = RSA2048_KEY_PATH
-        self.renewable_cert.fullchain = test_util.vector_path('cert_fullchain_2048.pem')
+        self.renewable_cert.cert_path = SS_CERT_PATH
+        self.renewable_cert.chain_path = SS_CERT_PATH
+        self.renewable_cert.key_path = RSA2048_KEY_PATH
+        self.renewable_cert.fullchain_path = test_util.vector_path('cert_fullchain_2048.pem')
 
         self.bad_renewable_cert = mock.MagicMock()
-        self.bad_renewable_cert.chain = SS_CERT_PATH
-        self.bad_renewable_cert.cert = SS_CERT_PATH
-        self.bad_renewable_cert.fullchain = SS_CERT_PATH
+        self.bad_renewable_cert.chain_path = SS_CERT_PATH
+        self.bad_renewable_cert.cert_path = SS_CERT_PATH
+        self.bad_renewable_cert.fullchain_path = SS_CERT_PATH
 
 
 class VerifyRenewableCertTest(VerifyCertSetup):
@@ -215,13 +226,13 @@ class VerifyRenewableCertSigTest(VerifyCertSetup):
 
     def test_cert_sig_match_ec(self):
         renewable_cert = mock.MagicMock()
-        renewable_cert.cert = P256_CERT_PATH
-        renewable_cert.chain = P256_CERT_PATH
-        renewable_cert.privkey = P256_KEY
+        renewable_cert.cert_path = P256_CERT_PATH
+        renewable_cert.chain_path = P256_CERT_PATH
+        renewable_cert.key_path = P256_KEY
         self.assertEqual(None, self._call(renewable_cert))
 
     def test_cert_sig_mismatch(self):
-        self.bad_renewable_cert.cert = test_util.vector_path('cert_512_bad.pem')
+        self.bad_renewable_cert.cert_path = test_util.vector_path('cert_512_bad.pem')
         self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
 
 
@@ -372,16 +383,69 @@ class Sha256sumTest(unittest.TestCase):
 class CertAndChainFromFullchainTest(unittest.TestCase):
     """Tests for certbot.crypto_util.cert_and_chain_from_fullchain"""
 
+    def _parse_and_reencode_pem(self, cert_pem):
+        from OpenSSL import crypto
+        return crypto.dump_certificate(crypto.FILETYPE_PEM,
+            crypto.load_certificate(crypto.FILETYPE_PEM, cert_pem)).decode()
+
     def test_cert_and_chain_from_fullchain(self):
         cert_pem = CERT.decode()
         chain_pem = cert_pem + SS_CERT.decode()
         fullchain_pem = cert_pem + chain_pem
         spacey_fullchain_pem = cert_pem + u'\n' + chain_pem
+        crlf_fullchain_pem = fullchain_pem.replace(u'\n', u'\r\n')
+
+        # In the ACME v1 code path, the fullchain is constructed by loading cert+chain DERs
+        # and using OpenSSL to dump them, so here we confirm that OpenSSL is producing certs
+        # that will be parseable by cert_and_chain_from_fullchain.
+        acmev1_fullchain_pem = self._parse_and_reencode_pem(cert_pem) + \
+            self._parse_and_reencode_pem(cert_pem) + self._parse_and_reencode_pem(SS_CERT.decode())
+
         from certbot.crypto_util import cert_and_chain_from_fullchain
-        for fullchain in (fullchain_pem, spacey_fullchain_pem):
+        for fullchain in (fullchain_pem, spacey_fullchain_pem, crlf_fullchain_pem,
+                          acmev1_fullchain_pem):
             cert_out, chain_out = cert_and_chain_from_fullchain(fullchain)
             self.assertEqual(cert_out, cert_pem)
             self.assertEqual(chain_out, chain_pem)
+
+        self.assertRaises(errors.Error, cert_and_chain_from_fullchain, cert_pem)
+
+
+class FindChainWithIssuerTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.find_chain_with_issuer"""
+
+    @classmethod
+    def _call(cls, fullchains, issuer_cn, **kwargs):
+        from certbot.crypto_util import find_chain_with_issuer
+        return find_chain_with_issuer(fullchains, issuer_cn, kwargs)
+
+    def _all_fullchains(self):
+        return [CERT_LEAF.decode() + CERT_ISSUER.decode(),
+                CERT_LEAF.decode() + CERT_ALT_ISSUER.decode()]
+
+    def test_positive_match(self):
+        """Correctly pick the chain based on the root's CN"""
+        fullchains = self._all_fullchains()
+        matched = self._call(fullchains, "Pebble Root CA 0cc6f0")
+        self.assertEqual(matched, fullchains[1])
+
+    @mock.patch('certbot.crypto_util.logger.info')
+    def test_no_match(self, mock_info):
+        fullchains = self._all_fullchains()
+        matched = self._call(fullchains, "non-existent issuer")
+        self.assertEqual(matched, fullchains[0])
+        mock_info.assert_not_called()
+
+    @mock.patch('certbot.crypto_util.logger.info')
+    def test_warning_on_no_match(self, mock_info):
+        fullchains = self._all_fullchains()
+        matched = self._call(fullchains, "non-existent issuer",
+                             warn_on_no_match=True)
+        self.assertEqual(matched, fullchains[0])
+        mock_info.assert_called_once_with("Certbot has been configured to prefer "
+            "certificate chains with issuer '%s', but no chain from the CA matched "
+            "this issuer. Using the default certificate chain instead.",
+            "non-existent issuer")
 
 
 if __name__ == '__main__':

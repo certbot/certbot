@@ -1,0 +1,35 @@
+#!/bin/sh
+set -e
+
+# This code is based on snapcraft's own patch to work around this problem at
+# https://github.com/snapcore/snapcraft/blob/a97fb5c7ea553a1bd20f4887a7c3393e75761890/patches/ctypes_init.diff.
+# We may not build the Certbot snap for all of these architectures (and as of
+# writing this we do not), but we keep the code for them to avoid having to
+# solve this problem again in the future if we add support for new
+# architectures.
+case "${SNAP_ARCH}" in
+    'arm64')
+        ARCH_TRIPLET='aarch64-linux-gnu';;
+    'armhf')
+        ARCH_TRIPLET='arm-linux-gnueabihf';;
+    'i386')
+        ARCH_TRIPLET='i386-linux-gnu';;
+    'ppc64el')
+        ARCH_TRIPLET='powerpc64le-linux-gnu';;
+    'powerpc')
+        ARCH_TRIPLET='powerpc-linux-gnu';;
+    'amd64')
+        ARCH_TRIPLET='x86_64-linux-gnu';;
+    's390x')
+        ARCH_TRIPLET='s390x-linux-gnu';;
+    *)
+        echo "Unrecongized value of SNAP_ARCH: ${SNAP_ARCH}" >&2
+        exit 1
+esac
+
+export CERTBOT_AUGEAS_PATH="${SNAP}/usr/lib/${ARCH_TRIPLET}/libaugeas.so.0"
+
+CERTBOT_PLUGIN_PATH="$(curl -s --unix-socket /run/snapd.socket "http://localhost/v2/connections?snap=certbot&interface=content" | jq -r  '.result.established | map(select(.plug.plug == "plugin" and ."plug-attrs".content == "certbot-1") | "/snap/"+.slot.snap+"/current/lib/python3.8/site-packages/" ) | join(":")')"
+export CERTBOT_PLUGIN_PATH
+
+exec certbot "$@"

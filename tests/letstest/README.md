@@ -14,15 +14,18 @@ Simple AWS testfarm scripts for certbot client testing
   - AWS EC2 has a default limit of 20 t2/t1 instances, if more
     are needed, they need to be requested via online webform.
 
-## Usage
-  - To install the necessary dependencies on Ubuntu 16.04, run:
+## Installation and configuration
+These tests require Python 3, awscli, boto3, PyYAML, and fabric 2.0+. If you're
+on a Debian based system, make sure you also have the python3-venv package
+installed. If you have Python 3 installed, you can use requirements.txt to
+create a virtual environment with a known set of dependencies by running:
 ```
-sudo apt install awscli python-yaml python-boto3 fabric
+python3 -m venv venv3
+. ./venv3/bin/activate
+pip install --requirement requirements.txt
 ```
 
-  - Requires AWS IAM secrets to be set up with aws cli
-  - Requires an AWS associated keyfile <keyname>.pem
-
+You can then configure AWS credentials and create a key by running:
 ```
 >aws configure --profile <profile name>
 [interactive: enter secrets for IAM role]
@@ -30,9 +33,10 @@ sudo apt install awscli python-yaml python-boto3 fabric
 ```
 Note: whatever you pick for `<key name>` will be shown to other users with AWS access.
 
-When prompted for a default region name, enter: `us-east-1`
+When prompted for a default region name, enter: `us-east-1`.
 
-then:
+## Usage
+To run tests, activate the virtual environment you created above and run:
 ```
 >python multitester.py targets.yaml /path/to/your/key.pem <profile name> scripts/<test to run>
 ```

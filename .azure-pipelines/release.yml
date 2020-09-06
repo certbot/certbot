@@ -1,0 +1,18 @@
+# Release pipeline to run our full test suite, build artifacts, and deploy them
+# for GitHub release tags.
+trigger:
+  tags:
+    include:
+      - v*
+pr: none
+
+variables:
+  dockerTag: ${{variables['Build.SourceBranchName']}}
+
+stages:
+  - template: templates/stages/test-and-package-stage.yml
+  - template: templates/stages/changelog-stage.yml
+  - template: templates/stages/deploy-stage.yml
+    parameters:
+      snapReleaseChannel: beta
+  - template: templates/stages/notify-failure-stage.yml

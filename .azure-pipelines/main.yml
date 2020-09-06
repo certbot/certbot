@@ -1,0 +1,7 @@
+trigger: none
+pr:
+  - master
+  - '*.x'
+
+jobs:
+  - template: templates/jobs/standard-tests-jobs.yml

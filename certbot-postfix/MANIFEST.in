@@ -1,4 +1,0 @@
-include LICENSE.txt
-include README.rst
-recursive-include certbot_postfix/testdata *
-recursive-include certbot_postfix/docs *
