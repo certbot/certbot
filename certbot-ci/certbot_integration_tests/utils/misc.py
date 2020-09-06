@@ -279,16 +279,17 @@ def load_sample_data_path(workspace):
     shutil.copytree(original, copied, symlinks=True)
 
     if os.name == 'nt':
-        # Fix the symlinks on Windows since GIT is not creating them upon checkout
+        # Fix the symlinks on Windows if GIT is not configured to create them upon checkout
         for lineage in ['a.encryption-example.com', 'b.encryption-example.com']:
             current_live = os.path.join(copied, 'live', lineage)
             for name in os.listdir(current_live):
                 if name != 'README':
                     current_file = os.path.join(current_live, name)
-                    with open(current_file) as file_h:
-                        src = file_h.read()
-                    os.unlink(current_file)
-                    os.symlink(os.path.join(current_live, src), current_file)
+                    if not os.path.islink(current_file):
+                        with open(current_file) as file_h:
+                            src = file_h.read()
+                        os.unlink(current_file)
+                        os.symlink(os.path.join(current_live, src), current_file)
 
     return copied
 

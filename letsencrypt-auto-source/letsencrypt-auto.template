@@ -258,7 +258,7 @@ DeprecationBootstrap() {
 
 MIN_PYTHON_2_VERSION="2.7"
 MIN_PYVER2=$(echo "$MIN_PYTHON_2_VERSION" | sed 's/\.//')
-MIN_PYTHON_3_VERSION="3.5"
+MIN_PYTHON_3_VERSION="3.6"
 MIN_PYVER3=$(echo "$MIN_PYTHON_3_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version.
@@ -452,7 +452,7 @@ else
     error "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     error
     error "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
-    error "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
+    error "Please see https://certbot.eff.org/docs/contributing.html#prerequisites"
     error "for more info."
     exit 1
   }

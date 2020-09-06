@@ -36,14 +36,6 @@ jobs:
           PYTHON_VERSION: 2.7
           TOXENV: integration
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-py35-integration:
-          PYTHON_VERSION: 3.5
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
-        linux-boulder-v2-py35-integration:
-          PYTHON_VERSION: 3.5
-          TOXENV: integration
-          ACME_SERVER: boulder-v2
         linux-boulder-v1-py36-integration:
           PYTHON_VERSION: 3.6
           TOXENV: integration
@@ -70,16 +62,17 @@ jobs:
           ACME_SERVER: boulder-v2
         nginx-compat:
           TOXENV: nginx_compat
-        le-auto-jessie:
-          TOXENV: le_auto_jessie
         le-auto-centos6:
           TOXENV: le_auto_centos6
         le-auto-oraclelinux6:
           TOXENV: le_auto_oraclelinux6
         docker-dev:
           TOXENV: docker_dev
-        farmtest-apache2:
-          PYTHON_VERSION: 3.7
+        macos-farmtest-apache2:
+          # We run one of these test farm tests on macOS to help ensure the
+          # tests continue to work on the platform.
+          IMAGE_NAME: macOS-10.15
+          PYTHON_VERSION: 3.8
           TOXENV: test-farm-apache2
         farmtest-leauto-upgrades:
           PYTHON_VERSION: 3.7

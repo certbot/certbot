@@ -1,4 +1,35 @@
 jobs:
+  - job: docker_build
+    pool:
+      vmImage: ubuntu-18.04
+    strategy:
+      matrix:
+        amd64:
+          DOCKER_ARCH: amd64
+        # Do not run the heavy non-amd64 builds for test branches
+        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
+          arm32v6:
+            DOCKER_ARCH: arm32v6
+          arm64v8:
+            DOCKER_ARCH: arm64v8
+    steps:
+      - bash: tools/docker/build.sh $(dockerTag) $DOCKER_ARCH
+        displayName: Build the Docker images
+      # We don't filter for the Docker Hub organization to continue to allow
+      # easy testing of these scripts on forks.
+      - bash: |
+          DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
+          docker save --output images.tar $DOCKER_IMAGES
+        displayName: Save the Docker images
+      # If the name of the tar file or artifact changes, the deploy stage will
+      # also need to be updated.
+      - bash: mv images.tar $(Build.ArtifactStagingDirectory)
+        displayName: Prepare Docker artifact
+      - task: PublishPipelineArtifact@1
+        inputs:
+          path: $(Build.ArtifactStagingDirectory)
+          artifact: docker_$(DOCKER_ARCH)
+        displayName: Store Docker artifact
   - job: installer_build
     pool:
       vmImage: vs2017-win2016
@@ -18,6 +49,7 @@ jobs:
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
+          # If we change the artifact's name, it should also be changed in tools/create_github_release.py
           artifact: windows-installer
         displayName: Publish Windows installer
   - job: installer_run
@@ -58,29 +90,48 @@ jobs:
           set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
-  - job: snap_build
-    strategy:
-      matrix:
-        amd64:
-          ARCH: amd64
-        arm64:
-          ARCH: arm64
-        armhf:
-          ARCH: armhf
+  - job: snaps_build
     pool:
       vmImage: ubuntu-18.04
+    timeoutInMinutes: 0
+    variables:
+      # Do not run the heavy non-amd64 builds for test branches
+      ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
+        ARCHS: amd64 arm64 armhf
+      ${{ if startsWith(variables['Build.SourceBranchName'], 'test-') }}:
+        ARCHS: amd64
     steps:
       - script: |
-          snap/local/build.sh ${ARCH}
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends snapd
+          sudo snap install --classic snapcraft
+        displayName: Install dependencies
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.8
+          addToPath: true
+      - task: DownloadSecureFile@1
+        name: credentials
+        inputs:
+          secureFile: launchpad-credentials
+      - script: |
+          git config --global user.email "$(Build.RequestedForEmail)"
+          git config --global user.name "$(Build.RequestedFor)"
+          mkdir -p ~/.local/share/snapcraft/provider/launchpad
+          cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
+          python3 tools/snap/build_remote.py ALL --archs ${ARCHS}
+        displayName: Build snaps
+      - script: |
           mv *.snap $(Build.ArtifactStagingDirectory)
-        displayName: Build Certbot snap
+          mv certbot-dns-*/*.snap $(Build.ArtifactStagingDirectory)
+        displayName: Prepare artifacts
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
-          artifact: snap-$(arch)
-        displayName: Store snap artifact
+          artifact: snaps
+        displayName: Store snaps artifacts
   - job: snap_run
-    dependsOn: snap_build
+    dependsOn: snaps_build
     pool:
       vmImage: ubuntu-18.04
     steps:
@@ -91,12 +142,37 @@ jobs:
         displayName: Install dependencies
       - task: DownloadPipelineArtifact@2
         inputs:
-          artifact: snap-amd64
+          artifact: snaps
           path: $(Build.SourcesDirectory)/snap
-        displayName: Retrieve Certbot snap
+        displayName: Retrieve Certbot snaps
       - script: |
-          sudo snap install --dangerous --classic snap/*.snap
+          sudo snap install --dangerous --classic snap/certbot_*_amd64.snap
         displayName: Install Certbot snap
       - script: |
           python -m tox -e integration-external,apacheconftest-external-with-pebble
         displayName: Run tox
+  - job: snap_dns_run
+    dependsOn: snaps_build
+    pool:
+      vmImage: ubuntu-18.04
+    steps:
+      - script: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends snapd
+        displayName: Install dependencies
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.8
+          addToPath: true
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          artifact: snaps
+          path: $(Build.SourcesDirectory)/snap
+        displayName: Retrieve Certbot snaps
+      - script: |
+          python3 -m venv venv
+          venv/bin/python tools/pip_install.py -e certbot-ci
+        displayName: Prepare Certbot-CI
+      - script: |
+          sudo -E venv/bin/pytest certbot-ci/snap_integration_tests/dns_tests --allow-persistent-changes --snap-folder $(Build.SourcesDirectory)/snap --snap-arch amd64
+        displayName: Test DNS plugins snaps

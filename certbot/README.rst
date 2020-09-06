@@ -67,9 +67,9 @@ Let's Encrypt Website: https://letsencrypt.org
 
 Community: https://community.letsencrypt.org
 
-ACME spec: http://ietf-wg-acme.github.io/acme/
+ACME spec: `RFC 8555 <https://tools.ietf.org/html/rfc8555>`_
 
-ACME working area in github: https://github.com/ietf-wg-acme/acme
+ACME working area in github (archived): https://github.com/ietf-wg-acme/acme
 
 |build-status|
 

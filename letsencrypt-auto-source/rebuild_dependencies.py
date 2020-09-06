@@ -27,7 +27,7 @@ import argparse
 # The list of docker distributions to test dependencies against with.
 DISTRIBUTION_LIST = [
     'ubuntu:18.04', 'ubuntu:16.04',
-    'debian:stretch', 'debian:jessie',
+    'debian:stretch',
     'centos:7', 'centos:6',
     'opensuse/leap:15',
     'fedora:29',
@@ -46,7 +46,7 @@ AUTHORITATIVE_CONSTRAINTS = {
     # certbot-auto failures on Python 3.6+ which enum34 doesn't support. See #5456.
     'enum34': '1.1.10; python_version < \'3.4\'',
     # Cryptography 2.9+ drops support for OpenSSL 1.0.1, but we still want to support it
-    # for officially supported non-x86_64 ancient distributions like RHEL 6 or Debian 8.
+    # for officially supported non-x86_64 ancient distributions like RHEL 6.
     'cryptography': '2.8',
     # Parsedatetime 2.6 is broken on Python 2.7, see https://github.com/bear/parsedatetime/issues/246
     'parsedatetime': '2.5',

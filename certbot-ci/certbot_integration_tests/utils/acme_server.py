@@ -192,11 +192,11 @@ class ACMEServer(object):
             print('=> Waiting for boulder instance to respond...')
             misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=300)
 
-	        if not self._dns_server:
-	            # Configure challtestsrv to answer any A record request with ip of the docker host.
-	            response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),
-	                                     json={'ip': '10.77.77.1'})
-	            response.raise_for_status()
+            if not self._dns_server:
+                # Configure challtestsrv to answer any A record request with ip of the docker host.
+                response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),
+                                         json={'ip': '10.77.77.1'})
+                response.raise_for_status()
         except BaseException:
             # If we failed to set up boulder, print its logs.
             print('=> Boulder setup failed. Boulder logs are:')
