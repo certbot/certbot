@@ -392,7 +392,7 @@ abuse of the ACME protocol, as described
 .. _changing:
 
 Changing a Certificate's Domains
-================================
+--------------------------------
 
 The ``--cert-name`` flag can also be used to modify the domains a certificate contains,
 by specifying new domains using the ``-d`` or ``--domains`` flag. If certificate ``example.com``
