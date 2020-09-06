@@ -460,11 +460,13 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual(self.config._get_openssl_version(), "")
 
     @mock.patch("certbot_nginx._internal.configurator.subprocess.Popen")
-    def test_nginx_restart(self, mock_popen):
+    @mock.patch("certbot_nginx._internal.configurator.time")
+    def test_nginx_restart(self, mock_time, mock_popen):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 0
         self.config.restart()
+        mock_time.sleep.assert_called_once_with(0.1234)
 
     @mock.patch("certbot_nginx._internal.configurator.subprocess.Popen")
     def test_nginx_restart_fail(self, mock_popen):

@@ -26,6 +26,9 @@ zope.event==4.0.3
 zope.interface==4.0.5
 
 # Debian Jessie Backports constraints
+# Debian Jessie has reached end of life. However:
+# When it becomes necessary to upgrade any of these dependencies, you should only update them to the oldest version of the package found
+# in a non-EOL'd version of CentOS, Debian, or Ubuntu that has Certbot packages in their OS repositories.
 PyICU==1.8
 colorama==0.3.2
 enum34==1.0.3
@@ -63,3 +66,10 @@ dns-lexicon==2.2.1
 # Tracking at https://github.com/certbot/certbot/issues/6473
 boto3==1.4.7
 botocore==1.7.41
+
+# Old certbot[dev] constraints
+# Old versions of certbot[dev] required ipdb and our normally pinned version of
+# ipython which ipdb depends on doesn't support Python 2 so we pin an older
+# version here to keep tests working while we have Python 2 support.
+ipython==5.8.0
+prompt-toolkit==1.0.18

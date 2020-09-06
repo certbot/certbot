@@ -77,6 +77,9 @@ class NginxConfigurator(common.Installer):
         add("ctl", default=constants.CLI_DEFAULTS["ctl"], help="Path to the "
             "'nginx' binary, used for 'configtest' and retrieving nginx "
             "version number.")
+        add("sleep-seconds", default=constants.CLI_DEFAULTS["sleep_seconds"], type=int,
+            help="Number of seconds to wait for nginx configuration changes "
+            "to apply when reloading.")
 
     @property
     def nginx_conf(self):
@@ -912,7 +915,7 @@ class NginxConfigurator(common.Installer):
         :raises .errors.MisconfigurationError: If either the reload fails.
 
         """
-        nginx_restart(self.conf('ctl'), self.nginx_conf)
+        nginx_restart(self.conf('ctl'), self.nginx_conf, self.conf('sleep-seconds'))
 
     def config_test(self):
         """Check the configuration of Nginx for errors.
@@ -1159,7 +1162,7 @@ def _redirect_block_for_domain(domain):
     return redirect_block
 
 
-def nginx_restart(nginx_ctl, nginx_conf):
+def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
     """Restarts the Nginx Server.
 
     .. todo:: Nginx restart is fatal if the configuration references
@@ -1167,6 +1170,8 @@ def nginx_restart(nginx_ctl, nginx_conf):
         before restart.
 
     :param str nginx_ctl: Path to the Nginx binary.
+    :param str nginx_conf: Path to the Nginx configuration file.
+    :param int sleep_duration: How long to sleep after sending the reload signal.
 
     """
     try:
@@ -1190,10 +1195,12 @@ def nginx_restart(nginx_ctl, nginx_conf):
 
     except (OSError, ValueError):
         raise errors.MisconfigurationError("nginx restart failed")
-    # Nginx can take a moment to recognize a newly added TLS SNI servername, so sleep
-    # for a second. TODO: Check for expected servername and loop until it
-    # appears or return an error if looping too long.
-    time.sleep(1)
+    # Nginx can take a significant duration of time to fully apply a new config, depending
+    # on size and contents (https://github.com/certbot/certbot/issues/7422). Lacking a way
+    # to reliably identify when this process is complete, we provide the user with control
+    # over how long Certbot will sleep after reloading the configuration.
+    if sleep_duration > 0:
+        time.sleep(sleep_duration)
 
 
 def _determine_default_server_root():

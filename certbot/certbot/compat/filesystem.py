@@ -340,8 +340,9 @@ def replace(src, dst):
     :param str dst: The new file path.
     """
     if hasattr(os, 'replace'):
-        # Use replace if possible. On Windows, only Python >= 3.5 is supported
-        # so we can assume that os.replace() is always available for this platform.
+        # Use replace if possible. Since we don't support Python 2 on Windows
+        # and os.replace() was added in Python 3.3, we can assume that
+        # os.replace() is always available on Windows.
         getattr(os, 'replace')(src, dst)
     else:
         # Otherwise, use os.rename() that behaves like os.replace() on Linux.

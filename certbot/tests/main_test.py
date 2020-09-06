@@ -1404,6 +1404,43 @@ class MainTest(test_util.ConfigTestCase):
                  "user@example.org"])
             self.assertTrue("Could not find an existing account" in x[0])
 
+    @mock.patch('certbot._internal.main._determine_account')
+    @mock.patch('certbot._internal.eff.prepare_subscription')
+    @mock.patch('certbot._internal.main.account')
+    def test_update_account_remove_email(self, mocked_account_module, mock_prepare, mock_det_acc):
+        # Mock account storage and the account object returned
+        mocked_storage = mock.MagicMock()
+        mocked_account = mock.MagicMock()
+
+        mocked_account_module.AccountFileStorage.return_value = mocked_storage
+        mocked_storage.find_all.return_value = [mocked_account]
+        mock_det_acc.return_value = (mocked_account, "foo")
+
+        # Mock registration body to verify calls are made
+        mock_regr_body = mock.MagicMock()
+
+        # mocked_account.regr is overwritten in update, requiring an odd mock setup
+        mocked_account.regr.body = mock_regr_body
+
+        x = self._call(
+            ["update_account", "--register-unsafely-without-email"])
+
+
+        # When update succeeds, the return value of update_account() is None
+        self.assertTrue(x[0] is None)
+        # and we got supposedly did update the registration from
+        # the server
+        client_mock = x[3]
+        self.assertTrue(client_mock.Client().acme.update_registration.called)
+
+        self.assertTrue(mock_regr_body.update.called)
+        self.assertTrue('contact' in mock_regr_body.update.call_args[1])
+        self.assertEqual(mock_regr_body.update.call_args[1]['contact'], ())
+        # and we saved the updated registration on disk
+        self.assertTrue(mocked_storage.update_regr.called)
+        # ensure we didn't try to subscribe (no email to subscribe with)
+        self.assertFalse(mock_prepare.called)
+
     @mock.patch('certbot._internal.main.display_ops.get_email')
     @test_util.patch_get_utility()
     def test_update_account_with_email(self, mock_utility, mock_email):

@@ -56,6 +56,7 @@ class NginxTest(test_log_util.AssertLogsMixin, test_util.ConfigTestCase):
         backups = os.path.join(work_dir, "backups")
 
         self.configuration.nginx_server_root = config_path
+        self.configuration.nginx_sleep_seconds = 0.1234
         self.configuration.le_vhost_ext = "-le-ssl.conf"
         self.configuration.config_dir = config_dir
         self.configuration.work_dir = work_dir

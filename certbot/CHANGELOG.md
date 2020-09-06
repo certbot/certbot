@@ -2,7 +2,49 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.6.0 - master
+## 1.8.0 - master
+
+### Added
+
+* Added the ability to remove email and phone contact information from an account 
+  using `update_account --register-unsafely-without-email`
+
+### Changed
+
+* Support for Python 3.5 has been removed.
+
+### Fixed
+
+* The problem causing the Apache plugin in the Certbot snap on ARM systems to
+  fail to load the Augeas library it depends on has been fixed.
+* The `acme` library can now tell the ACME server to clear contact information by passing an empty
+  `tuple` to the `contact` field of a `Registration` message. 
+* Fixed the `*** stack smashing detected ***` error in the Certbot snap on some systems.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.7.0 - 2020-08-04
+
+### Added
+
+* Third-party plugins can be used without prefix (`plugin_name` instead of `dist_name:plugin_name`):
+  this concerns the plugin name, CLI flags, and keys in credential files.
+  The prefixed form is still supported but is deprecated, and will be removed in a future release.
+* Added `--nginx-sleep-seconds` (default `1`) for environments where nginx takes a long time to reload.
+
+### Changed
+
+* The Linode DNS plugin now waits 120 seconds for DNS propagation, instead of 1200,
+  due to https://www.linode.com/blog/linode/linode-turns-17/
+* We deprecated support for Python 3.5 in Certbot and its ACME library.
+  Support for Python 3.5 will be removed in the next major release of Certbot.
+
+### Fixed
+
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.6.0 - 2020-07-07
 
 ### Added
 

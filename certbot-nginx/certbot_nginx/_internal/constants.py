@@ -1,6 +1,9 @@
 """nginx plugin constants."""
 import platform
 
+from acme.magic_typing import Any
+from acme.magic_typing import Dict
+
 FREEBSD_DARWIN_SERVER_ROOT = "/usr/local/etc/nginx"
 LINUX_SERVER_ROOT = "/etc/nginx"
 PKGSRC_SERVER_ROOT = "/usr/pkg/etc/nginx"
@@ -15,7 +18,8 @@ else:
 CLI_DEFAULTS = dict(
     server_root=server_root_tmp,
     ctl="nginx",
-)
+    sleep_seconds=1
+) # type: Dict[str, Any]
 """CLI defaults."""
 
 
