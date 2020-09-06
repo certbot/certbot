@@ -211,7 +211,7 @@ class _RFC2136Client(object):
         try:
             try:
                 response = dns.query.tcp(request, self.server, self._default_timeout, self.port)
-            except OSError as e:
+            except (OSError, dns.exception.Timeout) as e:
                 logger.debug('TCP query failed, fallback to UDP: %s', e)
                 response = dns.query.udp(request, self.server, self._default_timeout, self.port)
             rcode = response.rcode()
