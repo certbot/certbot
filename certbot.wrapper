@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# TODO: We may want to consider rewriting this script in Python. See
+# https://github.com/certbot/certbot/issues/8251 for more info.
 set -e
 
 # This code is based on snapcraft's own patch to work around this problem at
