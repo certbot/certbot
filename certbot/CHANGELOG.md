@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed `server_name` case-sensitivity in the nginx plugin.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -36,7 +36,6 @@ More details about these changes can be found on our GitHub repo.
 * The `acme` library can now tell the ACME server to clear contact information by passing an empty
   `tuple` to the `contact` field of a `Registration` message. 
 * Fixed the `*** stack smashing detected ***` error in the Certbot snap on some systems.
-* Fixed `server_name` case-sensitivity in the nginx plugin.
 
 More details about these changes can be found on our GitHub repo.
 
