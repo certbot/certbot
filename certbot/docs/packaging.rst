@@ -46,7 +46,11 @@ Notes for package maintainers
 
 2. To run tests on our packages, you should use ``python setup.py test``. Doing things like running ``pytest`` directly on our package files may not work because Certbot relies on setuptools to register and find its plugins.
 
-3. If you'd like to include automated renewal in your package ``certbot renew -q`` should be added to crontab or systemd timer. Additionally you should include a random per-machine time offset to avoid having a large number of your clients hit Let's Encrypt's servers simultaneously.
+3. If you'd like to include automated renewal in your package:
+
+  - ``certbot renew -q`` should be added to crontab or systemd timer.
+  - A random per-machine time offset should be included to avoid having a large number of your clients hit Let's Encrypt's servers simultaneously.
+  - `--preconfigured-renewal` should be included on the CLI or in `cli.ini` for all invocations of Certbot, so that it can adjust its interactive output regarding automated renewal (Certbot >= 1.9.0).
 
 4. ``jws`` is an internal script for ``acme`` module and it doesn't have to be packaged - it's mostly for debugging: you can use it as ``echo foo | jws sign | jws verify``.
 

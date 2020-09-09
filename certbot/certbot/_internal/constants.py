@@ -25,6 +25,7 @@ CLI_DEFAULTS = dict(
     verbose_count=-int(logging.INFO / 10),
     text_mode=False,
     max_log_backups=1000,
+    preconfigured_renewal=False,
     noninteractive_mode=False,
     force_interactive=False,
     domains=[],
