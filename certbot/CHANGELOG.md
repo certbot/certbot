@@ -15,6 +15,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Fixed `server_name` case-sensitivity in the nginx plugin.
+* The minimum version of the `acme` library required by Certbot was corrected.
+  In the previous release, Certbot said it required `acme>=1.6.0` when it
+  actually required `acme>=1.8.0` to properly support removing contact
+  information from an ACME account.
 
 More details about these changes can be found on our GitHub repo.
 
