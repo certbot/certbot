@@ -7,7 +7,6 @@ import sys
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
-from setuptools.command.test import test as TestCommand
 
 # Workaround for http://bugs.python.org/issue8876, see
 # http://bugs.python.org/issue8876#msg208792
@@ -108,22 +107,6 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
-
-class PyTest(TestCommand):
-    user_options = []
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.pytest_args = ''
-
-    def run_tests(self):
-        import shlex
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(shlex.split(self.pytest_args))
-        sys.exit(errno)
-
-
 setup(
     name='certbot',
     version=version,
@@ -165,10 +148,6 @@ setup(
         'dev3': dev3_extras,
         'docs': docs_extras,
     },
-
-    test_suite='certbot',
-    tests_require=["pytest"],
-    cmdclass={"test": PyTest},
 
     entry_points={
         'console_scripts': [

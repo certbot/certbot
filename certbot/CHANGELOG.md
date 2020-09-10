@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Update the packaging instructions to promote usage of `python -m pytest` to test Certbot
+  instead of the deprecated `python setup.py test` setuptools approach.
 
 ### Fixed
 
