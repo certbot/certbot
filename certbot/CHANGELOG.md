@@ -12,6 +12,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Support for Python 3.5 has been removed.
+* Update the packaging instructions to promote usage of `python -m pytest` to test Certbot
+  instead of the deprecated `python setup.py test` setuptools approach.
 
 ### Fixed
 
