@@ -70,20 +70,25 @@ def merge_requirements(tools_path, requirements, test_constraints, all_constrain
         fd.write(merged_requirements)
 
 
-def call_with_print(command):
+def call_with_print(command, shell=False):
     print(command)
-    subprocess.check_call(command, shell=True)
+    subprocess.check_call(command, shell=shell)
 
 
 def pip_install_with_print(args_str):
     command = '"{0}" -m pip install --disable-pip-version-check {1}'.format(sys.executable,
                                                                             args_str)
-    call_with_print(command)
+    call_with_print(command, shell=True)
 
 
 def main(args):
     tools_path = find_tools_path()
     working_dir = tempfile.mkdtemp()
+
+    # Pin the build environment
+    repo_path = os.path.dirname(tools_path)
+    call_with_print([sys.executable, os.path.normpath(
+        os.path.join(repo_path, 'letsencrypt-auto-source/pieces/pipstrap.py'))])
 
     if os.environ.get('TRAVIS'):
         # When this script is executed on Travis, the following print will make the log
