@@ -35,4 +35,4 @@ export CERTBOT_AUGEAS_PATH="${SNAP}/usr/lib/${ARCH_TRIPLET}/libaugeas.so.0"
 CERTBOT_PLUGIN_PATH="$(curl -s --unix-socket /run/snapd.socket "http://localhost/v2/connections?snap=certbot&interface=content" | jq -r  '.result.established | map(select(.plug.plug == "plugin" and ."plug-attrs".content == "certbot-1") | "/snap/"+.slot.snap+"/current/lib/python3.8/site-packages/" ) | join(":")')"
 export CERTBOT_PLUGIN_PATH
 
-exec certbot "$@"
+exec certbot "$@" --preconfigured-renewal
