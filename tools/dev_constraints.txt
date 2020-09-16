@@ -39,7 +39,7 @@ future==0.16.0
 futures==3.3.0
 filelock==3.0.12
 google-api-python-client==1.5.5
-httplib2==0.10.3
+httplib2==0.18.1
 imagesize==0.7.1
 importlib-metadata==0.23
 ipdb==0.12.3
