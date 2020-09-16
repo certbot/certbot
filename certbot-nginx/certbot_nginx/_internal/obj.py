@@ -19,7 +19,7 @@ class Addr(common.Addr):
     80. If no address is specified, listen on all addresses.
 
     .. _documentation:
-       http://nginx.org/en/docs/http/ngx_http_core_module.html#listen
+       https://nginx.org/en/docs/http/ngx_http_core_module.html#listen
 
     .. todo:: Old-style nginx configs define SSL vhosts in a separate
               block instead of using 'ssl' in the listen directive.

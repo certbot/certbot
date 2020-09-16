@@ -100,9 +100,9 @@ AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
    add and remove TXT records for one specific host for the purpose of
    completing the ``dns-01`` challenge. If your version of BIND doesn't
    support the
-   `update-policy <http://www.zytrax.com/books/dns/ch7/xfer.html#update-policy>`_
+   `update-policy <https://www.zytrax.com/books/dns/ch7/xfer.html#update-policy>`_
    directive then you can use the less-secure
-   `allow-update <http://www.zytrax.com/books/dns/ch7/xfer.html#allow-update>`_
+   `allow-update <https://www.zytrax.com/books/dns/ch7/xfer.html#allow-update>`_
    directive instead.
 
 Examples

@@ -31,7 +31,7 @@ The following scripts are used in the process:
 We use git tags to identify releases, using `Semantic Versioning`_. For
 example: `v0.11.1`.
 
-.. _`Semantic Versioning`: http://semver.org/
+.. _`Semantic Versioning`: https://semver.org/
 
 Our packages are cryptographically signed and their signature can be verified
 using the PGP key ``A2CFB51FA275A7286234E7B24D17C995CD9775F2``. This key can be
