@@ -466,7 +466,7 @@ class NginxConfiguratorTest(util.NginxTest):
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 0
         self.config.restart()
-        assert mocked.communicate.call_count == 1
+        self.assertEqual(mocked.communicate.call_count, 1)
         mock_time.sleep.assert_called_once_with(0.1234)
 
     @mock.patch("certbot_nginx._internal.configurator.subprocess.Popen")
@@ -476,7 +476,7 @@ class NginxConfiguratorTest(util.NginxTest):
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 1
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
-        assert mocked.communicate.call_count == 2
+        self.assertEqual(mocked.communicate.call_count, 2)
         mock_log_debug.assert_called_once_with("nginx reload failed:\n%s", "")
 
     @mock.patch("certbot_nginx._internal.configurator.subprocess.Popen")
