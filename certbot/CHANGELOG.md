@@ -2,11 +2,34 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.8.0 - master
+## 1.9.0 - master
 
 ### Added
 
-*
+* `--preconfigured-renewal` flag, for packager use only.
+  See the [packaging guide](https://certbot.eff.org/docs/packaging.html).
+
+### Changed
+
+* Update the packaging instructions to promote usage of `python -m pytest` to test Certbot
+  instead of the deprecated `python setup.py test` setuptools approach.
+
+### Fixed
+
+* Fixed `server_name` case-sensitivity in the nginx plugin.
+* The minimum version of the `acme` library required by Certbot was corrected.
+  In the previous release, Certbot said it required `acme>=1.6.0` when it
+  actually required `acme>=1.8.0` to properly support removing contact
+  information from an ACME account.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.8.0 - 2020-09-08
+
+### Added
+
+* Added the ability to remove email and phone contact information from an account 
+  using `update_account --register-unsafely-without-email`
 
 ### Changed
 
@@ -17,6 +40,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * The problem causing the Apache plugin in the Certbot snap on ARM systems to
   fail to load the Augeas library it depends on has been fixed.
+* The `acme` library can now tell the ACME server to clear contact information by passing an empty
+  `tuple` to the `contact` field of a `Registration` message. 
+* Fixed the `*** stack smashing detected ***` error in the Certbot snap on some systems.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -28,8 +54,6 @@ More details about these changes can be found on our GitHub repo.
   this concerns the plugin name, CLI flags, and keys in credential files.
   The prefixed form is still supported but is deprecated, and will be removed in a future release.
 * Added `--nginx-sleep-seconds` (default `1`) for environments where nginx takes a long time to reload.
-* Added the ability to remove email and phone contact information from an account 
-  using `update_account --register-unsafely-without-email`
 
 ### Changed
 
@@ -40,8 +64,6 @@ More details about these changes can be found on our GitHub repo.
 
 ### Fixed
 
-* The `acme` library can now tell the ACME server to clear contact information by passing an empty
-  `tuple` to the `contact` field of a `Registration` message. 
 
 More details about these changes can be found on our GitHub repo.
 

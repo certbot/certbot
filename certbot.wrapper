@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/bin/sh
+#
+# TODO: We may want to consider rewriting this script in Python. See
+# https://github.com/certbot/certbot/issues/8251 for more info.
 set -e
 
 # This code is based on snapcraft's own patch to work around this problem at
@@ -27,21 +30,9 @@ case "${SNAP_ARCH}" in
         exit 1
 esac
 
-PARTIAL_LIBRARY_PATH="${SNAP}/usr/lib/${ARCH_TRIPLET}/"
-export LD_LIBRARY_PATH="${PARTIAL_LIBRARY_PATH}:${LD_LIBRARY_PATH}"
-export CERTBOT_AUGEAS_PATH="${PARTIAL_LIBRARY_PATH}libaugeas.so.0"
+export CERTBOT_AUGEAS_PATH="${SNAP}/usr/lib/${ARCH_TRIPLET}/libaugeas.so.0"
 
-join() {
-    sep=$1
-    first=$2
-    if [ "$first" != "" ]; then
-        shift 2
-        echo -n "${first}"
-        for item in "$@"; do echo -n "${sep}${item}"; done
-        echo
-    fi
-}
+CERTBOT_PLUGIN_PATH="$(curl -s --unix-socket /run/snapd.socket "http://localhost/v2/connections?snap=certbot&interface=content" | jq -r  '.result.established | map(select(.plug.plug == "plugin" and ."plug-attrs".content == "certbot-1") | "/snap/"+.slot.snap+"/current/lib/python3.8/site-packages/" ) | join(":")')"
+export CERTBOT_PLUGIN_PATH
 
-paths=$(for plugin_snap in $(snap connections certbot|sed -n '2,$p'|awk '$1=="content[certbot-1]"{print $3}'|cut -d: -f1); do echo /snap/$plugin_snap/current/lib/python3.8/site-packages; done)
-export CERTBOT_PLUGIN_PATH=$(join : $paths)
-exec certbot "$@"
+exec certbot "$@" --preconfigured-renewal
