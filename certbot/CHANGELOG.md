@@ -13,6 +13,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Update the packaging instructions to promote usage of `python -m pytest` to test Certbot
   instead of the deprecated `python setup.py test` setuptools approach.
+* Reduced CLI logging when reloading nginx, if it is not running.
 
 ### Fixed
 
