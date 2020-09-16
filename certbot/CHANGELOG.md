@@ -21,6 +21,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   In the previous release, Certbot said it required `acme>=1.6.0` when it
   actually required `acme>=1.8.0` to properly support removing contact
   information from an ACME account.
+* Upgraded the version of httplib2 used in our snaps and Docker images to add
+  support for proxy environment variables and fix the plugin for Google Cloud
+  DNS.
 
 More details about these changes can be found on our GitHub repo.
 
