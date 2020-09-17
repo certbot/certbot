@@ -1,5 +1,9 @@
 #!/bin/bash -e
 
+OUTPUT=$(snap info certbot-dns-gehirn)
+echo "${OUTPUT}"
+exit 1
+
 if [ "$(snapctl get trust-plugin-with-root)" = "ok" ]; then
     # allow the connection, but reset config to allow for other slots to go through this auth flow
     snapctl unset trust-plugin-with-root
