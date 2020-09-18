@@ -127,7 +127,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
 
     config["renewalparams"].update(relevant_data)
 
-    for k in config["renewalparams"].keys():
+    for k in config["renewalparams"]:
         if k not in relevant_data:
             del config["renewalparams"][k]
 

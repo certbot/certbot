@@ -799,7 +799,7 @@ class ApacheParser(object):
     def _parsed_by_parser_paths(self, filep, paths):
         """Helper function that searches through provided paths and returns
         True if file path is found in the set"""
-        for directory in paths.keys():
+        for directory in paths:
             for filename in paths[directory]:
                 if fnmatch.fnmatch(filep, os.path.join(directory, filename)):
                     return True

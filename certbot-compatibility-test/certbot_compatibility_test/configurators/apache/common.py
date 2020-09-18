@@ -57,7 +57,7 @@ class Proxy(configurators_common.Proxy):
 
     def _prepare_configurator(self):
         """Prepares the Apache plugin for testing"""
-        for k in entrypoint.ENTRYPOINT.OS_DEFAULTS.keys():
+        for k in entrypoint.ENTRYPOINT.OS_DEFAULTS:
             setattr(self.le_config, "apache_" + k,
                     entrypoint.ENTRYPOINT.OS_DEFAULTS[k])
 
