@@ -13,17 +13,18 @@ jobs:
           arm64v8:
             DOCKER_ARCH: arm64v8
     steps:
-      - bash: tools/docker/build.sh $(dockerTag) $DOCKER_ARCH
+      - bash: set -e && tools/docker/build.sh $(dockerTag) $DOCKER_ARCH
         displayName: Build the Docker images
       # We don't filter for the Docker Hub organization to continue to allow
       # easy testing of these scripts on forks.
       - bash: |
+          set -e
           DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
           docker save --output images.tar $DOCKER_IMAGES
         displayName: Save the Docker images
       # If the name of the tar file or artifact changes, the deploy stage will
       # also need to be updated.
-      - bash: mv images.tar $(Build.ArtifactStagingDirectory)
+      - bash: set -e && mv images.tar $(Build.ArtifactStagingDirectory)
         displayName: Prepare Docker artifact
       - task: PublishPipelineArtifact@1
         inputs:
