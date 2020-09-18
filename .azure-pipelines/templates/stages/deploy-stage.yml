@@ -58,7 +58,12 @@ stages:
               mkdir -p .snapcraft
               ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
               for SNAP_FILE in snap/*.snap; do
-                snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
+                for i in `seq 1 3`;
+                do
+                  if snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}" ; then
+                    break
+                  fi
+                done
               done
             displayName: Publish to Snap store
       - job: publish_docker
