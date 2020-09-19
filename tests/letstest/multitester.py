@@ -322,7 +322,7 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id):
     else:
         # 32 bit systems
         machine_type = 'c1.medium'
-    if 'userdata' in target.keys():
+    if 'userdata' in target:
         userdata = target['userdata']
     else:
         userdata = ''

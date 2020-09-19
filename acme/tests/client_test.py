@@ -1342,7 +1342,7 @@ class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
         # test should fail if the default adapter type is changed by requests
         net = ClientNetwork(key=None, alg=None)
         session = requests.Session()
-        for scheme in session.adapters.keys():
+        for scheme in session.adapters:
             client_network_adapter = net.session.adapters.get(scheme)
             default_adapter = session.adapters.get(scheme)
             self.assertEqual(client_network_adapter.__class__, default_adapter.__class__)
