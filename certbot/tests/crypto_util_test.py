@@ -185,8 +185,6 @@ class VerifyCertSetup(unittest.TestCase):
     """Refactoring for verification tests."""
 
     def setUp(self):
-        super(VerifyCertSetup, self).setUp()
-
         self.renewable_cert = mock.MagicMock()
         self.renewable_cert.cert_path = SS_CERT_PATH
         self.renewable_cert.chain_path = SS_CERT_PATH
