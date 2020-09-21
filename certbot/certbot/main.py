@@ -22,6 +22,8 @@ def main(cli_args=None):
     :rtype: `str` or `int` or `None`
 
     """
+    cli_args = cli_args if cli_args else sys.argv[1:]
+
     if os.environ.get('CERTBOT_SNAPPED') == 'True':
         cli_args = _prepare_snap_env(cli_args)
 
@@ -35,15 +37,15 @@ def _prepare_snap_env(cli_args):
     elif snap_arch == 'armhf':
         arch_triplet = 'arm-linux-gnueabihf'
     elif snap_arch == 'i386':
-        arch_triplet = 'arm-linux-gnueabihf'
+        arch_triplet = 'i386-linux-gnu'
     elif snap_arch == 'ppc64el':
-        arch_triplet = 'arm-linux-gnueabihf'
+        arch_triplet = 'powerpc64le-linux-gnu'
     elif snap_arch == 'powerpc':
-        arch_triplet = 'arm-linux-gnueabihf'
+        arch_triplet = 'powerpc-linux-gnu'
     elif snap_arch == 'amd64':
-        arch_triplet = 'arm-linux-gnueabihf'
+        arch_triplet = 'x86_64-linux-gnu'
     elif snap_arch == 's390x':
-        arch_triplet = 'arm-linux-gnueabihf'
+        arch_triplet = 's390x-linux-gnu'
     else:
         print('Unrecognized value of SNAP_ARCH: {0}'.format(snap_arch), file=sys.stderr)
         sys.exit(1)
@@ -59,8 +61,10 @@ def _prepare_snap_env(cli_args):
     try:
         response.raise_for_status()
         data = response.json()
+        print(data)
     except (HTTPError, JSONDecodeError):
-        print('Error while trying to fetch Certbot snap connections', file=sys.stderr)
+        print('An error occured while fetching Certbot snap plugins.', file=sys.stderr)
+        print('Please run "sudo snap install core" in your terminal and try again.', file=sys.stderr)
         sys.exit(1)
 
     connections = ['/snap/{0}/current/lib/python3.8/site-packages/'.format(item['slot']['snap'])
@@ -70,7 +74,6 @@ def _prepare_snap_env(cli_args):
 
     os.environ['CERTBOT_PLUGIN_PATH'] = ':'.join(connections)
 
-    cli_args = cli_args if cli_args else []
     cli_args.append('--preconfigured-renewal')
 
     return cli_args
