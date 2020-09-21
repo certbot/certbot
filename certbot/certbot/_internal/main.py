@@ -28,6 +28,7 @@ from certbot._internal import hooks
 from certbot._internal import log
 from certbot._internal import renewal
 from certbot._internal import reporter
+from certbot._internal import snap_config
 from certbot._internal import storage
 from certbot._internal import updater
 from certbot._internal.plugins import disco as plugins_disco
@@ -1322,6 +1323,9 @@ def main(cli_args=None):
     """
     if not cli_args:
         cli_args = sys.argv[1:]
+
+    if os.environ.get('CERTBOT_SNAPPED') == 'True':
+        cli_args = snap_config.prepare_env(cli_args)
 
     log.pre_arg_parse_setup()
 
