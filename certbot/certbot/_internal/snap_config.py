@@ -1,9 +1,8 @@
 """Module configuring Certbot in a snap environment"""
-from json import JSONDecodeError
 import socket
 import sys
 
-from requests import HTTPError, Session
+from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3.connection import HTTPConnection
 from urllib3.connectionpool import HTTPConnectionPool
