@@ -42,15 +42,17 @@ def prepare_env(cli_args):
 
     response = session.get('http://snapd/v2/connections?snap=certbot&interface=content')
 
-    try:
-        response.raise_for_status()
-        data = response.json()
-        print(data)
-    except (HTTPError, JSONDecodeError):
-        print('An error occured while fetching Certbot snap plugins.', file=sys.stderr)
-        print('Please run "sudo snap install core" in your terminal and try again.', file=sys.stderr)
+    if response.status_code == 404:
+        print('An error occurred while fetching Certbot snap plugins: '
+              'your version of snapd is outdated.',
+              file=sys.stderr)
+        print('Please run "sudo snap install core" in your terminal and try again.',
+              file=sys.stderr)
         sys.exit(1)
 
+    response.raise_for_status()
+
+    data = response.json()
     connections = ['/snap/{0}/current/lib/python3.8/site-packages/'.format(item['slot']['snap'])
                    for item in data.get('result', {}).get('established', [])
                    if item.get('plug', {}).get('plug') == 'plugin'
