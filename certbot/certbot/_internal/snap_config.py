@@ -14,6 +14,12 @@ from certbot.compat import os
 
 def prepare_env(cli_args):
     # type: (List[str]) -> List[str]
+    """
+    Prepare runtime environment for a certbot execution in snap.
+    :param list cli_args: List of command line arguments
+    :return: Update list of command line arguments
+    :rtype: list
+    """
     snap_arch = os.environ.get('SNAP_ARCH')
     if snap_arch == 'arm64':
         arch_triplet = 'aarch64-linux-gnu'
@@ -30,23 +36,21 @@ def prepare_env(cli_args):
     elif snap_arch == 's390x':
         arch_triplet = 's390x-linux-gnu'
     else:
-        print('Unrecognized value of SNAP_ARCH: {0}'.format(snap_arch), file=sys.stderr)
+        sys.stderr.write('Unrecognized value of SNAP_ARCH: {0}\n'.format(snap_arch))
         sys.exit(1)
 
     os.environ['CERTBOT_AUGEAS_PATH'] = '{0}/usr/lib/{1}/libaugeas.so.0'.format(
         os.environ.get('SNAP'), arch_triplet)
 
     session = Session()
-    session.mount('http://snapd/', SnapdAdapter())
+    session.mount('http://snapd/', _SnapdAdapter())
 
     response = session.get('http://snapd/v2/connections?snap=certbot&interface=content')
 
     if response.status_code == 404:
-        print('An error occurred while fetching Certbot snap plugins: '
-              'your version of snapd is outdated.',
-              file=sys.stderr)
-        print('Please run "sudo snap install core" in your terminal and try again.',
-              file=sys.stderr)
+        sys.stderr.write('An error occurred while fetching Certbot snap plugins: '
+                         'your version of snapd is outdated.\n')
+        sys.stderr.write('Please run "sudo snap install core" in your terminal and try again.\n')
         sys.exit(1)
 
     response.raise_for_status()
@@ -64,7 +68,7 @@ def prepare_env(cli_args):
     return cli_args
 
 
-class SnapdConnection(HTTPConnection):
+class _SnapdConnection(HTTPConnection):
     def __init__(self):
         super().__init__("localhost")
         self.sock = None
@@ -74,14 +78,14 @@ class SnapdConnection(HTTPConnection):
         self.sock.connect("/run/snapd.socket")
 
 
-class SnapdConnectionPool(HTTPConnectionPool):
+class _SnapdConnectionPool(HTTPConnectionPool):
     def __init__(self):
         super().__init__("localhost")
 
     def _new_conn(self):
-        return SnapdConnection()
+        return _SnapdConnection()
 
 
-class SnapdAdapter(HTTPAdapter):
+class _SnapdAdapter(HTTPAdapter):
     def get_connection(self, url, proxies=None):
-        return SnapdConnectionPool()
+        return _SnapdConnectionPool()
