@@ -12,6 +12,17 @@ from acme.magic_typing import List
 from certbot.compat import os
 
 
+_ARCH_TRIPLET_MAP = {
+    'arm64': 'aarch64-linux-gnu',
+    'armhf': 'arm-linux-gnueabihf',
+    'i386': 'i386-linux-gnu',
+    'ppc64el': 'powerpc64le-linux-gnu',
+    'powerpc': 'powerpc-linux-gnu',
+    'amd64': 'x86_64-linux-gnu',
+    's390x': 's390x-linux-gnu',
+}
+
+
 def prepare_env(cli_args):
     # type: (List[str]) -> List[str]
     """
@@ -21,26 +32,13 @@ def prepare_env(cli_args):
     :rtype: list
     """
     snap_arch = os.environ.get('SNAP_ARCH')
-    if snap_arch == 'arm64':
-        arch_triplet = 'aarch64-linux-gnu'
-    elif snap_arch == 'armhf':
-        arch_triplet = 'arm-linux-gnueabihf'
-    elif snap_arch == 'i386':
-        arch_triplet = 'i386-linux-gnu'
-    elif snap_arch == 'ppc64el':
-        arch_triplet = 'powerpc64le-linux-gnu'
-    elif snap_arch == 'powerpc':
-        arch_triplet = 'powerpc-linux-gnu'
-    elif snap_arch == 'amd64':
-        arch_triplet = 'x86_64-linux-gnu'
-    elif snap_arch == 's390x':
-        arch_triplet = 's390x-linux-gnu'
-    else:
+
+    if snap_arch not in _ARCH_TRIPLET_MAP:
         sys.stderr.write('Unrecognized value of SNAP_ARCH: {0}\n'.format(snap_arch))
         sys.exit(1)
 
     os.environ['CERTBOT_AUGEAS_PATH'] = '{0}/usr/lib/{1}/libaugeas.so.0'.format(
-        os.environ.get('SNAP'), arch_triplet)
+        os.environ.get('SNAP'), _ARCH_TRIPLET_MAP[snap_arch])
 
     session = Session()
     session.mount('http://snapd/', _SnapdAdapter())
@@ -70,7 +68,7 @@ def prepare_env(cli_args):
 
 class _SnapdConnection(HTTPConnection):
     def __init__(self):
-        super().__init__("localhost")
+        super(HTTPConnection, self).__init__("localhost")
         self.sock = None
 
     def connect(self):
@@ -80,7 +78,7 @@ class _SnapdConnection(HTTPConnection):
 
 class _SnapdConnectionPool(HTTPConnectionPool):
     def __init__(self):
-        super().__init__("localhost")
+        super(HTTPConnectionPool, self).__init__("localhost")
 
     def _new_conn(self):
         return _SnapdConnection()
