@@ -4,8 +4,13 @@ import sys
 
 from requests import Session
 from requests.adapters import HTTPAdapter
-from urllib3.connection import HTTPConnection
-from urllib3.connectionpool import HTTPConnectionPool
+try:
+    from urllib3.connection import HTTPConnection
+    from urllib3.connectionpool import HTTPConnectionPool
+except ImportError:
+    # Stub imports for oldest requirements, that will never be used in snaps.
+    HTTPConnection = object
+    HTTPConnectionPool = object
 
 from acme.magic_typing import List
 
@@ -68,7 +73,7 @@ def prepare_env(cli_args):
 
 class _SnapdConnection(HTTPConnection):
     def __init__(self):
-        super(HTTPConnection, self).__init__("localhost")
+        super(_SnapdConnection, self).__init__("localhost")
         self.sock = None
 
     def connect(self):
@@ -78,7 +83,7 @@ class _SnapdConnection(HTTPConnection):
 
 class _SnapdConnectionPool(HTTPConnectionPool):
     def __init__(self):
-        super(HTTPConnectionPool, self).__init__("localhost")
+        super(_SnapdConnectionPool, self).__init__("localhost")
 
     def _new_conn(self):
         return _SnapdConnection()
