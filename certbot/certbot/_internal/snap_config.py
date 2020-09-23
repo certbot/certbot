@@ -53,7 +53,8 @@ def prepare_env(cli_args):
     if response.status_code == 404:
         sys.stderr.write('An error occurred while fetching Certbot snap plugins: '
                          'your version of snapd is outdated.\n')
-        sys.stderr.write('Please run "sudo snap install core" in your terminal and try again.\n')
+        sys.stderr.write('Please run "sudo snap install core; sudo snap refresh" '
+                         'in your terminal and try again.\n')
         sys.exit(1)
 
     response.raise_for_status()
