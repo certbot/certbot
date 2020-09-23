@@ -136,6 +136,10 @@ jobs:
     pool:
       vmImage: ubuntu-18.04
     steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.8
+          addToPath: true
       - script: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends nginx-light snapd
