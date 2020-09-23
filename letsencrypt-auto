@@ -336,15 +336,26 @@ BootstrapDebCommon() {
   # distro version (#346)
 
   virtualenv=
-  # virtual env is known to apt and is installable
-  if apt-cache show virtualenv > /dev/null 2>&1 ; then
+  python=
+
+  if [ "$USE_PYTHON_3" = 1 ] ; then
+    if ! LC_ALL=C apt-cache --quiet=0 show python3-venv 2>&1 | grep -q 'No packages found'; then
+      virtualenv="python3-venv python3-virtualenv"
+    fi
+
+    python="python3 python3-dev"
+
+  else
+    # virtual env is known to apt and is installable
     if ! LC_ALL=C apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
       virtualenv="virtualenv"
     fi
-  fi
 
-  if apt-cache show python-virtualenv > /dev/null 2>&1; then
-    virtualenv="$virtualenv python-virtualenv"
+    if ! LC_ALL=C apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
+      virtualenv="$virtualenv python-virtualenv"
+    fi
+
+    python="python python-dev"
   fi
 
   augeas_pkg="libaugeas0 augeas-lenses"
@@ -354,8 +365,7 @@ BootstrapDebCommon() {
   fi
 
   apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
-    python \
-    python-dev \
+    $python \
     $virtualenv \
     gcc \
     $augeas_pkg \
@@ -799,6 +809,17 @@ BootstrapMageiaCommon() {
 # that function. If Bootstrap is set to a function that doesn't install any
 # packages BOOTSTRAP_VERSION is not set.
 if [ -f /etc/debian_version ]; then
+  DEB_DIST_NAME=$( (. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown")
+  DEB_VERSION_ID=$( (. /etc/os-release 2> /dev/null && echo $VERSION_ID) | cut -d '.' -f1 || echo "unknown")
+
+  if [ "$DEB_DIST_NAME" = "debian" -a "$DEB_VERSION_ID" -ge 9  ]; then
+    USE_PYTHON_3=1
+  fi
+
+  if [ "$DEB_DIST_NAME" = "ubuntu" -a "$DEB_VERSION_ID" -ge 18  ]; then
+    USE_PYTHON_3=1
+  fi
+
   Bootstrap() {
     BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
