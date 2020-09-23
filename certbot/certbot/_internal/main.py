@@ -1324,10 +1324,10 @@ def main(cli_args=None):
     if not cli_args:
         cli_args = sys.argv[1:]
 
+    log.pre_arg_parse_setup()
+
     if os.environ.get('CERTBOT_SNAPPED') == 'True':
         cli_args = snap_config.prepare_env(cli_args)
-
-    log.pre_arg_parse_setup()
 
     plugins = plugins_disco.PluginsRegistry.find_all()
     logger.debug("certbot version: %s", certbot.__version__)
