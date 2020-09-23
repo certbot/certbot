@@ -731,7 +731,6 @@ class ApacheParser(object):
         privileged users.
 
         https://apr.apache.org/docs/apr/2.0/apr__fnmatch_8h_source.html
-        http://apache2.sourcearchive.com/documentation/2.2.16-6/apr__fnmatch_8h_source.html
 
         :param str clean_fn_match: Apache style filename match, like globs
 

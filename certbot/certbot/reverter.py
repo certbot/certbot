@@ -180,7 +180,7 @@ class Reverter(object):
                     shutil.copy2(filename, os.path.join(
                         cp_dir, os.path.basename(filename) + "_" + str(idx)))
                     op_fd.write('{0}\n'.format(filename))
-                # http://stackoverflow.com/questions/4726260/effective-use-of-python-shutil-copy2
+                # https://stackoverflow.com/questions/4726260/effective-use-of-python-shutil-copy2
                 except IOError:
                     op_fd.close()
                     logger.error(
