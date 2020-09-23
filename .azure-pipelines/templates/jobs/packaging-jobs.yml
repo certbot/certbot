@@ -80,6 +80,7 @@ jobs:
         displayName: Retrieve Windows installer
       - script: |
           py -3 -m venv venv
+          venv\Scripts\python letsencrypt-auto-source\pieces\pipstrap.py
           venv\Scripts\python tools\pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
       - script: |
@@ -138,7 +139,9 @@ jobs:
       - script: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends nginx-light snapd
-          python tools/pip_install.py -U tox
+          python3 -m venv venv
+          venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
+          venv/bin/python tools/pip_install.py -U tox
         displayName: Install dependencies
       - task: DownloadPipelineArtifact@2
         inputs:
@@ -149,7 +152,7 @@ jobs:
           sudo snap install --dangerous --classic snap/certbot_*_amd64.snap
         displayName: Install Certbot snap
       - script: |
-          python -m tox -e integration-external,apacheconftest-external-with-pebble
+          venv/bin/python -m tox -e integration-external,apacheconftest-external-with-pebble
         displayName: Run tox
   - job: snap_dns_run
     dependsOn: snaps_build
@@ -171,6 +174,7 @@ jobs:
         displayName: Retrieve Certbot snaps
       - script: |
           python3 -m venv venv
+          venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
           venv/bin/python tools/pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
       - script: |

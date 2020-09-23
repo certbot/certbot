@@ -30,6 +30,7 @@ steps:
     # set, pip updates dependencies it thinks are already satisfied to avoid some
     # problems with its lack of real dependency resolution.
   - bash: |
+      python letsencrypt-auto-source/pieces/pipstrap.py
       python tools/pip_install.py -I tox virtualenv
     displayName: Install runtime dependencies
   - task: DownloadSecureFile@1
