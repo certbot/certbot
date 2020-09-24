@@ -1,9 +1,11 @@
 """Module configuring Certbot in a snap environment"""
+import logging
 import socket
 import sys
 
 from requests import Session
 from requests.adapters import HTTPAdapter
+from requests.exceptions import HTTPError, RequestException
 try:
     from urllib3.connection import HTTPConnection
     from urllib3.connectionpool import HTTPConnectionPool
@@ -27,6 +29,8 @@ _ARCH_TRIPLET_MAP = {
     's390x': 's390x-linux-gnu',
 }
 
+LOGGER = logging.getLogger(__name__)
+
 
 def prepare_env(cli_args):
     # type: (List[str]) -> List[str]
@@ -48,16 +52,19 @@ def prepare_env(cli_args):
     session = Session()
     session.mount('http://snapd/', _SnapdAdapter())
 
-    response = session.get('http://snapd/v2/connections?snap=certbot&interface=content')
-
-    if response.status_code == 404:
-        sys.stderr.write('An error occurred while fetching Certbot snap plugins: '
-                         'your version of snapd is outdated.\n')
-        sys.stderr.write('Please run "sudo snap install core; sudo snap refresh" '
-                         'in your terminal and try again.\n')
-        sys.exit(1)
-
-    response.raise_for_status()
+    try:
+        response = session.get('http://snapd/v2/connections?snap=certbot&interface=content')
+        response.raise_for_status()
+    except RequestException as e:
+        if isinstance(e, HTTPError) and e.response.status_code == 404:
+            LOGGER.error('An error occurred while fetching Certbot snap plugins: '
+                            'your version of snapd is outdated.')
+            LOGGER.error('Please run "sudo snap install core; sudo snap refresh" '
+                            'in your terminal and try again.')
+        else:
+            LOGGER.error('An error occurred while fetching Certbot snap plugins: '
+                         'make sure the snapd service is running.')
+        raise e
 
     data = response.json()
     connections = ['/snap/{0}/current/lib/python3.8/site-packages/'.format(item['slot']['snap'])
