@@ -20,13 +20,13 @@ adopt-info: certbot
 
 apps:
   certbot:
-    command: bin/python3 $SNAP/bin/certbot
+    command: bin/python3 -m certbot
     environment:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
       AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
       CERTBOT_SNAPPED: "True"
   renew:
-    command: bin/python3 $SNAP/bin/certbot -q renew
+    command: bin/python3 -m certbot -q renew
     daemon: oneshot
     environment:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
