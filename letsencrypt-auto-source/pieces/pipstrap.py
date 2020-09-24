@@ -67,6 +67,11 @@ maybe_argparse = (
     if sys.version_info < (2, 7, 0) else [])
 
 
+# Be careful when updating the pinned versions here, in particular for pip.
+# Indeed starting from 10.0, pip will build dependencies in isolation if the
+# related projects are compliant with PEP 517. This is not something we want
+# as of now, so the isolation build will need to be disabled wherever
+# pipstrap is used (see https://github.com/certbot/certbot/issues/8256).
 PACKAGES = maybe_argparse + [
     # Pip has no dependencies, as it vendors everything:
     ('11/b6/abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/'
