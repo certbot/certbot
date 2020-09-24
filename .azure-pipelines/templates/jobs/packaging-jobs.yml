@@ -72,6 +72,7 @@ jobs:
       - task: UsePythonVersion@0
         inputs:
           versionSpec: 3.7
+          architecture: x86
           addToPath: true
       - task: DownloadPipelineArtifact@2
         inputs:
