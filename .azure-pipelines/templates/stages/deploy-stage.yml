@@ -55,15 +55,25 @@ stages:
               secureFile: snapcraft.cfg
           - bash: |
               set -e
+              retry_command() {
+                # based on travis_retry.bash https://github.com/travis-ci/travis-build/blob/master/lib/travis/build/bash/travis_retry.bash
+                local result=0
+                local count=1
+                while [[ "${count}" -le 3 ]]; do
+                  # run the command in a way that doesn't disable setting `errexit`
+                  "${@}"
+                  result="${?}"
+                  if [[ $result -eq 0 ]]; then break; fi
+                  count="$((count + 1))"
+                  sleep 1
+                done
+
+                return "${result}"
+              }
               mkdir -p .snapcraft
               ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
               for SNAP_FILE in snap/*.snap; do
-                for i in `seq 1 3`;
-                do
-                  if snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}" ; then
-                    break
-                  fi
-                done
+                retry_command eval snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
               done
             displayName: Publish to Snap store
       - job: publish_docker
