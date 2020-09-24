@@ -103,6 +103,7 @@ jobs:
         ARCHS: amd64
     steps:
       - script: |
+          set -e
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends snapd
           sudo snap install --classic snapcraft
@@ -116,6 +117,7 @@ jobs:
         inputs:
           secureFile: launchpad-credentials
       - script: |
+          set -e
           git config --global user.email "$(Build.RequestedForEmail)"
           git config --global user.name "$(Build.RequestedFor)"
           mkdir -p ~/.local/share/snapcraft/provider/launchpad
@@ -123,6 +125,7 @@ jobs:
           python3 tools/snap/build_remote.py ALL --archs ${ARCHS}
         displayName: Build snaps
       - script: |
+          set -e
           mv *.snap $(Build.ArtifactStagingDirectory)
           mv certbot-dns-*/*.snap $(Build.ArtifactStagingDirectory)
         displayName: Prepare artifacts
@@ -137,6 +140,7 @@ jobs:
       vmImage: ubuntu-18.04
     steps:
       - script: |
+          set -e
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends nginx-light snapd
           python tools/pip_install.py -U tox
@@ -147,9 +151,11 @@ jobs:
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snaps
       - script: |
+          set -e
           sudo snap install --dangerous --classic snap/certbot_*_amd64.snap
         displayName: Install Certbot snap
       - script: |
+          set -e
           python -m tox -e integration-external,apacheconftest-external-with-pebble
         displayName: Run tox
   - job: snap_dns_run
@@ -158,6 +164,7 @@ jobs:
       vmImage: ubuntu-18.04
     steps:
       - script: |
+          set -e
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends snapd
         displayName: Install dependencies
@@ -171,9 +178,11 @@ jobs:
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snaps
       - script: |
+          set -e
           python3 -m venv venv
           venv/bin/python tools/pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
       - script: |
+          set -e
           sudo -E venv/bin/pytest certbot-ci/snap_integration_tests/dns_tests --allow-persistent-changes --snap-folder $(Build.SourcesDirectory)/snap --snap-arch amd64
         displayName: Test DNS plugins snaps
