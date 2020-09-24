@@ -71,7 +71,7 @@ jobs:
         displayName: Check Powershell 5.x is used in vs2017-win2016
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: 3.8
+          versionSpec: 3.7
           addToPath: true
       - task: DownloadPipelineArtifact@2
         inputs:
