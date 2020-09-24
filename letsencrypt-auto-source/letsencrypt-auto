@@ -1617,7 +1617,7 @@ maybe_argparse = (
 
 # Be careful when updating the pinned versions here, in particular for pip.
 # Indeed starting from 10.0, pip will build dependencies in isolation if the
-# related projects is compliant with PEP 517. This is not something we want
+# related projects are compliant with PEP 517. This is not something we want
 # as of now, so the isolation build will need to be disabled wherever
 # pipstrap is used (see https://github.com/certbot/certbot/issues/8256).
 PACKAGES = maybe_argparse + [
