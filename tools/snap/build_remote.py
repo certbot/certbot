@@ -69,7 +69,7 @@ def _build_snap(target, archs, status, lock):
                         dump_output = True
                         print(f'Missing output on a failed build {target} for {arch}.')
             if dump_output:
-                print('Dumping snapcraft remote-build output build:')
+                print(f'Dumping snapcraft remote-build output build for {target}:')
                 print('\n'.join(process_output))
 
         # Retry the remote build if it has been interrupted (non zero status code) or if some builds have failed.
