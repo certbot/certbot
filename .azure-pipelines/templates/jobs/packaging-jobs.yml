@@ -78,9 +78,16 @@ jobs:
           artifact: windows-installer
           path: $(Build.SourcesDirectory)/bin
         displayName: Retrieve Windows installer
+      # pip 9.0 provided by pipstrap is not able to resolve properly the pywin32 dependency
+      # required by certbot-ci: as a temporary workaround until pipstrap is updated, we install
+      # a recent version of pip, but we also to disable the isolated feature as described in
+      # https://github.com/certbot/certbot/issues/8256
       - script: |
           py -3 -m venv venv
+          venv\Scripts\python -m pip install pip==20.2.3 setuptools==50.3.0 wheel==0.35.1
           venv\Scripts\python tools\pip_install.py -e certbot-ci
+        env:
+          PIP_NO_BUILD_ISOLATION: no
         displayName: Prepare Certbot-CI
       - script: |
           set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
@@ -135,10 +142,16 @@ jobs:
     pool:
       vmImage: ubuntu-18.04
     steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.8
+          addToPath: true
       - script: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends nginx-light snapd
-          python tools/pip_install.py -U tox
+          python3 -m venv venv
+          venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
+          venv/bin/python tools/pip_install.py -U tox
         displayName: Install dependencies
       - task: DownloadPipelineArtifact@2
         inputs:
@@ -149,7 +162,7 @@ jobs:
           sudo snap install --dangerous --classic snap/certbot_*_amd64.snap
         displayName: Install Certbot snap
       - script: |
-          python -m tox -e integration-external,apacheconftest-external-with-pebble
+          venv/bin/python -m tox -e integration-external,apacheconftest-external-with-pebble
         displayName: Run tox
   - job: snap_dns_run
     dependsOn: snaps_build
@@ -171,6 +184,7 @@ jobs:
         displayName: Retrieve Certbot snaps
       - script: |
           python3 -m venv venv
+          venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
           venv/bin/python tools/pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
       - script: |
