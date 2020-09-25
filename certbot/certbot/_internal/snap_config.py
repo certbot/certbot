@@ -1,11 +1,16 @@
 """Module configuring Certbot in a snap environment"""
 import logging
 import socket
-import sys
 
 from requests import Session
 from requests.adapters import HTTPAdapter
-from requests.exceptions import HTTPError, RequestException
+from requests.exceptions import HTTPError
+from requests.exceptions import RequestException
+
+from acme.magic_typing import List
+from certbot.compat import os
+from certbot.errors import Error
+
 try:
     from urllib3.connection import HTTPConnection
     from urllib3.connectionpool import HTTPConnectionPool
@@ -13,10 +18,6 @@ except ImportError:
     # Stub imports for oldest requirements, that will never be used in snaps.
     HTTPConnection = object
     HTTPConnectionPool = object
-
-from acme.magic_typing import List
-
-from certbot.compat import os
 
 
 _ARCH_TRIPLET_MAP = {
@@ -43,8 +44,7 @@ def prepare_env(cli_args):
     snap_arch = os.environ.get('SNAP_ARCH')
 
     if snap_arch not in _ARCH_TRIPLET_MAP:
-        sys.stderr.write('Unrecognized value of SNAP_ARCH: {0}\n'.format(snap_arch))
-        sys.exit(1)
+        raise Error('Unrecognized value of SNAP_ARCH: {0}'.format(snap_arch))
 
     os.environ['CERTBOT_AUGEAS_PATH'] = '{0}/usr/lib/{1}/libaugeas.so.0'.format(
         os.environ.get('SNAP'), _ARCH_TRIPLET_MAP[snap_arch])
@@ -58,9 +58,9 @@ def prepare_env(cli_args):
     except RequestException as e:
         if isinstance(e, HTTPError) and e.response.status_code == 404:
             LOGGER.error('An error occurred while fetching Certbot snap plugins: '
-                            'your version of snapd is outdated.')
+                         'your version of snapd is outdated.')
             LOGGER.error('Please run "sudo snap install core; sudo snap refresh" '
-                            'in your terminal and try again.')
+                         'in your terminal and try again.')
         else:
             LOGGER.error('An error occurred while fetching Certbot snap plugins: '
                          'make sure the snapd service is running.')
