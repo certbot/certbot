@@ -61,8 +61,7 @@ stages:
                 local count=1
                 while [[ "${count}" -le 3 ]]; do
                   # run the command in a way that doesn't disable setting `errexit`
-                  "${@}"
-                  result="${?}"
+                  "${@}" || result="${?}"
                   if [[ $result -eq 0 ]]; then break; fi
                   count="$((count + 1))"
                   sleep 1
