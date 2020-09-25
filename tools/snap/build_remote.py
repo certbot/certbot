@@ -52,27 +52,25 @@ def _build_snap(target, archs, status, lock):
         sys.stdout.flush()
 
         with lock:
+            dump_output = exit_code != 0
             failed_archs = [arch for arch in archs if status[target][arch] == 'Failed to build']
             if exit_code == 0 and not failed_archs:
                 # We expect to have all target snaps available, or something bad happened.
                 snaps_list = glob.glob(join(workspace, '*.snap'))
                 if not len(snaps_list) == len(archs):
                     print(f'Some of the expected snaps for a successful build are missing (current list: {snaps_list}).')
-                    print('Dumping snapcraft remote-build output build:')
-                    print('\n'.join(process_output))
+                    dump_output = True
                 else:
                     break
-
             if failed_archs:
                 # We expect each failed build to have a log file, or something bad happened.
-                missing_outputs = False
                 for arch in failed_archs:
                     if not exists(join(workspace, f'{target}_{arch}.txt')):
-                        missing_outputs = True
+                        dump_output = True
                         print(f'Missing output on a failed build {target} for {arch}.')
-                if missing_outputs:
-                    print('Dumping snapcraft remote-build output build:')
-                    print('\n'.join(process_output))
+            if dump_output:
+                print(f'Dumping snapcraft remote-build output build for {target}:')
+                print('\n'.join(process_output))
 
         # Retry the remote build if it has been interrupted (non zero status code) or if some builds have failed.
         retry = retry - 1
