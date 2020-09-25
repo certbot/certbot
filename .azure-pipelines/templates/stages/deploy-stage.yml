@@ -60,7 +60,6 @@ stages:
                 local result=0
                 local count=1
                 while [[ "${count}" -le 3 ]]; do
-                  # run the command in a way that doesn't disable setting `errexit`
                   result=0
                   "${@}" || result="${?}"
                   if [[ $result -eq 0 ]]; then break; fi
