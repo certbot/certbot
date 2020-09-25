@@ -1462,7 +1462,7 @@ class ApacheConfigurator(common.Installer):
         if not line.lower().lstrip().startswith("rewriterule"):
             return False
 
-        # According to: http://httpd.apache.org/docs/2.4/rewrite/flags.html
+        # According to: https://httpd.apache.org/docs/2.4/rewrite/flags.html
         # The syntax of a RewriteRule is:
         # RewriteRule pattern target [Flag1,Flag2,Flag3]
         # i.e. target is required, so it must exist.

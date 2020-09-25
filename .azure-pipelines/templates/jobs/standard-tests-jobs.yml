@@ -1,5 +1,7 @@
 jobs:
   - job: test
+    variables:
+      PYTHON_VERSION: 3.8
     strategy:
       matrix:
         macos-py27:

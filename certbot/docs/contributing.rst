@@ -347,7 +347,7 @@ Certbot's DNS plugins and the README file in ``tools/snap/`` provide a
 starting reference for how to do this.
 
 .. _`setuptools entry points`:
-    http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
+    https://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
 
 .. _coding-style:
 
@@ -378,7 +378,7 @@ Please:
 
 .. _Google Python Style Guide:
   https://google.github.io/styleguide/pyguide.html
-.. _Sphinx-style: http://sphinx-doc.org/
+.. _Sphinx-style: https://www.sphinx-doc.org/
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
 

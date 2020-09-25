@@ -26,8 +26,6 @@ class ApacheTest(unittest.TestCase):
               config_root="debian_apache_2_4/multiple_vhosts/apache2",
               vhost_root="debian_apache_2_4/multiple_vhosts/apache2/sites-available"):
         # pylint: disable=arguments-differ
-        super(ApacheTest, self).setUp()
-
         self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
             test_dir=test_dir,
             pkg=__name__)

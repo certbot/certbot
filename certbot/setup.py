@@ -8,8 +8,8 @@ from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 
-# Workaround for http://bugs.python.org/issue8876, see
-# http://bugs.python.org/issue8876#msg208792
+# Workaround for https://bugs.python.org/issue8876, see
+# https://bugs.python.org/issue8876#msg208792
 # This can be removed when using Python 2.7.9 or later:
 # https://hg.python.org/cpython/raw-file/v2.7.9/Misc/NEWS
 if os.path.abspath(__file__).split(os.path.sep)[1] == 'vagrant':

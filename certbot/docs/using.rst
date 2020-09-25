@@ -287,7 +287,7 @@ dns-inwx           Y    Y    DNS Authentication for INWX through the XML API
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
 .. _gandi: https://github.com/obynio/certbot-plugin-gandi
-.. _varnish: http://git.sesse.net/?p=letsencrypt-varnish-plugin
+.. _varnish: https://git.sesse.net/?p=letsencrypt-varnish-plugin
 .. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
 .. _external-auth: https://github.com/EnigmaBridge/certbot-external-auth
@@ -684,7 +684,7 @@ The following files are available:
   This is what Apache needs for `SSLCertificateKeyFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,
   and Nginx for `ssl_certificate_key
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
+  <https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
 
 ``fullchain.pem``
   All certificates, **including** server certificate (aka leaf certificate or
@@ -694,7 +694,7 @@ The following files are available:
   This is what Apache >= 2.4.8 needs for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
   and what Nginx needs for `ssl_certificate
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
+  <https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
 
 ``cert.pem`` and ``chain.pem`` (less common)
   ``cert.pem`` contains the server certificate by itself, and
@@ -713,7 +713,7 @@ The following files are available:
 
   If you're using OCSP stapling with Nginx >= 1.3.7, ``chain.pem`` should be
   provided as the `ssl_trusted_certificate
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_
+  <https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_
   to validate OCSP responses.
 
 .. note:: All files are PEM-encoded.
