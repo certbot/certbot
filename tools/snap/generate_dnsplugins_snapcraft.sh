@@ -17,16 +17,13 @@ description: ${DESCRIPTION}
 confinement: strict
 grade: devel
 base: core20
-adopt-info: ${PLUGIN}
+version: $(git describe|sed s/^v//)
 
 parts:
   ${PLUGIN}:
     plugin: python
     source: .
     constraints: [\$SNAPCRAFT_PART_SRC/snap-constraints.txt]
-    override-pull: |
-        snapcraftctl pull
-        snapcraftctl set-version \`grep ^version \$SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"\`
     build-environment:
       - SNAP_BUILD: "True"
     # To build cryptography and cffi if needed
