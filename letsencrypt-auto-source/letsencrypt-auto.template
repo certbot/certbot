@@ -328,10 +328,7 @@ if [ -f /etc/debian_version ]; then
   BOOTSTRAP_VERSION="BootstrapDebCommon $BOOTSTRAP_DEB_COMMON_VERSION"
 elif [ -f /etc/mageia-release ]; then
   # Mageia has both /etc/mageia-release and /etc/redhat-release
-  Bootstrap() {
-    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/redhat-release ]; then
   # Run DeterminePythonVersion to decide on the basis of available Python versions
   # whether to use 2.x or 3.x on RedHat-like systems.
@@ -406,31 +403,11 @@ elif [ -f /etc/redhat-release ]; then
 
   LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
-  Bootstrap() {
-    BootstrapMessage "openSUSE-based OSes"
-    BootstrapSuseCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapSuseCommon $BOOTSTRAP_SUSE_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/arch-release ]; then
-  Bootstrap() {
-    if [ "$DEBUG" = 1 ]; then
-      BootstrapMessage "Archlinux"
-      BootstrapArchCommon
-    else
-      error "Please use pacman to install letsencrypt packages:"
-      error "# pacman -S certbot certbot-apache"
-      error
-      error "If you would like to use the virtualenv way, please run the script again with the"
-      error "--debug flag."
-      exit 1
-    fi
-  }
-  BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/manjaro-release ]; then
-  Bootstrap() {
-    ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/gentoo-release ]; then
   DEPRECATED_OS=1
 elif uname | grep -iq FreeBSD ; then
@@ -438,24 +415,11 @@ elif uname | grep -iq FreeBSD ; then
 elif uname | grep -iq Darwin ; then
   DEPRECATED_OS=1
 elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
-  Bootstrap() {
-    ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
-  Bootstrap() {
-    ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
-  }
-  BOOTSTRAP_VERSION="BootstrapSmartOS $BOOTSTRAP_SMARTOS_VERSION"
+  DEPRECATED_OS=1
 else
-  Bootstrap() {
-    error "Sorry, I don't know how to bootstrap Certbot on your operating system!"
-    error
-    error "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
-    error "Please see https://certbot.eff.org/docs/contributing.html#prerequisites"
-    error "for more info."
-    exit 1
-  }
+  DEPRECATED_OS=1
 fi
 
 # We handle this case after determining the normal bootstrap version to allow
