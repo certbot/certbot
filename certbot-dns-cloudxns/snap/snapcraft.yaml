@@ -17,7 +17,6 @@ parts:
         snapcraftctl set-version `grep ^version $SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"`
     build-environment:
       - SNAP_BUILD: "True"
-      - PIP_NO_BUILD_ISOLATION: "no"
     # To build cryptography and cffi if needed
     build-packages: [gcc, libffi-dev, libssl-dev, python3-dev]
   certbot-metadata:
