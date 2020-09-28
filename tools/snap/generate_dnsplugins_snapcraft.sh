@@ -31,8 +31,10 @@ parts:
       - SNAPCRAFT_PYTHON_VENV_ARGS: --system-site-packages
       - SNAP_BUILD: "True"
       - PIP_NO_BUILD_ISOLATION: "no"
-    # To build cryptography and cffi if needed
-    build-packages: [gcc, libffi-dev, libssl-dev, python3-dev]
+    # To build cryptography and cffi if needed. python3-wheel is needed with
+    # --system-site-packages above to fix fatal errors trying to build wheels
+    # because wheel is not installed.
+    build-packages: [gcc, libffi-dev, libssl-dev, python3-dev, python3-wheel]
   certbot-metadata:
     plugin: dump
     source: .
