@@ -28,6 +28,7 @@ parts:
         snapcraftctl pull
         snapcraftctl set-version \`grep ^version \$SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"\`
     build-environment:
+      - SNAPCRAFT_PYTHON_VENV_ARGS: --system-site-packages
       - SNAP_BUILD: "True"
       - PIP_NO_BUILD_ISOLATION: "no"
     # To build cryptography and cffi if needed
