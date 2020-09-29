@@ -59,7 +59,7 @@ def prepare_env(cli_args):
         if isinstance(e, HTTPError) and e.response.status_code == 404:
             LOGGER.error('An error occurred while fetching Certbot snap plugins: '
                          'your version of snapd is outdated.')
-            LOGGER.error('Please run "sudo snap install core; sudo snap refresh" '
+            LOGGER.error('Please run "sudo snap install core; sudo snap refresh core" '
                          'in your terminal and try again.')
         else:
             LOGGER.error('An error occurred while fetching Certbot snap plugins: '
