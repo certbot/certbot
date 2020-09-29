@@ -165,6 +165,11 @@ def main():
         targets.remove('DNS_PLUGINS')
         targets.update(PLUGINS)
 
+    if targets != set(('certbot',)):
+        # If we're building any of the DNS plugins, generate their
+        # snapcraft.yaml files.
+        subprocess.run('tools/snap/generate_dnsplugins_snapcraft.sh', check=True)
+
     print('Start remote snap builds...')
     print(f' - archs: {", ".join(archs)}')
     print(f' - projects: {", ".join(sorted(targets))}')
