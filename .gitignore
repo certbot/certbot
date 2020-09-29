@@ -60,3 +60,4 @@ stage
 *.snap
 snap-constraints.txt
 qemu-*
+certbot-dns-*/snap/snapcraft.yaml
