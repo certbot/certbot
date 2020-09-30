@@ -169,10 +169,20 @@ noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dn
 
 def record_chosen_plugins(config, plugins, auth, inst):
     "Update the config entries to reflect the plugins we actually selected."
-    config.authenticator = plugins.find_init(auth).name if auth else None
-    config.installer = plugins.find_init(inst).name if inst else None
-    logger.info("Plugins selected: Authenticator %s, Installer %s",
-         config.authenticator, config.installer)
+    if auth:
+        authenticator = plugins.find_init(auth)
+        config.authenticator = authenticator.name
+        config.auth_version = authenticator.entry_point.dist.version
+    else:
+        config.authenticator = config.auth_version = None
+    if inst:
+        installer = plugins.find_init(inst)
+        config.installer = installer.name
+        config.inst_version = installer.entry_point.dist.version
+    else:
+        config.installer = config.inst_version = None
+    logger.info("Plugins selected: Authenticator %s (%s), Installer %s (%s)",
+         config.authenticator, config.auth_version, config.installer, config.inst_version)
 
 
 def choose_configurator_plugins(config, plugins, verb):
