@@ -893,7 +893,10 @@ elif uname | grep -iq FreeBSD ; then
 elif uname | grep -iq Darwin ; then
   DEPRECATED_OS=1
 elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
-  DEPRECATED_OS=1
+  Bootstrap() {
+    ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
+  }
+  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
 elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
   DEPRECATED_OS=1
 else
