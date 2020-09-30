@@ -1039,7 +1039,7 @@ def revoke(config, unused_plugins):
 
     """
     # For user-agent construction
-    config.installer = config.authenticator = None
+    config.installer = config.authenticator = config.auth_version = config.inst_version = None
 
     if config.cert_path is None and config.certname:
         config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
