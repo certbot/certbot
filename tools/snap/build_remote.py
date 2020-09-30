@@ -44,7 +44,7 @@ def _build_snap(target, archs, status, lock):
                  '"{1}" > "{2}/snap-constraints.txt"').format(sys.executable, f.name, workspace),
             shell=True, cwd=CERTBOT_DIR)
 
-    retry = 3
+    retry = 1
     while retry:
         exit_code, process_output = _execute_build(target, archs, status, workspace)
 
