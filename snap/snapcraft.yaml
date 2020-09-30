@@ -20,13 +20,13 @@ adopt-info: certbot
 
 apps:
   certbot:
-    command: certbot.wrapper
+    command: bin/python3 $SNAP/bin/certbot
     environment:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
       AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
       CERTBOT_SNAPPED: "True"
   renew:
-    command: certbot.wrapper -q renew
+    command: bin/python3 $SNAP/bin/certbot -q renew
     daemon: oneshot
     environment:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
@@ -71,9 +71,6 @@ parts:
       - python3-distutils
       - python3-pkg-resources
       - python3.8-minimal
-      # added for certbot.wrapper script:
-      - curl
-      - jq
     # To build cryptography and cffi if needed
     build-packages: [gcc, libffi-dev, libssl-dev, git, libaugeas-dev, python3-dev]
     build-environment:
@@ -84,10 +81,6 @@ parts:
         cd $SNAPCRAFT_PART_SRC
         python3 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt | grep -v python-augeas > snap-constraints.txt
         snapcraftctl set-version `git describe|sed s/^v//`
-  wrappers:
-    plugin: dump
-    source: .
-    stage: [certbot.wrapper]
   shared-metadata:
     plugin: dump
     source: .
