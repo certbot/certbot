@@ -53,6 +53,7 @@ class PluginEntryPoint(object):
 
     def __init__(self, entry_point, with_prefix=False):
         self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
+        self.version = entry_point.dist.version
         self.plugin_cls = entry_point.load()
         self.entry_point = entry_point
         self.warning_message = None

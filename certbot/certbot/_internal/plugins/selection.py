@@ -172,13 +172,13 @@ def record_chosen_plugins(config, plugins, auth, inst):
     if auth:
         authenticator = plugins.find_init(auth)
         config.authenticator = authenticator.name
-        config.auth_version = authenticator.entry_point.dist.version
+        config.auth_version = authenticator.version
     else:
         config.authenticator = config.auth_version = None
     if inst:
         installer = plugins.find_init(inst)
         config.installer = installer.name
-        config.inst_version = installer.entry_point.dist.version
+        config.inst_version = installer.version
     else:
         config.installer = config.inst_version = None
     logger.info("Plugins selected: Authenticator %s (%s), Installer %s (%s)",
