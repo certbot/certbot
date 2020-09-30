@@ -194,6 +194,7 @@ class PluginEntryPoint(object):
         lines = [
             "* {0}".format(self.name),
             "Description: {0}".format(self.plugin_cls.description),
+            "Version: {0}".format(self.version),
             "Interfaces: {0}".format(", ".join(
                 iface.__name__ for iface in zope.interface.implementedBy(
                     self.plugin_cls))),
