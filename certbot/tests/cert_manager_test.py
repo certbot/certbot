@@ -35,8 +35,8 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
             "example.org": None,
             "other.com": os.path.join(self.config.config_dir, "specialarchive")
         }
-        self.config_files = dict((domain, self._set_up_config(domain, self.domains[domain]))
-            for domain in self.domains)
+        self.config_files = {domain: self._set_up_config(domain, self.domains[domain])
+            for domain in self.domains}
 
         # We also create a file that isn't a renewal config in the same
         # location to test that logic that reads in all-and-only renewal
@@ -80,8 +80,8 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
                 archive_dir_path = custom_archive
             else:
                 archive_dir_path = os.path.join(self.config.default_archive_dir, domain)
-            archive_paths[domain] = dict((kind,
-                os.path.join(archive_dir_path, kind + "1.pem")) for kind in ALL_FOUR)
+            archive_paths[domain] = {kind:
+                os.path.join(archive_dir_path, kind + "1.pem") for kind in ALL_FOUR}
             for kind in ALL_FOUR:
                 live_path = self.config_files[domain][kind]
                 archive_path = archive_paths[domain][kind]

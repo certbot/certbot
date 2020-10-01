@@ -448,7 +448,7 @@ class Client(ClientBase):
         heapq.heapify(waiting)
         # mapping between original Authorization Resource and the most
         # recently updated one
-        updated = dict((authzr, authzr) for authzr in authzrs)
+        updated = {authzr: authzr for authzr in authzrs}
 
         while waiting:
             # find the smallest Retry-After, and sleep if necessary
