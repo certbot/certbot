@@ -409,7 +409,7 @@ def test_reuse_key(context):
 
     with open(join(context.config_dir, 'archive/{0}/privkey3.pem').format(certname), 'r') as file:
         privkey3 = file.read()
-    assert privkey2 != privkey3
+    assert privkey2 == privkey3
 
     with open(join(context.config_dir, 'archive/{0}/cert1.pem').format(certname), 'r') as file:
         cert1 = file.read()

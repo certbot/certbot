@@ -1,4 +1,3 @@
-
 """Tests for certbot._internal.cert_manager."""
 # pylint: disable=protected-access
 import re
@@ -279,11 +278,11 @@ class SearchLineagesTest(BaseCertManagerTest):
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_conf_files')
-    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.get_renewable_cert')
     def test_cert_storage_error(self, mock_renewable_cert, mock_renewal_conf_files,
                                 mock_make_or_verify_dir):
         mock_renewal_conf_files.return_value = ["badfile"]
-        mock_renewable_cert.side_effect = errors.CertStorageError
+        mock_renewable_cert.return_value = None
         from certbot._internal import cert_manager
         # pylint: disable=protected-access
         self.assertEqual(cert_manager._search_lineages(self.config, lambda x: x, "check"), "check")
@@ -295,7 +294,7 @@ class LineageForCertnameTest(BaseCertManagerTest):
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.get_renewable_cert')
     def test_found_match(self, mock_renewable_cert, mock_renewal_conf_file,
                          mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"
@@ -327,7 +326,7 @@ class DomainsForCertnameTest(BaseCertManagerTest):
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.get_renewable_cert')
     def test_found_match(self, mock_renewable_cert, mock_renewal_conf_file,
                          mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"

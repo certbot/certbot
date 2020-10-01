@@ -58,6 +58,15 @@ class NamespaceConfig(object):
     def __setattr__(self, name, value):
         setattr(self.namespace, name, value)
 
+    def __str__(self):
+        s = list()
+        for k, v in self.__dict__.items():
+            s.append("{}='{}'".format(k, v))
+        return "< NamespaceConfig {} >".format(" ".join(s))
+
+    def __repr__(self):
+        return self.__str__()
+
     @property
     def server_path(self):
         """File path based on ``server``."""

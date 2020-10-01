@@ -19,6 +19,7 @@ from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
+
 ###################
 # Commands
 ###################
@@ -37,6 +38,7 @@ def update_live_symlinks(config):
     """
     for renewal_file in storage.renewal_conf_files(config):
         storage.RenewableCert(renewal_file, config, update_symlinks=True)
+
 
 def rename_lineage(config):
     """Rename the specified lineage to the new name.
@@ -65,6 +67,7 @@ def rename_lineage(config):
     disp.notification("Successfully renamed {0} to {1}."
         .format(certname, new_certname), pause=False)
 
+
 def certificates(config):
     """Display information about certs configured with Certbot
 
@@ -87,6 +90,7 @@ def certificates(config):
     # Describe all the certs
     _describe_certs(config, parsed_certs, parse_failures)
 
+
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
     certnames = get_certnames(config, "delete", allow_multiple=True)
@@ -101,7 +105,16 @@ def delete(config):
 ###################
 
 def lineage_for_certname(cli_config, certname):
-    """Find a lineage object with name certname."""
+    """Find a lineage object with name certname.
+
+    :param `configuration.NamespaceConfig` cli_config: configuration for the
+        current lineage
+    :param str certname: Absolute path to the configuration file that defines
+        this lineage
+
+    :returns: the RenewableCert object or None if a fatal error occurred
+    :rtype: `storage.RenewableCert` or NoneType
+    """
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
     util.make_or_verify_dir(configs_dir, mode=0o755)
@@ -109,17 +122,19 @@ def lineage_for_certname(cli_config, certname):
         renewal_file = storage.renewal_file_for_certname(cli_config, certname)
     except errors.CertStorageError:
         return None
-    try:
-        return storage.RenewableCert(renewal_file, cli_config)
-    except (errors.CertStorageError, IOError):
-        logger.debug("Renewal conf file %s is broken.", renewal_file)
-        logger.debug("Traceback was:\n%s", traceback.format_exc())
+
+    renewable_cert = storage.get_renewable_cert(renewal_file, cli_config)
+    if not renewable_cert:
         return None
+    else:
+        return renewable_cert
+
 
 def domains_for_certname(config, certname):
     """Find the domains in the cert with name certname."""
     lineage = lineage_for_certname(config, certname)
     return lineage.names() if lineage else None
+
 
 def find_duplicative_certs(config, domains):
     """Find existing certs that match the given domain names.
@@ -165,6 +180,7 @@ def find_duplicative_certs(config, domains):
 
     return _search_lineages(config, update_certs_for_domain_matches, (None, None))
 
+
 def _archive_files(candidate_lineage, filetype):
     """ In order to match things like:
         /etc/letsencrypt/archive/example.com/chain1.pem.
@@ -186,6 +202,7 @@ def _archive_files(candidate_lineage, filetype):
         return pattern
     return None
 
+
 def _acceptable_matches():
     """ Generates the list that's passed to match_and_check_overlaps. Is its own function to
     make unit testing easier.
@@ -195,6 +212,7 @@ def _acceptable_matches():
     """
     return [lambda x: x.fullchain_path, lambda x: x.cert_path,
             lambda x: _archive_files(x, "cert"), lambda x: _archive_files(x, "fullchain")]
+
 
 def cert_path_to_lineage(cli_config):
     """ If config.cert_path is defined, try to find an appropriate value for config.certname.
@@ -211,6 +229,7 @@ def cert_path_to_lineage(cli_config):
     match = match_and_check_overlaps(cli_config, acceptable_matches,
             lambda x: cli_config.cert_path[0], lambda x: x.lineagename)
     return match[0]
+
 
 def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func):
     """ Searches through all lineages for a match, and checks for duplicates.
@@ -291,6 +310,7 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
                          cert.privkey))
     return "".join(certinfo)
 
+
 def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
     """Get certname from flag, interactively, or error out.
     """
@@ -334,12 +354,14 @@ def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""
     return "  " + "\n  ".join(str(msg) for msg in msgs)
 
+
 def _report_human_readable(config, parsed_certs):
     """Format a results report for a parsed cert"""
     certinfo = []
     for cert in parsed_certs:
         certinfo.append(human_readable_cert_info(config, cert))
     return "\n".join(certinfo)
+
 
 def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
@@ -362,6 +384,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
     disp = zope.component.getUtility(interfaces.IDisplay)
     disp.notification("\n".join(out), pause=False, wrap=False)
 
+
 def _search_lineages(cli_config, func, initial_rv, *args):
     """Iterate func over unbroken lineages, allowing custom return conditions.
 
@@ -380,11 +403,8 @@ def _search_lineages(cli_config, func, initial_rv, *args):
 
     rv = initial_rv
     for renewal_file in storage.renewal_conf_files(cli_config):
-        try:
-            candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
-        except (errors.CertStorageError, IOError):
-            logger.debug("Renewal conf file %s is broken. Skipping.", renewal_file)
-            logger.debug("Traceback was:\n%s", traceback.format_exc())
+        candidate_lineage = storage.get_renewable_cert(renewal_file, cli_config)
+        if not candidate_lineage:
             continue
         rv = func(candidate_lineage, rv, *args)
     return rv
