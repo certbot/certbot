@@ -206,7 +206,7 @@ class Directory(jose.JSONDeSerializable):
         external_account_required = jose.Field('externalAccountRequired', omitempty=True)
 
         def __init__(self, **kwargs):
-            kwargs = dict((self._internal_name(k), v) for k, v in kwargs.items())
+            kwargs = {self._internal_name(k): v for k, v in kwargs.items()}
             super(Directory.Meta, self).__init__(**kwargs)
 
         @property
@@ -465,7 +465,7 @@ class ChallengeBody(ResourceBody):
                        omitempty=True, default=None)
 
     def __init__(self, **kwargs):
-        kwargs = dict((self._internal_name(k), v) for k, v in kwargs.items())
+        kwargs = {self._internal_name(k): v for k, v in kwargs.items()}
         super(ChallengeBody, self).__init__(**kwargs)
 
     def encode(self, name):

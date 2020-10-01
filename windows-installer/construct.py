@@ -177,7 +177,7 @@ def _prepare_environment():
 
 
 if __name__ == '__main__':
-    if not os.name == 'nt':
+    if os.name != 'nt':
         raise RuntimeError('This script must be run under Windows.')
 
     if ctypes.windll.shell32.IsUserAnAdmin() == 0:

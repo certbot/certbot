@@ -277,8 +277,8 @@ class PluginsRegistry(Mapping):
 
     def filter(self, pred):
         """Filter plugins based on predicate."""
-        return type(self)(dict((name, plugin_ep) for name, plugin_ep
-                               in six.iteritems(self._plugins) if pred(plugin_ep)))
+        return type(self)({name: plugin_ep for name, plugin_ep
+                               in six.iteritems(self._plugins) if pred(plugin_ep)})
 
     def visible(self):
         """Filter plugins based on visibility."""

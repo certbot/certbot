@@ -1492,7 +1492,7 @@ class UnregisterTest(unittest.TestCase):
             'account': mock.patch('certbot._internal.main.account'),
             'client': mock.patch('certbot._internal.main.client'),
             'get_utility': test_util.patch_get_utility()}
-        self.mocks = dict((k, v.start()) for k, v in self.patchers.items())
+        self.mocks = {k: v.start() for k, v in self.patchers.items()}
 
     def tearDown(self):
         for patch in self.patchers.values():
