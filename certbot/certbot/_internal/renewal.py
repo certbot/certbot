@@ -17,6 +17,7 @@ import six
 import zope.component
 
 from acme.magic_typing import List
+from acme.magic_typing import Optional  # pylint: disable=unused-import
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -312,7 +313,7 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
 
 
 def renew_cert(config, domains, le_client, lineage):
-    # type: (interfaces.IConfig, List[str], client.Client, storage.RenewableCert) -> None
+    # type: (interfaces.IConfig, Optional[List[str]], client.Client, storage.RenewableCert) -> None
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
