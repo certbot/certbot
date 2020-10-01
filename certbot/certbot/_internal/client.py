@@ -59,11 +59,11 @@ def determine_user_agent(config):
         # Required for functions without authenticator and/or installer
         try:
             config.auth_version
-        except NameError:
+        except AttributeError:
             config.auth_version = None
         try:
             config.inst_version
-        except NameError:
+        except AttributeError:
             config.inst_version = None
         ua = ("CertbotACMEClient/{0} ({1}; {2}{8}) Authenticator/{3}_{9} "
               "Installer/{4}_{10} ({5}; flags: {6}) Py/{7}")
