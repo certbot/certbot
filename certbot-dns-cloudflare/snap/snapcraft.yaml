@@ -3,7 +3,7 @@ name: certbot-dns-cloudflare
 summary: Cloudflare DNS Authenticator plugin for Certbot
 description: Cloudflare DNS Authenticator plugin for Certbot
 confinement: strict
-grade: devel
+grade: stable
 base: core20
 adopt-info: certbot-dns-cloudflare
 

@@ -3,7 +3,7 @@ name: certbot-dns-nsone
 summary: NS1 DNS Authenticator plugin for Certbot
 description: NS1 DNS Authenticator plugin for Certbot
 confinement: strict
-grade: devel
+grade: stable
 base: core20
 adopt-info: certbot-dns-nsone
 

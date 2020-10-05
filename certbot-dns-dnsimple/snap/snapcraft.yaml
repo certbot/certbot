@@ -3,7 +3,7 @@ name: certbot-dns-dnsimple
 summary: DNSimple DNS Authenticator plugin for Certbot
 description: DNSimple DNS Authenticator plugin for Certbot
 confinement: strict
-grade: devel
+grade: stable
 base: core20
 adopt-info: certbot-dns-dnsimple
 

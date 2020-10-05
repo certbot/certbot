@@ -3,7 +3,7 @@ name: certbot-dns-dnsmadeeasy
 summary: DNS Made Easy DNS Authenticator plugin for Certbot
 description: DNS Made Easy DNS Authenticator plugin for Certbot
 confinement: strict
-grade: devel
+grade: stable
 base: core20
 adopt-info: certbot-dns-dnsmadeeasy
 
