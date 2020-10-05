@@ -4,14 +4,17 @@ Post-release script to publish artifacts created from Azure Pipelines.
 
 This currently includes:
 
-* Publishing the Windows installer in a GitHub release
 * Moving snaps from the beta channel to the stable channel
+* Publishing the Windows installer in a GitHub release
 
 Setup:
  - Create a github personal access token
    - https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token#creating-a-token
    - You'll need repo scope
    - Save the token to somewhere like ~/.ssh/githubpat.txt
+ - Install the snapcraft command line tool and log in to a privileged account.
+   - https://snapcraft.io/docs/installing-snapcraft
+   - Use the command `snapcraft login` to log in.
 
 Run:
 
@@ -111,7 +114,7 @@ def assert_logged_into_snapcraft():
                        stderr=subprocess.DEVNULL, universal_newlines=True)
     except (subprocess.CalledProcessError, OSError):
         print("Please make sure that the command line tool snapcraft is")
-        print("installed and that you have logged into an account by running")
+        print("installed and that you have logged in to an account by running")
         print("'snapcraft login'.")
         sys.exit(1)
 
