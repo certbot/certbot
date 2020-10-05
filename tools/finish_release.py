@@ -134,6 +134,9 @@ def get_snap_revisions(snap, version):
     :returns: list of revision numbers
     :rtype: `list` of `str`
 
+    :raises subprocess.CalledProcessError: if the snapcraft command
+        fails
+
     """
     cmd = ['snapcraft', 'status', snap]
     process = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, universal_newlines=True)
@@ -154,6 +157,9 @@ def promote_snaps(version):
 
     :raises SystemExit: if the command snapcraft is unavailable or it
         isn't logged into an account
+
+    :raises subprocess.CalledProcessError: if a snapcraft command fails
+        for another reason
 
     """
     assert_logged_into_snapcraft()
