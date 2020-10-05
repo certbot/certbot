@@ -96,14 +96,14 @@ def delete(config):
         verb = "are"
     else:
         suffix = ""
-        verb   = "is"
-    logger.info("\nThe following certificate{0} {1} selected for deletion:\n"
-        .format(suffix, verb))
+        verb = "is"
+    logger.info("\nThe following certificate%s %s selected for deletion:\n",
+        suffix, verb)
     for certname in certnames:
-        logger.info("  * " + certname)
+        logger.info("  * %s", certname)
     if not disp.yesno("Are you sure to delete the above certificate{0}?".
-        format(suffix), force_interactive=True):
-        logger.info("Deleting of certificate{0} canceled.".format(suffix))
+        format(suffix), default=True):
+        logger.info("Deleting of certificate%s canceled.", suffix)
         return
     for certname in certnames:
         storage.delete_files(config, certname)
