@@ -80,7 +80,7 @@ parts:
         snapcraftctl pull
         cd $SNAPCRAFT_PART_SRC
         python3 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt | grep -v python-augeas > snap-constraints.txt
-        snapcraftctl set-version `git describe|sed s/^v//`
+        snapcraftctl set-version `grep -oP "__version__ = '\K.*(?=')" $SNAPCRAFT_PART_SRC/certbot/certbot/__init__.py`
   shared-metadata:
     plugin: dump
     source: .
