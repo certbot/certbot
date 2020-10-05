@@ -125,7 +125,7 @@ def assert_logged_into_snapcraft():
 def get_snap_revisions(snap, version):
     """Finds the revisions for the snap and version in the beta channel.
 
-    If you call this function without being logged with snapcraft, it
+    If you call this function without being logged in with snapcraft, it
     will hang with no output.
 
     :param str snap: the name of the snap on the snap store
