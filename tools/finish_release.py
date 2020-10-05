@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 """
-Post-release script to download artifacts from azure pipelines and use them to create
-a GitHub release.
+Post-release script to publish artifacts created from Azure Pipelines.
+
+This currently includes:
+
+* Publishing the Windows installer in a GitHub release
+* Moving snaps from the beta channel to the stable channel
 
 Setup:
  - Create a github personal access token
@@ -11,16 +15,30 @@ Setup:
 
 Run:
 
-python tools/create_github_release.py ~/.ssh/githubpat.txt
+python tools/finish_release.py ~/.ssh/githubpat.txt
 """
 
-import requests
+import glob
+import os.path
+import re
+import subprocess
 import sys
 import tempfile
 from zipfile import ZipFile
 
 from azure.devops.connection import Connection
 from github import Github
+import requests
+
+# Path to the root directory of the Certbot repository containing this script
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+# This list contains the names of all Certbot DNS plugins
+DNS_PLUGINS = [os.path.basename(path) for path in glob.glob(os.path.join(REPO_ROOT, 'certbot-dns-*'))]
+# This list contains the name of all Certbot snaps
+SNAPS = ['certbot'] + DNS_PLUGINS
+# This is the count of the architectures currently supported by our snaps used
+# for sanity checking.
+SNAP_ARCH_COUNT = 3
 
 def download_azure_artifacts(tempdir):
     """Download and unzip build artifacts from Azure pipelines.
@@ -79,6 +97,51 @@ def create_github_release(github_access_token, tempdir, version):
     release.upload_asset(tempdir + '/windows-installer/certbot-beta-installer-win32.exe')
     release.update_release(release.title, release.body, draft=False)
 
+
+def get_snap_revisions(snap, version):
+    """Finds the revisions for the snap and version in the beta channel.
+
+    :param str snap: the name of the snap on the snap store
+    :param str version: snap version number, e.g. 1.7.0
+
+    :returns: list of revision numbers
+    :rtype: `list` of `str`
+
+    """
+    cmd = ['snapcraft', 'status', snap]
+    process = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, universal_newlines=True)
+    pattern = f'^\s+beta\s+{version}\s+(\d+)\s*$'
+    revisions = re.findall(pattern, process.stdout, re.MULTILINE)
+    assert len(revisions) == SNAP_ARCH_COUNT, f'Unexpected number of snaps found for {snap} {version}'
+    return revisions
+
+
+def promote_snaps(version):
+    """Promotes all Certbot snaps from the beta to stable channel.
+
+    If the snaps have already been released to the stable channel, this
+    function will try to release them again which has no effect.
+
+    :param str version: the version number that should be found in the
+        beta channel, e.g. 1.7.0
+
+    """
+    for snap in SNAPS:
+        revisions = get_snap_revisions(snap, version)
+        for revision in revisions:
+            cmd = ['snapcraft', 'release', snap, revision, 'stable']
+            try:
+                subprocess.run(cmd, check=True, stdout=subprocess.PIPE, universal_newlines=True)
+            except subprocess.CalledProcessError as e:
+                print("The command", f"'{' '.join(cmd)}'", "failed.")
+                print("The output printed to stdout was:")
+                print(e.stdout)
+                raise
+        # This loop is kind of slow, so let's print some output about what it
+        # is doing.
+        print('Successfully released', snap, 'to the stable channel.')
+
+
 def main(args):
     github_access_token_file = args[0]
 
@@ -86,6 +149,11 @@ def main(args):
 
     with tempfile.TemporaryDirectory() as tempdir:
         version = download_azure_artifacts(tempdir)
+        # Once the GitHub release has been published, trying to publish it
+        # again fails. Publishing the snaps can be done multiple times though
+        # so we do that first to make it easier to run the script again later
+        # if something goes wrong.
+        promote_snaps(version)
         create_github_release(github_access_token, tempdir, version)
 
 if __name__ == "__main__":
