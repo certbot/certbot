@@ -37,8 +37,11 @@ import requests
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 # This list contains the names of all Certbot DNS plugins
 DNS_PLUGINS = [os.path.basename(path) for path in glob.glob(os.path.join(REPO_ROOT, 'certbot-dns-*'))]
-# This list contains the name of all Certbot snaps
-SNAPS = ['certbot'] + DNS_PLUGINS
+# This list contains the name of all Certbot snaps that should be published to
+# the stable channel. To publish all Certbot snaps to the stable channel in the
+# future, change the line below to:
+# SNAPS = ['certbot'] + DNS_PLUGINS
+SNAPS = ['certbot']
 # This is the count of the architectures currently supported by our snaps used
 # for sanity checking.
 SNAP_ARCH_COUNT = 3
