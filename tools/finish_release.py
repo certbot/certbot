@@ -109,7 +109,7 @@ def assert_logged_into_snapcraft():
     try:
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL,
                        stderr=subprocess.DEVNULL, universal_newlines=True)
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, OSError):
         print("Please make sure that the command line tool snapcraft is")
         print("installed and that you have logged into an account by running")
         print("'snapcraft login'.")
