@@ -98,8 +98,29 @@ def create_github_release(github_access_token, tempdir, version):
     release.update_release(release.title, release.body, draft=False)
 
 
+def assert_logged_into_snapcraft():
+    """Confirms that snapcraft is logged in to an account.
+
+    :raises SystemExit: if the command snapcraft is unavailable or it
+        isn't logged into an account
+
+    """
+    cmd = 'snapcraft whoami'.split()
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL, universal_newlines=True)
+    except subprocess.CalledProcessError:
+        print("Please make sure that the command line tool snapcraft is")
+        print("installed and that you have logged into an account by running")
+        print("'snapcraft login'.")
+        sys.exit(1)
+
+
 def get_snap_revisions(snap, version):
     """Finds the revisions for the snap and version in the beta channel.
+
+    If you call this function without being logged with snapcraft, it
+    will hang with no output.
 
     :param str snap: the name of the snap on the snap store
     :param str version: snap version number, e.g. 1.7.0
@@ -125,7 +146,11 @@ def promote_snaps(version):
     :param str version: the version number that should be found in the
         beta channel, e.g. 1.7.0
 
+    :raises SystemExit: if the command snapcraft is unavailable or it
+        isn't logged into an account
+
     """
+    assert_logged_into_snapcraft()
     for snap in SNAPS:
         revisions = get_snap_revisions(snap, version)
         for revision in revisions:
