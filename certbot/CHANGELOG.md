@@ -8,6 +8,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * `--preconfigured-renewal` flag, for packager use only.
   See the [packaging guide](https://certbot.eff.org/docs/packaging.html).
+* Confirmation when deleting certificates
 
 ### Changed
 
