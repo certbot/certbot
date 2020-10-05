@@ -103,7 +103,7 @@ def delete(config):
         logger.info("  * %s", certname)
     if not disp.yesno("Are you sure to delete the above certificate{0}?".
         format(suffix), default=True):
-        logger.info("Deleting of certificate%s canceled.", suffix)
+        logger.info("Deletion of certificate%s canceled.", suffix)
         return
     for certname in certnames:
         storage.delete_files(config, certname)
