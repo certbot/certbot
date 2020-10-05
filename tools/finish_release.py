@@ -137,6 +137,8 @@ def get_snap_revisions(snap, version):
     :raises subprocess.CalledProcessError: if the snapcraft command
         fails
 
+    :raises AssertionError: if the expected snaps are not found
+
     """
     cmd = ['snapcraft', 'status', snap]
     process = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, universal_newlines=True)
