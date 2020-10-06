@@ -315,7 +315,8 @@ def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
             raise errors.Error("No existing certificates found.")
         if allow_multiple:
             if not custom_prompt:
-                prompt = "Which certificate(s) would you like to {0}?".format(verb)
+                prompt = ("Which certificate or certificates would you like to "
+                    "{0}?".format(verb))
             else:
                 prompt = custom_prompt
             code, certnames = disp.checklist(
