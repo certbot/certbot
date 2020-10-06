@@ -97,12 +97,13 @@ def delete(config):
     else:
         suffix = ""
         verb = "is"
-    logger.info("\nThe following certificate%s %s selected for deletion:\n",
-        suffix, verb)
+    msg = ["The following certificate{0} {1} selected for deletion:\n"
+        .format(suffix, verb)]
     for certname in certnames:
-        logger.info("  * %s", certname)
-    if not disp.yesno("Are you sure to delete the above certificate{0}?".
-        format(suffix), default=True):
+        msg.append("  * " + certname)
+    msg.append("\nAre you sure to delete the above certificate{0}?".
+            format(suffix))
+    if not disp.yesno("\n".join(msg), default=True):
         logger.info("Deletion of certificate%s canceled.", suffix)
         return
     for certname in certnames:
