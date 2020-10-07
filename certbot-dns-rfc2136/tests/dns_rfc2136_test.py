@@ -100,7 +100,8 @@ class RFC2136ClientTest(unittest.TestCase):
         self.domain = dns.name.from_text(DOMAIN)
         self.prefix = dict()  # type: Dict[str, dns.name.Name]
         self.subdom = dict()  # type: Dict[str, dns.name.Name]
-        for pfx in 'foo', 'bar', 'foo.bar', 'baz', 'quux', 'cname', 'dname', 'subzone', 'bad':
+        for pfx in 'foo', 'bar', 'foo.bar', 'baz', 'quux', 'cname', 'dname', 'subzone', 'bad', \
+          'foo.bar.subzone', 'foo.bar.cname', 'my.challenge', 'my.challenge.subzone':
             self.prefix[pfx] = dns.name.from_text(pfx, dns.name.empty)
             self.subdom[pfx] = self.prefix[pfx] + self.domain
 
@@ -111,7 +112,9 @@ class RFC2136ClientTest(unittest.TestCase):
         soa_rr = dns.rdtypes.ANY.SOA.SOA(dns.rdataclass.IN, dns.rdatatype.SOA,
                                          SERVER, SERVER, 1, 2, 3, 4, 5)
         cname_rr = dns.rdtypes.ANY.CNAME.CNAME(dns.rdataclass.IN, dns.rdatatype.CNAME,
-                                               self.subdom['subzone'])
+                                               self.subdom['foo.bar.subzone'])
+        cname_challenge_rr = dns.rdtypes.ANY.CNAME.CNAME(dns.rdataclass.IN, dns.rdatatype.CNAME,
+                                               self.subdom['my.challenge.subzone'])
         dname_rr = dns.rdtypes.ANY.DNAME.DNAME(dns.rdataclass.IN, dns.rdatatype.DNAME,
                                                self.subdom['subzone'])
         self._query_soa_return = \
@@ -119,6 +122,7 @@ class RFC2136ClientTest(unittest.TestCase):
                                    self.domain: (True, soa_rr),
                                    self.subdom['subzone']: (True, soa_rr),
                                    self.subdom['cname']: (True, cname_rr),
+                                   self.subdom['foo.bar.cname']: (True, cname_challenge_rr),
                                    self.subdom['dname']: (False, dname_rr),
                                    self.subdom['bad']: (False, soa_rr)})
         self._mock_query_soa = mock.MagicMock(side_effect=self._stub_query_soa)
@@ -205,10 +209,20 @@ class RFC2136ClientTest(unittest.TestCase):
         self.rfc2136_client._query_soa = self._mock_query_soa
 
         # _find_domain | pylint: disable=protected-access
-        (prefix, domain) = self.rfc2136_client._find_domain('foo.bar.cname.'+DOMAIN)
+        (prefix, domain) = self.rfc2136_client._find_domain('cname.'+DOMAIN)
 
         self.assertTrue(domain == self.subdom['subzone'])
         self.assertTrue(prefix == self.prefix['foo.bar'])
+
+    def test_find_domain_dual_cnames(self):
+        # _query_soa | pylint: disable=protected-access
+        self.rfc2136_client._query_soa = self._mock_query_soa
+
+        # _find_domain | pylint: disable=protected-access
+        (prefix, domain) = self.rfc2136_client._find_domain('foo.bar.cname.'+DOMAIN)
+
+        self.assertTrue(domain == self.subdom['subzone'])
+        self.assertTrue(prefix == self.prefix['my.challenge'])
 
     def test_find_domain_dname(self):
         # _query_soa | pylint: disable=protected-access

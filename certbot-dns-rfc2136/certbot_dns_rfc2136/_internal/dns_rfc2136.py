@@ -218,8 +218,12 @@ class _RFC2136Client(object):
             elif rr.rdtype == dns.rdatatype.SOA:
                 # We found an SOA, authoritative or not
                 found = (auth, prefix, suffix)
+            elif rr.rdtype == dns.rdatatype.CNAME and prefix:
+                # We found a CNAME which isn't the full domain
+                pass
             else:
-                # We found a DNAME or CNAME. We need to start the walk over
+                # We found a DNAME or the full domain is a CNAME.
+                # We need to start the walk over
                 # from the common point of departure.
                 target = rr.target
                 if target in domain_names_searched:
