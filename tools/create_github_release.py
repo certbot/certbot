@@ -43,11 +43,13 @@ def download_azure_artifacts(tempdir):
 
     # Save and unzip files
     for filename in ('windows-installer', 'changelog'):
+        print("Downloading artifact %s" % filename)
         url = build_client.get_artifact('certbot', build_id, filename).resource.download_url
         r = requests.get(url)
         r.raise_for_status()
         with open(tempdir + '/' + filename + '.zip', 'wb') as f:
             f.write(r.content)
+        print("Extracting %s" % filename)
         with ZipFile(tempdir + '/' + filename + '.zip', 'r') as zipObj:
            zipObj.extractall(tempdir)
 
@@ -66,12 +68,14 @@ def create_github_release(github_access_token, tempdir, version):
     g = Github(github_access_token)
     repo = g.get_user('certbot').get_repo('certbot')
     release_notes = open(tempdir + '/changelog/release_notes.md', 'r').read()
+    print("Creating git release")
     release= repo.create_git_release('v{0}'.format(version),
                                      'Certbot {0}'.format(version),
                                      release_notes,
                                      draft=True)
 
     # Upload windows installer to release
+    print("Uploading windows installer")
     release.upload_asset(tempdir + '/windows-installer/certbot-beta-installer-win32.exe')
     release.update_release(release.title, release.body, draft=False)
 
