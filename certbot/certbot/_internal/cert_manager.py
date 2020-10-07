@@ -91,15 +91,12 @@ def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
     certnames = get_certnames(config, "delete", allow_multiple=True)
     disp = zope.component.getUtility(interfaces.IDisplay)
-    suffix, verb = ("s", "are") if len(certnames) > 1 else ("", "is")
-    msg = ["The following certificate{0} {1} selected for deletion:\n"
-        .format(suffix, verb)]
+    msg = ["The following certificate(s) is/are selected for deletion:\n"]
     for certname in certnames:
         msg.append("  * " + certname)
-    msg.append("\nAre you sure to delete the above certificate{0}?".
-            format(suffix))
+    msg.append("\nAre you sure you want to delete the above certificate(s)?")
     if not disp.yesno("\n".join(msg), default=True):
-        logger.info("Deletion of certificate%s canceled.", suffix)
+        logger.info("Deletion of certificate(s) canceled.")
         return
     for certname in certnames:
         storage.delete_files(config, certname)
@@ -315,8 +312,7 @@ def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
             raise errors.Error("No existing certificates found.")
         if allow_multiple:
             if not custom_prompt:
-                prompt = ("Which certificate or certificates would you like to "
-                    "{0}?".format(verb))
+                prompt = "Which certificate(s) would you like to {0}?".format(verb)
             else:
                 prompt = custom_prompt
             code, certnames = disp.checklist(

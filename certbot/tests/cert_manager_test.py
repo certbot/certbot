@@ -661,7 +661,7 @@ class GetCertnameTest(unittest.TestCase):
         mock_files.return_value = ['example.com.conf']
         mock_name.return_value = 'example.com'
         from certbot._internal import cert_manager
-        prompt = "Which certificate or certificates would you"
+        prompt = "Which certificate(s) would you"
         self.mock_get_utility().checklist.return_value = (display_util.OK,
                                                           ['example.com'])
         self.assertEqual(
