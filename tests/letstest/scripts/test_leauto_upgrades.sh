@@ -105,9 +105,16 @@ if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python
     exit 1
 fi
 
-EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
+# Once certbot-auto is deprecated on RHEL systems, we can unconditionally check
+# for INITIAL_VERSION below.
+if [ -f /etc/debian_version ]; then
+    EXPECTED_VERSION="$INITIAL_VERSION"
+else
+    EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
+fi
+
 if ! /opt/eff.org/certbot/venv/bin/letsencrypt --version 2>&1 | tail -n1 | grep "^certbot $EXPECTED_VERSION$" ; then
-    echo upgrade appeared to fail
+    echo unexpected certbot version found
     exit 1
 fi
 
