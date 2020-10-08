@@ -166,6 +166,9 @@ def promote_snaps(version):
     assert_logged_into_snapcraft()
     for snap in SNAPS:
         revisions = get_snap_revisions(snap, version)
+        # The loop below is kind of slow, so let's print some output about what
+        # it is doing.
+        print('Releasing', snap, 'snaps to the stable channel')
         for revision in revisions:
             cmd = ['snapcraft', 'release', snap, revision, 'stable']
             try:
@@ -175,9 +178,6 @@ def promote_snaps(version):
                 print("The output printed to stdout was:")
                 print(e.stdout)
                 raise
-        # This loop is kind of slow, so let's print some output about what it
-        # is doing.
-        print('Successfully released', snap, 'to the stable channel.')
 
 
 def main(args):
