@@ -140,6 +140,7 @@ def get_snap_revisions(snap, version):
     :raises AssertionError: if the expected snaps are not found
 
     """
+    print('Getting revision numbers for', snap, version)
     cmd = ['snapcraft', 'status', snap]
     process = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, universal_newlines=True)
     pattern = f'^\s+beta\s+{version}\s+(\d+)\s*$'
