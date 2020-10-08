@@ -401,14 +401,14 @@ def get_python_os_info(pretty=False):
         try:
             proc = subprocess.Popen(
                 ["/usr/bin/sw_vers", "-productVersion"],
-                stdout=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 universal_newlines=True,
                 env=env_no_snap_for_external_calls(),
             )
         except OSError:
             proc = subprocess.Popen(
                 ["sw_vers", "-productVersion"],
-                stdout=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 universal_newlines=True,
                 env=env_no_snap_for_external_calls(),
             )
