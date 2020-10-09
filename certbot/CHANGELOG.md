@@ -6,6 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+* Added timeout to DNS query function calls for dns-rfc2136 plugin.
 *
 
 ### Changed
@@ -64,7 +65,6 @@ More details about these changes can be found on our GitHub repo.
 * The `acme` library can now tell the ACME server to clear contact information by passing an empty
   `tuple` to the `contact` field of a `Registration` message. 
 * Fixed the `*** stack smashing detected ***` error in the Certbot snap on some systems.
-* Added timeout to DNS query function calls for dns-rfc2136 plugin.
 
 More details about these changes can be found on our GitHub repo.
 
