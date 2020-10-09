@@ -6,6 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+* Added timeout to DNS query function calls for dns-rfc2136 plugin.
 *
 
 ### Changed
