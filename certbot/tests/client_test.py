@@ -483,7 +483,6 @@ class ClientTest(ClientTestCommon):
     def test_save_certificate(self, mock_parser):
         certs = ["cert_512.pem", "cert-san_512.pem"]
         tmp_path = tempfile.mkdtemp()
-        filesystem.chmod(tmp_path, 0o755)  # TODO: really??
 
         cert_pem = test_util.load_vector(certs[0])
         chain_pem = (test_util.load_vector(certs[0]) + test_util.load_vector(certs[1]))

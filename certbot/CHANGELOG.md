@@ -2,7 +2,51 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.8.0 - master
+## 1.10.0 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.9.0 - 2020-10-06
+
+### Added
+
+* `--preconfigured-renewal` flag, for packager use only.
+  See the [packaging guide](https://certbot.eff.org/docs/packaging.html).
+
+### Changed
+
+* certbot-auto was deprecated on all systems except for those based on Debian or RHEL.
+* Update the packaging instructions to promote usage of `python -m pytest` to test Certbot
+  instead of the deprecated `python setup.py test` setuptools approach.
+* Reduced CLI logging when reloading nginx, if it is not running.
+* Reduced CLI logging when handling some kinds of errors.
+
+### Fixed
+
+* Fixed `server_name` case-sensitivity in the nginx plugin.
+* The minimum version of the `acme` library required by Certbot was corrected.
+  In the previous release, Certbot said it required `acme>=1.6.0` when it
+  actually required `acme>=1.8.0` to properly support removing contact
+  information from an ACME account.
+* Upgraded the version of httplib2 used in our snaps and Docker images to add
+  support for proxy environment variables and fix the plugin for Google Cloud
+  DNS.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.8.0 - 2020-09-08
 
 ### Added
 

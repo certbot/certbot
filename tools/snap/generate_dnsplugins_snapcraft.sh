@@ -15,7 +15,7 @@ name: ${PLUGIN}
 summary: ${DESCRIPTION}
 description: ${DESCRIPTION}
 confinement: strict
-grade: devel
+grade: stable
 base: core20
 adopt-info: ${PLUGIN}
 

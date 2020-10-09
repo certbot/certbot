@@ -127,7 +127,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
 
     config["renewalparams"].update(relevant_data)
 
-    for k in config["renewalparams"].keys():
+    for k in config["renewalparams"]:
         if k not in relevant_data:
             del config["renewalparams"][k]
 
@@ -1126,7 +1126,7 @@ class RenewableCert(interfaces.RenewableCert):
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(new_cert + new_chain)
 
-        symlinks = dict((kind, self.configuration[kind]) for kind in ALL_FOUR)
+        symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
         # Update renewal config file
         self.configfile = update_configuration(
             self.lineagename, self.archive_dir, symlinks, cli_config)

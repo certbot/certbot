@@ -13,17 +13,18 @@ jobs:
           arm64v8:
             DOCKER_ARCH: arm64v8
     steps:
-      - bash: tools/docker/build.sh $(dockerTag) $DOCKER_ARCH
+      - bash: set -e && tools/docker/build.sh $(dockerTag) $DOCKER_ARCH
         displayName: Build the Docker images
       # We don't filter for the Docker Hub organization to continue to allow
       # easy testing of these scripts on forks.
       - bash: |
+          set -e
           DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
           docker save --output images.tar $DOCKER_IMAGES
         displayName: Save the Docker images
       # If the name of the tar file or artifact changes, the deploy stage will
       # also need to be updated.
-      - bash: mv images.tar $(Build.ArtifactStagingDirectory)
+      - bash: set -e && mv images.tar $(Build.ArtifactStagingDirectory)
         displayName: Prepare Docker artifact
       - task: PublishPipelineArtifact@1
         inputs:
@@ -78,9 +79,16 @@ jobs:
           artifact: windows-installer
           path: $(Build.SourcesDirectory)/bin
         displayName: Retrieve Windows installer
+      # pip 9.0 provided by pipstrap is not able to resolve properly the pywin32 dependency
+      # required by certbot-ci: as a temporary workaround until pipstrap is updated, we install
+      # a recent version of pip, but we also to disable the isolated feature as described in
+      # https://github.com/certbot/certbot/issues/8256
       - script: |
           py -3 -m venv venv
+          venv\Scripts\python -m pip install pip==20.2.3 setuptools==50.3.0 wheel==0.35.1
           venv\Scripts\python tools\pip_install.py -e certbot-ci
+        env:
+          PIP_NO_BUILD_ISOLATION: no
         displayName: Prepare Certbot-CI
       - script: |
           set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
@@ -102,6 +110,7 @@ jobs:
         ARCHS: amd64
     steps:
       - script: |
+          set -e
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends snapd
           sudo snap install --classic snapcraft
@@ -115,6 +124,7 @@ jobs:
         inputs:
           secureFile: launchpad-credentials
       - script: |
+          set -e
           git config --global user.email "$(Build.RequestedForEmail)"
           git config --global user.name "$(Build.RequestedFor)"
           mkdir -p ~/.local/share/snapcraft/provider/launchpad
@@ -122,6 +132,7 @@ jobs:
           python3 tools/snap/build_remote.py ALL --archs ${ARCHS}
         displayName: Build snaps
       - script: |
+          set -e
           mv *.snap $(Build.ArtifactStagingDirectory)
           mv certbot-dns-*/*.snap $(Build.ArtifactStagingDirectory)
         displayName: Prepare artifacts
@@ -135,10 +146,17 @@ jobs:
     pool:
       vmImage: ubuntu-18.04
     steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.8
+          addToPath: true
       - script: |
+          set -e
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends nginx-light snapd
-          python tools/pip_install.py -U tox
+          python3 -m venv venv
+          venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
+          venv/bin/python tools/pip_install.py -U tox
         displayName: Install dependencies
       - task: DownloadPipelineArtifact@2
         inputs:
@@ -146,10 +164,12 @@ jobs:
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snaps
       - script: |
+          set -e
           sudo snap install --dangerous --classic snap/certbot_*_amd64.snap
         displayName: Install Certbot snap
       - script: |
-          python -m tox -e integration-external,apacheconftest-external-with-pebble
+          set -e
+          venv/bin/python -m tox -e integration-external,apacheconftest-external-with-pebble
         displayName: Run tox
   - job: snap_dns_run
     dependsOn: snaps_build
@@ -157,6 +177,7 @@ jobs:
       vmImage: ubuntu-18.04
     steps:
       - script: |
+          set -e
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends snapd
         displayName: Install dependencies
@@ -170,9 +191,12 @@ jobs:
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snaps
       - script: |
+          set -e
           python3 -m venv venv
+          venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
           venv/bin/python tools/pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
       - script: |
+          set -e
           sudo -E venv/bin/pytest certbot-ci/snap_integration_tests/dns_tests --allow-persistent-changes --snap-folder $(Build.SourcesDirectory)/snap --snap-arch amd64
         displayName: Test DNS plugins snaps

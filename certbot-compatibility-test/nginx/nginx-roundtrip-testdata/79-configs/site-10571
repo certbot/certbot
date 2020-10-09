@@ -61,7 +61,6 @@ server {
 server {
     listen 80;
     server_name random1413.example.org www.random1413.example.org;
-    server_name random28524.example.org www.random28524.example.org;
     server_name random25266.example.org www.random25266.example.org;
     server_name random26791.example.org www.random26791.example.org;
 

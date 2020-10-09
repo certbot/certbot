@@ -448,7 +448,7 @@ class Client(ClientBase):
         heapq.heapify(waiting)
         # mapping between original Authorization Resource and the most
         # recently updated one
-        updated = dict((authzr, authzr) for authzr in authzrs)
+        updated = {authzr: authzr for authzr in authzrs}
 
         while waiting:
             # find the smallest Retry-After, and sleep if necessary
@@ -801,7 +801,7 @@ class ClientV2(ClientBase):
         """
         # Can't use response.links directly because it drops multiple links
         # of the same relation type, which is possible in RFC8555 responses.
-        if not 'Link' in response.headers:
+        if 'Link' not in response.headers:
             return []
         links = parse_header_links(response.headers['Link'])
         return [l['url'] for l in links

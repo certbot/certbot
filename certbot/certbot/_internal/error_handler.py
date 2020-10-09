@@ -123,8 +123,10 @@ class ErrorHandler(object):
         while self.funcs:
             try:
                 self.funcs[-1]()
-            except Exception:  # pylint: disable=broad-except
-                logger.error("Encountered exception during recovery: ", exc_info=True)
+            except Exception as exc:  # pylint: disable=broad-except
+                output = traceback.format_exception_only(type(exc), exc)
+                logger.error("Encountered exception during recovery: %s",
+                             ''.join(output).rstrip())
             self.funcs.pop()
 
     def _set_signal_handlers(self):
