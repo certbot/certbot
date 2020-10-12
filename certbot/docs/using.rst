@@ -282,6 +282,7 @@ dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 dns-inwx           Y    Y    DNS Authentication for INWX through the XML API
+azure              Y    Y    DNS Authentication for Azure and App Gateway Installation
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -295,6 +296,7 @@ dns-inwx           Y    Y    DNS Authentication for INWX through the XML API
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
+.. _azure: https://github.com/dlapiduz/certbot-azure/
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
