@@ -282,7 +282,7 @@ dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
-dns-inwx           Y    Y    DNS Authentication for INWX through the XML API
+dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
