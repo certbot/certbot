@@ -25,6 +25,7 @@ More details about these changes can be found on our GitHub repo.
 
 * `--preconfigured-renewal` flag, for packager use only.
   See the [packaging guide](https://certbot.eff.org/docs/packaging.html).
+* Confirmation when deleting certificates
 
 ### Changed
 
