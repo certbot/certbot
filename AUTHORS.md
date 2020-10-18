@@ -255,6 +255,7 @@ Authors
 * [Torsten Bögershausen](https://github.com/tboegi)
 * [Travis Raines](https://github.com/rainest)
 * [Trung Ngo](https://github.com/Ngo-The-Trung)
+* [Tyler Durr](https://github.com/TDurrr1)
 * [Valentin](https://github.com/e00E)
 * [venyii](https://github.com/venyii)
 * [Viktor Szakats](https://github.com/vszakats)
