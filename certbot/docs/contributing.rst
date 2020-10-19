@@ -361,10 +361,18 @@ installed in the Certbot snap, the Certbot snap will have to be updated.
 
 Certbot plugin snaps expose their Python modules to the Certbot snap via a
 `snap content interface`_ where ``certbot-1`` is the value for the ``content``
-attribute. The Certbot snap also provides a separate content interface which
+attribute. The Certbot snap only uses this to find the names of connected
+plugin snaps and it expects to find the Python modules to be loaded under
+``lib/python3.8/site-packages/`` in the plugin snap. This location is the
+default when using the ``core20`` `base snap`_ and the `python snapcraft
+plugin`_.
+
+The Certbot snap also provides a separate content interface which
 you can use to get metadata about the Certbot snap using the ``content``
-identifier ``metadata-1``. The script used to generate the snapcraft.yaml files
-for our own externally snapped plugins can be found at
+identifier ``metadata-1``.
+
+The script used to generate the snapcraft.yaml files for our own externally
+snapped plugins can be found at
 https://github.com/certbot/certbot/blob/master/tools/snap/generate_dnsplugins_snapcraft.sh.
 
 Once you have created your own snap, if you have the snap file locally,
@@ -388,6 +396,10 @@ connect your snap to it.
 
 .. _`snap content interface`:
     https://snapcraft.io/docs/content-interface
+.. _`base snap`:
+    https://snapcraft.io/docs/base-snaps
+.. _`python snapcraft plugin`:
+    https://snapcraft.io/docs/python-plugin
 
 .. _coding-style:
 
