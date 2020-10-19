@@ -12,6 +12,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* CLI flag `--manual-public-ip-logging-ok` is now a no-op, generates a
+  deprecation warning, and will be removed in a future release.
 *
 
 ### Fixed
