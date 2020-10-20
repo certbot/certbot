@@ -105,8 +105,10 @@ if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python
     exit 1
 fi
 
-# Once certbot-auto is deprecated on RHEL systems, we can unconditionally check
-# for INITIAL_VERSION below.
+# On systems like Debian where certbot-auto is deprecated, we expect it to
+# leave existing Certbot installations unmodified so we check for the same
+# version that was initially installed below.  Once certbot-auto is deprecated
+# on RHEL systems, we can unconditionally check for INITIAL_VERSION.
 if [ -f /etc/debian_version ]; then
     EXPECTED_VERSION="$INITIAL_VERSION"
 else

@@ -16,8 +16,9 @@ sudo chown root "$LE_AUTO_PATH"
 sudo chmod 0755 "$LE_AUTO_PATH"
 export PATH="$LE_AUTO_DIR:$PATH"
 
-# Once certbot-auto is deprecated on RHEL systems, we can unconditionally run
-# this code.
+# On systems like Debian where certbot-auto is deprecated, we expect
+# certbot-auto to error and refuse to install Certbot.  Once certbot-auto is
+# deprecated on RHEL systems, we can unconditionally run this code.
 if [ -f /etc/debian_version ]; then
     set +o pipefail
     if ! letsencrypt-auto --debug --version | grep "Certbot cannot be installed."; then
