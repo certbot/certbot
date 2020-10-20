@@ -12,7 +12,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* certbot-auto was deprecated on Debian based systems.
 
 ### Fixed
 
