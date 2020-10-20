@@ -51,7 +51,6 @@ from certbot._internal.cli.cli_utils import (
 )
 
 # These imports depend on cli_constants and cli_utils.
-from certbot._internal.cli.report_config_interaction import report_config_interaction
 from certbot._internal.cli.verb_help import VERB_HELP, VERB_HELP_MAP
 from certbot._internal.cli.group_adder import _add_all_groups
 from certbot._internal.cli.subparsers import _create_subparsers

@@ -505,43 +505,6 @@ class SetByCliTest(unittest.TestCase):
         verb = 'renew'
         self.assertTrue(_call_set_by_cli('webroot_map', args, verb))
 
-    def test_report_config_interaction_str(self):
-        cli.report_config_interaction('manual_public_ip_logging_ok',
-                                      'manual_auth_hook')
-        cli.report_config_interaction('manual_auth_hook', 'manual')
-
-        self._test_report_config_interaction_common()
-
-    def test_report_config_interaction_iterable(self):
-        cli.report_config_interaction(('manual_public_ip_logging_ok',),
-                                      ('manual_auth_hook',))
-        cli.report_config_interaction(('manual_auth_hook',), ('manual',))
-
-        self._test_report_config_interaction_common()
-
-    def _test_report_config_interaction_common(self):
-        """Tests implied interaction between manual flags.
-
-        --manual implies --manual-auth-hook which implies
-        --manual-public-ip-logging-ok. These interactions don't actually
-        exist in the client, but are used here for testing purposes.
-
-        """
-
-        args = ['--manual']
-        verb = 'renew'
-        for v in ('manual', 'manual_auth_hook', 'manual_public_ip_logging_ok'):
-            self.assertTrue(_call_set_by_cli(v, args, verb))
-
-        # https://github.com/python/mypy/issues/2087
-        cli.set_by_cli.detector = None  # type: ignore
-
-        args = ['--manual-auth-hook', 'command']
-        for v in ('manual_auth_hook', 'manual_public_ip_logging_ok'):
-            self.assertTrue(_call_set_by_cli(v, args, verb))
-
-        self.assertFalse(_call_set_by_cli('manual', args, verb))
-
 
 def _call_set_by_cli(var, args, verb):
     with mock.patch('certbot._internal.cli.helpful_parser') as mock_parser:
