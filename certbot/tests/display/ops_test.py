@@ -376,25 +376,6 @@ class SuccessRenewalTest(unittest.TestCase):
         for name in names:
             self.assertTrue(name in arg)
 
-class SuccessRevocationTest(unittest.TestCase):
-    """Test the success revocation message."""
-    @classmethod
-    def _call(cls, path):
-        from certbot.display.ops import success_revocation
-        success_revocation(path)
-
-    @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_success_revocation(self, mock_util):
-        mock_util().notification.return_value = None
-        path = "/path/to/cert.pem"
-        self._call(path)
-        mock_util().notification.assert_called_once_with(
-            "Congratulations! You have successfully revoked the certificate "
-            "that was located at {0}{1}{1}".format(
-                path,
-                os.linesep), pause=False)
-        self.assertTrue(path in mock_util().notification.call_args[0][0])
-
 
 class ValidatorTests(unittest.TestCase):
     """Tests for `validated_input` and `validated_directory`."""

@@ -252,12 +252,12 @@ class RevokeTest(test_util.TempDirTestCase):
             mock.patch('acme.client.BackwardsCompatibleClientV2'),
             mock.patch('certbot._internal.client.Client'),
             mock.patch('certbot._internal.main._determine_account'),
-            mock.patch('certbot._internal.main.display_ops.success_revocation')
+            mock.patch('certbot._internal.main.logger.info')
         ]
         self.mock_acme_client = patches[0].start()
         patches[1].start()
         self.mock_determine_account = patches[2].start()
-        self.mock_success_revoke = patches[3].start()
+        self.mock_logger_info = patches[3].start()
         for patch in patches:
             self.addCleanup(patch.stop)
 
@@ -308,19 +308,25 @@ class RevokeTest(test_util.TempDirTestCase):
         mock_cert_path_for_cert_name.return_value = self.tmp_cert
         mock_delete_if_appropriate.return_value = False
         self._call(args)
-        self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
+        self.mock_logger_info.assert_called_with(
+            "Congratulations! You have successfully revoked the certificate "
+            "that was located at %s", self.tmp_cert_path
+        )
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     def test_revocation_success(self, mock_delete_if_appropriate):
         self._call()
         mock_delete_if_appropriate.return_value = False
-        self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
+        self.mock_logger_info.assert_called_with(
+            "Congratulations! You have successfully revoked the certificate "
+            "that was located at %s", self.tmp_cert_path
+        )
 
     def test_revocation_error(self):
         from acme import errors as acme_errors
         self.mock_acme_client.side_effect = acme_errors.ClientError()
         self.assertRaises(acme_errors.ClientError, self._call)
-        self.mock_success_revoke.assert_not_called()
+        self.mock_logger_info.assert_not_called()
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.cert_manager.delete')
@@ -339,31 +345,31 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         from certbot._internal.main import _delete_if_appropriate
         _delete_if_appropriate(mock_config)
 
-    def _test_delete_opt_out_common(self, mock_get_utility):
+    def _test_delete_opt_out_common(self):
         with mock.patch('certbot._internal.cert_manager.delete') as mock_delete:
             self._call(self.config)
         mock_delete.assert_not_called()
-        self.assertTrue(mock_get_utility().add_message.called)
 
     @test_util.patch_get_utility()
     def test_delete_flag_opt_out(self, mock_get_utility):
         self.config.delete_after_revoke = False
-        self._test_delete_opt_out_common(mock_get_utility)
+        self._test_delete_opt_out_common()
 
     @test_util.patch_get_utility()
     def test_delete_prompt_opt_out(self, mock_get_utility):
         util_mock = mock_get_utility()
         util_mock.yesno.return_value = False
-        self._test_delete_opt_out_common(mock_get_utility)
+        self._test_delete_opt_out_common()
 
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.delete')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot._internal.storage.full_archive_path')
     @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
+    @mock.patch('certbot._internal.main.logger.warning')
     @test_util.patch_get_utility()
     def test_overlapping_archive_dirs(self, mock_get_utility,
-            mock_cert_path_to_lineage, mock_archive,
+            mock_warning, mock_cert_path_to_lineage, mock_archive,
             mock_match_and_check_overlaps, mock_delete,
             mock_renewal_file_for_certname):
         # pylint: disable = unused-argument
@@ -374,6 +380,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         mock_match_and_check_overlaps.side_effect = errors.OverlappingMatchFound()
         self._call(config)
         mock_delete.assert_not_called()
+        mock_warning.assert_called_once()
 
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')

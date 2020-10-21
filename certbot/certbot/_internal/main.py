@@ -543,7 +543,6 @@ def _delete_if_appropriate(config):
         archive dir is found for the specified lineage, etc ...
     """
     display = zope.component.getUtility(interfaces.IDisplay)
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
 
     attempt_deletion = config.delete_after_revoke
     if attempt_deletion is None:
@@ -553,7 +552,6 @@ def _delete_if_appropriate(config):
                 force_interactive=True, default=True)
 
     if not attempt_deletion:
-        reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)
         return
 
     # config.cert_path must have been set
@@ -571,9 +569,8 @@ def _delete_if_appropriate(config):
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
             lambda x: x.archive_dir, lambda x: x)
     except errors.OverlappingMatchFound:
-        msg = ('Not deleting revoked certs due to overlapping archive dirs. More than '
-                'one lineage is using {0}'.format(archive_dir))
-        reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
+        logger.warning("Not deleting revoked certs due to overlapping archive dirs. More than "
+                       "one certificate is using %s", archive_dir)
         return
     except Exception as e:
         msg = ('config.default_archive_dir: {0}, config.live_dir: {1}, archive_dir: {2},'
@@ -1067,7 +1064,11 @@ def revoke(config, unused_plugins):
     except acme_errors.ClientError as e:
         return str(e)
 
-    display_ops.success_revocation(config.cert_path[0])
+    logger.info(
+        "Congratulations! You have successfully revoked "
+        "the certificate that was located at %s",
+        config.cert_path[0]
+    )
     return None
 
 

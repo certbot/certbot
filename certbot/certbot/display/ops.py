@@ -261,20 +261,6 @@ def success_renewal(domains):
         pause=False)
 
 
-def success_revocation(cert_path):
-    """Display a box confirming a certificate has been revoked.
-
-    :param list cert_path: path to certificate which was revoked.
-
-    """
-    z_util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully revoked the certificate "
-        "that was located at {0}{1}{1}".format(
-            cert_path,
-            os.linesep),
-        pause=False)
-
-
 def _gen_https_names(domains):
     """Returns a string of the https domains.
 
