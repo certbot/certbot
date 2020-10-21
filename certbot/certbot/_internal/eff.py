@@ -133,5 +133,4 @@ def _report_failure(reason=None):
         msg.append(' because ')
         msg.append(reason)
     msg.append('. You can try again later by visiting https://act.eff.org.')
-    reporter = zope.component.getUtility(interfaces.IReporter)
-    reporter.add_message(''.join(msg), reporter.LOW_PRIORITY)
+    logger.warning("".join(msg))
