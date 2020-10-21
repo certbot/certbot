@@ -38,10 +38,10 @@ jobs:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.6
           TOXENV: py36
-        linux-py38-cover:
+        linux-py39-cover:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.8
-          TOXENV: py38-cover
+          PYTHON_VERSION: 3.9
+          TOXENV: py39-cover
         linux-py37-lint:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.7

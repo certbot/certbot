@@ -14,6 +14,9 @@ jobs:
         linux-py37:
           PYTHON_VERSION: 3.7
           TOXENV: py37
+        linux-py38:
+          PYTHON_VERSION: 3.8
+          TOXENV: py38
         linux-py37-nopin:
           PYTHON_VERSION: 3.7
           TOXENV: py37
@@ -60,6 +63,14 @@ jobs:
           ACME_SERVER: boulder-v1
         linux-boulder-v2-py38-integration:
           PYTHON_VERSION: 3.8
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-py39-integration:
+          PYTHON_VERSION: 3.9
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py39-integration:
+          PYTHON_VERSION: 3.9
           TOXENV: integration
           ACME_SERVER: boulder-v2
         nginx-compat:
