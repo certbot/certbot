@@ -1279,13 +1279,16 @@ class MainTest(test_util.ConfigTestCase):
     @test_util.patch_get_utility()
     @mock.patch('certbot._internal.main._find_lineage_for_domains_and_certname')
     @mock.patch('certbot._internal.main._init_le_client')
-    def test_certonly_reinstall(self, mock_init, mock_renewal, mock_get_utility):
+    @mock.patch('certbot._internal.main._report_new_cert')
+    def test_certonly_reinstall(self, mock_report_new_cert, mock_init,
+                                mock_renewal, mock_get_utility):
         mock_renewal.return_value = ('reinstall', mock.MagicMock())
         mock_init.return_value = mock_client = mock.MagicMock()
         self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
         self.assertFalse(mock_client.obtain_certificate.called)
         self.assertFalse(mock_client.obtain_and_enroll_certificate.called)
         self.assertEqual(mock_get_utility().add_message.call_count, 0)
+        mock_report_new_cert.assert_not_called()
         #self.assertTrue('donate' not in mock_get_utility().add_message.call_args[0][0])
 
     def _test_certonly_csr_common(self, extra_args=None):
