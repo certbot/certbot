@@ -163,17 +163,13 @@ def _handle_subset_cert_request(config, domains, cert):
                                        cli_flag="--expand",
                                        force_interactive=True):
         return "renew", cert
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message(
+    logger.info(
         "To obtain a new certificate that contains these names without "
-        "replacing your existing certificate for {0}, you must use the "
-        "--duplicate option.{br}{br}"
-        "For example:{br}{br}{1} --duplicate {2}".format(
-            existing,
-            sys.argv[0], " ".join(sys.argv[1:]),
-            br=os.linesep
-        ),
-        reporter_util.HIGH_PRIORITY)
+        "replacing your existing certificate for %s, you must use the "
+        "--duplicate option. For example:\n\n"
+        "  %s --duplicate %s\n",
+        existing, sys.argv[0], " ".join(sys.argv[1:])
+    )
     raise errors.Error(USER_CANCELLED)
 
 
@@ -623,7 +619,6 @@ def unregister(config, unused_plugins):
     """
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
 
     if not accounts:
         return "Could not find existing account to deactivate."
@@ -645,7 +640,7 @@ def unregister(config, unused_plugins):
     # delete local account files
     account_files.delete(config.account)
 
-    reporter_util.add_message("Account deactivated.", reporter_util.MEDIUM_PRIORITY)
+    logger.info("Account deactivated.")
     return None
 
 
@@ -696,8 +691,6 @@ def update_account(config, unused_plugins):
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     if not accounts:
         return "Could not find an existing account to update."
@@ -722,10 +715,10 @@ def update_account(config, unused_plugins):
     account_storage.update_regr(acc, cb_client.acme)
 
     if config.email is None:
-        add_msg("Any contact information associated with this account has been removed.")
+        logger.info("Any contact information associated with this account has been removed.")
     else:
         eff.prepare_subscription(config, acc)
-        add_msg("Your e-mail address was updated to {0}.".format(config.email))
+        logger.info("Your e-mail address was updated to %s.", config.email)
 
     return None
 

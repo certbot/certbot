@@ -1448,9 +1448,10 @@ class MainTest(test_util.ConfigTestCase):
         # ensure we didn't try to subscribe (no email to subscribe with)
         self.assertFalse(mock_prepare.called)
 
+    @mock.patch('certbot._internal.main.logger.info')
     @mock.patch('certbot._internal.main.display_ops.get_email')
     @test_util.patch_get_utility()
-    def test_update_account_with_email(self, mock_utility, mock_email):
+    def test_update_account_with_email(self, mock_utility, mock_email, mock_log_info):
         email = "user@example.com"
         mock_email.return_value = email
         with mock.patch('certbot._internal.eff.prepare_subscription') as mock_prepare:
@@ -1474,8 +1475,10 @@ class MainTest(test_util.ConfigTestCase):
                             cb_client.acme.update_registration.called)
                         # and we saved the updated registration on disk
                         self.assertTrue(mocked_storage.update_regr.called)
-                        self.assertTrue(
-                            email in mock_utility().add_message.call_args[0][0])
+                        mock_log_info.assert_called_with(
+                            "Your e-mail address was updated to %s.",
+                            email
+                        )
                         self.assertTrue(mock_prepare.called)
 
     @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
@@ -1498,7 +1501,8 @@ class UnregisterTest(unittest.TestCase):
             '_determine_account': mock.patch('certbot._internal.main._determine_account'),
             'account': mock.patch('certbot._internal.main.account'),
             'client': mock.patch('certbot._internal.main.client'),
-            'get_utility': test_util.patch_get_utility()}
+            'get_utility': test_util.patch_get_utility(),
+            'log_info': mock.patch('certbot._internal.main.logger.info')}
         self.mocks = {k: v.start() for k, v in self.patchers.items()}
 
     def tearDown(self):
@@ -1535,7 +1539,7 @@ class UnregisterTest(unittest.TestCase):
         self.assertTrue(res is None)
         self.assertTrue(cb_client.acme.deactivate_registration.called)
         m = "Account deactivated."
-        self.assertTrue(m in self.mocks['get_utility']().add_message.call_args[0][0])
+        self.assertTrue(m in self.mocks['log_info'].call_args[0][0])
 
     def test_unregister_no_account(self):
         mocked_storage = mock.MagicMock()
