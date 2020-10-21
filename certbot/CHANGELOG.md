@@ -8,7 +8,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Added timeout to DNS query function calls for dns-rfc2136 plugin.
 * Confirmation when deleting certificates
-*
+* Support for Python 3.9 was added to Certbot and all of its components.
 
 ### Changed
 
