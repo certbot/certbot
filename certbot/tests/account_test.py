@@ -83,24 +83,6 @@ class MetaTest(unittest.TestCase):
         self.assertIsNotNone(meta.creation_host)
         self.assertIsNotNone(meta.register_to_eff)
 
-class ReportNewAccountTest(test_util.ConfigTestCase):
-    """Tests for certbot._internal.account.report_new_account."""
-
-    def _call(self):
-        from certbot._internal.account import report_new_account
-        report_new_account(self.config)
-
-    @mock.patch("certbot._internal.account.zope.component.queryUtility")
-    def test_no_reporter(self, mock_zope):
-        mock_zope.return_value = None
-        self._call()
-
-    @mock.patch("certbot._internal.account.zope.component.queryUtility")
-    def test_it(self, mock_zope):
-        self._call()
-        call_list = mock_zope().add_message.call_args_list
-        self.assertTrue(self.config.config_dir in call_list[0][0][0])
-
 
 class AccountMemoryStorageTest(unittest.TestCase):
     """Tests for certbot._internal.account.AccountMemoryStorage."""
