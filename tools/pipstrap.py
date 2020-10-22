@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-"""Uses pip to install or upgrade Python packaging tools.
-
-pip_install.py is used to accomplish this so packages like pip can be
-pinned the same way as our other packages.
-
-"""
+"""Uses pip to upgrade Python packaging tools to pinned versions."""
 from __future__ import absolute_import
 
 import os
