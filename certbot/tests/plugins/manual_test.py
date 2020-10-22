@@ -32,8 +32,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             # initialization.
         self.config = mock.MagicMock(
             http01_port=0, manual_auth_hook=None, manual_cleanup_hook=None,
-            manual_public_ip_logging_ok=False, noninteractive_mode=False,
-            validate_hooks=False,
+            noninteractive_mode=False, validate_hooks=False,
             config_dir=os.path.join(self.tempdir, "config_dir"),
             work_dir=os.path.join(self.tempdir, "work_dir"),
             backup_dir=os.path.join(self.tempdir, "backup_dir"),
@@ -60,19 +59,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.assertEqual(self.auth.get_chall_pref('example.org'),
                          [challenges.HTTP01, challenges.DNS01])
 
-    @test_util.patch_get_utility()
-    def test_ip_logging_not_ok(self, mock_get_utility):
-        mock_get_utility().yesno.return_value = False
-        self.assertRaises(errors.PluginError, self.auth.perform, [])
-
-    @test_util.patch_get_utility()
-    def test_ip_logging_ok(self, mock_get_utility):
-        mock_get_utility().yesno.return_value = True
-        self.auth.perform([])
-        self.assertTrue(self.config.manual_public_ip_logging_ok)
-
     def test_script_perform(self):
-        self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = (
             '{0} -c "from __future__ import print_function;'
             'from certbot.compat import os;'
@@ -105,7 +92,6 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
     @test_util.patch_get_utility()
     def test_manual_perform(self, mock_get_utility):
-        self.config.manual_public_ip_logging_ok = True
         self.assertEqual(
             self.auth.perform(self.achalls),
             [achall.response(achall.account_key) for achall in self.achalls])
@@ -116,7 +102,6 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.assertFalse(kwargs['wrap'])
 
     def test_cleanup(self):
-        self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = ('{0} -c "import sys; sys.stdout.write(\'foo\')"'
                                         .format(sys.executable))
         self.config.manual_cleanup_hook = '# cleanup'
