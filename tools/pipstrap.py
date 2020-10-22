@@ -8,6 +8,7 @@ pinned the same way as our other packages.
 from __future__ import absolute_import
 
 import os
+import shutil
 import tempfile
 
 import pip_install
@@ -30,7 +31,7 @@ wheel==0.35.1 \
 
 
 def main():
-    with tempfile.TemporaryDirectory() as tempdir:
+    with pip_install.temporary_directory() as tempdir:
         requirements_filepath = os.path.join(tempdir, 'reqs.txt')
         with open(requirements_filepath, 'w') as f:
             f.write(REQUIREMENTS)
