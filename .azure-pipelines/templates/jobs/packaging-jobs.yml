@@ -46,7 +46,7 @@ jobs:
       - bash: |
           set -e
           DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
-          for $DOCKER_IMAGE in DOCKER_IMAGES
+          for DOCKER_IMAGE in $DOCKER_IMAGES
             do docker run --rm $DOCKER_IMAGE plugin --prepare
           done
   - job: installer_build
