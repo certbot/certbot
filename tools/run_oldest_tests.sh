@@ -30,8 +30,8 @@ RUN apt-get update \
 EOF
 
 docker build -f "${DOCKERFILE}" -t oldest-worker .
-#docker run --rm --network=host -w "${PWD}" \
-#  -v /var/run/docker.sock:/var/run/docker.sock \
-#  -v "${PWD}:${PWD}" -v /tmp:/tmp \
-#  -e TOXENV -e ACME_SERVER -e PYTEST_ADDOPTS \
-#  oldest-worker python -m tox
+docker run --rm --network=host -w "${PWD}" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "${PWD}:${PWD}" -v /tmp:/tmp \
+  -e TOXENV -e ACME_SERVER -e PYTEST_ADDOPTS \
+  oldest-worker python -m tox
