@@ -136,7 +136,7 @@ On a low memory system such as VPS with less than 512MB of RAM, the required dep
 This can be identified if the pip outputs contains something like ``internal compiler error: Killed (program cc1)``.
 You can workaround this restriction by creating a temporary swapfile::
 
-  user@webserver:~$ sudo fallocate -l 1G /tmp/swapfile
+  user@webserver:~$ sudo dd if=/dev/zero of=/tmp/swapfile bs=1M count=1024
   user@webserver:~$ sudo chmod 600 /tmp/swapfile
   user@webserver:~$ sudo mkswap /tmp/swapfile
   user@webserver:~$ sudo swapon /tmp/swapfile
