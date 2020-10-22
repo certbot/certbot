@@ -4,7 +4,7 @@ jobs:
       - name: IMAGE_NAME
         value: ubuntu-18.04
       - name: PYTHON_VERSION
-        value: 3.8
+        value: 3.9
       - group: certbot-common
     strategy:
       matrix:
@@ -14,9 +14,12 @@ jobs:
         linux-py37:
           PYTHON_VERSION: 3.7
           TOXENV: py37
-        linux-py37-nopin:
-          PYTHON_VERSION: 3.7
-          TOXENV: py37
+        linux-py38:
+          PYTHON_VERSION: 3.8
+          TOXENV: py38
+        linux-py39-nopin:
+          PYTHON_VERSION: 3.9
+          TOXENV: py39
           CERTBOT_NO_PIN: 1
         linux-boulder-v1-integration-certbot-oldest:
           TOXENV: integration-certbot-oldest
@@ -62,6 +65,14 @@ jobs:
           PYTHON_VERSION: 3.8
           TOXENV: integration
           ACME_SERVER: boulder-v2
+        linux-boulder-v1-py39-integration:
+          PYTHON_VERSION: 3.9
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py39-integration:
+          PYTHON_VERSION: 3.9
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
         nginx-compat:
           TOXENV: nginx_compat
         le-auto-oraclelinux6:
@@ -72,16 +83,16 @@ jobs:
           # We run one of these test farm tests on macOS to help ensure the
           # tests continue to work on the platform.
           IMAGE_NAME: macOS-10.15
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.9
           TOXENV: test-farm-apache2
         farmtest-leauto-upgrades:
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.9
           TOXENV: test-farm-leauto-upgrades
         farmtest-certonly-standalone:
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.9
           TOXENV: test-farm-certonly-standalone
         farmtest-sdists:
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.9
           TOXENV: test-farm-sdists
     pool:
       vmImage: $(IMAGE_NAME)

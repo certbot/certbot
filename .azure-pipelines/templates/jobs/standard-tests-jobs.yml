@@ -1,17 +1,17 @@
 jobs:
   - job: test
     variables:
-      PYTHON_VERSION: 3.8
+      PYTHON_VERSION: 3.9
     strategy:
       matrix:
         macos-py27:
           IMAGE_NAME: macOS-10.15
           PYTHON_VERSION: 2.7
           TOXENV: py27
-        macos-py38:
+        macos-py39:
           IMAGE_NAME: macOS-10.15
-          PYTHON_VERSION: 3.8
-          TOXENV: py38
+          PYTHON_VERSION: 3.9
+          TOXENV: py39
         windows-py36:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.6
@@ -38,13 +38,13 @@ jobs:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.6
           TOXENV: py36
-        linux-py38-cover:
+        linux-py39-cover:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.9
           TOXENV: py38-cover
-        linux-py37-lint:
+        linux-py39-lint:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.9
           TOXENV: lint
         linux-py36-mypy:
           IMAGE_NAME: ubuntu-18.04
@@ -52,7 +52,6 @@ jobs:
           TOXENV: mypy
         linux-integration:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
           TOXENV: integration
           ACME_SERVER: pebble
         apache-compat:
@@ -63,11 +62,9 @@ jobs:
           TOXENV: le_auto_centos6
         apacheconftest:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
           TOXENV: apacheconftest-with-pebble
         nginxroundtrip:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
           TOXENV: nginxroundtrip
     pool:
       vmImage: $(IMAGE_NAME)
