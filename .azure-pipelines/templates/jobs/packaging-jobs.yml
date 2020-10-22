@@ -45,9 +45,9 @@ jobs:
         displayName: Load Docker images
       - bash: |
           set -e
-          DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
-          for DOCKER_IMAGE in $DOCKER_IMAGES
-            do docker run --rm $DOCKER_IMAGE plugin --prepare
+          DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}:{{.Tag}}')
+          for DOCKER_IMAGE in ${DOCKER_IMAGES}
+            do docker run --rm "${DOCKER_IMAGE}:amd64-nightly" plugin --prepare
           done
   - job: installer_build
     pool:
