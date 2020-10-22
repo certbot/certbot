@@ -1,7 +1,6 @@
 """Tests for certbot.compat.filesystem"""
 import contextlib
 import errno
-import stat
 import unittest
 
 try:
