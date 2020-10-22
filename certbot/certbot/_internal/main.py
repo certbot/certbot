@@ -113,12 +113,20 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
         if lineage is not None:
             # Renewal, where we already know the specific lineage we're
             # interested in
-            logger.info("Renewing an existing certificate")
+            logger.info(
+                "Renewing%s an existing certificate for %s",
+                " (dry run)" if config.dry_run else "",
+                display_util.summarize_domain_list(domains or lineage.names()),
+            )
             renewal.renew_cert(config, domains, le_client, lineage)
         else:
             # TREAT AS NEW REQUEST
             assert domains is not None
-            logger.info("Obtaining a new certificate")
+            logger.info(
+                "Requesting%s a certificate for %s",
+                " (dry run)" if config.dry_run else "",
+                display_util.summarize_domain_list(domains),
+            )
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")

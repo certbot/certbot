@@ -429,5 +429,26 @@ class PlaceParensTest(unittest.TestCase):
         self.assertEqual("(y)es please", self._call("yes please"))
 
 
+class SummarizeDomainListTest(unittest.TestCase):
+    @classmethod
+    def _call(cls, domains):
+        from certbot.display.util import summarize_domain_list
+        return summarize_domain_list(domains)
+
+    def test_single_domain(self):
+        self.assertEqual("example.com", self._call(["example.com"]))
+
+    def test_two_domains(self):
+        self.assertEqual("example.com and example.org",
+                         self._call(["example.com", "example.org"]))
+
+    def test_many_domains(self):
+        self.assertEqual("example.com and 2 more domains",
+                         self._call(["example.com", "example.org", "a.example.com"]))
+
+    def test_empty_domains(self):
+        self.assertEqual("", self._call([]))
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
