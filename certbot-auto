@@ -892,7 +892,8 @@ elif uname | grep -iq FreeBSD ; then
   DEPRECATED_OS=1
 elif uname | grep -iq Darwin ; then
   DEPRECATED_OS=1
-elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
+elif grep -i "Amazon Linux" /etc/issue > /dev/null 2>&1 || \
+  grep 'cpe:.*:amazon_linux:2' /etc/os-release > /dev/null 2>&1; then
   Bootstrap() {
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
   }
