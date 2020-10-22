@@ -32,7 +32,7 @@ steps:
     # problems with its lack of real dependency resolution.
   - bash: |
       set -e
-      python letsencrypt-auto-source/pieces/pipstrap.py
+      python tools/pipstrap.py
       python tools/pip_install.py -I tox virtualenv
     displayName: Install runtime dependencies
   - task: DownloadSecureFile@1

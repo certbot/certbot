@@ -79,13 +79,9 @@ jobs:
           artifact: windows-installer
           path: $(Build.SourcesDirectory)/bin
         displayName: Retrieve Windows installer
-      # pip 9.0 provided by pipstrap is not able to resolve properly the pywin32 dependency
-      # required by certbot-ci: as a temporary workaround until pipstrap is updated, we install
-      # a recent version of pip, but we also to disable the isolated feature as described in
-      # https://github.com/certbot/certbot/issues/8256
       - script: |
           py -3 -m venv venv
-          venv\Scripts\python -m pip install pip==20.2.3 setuptools==50.3.0 wheel==0.35.1
+          venv\Scripts\python tools\pipstrap.py
           venv\Scripts\python tools\pip_install.py -e certbot-ci
         env:
           PIP_NO_BUILD_ISOLATION: no
@@ -155,7 +151,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends nginx-light snapd
           python3 -m venv venv
-          venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
+          venv/bin/python tools/pipstrap.py
           venv/bin/python tools/pip_install.py -U tox
         displayName: Install dependencies
       - task: DownloadPipelineArtifact@2
@@ -193,7 +189,7 @@ jobs:
       - script: |
           set -e
           python3 -m venv venv
-          venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
+          venv/bin/python tools/pipstrap.py
           venv/bin/python tools/pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
       - script: |
