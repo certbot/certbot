@@ -75,7 +75,7 @@ def call_with_print(command):
     subprocess.check_call(command, shell=True)
 
 
-def pip_install_with_print(args_str, disable_build_isolation):
+def pip_install_with_print(args_str, disable_build_isolation=True):
     command = ['"', sys.executable, '" -m pip install --disable-pip-version-check ']
     if disable_build_isolation:
         command.append('--no-build-isolation ')
@@ -83,7 +83,7 @@ def pip_install_with_print(args_str, disable_build_isolation):
     call_with_print(''.join(command))
 
 
-def main(args, disable_build_isolation=True):
+def main(args):
     tools_path = find_tools_path()
     working_dir = tempfile.mkdtemp()
 
@@ -98,7 +98,7 @@ def main(args, disable_build_isolation=True):
 
         if os.environ.get('CERTBOT_NO_PIN') == '1':
             # With unpinned dependencies, there is no constraint
-            pip_install_with_print(' '.join(args), disable_build_isolation)
+            pip_install_with_print(' '.join(args))
         else:
             # Otherwise, we merge requirements to build the constraints and pin dependencies
             requirements = None
@@ -112,17 +112,15 @@ def main(args, disable_build_isolation=True):
                 # First step, install the transitive dependencies of oldest requirements
                 # in respect with oldest constraints.
                 pip_install_with_print('--constraint "{0}" --requirement "{1}"'
-                                       .format(all_constraints, requirements),
-                                       disable_build_isolation)
+                                       .format(all_constraints, requirements))
                 # Second step, ensure that oldest requirements themselves are effectively
                 # installed using --force-reinstall, and avoid corner cases like the one described
                 # in https://github.com/certbot/certbot/issues/7014.
                 pip_install_with_print('--force-reinstall --no-deps --requirement "{0}"'
-                                       .format(requirements),
-                                       disable_build_isolation)
+                                       .format(requirements))
 
             pip_install_with_print('--constraint "{0}" {1}'.format(
-                all_constraints, ' '.join(args)), disable_build_isolation)
+                all_constraints, ' '.join(args)))
     finally:
         if os.environ.get('TRAVIS'):
             print('travis_fold:end:install_certbot_deps')

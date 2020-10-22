@@ -15,7 +15,11 @@ if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | se
 fi
 
 # setup venv
-CERTBOT_PIP_NO_BINARY=:all: tools/venv3.py --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
+# We strip the hashes because the venv creation script includes unhashed
+# constraints in the commands given to pip and the mix of hashed and unhashed
+# packages makes pip error out.
+tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > unhashed-requirements.txt
+CERTBOT_PIP_NO_BINARY=:all: tools/venv3.py --requirement unhashed-requirements.txt
 . "$VENV_PATH/bin/activate"
 # pytest is needed to run tests on some of our packages so we install a pinned version here.
 tools/pip_install.py pytest
