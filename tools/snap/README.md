@@ -69,6 +69,27 @@ These are the steps to build and install the Certbot DNSimple plugin snap. If yo
 
 Run Certbot as normal. For example, `certbot plugins` should display the DNSimple plugin as installed.
 
-## Building for other architectures
+## Building for Other Architectures
 
-TK
+To build for an unavailable architecture or for multiple architectures simultaneously, we recommend using snapcraft's remote build feature.
+It is easiest to run this from a local machine.
+
+### Initial Local Setup
+
+ 1. Create or log into an Ubuntu One account [here](https://login.launchpad.net/).
+ 2. Install git and python with `sudo apt update && sudo apt install -y git python`.
+ 3. Install snapcraft with `sudo snap install --classic snapcraft`.
+ 4. `cd ~` (or any other directory where you want our source files to be)
+ 5. Run `git clone git://github.com/certbot/certbot`
+ 6. `cd certbot` (All further instructions are relative to this directory.)
+
+### Build Snaps Remotely
+
+Certbot provides a wrapper around snapcraft's remote build to make building all of our plugins easier. To see all available
+options, run `python3 tools/snap/build_remote.py --help`.
+
+For example, to build all available snaps for all architectures, run `python3 tools/snap/build_remote.py ALL --archs amd64 arm64 armhf`.
+
+To build only the certbot snap on only amd64, run `python3 tools/snap/build_remote.py certbot --archs armhf`.
+
+After running the command, an authorization request will open in your browser. Confirm access to continue the build.
