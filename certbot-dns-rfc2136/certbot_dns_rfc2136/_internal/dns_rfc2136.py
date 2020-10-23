@@ -12,6 +12,14 @@ import dns.tsigkeyring
 import dns.update
 import zope.interface
 
+# pylint raises nearly a dozen "no-member" errors about various attributes in
+# dnspython. I verified all attributes it is erroring about do exist and that
+# the problem still exists in the latest version of pylint which as of writing
+# this is 2.6.0. Instead of disabling all of these errors inline now and in the
+# future, let's just disable this check in this file while pylint is unable to
+# properly parse dnspython.
+# pylint: disable=no-member
+
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
