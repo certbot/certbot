@@ -4,7 +4,7 @@ jobs:
       - name: IMAGE_NAME
         value: ubuntu-18.04
       - name: PYTHON_VERSION
-        value: 3.8
+        value: 3.9
       - group: certbot-common
     strategy:
       matrix:

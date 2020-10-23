@@ -1,17 +1,17 @@
 jobs:
   - job: test
     variables:
-      PYTHON_VERSION: 3.8
+      PYTHON_VERSION: 3.9
     strategy:
       matrix:
         macos-py27:
           IMAGE_NAME: macOS-10.15
           PYTHON_VERSION: 2.7
           TOXENV: py27
-        macos-py38:
+        macos-py39:
           IMAGE_NAME: macOS-10.15
-          PYTHON_VERSION: 3.8
-          TOXENV: py38
+          PYTHON_VERSION: 3.9
+          TOXENV: py39
         windows-py36:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.6
