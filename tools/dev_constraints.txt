@@ -117,7 +117,7 @@ tox==3.14.0
 tqdm==4.19.4
 traitlets==4.3.3
 twine==1.11.0
-typed-ast==1.4.0
+typed-ast==1.4.1
 typing==3.6.4
 uritemplate==3.0.0
 virtualenv==16.6.2
