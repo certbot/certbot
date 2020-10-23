@@ -26,7 +26,13 @@ coverage==4.5.4
 decorator==4.4.1
 deprecated==1.2.10
 dns-lexicon==3.3.17
-dnspython==1.15.0
+# There is no version of dnspython that works on both Python 2 and Python 3.9.
+# To work around this, we make use of the fact that subject to other
+# constraints, pip will install the newest version of a package while ignoring
+# versions that don't support the version of Python being used. The result of
+# this is dnspython 2.0.0 is installed in Python 3 while dnspython 1.16.0 is
+# installed in Python 2.
+dnspython<=2.0.0
 docker==4.3.1
 docker-compose==1.26.2
 docker-pycreds==0.4.0
