@@ -97,7 +97,6 @@ def pip_install_with_print(args_str, disable_build_isolation=True):
 
 def main(args):
     tools_path = find_tools_path()
-    working_dir = tempfile.mkdtemp()
 
     with temporary_directory() as working_dir:
         test_constraints = os.path.join(working_dir, 'test_constraints.txt')
