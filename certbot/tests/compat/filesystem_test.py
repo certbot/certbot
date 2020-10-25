@@ -151,6 +151,57 @@ class WindowsChmodTests(TempDirTestCase):
         self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 2)
 
 
+class UmaskTest(TempDirTestCase):
+    def test_umask_on_dir(self):
+        previous_umask = filesystem.umask(0o022)
+
+        try:
+            dir1 = os.path.join(self.tempdir, 'probe1')
+            filesystem.mkdir(dir1)
+            self.assertTrue(filesystem.check_mode(dir1, 0o755))
+
+            filesystem.umask(0o077)
+
+            dir2 = os.path.join(self.tempdir, 'dir2')
+            filesystem.mkdir(dir2)
+            self.assertTrue(filesystem.check_mode(dir2, 0o700))
+
+            dir3 = os.path.join(self.tempdir, 'dir3')
+            filesystem.mkdir(dir3, mode=0o777)
+            self.assertTrue(filesystem.check_mode(dir3, 0o700))
+        finally:
+            filesystem.umask(previous_umask)
+
+    def test_umask_on_file(self):
+        previous_umask = filesystem.umask(0o022)
+
+        try:
+            file1 = os.path.join(self.tempdir, 'probe1')
+            UmaskTest._create_file(file1)
+            self.assertTrue(filesystem.check_mode(file1, 0o755))
+
+            filesystem.umask(0o077)
+
+            file2 = os.path.join(self.tempdir, 'probe2')
+            UmaskTest._create_file(file2)
+            self.assertTrue(filesystem.check_mode(file2, 0o700))
+
+            file3 = os.path.join(self.tempdir, 'probe3')
+            UmaskTest._create_file(file3)
+            self.assertTrue(filesystem.check_mode(file3, 0o700))
+        finally:
+            filesystem.umask(previous_umask)
+
+    @staticmethod
+    def _create_file(path, mode=0o777):
+        file_desc = None
+        try:
+            file_desc = filesystem.open(path, flags=os.O_CREAT, mode=mode)
+        finally:
+            if file_desc:
+                os.close(file_desc)
+
+
 class ComputePrivateKeyModeTest(TempDirTestCase):
     def setUp(self):
         super(ComputePrivateKeyModeTest, self).setUp()
@@ -281,24 +332,21 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         self.assertEqual(original_mkdir, std_os.mkdir)
 
 
-# TODO: This test can be used both by Linux and Windows once on #7967
-@unittest.skipUnless(POSIX_MODE, reason='Needs umask to succeed, and Windows does not have it')
-class LinuxMkdirTests(test_util.TempDirTestCase):
-    """Unit tests for Linux mkdir + makedirs functions in filesystem module"""
+class MakedirsTests(test_util.TempDirTestCase):
+    """Unit tests for makedirs function in filesystem module"""
     def test_makedirs_correct_permissions(self):
         path = os.path.join(self.tempdir, 'dir')
         subpath = os.path.join(path, 'subpath')
 
-        previous_umask = os.umask(0o022)
+        previous_umask = filesystem.umask(0o022)
 
         try:
             filesystem.makedirs(subpath, 0o700)
 
-            import os as std_os  # pylint: disable=os-module-forbidden
-            assert stat.S_IMODE(std_os.stat(path).st_mode) == 0o700
-            assert stat.S_IMODE(std_os.stat(subpath).st_mode) == 0o700
+            assert filesystem.check_mode(path, 0o700)
+            assert filesystem.check_mode(subpath, 0o700)
         finally:
-            os.umask(previous_umask)
+            filesystem.umask(previous_umask)
 
 
 class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
@@ -513,8 +561,8 @@ class IsExecutableTest(test_util.TempDirTestCase):
 
         from certbot.compat.filesystem import _generate_dacl
 
-        def _execute_mock(user_sid, mode):
-            dacl = _generate_dacl(user_sid, mode)
+        def _execute_mock(user_sid, mode, mask=None):
+            dacl = _generate_dacl(user_sid, mode, mask)
             for _ in range(1, dacl.GetAceCount()):
                 dacl.DeleteAce(1)  # DeleteAce dynamically updates the internal index mapping.
             return dacl

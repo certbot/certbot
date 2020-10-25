@@ -99,11 +99,10 @@ AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
    This configuration limits the scope of the TSIG key to just be able to
    add and remove TXT records for one specific host for the purpose of
    completing the ``dns-01`` challenge. If your version of BIND doesn't
-   support the
-   `update-policy <http://www.zytrax.com/books/dns/ch7/xfer.html#update-policy>`_
-   directive then you can use the less-secure
-   `allow-update <http://www.zytrax.com/books/dns/ch7/xfer.html#allow-update>`_
-   directive instead.
+   support the ``update-policy`` directive, then you can use the less-secure
+   ``allow-update`` directive instead. `See the BIND documentation
+   <https://bind9.readthedocs.io/en/latest/reference.html#dynamic-update-policies>`_
+   for details.
 
 Examples
 --------

@@ -90,9 +90,16 @@ def certificates(config):
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
     certnames = get_certnames(config, "delete", allow_multiple=True)
+    disp = zope.component.getUtility(interfaces.IDisplay)
+    msg = ["The following certificate(s) are selected for deletion:\n"]
+    for certname in certnames:
+        msg.append("  * " + certname)
+    msg.append("\nAre you sure you want to delete the above certificate(s)?")
+    if not disp.yesno("\n".join(msg), default=True):
+        logger.info("Deletion of certificate(s) canceled.")
+        return
     for certname in certnames:
         storage.delete_files(config, certname)
-        disp = zope.component.getUtility(interfaces.IDisplay)
         disp.notification("Deleted all files relating to certificate {0}."
             .format(certname), pause=False)
 

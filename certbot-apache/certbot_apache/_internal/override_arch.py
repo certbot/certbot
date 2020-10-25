@@ -24,4 +24,5 @@ class ArchConfigurator(configurator.ApacheConfigurator):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/httpd/conf",
+        bin=None,
     )

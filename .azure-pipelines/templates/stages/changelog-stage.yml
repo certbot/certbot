@@ -1,0 +1,19 @@
+stages:
+  - stage: Changelog
+    jobs:
+      - job: prepare
+        pool:
+          vmImage: vs2017-win2016
+        steps:
+          # If we change the output filename from `release_notes.md`, it should also be changed in tools/create_github_release.py
+          - bash: |
+              set -e
+              CERTBOT_VERSION="$(cd certbot && python -c "import certbot; print(certbot.__version__)" && cd ~-)"
+              "${BUILD_REPOSITORY_LOCALPATH}\tools\extract_changelog.py" "${CERTBOT_VERSION}" >> "${BUILD_ARTIFACTSTAGINGDIRECTORY}/release_notes.md"
+            displayName: Prepare changelog
+          - task: PublishPipelineArtifact@1
+            inputs:
+              path: $(Build.ArtifactStagingDirectory)
+              # If we change the artifact's name, it should also be changed in tools/create_github_release.py
+              artifact: changelog
+            displayName: Publish changelog

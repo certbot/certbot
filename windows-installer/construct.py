@@ -123,6 +123,8 @@ imp.load_dynamic('pythoncom', pcom)
     certbot_version = subprocess.check_output([sys.executable, '-c', 'import certbot; print(certbot.__version__)'],
                                               universal_newlines=True, cwd=certbot_pkg_path).strip()
 
+    # If we change the installer name from `certbot-beta-installer-win32.exe`, it should
+    # also be changed in tools/create_github_release.py
     with open(installer_cfg_path, 'w') as file_h:
         file_h.write('''\
 [Application]
@@ -175,7 +177,7 @@ def _prepare_environment():
 
 
 if __name__ == '__main__':
-    if not os.name == 'nt':
+    if os.name != 'nt':
         raise RuntimeError('This script must be run under Windows.')
 
     if ctypes.windll.shell32.IsUserAnAdmin() == 0:

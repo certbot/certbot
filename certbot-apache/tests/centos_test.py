@@ -140,7 +140,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         self.assertEqual(mock_get.call_count, 3)
         self.assertEqual(len(self.config.parser.modules), 4)
         self.assertEqual(len(self.config.parser.variables), 2)
-        self.assertTrue("TEST2" in self.config.parser.variables.keys())
+        self.assertTrue("TEST2" in self.config.parser.variables)
         self.assertTrue("mod_another.c" in self.config.parser.modules)
 
     def test_get_virtual_hosts(self):
@@ -172,11 +172,11 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
             mock_osi.return_value = ("centos", "7")
             self.config.parser.update_runtime_variables()
 
-        self.assertTrue("mock_define" in self.config.parser.variables.keys())
-        self.assertTrue("mock_define_too" in self.config.parser.variables.keys())
-        self.assertTrue("mock_value" in self.config.parser.variables.keys())
+        self.assertTrue("mock_define" in self.config.parser.variables)
+        self.assertTrue("mock_define_too" in self.config.parser.variables)
+        self.assertTrue("mock_value" in self.config.parser.variables)
         self.assertEqual("TRUE", self.config.parser.variables["mock_value"])
-        self.assertTrue("MOCK_NOSEP" in self.config.parser.variables.keys())
+        self.assertTrue("MOCK_NOSEP" in self.config.parser.variables)
         self.assertEqual("NOSEP_VAL", self.config.parser.variables["NOSEP_TWO"])
 
     @mock.patch("certbot_apache._internal.configurator.util.run_script")

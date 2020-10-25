@@ -122,7 +122,7 @@ class PreHookTest(HookTest):
 
     def _test_nonrenew_common(self):
         mock_execute = self._call_with_mock_execute(self.config)
-        mock_execute.assert_called_once_with("pre-hook", self.config.pre_hook)
+        mock_execute.assert_called_once_with("pre-hook", self.config.pre_hook, env=mock.ANY)
         self._test_no_executions_common()
 
     def test_no_hooks(self):
@@ -138,21 +138,21 @@ class PreHookTest(HookTest):
     def test_renew_disabled_dir_hooks(self):
         self.config.directory_hooks = False
         mock_execute = self._call_with_mock_execute(self.config)
-        mock_execute.assert_called_once_with("pre-hook", self.config.pre_hook)
+        mock_execute.assert_called_once_with("pre-hook", self.config.pre_hook, env=mock.ANY)
         self._test_no_executions_common()
 
     def test_renew_no_overlap(self):
         self.config.verb = "renew"
         mock_execute = self._call_with_mock_execute(self.config)
-        mock_execute.assert_any_call("pre-hook", self.dir_hook)
-        mock_execute.assert_called_with("pre-hook", self.config.pre_hook)
+        mock_execute.assert_any_call("pre-hook", self.dir_hook, env=mock.ANY)
+        mock_execute.assert_called_with("pre-hook", self.config.pre_hook, env=mock.ANY)
         self._test_no_executions_common()
 
     def test_renew_with_overlap(self):
         self.config.pre_hook = self.dir_hook
         self.config.verb = "renew"
         mock_execute = self._call_with_mock_execute(self.config)
-        mock_execute.assert_called_once_with("pre-hook", self.dir_hook)
+        mock_execute.assert_called_once_with("pre-hook", self.dir_hook, env=mock.ANY)
         self._test_no_executions_common()
 
     def _test_no_executions_common(self):
@@ -194,7 +194,7 @@ class PostHookTest(HookTest):
         for verb in ("certonly", "run",):
             self.config.verb = verb
             mock_execute = self._call_with_mock_execute(self.config)
-            mock_execute.assert_called_once_with("post-hook", self.config.post_hook)
+            mock_execute.assert_called_once_with("post-hook", self.config.post_hook, env=mock.ANY)
             self.assertFalse(self._get_eventually())
 
     def test_cert_only_and_run_without_hook(self):
@@ -283,7 +283,7 @@ class RunSavedPostHooksTest(HookTest):
     def test_single(self):
         self.eventually = ["foo"]
         mock_execute = self._call_with_mock_execute_and_eventually()
-        mock_execute.assert_called_once_with("post-hook", self.eventually[0])
+        mock_execute.assert_called_once_with("post-hook", self.eventually[0], env=mock.ANY)
 
 
 class RenewalHookTest(HookTest):
@@ -361,7 +361,7 @@ class DeployHookTest(RenewalHookTest):
         self.config.deploy_hook = "foo"
         mock_execute = self._call_with_mock_execute(
             self.config, domains, lineage)
-        mock_execute.assert_called_once_with("deploy-hook", self.config.deploy_hook)
+        mock_execute.assert_called_once_with("deploy-hook", self.config.deploy_hook, env=mock.ANY)
 
 
 class RenewHookTest(RenewalHookTest):
@@ -385,7 +385,7 @@ class RenewHookTest(RenewalHookTest):
         self.config.directory_hooks = False
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
-        mock_execute.assert_called_once_with("deploy-hook", self.config.renew_hook)
+        mock_execute.assert_called_once_with("deploy-hook", self.config.renew_hook, env=mock.ANY)
 
     @mock.patch("certbot._internal.hooks.logger")
     def test_dry_run(self, mock_logger):
@@ -409,13 +409,13 @@ class RenewHookTest(RenewalHookTest):
         self.config.renew_hook = self.dir_hook
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.net", "example.org"], "/foo/bar")
-        mock_execute.assert_called_once_with("deploy-hook", self.dir_hook)
+        mock_execute.assert_called_once_with("deploy-hook", self.dir_hook, env=mock.ANY)
 
     def test_no_overlap(self):
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
-        mock_execute.assert_any_call("deploy-hook", self.dir_hook)
-        mock_execute.assert_called_with("deploy-hook", self.config.renew_hook)
+        mock_execute.assert_any_call("deploy-hook", self.dir_hook, env=mock.ANY)
+        mock_execute.assert_called_with("deploy-hook", self.config.renew_hook, env=mock.ANY)
 
 
 class ListHooksTest(test_util.TempDirTestCase):

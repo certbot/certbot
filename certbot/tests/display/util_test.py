@@ -326,7 +326,6 @@ class FileOutputDisplayTest(unittest.TestCase):
 class NoninteractiveDisplayTest(unittest.TestCase):
     """Test non-interactive display. These tests are pretty easy!"""
     def setUp(self):
-        super(NoninteractiveDisplayTest, self).setUp()
         self.mock_stdout = mock.MagicMock()
         self.displayer = display_util.NoninteractiveDisplay(self.mock_stdout)
 

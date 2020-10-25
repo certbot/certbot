@@ -12,7 +12,7 @@ import sys
 from certbot import errors
 from certbot.compat import os
 
-from acme.magic_typing import Tuple
+from acme.magic_typing import Tuple, Optional
 
 try:
     from win32com.shell import shell as shellwin32
@@ -116,8 +116,8 @@ def underscores_for_unsupported_characters_in_path(path):
     return drive + tail.replace(':', '_')
 
 
-def execute_command(cmd_name, shell_cmd):
-    # type: (str, str) -> Tuple[str, str]
+def execute_command(cmd_name, shell_cmd, env=None):
+    # type: (str, str, Optional[dict]) -> Tuple[str, str]
     """
     Run a command:
         - on Linux command will be run by the standard shell selected with Popen(shell=True)
@@ -125,6 +125,7 @@ def execute_command(cmd_name, shell_cmd):
 
     :param str cmd_name: the user facing name of the hook being run
     :param str shell_cmd: shell command to execute
+    :param dict env: environ to pass into Popen
 
     :returns: `tuple` (`str` stderr, `str` stdout)
     """
@@ -132,11 +133,12 @@ def execute_command(cmd_name, shell_cmd):
 
     if POSIX_MODE:
         cmd = subprocess.Popen(shell_cmd, shell=True, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, universal_newlines=True)
+                               stderr=subprocess.PIPE, universal_newlines=True,
+                               env=env)
     else:
         line = ['powershell.exe', '-Command', shell_cmd]
         cmd = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               universal_newlines=True)
+                               universal_newlines=True, env=env)
 
     # universal_newlines causes Popen.communicate()
     # to return str objects instead of bytes in Python 3

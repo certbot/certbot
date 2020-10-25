@@ -319,6 +319,9 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
     # logger.DEBUG should be used
     if debug or not issubclass(exc_type, Exception):
         assert constants.QUIET_LOGGING_LEVEL <= logging.ERROR
+        if exc_type is KeyboardInterrupt:
+            logger.error('Exiting due to user request.')
+            sys.exit(1)
         logger.error('Exiting abnormally:', exc_info=exc_info)
     else:
         logger.debug('Exiting abnormally:', exc_info=exc_info)

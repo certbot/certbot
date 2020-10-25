@@ -1,0 +1,84 @@
+# These images are located in us-east-1.
+
+targets:
+  #-----------------------------------------------------------------------------
+  #Ubuntu
+  - ami: ami-095192256fe1477ad
+    name: ubuntu18.04LTS
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  - ami: ami-09677e0a6b14905b0
+    name: ubuntu16.04LTS
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  #-----------------------------------------------------------------------------
+  # Debian
+  - ami: ami-01db78123b2b99496
+    name: debian10
+    type: ubuntu
+    virt: hvm
+    user: admin
+  - ami: ami-003f19e0e687de1cd
+    name: debian9
+    type: ubuntu
+    virt: hvm
+    user: admin
+  - ami: ami-0ed54dd1b25657636
+    name: debian9_arm64
+    type: ubuntu
+    virt: hvm
+    user: admin
+    machine_type: a1.medium
+    # userdata: |
+    #   #cloud-init
+    #   runcmd:
+    #     - [ apt-get, install, -y, curl ]
+  #-----------------------------------------------------------------------------
+  # Other Redhat Distros
+  - ami: ami-0916c408cb02e310b
+    name: RHEL7
+    type: centos
+    virt: hvm
+    user: ec2-user
+  - ami: ami-0c322300a1dd5dc79
+    name: RHEL8
+    type: centos
+    virt: hvm
+    user: ec2-user
+  - ami: ami-0fcbe88944a53b4c8
+    name: fedora31
+    type: centos
+    virt: hvm
+    user: fedora
+  - ami: ami-00bbc6858140f19ed
+    name: fedora30
+    type: centos
+    virt: hvm
+    user: fedora
+  #-----------------------------------------------------------------------------
+  # CentOS
+  # These Marketplace AMIs must, irritatingly, have their terms manually
+  # agreed to on the AWS marketplace site for any new AWS account using them...
+  - ami: ami-9887c6e7
+    name: centos7
+    type: centos
+    virt: hvm
+    user: centos
+  # centos6 requires EPEL repo added
+  - ami: ami-1585c46a
+    name: centos6
+    type: centos
+    virt: hvm
+    user: centos
+    userdata: |
+      #cloud-config
+      runcmd:
+        - yum install -y epel-release
+        - iptables -F
+  - ami: ami-01ca03df4a6012157
+    name: centos8
+    type: centos
+    virt: hvm
+    user: centos

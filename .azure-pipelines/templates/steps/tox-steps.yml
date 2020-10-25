@@ -1,0 +1,57 @@
+steps:
+  - bash: |
+      set -e
+      brew install augeas
+    condition: startswith(variables['IMAGE_NAME'], 'macOS')
+    displayName: Install MacOS dependencies
+  - bash: |
+      set -e
+      sudo apt-get update
+      sudo apt-get install -y --no-install-recommends \
+        python-dev \
+        gcc \
+        libaugeas0 \
+        libssl-dev \
+        libffi-dev \
+        ca-certificates \
+        nginx-light \
+        openssl
+      sudo systemctl stop nginx
+    condition: startswith(variables['IMAGE_NAME'], 'ubuntu')
+    displayName: Install Linux dependencies
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: $(PYTHON_VERSION)
+      addToPath: true
+    # tools/pip_install.py is used to pin packages to a known working version
+    # except in tests where the environment variable CERTBOT_NO_PIN is set.
+    # virtualenv is listed here explicitly to make sure it is upgraded when
+    # CERTBOT_NO_PIN is set to work around failures we've seen when using an older
+    # version of virtualenv. The option "-I" is set so when CERTBOT_NO_PIN is also
+    # set, pip updates dependencies it thinks are already satisfied to avoid some
+    # problems with its lack of real dependency resolution.
+  - bash: |
+      set -e
+      python letsencrypt-auto-source/pieces/pipstrap.py
+      python tools/pip_install.py -I tox virtualenv
+    displayName: Install runtime dependencies
+  - task: DownloadSecureFile@1
+    name: testFarmPem
+    inputs:
+      secureFile: azure-test-farm.pem
+    condition: contains(variables['TOXENV'], 'test-farm')
+  - bash: |
+      set -e
+      export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
+      [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
+      env
+      if [[ "${TOXENV}" == *"oldest"* ]]; then
+        tools/run_oldest_tests.sh
+      else
+        python -m tox
+      fi
+    env:
+      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+      AWS_EC2_PEM_FILE: $(testFarmPem.secureFilePath)
+    displayName: Run tox

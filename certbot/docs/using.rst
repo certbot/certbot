@@ -180,9 +180,9 @@ Certbot's DNS plugins.
 
 These plugins are not included in a default Certbot installation and must be
 installed separately. While the DNS plugins cannot currently be used with
-``certbot-auto``, they are available in many OS package managers and as Docker
-images. Visit https://certbot.eff.org to learn the best way to use the DNS
-plugins on your system.
+``certbot-auto``, they are available in many OS package managers, as Docker
+images, and as snaps. Visit https://certbot.eff.org to learn the best way to use
+the DNS plugins on your system.
 
 Once installed, you can find documentation on how to use each plugin at:
 
@@ -281,18 +281,22 @@ proxmox_           N    Y    Install certificates in Proxmox Virtualization serv
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
+dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
+dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
 .. _gandi: https://github.com/obynio/certbot-plugin-gandi
-.. _varnish: http://git.sesse.net/?p=letsencrypt-varnish-plugin
+.. _varnish: https://git.sesse.net/?p=letsencrypt-varnish-plugin
 .. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
 .. _external-auth: https://github.com/EnigmaBridge/certbot-external-auth
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
+.. _dns-lightsail: https://github.com/noi/certbot-dns-lightsail
+.. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -390,7 +394,7 @@ abuse of the ACME protocol, as described
 .. _changing:
 
 Changing a Certificate's Domains
-================================
+--------------------------------
 
 The ``--cert-name`` flag can also be used to modify the domains a certificate contains,
 by specifying new domains using the ``-d`` or ``--domains`` flag. If certificate ``example.com``
@@ -629,7 +633,6 @@ systemd timers (`systemctl list-timers`).
    :header: "Distribution Name", "Distribution Version", "Automation Method"
 
    "CentOS", "EPEL 7", "systemd"
-   "Debian", "jessie", "cron, systemd"
    "Debian", "stretch", "cron, systemd"
    "Debian", "testing/sid", "cron, systemd"
    "Fedora", "26", "systemd"
@@ -683,7 +686,7 @@ The following files are available:
   This is what Apache needs for `SSLCertificateKeyFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,
   and Nginx for `ssl_certificate_key
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
+  <https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
 
 ``fullchain.pem``
   All certificates, **including** server certificate (aka leaf certificate or
@@ -693,7 +696,7 @@ The following files are available:
   This is what Apache >= 2.4.8 needs for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
   and what Nginx needs for `ssl_certificate
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
+  <https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
 
 ``cert.pem`` and ``chain.pem`` (less common)
   ``cert.pem`` contains the server certificate by itself, and
@@ -712,7 +715,7 @@ The following files are available:
 
   If you're using OCSP stapling with Nginx >= 1.3.7, ``chain.pem`` should be
   provided as the `ssl_trusted_certificate
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_
+  <https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_
   to validate OCSP responses.
 
 .. note:: All files are PEM-encoded.

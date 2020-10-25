@@ -91,7 +91,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         with mock.patch("certbot_apache._internal.override_gentoo.GentooParser.update_modules"):
             self.config.parser.update_runtime_variables()
         for define in defines:
-            self.assertTrue(define in self.config.parser.variables.keys())
+            self.assertTrue(define in self.config.parser.variables)
 
     @mock.patch("certbot_apache._internal.apache_util.parse_from_subprocess")
     def test_no_binary_configdump(self, mock_subprocess):

@@ -2,12 +2,13 @@
 trigger:
   # When changing these triggers, please ensure the documentation under
   # "Running tests in CI" is still correct.
-  - azure-test-*
   - test-*
 pr: none
 
-jobs:
-  # Any addition here should be reflected in the advanced and release pipelines.
-  # It is advised to declare all jobs here as templates to improve maintainability.
-  - template: templates/tests-suite.yml
-  - template: templates/installer-tests.yml
+variables:
+  # We don't publish our Docker images in this pipeline, but when building them
+  # for testing, let's use the nightly tag.
+  dockerTag: nightly
+
+stages:
+  - template: templates/stages/test-and-package-stage.yml
