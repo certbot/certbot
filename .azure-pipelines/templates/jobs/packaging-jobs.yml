@@ -31,25 +31,6 @@ jobs:
           path: $(Build.ArtifactStagingDirectory)
           artifact: docker_$(DOCKER_ARCH)
         displayName: Store Docker artifact
-  - job: docker_run
-    dependsOn: docker_build
-    pool:
-      vmImage: ubuntu-18.04
-    steps:
-      - task: DownloadPipelineArtifact@2
-        inputs:
-          artifact: docker_amd64
-          path: $(Build.SourcesDirectory)
-        displayName: Retrieve Docker images
-      - bash: set -e && docker load --input $(Build.SourcesDirectory)/images.tar
-        displayName: Load Docker images
-      - bash: |
-          set -ex
-          DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}:{{.Tag}}')
-          for DOCKER_IMAGE in ${DOCKER_IMAGES}
-            do docker run --rm "${DOCKER_IMAGE}" plugins --prepare
-          done
-        displayName: Run integration tests for Docker images
   - job: installer_build
     pool:
       vmImage: vs2017-win2016
