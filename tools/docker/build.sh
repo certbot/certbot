@@ -23,7 +23,8 @@ IFS=$'\n\t'
 # This variable is set inside the script itself rather than in something like
 # the CI config to have a consistent experience when this script is run
 # locally.
-export DOCKER_BUILDKIT=1
+#export DOCKER_BUILDKIT=1
+docker version
 
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 REPO_ROOT="$(dirname "$(dirname "${WORK_DIR}")")"
