@@ -2,7 +2,7 @@
 # Generate the snapcraft.yaml file for a DNS plugins
 # Usage: bash generate_dnsplugins_snapcraft.sh path/to/dns/plugin
 # For example, from the certbot home directory:
-#   bash generate_dnsplugins_snapcraft.sh certbot-dns-dnsimple
+#   tools/snap/generate_dnsplugins_snapcraft.sh certbot-dns-dnsimple
 set -e
 
 PLUGIN_PATH=$1

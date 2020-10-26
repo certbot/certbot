@@ -82,6 +82,10 @@ It is easiest to run this from a local machine.
  4. `cd ~` (or any other directory where you want our source files to be)
  5. Run `git clone git://github.com/certbot/certbot`
  6. `cd certbot` (All further instructions are relative to this directory.)
+ 7. To trigger `snapcraft` to request access to your Launchpad account, run
+    `snapcraft remote-build --launchpad-accept-public-upload --status`. A URL where you need
+    to grant this access will be printed to your terminal and automatically open in your browser
+    if one is available.
 
 ### Build Snaps Remotely
 
@@ -92,4 +96,5 @@ For example, to build all available snaps for all architectures, run `python3 to
 
 To build only the certbot snap on only amd64, run `python3 tools/snap/build_remote.py certbot --archs armhf`.
 
-After running the command, an authorization request will open in your browser. Confirm access to continue the build.
+The command will upload the entire contents of the working directory, so if the remote build
+appears to hang, try using a clean clone of the `certbot` repository.

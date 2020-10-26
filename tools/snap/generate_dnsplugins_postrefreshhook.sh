@@ -2,7 +2,7 @@
 # Generate the hooks/post-refresh file for a DNS plugin
 # Usage: bash generate_dnsplugins_postrefreshhook.sh path/to/dns/plugin
 # For example, from the certbot home directory:
-#   bash generate_dnsplugins_postrefreshhook.sh certbot-dns-dnsimple
+#   tools/snap/generate_dnsplugins_postrefreshhook.sh certbot-dns-dnsimple
 set -eu
 
 PLUGIN_PATH=$1

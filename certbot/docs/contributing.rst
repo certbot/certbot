@@ -374,8 +374,9 @@ identifier ``metadata-1``.
 The script used to generate the snapcraft.yaml files for our own externally
 snapped plugins can be found at
 https://github.com/certbot/certbot/blob/master/tools/snap/generate_dnsplugins_snapcraft.sh.
-Instructions for how to build our externally snapped plugins can be found in the README file at
-https://github.com/certbot/certbot/tree/master/tools/snap.
+
+For more information on building externally snapped plugins, see the section on
+:ref:`Building snaps`.
 
 Once you have created your own snap, if you have the snap file locally,
 it can be installed for use with Certbot by running:
@@ -535,6 +536,8 @@ on this platform.
 Use of EFFOSCCP is subject to the `EFF Code of Conduct
 <https://www.eff.org/pages/eppcode>`_. When investigating an alleged Code of
 Conduct violation, EFF may review discussion channels or direct messages.
+
+.. _Building snaps:
 
 Building the Certbot and DNS plugin snaps
 =========================================
