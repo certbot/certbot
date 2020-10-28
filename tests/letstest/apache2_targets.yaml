@@ -37,18 +37,6 @@ targets:
     virt: hvm
     user: admin
   #-----------------------------------------------------------------------------
-  # Fedora
-  - ami: ami-0fcbe88944a53b4c8
-    name: fedora31
-    type: centos
-    virt: hvm
-    user: fedora
-  - ami: ami-00bbc6858140f19ed
-    name: fedora30
-    type: centos
-    virt: hvm
-    user: fedora
-  #-----------------------------------------------------------------------------
   # CentOS
   - ami: ami-9887c6e7
     name: centos7
