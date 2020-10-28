@@ -3,6 +3,11 @@
 targets:
   #-----------------------------------------------------------------------------
   #Ubuntu
+  - ami: ami-0f2e2c076f4c2f941
+    name: ubuntu20.10
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
   - ami: ami-0758470213bdd23b1
     name: ubuntu20.04
     type: ubuntu
