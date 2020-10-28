@@ -52,7 +52,7 @@ jobs:
       # a recent version of pip, but we also to disable the isolated feature as described in
       # https://github.com/certbot/certbot/issues/8256
       - script: |
-          py -3 -m venv venv
+          python -m venv venv
           venv\Scripts\python --version
           venv\Scripts\python -m pip install pip==20.2.3 setuptools==50.3.0 wheel==0.35.1
           venv\Scripts\python tools\pip_install.py -e certbot-ci
