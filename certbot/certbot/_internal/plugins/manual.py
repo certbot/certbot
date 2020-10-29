@@ -84,8 +84,7 @@ permitted by DNS standards.)
             help='Path or command to execute for the authentication script')
         add('cleanup-hook',
             help='Path or command to execute for the cleanup script')
-        add('public-ip-logging-ok', action='store_true',
-            help='Automatically allows public IP logging (default: Ask)')
+        util.add_deprecated_argument(add, 'public-ip-logging-ok', 0)
 
     def prepare(self):  # pylint: disable=missing-function-docstring
         if self.config.noninteractive_mode and not self.conf('auth-hook'):
@@ -114,8 +113,6 @@ permitted by DNS standards.)
         return [challenges.HTTP01, challenges.DNS01]
 
     def perform(self, achalls):  # pylint: disable=missing-function-docstring
-        self._verify_ip_logging_ok()
-
         responses = []
         for achall in achalls:
             if self.conf('auth-hook'):
@@ -124,20 +121,6 @@ permitted by DNS standards.)
                 self._perform_achall_manually(achall)
             responses.append(achall.response(achall.account_key))
         return responses
-
-    def _verify_ip_logging_ok(self):
-        if not self.conf('public-ip-logging-ok'):
-            cli_flag = '--{0}'.format(self.option_name('public-ip-logging-ok'))
-            msg = ('NOTE: The IP of this machine will be publicly logged as '
-                   "having requested this certificate. If you're running "
-                   'certbot in manual mode on a machine that is not your '
-                   "server, please ensure you're okay with that.\n\n"
-                   'Are you OK with your IP being logged?')
-            display = zope.component.getUtility(interfaces.IDisplay)
-            if display.yesno(msg, cli_flag=cli_flag, force_interactive=True):
-                setattr(self.config, self.dest('public-ip-logging-ok'), True)
-            else:
-                raise errors.PluginError('Must agree to IP logging to proceed')
 
     def _perform_achall_with_script(self, achall, achalls):
         env = dict(CERTBOT_DOMAIN=achall.domain,

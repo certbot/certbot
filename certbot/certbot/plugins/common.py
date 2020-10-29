@@ -55,10 +55,6 @@ class Plugin(object):
     def add_parser_arguments(cls, add):
         """Add plugin arguments to the CLI argument parser.
 
-        NOTE: If some of your flags interact with others, you can
-        use cli.report_config_interaction to register this to ensure
-        values are correctly saved/overridable during renewal.
-
         :param callable add: Function that proxies calls to
             `argparse.ArgumentParser.add_argument` prepending options
             with unique plugin name prefix.

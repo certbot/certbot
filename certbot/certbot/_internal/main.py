@@ -490,11 +490,9 @@ def _determine_account(config):
             return True
         msg = ("Please read the Terms of Service at {0}. You "
                "must agree in order to register with the ACME "
-               "server at {1}".format(
-                   terms_of_service, config.server))
+               "server. Do you agree?".format(terms_of_service))
         obj = zope.component.getUtility(interfaces.IDisplay)
-        result = obj.yesno(msg, "Agree", "Cancel",
-                         cli_flag="--agree-tos", force_interactive=True)
+        result = obj.yesno(msg, cli_flag="--agree-tos", force_interactive=True)
         if not result:
             raise errors.Error(
                 "Registration cannot proceed without accepting "
@@ -518,6 +516,7 @@ def _determine_account(config):
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
+                logger.info("Account registered.")
             except errors.MissingCommandlineFlag:
                 raise
             except errors.Error:
@@ -1110,7 +1109,9 @@ def run(config, plugins):
     cert_path = new_lineage.cert_path if new_lineage else None
     fullchain_path = new_lineage.fullchain_path if new_lineage else None
     key_path = new_lineage.key_path if new_lineage else None
-    _report_new_cert(config, cert_path, fullchain_path, key_path)
+
+    if should_get_cert:
+        _report_new_cert(config, cert_path, fullchain_path, key_path)
 
     _install_cert(config, le_client, domains, new_lineage)
 

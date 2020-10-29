@@ -158,7 +158,7 @@ def register(config, account_storage, tos_cb=None):
             logger.warning(msg)
             raise errors.Error(msg)
         if not config.dry_run:
-            logger.info("Registering without email!")
+            logger.debug("Registering without email!")
 
     # If --dry-run is used, and there is no staging account, create one with no email.
     if config.dry_run:
@@ -175,7 +175,6 @@ def register(config, account_storage, tos_cb=None):
     regr = perform_registration(acme, config, tos_cb)
 
     acc = account.Account(regr, key)
-    account.report_new_account(config)
     account_storage.save(acc, acme)
 
     eff.prepare_subscription(config, acc)
