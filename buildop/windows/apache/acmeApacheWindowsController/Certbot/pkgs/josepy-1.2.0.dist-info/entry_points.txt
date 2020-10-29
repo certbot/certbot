@@ -1,3 +1,0 @@
-[console_scripts]
-jws = josepy.jws:CLI.run
-

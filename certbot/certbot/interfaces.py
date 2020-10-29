@@ -260,6 +260,14 @@ class IConfig(zope.interface.Interface):
         "offered chain will be used."
     )
 
+    max_retry = zope.interface.Attribute(
+        "Maximum number of retries before exiting"
+    )
+
+    retry_interval = zope.interface.Attribute(
+        "Retry interval between two consecutive requests"
+    )
+
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.
 

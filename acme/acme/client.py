@@ -41,7 +41,7 @@ if sys.version_info < (2, 7, 9):  # pragma: no cover
         import urllib3.contrib.pyopenssl
         urllib3.contrib.pyopenssl.inject_into_urllib3()
 
-DEFAULT_NETWORK_TIMEOUT = 45
+DEFAULT_NETWORK_TIMEOUT = 60
 
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
@@ -188,7 +188,8 @@ class ClientBase(object):
         :param int default: Default value (in seconds), used when
             ``Retry-After`` header is not present or invalid.
 
-        :returns: Time point when next `poll` should be performed.
+        :returns: Time point when next `poll` shou
+        ld be performed.
         :rtype: `datetime.datetime`
 
         """
@@ -751,7 +752,6 @@ class ClientV2(ClientBase):
         wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
         self._post(orderr.body.finalize, wrapped_csr)
         while datetime.datetime.now() < deadline:
-            time.sleep(1)
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
             if body.error is not None:
@@ -764,6 +764,9 @@ class ClientV2(ClientBase):
                     alt_chains = [self._post_as_get(url).text for url in alt_chains_urls]
                     orderr = orderr.update(alternative_fullchains_pem=alt_chains)
                 return orderr
+            future_date = self.retry_after(response,DEFAULT_NETWORK_TIMEOUT)
+            difference = (future_date - datetime.datetime.now()).total_seconds()
+            time.sleep(difference)
         raise errors.TimeoutError()
 
     def revoke(self, cert, rsn):
