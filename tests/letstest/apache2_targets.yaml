@@ -3,6 +3,11 @@
 targets:
   #-----------------------------------------------------------------------------
   #Ubuntu
+  - ami: ami-0f2e2c076f4c2f941
+    name: ubuntu20.10
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
   - ami: ami-0758470213bdd23b1
     name: ubuntu20.04
     type: ubuntu
@@ -36,18 +41,6 @@ targets:
     type: ubuntu
     virt: hvm
     user: admin
-  #-----------------------------------------------------------------------------
-  # Fedora
-  - ami: ami-0fcbe88944a53b4c8
-    name: fedora31
-    type: centos
-    virt: hvm
-    user: fedora
-  - ami: ami-00bbc6858140f19ed
-    name: fedora30
-    type: centos
-    virt: hvm
-    user: fedora
   #-----------------------------------------------------------------------------
   # CentOS
   - ami: ami-9887c6e7
