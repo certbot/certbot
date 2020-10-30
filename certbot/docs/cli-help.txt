@@ -21,7 +21,9 @@ obtain, install, and renew certificates:
    -n               Run non-interactively
   --test-cert       Obtain a test certificate from a staging server
   --dry-run         Test "renew" or "certonly" without saving any certificates to disk
-
+  --max-retry       number of retries for a pending or processing order
+  --retry-interval  interval in seconds to retry ( to be used with --max-retry option )
+  
 manage certificates:
     certificates    Display information about certificates you have from Certbot
     revoke          Revoke a certificate (supply --cert-name or --cert-path)

@@ -40,7 +40,7 @@ def _compile_wheels(repo_path, build_path, venv_python):
     wheels_path = os.path.join(build_path, 'wheels')
     os.makedirs(wheels_path)
 
-    certbot_packages = ['acme', 'certbot']
+    certbot_packages = ['acme', 'certbot','certbot-nginx','certbot-apache','certbot-apache-win']
     # Uncomment following line to include all DNS plugins in the installer
     # certbot_packages.extend([name for name in os.listdir(repo_path) if name.startswith('certbot-dns-')])
     wheels_project = [os.path.join(repo_path, package) for package in certbot_packages]

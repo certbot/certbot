@@ -440,13 +440,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         default=flag_default("autorenew"), dest="autorenew",
         help="Disable auto renewal of certificates.")
     helpful.add(
-        None, "--max-retry",type=int, dest="max_retry", action="store_true",
-        default=flag_default("max_retry"), help="Provide number of max retries")
-
+        [None,"automation", "certonly", "run","renew"], "--max-retry",type=int,
+        dest="max_retry",
+        default=flag_default("max_retry"), help=config_help("max_retry"))
     helpful.add(
-        None, "--retry-interval",type=int, dest="retry_interval", action="store_true",
-        default=flag_default("retry_interval"), help="Interval in seconds between two consecutive requests.")
-
+        [None,"automation", "certonly", "run","renew"], "--retry-interval",type=int,
+        dest="retry_interval",
+        default=flag_default("retry_interval"), help=config_help("retry_interval"))
+    
     # Populate the command line parameters for new style enhancements
     enhancements.populate_cli(helpful.add)
 
