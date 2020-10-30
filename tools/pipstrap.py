@@ -12,6 +12,10 @@ import pip_install
 # We include the hashes of the packages here for extra verification of
 # the packages downloaded from PyPI. This is especially valuable in our
 # builds of Certbot that we ship to our users such as our Docker images.
+#
+# An older version of setuptools is currently used here in order to keep
+# compatibility with Python 2 since newer versions of setuptools have dropped
+# support for it.
 REQUIREMENTS = r"""
 pip==20.2.4 \
     --hash=sha256:51f1c7514530bd5c145d8f13ed936ad6b8bfcb8cf74e10403d0890bc986f0033 \
