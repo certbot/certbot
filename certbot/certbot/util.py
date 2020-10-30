@@ -577,10 +577,10 @@ def is_wildcard_domain(domain):
     :rtype: bool
 
     """
+    wildcard_marker = b"*."  # type: Union[str, bytes]
     if isinstance(domain, six.text_type):
-        return domain.startswith(u"*.")
-    else:
-        return domain.startswith(b"*.")
+        wildcard_marker = u"*."
+    return domain.startswith(wildcard_marker)
 
 
 def get_strict_version(normalized):
