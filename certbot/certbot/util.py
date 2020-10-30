@@ -578,11 +578,9 @@ def is_wildcard_domain(domain):
 
     """
     if isinstance(domain, six.text_type):
-        wildcard_marker = u"*."
+        return domain.startswith(u"*.")
     else:
-        wildcard_marker = b"*."
-
-    return domain.startswith(wildcard_marker)
+        return domain.startswith(b"*.")
 
 
 def get_strict_version(normalized):

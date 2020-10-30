@@ -18,7 +18,7 @@ class Validator(object):
     def certificate(self, cert, name, alt_host=None, port=443):
         """Verifies the certificate presented at name is cert"""
         if alt_host is None:
-            host = socket.gethostbyname(name)
+            host = socket.gethostbyname(name).encode()
         elif isinstance(alt_host, six.binary_type):
             host = alt_host
         else:

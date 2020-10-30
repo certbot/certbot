@@ -25,6 +25,7 @@ import zope.component
 
 from acme import crypto_util as acme_crypto_util
 from acme.magic_typing import IO  # pylint: disable=unused-import
+from acme.magic_typing import Union  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -455,7 +456,7 @@ def _notAfterBefore(cert_path, method):
     reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
                              timestamp[6:8], b"T", timestamp[8:10], b":",
                              timestamp[10:12], b":", timestamp[12:]]
-    timestamp_str = b"".join(reformatted_timestamp)
+    timestamp_str = b"".join(reformatted_timestamp)  # type: Union[str, bytes]
     # pyrfc3339 uses "native" strings. That is, bytes on Python 2 and unicode
     # on Python 3
     if six.PY3:
