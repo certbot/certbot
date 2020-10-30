@@ -750,8 +750,10 @@ class ClientV2(ClientBase):
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
         wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
-        self._post(orderr.body.finalize, wrapped_csr)
+        self._post(orderr.body.finalize, wrapped_csr)   
+        difference = 5 #set initial delay to 5sec
         while datetime.datetime.now() < deadline:
+            time.sleep(difference)
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
             if body.error is not None:
@@ -766,7 +768,6 @@ class ClientV2(ClientBase):
                 return orderr
             future_date = self.retry_after(response,DEFAULT_NETWORK_TIMEOUT)
             difference = (future_date - datetime.datetime.now()).total_seconds()
-            time.sleep(difference)
         raise errors.TimeoutError()
 
     def revoke(self, cert, rsn):
