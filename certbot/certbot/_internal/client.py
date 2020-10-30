@@ -158,7 +158,7 @@ def register(config, account_storage, tos_cb=None):
             logger.warning(msg)
             raise errors.Error(msg)
         if not config.dry_run:
-            logger.info("Registering without email!")
+            logger.debug("Registering without email!")
 
     # If --dry-run is used, and there is no staging account, create one with no email.
     if config.dry_run:
@@ -175,10 +175,9 @@ def register(config, account_storage, tos_cb=None):
     regr = perform_registration(acme, config, tos_cb)
 
     acc = account.Account(regr, key)
-    account.report_new_account(config)
     account_storage.save(acc, acme)
 
-    eff.handle_subscription(config)
+    eff.prepare_subscription(config, acc)
 
     return acc, acme
 
@@ -286,10 +285,18 @@ class Client(object):
 
         if orderr is None:
             orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
-
-        deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
-        orderr = self.acme.finalize_order(orderr, deadline)
-        cert, chain = crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
+        
+        deadline = datetime.datetime.now() + datetime.timedelta(seconds=(self.config.max_retry*self.config.retry_interval))
+        get_alt_chains = self.config.preferred_chain is not None
+        orderr = self.acme.finalize_order(orderr, deadline,
+                                          fetch_alternative_chains=get_alt_chains)
+        fullchain = orderr.fullchain_pem
+        if get_alt_chains and orderr.alternative_fullchains_pem:
+            fullchain = crypto_util.find_chain_with_issuer([fullchain] + \
+                                                           orderr.alternative_fullchains_pem,
+                                                           self.config.preferred_chain,
+                                                           not self.config.dry_run)
+        cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 
     def obtain_certificate(self, domains, old_keypath=None):
@@ -389,6 +396,7 @@ class Client(object):
 
         authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
         return orderr.update(authorizations=authzr)
+
     def obtain_and_enroll_certificate(self, domains, certname):
         """Obtain and enroll certificate.
 

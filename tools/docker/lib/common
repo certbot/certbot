@@ -1,0 +1,53 @@
+#!/bin/bash
+set -ex
+
+# Current supported architectures
+export ALL_TARGET_ARCH=(amd64 arm32v6 arm64v8)
+
+# Architecture used in tags with no architecture specified (certbot/certbot:latest, certbot/certbot:v0.35.0, ...)
+export DEFAULT_ARCH=amd64
+
+# Name of the Certbot Docker organizaation on GitHub. After creating
+# repositories with the same names (e.g. "certbot", "dns-dnsmadeeasy", etc.)
+# using a different account on Docker Hub, you can change this value to have
+# the scripts modify those Docker repositories rather than the repositories for
+# the official Certbot Docker images.
+export DOCKER_HUB_ORG="certbot"
+
+# List of Certbot plugins
+export CERTBOT_PLUGINS=(
+    "dns-dnsmadeeasy"
+    "dns-dnsimple"
+    "dns-ovh"
+    "dns-cloudflare"
+    "dns-cloudxns"
+    "dns-digitalocean"
+    "dns-google"
+    "dns-luadns"
+    "dns-nsone"
+    "dns-rfc2136"
+    "dns-route53"
+    "dns-gehirn"
+    "dns-linode"
+    "dns-sakuracloud"
+)
+
+# Parses the requested architecture string and sets ALL_REQUESTED_ARCH to
+# result.
+# Usage: ParseRequestedArch [all|amd64|arm32v6|arm64v8]
+ParseRequestedArch() {
+    REQUESTED_ARCH="${1}"
+    if [[ "${REQUESTED_ARCH}" == "all" ]]; then
+        ALL_REQUESTED_ARCH=("${ALL_TARGET_ARCH[@]}")
+        return 0
+    fi
+    for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
+        if [[ "${TARGET_ARCH}" == "${REQUESTED_ARCH}" ]]; then
+            ALL_REQUESTED_ARCH=("${REQUESTED_ARCH}")
+            return 0
+        fi
+    done
+    # If we didn't return above, REQUESTED_ARCH has an unexpected value.
+    echo "Unexpected target architecture \"${REQUESTED_ARCH}\"". >&2
+    exit 1
+}

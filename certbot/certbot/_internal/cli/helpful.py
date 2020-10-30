@@ -192,8 +192,8 @@ class HelpfulArgumentParser(object):
         if self.detect_defaults:
             return parsed_args
 
-        self.defaults = dict((key, copy.deepcopy(self.parser.get_default(key)))
-                             for key in vars(parsed_args))
+        self.defaults = {key: copy.deepcopy(self.parser.get_default(key))
+                             for key in vars(parsed_args)}
 
         # Do any post-parsing homework here
 

@@ -1,9 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/zope">
-  <include package="zope.component" file="meta.zcml" />
-
-  <adapter 
-    factory="zope.component.testfiles.components.Comp2"
-    provides="zope.component.testfiles.components.IApp2"
-    for="zope.component.testfiles.components.IContent" />
-
-</configure>

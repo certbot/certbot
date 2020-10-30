@@ -1,0 +1,99 @@
+parameters:
+- name: snapReleaseChannel
+  type: string
+  default: edge
+  values:
+  - edge
+  - beta
+
+stages:
+  - stage: Deploy
+    jobs:
+      # This job relies on credentials used to publish the Certbot snaps. This
+      # credential file was created by running:
+      #
+      #   snapcraft logout
+      #   snapcraft login (provide the shared snapcraft credentials when prompted)
+      #   snapcraft export-login --channels=beta,edge snapcraft.cfg
+      #
+      # Then the file was added as a secure file in Azure pipelines
+      # with the name snapcraft.cfg by following the instructions at
+      # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/secure-files?view=azure-devops
+      # including authorizing the file in all pipelines as described at
+      # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/secure-files?view=azure-devops#how-do-i-authorize-a-secure-file-for-use-in-all-pipelines.
+      #
+      # This file has a maximum lifetime of one year and the current
+      # file will expire on 2021-07-28 which is also tracked by
+      # https://github.com/certbot/certbot/issues/7931. The file will
+      # need to be updated before then to prevent automated deploys
+      # from breaking.
+      #
+      # Revoking these credentials can be done by changing the password of the
+      # account used to generate the credentials. See
+      # https://forum.snapcraft.io/t/revoking-exported-credentials/19031 for
+      # more info.
+      - job: publish_snap
+        pool:
+          vmImage: ubuntu-18.04
+        variables:
+          - group: certbot-common
+        steps:
+          - bash: |
+              set -e
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends snapd
+              sudo snap install --classic snapcraft
+            displayName: Install dependencies
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: snaps
+              path: $(Build.SourcesDirectory)/snap
+            displayName: Retrieve Certbot snaps
+          - task: DownloadSecureFile@1
+            name: snapcraftCfg
+            inputs:
+              secureFile: snapcraft.cfg
+          - bash: |
+              set -e
+              mkdir -p .snapcraft
+              ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
+              for SNAP_FILE in snap/*.snap; do
+                tools/retry.sh eval snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
+              done
+            displayName: Publish to Snap store
+      - job: publish_docker
+        pool:
+          vmImage: ubuntu-18.04
+        strategy:
+          matrix:
+            amd64:
+              DOCKER_ARCH: amd64
+            arm32v6:
+              DOCKER_ARCH: arm32v6
+            arm64v8:
+              DOCKER_ARCH: arm64v8
+        steps:
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: docker_$(DOCKER_ARCH)
+              path: $(Build.SourcesDirectory)
+            displayName: Retrieve Docker images
+          - bash: set -e && docker load --input $(Build.SourcesDirectory)/images.tar
+            displayName: Load Docker images
+          - task: Docker@2
+            inputs:
+              command: login
+              # The credentials used here are for the shared certbotbot account
+              # on Docker Hub. The credentials are stored in a service account
+              # which was created by following the instructions at
+              # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#sep-docreg.
+              # The name given to this service account must match the value
+              # given to containerRegistry below. "Grant access to all
+              # pipelines" should also be checked.  To revoke these
+              # credentials, we can change the password on the certbotbot
+              # Docker Hub account or remove the account from the
+              # Certbot organization on Docker Hub.
+              containerRegistry: docker-hub
+            displayName: Login to Docker Hub
+          - bash: set -e && tools/docker/deploy.sh $(dockerTag) $DOCKER_ARCH
+            displayName: Deploy the Docker images

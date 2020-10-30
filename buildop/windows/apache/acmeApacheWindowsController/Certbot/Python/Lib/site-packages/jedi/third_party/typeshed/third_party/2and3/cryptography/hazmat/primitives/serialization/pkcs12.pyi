@@ -1,3 +1,0 @@
-from typing import Optional
-
-def load_key_and_certificates(data: bytes, password: Optional[bytes], backend): ...

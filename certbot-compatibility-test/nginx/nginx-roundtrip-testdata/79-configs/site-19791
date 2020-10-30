@@ -29,6 +29,5 @@ server {
 
 server {
     server_name www.random1413.example.org;
-    server_name random28524.example.org www.random28524.example.org;
     rewrite ^ http://random1413.example.org$request_uri permanent;
 }

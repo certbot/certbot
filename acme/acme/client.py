@@ -13,6 +13,7 @@ import josepy as jose
 import OpenSSL
 import requests
 from requests.adapters import HTTPAdapter
+from requests.utils import parse_header_links
 from requests_toolbelt.adapters.source import SourceAddressAdapter
 import six
 from six.moves import http_client
@@ -40,7 +41,7 @@ if sys.version_info < (2, 7, 9):  # pragma: no cover
         import urllib3.contrib.pyopenssl
         urllib3.contrib.pyopenssl.inject_into_urllib3()
 
-DEFAULT_NETWORK_TIMEOUT = 45
+DEFAULT_NETWORK_TIMEOUT = 60
 
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
@@ -187,7 +188,8 @@ class ClientBase(object):
         :param int default: Default value (in seconds), used when
             ``Retry-After`` header is not present or invalid.
 
-        :returns: Time point when next `poll` should be performed.
+        :returns: Time point when next `poll` shou
+        ld be performed.
         :rtype: `datetime.datetime`
 
         """
@@ -447,7 +449,7 @@ class Client(ClientBase):
         heapq.heapify(waiting)
         # mapping between original Authorization Resource and the most
         # recently updated one
-        updated = dict((authzr, authzr) for authzr in authzrs)
+        updated = {authzr: authzr for authzr in authzrs}
 
         while waiting:
             # find the smallest Retry-After, and sleep if necessary
@@ -733,11 +735,13 @@ class ClientV2(ClientBase):
             raise errors.ValidationError(failed)
         return orderr.update(authorizations=responses)
 
-    def finalize_order(self, orderr, deadline):
+    def finalize_order(self, orderr, deadline, fetch_alternative_chains=False):
         """Finalize an order and obtain a certificate.
 
         :param messages.OrderResource orderr: order to finalize
         :param datetime.datetime deadline: when to stop polling and timeout
+        :param bool fetch_alternative_chains: whether to also fetch alternative
+            certificate chains
 
         :returns: finalized order
         :rtype: messages.OrderResource
@@ -746,16 +750,24 @@ class ClientV2(ClientBase):
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
         wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
-        self._post(orderr.body.finalize, wrapped_csr)
+        self._post(orderr.body.finalize, wrapped_csr)   
+        difference = 5 #set initial delay to 5sec
         while datetime.datetime.now() < deadline:
-            time.sleep(1)
+            time.sleep(difference)
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
             if body.error is not None:
                 raise errors.IssuanceError(body.error)
             if body.certificate is not None:
-                certificate_response = self._post_as_get(body.certificate).text
-                return orderr.update(body=body, fullchain_pem=certificate_response)
+                certificate_response = self._post_as_get(body.certificate)
+                orderr = orderr.update(body=body, fullchain_pem=certificate_response.text)
+                if fetch_alternative_chains:
+                    alt_chains_urls = self._get_links(certificate_response, 'alternate')
+                    alt_chains = [self._post_as_get(url).text for url in alt_chains_urls]
+                    orderr = orderr.update(alternative_fullchains_pem=alt_chains)
+                return orderr
+            future_date = self.retry_after(response,DEFAULT_NETWORK_TIMEOUT)
+            difference = (future_date - datetime.datetime.now()).total_seconds()
         raise errors.TimeoutError()
 
     def revoke(self, cert, rsn):
@@ -784,6 +796,20 @@ class ClientV2(ClientBase):
         """
         new_args = args[:1] + (None,) + args[1:]
         return self._post(*new_args, **kwargs)
+
+    def _get_links(self, response, relation_type):
+        """
+        Retrieves all Link URIs of relation_type from the response.
+        :param requests.Response response: The requests HTTP response.
+        :param str relation_type: The relation type to filter by.
+        """
+        # Can't use response.links directly because it drops multiple links
+        # of the same relation type, which is possible in RFC8555 responses.
+        if 'Link' not in response.headers:
+            return []
+        links = parse_header_links(response.headers['Link'])
+        return [l['url'] for l in links
+                if 'rel' in l and 'url' in l and l['rel'] == relation_type]
 
 
 class BackwardsCompatibleClientV2(object):
@@ -863,11 +889,13 @@ class BackwardsCompatibleClientV2(object):
             return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem)
         return self.client.new_order(csr_pem)
 
-    def finalize_order(self, orderr, deadline):
+    def finalize_order(self, orderr, deadline, fetch_alternative_chains=False):
         """Finalize an order and obtain a certificate.
 
         :param messages.OrderResource orderr: order to finalize
         :param datetime.datetime deadline: when to stop polling and timeout
+        :param bool fetch_alternative_chains: whether to also fetch alternative
+            certificate chains
 
         :returns: finalized order
         :rtype: messages.OrderResource
@@ -898,7 +926,7 @@ class BackwardsCompatibleClientV2(object):
             chain = crypto_util.dump_pyopenssl_chain(chain).decode()
 
             return orderr.update(fullchain_pem=(cert + chain))
-        return self.client.finalize_order(orderr, deadline)
+        return self.client.finalize_order(orderr, deadline, fetch_alternative_chains)
 
     def revoke(self, cert, rsn):
         """Revoke certificate.

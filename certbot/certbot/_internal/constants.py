@@ -16,7 +16,7 @@ OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 CLI_DEFAULTS = dict(
     config_files=[
         os.path.join(misc.get_default_folder('config'), 'cli.ini'),
-        # http://freedesktop.org/wiki/Software/xdg-user-dirs/
+        # https://freedesktop.org/wiki/Software/xdg-user-dirs/
         os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
                      "letsencrypt", "cli.ini"),
     ],
@@ -25,6 +25,7 @@ CLI_DEFAULTS = dict(
     verbose_count=-int(logging.INFO / 10),
     text_mode=False,
     max_log_backups=1000,
+    preconfigured_renewal=False,
     noninteractive_mode=False,
     force_interactive=False,
     domains=[],
@@ -63,6 +64,7 @@ CLI_DEFAULTS = dict(
     uir=None,
     staple=None,
     strict_permissions=False,
+    preferred_chain=None,
     pref_challs=[],
     validate_hooks=True,
     directory_hooks=True,
@@ -71,6 +73,8 @@ CLI_DEFAULTS = dict(
     random_sleep_on_renew=True,
     eab_hmac_key=None,
     eab_kid=None,
+    max_retry=10,
+    retry_interval=30,
 
     # Subparsers
     num=None,
@@ -119,6 +123,8 @@ CLI_DEFAULTS = dict(
 
 )
 STAGING_URI = "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+V1_URI = "https://acme-v01.api.letsencrypt.org/directory"
 
 # The set of reasons for revoking a certificate is defined in RFC 5280 in
 # section 5.3.1. The reasons that users are allowed to submit are restricted to

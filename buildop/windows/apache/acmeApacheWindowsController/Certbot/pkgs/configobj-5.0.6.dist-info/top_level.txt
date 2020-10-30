@@ -1,3 +1,0 @@
-_version
-configobj
-validate

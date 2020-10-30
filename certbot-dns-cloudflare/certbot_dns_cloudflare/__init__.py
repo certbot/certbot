@@ -21,8 +21,8 @@ Credentials
 -----------
 
 Use of this plugin requires a configuration file containing Cloudflare API
-credentials, obtained from your Cloudflare
-`account page <https://dash.cloudflare.com/profile/api-tokens>`_.
+credentials, obtained from your
+`Cloudflare dashboard <https://dash.cloudflare.com/?to=/:account/profile/api-tokens>`_.
 
 Previously, Cloudflare's "Global API Key" was used for authentication, however
 this key can access the entire Cloudflare API for all domains in your account,
@@ -31,11 +31,8 @@ meaning it could cause a lot of damage if leaked.
 Cloudflare's newer API Tokens can be restricted to specific domains and
 operations, and are therefore now the recommended authentication option.
 
-However, due to some shortcomings in Cloudflare's implementation of Tokens,
-Tokens created for Certbot currently require ``Zone:Zone:Read`` and ``Zone:DNS:Edit``
-permissions for **all** zones in your account. While this is not ideal, your Token
-will still have fewer permission than the Global key, so it's still worth doing.
-Hopefully Cloudflare will improve this in the future.
+The Token needed by Certbot requires ``Zone:DNS:Edit`` permissions for only the
+zones you need certificates for.
 
 Using Cloudflare Tokens also requires at least version 2.3.1 of the ``cloudflare``
 python module. If the version that automatically installed with this plugin is

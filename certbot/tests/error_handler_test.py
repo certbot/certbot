@@ -14,7 +14,7 @@ from certbot.compat import os
 
 def get_signals(signums):
     """Get the handlers for an iterable of signums."""
-    return dict((s, signal.getsignal(s)) for s in signums)
+    return {s: signal.getsignal(s) for s in signums}
 
 
 def set_signals(sig_handler_dict):
@@ -28,7 +28,7 @@ def signal_receiver(signums):
     """Context manager to catch signals"""
     signals = []
     prev_handlers = get_signals(signums)  # type: Dict[int, Union[int, None, Callable]]
-    set_signals(dict((s, lambda s, _: signals.append(s)) for s in signums))
+    set_signals({s: lambda s, _: signals.append(s) for s in signums})
     yield signals
     set_signals(prev_handlers)
 

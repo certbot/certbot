@@ -1772,7 +1772,17 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             AH02556: "SSLOpenSSLConfCmd %s %s" applied to %s
             OpenSSL 1.0.2g  1 Mar 2016
             """
+        # ssl_module as a DSO
         self.config.parser.modules['ssl_module'] = '/fake/path'
+        with mock.patch("certbot_apache._internal.configurator."
+            "ApacheConfigurator._open_module_file") as mock_omf:
+            mock_omf.return_value = some_string_contents
+            self.assertEqual(self.config.openssl_version(), "1.0.2g")
+
+        # ssl_module statically linked
+        self.config._openssl_version = None
+        self.config.parser.modules['ssl_module'] = None
+        self.config.options['bin'] = '/fake/path/to/httpd'
         with mock.patch("certbot_apache._internal.configurator."
             "ApacheConfigurator._open_module_file") as mock_omf:
             mock_omf.return_value = some_string_contents
@@ -1799,11 +1809,20 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertEqual(self.config.openssl_version(), None)
             self.assertTrue("Could not find ssl_module" in mock_log.call_args[0][0])
 
+        # When no ssl_module is present at all
         self.config._openssl_version = None
-        self.config.parser.modules['ssl_module'] = None
+        self.assertTrue("ssl_module" not in self.config.parser.modules)
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
             self.assertEqual(self.config.openssl_version(), None)
             self.assertTrue("Could not find ssl_module" in mock_log.call_args[0][0])
+
+        # When ssl_module is statically linked but --apache-bin not provided
+        self.config._openssl_version = None
+        self.config.options['bin'] = None
+        self.config.parser.modules['ssl_module'] = None
+        with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
+            self.assertEqual(self.config.openssl_version(), None)
+            self.assertTrue("ssl_module is statically linked but" in mock_log.call_args[0][0])
 
         self.config.parser.modules['ssl_module'] = "/fake/path"
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
