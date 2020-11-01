@@ -63,7 +63,7 @@ These are the steps to build and install the Certbot DNSimple plugin snap. If yo
  4. Run `sudo snap set certbot trust-plugin-with-root=ok`.
  5. Install the generated snap with `sudo snap install --dangerous certbot-dns-dnsimple_*_amd64.snap`. Again, you can transfer the snap to a different machine to run it there instead if you prefer.
  6. Connect the plugin with `sudo snap connect certbot:plugin certbot-dns-dnsimple`.
- 7. Connect the plugin metadata with `sudo snap connect certbot-dns-dnsimple:certbot-metadata certbot:certbot-metadata`. Install the plugin again to test refresh; logs are at `/var/snap/certbot-dns-dnsimple/current/debuglog`.
+ 7. Connect the plugin metadata with `sudo snap connect certbot-dns-dnsimple:certbot-metadata certbot:certbot-metadata`. Install the plugin again to test refresh; if the plugin's hook creates any logs, they are at `/var/snap/certbot-dns-dnsimple/current/debuglog`.
 
 #### Run
 
