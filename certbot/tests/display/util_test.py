@@ -97,6 +97,16 @@ class FileOutputDisplayTest(unittest.TestCase):
         string = self.mock_stdout.write.call_args[0][0]
         self.assertTrue("message2" in string)
 
+    def test_notification_decoration(self):
+        from certbot.compat import os
+        self.displayer.notification("message", pause=False, decorate=False)
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertEqual(string, "message" + os.linesep)
+
+        self.displayer.notification("message2", pause=False)
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertTrue("- - - " in string and ("message2" + os.linesep) in string)
+
     @mock.patch("certbot.display.util."
                 "FileDisplay._get_valid_int_ans")
     def test_menu(self, mock_ans):
@@ -334,6 +344,16 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         string = self.mock_stdout.write.call_args[0][0]
 
         self.assertTrue("message" in string)
+
+    def test_notification_decoration(self):
+        from certbot.compat import os
+        self.displayer.notification("message", pause=False, decorate=False)
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertEqual(string, "message" + os.linesep)
+
+        self.displayer.notification("message2", pause=False)
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertTrue("- - - " in string and ("message2" + os.linesep) in string)
 
     def test_input(self):
         d = "an incomputable value"

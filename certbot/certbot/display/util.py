@@ -98,7 +98,8 @@ class FileDisplay(object):
         self.skipped_interaction = False
 
     def notification(self, message, pause=True,
-                     wrap=True, force_interactive=False):
+                     wrap=True, force_interactive=False,
+                     decorate=True):
         """Displays a notification and waits for user acceptance.
 
         :param str message: Message to display
@@ -107,14 +108,21 @@ class FileDisplay(object):
         :param bool wrap: Whether or not the application should wrap text
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
+        :param bool decorate: Whether to surround the message with a
+            decorated frame
 
         """
         if wrap:
             message = _wrap_lines(message)
+
+        decoration = "{frame}{line}" if decorate else ""
+
         self.outfile.write(
-            "{line}{frame}{line}{msg}{line}{frame}{line}".format(
-                line='\n', frame=SIDE_FRAME, msg=message))
+            (decoration + "{msg}{line}" + decoration)
+            .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
+        )
         self.outfile.flush()
+
         if pause:
             if self._can_interact(force_interactive):
                 input_with_timeout("Press Enter to Continue")
@@ -461,19 +469,24 @@ class NoninteractiveDisplay(object):
             msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
         raise errors.MissingCommandlineFlag(msg)
 
-    def notification(self, message, pause=False, wrap=True, **unused_kwargs):  # pylint: disable=unused-argument
+    def notification(self, message, pause=False, wrap=True, decorate=True, **unused_kwargs):  # pylint: disable=unused-argument
         """Displays a notification without waiting for user acceptance.
 
         :param str message: Message to display to stdout
         :param bool pause: The NoninteractiveDisplay waits for no keyboard
         :param bool wrap: Whether or not the application should wrap text
+        :param bool decorate: Whether to apply a decorated frame to the message
 
         """
         if wrap:
             message = _wrap_lines(message)
+
+        decoration = "{frame}{line}" if decorate else ""
+
         self.outfile.write(
-            "{line}{frame}{line}{msg}{line}{frame}{line}".format(
-                line=os.linesep, frame=SIDE_FRAME, msg=message))
+            (decoration + "{msg}{line}" + decoration)
+            .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
+        )
         self.outfile.flush()
 
     def menu(self, message, choices, ok_label=None, cancel_label=None,
