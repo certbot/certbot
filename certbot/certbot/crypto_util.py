@@ -456,11 +456,14 @@ def _notAfterBefore(cert_path, method):
     reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
                              timestamp[6:8], b"T", timestamp[8:10], b":",
                              timestamp[10:12], b":", timestamp[12:]]
-    timestamp_str = b"".join(reformatted_timestamp)  # type: Union[str, bytes]
-    # pyrfc3339 uses "native" strings. That is, bytes on Python 2 and unicode
-    # on Python 3
+    # pyrfc3339 always uses the type `str`. This means that in Python 2, it
+    # expects str/bytes and in Python 3 it expects its str type or the Python 2
+    # equivalent of the type unicode.
+    timestamp_bytes = b"".join(reformatted_timestamp)
     if six.PY3:
         timestamp_str = timestamp_str.decode('ascii')
+    else:
+        timestamp_str = timestamp_bytes
     return pyrfc3339.parse(timestamp_str)
 
 
