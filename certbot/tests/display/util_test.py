@@ -66,11 +66,13 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.mock_stdout = mock.MagicMock()
         self.displayer = display_util.FileDisplay(self.mock_stdout, False)
 
-    def test_notification_no_pause(self):
+    @mock.patch("certbot.display.util.logger")
+    def test_notification_no_pause(self, mock_logger):
         self.displayer.notification("message", False)
         string = self.mock_stdout.write.call_args[0][0]
 
         self.assertTrue("message" in string)
+        mock_logger.debug.assert_called_with("Notifying user: %s", "message")
 
     def test_notification_pause(self):
         input_with_timeout = "certbot.display.util.input_with_timeout"
@@ -339,11 +341,13 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         self.mock_stdout = mock.MagicMock()
         self.displayer = display_util.NoninteractiveDisplay(self.mock_stdout)
 
-    def test_notification_no_pause(self):
+    @mock.patch("certbot.display.util.logger")
+    def test_notification_no_pause(self, mock_logger):
         self.displayer.notification("message", 10)
         string = self.mock_stdout.write.call_args[0][0]
 
         self.assertTrue("message" in string)
+        mock_logger.debug.assert_called_with("Notifying user: %s", "message")
 
     def test_notification_decoration(self):
         from certbot.compat import os

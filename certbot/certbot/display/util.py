@@ -115,6 +115,8 @@ class FileDisplay(object):
         if wrap:
             message = _wrap_lines(message)
 
+        logger.debug("Notifying user: %s", message)
+
         decoration = "{frame}{line}" if decorate else ""
 
         self.outfile.write(
@@ -480,6 +482,8 @@ class NoninteractiveDisplay(object):
         """
         if wrap:
             message = _wrap_lines(message)
+
+        logger.debug("Notifying user: %s", message)
 
         decoration = "{frame}{line}" if decorate else ""
 
