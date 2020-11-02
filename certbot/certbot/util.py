@@ -17,6 +17,7 @@ import sys
 import configargparse
 import six
 
+from acme.magic_typing import Text
 from acme.magic_typing import Tuple
 from acme.magic_typing import Union
 from certbot import errors
@@ -577,7 +578,7 @@ def is_wildcard_domain(domain):
     :rtype: bool
 
     """
-    wildcard_marker = b"*."  # type: Union[str, bytes]
+    wildcard_marker = b"*."  # type: Union[Text, bytes]
     if isinstance(domain, six.text_type):
         wildcard_marker = u"*."
     return domain.startswith(wildcard_marker)
