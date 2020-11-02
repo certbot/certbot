@@ -234,6 +234,18 @@ def _choose_names_manually(prompt_prefix=""):
     return []
 
 
+def notify(msg):
+    # type: (str) -> None
+    """Display a basic status message.
+
+    :param str msg: message to display
+
+    """
+    z_util(interfaces.IDisplay).notification(
+        msg, pause=False, decorate=False
+    )
+
+
 def success_installation(domains):
     """Display a box confirming the installation of HTTPS.
 
