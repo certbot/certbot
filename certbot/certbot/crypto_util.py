@@ -460,7 +460,7 @@ def _notAfterBefore(cert_path, method):
     # equivalent of the type unicode.
     timestamp_bytes = b"".join(reformatted_timestamp)
     if six.PY3:
-        timestamp_str = timestamp_str.decode('ascii')
+        timestamp_str = timestamp_bytes.decode('ascii')
     else:
         timestamp_str = timestamp_bytes
     return pyrfc3339.parse(timestamp_str)
