@@ -117,10 +117,10 @@ class FileDisplay(object):
 
         logger.debug("Notifying user: %s", message)
 
-        decoration = "{frame}{line}" if decorate else ""
-
         self.outfile.write(
-            (decoration + "{msg}{line}" + decoration)
+            (("{line}{frame}{line}" if decorate else "") +
+             "{msg}{line}" +
+             ("{frame}{line}" if decorate else ""))
             .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
         )
         self.outfile.flush()
@@ -485,10 +485,10 @@ class NoninteractiveDisplay(object):
 
         logger.debug("Notifying user: %s", message)
 
-        decoration = "{frame}{line}" if decorate else ""
-
         self.outfile.write(
-            (decoration + "{msg}{line}" + decoration)
+            (("{line}{frame}{line}" if decorate else "") +
+             "{msg}{line}" +
+             ("{frame}{line}" if decorate else ""))
             .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
         )
         self.outfile.flush()
