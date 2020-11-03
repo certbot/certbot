@@ -712,6 +712,18 @@ null:
 standalone:
   Spin up a temporary webserver
 
+tomcat:
+  tomcat Web Server plugin
+
+  --tomcat-server-root TOMCAT_SERVER_ROOT
+                        Tomcat server root directory. (default: /etc or
+                        /usr/local/etc)
+  --tomcat-ctl TOMCAT_CTL
+                        Path to the 'tomcat' binary, used for 'configtest' and
+                        retrieving tomcat version number. (default: tomcat)
+  --tomcat-service-name TOMCAT_SERVICE_NAME
+                        Service Name if tomcat is running as a service
+						
 webroot:
   Place files in webroot directory
 
