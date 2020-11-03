@@ -271,6 +271,9 @@ def cli_plugin_requests(config):
     if config.apache:
         req_inst = set_configurator(req_inst, "apache")
         req_auth = set_configurator(req_auth, "apache")
+    if config.tomcat:
+        req_inst = set_configurator(req_inst, "certbot-tomcat:tomcat")
+        req_auth = set_configurator(req_auth, "certbot-tomcat:tomcat")
     if config.standalone:
         req_auth = set_configurator(req_auth, "standalone")
     if config.webroot:

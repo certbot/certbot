@@ -150,10 +150,14 @@ class HelpfulArgumentParser(object):
             apache_doc = "--apache          Use the Apache plugin for authentication & installation"
         else:
             apache_doc = "(the certbot apache plugin is not installed)"
+        if "certbot-tomcat:tomcat" in plugins:
+            tomcat_doc= "--tomcat          Use the tomcat plugin for authentication & installation"
+        else:
+            tomcat_doc = "(the certbot tomcat plugin is not installed)"
 
         usage = SHORT_USAGE
         if help_arg is True:
-            self.notify(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_AND_VERSION_USAGE)
+            self.notify(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc, tomcat_doc) + HELP_AND_VERSION_USAGE)
             sys.exit(0)
         elif help_arg in self.COMMANDS_TOPICS:
             self.notify(usage + self._list_subcommands())
@@ -161,7 +165,7 @@ class HelpfulArgumentParser(object):
         elif help_arg == "all":
             # if we're doing --help all, the OVERVIEW is part of the SHORT_USAGE at
             # the top; if we're doing --help someothertopic, it's OT so it's not
-            usage += COMMAND_OVERVIEW % (apache_doc, nginx_doc)
+            usage += COMMAND_OVERVIEW % (apache_doc, nginx_doc, tomcat_doc)
         else:
             custom = VERB_HELP_MAP.get(help_arg, {}).get("usage", None)
             usage = custom if custom else usage
