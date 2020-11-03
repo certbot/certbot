@@ -1,1 +1,0 @@
-Nginx plugin for Certbot

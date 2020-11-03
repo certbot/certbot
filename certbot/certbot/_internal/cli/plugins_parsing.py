@@ -25,9 +25,6 @@ def _plugins_parsing(helpful, plugins):
     helpful.add(["plugins", "certonly", "run", "install"],
                 "--nginx", action="store_true", default=flag_default("nginx"),
                 help="Obtain and install certificates using Nginx")
-    helpful.add(["plugins", "certonly", "run", "install"],
-                "--tomcat", action="store_true",
-                help="Obtain and install certificates using Tomcat")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
                 default=flag_default("standalone"),
                 help='Obtain certificates using a "standalone" webserver.')

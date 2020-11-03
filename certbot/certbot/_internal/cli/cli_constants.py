@@ -51,7 +51,6 @@ obtain, install, and renew certificates:
   %s
   --standalone      Run a standalone webserver for authentication
   %s
-  %s
   --webroot         Place files in a server's webroot folder for authentication
   --manual          Obtain certificates interactively, or using shell script hooks
 
