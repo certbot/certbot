@@ -1,4 +1,14 @@
-"""Certbot display."""
+"""Certbot display.
+
+This module (`certbot.display.util`) or its companion `certbot.display.ops`
+should be used whenever:
+
+- Displaying status information to the user on the terminal
+- Collecting information from the user via prompts
+
+Other messages can use the `logging` module. See `log.py`.
+
+"""
 import logging
 import sys
 import textwrap
