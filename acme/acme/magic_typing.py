@@ -12,4 +12,5 @@ try:
     from typing import *  # pylint: disable=wildcard-import, unused-wildcard-import
     from typing import Collection, IO  # type: ignore
 except ImportError:
-    sys.modules[__name__] = TypingClass()
+    # mypy complains because TypingClass is not a module
+    sys.modules[__name__] = TypingClass()  # type: ignore
