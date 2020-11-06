@@ -13,6 +13,7 @@ import six
 from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
+import certbot.tests.util as test_util
 
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
@@ -451,6 +452,18 @@ class PlaceParensTest(unittest.TestCase):
     def test_multiple(self):
         self.assertEqual("(L)abel", self._call("Label"))
         self.assertEqual("(y)es please", self._call("yes please"))
+
+
+class PrintTest(unittest.TestCase):
+    """Test the print function """
+
+    @test_util.patch_get_utility()
+    def test_print(self, mock_util):
+        from certbot.display.util import print
+        print("Hello World")
+        mock_util().notification.assert_called_with(
+            "Hello World", pause=False, decorate=False
+        )
 
 
 if __name__ == "__main__":

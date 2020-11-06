@@ -14,6 +14,7 @@ import sys
 import textwrap
 
 import zope.interface
+import zope.component
 
 from certbot import errors
 from certbot import interfaces
@@ -94,6 +95,18 @@ def input_with_timeout(prompt=None, timeout=36000.0):
     if not line:
         raise EOFError
     return line.rstrip('\n')
+
+
+def print(msg):
+    # type: (str) -> None
+    """Display a basic status message.
+
+    :param str msg: message to display
+
+    """
+    zope.component.getUtility(interfaces.IDisplay).notification(
+        msg, pause=False, decorate=False
+    )
 
 
 @zope.interface.implementer(interfaces.IDisplay)

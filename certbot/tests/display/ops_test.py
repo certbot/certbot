@@ -335,18 +335,6 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(utility_mock.yesno.call_count, 3)
 
 
-class NotifyTest(unittest.TestCase):
-    """Test the notify (printing) function """
-
-    @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_notify(self, mock_util):
-        from certbot.display.ops import notify
-        notify("Hello World")
-        mock_util().notification.assert_called_with(
-            "Hello World", pause=False, decorate=False
-        )
-
-
 class SuccessInstallationTest(unittest.TestCase):
     """Test the success installation message."""
     @classmethod

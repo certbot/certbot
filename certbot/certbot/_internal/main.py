@@ -516,7 +516,7 @@ def _determine_account(config):
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
-                display_ops.notify("Account registered.")
+                display_util.print("Account registered.")
             except errors.MissingCommandlineFlag:
                 raise
             except errors.Error:
