@@ -380,8 +380,7 @@ class IDisplay(zope.interface.Interface):
     """Generic display."""
     # see https://github.com/certbot/certbot/issues/3915
 
-    def notification(message, pause, wrap=True, force_interactive=False,
-                     decorate=True):
+    def notification(message, pause, wrap=True, force_interactive=False):
         """Displays a string message
 
         :param str message: Message to display
@@ -390,7 +389,6 @@ class IDisplay(zope.interface.Interface):
         :param bool wrap: Whether or not the application should wrap text
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
-        :param bool decorate: Whether to apply a decorated frame to the message
 
         """
 
