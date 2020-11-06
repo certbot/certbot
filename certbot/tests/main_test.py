@@ -483,8 +483,8 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.assertTrue(self.config.email is None)
 
     @mock.patch('certbot._internal.client.display_ops.get_email')
-    @mock.patch('certbot._internal.main.display_util.print')
-    def test_no_accounts_no_email(self, mock_print, mock_get_email):
+    @mock.patch('certbot._internal.main.display_util.notify')
+    def test_no_accounts_no_email(self, mock_notify, mock_get_email):
         mock_get_email.return_value = 'foo@bar.baz'
 
         with mock.patch('certbot._internal.main.client') as client:
@@ -496,7 +496,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
 
         self.assertEqual(self.accs[0].id, self.config.account)
         self.assertEqual('foo@bar.baz', self.config.email)
-        mock_print.assert_called_once_with('Account registered.')
+        mock_notify.assert_called_once_with('Account registered.')
 
     def test_no_accounts_email(self):
         self.config.email = 'other email'

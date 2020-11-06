@@ -459,8 +459,8 @@ class PrintTest(unittest.TestCase):
 
     @test_util.patch_get_utility()
     def test_print(self, mock_util):
-        from certbot.display.util import print
-        print("Hello World")
+        from certbot.display.util import notify
+        notify("Hello World")
         mock_util().notification.assert_called_with(
             "Hello World", pause=False, decorate=False
         )

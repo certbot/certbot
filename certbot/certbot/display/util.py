@@ -97,7 +97,7 @@ def input_with_timeout(prompt=None, timeout=36000.0):
     return line.rstrip('\n')
 
 
-def print(msg):
+def notify(msg):
     # type: (str) -> None
     """Display a basic status message.
 
