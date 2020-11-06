@@ -11,7 +11,7 @@ import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
-from acme.magic_typing import Union, Iterable, Optional  # pylint: disable=unused-import
+from acme.magic_typing import Union, Iterable, Optional, List, Tuple  # pylint: disable=unused-import
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -130,7 +130,37 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
     return lineage
 
 
-def _handle_subset_cert_request(config, domains, cert):
+def _handle_unexpected_key_type_migration(config, cert):
+    # type: (configuration.NamespaceConfig, storage.RenewableCert) -> None
+    """
+    This function ensures that the user will not implicitly migrate an existing key
+    from one type to another in the situation where a certificate for that lineage
+    already exist and they have not provided explicitly --key-type and --cert-name.
+    :param config: Current configuration provided by the client
+    :param cert: Matching certificate that could be renewed
+    """
+    if (config.verb in ["certonly", "run"]
+            and (not cli.set_by_cli("key_type") or not cli.set_by_cli("certname"))):
+
+        new_key_type = config.key_type.upper()
+        cur_key_type = cert.private_key_type.upper()
+
+        if new_key_type != cur_key_type:
+            logger.error("A certificate already exists for that name, the list of provided "
+                         "domains or a subset of this list. This certificate uses a key of %s "
+                         "type, and you have not provided the --key-type flag. By default in this "
+                         "case Certbot would generate a new certificate with a key of %s type. "
+                         "Please confirm that you really want to change the type of the key by "
+                         "setting both --cert-name and --key-type CLI flags.",
+                         cur_key_type, new_key_type)
+            raise errors.Error("Command canceled.")
+
+
+def _handle_subset_cert_request(config,  # type: configuration.NamespaceConfig
+                                domains,  # type: List[str]
+                                cert  # type: storage.RenewableCert
+                                ):
+    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
     """Figure out what to do if a previous cert had a subset of the names now requested
 
     :param config: Configuration object
@@ -147,6 +177,8 @@ def _handle_subset_cert_request(config, domains, cert):
     :rtype: `tuple` of `str`
 
     """
+    _handle_unexpected_key_type_migration(config, cert)
+
     existing = ", ".join(cert.names())
     question = (
         "You have an existing certificate that contains a portion of "
@@ -177,7 +209,10 @@ def _handle_subset_cert_request(config, domains, cert):
     raise errors.Error(USER_CANCELLED)
 
 
-def _handle_identical_cert_request(config, lineage):
+def _handle_identical_cert_request(config,  # type: configuration.NamespaceConfig
+                                   lineage,  # type: storage.RenewableCert
+                                   ):
+    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
     """Figure out what to do if a lineage has the same names as a previously obtained one
 
     :param config: Configuration object
@@ -191,6 +226,8 @@ def _handle_identical_cert_request(config, lineage):
     :rtype: `tuple` of `str`
 
     """
+    _handle_unexpected_key_type_migration(config, lineage)
+
     if not lineage.ensure_deployed():
         return "reinstall", lineage
     if renewal.should_renew(config, lineage):
@@ -266,6 +303,7 @@ def _find_lineage_for_domains(config, domains):
         return _handle_subset_cert_request(config, domains, subset_names_cert)
     return None, None
 
+
 def _find_cert(config, domains, certname):
     """Finds an existing certificate object given domains and/or a certificate name.
 
@@ -289,7 +327,12 @@ def _find_cert(config, domains, certname):
         logger.info("Keeping the existing certificate")
     return (action != "reinstall"), lineage
 
-def _find_lineage_for_domains_and_certname(config, domains, certname):
+
+def _find_lineage_for_domains_and_certname(config,  # type: configuration.NamespaceConfig
+                                           domains,  # type: List[str]
+                                           certname  # type: str
+                                           ):
+    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
     """Find appropriate lineage based on given domains and/or certname.
 
     :param config: Configuration object
@@ -316,8 +359,9 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
     if lineage:
         if domains:
             if set(cert_manager.domains_for_certname(config, certname)) != set(domains):
+                _handle_unexpected_key_type_migration(config, lineage)
                 _ask_user_to_confirm_new_names(config, domains, certname,
-                    lineage.names()) # raises if no
+                                               lineage.names())  # raises if no
                 return "renew", lineage
         # unnecessarily specified domains or no domains specified
         return _handle_identical_cert_request(config, lineage)
@@ -385,6 +429,7 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     obj = zope.component.getUtility(interfaces.IDisplay)
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
+
 
 def _find_domains_or_certname(config, installer, question=None):
     """Retrieve domains and certname from config or user input.
