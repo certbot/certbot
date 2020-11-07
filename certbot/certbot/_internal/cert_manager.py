@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import re
+import sys
 import traceback
 
 import pytz
@@ -274,11 +275,17 @@ def json_parsable_cert_info(config, cert, skip_filter_checks=False):
 
     serial = format(crypto_util.get_serial_from_cert(cert.cert_path), 'x')
 
+    if sys.version_info[0] > 2:
+        expiry_date = cert.target_expiry.timestamp()
+    else:
+        expiry_date = (cert.target_expiry.replace(tzinfo=None) -
+                       datetime.datetime(1970, 1, 1)).total_seconds()
+
     certinfo = {
         "cert_name": cert.lineagename,
         "serial": serial,
         "domains": cert.names(),
-        "expiry_date": int(cert.target_expiry.timestamp()),
+        "expiry_date": int(expiry_date),
         "status": {
             "validity": status,
             "reason": reasons
