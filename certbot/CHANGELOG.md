@@ -8,7 +8,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Added timeout to DNS query function calls for dns-rfc2136 plugin.
 * Confirmation when deleting certificates
-*
+* Added `--json` flag for `certbot certificates` output in JSON.
+* 
 
 ### Changed
 
