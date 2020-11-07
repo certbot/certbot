@@ -73,6 +73,7 @@ CLI_DEFAULTS = dict(
     random_sleep_on_renew=True,
     eab_hmac_key=None,
     eab_kid=None,
+    format_json=False,
 
     # Subparsers
     num=None,

@@ -3,6 +3,7 @@ import datetime
 import logging
 import re
 import traceback
+import json
 
 import pytz
 import zope.component
@@ -251,6 +252,42 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
         raise errors.OverlappingMatchFound()
     return matched
 
+def json_parsable_cert_info(config, cert, skip_filter_checks=False):
+    """ Returns a JSON formatted parsable description of info about a RenewableCert object"""
+    checker = ocsp.RevocationChecker()
+
+    if config.certname and cert.lineagename != config.certname and not skip_filter_checks:
+        return ""
+    if config.domains and not set(config.domains).issubset(cert.names()):
+        return ""
+    now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+
+    reasons = []
+    if cert.is_test_cert:
+        reasons.append('test_cert')
+    if cert.target_expiry <= now:
+        reasons.append('expired')
+    elif checker.ocsp_revoked(cert):
+        reasons.append('revoked')
+
+    status = "invalid" if reasons else "valid"
+
+    serial = format(crypto_util.get_serial_from_cert(cert.cert_path), 'x')
+
+    certinfo = {
+        "cert_name": cert.lineagename,
+        "serial": serial,
+        "domains": cert.names(),
+        "expiry_date": int(cert.target_expiry.timestamp()),
+        "status": {
+            "validity": status,
+            "reason": reasons
+        },
+        "fullchain_path": cert.fullchain,
+        "privkey_path": cert.privkey
+    }
+
+    return certinfo
 
 def human_readable_cert_info(config, cert, skip_filter_checks=False):
     """ Returns a human readable description of info about a RenewableCert object"""
@@ -341,33 +378,53 @@ def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""
     return "  " + "\n  ".join(str(msg) for msg in msgs)
 
-def _report_human_readable(config, parsed_certs):
+def _report_human_readable(config, parsed_certs, output_format="human"):
     """Format a results report for a parsed cert"""
     certinfo = []
+
+    if output_format == "human":
+        cert_info = human_readable_cert_info
+    elif output_format == "json":
+        cert_info = json_parsable_cert_info
     for cert in parsed_certs:
-        certinfo.append(human_readable_cert_info(config, cert))
-    return "\n".join(certinfo)
+        certinfo.append(cert_info(config, cert))
+    return "\n".join(certinfo) if output_format == "human" else certinfo
 
 def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
+    format_json = config.format_json
+
     out = []  # type: List[str]
+    out_json = {}
 
     notify = out.append
+    notify_json = out_json.update
 
     if not parsed_certs and not parse_failures:
-        notify("No certs found.")
+        if format_json:
+            notify_json({'cert_count': 0})
+            notify_json({'certs': []})
+        else:
+            notify("No certs found.")
     else:
         if parsed_certs:
-            match = "matching " if config.certname or config.domains else ""
-            notify("Found the following {0}certs:".format(match))
-            notify(_report_human_readable(config, parsed_certs))
+            if format_json:
+                notify_json({'cert_count': len(parsed_certs)})
+                notify_json({'certs': _report_human_readable(config, parsed_certs,
+                    output_format="json")})
+            else:
+                match = "matching " if config.certname or config.domains else ""
+                notify("Found the following {0}certs:".format(match))
+                notify(_report_human_readable(config, parsed_certs))
         if parse_failures:
             notify("\nThe following renewal configurations "
                "were invalid:")
             notify(_report_lines(parse_failures))
 
+    output = json.dumps(out_json, sort_keys=True, indent=4) if format_json else "\n".join(out)
+
     disp = zope.component.getUtility(interfaces.IDisplay)
-    disp.notification("\n".join(out), pause=False, wrap=False)
+    disp.notification(output, pause=False, wrap=False)
 
 def _search_lineages(cli_config, func, initial_rv, *args):
     """Iterate func over unbroken lineages, allowing custom return conditions.

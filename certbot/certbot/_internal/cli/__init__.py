@@ -439,6 +439,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "renew", "--no-autorenew", action="store_false",
         default=flag_default("autorenew"), dest="autorenew",
         help="Disable auto renewal of certificates.")
+    helpful.add(
+        "certificates", "--json", action="store_true",
+        default=flag_default("format_json"), dest="format_json",
+        help="Output the list of certificates in JSON, so it can be easily parsed.")
 
     # Populate the command line parameters for new style enhancements
     enhancements.populate_cli(helpful.add)
