@@ -395,7 +395,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
     format_json = config.format_json
 
     out = []  # type: List[str]
-    out_json = {}
+    out_json = {}  # type: ignore
 
     notify = out.append
     notify_json = out_json.update
