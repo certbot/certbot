@@ -163,8 +163,7 @@ def _handle_subset_cert_request(config, domains, cert):
                                        cli_flag="--expand",
                                        force_interactive=True):
         return "renew", cert
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message(
+    display_util.notify(
         "To obtain a new certificate that contains these names without "
         "replacing your existing certificate for {0}, you must use the "
         "--duplicate option.{br}{br}"
@@ -172,8 +171,7 @@ def _handle_subset_cert_request(config, domains, cert):
             existing,
             sys.argv[0], " ".join(sys.argv[1:]),
             br=os.linesep
-        ),
-        reporter_util.HIGH_PRIORITY)
+        ))
     raise errors.Error(USER_CANCELLED)
 
 
