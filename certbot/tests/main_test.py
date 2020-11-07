@@ -449,10 +449,12 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.mock_client = mock.MagicMock()
         self.mock_client.directory.new_authz = "hi"
 
+
     def _call(self):
         # pylint: disable=protected-access
         from certbot._internal.main import _determine_account
-        with mock.patch('certbot._internal.main.account.AccountFileStorage') as mock_storage:
+        with mock.patch('certbot._internal.main.account.AccountFileStorage') as mock_storage, \
+             test_util.patch_get_utility():
             mock_storage.return_value = self.account_storage
             return _determine_account(self.config)
 
@@ -481,8 +483,8 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.assertTrue(self.config.email is None)
 
     @mock.patch('certbot._internal.client.display_ops.get_email')
-    @mock.patch('certbot._internal.main.logger')
-    def test_no_accounts_no_email(self, mock_logger, mock_get_email):
+    @mock.patch('certbot._internal.main.display_util.notify')
+    def test_no_accounts_no_email(self, mock_notify, mock_get_email):
         mock_get_email.return_value = 'foo@bar.baz'
 
         with mock.patch('certbot._internal.main.client') as client:
@@ -494,7 +496,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
 
         self.assertEqual(self.accs[0].id, self.config.account)
         self.assertEqual('foo@bar.baz', self.config.email)
-        mock_logger.info.assert_called_once_with('Account registered.')
+        mock_notify.assert_called_once_with('Account registered.')
 
     def test_no_accounts_email(self):
         self.config.email = 'other email'
