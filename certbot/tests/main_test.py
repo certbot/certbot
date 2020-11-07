@@ -1449,9 +1449,10 @@ class MainTest(test_util.ConfigTestCase):
         # ensure we didn't try to subscribe (no email to subscribe with)
         self.assertFalse(mock_prepare.called)
 
+    @mock.patch("certbot._internal.main.display_util.notify")
     @mock.patch('certbot._internal.main.display_ops.get_email')
     @test_util.patch_get_utility()
-    def test_update_account_with_email(self, mock_utility, mock_email):
+    def test_update_account_with_email(self, mock_utility, mock_email, mock_notify):
         email = "user@example.com"
         mock_email.return_value = email
         with mock.patch('certbot._internal.eff.prepare_subscription') as mock_prepare:
@@ -1476,7 +1477,7 @@ class MainTest(test_util.ConfigTestCase):
                         # and we saved the updated registration on disk
                         self.assertTrue(mocked_storage.update_regr.called)
                         self.assertTrue(
-                            email in mock_utility().add_message.call_args[0][0])
+                            email in mock_notify.call_args[0][0])
                         self.assertTrue(mock_prepare.called)
 
     @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')

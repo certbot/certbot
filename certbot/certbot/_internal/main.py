@@ -694,8 +694,6 @@ def update_account(config, unused_plugins):
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     if not accounts:
         return "Could not find an existing account to update."
@@ -720,10 +718,11 @@ def update_account(config, unused_plugins):
     account_storage.update_regr(acc, cb_client.acme)
 
     if config.email is None:
-        add_msg("Any contact information associated with this account has been removed.")
+        display_util.notify("Any contact information associated "
+                            "with this account has been removed.")
     else:
         eff.prepare_subscription(config, acc)
-        add_msg("Your e-mail address was updated to {0}.".format(config.email))
+        display_util.notify("Your e-mail address was updated to {0}.".format(config.email))
 
     return None
 
