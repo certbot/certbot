@@ -100,8 +100,8 @@ def delete(config):
         return
     for certname in certnames:
         storage.delete_files(config, certname)
-        disp.notification("Deleted all files relating to certificate {0}."
-            .format(certname), pause=False)
+        display_util.notify("Deleted all files relating to certificate {0}."
+                            .format(certname))
 
 ###################
 # Public Helpers

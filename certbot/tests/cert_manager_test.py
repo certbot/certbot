@@ -114,16 +114,20 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
         cert_manager.delete(self.config)
 
     @test_util.patch_get_utility()
+    @mock.patch('certbot.display.util.notify')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
     def test_delete_from_config_yes(self, mock_delete_files, mock_lineage_for_certname,
-        mock_util):
+        mock_notify, mock_util):
         """Test delete"""
         mock_lineage_for_certname.return_value = self.test_rc
         mock_util().yesno.return_value = True
         self.config.certname = "example.org"
         self._call()
         mock_delete_files.assert_called_once_with(self.config, "example.org")
+        mock_notify.assert_called_once_with(
+            "Deleted all files relating to certificate example.org."
+        )
 
     @test_util.patch_get_utility()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
