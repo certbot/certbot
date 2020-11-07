@@ -1,9 +1,9 @@
 """Tools for managing certificates."""
 import datetime
+import json
 import logging
 import re
 import traceback
-import json
 
 import pytz
 import zope.component
