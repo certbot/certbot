@@ -258,9 +258,9 @@ def json_parsable_cert_info(config, cert, skip_filter_checks=False):
     checker = ocsp.RevocationChecker()
 
     if config.certname and cert.lineagename != config.certname and not skip_filter_checks:
-        return ""
+        return None
     if config.domains and not set(config.domains).issubset(cert.names()):
-        return ""
+        return None
     now = pytz.UTC.fromutc(datetime.datetime.utcnow())
 
     reasons = []
@@ -394,7 +394,9 @@ def _report_human_readable(config, parsed_certs, output_format="human"):
     elif output_format == "json":
         cert_info = json_parsable_cert_info
     for cert in parsed_certs:
-        certinfo.append(cert_info(config, cert))
+        info = cert_info(config, cert)
+        if info:
+            certinfo.append(info)
     return "\n".join(certinfo) if output_format == "human" else certinfo
 
 def _describe_certs(config, parsed_certs, parse_failures):
@@ -409,14 +411,12 @@ def _describe_certs(config, parsed_certs, parse_failures):
 
     if not parsed_certs and not parse_failures:
         if format_json:
-            notify_json({'cert_count': 0})
             notify_json({'certs': []})
         else:
             notify("No certs found.")
     else:
         if parsed_certs:
             if format_json:
-                notify_json({'cert_count': len(parsed_certs)})
                 notify_json({'certs': _report_human_readable(config, parsed_certs,
                     output_format="json")})
             else:
