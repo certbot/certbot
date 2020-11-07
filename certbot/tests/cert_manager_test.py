@@ -244,7 +244,65 @@ class CertificatesTest(BaseCertManagerTest):
 
     @mock.patch('certbot.crypto_util.get_serial_from_cert')
     @mock.patch('certbot._internal.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
-    def test_report_human_readable(self, mock_revoked, mock_serial):
+    def test_report_human_readable_json(self, mock_revoked, mock_serial):
+        mock_revoked.return_value = None
+        mock_serial.return_value = 1234567890
+        from certbot._internal import cert_manager
+        import datetime
+        import pytz
+        expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
+
+        cert = mock.MagicMock(lineagename="nameone")
+        cert.target_expiry = expiry
+        cert.names.return_value = ["nameone", "nametwo"]
+        cert.is_test_cert = False
+        parsed_certs = [cert]
+
+        mock_config = mock.MagicMock(certname=None, lineagename=None)
+        # pylint: disable=protected-access
+
+        # pylint: disable=protected-access
+        get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs, "json")
+
+        out = str(get_report())
+        self.assertTrue('invalid' in out and 'expired' in out)
+
+        cert.target_expiry += datetime.timedelta(hours=2)
+        # pylint: disable=protected-access
+        out = str(get_report())
+        self.assertTrue('valid' in out and 'invalid' not in out)
+
+        cert.is_test_cert = True
+        mock_revoked.return_value = True
+        out = str(get_report())
+        self.assertTrue('invalid' in out and
+                        'revoked' in out and
+                        'test_cert' in out)
+
+        cert = mock.MagicMock(lineagename="indescribable")
+        cert.target_expiry = expiry
+        cert.names.return_value = ["nameone", "thrice.named"]
+        cert.is_test_cert = True
+        parsed_certs.append(cert)
+
+        out = str(get_report())
+        self.assertEqual(len(re.findall("invalid", out)), 2)
+        mock_config.domains = ["thrice.named"]
+        out = str(get_report())
+        self.assertEqual(len(re.findall("invalid", out)), 1)
+        mock_config.domains = ["nameone"]
+        out = str(get_report())
+        self.assertEqual(len(re.findall("invalid", out)), 2)
+        mock_config.certname = "indescribable"
+        out = str(get_report())
+        self.assertEqual(len(re.findall("invalid", out)), 1)
+        mock_config.certname = "horror"
+        out = str(get_report())
+        self.assertEqual(len(re.findall("invalid", out)), 0)
+
+    @mock.patch('certbot.crypto_util.get_serial_from_cert')
+    @mock.patch('certbot._internal.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
+    def test_report_human_readable_human(self, mock_revoked, mock_serial):
         mock_revoked.return_value = None
         mock_serial.return_value = 1234567890
         from certbot._internal import cert_manager
