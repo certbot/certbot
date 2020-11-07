@@ -1518,7 +1518,8 @@ class UnregisterTest(unittest.TestCase):
         res = main.unregister(config, unused_plugins)
         self.assertEqual(res, "Deactivation aborted.")
 
-    def test_unregister(self):
+    @mock.patch("certbot._internal.main.display_util.notify")
+    def test_unregister(self, mock_notify):
         mocked_storage = mock.MagicMock()
         mocked_storage.find_all.return_value = ["an account"]
 
@@ -1534,9 +1535,7 @@ class UnregisterTest(unittest.TestCase):
         res = main.unregister(config, unused_plugins)
 
         self.assertTrue(res is None)
-        self.assertTrue(cb_client.acme.deactivate_registration.called)
-        m = "Account deactivated."
-        self.assertTrue(m in self.mocks['get_utility']().add_message.call_args[0][0])
+        mock_notify.assert_called_once_with("Account deactivated.")
 
     def test_unregister_no_account(self):
         mocked_storage = mock.MagicMock()

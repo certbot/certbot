@@ -622,7 +622,6 @@ def unregister(config, unused_plugins):
     """
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
 
     if not accounts:
         return "Could not find existing account to deactivate."
@@ -644,7 +643,7 @@ def unregister(config, unused_plugins):
     # delete local account files
     account_files.delete(config.account)
 
-    reporter_util.add_message("Account deactivated.", reporter_util.MEDIUM_PRIORITY)
+    display_util.notify("Account deactivated.")
     return None
 
 
