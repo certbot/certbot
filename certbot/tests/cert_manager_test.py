@@ -279,6 +279,10 @@ class CertificatesTest(BaseCertManagerTest):
                         'revoked' in out and
                         'test_cert' in out)
 
+        cert.target_expiry = pytz.UTC.fromutc(datetime.datetime(2020, 11, 8))
+        out = str(get_report())
+        self.assertTrue('1604793600' in out)
+
         cert = mock.MagicMock(lineagename="indescribable")
         cert.target_expiry = expiry
         cert.names.return_value = ["nameone", "thrice.named"]
