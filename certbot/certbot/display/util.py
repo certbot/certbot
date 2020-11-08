@@ -97,15 +97,15 @@ def input_with_timeout(prompt=None, timeout=36000.0):
     return line.rstrip('\n')
 
 
-def notify(msg):
-    # type: (str) -> None
+def notify(msg, wrap=True):
+    # type: (str, bool) -> None
     """Display a basic status message.
 
     :param str msg: message to display
 
     """
     zope.component.getUtility(interfaces.IDisplay).notification(
-        msg, pause=False, decorate=False
+        msg, pause=False, wrap=wrap, decorate=False
     )
 
 

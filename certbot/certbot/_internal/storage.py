@@ -444,7 +444,7 @@ class RenewableCert(interfaces.RenewableCert):
         if not all(x in self.configuration for x in ALL_FOUR):
             raise errors.CertStorageError(
                 "renewal config file {0} is missing a required "
-                "file reference".format(self.configfile))
+                "file reference".format(config_filename))
 
         conf_version = self.configuration.get("version")
         if (conf_version is not None and

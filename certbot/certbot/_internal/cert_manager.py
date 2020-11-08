@@ -75,6 +75,7 @@ def certificates(config):
     """
     parsed_certs = []
     parse_failures = []
+    format_json = config.format_json
     for renewal_file in storage.renewal_conf_files(config):
         try:
             renewal_candidate = storage.RenewableCert(renewal_file, config)
@@ -84,7 +85,10 @@ def certificates(config):
             logger.warning("Renewal configuration file %s produced an "
                            "unexpected error: %s. Skipping.", renewal_file, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
-            parse_failures.append(renewal_file)
+            if format_json:
+                parse_failures.append({'renewal_file': renewal_file, 'error': str(e)})
+            else:
+                parse_failures.append(renewal_file)
 
     # Describe all the certs
     _describe_certs(config, parsed_certs, parse_failures)
@@ -423,13 +427,15 @@ def _describe_certs(config, parsed_certs, parse_failures):
                 match = "matching " if config.certname or config.domains else ""
                 notify("Found the following {0}certs:".format(match))
                 notify(_report_human_readable(config, parsed_certs))
-        if parse_failures:
+        if parse_failures and not format_json:
             notify("\nThe following renewal configurations "
                "were invalid:")
             notify(_report_lines(parse_failures))
+        if format_json:
+            notify_json({'parse_failures': parse_failures})
 
     output = json.dumps(out_json, sort_keys=True, indent=4) if format_json else "\n".join(out)
-    display_util.notify(output)
+    display_util.notify(output, wrap=False)
 
 def _search_lineages(cli_config, func, initial_rv, *args):
     """Iterate func over unbroken lineages, allowing custom return conditions.
