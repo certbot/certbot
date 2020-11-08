@@ -429,9 +429,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
             notify(_report_lines(parse_failures))
 
     output = json.dumps(out_json, sort_keys=True, indent=4) if format_json else "\n".join(out)
-
-    disp = zope.component.getUtility(interfaces.IDisplay)
-    disp.notification(output, pause=False, wrap=False)
+    display_util.notify(output)
 
 def _search_lineages(cli_config, func, initial_rv, *args):
     """Iterate func over unbroken lineages, allowing custom return conditions.
