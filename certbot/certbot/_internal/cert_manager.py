@@ -413,13 +413,13 @@ def _describe_certs(config, parsed_certs, parse_failures):
 
     if not parsed_certs and not parse_failures:
         if format_json:
-            notify_json({'certs': []})
+            notify_json({'certificates': []})
         else:
             notify("No certs found.")
     else:
         if parsed_certs:
             if format_json:
-                notify_json({'certs': _report_human_readable(config, parsed_certs,
+                notify_json({'certificates': _report_human_readable(config, parsed_certs,
                     output_format="json")})
             else:
                 match = "matching " if config.certname or config.domains else ""
