@@ -197,7 +197,15 @@ class CertificatesTest(BaseCertManagerTest):
 
     @mock.patch('certbot._internal.cert_manager.logger')
     @test_util.patch_get_utility()
-    def test_certificates_parse_fail(self, mock_utility, mock_logger):
+    def test_certificates_parse_fail_human(self, mock_utility, mock_logger):
+        self._certificates(self.config)
+        self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
+        self.assertTrue(mock_utility.called)
+
+    @mock.patch('certbot._internal.cert_manager.logger')
+    @test_util.patch_get_utility()
+    def test_certificates_parse_fail_json(self, mock_utility, mock_logger):
+        self.config.format_json = True
         self._certificates(self.config)
         self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
         self.assertTrue(mock_utility.called)
