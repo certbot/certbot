@@ -276,7 +276,6 @@ def json_parsable_cert_info(config, cert, skip_filter_checks=False):
         reasons.append('revoked')
 
     status = "invalid" if reasons else "valid"
-
     serial = format(crypto_util.get_serial_from_cert(cert.cert_path), 'x')
 
     if sys.version_info[0] > 2:
@@ -294,8 +293,7 @@ def json_parsable_cert_info(config, cert, skip_filter_checks=False):
             "validity": status,
             "reason": reasons
         },
-        "fullchain_path": cert.fullchain,
-        "privkey_path": cert.privkey
+        "renewal_configuration": cert.configfile
     }
 
     return certinfo
