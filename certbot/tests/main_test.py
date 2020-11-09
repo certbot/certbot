@@ -339,23 +339,23 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         from certbot._internal.main import _delete_if_appropriate
         _delete_if_appropriate(mock_config)
 
-    def _test_delete_opt_out_common(self, mock_get_utility):
+    def _test_delete_opt_out_common(self):
         with mock.patch('certbot._internal.cert_manager.delete') as mock_delete:
             self._call(self.config)
         mock_delete.assert_not_called()
-        self.assertTrue(mock_get_utility().add_message.called)
 
     @test_util.patch_get_utility()
-    def test_delete_flag_opt_out(self, mock_get_utility):
+    def test_delete_flag_opt_out(self, unused_mock_get_utility):
         self.config.delete_after_revoke = False
-        self._test_delete_opt_out_common(mock_get_utility)
+        self._test_delete_opt_out_common()
 
     @test_util.patch_get_utility()
     def test_delete_prompt_opt_out(self, mock_get_utility):
         util_mock = mock_get_utility()
         util_mock.yesno.return_value = False
-        self._test_delete_opt_out_common(mock_get_utility)
+        self._test_delete_opt_out_common()
 
+    @mock.patch("certbot._internal.main.logger.warning")
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.delete')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
@@ -365,7 +365,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     def test_overlapping_archive_dirs(self, mock_get_utility,
             mock_cert_path_to_lineage, mock_archive,
             mock_match_and_check_overlaps, mock_delete,
-            mock_renewal_file_for_certname):
+            mock_renewal_file_for_certname, mock_warning):
         # pylint: disable = unused-argument
         config = self.config
         config.cert_path = "/some/reasonable/path"
@@ -374,6 +374,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         mock_match_and_check_overlaps.side_effect = errors.OverlappingMatchFound()
         self._call(config)
         mock_delete.assert_not_called()
+        self.assertEqual(mock_warning.call_count, 1)
 
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
@@ -1448,9 +1449,10 @@ class MainTest(test_util.ConfigTestCase):
         # ensure we didn't try to subscribe (no email to subscribe with)
         self.assertFalse(mock_prepare.called)
 
+    @mock.patch("certbot._internal.main.display_util.notify")
     @mock.patch('certbot._internal.main.display_ops.get_email')
     @test_util.patch_get_utility()
-    def test_update_account_with_email(self, mock_utility, mock_email):
+    def test_update_account_with_email(self, mock_utility, mock_email, mock_notify):
         email = "user@example.com"
         mock_email.return_value = email
         with mock.patch('certbot._internal.eff.prepare_subscription') as mock_prepare:
@@ -1475,7 +1477,7 @@ class MainTest(test_util.ConfigTestCase):
                         # and we saved the updated registration on disk
                         self.assertTrue(mocked_storage.update_regr.called)
                         self.assertTrue(
-                            email in mock_utility().add_message.call_args[0][0])
+                            email in mock_notify.call_args[0][0])
                         self.assertTrue(mock_prepare.called)
 
     @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
@@ -1517,7 +1519,8 @@ class UnregisterTest(unittest.TestCase):
         res = main.unregister(config, unused_plugins)
         self.assertEqual(res, "Deactivation aborted.")
 
-    def test_unregister(self):
+    @mock.patch("certbot._internal.main.display_util.notify")
+    def test_unregister(self, mock_notify):
         mocked_storage = mock.MagicMock()
         mocked_storage.find_all.return_value = ["an account"]
 
@@ -1533,9 +1536,7 @@ class UnregisterTest(unittest.TestCase):
         res = main.unregister(config, unused_plugins)
 
         self.assertTrue(res is None)
-        self.assertTrue(cb_client.acme.deactivate_registration.called)
-        m = "Account deactivated."
-        self.assertTrue(m in self.mocks['get_utility']().add_message.call_args[0][0])
+        mock_notify.assert_called_once_with("Account deactivated.")
 
     def test_unregister_no_account(self):
         mocked_storage = mock.MagicMock()

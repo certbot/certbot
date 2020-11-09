@@ -7,6 +7,7 @@ import zope.component
 from acme.magic_typing import Optional  # pylint: disable=unused-import
 
 from certbot import interfaces
+from certbot.display import util as display_util
 from certbot._internal import constants
 from certbot._internal.account import Account  # pylint: disable=unused-import
 from certbot._internal.account import AccountFileStorage
@@ -133,5 +134,4 @@ def _report_failure(reason=None):
         msg.append(' because ')
         msg.append(reason)
     msg.append('. You can try again later by visiting https://act.eff.org.')
-    reporter = zope.component.getUtility(interfaces.IReporter)
-    reporter.add_message(''.join(msg), reporter.LOW_PRIORITY)
+    display_util.notify(''.join(msg))
