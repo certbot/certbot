@@ -122,10 +122,9 @@ class SubscribeTest(unittest.TestCase):
         self.json = {'status': True}
         self.response = mock.Mock(ok=True)
         self.response.json.return_value = self.json
-        self.mock_notify = mock.patch("certbot._internal.eff.display_util.notify").start()
-
-    def tearDown(self):
-        self.mock_notify.stop()
+        patcher = mock.patch("certbot._internal.eff.display_util.notify")
+        self.mock_notify = patcher.start()
+        self.addCleanup(patcher.stop)
 
     @mock.patch('certbot._internal.eff.requests.post')
     def _call(self, mock_post):
