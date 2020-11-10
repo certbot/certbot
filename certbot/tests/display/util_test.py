@@ -454,11 +454,11 @@ class PlaceParensTest(unittest.TestCase):
         self.assertEqual("(y)es please", self._call("yes please"))
 
 
-class PrintTest(unittest.TestCase):
-    """Test the print function """
+class NotifyTest(unittest.TestCase):
+    """Test the notify function """
 
     @test_util.patch_get_utility()
-    def test_print(self, mock_util):
+    def test_notify(self, mock_util):
         from certbot.display.util import notify
         notify("Hello World")
         mock_util().notification.assert_called_with(
