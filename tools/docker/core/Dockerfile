@@ -42,9 +42,5 @@ RUN apk add --no-cache --virtual .build-deps \
         musl-dev \
         libffi-dev \
     && python tools/pipstrap.py \
-    && pip install --no-build-isolation \
-        -r letsencrypt-auto-source/pieces/dependency-requirements.txt \
-    && pip install --no-build-isolation --no-cache-dir --no-deps \
-        --editable src/acme \
-        --editable src/certbot \
-&& apk del .build-deps
+    && python tools/pip_install_editable.py src/acme src/certbot \
+    && apk del .build-deps
