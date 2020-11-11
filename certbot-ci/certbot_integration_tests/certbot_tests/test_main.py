@@ -500,7 +500,7 @@ def test_renew_with_ec_keys(context):
     assert 280 < os.stat(key2).st_size < 320  # ec keys of 384 bits are ~310 bytes
 
     # We expect here that the command will fail because without --key-type specified,
-    # Certbot must errored out to prevent changing an existing certificate key type,
+    # Certbot must error out to prevent changing an existing certificate key type,
     # without explicit user consent (by specifying both --cert-name and --key-type).
     with pytest.raises(subprocess.CalledProcessError):
         context.certbot([
