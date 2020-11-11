@@ -499,6 +499,16 @@ def test_renew_with_ec_keys(context):
     assert_elliptic_key(key2, SECP384R1)
     assert 280 < os.stat(key2).st_size < 320  # ec keys of 384 bits are ~310 bytes
 
+    # We expect here that the command will fail because without --key-type specified,
+    # Certbot must error out to prevent changing an existing certificate key type,
+    # without explicit user consent (by specifying both --cert-name and --key-type).
+    with pytest.raises(subprocess.CalledProcessError):
+        context.certbot([
+            'certonly',
+            '--force-renewal',
+            '-d', certname
+        ])
+
 
 def test_ocsp_must_staple(context):
     """Test that OCSP Must-Staple is correctly set in the generated certificate."""
