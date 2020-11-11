@@ -40,7 +40,6 @@ parts:
   certbot:
     plugin: python
     source: .
-    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
     python-packages:
       - git+https://github.com/certbot/python-augeas.git@certbot-patched
       - ./acme
@@ -75,7 +74,7 @@ parts:
     build-packages: [gcc, libffi-dev, libssl-dev, git, libaugeas-dev, python3-dev]
     build-environment:
       - SNAPCRAFT_PYTHON_VENV_ARGS: --system-site-packages
-      - PIP_NO_BUILD_ISOLATION: "no"
+      - PIP_CONSTRAINT: $SNAPCRAFT_PART_SRC/snap-constraints.txt
     override-pull: |
         snapcraftctl pull
         cd $SNAPCRAFT_PART_SRC

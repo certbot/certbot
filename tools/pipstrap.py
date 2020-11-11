@@ -35,12 +35,7 @@ def main():
         with open(requirements_filepath, 'w') as f:
             f.write(REQUIREMENTS)
         pip_install_args = '--requirement ' + requirements_filepath
-        # We don't disable build isolation because we may have an older
-        # version of pip that doesn't support the flag disabling it. We
-        # expect these packages to already have usable wheels available
-        # anyway so no building should be required.
-        pip_install.pip_install_with_print(pip_install_args,
-                                           disable_build_isolation=False)
+        pip_install.pip_install_with_print(pip_install_args)
 
 
 if __name__ == '__main__':
