@@ -60,6 +60,7 @@ distro==1.0.1
 # Lexicon oldest constraint is overridden appropriately on relevant DNS provider plugins
 # using their local-oldest-requirements.txt
 dns-lexicon==2.2.1
+httplib2==0.9.2
 
 # Plugin constraints
 # These aren't necessarily the oldest versions we need to support

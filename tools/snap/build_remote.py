@@ -34,15 +34,6 @@ def _build_snap(target, archs, status, lock):
         workspace = CERTBOT_DIR
     else:
         workspace = join(CERTBOT_DIR, target)
-        with tempfile.NamedTemporaryFile() as f:
-            subprocess.check_output(
-                ('"{0}" tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt '
-                 '| grep -v python-augeas > "{1}"').format(sys.executable, f.name),
-            shell=True, cwd=CERTBOT_DIR)
-            subprocess.check_output(
-                ('"{0}" tools/merge_requirements.py tools/dev_constraints.txt '
-                 '"{1}" > "{2}/snap-constraints.txt"').format(sys.executable, f.name, workspace),
-            shell=True, cwd=CERTBOT_DIR)
 
     retry = 3
     while retry:
@@ -164,6 +155,12 @@ def main():
     if 'DNS_PLUGINS' in targets:
         targets.remove('DNS_PLUGINS')
         targets.update(PLUGINS)
+
+    # If we're building anything other than just Certbot, we need to
+    # generate the snapcraft files for the DNS plugins.
+    if targets != set(('certbot',)):
+        subprocess.run(['tools/snap/generate_dnsplugins_all.sh'],
+                       check=True, cwd=CERTBOT_DIR)
 
     print('Start remote snap builds...')
     print(f' - archs: {", ".join(archs)}')

@@ -201,7 +201,7 @@ class ClientBase(object):
             when = parsedate_tz(retry_after)
             if when is not None:
                 try:
-                    tz_secs = datetime.timedelta(when[-1] if when[-1] else 0)
+                    tz_secs = datetime.timedelta(when[-1] if when[-1] is not None else 0)
                     return datetime.datetime(*when[:7]) - tz_secs
                 except (ValueError, OverflowError):
                     pass
