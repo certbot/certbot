@@ -144,7 +144,7 @@ jobs:
           git config --global user.name "$(Build.RequestedFor)"
           mkdir -p ~/.local/share/snapcraft/provider/launchpad
           cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
-          python3 tools/snap/build_remote.py ALL --archs ${ARCHS}
+          python3 tools/snap/build_remote.py certbot --archs ${ARCHS}
         displayName: Build snaps
       - script: |
           set -e

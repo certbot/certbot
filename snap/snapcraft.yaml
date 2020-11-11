@@ -75,6 +75,7 @@ parts:
     build-environment:
       - SNAPCRAFT_PYTHON_VENV_ARGS: --system-site-packages
       - PIP_CONSTRAINT: $SNAPCRAFT_PART_SRC/snap-constraints.txt
+      - PIP_NO_BINARY: cryptography
     override-pull: |
         snapcraftctl pull
         cd $SNAPCRAFT_PART_SRC

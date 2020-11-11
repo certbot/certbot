@@ -41,6 +41,6 @@ RUN apk add --no-cache --virtual .build-deps \
         openssl-dev \
         musl-dev \
         libffi-dev \
-    && python tools/pipstrap.py \
-    && python tools/pip_install_editable.py src/acme src/certbot \
+    #&& python tools/pipstrap.py \
+    && PIP_NO_BINARY=cryptography python tools/pip_install_editable.py src/acme src/certbot \
     && apk del .build-deps
