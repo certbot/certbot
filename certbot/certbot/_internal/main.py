@@ -139,21 +139,17 @@ def _handle_unexpected_key_type_migration(config, cert):
     :param config: Current configuration provided by the client
     :param cert: Matching certificate that could be renewed
     """
-    if (config.verb in ["certonly", "run"]
-            and (not cli.set_by_cli("key_type") or not cli.set_by_cli("certname"))):
+    if not cli.set_by_cli("key_type") or not cli.set_by_cli("certname"):
 
         new_key_type = config.key_type.upper()
         cur_key_type = cert.private_key_type.upper()
 
         if new_key_type != cur_key_type:
-            logger.error("A certificate already exists for that name, the list of provided "
-                         "domains or a subset of this list. This certificate uses a key of %s "
-                         "type, and you have not provided the --key-type flag. By default in this "
-                         "case Certbot would generate a new certificate with a key of %s type. "
-                         "Please confirm that you really want to change the type of the key by "
-                         "setting both --cert-name and --key-type CLI flags.",
-                         cur_key_type, new_key_type)
-            raise errors.Error("Command canceled.")
+            msg = ('Are you trying to change the key type of the certificate named {0} '
+                   'from {1} to {2}? Please provide both --cert-name and --key-type on '
+                   'the command line confirm the change you are trying to make.')
+            msg = msg.format(cert.lineagename, cur_key_type, new_key_type)
+            raise errors.Error(msg)
 
 
 def _handle_subset_cert_request(config,  # type: configuration.NamespaceConfig

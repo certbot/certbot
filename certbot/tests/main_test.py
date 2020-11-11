@@ -73,7 +73,6 @@ class TestHandleCerts(unittest.TestCase):
     @mock.patch("certbot._internal.main.cli.set_by_cli")
     def test_handle_unexpected_key_type_migration(self, mock_set):
         config = mock.Mock()
-        config.verb = "certonly"
         config.key_type = "rsa"
         cert = mock.Mock()
         cert.private_key_type = "ecdsa"
@@ -84,12 +83,17 @@ class TestHandleCerts(unittest.TestCase):
         mock_set.return_value = False
         with self.assertRaises(errors.Error) as raised:
             main._handle_unexpected_key_type_migration(config, cert)
-        self.assertTrue("Command canceled." in str(raised.exception))
+        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
+
+        mock_set.side_effect = lambda var: var != "certname"
+        with self.assertRaises(errors.Error) as raised:
+            main._handle_unexpected_key_type_migration(config, cert)
+        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
 
         mock_set.side_effect = lambda var: var != "key_type"
         with self.assertRaises(errors.Error) as raised:
             main._handle_unexpected_key_type_migration(config, cert)
-        self.assertTrue("Command canceled." in str(raised.exception))
+        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
 
 
 class RunTest(test_util.ConfigTestCase):
