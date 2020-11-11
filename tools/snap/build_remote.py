@@ -24,6 +24,10 @@ def _execute_build(target, archs, status, workspace):
         process_output.append(line)
         _extract_state(target, line, status)
 
+        if any(state for state in status[target].values() if state == 'Chroot problem'):
+            # On this error the snapcraft process stales. Let's finish it.
+            process.kill()
+
     return process.wait(), process_output
 
 
@@ -44,7 +48,7 @@ def _build_snap(target, archs, status, lock):
 
         with lock:
             dump_output = exit_code != 0
-            failed_archs = [arch for arch in archs if status[target][arch] == 'Failed to build']
+            failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
             if exit_code == 0 and not failed_archs:
                 # We expect to have all target snaps available, or something bad happened.
                 snaps_list = glob.glob(join(workspace, '*.snap'))
