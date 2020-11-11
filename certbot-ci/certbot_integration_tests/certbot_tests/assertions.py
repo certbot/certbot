@@ -41,7 +41,7 @@ def assert_rsa_key(key):
     Asserts that the key at the given path is an RSA key.
     :param key: path to key
     """
-    with open(filename, 'rb') as file:
+    with open(key, 'rb') as file:
         privkey1 = file.read()
 
     key = load_pem_private_key(data=privkey1, password=None, backend=default_backend())
