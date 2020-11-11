@@ -9,10 +9,7 @@ import shutil
 import subprocess
 import time
 
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1, SECP384R1
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
-from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.x509 import NameOID
 
 import pytest
@@ -20,6 +17,7 @@ import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
 from certbot_integration_tests.certbot_tests.assertions import assert_elliptic_key
+from certbot_integration_tests.certbot_tests.assertions import assert_rsa_key
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_owner
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_world_read_permissions
@@ -460,11 +458,7 @@ def test_default_key_type(context):
         '--cert-name', certname, '-d', certname
     ])
     filename = join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname)
-    with open(filename, 'rb') as file:
-        privkey1 = file.read()
-
-    key = load_pem_private_key(data=privkey1, password=None, backend=default_backend())
-    assert isinstance(key, RSAPrivateKey)
+    assert_rsa_key(filename)
 
 
 def test_default_curve_type(context):
@@ -508,6 +502,13 @@ def test_renew_with_ec_keys(context):
             '--force-renewal',
             '-d', certname
         ])
+
+    # We expect that the previous behavior of requiring both --cert-name and
+    # --key-type to be set to not apply to the renew subcommand.
+    context.certbot(['renew', '--force-renewal', '--key-type', 'rsa'])
+    assert_cert_count_for_lineage(context.config_dir, certname, 3)
+    key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
+    assert_rsa_key(key3)
 
 
 def test_ocsp_must_staple(context):

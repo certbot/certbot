@@ -4,6 +4,7 @@ import os
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 try:
@@ -21,6 +22,11 @@ ADMINS_SID = 'S-1-5-32-544'
 
 
 def assert_elliptic_key(key, curve):
+    """
+    Asserts that the key at the given path is an EC key using the given curve.
+    :param key: path to key
+    :param curve: name of the expected elliptic curve
+    """
     with open(key, 'rb') as file:
         privkey1 = file.read()
 
@@ -28,6 +34,18 @@ def assert_elliptic_key(key, curve):
 
     assert isinstance(key, EllipticCurvePrivateKey)
     assert isinstance(key.curve, curve)
+
+
+def assert_rsa_key(key):
+    """
+    Asserts that the key at the given path is an RSA key.
+    :param key: path to key
+    """
+    with open(filename, 'rb') as file:
+        privkey1 = file.read()
+
+    key = load_pem_private_key(data=privkey1, password=None, backend=default_backend())
+    assert isinstance(key, RSAPrivateKey)
 
 
 def assert_hook_execution(probe_path, probe_content):
