@@ -209,20 +209,21 @@ class CertonlyTest(unittest.TestCase):
         mock_lineage.names.return_value = domains
         self._call(('certonly --webroot -d example.com -d test.org '
             '--cert-name example.com').split())
-        self.assertTrue(mock_lineage.call_count == 1)
-        self.assertTrue(mock_domains.call_count == 1)
-        self.assertTrue(mock_renew_cert.call_count == 1)
-        self.assertTrue(mock_report_cert.call_count == 1)
-        self.assertTrue(mock_handle_type.call_count == 1)
+
+        self.assertEqual(mock_lineage.call_count, 1)
+        self.assertEqual(mock_domains.call_count, 1)
+        self.assertEqual(mock_renew_cert.call_count, 1)
+        self.assertEqual(mock_report_cert.call_count, 1)
+        self.assertEqual(mock_handle_type.call_count, 1)
 
         # user confirms updating lineage with new domains
         self._call(('certonly --webroot -d example.com -d test.com '
             '--cert-name example.com').split())
-        self.assertTrue(mock_lineage.call_count == 2)
-        self.assertTrue(mock_domains.call_count == 2)
-        self.assertTrue(mock_renew_cert.call_count == 2)
-        self.assertTrue(mock_report_cert.call_count == 2)
-        self.assertTrue(mock_handle_type.call_count == 2)
+        self.assertEqual(mock_lineage.call_count, 2)
+        self.assertEqual(mock_domains.call_count, 2)
+        self.assertEqual(mock_renew_cert.call_count, 2)
+        self.assertEqual(mock_report_cert.call_count, 2)
+        self.assertEqual(mock_handle_type.call_count, 2)
 
         # error in _ask_user_to_confirm_new_names
         self.mock_get_utility().yesno.return_value = False
@@ -240,14 +241,15 @@ class CertonlyTest(unittest.TestCase):
         # no lineage with this name but we specified domains so create a new cert
         self._call(('certonly --webroot -d example.com -d test.com '
             '--cert-name example.com').split())
-        self.assertTrue(mock_lineage.call_count == 1)
-        self.assertTrue(mock_report_cert.call_count == 1)
+        self.assertEqual(mock_lineage.call_count, 1)
+        self.assertEqual(mock_report_cert.call_count, 1)
 
         # no lineage with this name and we didn't give domains
         mock_choose_names.return_value = ["somename"]
         mock_domains_for_certname.return_value = None
         self._call(('certonly --webroot --cert-name example.com').split())
-        self.assertTrue(mock_choose_names.called)
+        self.assertIs(mock_choose_names.called, True)
+
 
 class FindDomainsOrCertnameTest(unittest.TestCase):
     """Tests for certbot._internal.main._find_domains_or_certname."""
@@ -755,7 +757,7 @@ class MainTest(test_util.ConfigTestCase):
         # This needed two calls to find_all(), which we're avoiding for now
         # because of possible side effects:
         # https://github.com/letsencrypt/letsencrypt/commit/51ed2b681f87b1eb29088dd48718a54f401e4855
-        #with mock.patch('certbot._internal.cli.plugins_testable') as plugins:
+        # with mock.patch('certbot._internal.cli.plugins_testable') as plugins:
         #    plugins.return_value = {"apache": True, "nginx": True}
         #    ret, _, _, _ = self._call(args)
         #    self.assertTrue("Too many flags setting" in ret)
