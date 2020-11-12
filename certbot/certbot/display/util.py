@@ -106,7 +106,7 @@ def notify(msg):
 
     """
     zope.component.getUtility(interfaces.IDisplay).notification(
-        msg, pause=False, decorate=False
+        msg, pause=False, decorate=False, wrap=False
     )
 
 

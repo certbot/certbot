@@ -483,7 +483,7 @@ class NotifyTest(unittest.TestCase):
         from certbot.display.util import notify
         notify("Hello World")
         mock_util().notification.assert_called_with(
-            "Hello World", pause=False, decorate=False
+            "Hello World", pause=False, decorate=False, wrap=False
         )
 
 
