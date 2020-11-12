@@ -842,7 +842,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.recovery_routine()
         self.config.revert_challenge_config()
         self.config.rollback_checkpoints()
-        self.assertTrue(mock_parser_load.call_count == 3)
+        self.assertEqual(mock_parser_load.call_count, 3)
 
     def test_choose_vhosts_wildcard(self):
         # pylint: disable=protected-access

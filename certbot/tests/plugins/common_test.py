@@ -233,11 +233,11 @@ class AddrTest(unittest.TestCase):
     def test_eq(self):
         self.assertEqual(self.addr1, self.addr2.get_addr_obj(""))
         self.assertNotEqual(self.addr1, self.addr2)
-        self.assertFalse(self.addr1 == 3333)
+        self.assertNotEqual(self.addr1, 3333)
 
         self.assertEqual(self.addr4, self.addr4.get_addr_obj(""))
         self.assertNotEqual(self.addr4, self.addr5)
-        self.assertFalse(self.addr4 == 3333)
+        self.assertNotEqual(self.addr4, 3333)
         from certbot.plugins.common import Addr
         self.assertEqual(self.addr4, Addr.fromstring("[fe00:0:0::1]"))
         self.assertEqual(self.addr4, Addr.fromstring("[fe00:0::0:0:1]"))
