@@ -88,21 +88,23 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
       :param int attempts: The number of attempts to make.
       """
       for _ in range(attempts):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-          sock.settimeout(5.0)
-          try:
-            sock.connect(BIND_BIND_ADDRESS)
-            sock.sendall(BIND_TEST_QUERY)
-            buf = sock.recv(1024)
-            # We should receive a DNS message with the same tx_id
-            if buf and len(buf) > 4 and buf[2:4] == BIND_TEST_QUERY[2:4]:
-              return
-            # If we got a response but it wasn't the one we wanted, wait a little
-            time.sleep(1)
-          except:
-            # If there was a network error, wait a little
-            time.sleep(1)
-            pass
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5.0)
+        try:
+          sock.connect(BIND_BIND_ADDRESS)
+          sock.sendall(BIND_TEST_QUERY)
+          buf = sock.recv(1024)
+          # We should receive a DNS message with the same tx_id
+          if buf and len(buf) > 4 and buf[2:4] == BIND_TEST_QUERY[2:4]:
+            return
+          # If we got a response but it wasn't the one we wanted, wait a little
+          time.sleep(1)
+        except:
+          # If there was a network error, wait a little
+          time.sleep(1)
+          pass
+        finally:
+          sock.close()
 
       raise ValueError(
         'Gave up waiting for DNS server {} to respond'.format(BIND_BIND_ADDRESS))
