@@ -52,7 +52,7 @@ jobs:
           TOXENV: mypy
         linux-integration:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
+          PYTHON_VERSION: 3.8
           TOXENV: integration
           ACME_SERVER: pebble
         apache-compat:
