@@ -58,3 +58,10 @@ parts
 prime
 stage
 *.snap
+snap-constraints.txt
+qemu-*
+certbot-dns*/certbot-dns*_amd64*.txt
+certbot-dns*/certbot-dns*_arm*.txt
+/certbot_amd64*.txt
+/certbot_arm*.txt
+certbot-dns*/snap

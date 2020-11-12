@@ -31,7 +31,7 @@ The following scripts are used in the process:
 We use git tags to identify releases, using `Semantic Versioning`_. For
 example: `v0.11.1`.
 
-.. _`Semantic Versioning`: http://semver.org/
+.. _`Semantic Versioning`: https://semver.org/
 
 Our packages are cryptographically signed and their signature can be verified
 using the PGP key ``A2CFB51FA275A7286234E7B24D17C995CD9775F2``. This key can be
@@ -44,9 +44,13 @@ Notes for package maintainers
 
 1. Do not package ``certbot-compatibility-test`` as it's only used internally.
 
-2. To run tests on our packages, you should use ``python setup.py test``. Doing things like running ``pytest`` directly on our package files may not work because Certbot relies on setuptools to register and find its plugins.
+2. To run tests on our packages, you should use pytest by running the command ``python -m pytest``. Running ``pytest`` directly may not work because PYTHONPATH is not handled the same way and local modules may not be found by the test runner.
 
-3. If you'd like to include automated renewal in your package ``certbot renew -q`` should be added to crontab or systemd timer. Additionally you should include a random per-machine time offset to avoid having a large number of your clients hit Let's Encrypt's servers simultaneously.
+3. If you'd like to include automated renewal in your package:
+
+  - ``certbot renew -q`` should be added to crontab or systemd timer.
+  - A random per-machine time offset should be included to avoid having a large number of your clients hit Let's Encrypt's servers simultaneously.
+  - ``--preconfigured-renewal`` should be included on the CLI or in ``cli.ini`` for all invocations of Certbot, so that it can adjust its interactive output regarding automated renewal (Certbot >= 1.9.0).
 
 4. ``jws`` is an internal script for ``acme`` module and it doesn't have to be packaged - it's mostly for debugging: you can use it as ``echo foo | jws sign | jws verify``.
 

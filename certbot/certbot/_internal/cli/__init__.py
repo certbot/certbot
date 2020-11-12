@@ -51,7 +51,6 @@ from certbot._internal.cli.cli_utils import (
 )
 
 # These imports depend on cli_constants and cli_utils.
-from certbot._internal.cli.report_config_interaction import report_config_interaction
 from certbot._internal.cli.verb_help import VERB_HELP, VERB_HELP_MAP
 from certbot._internal.cli.group_adder import _add_all_groups
 from certbot._internal.cli.subparsers import _create_subparsers
@@ -100,6 +99,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              "be kept by Certbot's built in log rotation. Setting this "
              "flag to 0 disables log rotation entirely, causing "
              "Certbot to always append to the same log file.")
+    helpful.add(
+        None, "--preconfigured-renewal", dest="preconfigured_renewal",
+        action="store_true", default=flag_default("preconfigured_renewal"),
+        help=argparse.SUPPRESS
+    )
     helpful.add(
         [None, "automation", "run", "certonly", "enhance"],
         "-n", "--non-interactive", "--noninteractive",
@@ -171,13 +175,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         default=flag_default("register_unsafely_without_email"),
         help="Specifying this flag enables registering an account with no "
-             "email address. This is strongly discouraged, because in the "
-             "event of key loss or account compromise you will irrevocably "
-             "lose access to your account. You will also be unable to receive "
-             "notice about impending expiration or revocation of your "
-             "certificates. Updates to the Subscriber Agreement will still "
-             "affect you, and will be effective 14 days after posting an "
-             "update to the web site.")
+             "email address. This is strongly discouraged, because you will be "
+             "unable to receive notice about impending expiration or "
+             "revocation of your certificates or problems with your Certbot "
+             "installation that will lead to failure to renew.")
     helpful.add(
         ["register", "update_account", "unregister", "automation"], "-m", "--email",
         default=flag_default("email"),
@@ -360,6 +361,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         default=flag_default("strict_permissions"),
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
+    helpful.add(
+        [None, "certonly", "renew", "run"],
+        "--preferred-chain", dest="preferred_chain",
+        default=flag_default("preferred_chain"), help=config_help("preferred_chain")
+    )
     helpful.add(
         ["manual", "standalone", "certonly", "renew"],
         "--preferred-challenges", dest="pref_challs",

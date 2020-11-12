@@ -3,8 +3,11 @@ This compat modules is a wrapper of the core os module that forbids usage of spe
 (e.g. chown, chmod, getuid) that would be harmful to the Windows file security model of Certbot.
 This module is intended to replace standard os module throughout certbot projects (except acme).
 
-isort:skip_file
+This module has the same API as the os module in the Python standard library
+except for the functions defined below.
+
 """
+# isort:skip_file
 # pylint: disable=function-redefined
 from __future__ import absolute_import
 
@@ -21,12 +24,15 @@ import os as std_os  # pylint: disable=os-module-forbidden
 import sys as std_sys
 
 ourselves = std_sys.modules[__name__]
-for attribute in dir(std_os):
-    # Check if the attribute does not already exist in our module. It could be internal attributes
-    # of the module (__name__, __doc__), or attributes from standard os already imported with
-    # `from os import *`.
-    if not hasattr(ourselves, attribute):
-        setattr(ourselves, attribute, getattr(std_os, attribute))
+# Adding all of stdlib os to this module confuses Sphinx so we skip this when
+# building the documentation.
+if not std_os.environ.get("CERTBOT_DOCS") == "1":
+    for attribute in dir(std_os):
+        # Check if the attribute does not already exist in our module. It could
+        # be internal attributes of the module (__name__, __doc__), or
+        # attributes from standard os already imported with `from os import *`.
+        if not hasattr(ourselves, attribute):
+            setattr(ourselves, attribute, getattr(std_os, attribute))
 
 # Import our internal path module, then allow certbot.compat.os.path
 # to behave as a module (similarly to os.path).
@@ -54,6 +60,16 @@ def chmod(*unused_args, **unused_kwargs):
     """Method os.chmod() is forbidden"""
     raise RuntimeError('Usage of os.chmod() is forbidden. '
                        'Use certbot.compat.filesystem.chmod() instead.')
+
+
+# Since there is no mode on Windows, there is no umask either, and so this method is a noop for
+# this platform. In order to have a consistent behavior between Linux and Windows on Certbot files
+# and directories, the filesystem umask method must be used instead, since it implements umask for
+# Windows.
+def umask(*unused_args, **unused_kwargs):
+    """Method os.chmod() is forbidden"""
+    raise RuntimeError('Usage of os.umask() is forbidden. '
+                       'Use certbot.compat.filesystem.umask() instead.')
 
 
 # Because uid is not a concept on Windows, chown is useless. In fact, it is not even available

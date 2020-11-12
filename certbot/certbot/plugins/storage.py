@@ -106,7 +106,7 @@ class PluginStorage(object):
         if not self._initialized:
             self._initialize_storage()
 
-        if not self._classkey in self._data.keys():
+        if self._classkey not in self._data:
             self._data[self._classkey] = {}
         self._data[self._classkey][key] = value
 

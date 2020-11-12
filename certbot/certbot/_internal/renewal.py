@@ -9,16 +9,22 @@ import sys
 import time
 import traceback
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import OpenSSL
 import six
 import zope.component
 
 from acme.magic_typing import List
+from acme.magic_typing import Optional  # pylint: disable=unused-import
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot._internal import cli
+from certbot._internal import client  # pylint: disable=unused-import
+from certbot._internal import constants
 from certbot._internal import hooks
 from certbot._internal import storage
 from certbot._internal import updater
@@ -33,7 +39,8 @@ logger = logging.getLogger(__name__)
 # the renewal configuration process loses this information.
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
-                    "renew_hook", "pre_hook", "post_hook", "http01_address"]
+                    "renew_hook", "pre_hook", "post_hook", "http01_address",
+                    "preferred_chain"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "http01_port"]
 BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key",
                      "autorenew"]
@@ -243,16 +250,28 @@ def _restore_int(name, value):
         raise errors.Error("Expected a numeric value for {0}".format(name))
 
 
-def _restore_str(unused_name, value):
+def _restore_str(name, value):
     """Restores a string key-value pair from a renewal config file.
 
-    :param str unused_name: option name
+    :param str name: option name
     :param str value: option value
 
     :returns: converted option value to be stored in the runtime config
     :rtype: str or None
 
     """
+    # Previous to v0.5.0, Certbot always stored the `server` URL in the renewal config,
+    # resulting in configs which explicitly use the deprecated ACMEv1 URL, today
+    # preventing an automatic transition to the default modern ACME URL.
+    # (https://github.com/certbot/certbot/issues/7978#issuecomment-625442870)
+    # As a mitigation, this function reinterprets the value of the `server` parameter if
+    # necessary, replacing the ACMEv1 URL with the default ACME URL. It is still possible
+    # to override this choice with the explicit `--server` CLI flag.
+    if name == "server" and value == constants.V1_URI:
+        logger.info("Using server %s instead of legacy %s",
+                    constants.CLI_DEFAULTS["server"], value)
+        return constants.CLI_DEFAULTS["server"]
+
     return None if value == "None" else value
 
 
@@ -294,7 +313,8 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
 
 
 def renew_cert(config, domains, le_client, lineage):
-    "Renew a certificate lineage."
+    # type: (interfaces.IConfig, Optional[List[str]], client.Client, storage.RenewableCert) -> None
+    """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
     _avoid_invalidating_lineage(config, lineage, original_server)
@@ -302,11 +322,14 @@ def renew_cert(config, domains, le_client, lineage):
         domains = lineage.names()
     # The private key is the existing lineage private key if reuse_key is set.
     # Otherwise, generate a fresh private key by passing None.
-    new_key = os.path.normpath(lineage.privkey) if config.reuse_key else None
+    if config.reuse_key:
+        new_key = os.path.normpath(lineage.privkey)
+        _update_renewal_params_from_key(new_key, config)
+    else:
+        new_key = None
     new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
     if config.dry_run:
-        logger.debug("Dry run: skipping updating lineage at %s",
-                    os.path.dirname(lineage.cert))
+        logger.debug("Dry run: skipping updating lineage at %s", os.path.dirname(lineage.cert))
     else:
         prior_version = lineage.latest_common_version()
         # TODO: Check return value of save_successor
@@ -320,6 +343,7 @@ def report(msgs, category):
     "Format a results report for a category of renewal outcomes"
     lines = ("%s (%s)" % (m, category) for m in msgs)
     return "  " + "\n  ".join(lines)
+
 
 def _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures):
@@ -475,3 +499,13 @@ def handle_renewal_request(config):
     # Windows installer integration tests rely on handle_renewal_request behavior here.
     # If the text below changes, these tests will need to be updated accordingly.
     logger.debug("no renewal failures")
+
+
+def _update_renewal_params_from_key(key_path, config):
+    # type: (str, interfaces.IConfig) -> None
+    with open(key_path, 'rb') as file_h:
+        key = load_pem_private_key(file_h.read(), password=None, backend=default_backend())
+    if isinstance(key, rsa.RSAPrivateKey):
+        config.rsa_key_size = key.key_size
+    else:
+        raise errors.Error('Key at {0} is of an unsupported type: {1}.'.format(key_path, type(key)))

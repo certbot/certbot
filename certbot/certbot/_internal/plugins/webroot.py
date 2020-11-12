@@ -201,13 +201,13 @@ to serve all files under specified web root ({0})."""
         logger.debug("Attempting to save validation to %s", validation_path)
 
         # Change permissions to be world-readable, owner-writable (GH #1795)
-        old_umask = os.umask(0o022)
+        old_umask = filesystem.umask(0o022)
 
         try:
             with safe_open(validation_path, mode="wb", chmod=0o644) as validation_file:
                 validation_file.write(validation.encode())
         finally:
-            os.umask(old_umask)
+            filesystem.umask(old_umask)
 
         self.performed[root_path].add(achall)
         return response

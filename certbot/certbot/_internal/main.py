@@ -11,7 +11,7 @@ import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
-from acme.magic_typing import Union
+from acme.magic_typing import Union, Iterable, Optional  # pylint: disable=unused-import
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -28,6 +28,7 @@ from certbot._internal import hooks
 from certbot._internal import log
 from certbot._internal import renewal
 from certbot._internal import reporter
+from certbot._internal import snap_config
 from certbot._internal import storage
 from certbot._internal import updater
 from certbot._internal.plugins import disco as plugins_disco
@@ -162,8 +163,7 @@ def _handle_subset_cert_request(config, domains, cert):
                                        cli_flag="--expand",
                                        force_interactive=True):
         return "renew", cert
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message(
+    display_util.notify(
         "To obtain a new certificate that contains these names without "
         "replacing your existing certificate for {0}, you must use the "
         "--duplicate option.{br}{br}"
@@ -171,8 +171,7 @@ def _handle_subset_cert_request(config, domains, cert):
             existing,
             sys.argv[0], " ".join(sys.argv[1:]),
             br=os.linesep
-        ),
-        reporter_util.HIGH_PRIORITY)
+        ))
     raise errors.Error(USER_CANCELLED)
 
 
@@ -209,7 +208,7 @@ def _handle_identical_cert_request(config, lineage):
     elif config.verb == "certonly":
         keep_opt = "Keep the existing certificate for now"
     choices = [keep_opt,
-               "Renew & replace the cert (limit ~5 per 7 days)"]
+               "Renew & replace the cert (may be subject to CA rate limits)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
     response = display.menu(question, choices,
@@ -489,11 +488,9 @@ def _determine_account(config):
             return True
         msg = ("Please read the Terms of Service at {0}. You "
                "must agree in order to register with the ACME "
-               "server at {1}".format(
-                   terms_of_service, config.server))
+               "server. Do you agree?".format(terms_of_service))
         obj = zope.component.getUtility(interfaces.IDisplay)
-        result = obj.yesno(msg, "Agree", "Cancel",
-                         cli_flag="--agree-tos", force_interactive=True)
+        result = obj.yesno(msg, cli_flag="--agree-tos", force_interactive=True)
         if not result:
             raise errors.Error(
                 "Registration cannot proceed without accepting "
@@ -517,6 +514,7 @@ def _determine_account(config):
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
+                display_util.notify("Account registered.")
             except errors.MissingCommandlineFlag:
                 raise
             except errors.Error:
@@ -542,7 +540,6 @@ def _delete_if_appropriate(config):
         archive dir is found for the specified lineage, etc ...
     """
     display = zope.component.getUtility(interfaces.IDisplay)
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
 
     attempt_deletion = config.delete_after_revoke
     if attempt_deletion is None:
@@ -552,7 +549,6 @@ def _delete_if_appropriate(config):
                 force_interactive=True, default=True)
 
     if not attempt_deletion:
-        reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)
         return
 
     # config.cert_path must have been set
@@ -570,9 +566,8 @@ def _delete_if_appropriate(config):
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
             lambda x: x.archive_dir, lambda x: x)
     except errors.OverlappingMatchFound:
-        msg = ('Not deleting revoked certs due to overlapping archive dirs. More than '
-                'one lineage is using {0}'.format(archive_dir))
-        reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
+        logger.warning("Not deleting revoked certs due to overlapping archive dirs. More than "
+                       "one certificate is using %s", archive_dir)
         return
     except Exception as e:
         msg = ('config.default_archive_dir: {0}, config.live_dir: {1}, archive_dir: {2},'
@@ -590,7 +585,7 @@ def _init_le_client(config, authenticator, installer):
     :type config: interfaces.IConfig
 
     :param authenticator: Acme authentication handler
-    :type authenticator: interfaces.IAuthenticator
+    :type authenticator: Optional[interfaces.IAuthenticator]
     :param installer: Installer object
     :type installer: interfaces.IInstaller
 
@@ -625,7 +620,6 @@ def unregister(config, unused_plugins):
     """
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
 
     if not accounts:
         return "Could not find existing account to deactivate."
@@ -647,7 +641,7 @@ def unregister(config, unused_plugins):
     # delete local account files
     account_files.delete(config.account)
 
-    reporter_util.add_message("Account deactivated.", reporter_util.MEDIUM_PRIORITY)
+    display_util.notify("Account deactivated.")
     return None
 
 
@@ -698,22 +692,20 @@ def update_account(config, unused_plugins):
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     if not accounts:
         return "Could not find an existing account to update."
-    if config.email is None:
-        if config.register_unsafely_without_email:
-            return ("--register-unsafely-without-email provided, however, a "
-                    "new e-mail address must\ncurrently be provided when "
-                    "updating a registration.")
+    if config.email is None and not config.register_unsafely_without_email:
         config.email = display_ops.get_email(optional=False)
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
+    # Empty list of contacts in case the user is removing all emails
+
+    acc_contacts = () # type: Iterable[str]
+    if config.email:
+        acc_contacts = ['mailto:' + email for email in config.email.split(',')]
     # We rely on an exception to interrupt this process if it didn't work.
-    acc_contacts = ['mailto:' + email for email in config.email.split(',')]
     prev_regr_uri = acc.regr.uri
     acc.regr = cb_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=acc_contacts)))
@@ -721,10 +713,17 @@ def update_account(config, unused_plugins):
     # the v2 uri. Since it's the same object on disk, put it back to the v1 uri
     # so that we can also continue to use the account object with acmev1.
     acc.regr = acc.regr.update(uri=prev_regr_uri)
-    account_storage.save_regr(acc, cb_client.acme)
-    eff.handle_subscription(config)
-    add_msg("Your e-mail address was updated to {0}.".format(config.email))
+    account_storage.update_regr(acc, cb_client.acme)
+
+    if config.email is None:
+        display_util.notify("Any contact information associated "
+                            "with this account has been removed.")
+    else:
+        eff.prepare_subscription(config, acc)
+        display_util.notify("Your e-mail address was updated to {0}.".format(config.email))
+
     return None
+
 
 def _install_cert(config, le_client, domains, lineage=None):
     """Install a cert
@@ -1103,7 +1102,9 @@ def run(config, plugins):
     cert_path = new_lineage.cert_path if new_lineage else None
     fullchain_path = new_lineage.fullchain_path if new_lineage else None
     key_path = new_lineage.key_path if new_lineage else None
-    _report_new_cert(config, cert_path, fullchain_path, key_path)
+
+    if should_get_cert:
+        _report_new_cert(config, cert_path, fullchain_path, key_path)
 
     _install_cert(config, le_client, domains, new_lineage)
 
@@ -1116,6 +1117,7 @@ def run(config, plugins):
         display_ops.success_renewal(domains)
 
     _suggest_donation_if_appropriate(config)
+    eff.handle_subscription(config, le_client.account)
     return None
 
 
@@ -1189,6 +1191,7 @@ def renew_cert(config, plugins, lineage):
         notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                config.installer, lineage.fullchain), pause=False)
 
+
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.
 
@@ -1220,6 +1223,7 @@ def certonly(config, plugins):
         cert_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
         _report_new_cert(config, cert_path, fullchain_path)
         _suggest_donation_if_appropriate(config)
+        eff.handle_subscription(config, le_client.account)
         return
 
     domains, certname = _find_domains_or_certname(config, installer)
@@ -1237,6 +1241,8 @@ def certonly(config, plugins):
     key_path = lineage.key_path if lineage else None
     _report_new_cert(config, cert_path, fullchain_path, key_path)
     _suggest_donation_if_appropriate(config)
+    eff.handle_subscription(config, le_client.account)
+
 
 def renew(config, unused_plugins):
     """Renew previously-obtained certificates.
@@ -1313,6 +1319,9 @@ def main(cli_args=None):
         cli_args = sys.argv[1:]
 
     log.pre_arg_parse_setup()
+
+    if os.environ.get('CERTBOT_SNAPPED') == 'True':
+        cli_args = snap_config.prepare_env(cli_args)
 
     plugins = plugins_disco.PluginsRegistry.find_all()
     logger.debug("certbot version: %s", certbot.__version__)

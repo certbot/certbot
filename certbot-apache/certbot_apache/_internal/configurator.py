@@ -9,7 +9,6 @@ import re
 import socket
 import time
 
-import six
 import zope.component
 import zope.interface
 try:
@@ -115,6 +114,7 @@ class ApacheConfigurator(common.Installer):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2",
+        bin=None
     )
 
     def option(self, key):
@@ -145,7 +145,7 @@ class ApacheConfigurator(common.Installer):
         """
         opts = ["enmod", "dismod", "le_vhost_ext", "server_root", "vhost_root",
                 "logs_root", "challenge_location", "handle_modules", "handle_sites",
-                "ctl"]
+                "ctl", "bin"]
         for o in opts:
             # Config options use dashes instead of underscores
             if self.conf(o.replace("_", "-")) is not None:
@@ -194,6 +194,8 @@ class ApacheConfigurator(common.Installer):
                  "(Only Ubuntu/Debian currently)")
         add("ctl", default=DEFAULTS["ctl"],
             help="Full path to Apache control script")
+        add("bin", default=DEFAULTS["bin"],
+            help="Full path to apache2/httpd binary")
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
@@ -269,18 +271,25 @@ class ApacheConfigurator(common.Installer):
         """
         if self._openssl_version:
             return self._openssl_version
-        # Step 1. Check for LoadModule directive
+        # Step 1. Determine the location of ssl_module
         try:
             ssl_module_location = self.parser.modules['ssl_module']
         except KeyError:
             if warn_on_no_mod_ssl:
                 logger.warning("Could not find ssl_module; not disabling session tickets.")
             return None
-        if not ssl_module_location:
-            logger.warning("Could not find ssl_module; not disabling session tickets.")
-            return None
-        ssl_module_location = self.parser.standard_path_from_server_root(ssl_module_location)
-        # Step 2. Grep in the .so for openssl version
+        if ssl_module_location:
+            # Possibility A: ssl_module is a DSO
+            ssl_module_location = self.parser.standard_path_from_server_root(ssl_module_location)
+        else:
+            # Possibility B: ssl_module is statically linked into Apache
+            if self.option("bin"):
+                ssl_module_location = self.option("bin")
+            else:
+                logger.warning("ssl_module is statically linked but --apache-bin is "
+                               "missing; not disabling session tickets.")
+                return None
+        # Step 2. Grep in the binary for openssl version
         contents = self._open_module_file(ssl_module_location)
         if not contents:
             logger.warning("Unable to read ssl_module file; not disabling session tickets.")
@@ -454,21 +463,6 @@ class ApacheConfigurator(common.Installer):
             metadata=metadata
         )
 
-    def _wildcard_domain(self, domain):
-        """
-        Checks if domain is a wildcard domain
-
-        :param str domain: Domain to check
-
-        :returns: If the domain is wildcard domain
-        :rtype: bool
-        """
-        if isinstance(domain, six.text_type):
-            wildcard_marker = u"*."
-        else:
-            wildcard_marker = b"*."
-        return domain.startswith(wildcard_marker)
-
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):
         """Deploys certificate to specified virtual host.
@@ -503,7 +497,7 @@ class ApacheConfigurator(common.Installer):
         :rtype: `list` of :class:`~certbot_apache._internal.obj.VirtualHost`
         """
 
-        if self._wildcard_domain(domain):
+        if util.is_wildcard_domain(domain):
             if domain in self._wildcard_vhosts:
                 # Vhosts for a wildcard domain were already selected
                 return self._wildcard_vhosts[domain]
@@ -1452,7 +1446,7 @@ class ApacheConfigurator(common.Installer):
         if not line.lower().lstrip().startswith("rewriterule"):
             return False
 
-        # According to: http://httpd.apache.org/docs/2.4/rewrite/flags.html
+        # According to: https://httpd.apache.org/docs/2.4/rewrite/flags.html
         # The syntax of a RewriteRule is:
         # RewriteRule pattern target [Flag1,Flag2,Flag3]
         # i.e. target is required, so it must exist.

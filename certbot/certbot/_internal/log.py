@@ -11,6 +11,13 @@ configured by the user. Any logged messages before
 Special care is taken by both methods to ensure all errors are logged
 and properly flushed before program exit.
 
+The `logging` module is useful for recording messages about about what
+Certbot is doing under the hood, but do not necessarily need to be shown
+to the user on the terminal. The default verbosity is INFO.
+
+The preferred method to display important information to the user is to
+use `certbot.display.util` and `certbot.display.ops`.
+
 """
 from __future__ import print_function
 
@@ -319,6 +326,9 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
     # logger.DEBUG should be used
     if debug or not issubclass(exc_type, Exception):
         assert constants.QUIET_LOGGING_LEVEL <= logging.ERROR
+        if exc_type is KeyboardInterrupt:
+            logger.error('Exiting due to user request.')
+            sys.exit(1)
         logger.error('Exiting abnormally:', exc_info=exc_info)
     else:
         logger.debug('Exiting abnormally:', exc_info=exc_info)
