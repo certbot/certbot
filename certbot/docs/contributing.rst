@@ -181,7 +181,7 @@ that can be used once the virtual environment is activated:
 - This instance is configured to validate challenges against certbot executed locally.
 
 .. note:: Some options are available to tweak the local ACME server. You can execute
-    ``run_acme_server --help` to see the inline help of ``run_acme_server`` tool.
+    ``run_acme_server --help`` to see the inline help of the ``run_acme_server`` tool.
 
 .. code-block:: shell
 
