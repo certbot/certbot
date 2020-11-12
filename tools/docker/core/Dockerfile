@@ -14,15 +14,13 @@ WORKDIR /opt/certbot
 
 # Copy certbot code
 COPY CHANGELOG.md README.rst src/
-COPY letsencrypt-auto-source/pieces/dependency-requirements.txt .
-COPY letsencrypt-auto-source/pieces/pipstrap.py .
+# We keep the relative path to the requirements file the same because, as of
+# writing this, tools/pip_install.py is used in the Dockerfile for Certbot
+# plugins and this script expects to find the requirements file there.
+COPY letsencrypt-auto-source/pieces/dependency-requirements.txt letsencrypt-auto-source/pieces/
 COPY tools tools
 COPY acme src/acme
 COPY certbot src/certbot
-
-# Generate constraints file to pin dependency versions
-RUN cat dependency-requirements.txt | tools/strip_hashes.py > unhashed_requirements.txt \
- && cat tools/dev_constraints.txt unhashed_requirements.txt | tools/merge_requirements.py > docker_constraints.txt
 
 # Install certbot runtime dependencies
 RUN apk add --no-cache --virtual .certbot-deps \
@@ -33,15 +31,20 @@ RUN apk add --no-cache --virtual .certbot-deps \
         binutils
 
 # Install certbot from sources
+#
+# We don't use tools/pip_install.py below so the hashes in
+# dependency-requirements.txt can be used when installing packages for extra
+# security.
 RUN apk add --no-cache --virtual .build-deps \
         gcc \
         linux-headers \
         openssl-dev \
         musl-dev \
         libffi-dev \
-    && python pipstrap.py \
-    && pip install -r dependency-requirements.txt \
-    && pip install --no-cache-dir --no-deps \
+    && python tools/pipstrap.py \
+    && pip install --no-build-isolation \
+        -r letsencrypt-auto-source/pieces/dependency-requirements.txt \
+    && pip install --no-build-isolation --no-cache-dir --no-deps \
         --editable src/acme \
         --editable src/certbot \
 && apk del .build-deps

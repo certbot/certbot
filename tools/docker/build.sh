@@ -12,19 +12,6 @@ IFS=$'\n\t'
 #   given value is only the base of the tag because the things like the CPU
 #   architecture are also added to the full tag.
 
-# As of writing this, runs of this script consistently fail in Azure
-# Pipelines, but they are fixed by using Docker BuildKit. A log of the failures
-# that were occurring can be seen at
-# https://gist.github.com/2227a05622299ce17bff9b0da714a1ff. Since using
-# BuildKit is supposed to offer benefits anyway (see
-# https://docs.docker.com/develop/develop-images/build_enhancements/ for more
-# information), let's use it.
-#
-# This variable is set inside the script itself rather than in something like
-# the CI config to have a consistent experience when this script is run
-# locally.
-export DOCKER_BUILDKIT=1
-
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 REPO_ROOT="$(dirname "$(dirname "${WORK_DIR}")")"
 source "$WORK_DIR/lib/common"

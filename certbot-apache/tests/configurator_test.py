@@ -1337,13 +1337,6 @@ class MultipleVhostsTest(util.ApacheTest):
                           self.config.enable_mod,
                           "whatever")
 
-    def test_wildcard_domain(self):
-        # pylint: disable=protected-access
-        cases = {u"*.example.org": True, b"*.x.example.org": True,
-                 u"a.example.org": False, b"a.x.example.org": False}
-        for key in cases:
-            self.assertEqual(self.config._wildcard_domain(key), cases[key])
-
     def test_choose_vhosts_wildcard(self):
         # pylint: disable=protected-access
         mock_path = "certbot_apache._internal.display_ops.select_vhost_multiple"

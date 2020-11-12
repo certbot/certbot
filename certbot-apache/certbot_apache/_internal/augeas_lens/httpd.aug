@@ -6,7 +6,7 @@ Authors:
   Raphael Pinson <raphink@gmail.com>
 
 About: Reference
-  Online Apache configuration manual: http://httpd.apache.org/docs/trunk/
+  Online Apache configuration manual: https://httpd.apache.org/docs/trunk/
 
 About: License
     This file is licensed under the LGPL v2+.

@@ -51,7 +51,6 @@ from certbot._internal.cli.cli_utils import (
 )
 
 # These imports depend on cli_constants and cli_utils.
-from certbot._internal.cli.report_config_interaction import report_config_interaction
 from certbot._internal.cli.verb_help import VERB_HELP, VERB_HELP_MAP
 from certbot._internal.cli.group_adder import _add_all_groups
 from certbot._internal.cli.subparsers import _create_subparsers
@@ -100,6 +99,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              "be kept by Certbot's built in log rotation. Setting this "
              "flag to 0 disables log rotation entirely, causing "
              "Certbot to always append to the same log file.")
+    helpful.add(
+        None, "--preconfigured-renewal", dest="preconfigured_renewal",
+        action="store_true", default=flag_default("preconfigured_renewal"),
+        help=argparse.SUPPRESS
+    )
     helpful.add(
         [None, "automation", "run", "certonly", "enhance"],
         "-n", "--non-interactive", "--noninteractive",

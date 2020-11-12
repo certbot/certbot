@@ -248,18 +248,7 @@ replacing ``certbot`` with the name of the desired package.
 
 **Ubuntu**
 
-If you run Ubuntu Trusty, Xenial, or Bionic, certbot is available through the official PPA,
-that can be installed as followed:
-
-.. code-block:: shell
-
-   sudo apt-get update
-   sudo apt-get install software-properties-common
-   sudo add-apt-repository universe
-   sudo add-apt-repository ppa:certbot/certbot
-   sudo apt-get update
-
-Then, certbot can be installed using:
+If you run Ubuntu, certbot can be installed using:
 
 .. code-block:: shell
 

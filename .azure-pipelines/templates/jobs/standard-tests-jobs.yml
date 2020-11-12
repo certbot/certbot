@@ -1,5 +1,7 @@
 jobs:
   - job: test
+    variables:
+      PYTHON_VERSION: 3.8
     strategy:
       matrix:
         macos-py27:
@@ -56,9 +58,9 @@ jobs:
         apache-compat:
           IMAGE_NAME: ubuntu-18.04
           TOXENV: apache_compat
-        le-auto-xenial:
+        le-auto-centos6:
           IMAGE_NAME: ubuntu-18.04
-          TOXENV: le_auto_xenial
+          TOXENV: le_auto_centos6
         apacheconftest:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 2.7

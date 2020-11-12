@@ -11,6 +11,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import contextlib
 import os
 import re
 import shutil
@@ -21,6 +22,17 @@ import tempfile
 import merge_requirements as merge_module
 import readlink
 import strip_hashes
+
+
+# Once this code doesn't need to support Python 2, we can simply use
+# tempfile.TemporaryDirectory.
+@contextlib.contextmanager
+def temporary_directory():
+    dirpath = tempfile.mkdtemp()
+    try:
+        yield dirpath
+    finally:
+        shutil.rmtree(dirpath)
 
 
 def find_tools_path():
@@ -75,22 +87,18 @@ def call_with_print(command):
     subprocess.check_call(command, shell=True)
 
 
-def pip_install_with_print(args_str):
-    command = '"{0}" -m pip install --disable-pip-version-check {1}'.format(sys.executable,
-                                                                            args_str)
-    call_with_print(command)
+def pip_install_with_print(args_str, disable_build_isolation=True):
+    command = ['"', sys.executable, '" -m pip install --disable-pip-version-check ']
+    if disable_build_isolation:
+        command.append('--no-build-isolation ')
+    command.append(args_str)
+    call_with_print(''.join(command))
 
 
 def main(args):
     tools_path = find_tools_path()
-    working_dir = tempfile.mkdtemp()
 
-    if os.environ.get('TRAVIS'):
-        # When this script is executed on Travis, the following print will make the log
-        # be folded until the end command is printed (see finally section).
-        print('travis_fold:start:install_certbot_deps')
-
-    try:
+    with temporary_directory() as working_dir:
         test_constraints = os.path.join(working_dir, 'test_constraints.txt')
         all_constraints = os.path.join(working_dir, 'all_constraints.txt')
 
@@ -119,10 +127,6 @@ def main(args):
 
             pip_install_with_print('--constraint "{0}" {1}'.format(
                 all_constraints, ' '.join(args)))
-    finally:
-        if os.environ.get('TRAVIS'):
-            print('travis_fold:end:install_certbot_deps')
-        shutil.rmtree(working_dir)
 
 
 if __name__ == '__main__':

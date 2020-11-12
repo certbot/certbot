@@ -72,7 +72,7 @@ Examples
 
    certbot certonly \\
      --dns-ovh \\
-     --dns-ovh-credentials ~/.secrets/certbot/ohv.ini \\
+     --dns-ovh-credentials ~/.secrets/certbot/ovh.ini \\
      -d example.com
 
 .. code-block:: bash

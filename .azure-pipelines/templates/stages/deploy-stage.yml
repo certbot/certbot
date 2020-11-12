@@ -39,6 +39,7 @@ stages:
           - group: certbot-common
         steps:
           - bash: |
+              set -e
               sudo apt-get update
               sudo apt-get install -y --no-install-recommends snapd
               sudo snap install --classic snapcraft
@@ -53,10 +54,11 @@ stages:
             inputs:
               secureFile: snapcraft.cfg
           - bash: |
+              set -e
               mkdir -p .snapcraft
               ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
               for SNAP_FILE in snap/*.snap; do
-                snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
+                tools/retry.sh eval snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
               done
             displayName: Publish to Snap store
       - job: publish_docker
@@ -76,7 +78,7 @@ stages:
               artifact: docker_$(DOCKER_ARCH)
               path: $(Build.SourcesDirectory)
             displayName: Retrieve Docker images
-          - bash: docker load --input $(Build.SourcesDirectory)/images.tar
+          - bash: set -e && docker load --input $(Build.SourcesDirectory)/images.tar
             displayName: Load Docker images
           - task: Docker@2
             inputs:
@@ -93,5 +95,5 @@ stages:
               # Certbot organization on Docker Hub.
               containerRegistry: docker-hub
             displayName: Login to Docker Hub
-          - bash: tools/docker/deploy.sh $(dockerTag) $DOCKER_ARCH
+          - bash: set -e && tools/docker/deploy.sh $(dockerTag) $DOCKER_ARCH
             displayName: Deploy the Docker images

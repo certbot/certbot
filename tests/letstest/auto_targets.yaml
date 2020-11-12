@@ -3,11 +3,6 @@
 targets:
   #-----------------------------------------------------------------------------
   #Ubuntu
-  - ami: ami-0545f7036167eb3aa
-    name: ubuntu19.10
-    type: ubuntu
-    virt: hvm
-    user: ubuntu
   - ami: ami-095192256fe1477ad
     name: ubuntu18.04LTS
     type: ubuntu
@@ -52,16 +47,6 @@ targets:
     type: centos
     virt: hvm
     user: ec2-user
-  - ami: ami-0fcbe88944a53b4c8
-    name: fedora31
-    type: centos
-    virt: hvm
-    user: fedora
-  - ami: ami-00bbc6858140f19ed
-    name: fedora30
-    type: centos
-    virt: hvm
-    user: fedora
   #-----------------------------------------------------------------------------
   # CentOS
   # These Marketplace AMIs must, irritatingly, have their terms manually

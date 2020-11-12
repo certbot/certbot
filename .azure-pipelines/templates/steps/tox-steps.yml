@@ -1,9 +1,11 @@
 steps:
   - bash: |
+      set -e
       brew install augeas
     condition: startswith(variables['IMAGE_NAME'], 'macOS')
     displayName: Install MacOS dependencies
   - bash: |
+      set -e
       sudo apt-get update
       sudo apt-get install -y --no-install-recommends \
         python-dev \
@@ -21,7 +23,6 @@ steps:
     inputs:
       versionSpec: $(PYTHON_VERSION)
       addToPath: true
-    condition: ne(variables['PYTHON_VERSION'], '')
     # tools/pip_install.py is used to pin packages to a known working version
     # except in tests where the environment variable CERTBOT_NO_PIN is set.
     # virtualenv is listed here explicitly to make sure it is upgraded when
@@ -30,6 +31,8 @@ steps:
     # set, pip updates dependencies it thinks are already satisfied to avoid some
     # problems with its lack of real dependency resolution.
   - bash: |
+      set -e
+      python tools/pipstrap.py
       python tools/pip_install.py -I tox virtualenv
     displayName: Install runtime dependencies
   - task: DownloadSecureFile@1
@@ -38,6 +41,7 @@ steps:
       secureFile: azure-test-farm.pem
     condition: contains(variables['TOXENV'], 'test-farm')
   - bash: |
+      set -e
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
       [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
       env
