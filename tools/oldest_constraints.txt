@@ -26,6 +26,9 @@ zope.event==4.0.3
 zope.interface==4.0.5
 
 # Debian Jessie Backports constraints
+# Debian Jessie has reached end of life. However:
+# When it becomes necessary to upgrade any of these dependencies, you should only update them to the oldest version of the package found
+# in a non-EOL'd version of CentOS, Debian, or Ubuntu that has Certbot packages in their OS repositories.
 PyICU==1.8
 colorama==0.3.2
 enum34==1.0.3
@@ -57,6 +60,7 @@ distro==1.0.1
 # Lexicon oldest constraint is overridden appropriately on relevant DNS provider plugins
 # using their local-oldest-requirements.txt
 dns-lexicon==2.2.1
+httplib2==0.9.2
 
 # Plugin constraints
 # These aren't necessarily the oldest versions we need to support

@@ -6,7 +6,6 @@ import zope.component
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import util as display_util
 
@@ -33,9 +32,10 @@ def get_email(invalid=False, optional=True):
     msg = "Enter email address (used for urgent renewal and security notices)\n"
     unsafe_suggestion = ("\n\nIf you really want to skip this, you can run "
                          "the client with --register-unsafely-without-email "
-                         "but make sure you then backup your account key from "
-                         "{0}\n\n".format(os.path.join(
-                             misc.get_default_folder('config'), 'accounts')))
+                         "but you will then be unable to receive notice about "
+                         "impending expiration or revocation of your "
+                         "certificates or problems with your Certbot "
+                         "installation that will lead to failure to renew.\n\n")
     if optional:
         if invalid:
             msg += unsafe_suggestion
@@ -262,26 +262,15 @@ def success_renewal(domains):
 
 
 def success_revocation(cert_path):
-    """Display a box confirming a certificate has been revoked.
+    """Display a message confirming a certificate has been revoked.
 
     :param list cert_path: path to certificate which was revoked.
 
     """
-    z_util(interfaces.IDisplay).notification(
+    display_util.notify(
         "Congratulations! You have successfully revoked the certificate "
-        "that was located at {0}{1}{1}".format(
-            cert_path,
-            os.linesep),
-        pause=False)
-
-
-def _gen_ssl_lab_urls(domains):
-    """Returns a list of urls.
-
-    :param list domains: Each domain is a 'str'
-
-    """
-    return ["https://www.ssllabs.com/ssltest/analyze.html?d=%s" % dom for dom in domains]
+        "that was located at {0}.".format(cert_path)
+    )
 
 
 def _gen_https_names(domains):

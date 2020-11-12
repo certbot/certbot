@@ -11,7 +11,7 @@ to the Sphinx generated docs is provided below.
 
 
 [1] https://github.com/blog/1184-contributing-guidelines
-[2] http://docutils.sourceforge.net/docs/user/rst/quickref.html#hyperlink-targets
+[2] https://docutils.sourceforge.io/docs/user/rst/quickref.html#hyperlink-targets
 
 -->
 

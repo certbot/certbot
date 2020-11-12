@@ -731,7 +731,6 @@ class ApacheParser(object):
         privileged users.
 
         https://apr.apache.org/docs/apr/2.0/apr__fnmatch_8h_source.html
-        http://apache2.sourcearchive.com/documentation/2.2.16-6/apr__fnmatch_8h_source.html
 
         :param str clean_fn_match: Apache style filename match, like globs
 
@@ -799,7 +798,7 @@ class ApacheParser(object):
     def _parsed_by_parser_paths(self, filep, paths):
         """Helper function that searches through provided paths and returns
         True if file path is found in the set"""
-        for directory in paths.keys():
+        for directory in paths:
             for filename in paths[directory]:
                 if fnmatch.fnmatch(filep, os.path.join(directory, filename)):
                     return True

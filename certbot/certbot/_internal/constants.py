@@ -16,7 +16,7 @@ OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 CLI_DEFAULTS = dict(
     config_files=[
         os.path.join(misc.get_default_folder('config'), 'cli.ini'),
-        # http://freedesktop.org/wiki/Software/xdg-user-dirs/
+        # https://freedesktop.org/wiki/Software/xdg-user-dirs/
         os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
                      "letsencrypt", "cli.ini"),
     ],
@@ -25,6 +25,7 @@ CLI_DEFAULTS = dict(
     verbose_count=-int(logging.INFO / 10),
     text_mode=False,
     max_log_backups=1000,
+    preconfigured_renewal=False,
     noninteractive_mode=False,
     force_interactive=False,
     domains=[],

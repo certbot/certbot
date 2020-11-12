@@ -854,7 +854,7 @@ class ClientV2Test(ClientTestBase):
         self.response.json.return_value = updated_order.to_json()
         self.response.text = CERT_SAN_PEM
         self.response.headers['Link'] ='<https://example.com/acme/cert/1>;rel="alternate", ' + \
-            '<https://exaple.com/dir>;rel="index", ' + \
+            '<https://example.com/dir>;rel="index", ' + \
             '<https://example.com/acme/cert/2>;title="foo";rel="alternate"'
 
         deadline = datetime.datetime(9999, 9, 9)
@@ -1343,7 +1343,7 @@ class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
         # test should fail if the default adapter type is changed by requests
         net = ClientNetwork(key=None, alg=None)
         session = requests.Session()
-        for scheme in session.adapters.keys():
+        for scheme in session.adapters:
             client_network_adapter = net.session.adapters.get(scheme)
             default_adapter = session.adapters.get(scheme)
             self.assertEqual(client_network_adapter.__class__, default_adapter.__class__)

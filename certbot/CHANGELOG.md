@@ -2,13 +2,84 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.7.0 - master
+## 1.10.0 - master
+
+### Added
+
+* Added timeout to DNS query function calls for dns-rfc2136 plugin.
+* Confirmation when deleting certificates
+*
+
+### Changed
+
+* certbot-auto was deprecated on Debian based systems.
+* CLI flag `--manual-public-ip-logging-ok` is now a no-op, generates a
+  deprecation warning, and will be removed in a future release.
+*
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.9.0 - 2020-10-06
+
+### Added
+
+* `--preconfigured-renewal` flag, for packager use only.
+  See the [packaging guide](https://certbot.eff.org/docs/packaging.html).
+
+### Changed
+
+* certbot-auto was deprecated on all systems except for those based on Debian or RHEL.
+* Update the packaging instructions to promote usage of `python -m pytest` to test Certbot
+  instead of the deprecated `python setup.py test` setuptools approach.
+* Reduced CLI logging when reloading nginx, if it is not running.
+* Reduced CLI logging when handling some kinds of errors.
+
+### Fixed
+
+* Fixed `server_name` case-sensitivity in the nginx plugin.
+* The minimum version of the `acme` library required by Certbot was corrected.
+  In the previous release, Certbot said it required `acme>=1.6.0` when it
+  actually required `acme>=1.8.0` to properly support removing contact
+  information from an ACME account.
+* Upgraded the version of httplib2 used in our snaps and Docker images to add
+  support for proxy environment variables and fix the plugin for Google Cloud
+  DNS.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.8.0 - 2020-09-08
+
+### Added
+
+* Added the ability to remove email and phone contact information from an account 
+  using `update_account --register-unsafely-without-email`
+
+### Changed
+
+* Support for Python 3.5 has been removed.
+
+### Fixed
+
+* The problem causing the Apache plugin in the Certbot snap on ARM systems to
+  fail to load the Augeas library it depends on has been fixed.
+* The `acme` library can now tell the ACME server to clear contact information by passing an empty
+  `tuple` to the `contact` field of a `Registration` message. 
+* Fixed the `*** stack smashing detected ***` error in the Certbot snap on some systems.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.7.0 - 2020-08-04
 
 ### Added
 
 * Third-party plugins can be used without prefix (`plugin_name` instead of `dist_name:plugin_name`):
   this concerns the plugin name, CLI flags, and keys in credential files.
   The prefixed form is still supported but is deprecated, and will be removed in a future release.
+* Added `--nginx-sleep-seconds` (default `1`) for environments where nginx takes a long time to reload.
 
 ### Changed
 
@@ -19,7 +90,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
 
 More details about these changes can be found on our GitHub repo.
 

@@ -339,23 +339,23 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         from certbot._internal.main import _delete_if_appropriate
         _delete_if_appropriate(mock_config)
 
-    def _test_delete_opt_out_common(self, mock_get_utility):
+    def _test_delete_opt_out_common(self):
         with mock.patch('certbot._internal.cert_manager.delete') as mock_delete:
             self._call(self.config)
         mock_delete.assert_not_called()
-        self.assertTrue(mock_get_utility().add_message.called)
 
     @test_util.patch_get_utility()
-    def test_delete_flag_opt_out(self, mock_get_utility):
+    def test_delete_flag_opt_out(self, unused_mock_get_utility):
         self.config.delete_after_revoke = False
-        self._test_delete_opt_out_common(mock_get_utility)
+        self._test_delete_opt_out_common()
 
     @test_util.patch_get_utility()
     def test_delete_prompt_opt_out(self, mock_get_utility):
         util_mock = mock_get_utility()
         util_mock.yesno.return_value = False
-        self._test_delete_opt_out_common(mock_get_utility)
+        self._test_delete_opt_out_common()
 
+    @mock.patch("certbot._internal.main.logger.warning")
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.delete')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
@@ -365,7 +365,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     def test_overlapping_archive_dirs(self, mock_get_utility,
             mock_cert_path_to_lineage, mock_archive,
             mock_match_and_check_overlaps, mock_delete,
-            mock_renewal_file_for_certname):
+            mock_renewal_file_for_certname, mock_warning):
         # pylint: disable = unused-argument
         config = self.config
         config.cert_path = "/some/reasonable/path"
@@ -374,6 +374,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         mock_match_and_check_overlaps.side_effect = errors.OverlappingMatchFound()
         self._call(config)
         mock_delete.assert_not_called()
+        self.assertEqual(mock_warning.call_count, 1)
 
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
@@ -449,10 +450,12 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.mock_client = mock.MagicMock()
         self.mock_client.directory.new_authz = "hi"
 
+
     def _call(self):
         # pylint: disable=protected-access
         from certbot._internal.main import _determine_account
-        with mock.patch('certbot._internal.main.account.AccountFileStorage') as mock_storage:
+        with mock.patch('certbot._internal.main.account.AccountFileStorage') as mock_storage, \
+             test_util.patch_get_utility():
             mock_storage.return_value = self.account_storage
             return _determine_account(self.config)
 
@@ -481,7 +484,8 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.assertTrue(self.config.email is None)
 
     @mock.patch('certbot._internal.client.display_ops.get_email')
-    def test_no_accounts_no_email(self, mock_get_email):
+    @mock.patch('certbot._internal.main.display_util.notify')
+    def test_no_accounts_no_email(self, mock_notify, mock_get_email):
         mock_get_email.return_value = 'foo@bar.baz'
 
         with mock.patch('certbot._internal.main.client') as client:
@@ -493,6 +497,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
 
         self.assertEqual(self.accs[0].id, self.config.account)
         self.assertEqual('foo@bar.baz', self.config.email)
+        mock_notify.assert_called_once_with('Account registered.')
 
     def test_no_accounts_email(self):
         self.config.email = 'other email'
@@ -1275,13 +1280,16 @@ class MainTest(test_util.ConfigTestCase):
     @test_util.patch_get_utility()
     @mock.patch('certbot._internal.main._find_lineage_for_domains_and_certname')
     @mock.patch('certbot._internal.main._init_le_client')
-    def test_certonly_reinstall(self, mock_init, mock_renewal, mock_get_utility):
+    @mock.patch('certbot._internal.main._report_new_cert')
+    def test_certonly_reinstall(self, mock_report_new_cert, mock_init,
+                                mock_renewal, mock_get_utility):
         mock_renewal.return_value = ('reinstall', mock.MagicMock())
         mock_init.return_value = mock_client = mock.MagicMock()
         self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
         self.assertFalse(mock_client.obtain_certificate.called)
         self.assertFalse(mock_client.obtain_and_enroll_certificate.called)
         self.assertEqual(mock_get_utility().add_message.call_count, 0)
+        mock_report_new_cert.assert_not_called()
         #self.assertTrue('donate' not in mock_get_utility().add_message.call_args[0][0])
 
     def _test_certonly_csr_common(self, extra_args=None):
@@ -1400,9 +1408,47 @@ class MainTest(test_util.ConfigTestCase):
                  "user@example.org"])
             self.assertTrue("Could not find an existing account" in x[0])
 
+    @mock.patch('certbot._internal.main._determine_account')
+    @mock.patch('certbot._internal.eff.prepare_subscription')
+    @mock.patch('certbot._internal.main.account')
+    def test_update_account_remove_email(self, mocked_account_module, mock_prepare, mock_det_acc):
+        # Mock account storage and the account object returned
+        mocked_storage = mock.MagicMock()
+        mocked_account = mock.MagicMock()
+
+        mocked_account_module.AccountFileStorage.return_value = mocked_storage
+        mocked_storage.find_all.return_value = [mocked_account]
+        mock_det_acc.return_value = (mocked_account, "foo")
+
+        # Mock registration body to verify calls are made
+        mock_regr_body = mock.MagicMock()
+
+        # mocked_account.regr is overwritten in update, requiring an odd mock setup
+        mocked_account.regr.body = mock_regr_body
+
+        x = self._call(
+            ["update_account", "--register-unsafely-without-email"])
+
+
+        # When update succeeds, the return value of update_account() is None
+        self.assertTrue(x[0] is None)
+        # and we got supposedly did update the registration from
+        # the server
+        client_mock = x[3]
+        self.assertTrue(client_mock.Client().acme.update_registration.called)
+
+        self.assertTrue(mock_regr_body.update.called)
+        self.assertTrue('contact' in mock_regr_body.update.call_args[1])
+        self.assertEqual(mock_regr_body.update.call_args[1]['contact'], ())
+        # and we saved the updated registration on disk
+        self.assertTrue(mocked_storage.update_regr.called)
+        # ensure we didn't try to subscribe (no email to subscribe with)
+        self.assertFalse(mock_prepare.called)
+
+    @mock.patch("certbot._internal.main.display_util.notify")
     @mock.patch('certbot._internal.main.display_ops.get_email')
     @test_util.patch_get_utility()
-    def test_update_account_with_email(self, mock_utility, mock_email):
+    def test_update_account_with_email(self, mock_utility, mock_email, mock_notify):
         email = "user@example.com"
         mock_email.return_value = email
         with mock.patch('certbot._internal.eff.prepare_subscription') as mock_prepare:
@@ -1427,7 +1473,7 @@ class MainTest(test_util.ConfigTestCase):
                         # and we saved the updated registration on disk
                         self.assertTrue(mocked_storage.update_regr.called)
                         self.assertTrue(
-                            email in mock_utility().add_message.call_args[0][0])
+                            email in mock_notify.call_args[0][0])
                         self.assertTrue(mock_prepare.called)
 
     @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
@@ -1451,7 +1497,7 @@ class UnregisterTest(unittest.TestCase):
             'account': mock.patch('certbot._internal.main.account'),
             'client': mock.patch('certbot._internal.main.client'),
             'get_utility': test_util.patch_get_utility()}
-        self.mocks = dict((k, v.start()) for k, v in self.patchers.items())
+        self.mocks = {k: v.start() for k, v in self.patchers.items()}
 
     def tearDown(self):
         for patch in self.patchers.values():
@@ -1469,7 +1515,8 @@ class UnregisterTest(unittest.TestCase):
         res = main.unregister(config, unused_plugins)
         self.assertEqual(res, "Deactivation aborted.")
 
-    def test_unregister(self):
+    @mock.patch("certbot._internal.main.display_util.notify")
+    def test_unregister(self, mock_notify):
         mocked_storage = mock.MagicMock()
         mocked_storage.find_all.return_value = ["an account"]
 
@@ -1485,9 +1532,7 @@ class UnregisterTest(unittest.TestCase):
         res = main.unregister(config, unused_plugins)
 
         self.assertTrue(res is None)
-        self.assertTrue(cb_client.acme.deactivate_registration.called)
-        m = "Account deactivated."
-        self.assertTrue(m in self.mocks['get_utility']().add_message.call_args[0][0])
+        mock_notify.assert_called_once_with("Account deactivated.")
 
     def test_unregister_no_account(self):
         mocked_storage = mock.MagicMock()

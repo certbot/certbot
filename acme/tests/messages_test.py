@@ -254,6 +254,19 @@ class RegistrationTest(unittest.TestCase):
         from acme.messages import Registration
         hash(Registration.from_json(self.jobj_from))
 
+    def test_default_not_transmitted(self):
+        from acme.messages import NewRegistration
+        empty_new_reg = NewRegistration()
+        new_reg_with_contact = NewRegistration(contact=())
+
+        self.assertEqual(empty_new_reg.contact, ())
+        self.assertEqual(new_reg_with_contact.contact, ())
+
+        self.assertTrue('contact' not in empty_new_reg.to_partial_json())
+        self.assertTrue('contact' not in empty_new_reg.fields_to_partial_json())
+        self.assertTrue('contact' in new_reg_with_contact.to_partial_json())
+        self.assertTrue('contact' in new_reg_with_contact.fields_to_partial_json())
+
 
 class UpdateRegistrationTest(unittest.TestCase):
     """Tests for acme.messages.UpdateRegistration."""

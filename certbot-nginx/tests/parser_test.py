@@ -340,7 +340,9 @@ class NginxParserTest(util.NginxTest):
                  {'*.www.eff.org', 'www.*'},
                  {'*.org'},
                  set(),
-                 {'example.com'}]
+                 {'example.com'},
+                 {'www.Eff.org'},
+                 {'.efF.org'}]
         winners = [('exact', 'www.eff.org'),
                    (None, None),
                    ('exact', '.www.eff.org'),
@@ -353,7 +355,9 @@ class NginxParserTest(util.NginxTest):
                    ('wildcard_end', 'www.*'),
                    ('wildcard_start', '*.org'),
                    (None, None),
-                   (None, None)]
+                   (None, None),
+                   ('exact', 'www.Eff.org'),
+                   ('wildcard_start', '.efF.org')]
 
         for i, winner in enumerate(winners):
             self.assertEqual(winner,
