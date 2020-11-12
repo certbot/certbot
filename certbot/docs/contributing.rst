@@ -169,7 +169,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv3.py` contains two commands
+The virtual environment set up with `python tools/venv3.py` contains two CLI tools
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -179,6 +179,9 @@ that can be used once the virtual environment is activated:
 - Starts a local instance of Pebble and runs in the foreground printing its logs.
 - Press CTRL+C to stop this instance.
 - This instance is configured to validate challenges against certbot executed locally.
+
+.. note:: Some options are available to tweak the local ACME server. You can execute
+    ``run_acme_server --help`` to see the inline help of the ``run_acme_server`` tool.
 
 .. code-block:: shell
 
