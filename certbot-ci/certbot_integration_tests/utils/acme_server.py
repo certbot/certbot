@@ -233,7 +233,7 @@ def main():
                         help='type of CA server to start: can be Pebble or Boulder '
                              '(in ACMEv1 or ACMEv2 mode), Pebble is used if not set.')
     parser.add_argument('--dns-server', '-d',
-                        help='(Pebble specific) specify the DNS server as `IP:PORT` to use by '
+                        help='specify the DNS server as `IP:PORT` to use by '
                              'Pebble; if not specified, a local mock DNS server will be used to '
                              'resolve domains to localhost.')
     args = parser.parse_args()
