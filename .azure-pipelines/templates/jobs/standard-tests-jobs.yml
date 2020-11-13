@@ -69,6 +69,10 @@ jobs:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 2.7
           TOXENV: nginxroundtrip
+        linux-integration-rfc2136:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.8
+          TOXENV: integration-dns-rfc2136
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
