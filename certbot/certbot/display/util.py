@@ -16,6 +16,7 @@ import textwrap
 import zope.interface
 import zope.component
 
+from acme.magic_typing import List
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
@@ -105,7 +106,7 @@ def notify(msg):
 
     """
     zope.component.getUtility(interfaces.IDisplay).notification(
-        msg, pause=False, decorate=False
+        msg, pause=False, decorate=False, wrap=False
     )
 
 
@@ -633,3 +634,28 @@ def _parens_around_char(label):
 
     """
     return "({first}){rest}".format(first=label[0], rest=label[1:])
+
+
+def summarize_domain_list(domains):
+    # type: (List[str]) -> str
+    """Summarizes a list of domains in the format of:
+        example.com.com and N more domains
+    or if there is are only two domains:
+        example.com and www.example.com
+    or if there is only one domain:
+        example.com
+
+    :param list domains: `str` list of domains
+    :returns: the domain list summary
+    :rtype: str
+    """
+    if not domains:
+        return ""
+
+    l = len(domains)
+    if l == 1:
+        return domains[0]
+    elif l == 2:
+        return " and ".join(domains)
+    else:
+        return "{0} and {1} more domains".format(domains[0], l-1)
