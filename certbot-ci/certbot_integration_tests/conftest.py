@@ -13,7 +13,6 @@ import sys
 
 from certbot_integration_tests.utils import acme_server as acme_lib
 from certbot_integration_tests.utils import dns_server as dns_lib
-from certbot_integration_tests.utils.dns_server import DNSServer
 
 
 def pytest_addoption(parser):
@@ -92,8 +91,10 @@ def _setup_primary_node(config):
         try:
             subprocess.check_output(['docker-compose', '-v'], stderr=subprocess.STDOUT)
         except (subprocess.CalledProcessError, OSError):
-            raise ValueError('Error: docker-compose is required in PATH to launch the integration tests, '
-                             'but is not installed or not available for current user.')
+            raise ValueError(
+                'Error: docker-compose is required in PATH to launch the integration tests, '
+                'but is not installed or not available for current user.'
+            )
 
     # Parameter numprocesses is added to option by pytest-xdist
     workers = ['primary'] if not config.option.numprocesses\

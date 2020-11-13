@@ -1,3 +1,5 @@
+# pylint: disable=missing-module-docstring
+
 import json
 import os
 import stat
@@ -12,6 +14,7 @@ ASSETS_PATH = pkg_resources.resource_filename('certbot_integration_tests', 'asse
 
 
 def fetch(workspace):
+    # pylint: disable=missing-function-docstring
     suffix = 'linux-amd64' if os.name != 'nt' else 'windows-amd64.exe'
 
     pebble_path = _fetch_asset('pebble', suffix)

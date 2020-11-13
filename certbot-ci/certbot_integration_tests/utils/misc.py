@@ -39,6 +39,7 @@ def _suppress_x509_verification_warnings():
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     except ImportError:
         # Handle old versions of request with vendorized urllib3
+        # pylint: disable=no-member
         from requests.packages.urllib3.exceptions import InsecureRequestWarning
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -256,7 +257,8 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
 
 def read_certificate(cert_path):
     """
-    Load the certificate from the provided path, and return a human readable version of it (TEXT mode).
+    Load the certificate from the provided path, and return a human readable version
+    of it (TEXT mode).
     :param str cert_path: the path to the certificate
     :returns: the TEXT version of the certificate, as it would be displayed by openssl binary
     """

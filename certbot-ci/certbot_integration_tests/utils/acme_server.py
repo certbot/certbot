@@ -7,7 +7,6 @@ import errno
 import json
 import os
 from os.path import join
-import re
 import shutil
 import subprocess
 import sys
@@ -16,9 +15,11 @@ import time
 
 import requests
 
+from acme.magic_typing import List
 from certbot_integration_tests.utils import misc
 from certbot_integration_tests.utils import pebble_artifacts
 from certbot_integration_tests.utils import proxy
+# pylint: disable=wildcard-import,unused-wildcard-import
 from certbot_integration_tests.utils.constants import *
 
 
@@ -31,8 +32,8 @@ class ACMEServer(object):
     ACMEServer gives access the acme_xdist parameter, listing the ports and directory url to use
     for each pytest node. It exposes also start and stop methods in order to start the stack, and
     stop it with proper resources cleanup.
-    ACMEServer is also a context manager, and so can be used to ensure ACME server is started/stopped
-    upon context enter/exit.
+    ACMEServer is also a context manager, and so can be used to ensure ACME server is
+    started/stopped upon context enter/exit.
     """
     def __init__(self, acme_server, nodes, http_proxy=True, stdout=False, dns_server=None):
         """
@@ -48,7 +49,7 @@ class ACMEServer(object):
         self._acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
         self._proxy = http_proxy
         self._workspace = tempfile.mkdtemp()
-        self._processes = []
+        self._processes = []  # type: List
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w')
         self._dns_server = dns_server
 
@@ -107,19 +108,26 @@ class ACMEServer(object):
         """Generate and return the acme_xdist dict"""
         acme_xdist = {'acme_server': acme_server, 'challtestsrv_port': CHALLTESTSRV_PORT}
 
-        # Directory and ACME port are set implicitly in the docker-compose.yml files of Boulder/Pebble.
+        # Directory and ACME port are set implicitly in the docker-compose.yml
+        # files of Boulder/Pebble.
         if acme_server == 'pebble':
             acme_xdist['directory_url'] = PEBBLE_DIRECTORY_URL
         else:  # boulder
             acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL \
                 if acme_server == 'boulder-v2' else BOULDER_V1_DIRECTORY_URL
 
-        acme_xdist['http_port'] = {node: port for (node, port)
-                                   in zip(nodes, range(5200, 5200 + len(nodes)))}
-        acme_xdist['https_port'] = {node: port for (node, port)
-                                    in zip(nodes, range(5100, 5100 + len(nodes)))}
-        acme_xdist['other_port'] = {node: port for (node, port)
-                                    in zip(nodes, range(5300, 5300 + len(nodes)))}
+        acme_xdist['http_port'] = {
+            node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
+            zip(nodes, range(5200, 5200 + len(nodes)))
+        }
+        acme_xdist['https_port'] = {
+            node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
+            zip(nodes, range(5100, 5100 + len(nodes)))
+        }
+        acme_xdist['other_port'] = {
+            node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
+            zip(nodes, range(5300, 5300 + len(nodes)))
+        }
 
         self.acme_xdist = acme_xdist
 
@@ -150,9 +158,9 @@ class ACMEServer(object):
             env=environ)
 
         # pebble_ocsp_server is imported here and not at the top of module in order to avoid a
-        # useless ImportError, in the case where cryptography dependency is too old to support ocsp,
-        # but Boulder is used instead of Pebble, so pebble_ocsp_server is not used. This is the
-        # typical situation of integration-certbot-oldest tox testenv.
+        # useless ImportError, in the case where cryptography dependency is too old to support
+        # ocsp, but Boulder is used instead of Pebble, so pebble_ocsp_server is not used. This is
+        # the typical situation of integration-certbot-oldest tox testenv.
         from certbot_integration_tests.utils import pebble_ocsp_server
         self._launch_process([sys.executable, pebble_ocsp_server.__file__])
 
@@ -195,13 +203,16 @@ class ACMEServer(object):
 
             if not self._dns_server:
                 # Configure challtestsrv to answer any A record request with ip of the docker host.
-                response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),
-                                         json={'ip': '10.77.77.1'})
+                response = requests.post('http://localhost:{0}/set-default-ipv4'.format(
+                    CHALLTESTSRV_PORT), json={'ip': '10.77.77.1'}
+                )
                 response.raise_for_status()
         except BaseException:
             # If we failed to set up boulder, print its logs.
             print('=> Boulder setup failed. Boulder logs are:')
-            process = self._launch_process(['docker-compose', 'logs'], cwd=instance_path, force_stderr=True)
+            process = self._launch_process([
+                'docker-compose', 'logs'], cwd=instance_path, force_stderr=True
+            )
             process.wait()
             raise
 
@@ -221,12 +232,15 @@ class ACMEServer(object):
         if not env:
             env = os.environ
         stdout = sys.stderr if force_stderr else self._stdout
-        process = subprocess.Popen(command, stdout=stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env)
+        process = subprocess.Popen(
+            command, stdout=stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env
+        )
         self._processes.append(process)
         return process
 
 
 def main():
+    # pylint: disable=missing-function-docstring
     parser = argparse.ArgumentParser(
         description='CLI tool to start a local instance of Pebble or Boulder CA server.')
     parser.add_argument('--server-type', '-s',
@@ -239,7 +253,10 @@ def main():
                              'resolve domains to localhost.')
     args = parser.parse_args()
 
-    acme_server = ACMEServer(args.server_type, [], http_proxy=False, stdout=True, dns_server=args.dns_server)
+    acme_server = ACMEServer(
+        args.server_type, [], http_proxy=False, stdout=True,
+        dns_server=args.dns_server
+    )
 
     try:
         with acme_server as acme_xdist:
