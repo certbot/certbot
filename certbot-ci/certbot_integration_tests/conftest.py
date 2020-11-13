@@ -12,6 +12,8 @@ import subprocess
 import sys
 
 from certbot_integration_tests.utils import acme_server as acme_lib
+from certbot_integration_tests.utils import dns_server as dns_lib
+from certbot_integration_tests.utils.dns_server import DNSServer
 
 
 def pytest_addoption(parser):
@@ -23,6 +25,9 @@ def pytest_addoption(parser):
                      choices=['boulder-v1', 'boulder-v2', 'pebble'],
                      help='select the ACME server to use (boulder-v1, boulder-v2, '
                           'pebble), defaulting to pebble')
+    parser.addoption('--dns-server', default=None,
+                     choices=['bind', None],
+                     help='select the DNS server to run. If unset, challtestsrv is used.')
 
 
 def pytest_configure(config):
@@ -32,7 +37,7 @@ def pytest_configure(config):
     """
     if not hasattr(config, 'slaveinput'):  # If true, this is the primary node
         with _print_on_err():
-            config.acme_xdist = _setup_primary_node(config)
+            _setup_primary_node(config)
 
 
 def pytest_configure_node(node):
@@ -41,6 +46,7 @@ def pytest_configure_node(node):
     :param node: current worker node
     """
     node.slaveinput['acme_xdist'] = node.config.acme_xdist
+    node.slaveinput['dns_xdist'] = node.config.dns_xdist
 
 
 @contextlib.contextmanager
@@ -64,8 +70,9 @@ def _setup_primary_node(config):
     Will:
         - check runtime compatibility (Docker, docker-compose, Nginx)
         - create a temporary workspace and the persistent GIT repositories space
+        - configure and start a DNS server using Docker, if configured
         - configure and start paralleled ACME CA servers using Docker
-        - transfer ACME CA servers configurations to pytest nodes using env variables
+        - transfer ACME CA and DNS servers configurations to pytest nodes using env variables
     :param config: Configuration of the pytest primary node
     """
     # Check for runtime compatibility: some tools are required to be available in PATH
@@ -86,11 +93,26 @@ def _setup_primary_node(config):
     workers = ['primary'] if not config.option.numprocesses\
         else ['gw{0}'.format(i) for i in range(config.option.numprocesses)]
 
+    # If a non-default DNS server is configured, start it and feed it to the ACME server
+    dns_server = None
+    acme_dns_server = None
+    if config.option.dns_server == 'bind':
+        dns_server = dns_lib.DNSServer(workers)
+        config.add_cleanup(dns_server.stop)
+        print('DNS xdist config:\n{0}'.format(dns_server.dns_xdist))
+        dns_server.start()
+        acme_dns_server = '{}:{}'.format(
+            dns_server.dns_xdist['address'],
+            dns_server.dns_xdist[workers[0]]
+        )
+
     # By calling setup_acme_server we ensure that all necessary acme server instances will be
     # fully started. This runtime is reflected by the acme_xdist returned.
-    acme_server = acme_lib.ACMEServer(config.option.acme_server, workers)
+    acme_server = acme_lib.ACMEServer(config.option.acme_server, workers,
+                                      dns_server=acme_dns_server)
     config.add_cleanup(acme_server.stop)
     print('ACME xdist config:\n{0}'.format(acme_server.acme_xdist))
     acme_server.start()
 
-    return acme_server.acme_xdist
+    config.acme_xdist = acme_server.acme_xdist
+    config.dns_xdist = dns_server.dns_xdist if dns_server else None

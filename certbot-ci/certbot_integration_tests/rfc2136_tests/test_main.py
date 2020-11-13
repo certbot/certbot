@@ -1,8 +1,5 @@
 """Module executing integration tests against Certbot with the RFC2136 DNS authenticator."""
 import pytest
-import pkg_resources
-import os.path
-from shutil import copyfile
 
 from certbot_integration_tests.rfc2136_tests import context as rfc2136_context
 
@@ -17,15 +14,12 @@ def context(request):
         integration_test_context.cleanup()
 
 
-def test_get_certificate(context):
-  creds_file = os.path.join(context.workspace, 'rfc2136-creds.ini')
-  copyfile(
-    pkg_resources.resource_filename('certbot_integration_tests',
-                                    'assets/bind-config/rfc2136-credentials.ini'),
-    creds_file
-  )
+@pytest.mark.parametrize('domain', [('example.com'), ('sub.example.com')])
+def test_get_certificate(domain, context):
+    context.skip_if_no_server()
 
-  context.certbot_test_rfc2136([
-    'certonly', '--dns-rfc2136-credentials', creds_file,
-    '-d', 'example.com', '-d', '*.example.com', '--dry-run']
-  )
+    with context.rfc2136_credentials() as creds:
+        context.certbot_test_rfc2136([
+            'certonly', '--dns-rfc2136-credentials', creds, '-d', domain, '-d',
+            '*.{}'.format(domain), '--dry-run'
+        ])

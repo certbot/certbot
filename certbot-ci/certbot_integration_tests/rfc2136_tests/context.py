@@ -1,21 +1,10 @@
-import os
-import pkg_resources
-from shutil import rmtree, copytree
-import socket
-import subprocess
-import time
+from contextlib import contextmanager
+from pytest import skip
+from pkg_resources import resource_filename
+import tempfile
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import certbot_call
-
-
-BIND_DOCKER_IMAGE = 'internetsystemsconsortium/bind9:9.16'
-BIND_BIND_ADDRESS = ('127.0.0.1', 45953)
-
-# A DNS message which is a query for '. IN A' transaction ID 0xe785. This is used by
-# _wait_until_ready to check that BIND is responding without depending on dnspython.
-BIND_TEST_QUERY = bytearray.fromhex('0028e7850120000100000000000100000100010000'
-                                    '29100000000000000c000a00083ad084e525a28702')
 
 
 class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
@@ -23,22 +12,18 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
     def __init__(self, request):
         super(IntegrationTestsContext, self).__init__(request)
 
-        # Provision config dirs in the workspace for BIND
-        self.bind_root = os.path.join(self.workspace, 'bind')
-        os.mkdir(self.bind_root)
+        self.request = request
 
-        # Copy the premade BIND configuration into the workspace
-        bind_conf_src = pkg_resources.resource_filename(
-          'certbot_integration_tests', 'assets/bind-config')
-        for dir in ['conf', 'zones']:
-          dst = os.path.join(self.bind_root, dir)
-          copytree(os.path.join(bind_conf_src, dir), dst)
+        self._dns_xdist = None
 
-        # Bring up the BIND container against the workspace
-        self._start_bind()
+        if hasattr(request.config, 'slaveinput'):  # Worker node
+            self._worker_id = request.config.slaveinput['slaveid']
+            self._dns_xdist = request.config.slaveinput['dns_xdist']
+        elif 'dns_xdist' in request.config:  # Primary node
+            self._worker_id = 'primary'
+            self._dns_xdist = request.config.dns_xdist
 
     def cleanup(self):
-        self._stop_bind()
         super(IntegrationTestsContext, self).cleanup()
 
     def certbot_test_rfc2136(self, args):
@@ -46,66 +31,40 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         Main command to execute certbot using the RFC2136 DNS authenticator.
         :param list args: list of arguments to pass to Certbot
         """
-        command = ['--authenticator', 'dns-rfc2136', '--dns-rfc2136-propagation-seconds', '5']
+        command = ['--authenticator', 'dns-rfc2136', '--dns-rfc2136-propagation-seconds', '2']
         command.extend(args)
         return certbot_call.certbot_test(
             command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
             self.config_dir, self.workspace, force_renew=True)
 
-    def _start_bind(self):
-        addr_str = '{}:{}'.format(BIND_BIND_ADDRESS[0], BIND_BIND_ADDRESS[1])
-        self.process = subprocess.Popen([
-          'docker', 'run', '--rm',
-          '-p', '{}:53/udp'.format(addr_str),
-          '-p', '{}:53/tcp'.format(addr_str),
-          '-v', '{}/conf:/etc/bind'.format(self.bind_root),
-          '-v', '{}/zones:/var/lib/bind'.format(self.bind_root),
-          BIND_DOCKER_IMAGE
-        ])
+    @contextmanager
+    def rfc2136_credentials(self, label='default'):
+        # type: (str) -> str
+        """
+        Produces the contents of a certbot-dns-rfc2136 credentials file.
+        :param str label: which RFC2136 credential to use
+        :yields: Path to credentials file
+        :rtype: str
+        """
+        src_file = resource_filename('certbot_integration_tests',
+                                     'assets/bind-config/rfc2136-credentials-{}.ini'
+                                     .format(label))
+        contents = None
 
-        assert self.process.poll() is None
+        with open(src_file, 'r') as f:
+            contents = f.read().format(
+                server_address=self._dns_xdist['address'],
+                server_port=self._dns_xdist[self._worker_id]
+            )
 
-        try:
-          self._wait_until_ready()
-        except:
-          # The container might be running even if we think it isn't
-          self._stop_bind()
-          raise
+        with tempfile.NamedTemporaryFile('w+', prefix='rfc2136-creds-{}'.format(label),
+                                         suffix='.ini', dir=self.workspace) as f:
+            f.write(contents)
+            f.seek(0)
+            yield f.name
 
-    def _stop_bind(self):
-        assert self.process.poll() is None
-        self.process.terminate()
-        self.process.wait()
-        rmtree(self.bind_root)
-
-    def _wait_until_ready(self, attempts=30):
-      # type: (int) -> None
-      """
-      Polls the DNS server over TCP until it gets a response, or until
-      it runs out of attempts and raises a ValueError.
-      The DNS response message must match the txn_id of the DNS query message,
-      but otherwise the contents are ignored.
-      :param int attempts: The number of attempts to make.
-      """
-      for _ in range(attempts):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(5.0)
-        try:
-          sock.connect(BIND_BIND_ADDRESS)
-          sock.sendall(BIND_TEST_QUERY)
-          buf = sock.recv(1024)
-          # We should receive a DNS message with the same tx_id
-          if buf and len(buf) > 4 and buf[2:4] == BIND_TEST_QUERY[2:4]:
-            return
-          # If we got a response but it wasn't the one we wanted, wait a little
-          time.sleep(1)
-        except:
-          # If there was a network error, wait a little
-          time.sleep(1)
-          pass
-        finally:
-          sock.close()
-
-      raise ValueError(
-        'Gave up waiting for DNS server {} to respond'.format(BIND_BIND_ADDRESS))
-
+    def skip_if_no_server(self):
+        """Skips the test if there was no RFC2136-capable DNS server configured
+        in the test environment"""
+        if not self._dns_xdist:
+            skip('No RFC2136-capable DNS server is configured')
