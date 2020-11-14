@@ -43,11 +43,12 @@ class PrepareSubscriptionTest(SubscriptionTest):
         prepare_subscription(self.config, self.account)
 
     @test_util.patch_get_utility()
-    def test_failure(self, mock_get_utility):
+    @mock.patch("certbot._internal.eff.display_util.notify")
+    def test_failure(self, mock_notify, mock_get_utility):
         self.config.email = None
         self.config.eff_email = True
         self._call()
-        actual = mock_get_utility().add_message.call_args[0][0]
+        actual = mock_notify.call_args[0][0]
         expected_part = "because you didn't provide an e-mail address"
         self.assertTrue(expected_part in actual)
         self.assertIsNone(self.account.meta.register_to_eff)
@@ -121,6 +122,9 @@ class SubscribeTest(unittest.TestCase):
         self.json = {'status': True}
         self.response = mock.Mock(ok=True)
         self.response.json.return_value = self.json
+        patcher = mock.patch("certbot._internal.eff.display_util.notify")
+        self.mock_notify = patcher.start()
+        self.addCleanup(patcher.stop)
 
     @mock.patch('certbot._internal.eff.requests.post')
     def _call(self, mock_post):
@@ -139,42 +143,38 @@ class SubscribeTest(unittest.TestCase):
         self.assertFalse(data is None)
         self.assertEqual(data.get('email'), self.email)
 
-    @test_util.patch_get_utility()
-    def test_bad_status(self, mock_get_utility):
+    def test_bad_status(self):
         self.json['status'] = False
         self._call()
-        actual = self._get_reported_message(mock_get_utility)
+        actual = self._get_reported_message()
         expected_part = 'because your e-mail address appears to be invalid.'
         self.assertTrue(expected_part in actual)
 
-    @test_util.patch_get_utility()
-    def test_not_ok(self, mock_get_utility):
+    def test_not_ok(self):
         self.response.ok = False
         self.response.raise_for_status.side_effect = requests.exceptions.HTTPError
         self._call()
-        actual = self._get_reported_message(mock_get_utility)
+        actual = self._get_reported_message()
         unexpected_part = 'because'
         self.assertFalse(unexpected_part in actual)
 
-    @test_util.patch_get_utility()
-    def test_response_not_json(self, mock_get_utility):
+    def test_response_not_json(self):
         self.response.json.side_effect = ValueError()
         self._call()
-        actual = self._get_reported_message(mock_get_utility)
+        actual = self._get_reported_message()
         expected_part = 'problem'
         self.assertTrue(expected_part in actual)
 
-    @test_util.patch_get_utility()
-    def test_response_json_missing_status_element(self, mock_get_utility):
+    def test_response_json_missing_status_element(self):
         self.json.clear()
         self._call()
-        actual = self._get_reported_message(mock_get_utility)
+        actual = self._get_reported_message()
         expected_part = 'problem'
         self.assertTrue(expected_part in actual)
 
-    def _get_reported_message(self, mock_get_utility):
-        self.assertTrue(mock_get_utility().add_message.called)
-        return mock_get_utility().add_message.call_args[0][0]
+    def _get_reported_message(self):
+        self.assertTrue(self.mock_notify.called)
+        return self.mock_notify.call_args[0][0]
 
     @test_util.patch_get_utility()
     def test_subscribe(self, mock_get_utility):

@@ -113,12 +113,24 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
         if lineage is not None:
             # Renewal, where we already know the specific lineage we're
             # interested in
-            logger.info("Renewing an existing certificate")
+            display_util.notify(
+                "{action} for {domains}".format(
+                    action="Simulating renewal of an existing certificate"
+                            if config.dry_run else "Renewing an existing certificate",
+                    domains=display_util.summarize_domain_list(domains or lineage.names())
+                )
+            )
             renewal.renew_cert(config, domains, le_client, lineage)
         else:
             # TREAT AS NEW REQUEST
             assert domains is not None
-            logger.info("Obtaining a new certificate")
+            display_util.notify(
+                "{action} for {domains}".format(
+                    action="Simulating a certificate request" if config.dry_run else
+                           "Requesting a certificate",
+                    domains=display_util.summarize_domain_list(domains)
+                )
+            )
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
@@ -163,8 +175,7 @@ def _handle_subset_cert_request(config, domains, cert):
                                        cli_flag="--expand",
                                        force_interactive=True):
         return "renew", cert
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message(
+    display_util.notify(
         "To obtain a new certificate that contains these names without "
         "replacing your existing certificate for {0}, you must use the "
         "--duplicate option.{br}{br}"
@@ -172,8 +183,7 @@ def _handle_subset_cert_request(config, domains, cert):
             existing,
             sys.argv[0], " ".join(sys.argv[1:]),
             br=os.linesep
-        ),
-        reporter_util.HIGH_PRIORITY)
+        ))
     raise errors.Error(USER_CANCELLED)
 
 
@@ -542,7 +552,6 @@ def _delete_if_appropriate(config):
         archive dir is found for the specified lineage, etc ...
     """
     display = zope.component.getUtility(interfaces.IDisplay)
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
 
     attempt_deletion = config.delete_after_revoke
     if attempt_deletion is None:
@@ -552,7 +561,6 @@ def _delete_if_appropriate(config):
                 force_interactive=True, default=True)
 
     if not attempt_deletion:
-        reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)
         return
 
     # config.cert_path must have been set
@@ -570,9 +578,8 @@ def _delete_if_appropriate(config):
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
             lambda x: x.archive_dir, lambda x: x)
     except errors.OverlappingMatchFound:
-        msg = ('Not deleting revoked certs due to overlapping archive dirs. More than '
-                'one lineage is using {0}'.format(archive_dir))
-        reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
+        logger.warning("Not deleting revoked certs due to overlapping archive dirs. More than "
+                       "one certificate is using %s", archive_dir)
         return
     except Exception as e:
         msg = ('config.default_archive_dir: {0}, config.live_dir: {1}, archive_dir: {2},'
@@ -625,7 +632,6 @@ def unregister(config, unused_plugins):
     """
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
 
     if not accounts:
         return "Could not find existing account to deactivate."
@@ -647,7 +653,7 @@ def unregister(config, unused_plugins):
     # delete local account files
     account_files.delete(config.account)
 
-    reporter_util.add_message("Account deactivated.", reporter_util.MEDIUM_PRIORITY)
+    display_util.notify("Account deactivated.")
     return None
 
 
@@ -698,8 +704,6 @@ def update_account(config, unused_plugins):
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     if not accounts:
         return "Could not find an existing account to update."
@@ -724,10 +728,11 @@ def update_account(config, unused_plugins):
     account_storage.update_regr(acc, cb_client.acme)
 
     if config.email is None:
-        add_msg("Any contact information associated with this account has been removed.")
+        display_util.notify("Any contact information associated "
+                            "with this account has been removed.")
     else:
         eff.prepare_subscription(config, acc)
-        add_msg("Your e-mail address was updated to {0}.".format(config.email))
+        display_util.notify("Your e-mail address was updated to {0}.".format(config.email))
 
     return None
 

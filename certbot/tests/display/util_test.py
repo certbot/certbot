@@ -454,15 +454,36 @@ class PlaceParensTest(unittest.TestCase):
         self.assertEqual("(y)es please", self._call("yes please"))
 
 
-class PrintTest(unittest.TestCase):
-    """Test the print function """
+class SummarizeDomainListTest(unittest.TestCase):
+    @classmethod
+    def _call(cls, domains):
+        from certbot.display.util import summarize_domain_list
+        return summarize_domain_list(domains)
+
+    def test_single_domain(self):
+        self.assertEqual("example.com", self._call(["example.com"]))
+
+    def test_two_domains(self):
+        self.assertEqual("example.com and example.org",
+                         self._call(["example.com", "example.org"]))
+
+    def test_many_domains(self):
+        self.assertEqual("example.com and 2 more domains",
+                         self._call(["example.com", "example.org", "a.example.com"]))
+
+    def test_empty_domains(self):
+        self.assertEqual("", self._call([]))
+
+
+class NotifyTest(unittest.TestCase):
+    """Test the notify function """
 
     @test_util.patch_get_utility()
-    def test_print(self, mock_util):
+    def test_notify(self, mock_util):
         from certbot.display.util import notify
         notify("Hello World")
         mock_util().notification.assert_called_with(
-            "Hello World", pause=False, wrap=True, decorate=False
+            "Hello World", pause=False, decorate=False, wrap=False
         )
 
 
