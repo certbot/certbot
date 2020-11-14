@@ -104,7 +104,7 @@ def _setup_primary_node(config):
         dns_server.start()
         acme_dns_server = '{}:{}'.format(
             dns_server.dns_xdist['address'],
-            dns_server.dns_xdist[workers[0]]
+            dns_server.dns_xdist['port']
         )
 
     # By calling setup_acme_server we ensure that all necessary acme server instances will be

@@ -15,16 +15,10 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         self.request = request
 
         self._dns_xdist = None
-
         if hasattr(request.config, 'slaveinput'):  # Worker node
-            self._worker_id = request.config.slaveinput['slaveid']
             self._dns_xdist = request.config.slaveinput['dns_xdist']
-        elif 'dns_xdist' in request.config:  # Primary node
-            self._worker_id = 'primary'
+        else:  # Primary node
             self._dns_xdist = request.config.dns_xdist
-
-    def cleanup(self):
-        super(IntegrationTestsContext, self).cleanup()
 
     def certbot_test_rfc2136(self, args):
         """
@@ -47,23 +41,23 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         :rtype: str
         """
         src_file = resource_filename('certbot_integration_tests',
-                                     'assets/bind-config/rfc2136-credentials-{}.ini'
+                                     'assets/bind-config/rfc2136-credentials-{}.ini.tpl'
                                      .format(label))
         contents = None
 
         with open(src_file, 'r') as f:
             contents = f.read().format(
                 server_address=self._dns_xdist['address'],
-                server_port=self._dns_xdist[self._worker_id]
+                server_port=self._dns_xdist['port']
             )
 
         with tempfile.NamedTemporaryFile('w+', prefix='rfc2136-creds-{}'.format(label),
                                          suffix='.ini', dir=self.workspace) as f:
             f.write(contents)
-            f.seek(0)
+            f.flush()
             yield f.name
 
-    def skip_if_no_server(self):
+    def skip_if_no_bind9_server(self):
         """Skips the test if there was no RFC2136-capable DNS server configured
         in the test environment"""
         if not self._dns_xdist:

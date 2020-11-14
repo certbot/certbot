@@ -11,24 +11,23 @@ import tempfile
 import time
 
 
+BIND_DOCKER_IMAGE = 'internetsystemsconsortium/bind9:9.16'
+BIND_BIND_ADDRESS = ('127.0.0.1', 45953)
+
+# A TCP DNS message which is a query for '. CH A' transaction ID 0xcb37. This is used
+# by _wait_until_ready to check that BIND is responding without depending on dnspython.
+BIND_TEST_QUERY = bytearray.fromhex('0011cb37000000010000000000000000010003')
+
+
 class DNSServer(object):
     """
     DNSServer configures and handles the lifetime of an RFC2136-capable server.
-    DNServer provides access to the dns_xdist parameter, listing the address and ports to
-    use for each pytest node.
+    DNServer provides access to the dns_xdist parameter, listing the address and port
+    to use for each pytest node.
 
     At this time, DNSServer should only be used with a single node, but may be expanded in
-    future to support parallelization.
+    future to support parallelization (https://github.com/certbot/certbot/issues/8455).
     """
-
-    BIND_DOCKER_IMAGE = 'internetsystemsconsortium/bind9:9.16'
-    BIND_BIND_ADDRESS = ('127.0.0.1', 45953)
-
-    # A DNS message which is a query for '. IN A' transaction ID 0xe785. This is used by
-    # _wait_until_ready to check that BIND is responding without depending on dnspython.
-    BIND_TEST_QUERY = bytearray.fromhex('0028e7850120000100000000000100000100010000'
-                                        '29100000000000000c000a00083ad084e525a28702')
-
 
     def __init__(self, nodes, show_output=False):
         """
@@ -39,11 +38,10 @@ class DNSServer(object):
 
         self.bind_root = tempfile.mkdtemp()
 
-        # Same port to every node. We are only pretending to support parallelization.
         self.dns_xdist = {
-            node: DNSServer.BIND_BIND_ADDRESS[1] for node in nodes
+            'address': BIND_BIND_ADDRESS[0],
+            'port': BIND_BIND_ADDRESS[1]
         }
-        self.dns_xdist['address'] = DNSServer.BIND_BIND_ADDRESS[0]
 
         # Unfortunately the BIND9 image forces everything to stderr with -g and we can't
         # modify the verbosity.
@@ -63,7 +61,8 @@ class DNSServer(object):
         try:
             self.process.terminate()
             self.process.wait()
-        except:
+        except BaseException as e:
+            print("BIND9 did not stop cleanly: {}".format(e), file=sys.stderr)
             pass
         finally:
             shutil.rmtree(self.bind_root)
@@ -73,22 +72,22 @@ class DNSServer(object):
     def _configure_bind(self):
         """Configure the BIND9 server based on the prebaked configuration"""
         bind_conf_src = resource_filename('certbot_integration_tests', 'assets/bind-config')
-        for dir in ['conf', 'zones']:
-          shutil.copytree(os.path.join(bind_conf_src, dir), os.path.join(self.bind_root, dir))
+        shutil.copytree(bind_conf_src, self.bind_root, dirs_exist_ok=True)
 
     def _start_bind(self):
         """Launch the BIND9 server as a Docker container"""
-        addr_str = '{}:{}'.format(DNSServer.BIND_BIND_ADDRESS[0], DNSServer.BIND_BIND_ADDRESS[1])
+        addr_str = '{}:{}'.format(BIND_BIND_ADDRESS[0], BIND_BIND_ADDRESS[1])
         self.process = subprocess.Popen([
           'docker', 'run', '--rm',
           '-p', '{}:53/udp'.format(addr_str),
           '-p', '{}:53/tcp'.format(addr_str),
           '-v', '{}/conf:/etc/bind'.format(self.bind_root),
           '-v', '{}/zones:/var/lib/bind'.format(self.bind_root),
-          DNSServer.BIND_DOCKER_IMAGE
+          BIND_DOCKER_IMAGE
         ], stdout=self._output, stderr=self._output)
 
-        assert self.process.poll() is None
+        if self.process.poll():
+            raise("BIND9 server stopped unexpectedly")
 
         try:
           self._wait_until_ready()
@@ -110,11 +109,11 @@ class DNSServer(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(5.0)
         try:
-          sock.connect(DNSServer.BIND_BIND_ADDRESS)
-          sock.sendall(DNSServer.BIND_TEST_QUERY)
+          sock.connect(BIND_BIND_ADDRESS)
+          sock.sendall(BIND_TEST_QUERY)
           buf = sock.recv(1024)
           # We should receive a DNS message with the same tx_id
-          if buf and len(buf) > 4 and buf[2:4] == DNSServer.BIND_TEST_QUERY[2:4]:
+          if buf and len(buf) > 4 and buf[2:4] == BIND_TEST_QUERY[2:4]:
             return
           # If we got a response but it wasn't the one we wanted, wait a little
           time.sleep(1)
@@ -126,7 +125,7 @@ class DNSServer(object):
           sock.close()
 
       raise ValueError(
-        'Gave up waiting for DNS server {} to respond'.format(DNSServer.BIND_BIND_ADDRESS))
+        'Gave up waiting for DNS server {} to respond'.format(BIND_BIND_ADDRESS))
 
     def __enter__(self):
         self.start()
