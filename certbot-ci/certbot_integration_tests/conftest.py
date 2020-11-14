@@ -25,9 +25,10 @@ def pytest_addoption(parser):
                      choices=['boulder-v1', 'boulder-v2', 'pebble'],
                      help='select the ACME server to use (boulder-v1, boulder-v2, '
                           'pebble), defaulting to pebble')
-    parser.addoption('--dns-server', default=None,
-                     choices=['bind', None],
-                     help='select the DNS server to run. If unset, challtestsrv is used.')
+    parser.addoption('--dns-server', default='challtestsrv',
+                     choices=['bind', 'challtestsrv'],
+                     help='select the DNS server to use (bind, challtestsrv), '
+                          'defaulting to challtestsrv')
 
 
 def pytest_configure(config):
