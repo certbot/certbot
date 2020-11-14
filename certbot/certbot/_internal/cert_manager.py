@@ -433,7 +433,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
             notify_json({'parse_failures': parse_failures})
 
     output = json.dumps(out_json, sort_keys=True, indent=4) if format_json else "\n".join(out)
-    display_util.notify(output, wrap=False)
+    display_util.notify(output)
 
 def _search_lineages(cli_config, func, initial_rv, *args):
     """Iterate func over unbroken lineages, allowing custom return conditions.
