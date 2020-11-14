@@ -99,7 +99,7 @@ def input_with_timeout(prompt=None, timeout=36000.0):
 
 
 def notify(msg):
-    # type: (str, bool) -> None
+    # type: (str) -> None
     """Display a basic status message.
 
     :param str msg: message to display
