@@ -21,6 +21,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.display import util as display_util
 from certbot.compat import os
 from certbot.plugins import common
 from certbot_nginx._internal import constants
@@ -231,6 +232,8 @@ class NginxConfigurator(common.Installer):
         vhosts = self.choose_vhosts(domain, create_if_no_match=True)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
+            display_util.notify("Successfully deployed certificate for {} to {}"
+                                .format(domain, vhost.filep))
 
     def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):  # pylint: disable=unused-argument
         """

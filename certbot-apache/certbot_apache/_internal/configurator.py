@@ -29,6 +29,7 @@ from certbot import util
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.compat import filesystem
 from certbot.compat import os
+from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 from certbot.plugins.util import path_surgery
@@ -484,6 +485,8 @@ class ApacheConfigurator(common.Installer):
         vhosts = self.choose_vhosts(domain)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
+            display_util.notify("Successfully deployed certificate for {} to {}"
+                                .format(domain, vhost.filep))
 
     def choose_vhosts(self, domain, create_if_no_ssl=True):
         """
@@ -522,6 +525,20 @@ class ApacheConfigurator(common.Installer):
 
         return list(matched)
 
+    def _raise_no_suitable_vhost_error(self, target_name):
+        # type: (str) -> None
+        """
+        Notifies the user that Certbot could not find a vhost to secure
+        and raises an error.
+        :param str target_name: The server name that could not be mapped
+        :raises errors.PluginError: Raised unconditionally
+        """
+        raise errors.PluginError(
+            "Certbot could not find a VirtualHost for {0} in the Apache "
+            "configuration. Please create a VirtualHost with a ServerName "
+            "matching {0} and try again.".format(target_name)
+        )
+
     def _in_wildcard_scope(self, name, domain):
         """
         Helper method for _vhosts_for_wildcard() that makes sure that the domain
@@ -559,12 +576,7 @@ class ApacheConfigurator(common.Installer):
         dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
 
         if not dialog_output:
-            logger.error(
-                "No vhost exists with servername or alias for domain %s. "
-                "No vhost was selected. Please specify ServerName or ServerAlias "
-                "in the Apache config.",
-                domain)
-            raise errors.PluginError("No vhost selected")
+            self._raise_no_suitable_vhost_error(domain)
 
         # Make sure we create SSL vhosts for the ones that are HTTP only
         # if requested.
@@ -688,12 +700,7 @@ class ApacheConfigurator(common.Installer):
         # Select a vhost from a list
         vhost = display_ops.select_vhost(target_name, self.vhosts)
         if vhost is None:
-            logger.error(
-                "No vhost exists with servername or alias of %s. "
-                "No vhost was selected. Please specify ServerName or ServerAlias "
-                "in the Apache config.",
-                target_name)
-            raise errors.PluginError("No vhost selected")
+            self._raise_no_suitable_vhost_error(target_name)
         if temp:
             return vhost
         if not vhost.ssl:
@@ -1498,12 +1505,12 @@ class ApacheConfigurator(common.Installer):
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 
         if sift:
-            reporter = zope.component.getUtility(interfaces.IReporter)
-            reporter.add_message(
-                "Some rewrite rules copied from {0} were disabled in the "
-                "vhost for your HTTPS site located at {1} because they have "
-                "the potential to create redirection loops.".format(
-                    vhost.filep, ssl_fp), reporter.MEDIUM_PRIORITY)
+            display_util.notify(
+                "Some rewrite rules copied from {src_path} were disabled in the "
+                "vhost for your HTTPS site located at {dest_path} because they have "
+                "the potential to create redirection loops."
+                .format(src_path=vhost.filep, dest_path=ssl_fp)
+            )
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")
 

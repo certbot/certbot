@@ -339,7 +339,8 @@ class MultipleVhostsTest(util.ApacheTest):
         vhosts = self.config._non_default_vhosts(self.config.vhosts)
         self.assertEqual(len(vhosts), 10)
 
-    def test_deploy_cert_enable_new_vhost(self):
+    @mock.patch('certbot_apache._internal.configurator.display_util.notify')
+    def test_deploy_cert_enable_new_vhost(self, unused_mock_notify):
         # Create
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
         self.config.parser.modules["ssl_module"] = None
@@ -377,7 +378,8 @@ class MultipleVhostsTest(util.ApacheTest):
                 self.fail("Include shouldn't be added, as patched find_dir 'finds' existing one") \
                     # pragma: no cover
 
-    def test_deploy_cert(self):
+    @mock.patch('certbot_apache._internal.configurator.display_util.notify')
+    def test_deploy_cert(self, unused_mock_notify):
         self.config.parser.modules["ssl_module"] = None
         self.config.parser.modules["mod_ssl.c"] = None
         self.config.parser.modules["socache_shmcb_module"] = None
@@ -1292,7 +1294,8 @@ class MultipleVhostsTest(util.ApacheTest):
             os.path.basename(inc_path) in self.config.parser.existing_paths[
                 os.path.dirname(inc_path)])
 
-    def test_deploy_cert_not_parsed_path(self):
+    @mock.patch('certbot_apache._internal.configurator.display_util.notify')
+    def test_deploy_cert_not_parsed_path(self, unused_mock_notify):
         # Make sure that we add include to root config for vhosts when
         # handle-sites is false
         self.config.parser.modules["ssl_module"] = None
@@ -1388,7 +1391,8 @@ class MultipleVhostsTest(util.ApacheTest):
             self.assertEqual(vhs[0], self.vh_truth[7])
 
 
-    def test_deploy_cert_wildcard(self):
+    @mock.patch('certbot_apache._internal.configurator.display_util.notify')
+    def test_deploy_cert_wildcard(self, unused_mock_notify):
         # pylint: disable=protected-access
         mock_choose_vhosts = mock.MagicMock()
         mock_choose_vhosts.return_value = [self.vh_truth[7]]
@@ -1608,8 +1612,8 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertEqual(self.config._get_new_vh_path(without_index, both),
                          with_index_2[0])
 
-    @certbot_util.patch_get_utility()
-    def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
+    @mock.patch("certbot_apache._internal.configurator.display_util.notify")
+    def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_notify):
         self.config.parser.modules["rewrite_module"] = None
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[4])
@@ -1625,11 +1629,11 @@ class MultiVhostsTest(util.ApacheTest):
                                     "\"http://new.example.com/docs/$1\"  [R,L]")
         self.assertTrue(commented_rewrite_rule in conf_text)
         self.assertTrue(uncommented_rewrite_rule in conf_text)
-        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
-                                                               mock.ANY)
+        self.assertEqual(mock_notify.call_count, 1)
+        self.assertTrue("Some rewrite rules" in mock_notify.call_args[0][0])
 
-    @certbot_util.patch_get_utility()
-    def test_make_vhost_ssl_with_existing_rewrite_conds(self, mock_get_utility):
+    @mock.patch("certbot_apache._internal.configurator.display_util.notify")
+    def test_make_vhost_ssl_with_existing_rewrite_conds(self, mock_notify):
         self.config.parser.modules["rewrite_module"] = None
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[3])
@@ -1654,8 +1658,8 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertTrue(commented_cond1 in conf_line_set)
         self.assertTrue(commented_cond2 in conf_line_set)
         self.assertTrue(commented_rewrite_rule in conf_line_set)
-        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
-                                                               mock.ANY)
+        self.assertEqual(mock_notify.call_count, 1)
+        self.assertTrue("Some rewrite rules" in mock_notify.call_args[0][0])
 
 
 class InstallSslOptionsConfTest(util.ApacheTest):
