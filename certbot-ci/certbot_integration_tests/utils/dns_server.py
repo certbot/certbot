@@ -93,7 +93,7 @@ class DNSServer(object):
           self._wait_until_ready()
         except:
           # The container might be running even if we think it isn't
-          self._stop_bind()
+          self.stop()
           raise
 
     def _wait_until_ready(self, attempts=30):
