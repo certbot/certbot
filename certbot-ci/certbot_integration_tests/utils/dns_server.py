@@ -106,6 +106,9 @@ class DNSServer(object):
       :param int attempts: The number of attempts to make.
       """
       for _ in range(attempts):
+        if self.process.poll():
+          raise ValueError('BIND9 server stopped unexpectedly')
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(5.0)
         try:
