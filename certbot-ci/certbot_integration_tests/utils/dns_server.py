@@ -63,11 +63,11 @@ class DNSServer(object):
             self.process.wait()
         except BaseException as e:
             print("BIND9 did not stop cleanly: {}".format(e), file=sys.stderr)
-            pass
-        finally:
-            shutil.rmtree(self.bind_root)
-            if self._output != sys.stderr:
-                self._output.close()
+
+        shutil.rmtree(self.bind_root, ignore_errors=True)
+
+        if self._output != sys.stderr:
+            self._output.close()
 
     def _configure_bind(self):
         """Configure the BIND9 server based on the prebaked configuration"""
