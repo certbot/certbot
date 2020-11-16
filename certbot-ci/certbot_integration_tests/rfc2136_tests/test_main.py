@@ -21,6 +21,5 @@ def test_get_certificate(domain, context):
     with context.rfc2136_credentials() as creds:
         context.certbot_test_rfc2136([
             'certonly', '--dns-rfc2136-credentials', creds,
-            '-d', domain, '-d', '*.{}'.format(domain),
-            '--dry-run'
+            '-d', domain, '-d', '*.{}'.format(domain)
         ])
