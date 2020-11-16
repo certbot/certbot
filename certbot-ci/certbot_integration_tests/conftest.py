@@ -68,13 +68,18 @@ def _print_on_err():
 def _setup_primary_node(config):
     """
     Setup the environment for integration tests.
-    Will:
+
+    This function will:
         - check runtime compatibility (Docker, docker-compose, Nginx)
         - create a temporary workspace and the persistent GIT repositories space
         - configure and start a DNS server using Docker, if configured
         - configure and start paralleled ACME CA servers using Docker
         - transfer ACME CA and DNS servers configurations to pytest nodes using env variables
-    :param config: Configuration of the pytest primary node
+
+    This function modifies `config` by injecting the ACME CA and DNS server configurations,
+    in addition to cleanup functions for those servers.
+
+    :param config: Configuration of the pytest primary node. Is modified by this function.
     """
     # Check for runtime compatibility: some tools are required to be available in PATH
     if 'boulder' in config.option.acme_server:
