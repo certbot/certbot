@@ -64,6 +64,10 @@ jobs:
           ACME_SERVER: boulder-v2
         nginx-compat:
           TOXENV: nginx_compat
+        linux-integration-rfc2136:
+          IMAGE_NAME: ubuntu-18.04
+          PYTHON_VERSION: 3.8
+          TOXENV: integration-dns-rfc2136
         le-auto-oraclelinux6:
           TOXENV: le_auto_oraclelinux6
         docker-dev:
