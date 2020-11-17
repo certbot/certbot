@@ -2,6 +2,7 @@
 import copy
 import functools
 import glob
+import io
 import logging
 import re
 
@@ -205,12 +206,16 @@ class NginxParser(object):
             if item in self.parsed and not override:
                 continue
             try:
-                with open(item) as _file:
+                with io.open(item, "r", encoding="utf-8") as _file:
                     parsed = nginxparser.load(_file)
                     self.parsed[item] = parsed
                     trees.append(parsed)
             except IOError:
                 logger.warning("Could not open file: %s", item)
+            except UnicodeDecodeError:
+                logger.warning("Could not read file: %s due to invalid "
+                               "character. Only UTF-8 encoding is "
+                               "supported.", item)
             except pyparsing.ParseException as err:
                 logger.debug("Could not parse file: %s due to %s", item, err)
         return trees
@@ -399,9 +404,9 @@ class NginxParser(object):
                 if directive and directive[0] == 'listen':
                     # Exclude one-time use parameters which will cause an error if repeated.
                     # https://nginx.org/en/docs/http/ngx_http_core_module.html#listen
-                    exclude = set(('default_server', 'default', 'setfib', 'fastopen', 'backlog',
+                    exclude = {'default_server', 'default', 'setfib', 'fastopen', 'backlog',
                                    'rcvbuf', 'sndbuf', 'accept_filter', 'deferred', 'bind',
-                                   'ipv6only', 'reuseport', 'so_keepalive'))
+                                   'ipv6only', 'reuseport', 'so_keepalive'}
 
                     for param in exclude:
                         # See: github.com/certbot/certbot/pull/6223#pullrequestreview-143019225
@@ -414,10 +419,13 @@ class NginxParser(object):
 def _parse_ssl_options(ssl_options):
     if ssl_options is not None:
         try:
-            with open(ssl_options) as _file:
+            with io.open(ssl_options, "r", encoding="utf-8") as _file:
                 return nginxparser.load(_file)
         except IOError:
             logger.warning("Missing NGINX TLS options file: %s", ssl_options)
+        except UnicodeDecodeError:
+            logger.warning("Could not read file: %s due to invalid character. "
+                           "Only UTF-8 encoding is supported.", ssl_options)
         except pyparsing.ParseBaseException as err:
             logger.debug("Could not parse file: %s due to %s", ssl_options, err)
     return []
@@ -488,7 +496,8 @@ def get_best_match(target_name, names):
 
 
 def _exact_match(target_name, name):
-    return name in (target_name, '.' + target_name)
+    target_lower = target_name.lower()
+    return name.lower() in (target_lower, '.' + target_lower)
 
 
 def _wildcard_match(target_name, name, start):
@@ -509,11 +518,11 @@ def _wildcard_match(target_name, name, start):
     if first not in ('*', ''):
         return False
 
-    target_name = '.'.join(parts)
-    name = '.'.join(match_parts)
+    target_name_lower = '.'.join(parts).lower()
+    name_lower = '.'.join(match_parts).lower()
 
     # Ex: www.eff.org matches *.eff.org, eff.org does not match *.eff.org
-    return target_name.endswith('.' + name)
+    return target_name_lower.endswith('.' + name_lower)
 
 
 def _regex_match(target_name, name):
@@ -570,7 +579,7 @@ def _update_or_add_directives(directives, insert_at_top, block):
 
 
 INCLUDE = 'include'
-REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE, 'rewrite', 'add_header'])
+REPEATABLE_DIRECTIVES = {'server_name', 'listen', INCLUDE, 'rewrite', 'add_header'}
 COMMENT = ' managed by Certbot'
 COMMENT_BLOCK = [' ', '#', COMMENT]
 

@@ -2,14 +2,13 @@
 from __future__ import print_function
 
 import logging
-from subprocess import PIPE
-from subprocess import Popen
 
 from acme.magic_typing import List
 from acme.magic_typing import Set
 from certbot import errors
 from certbot import util
 from certbot.compat import filesystem
+from certbot.compat import misc
 from certbot.compat import os
 from certbot.plugins import util as plug_util
 
@@ -229,34 +228,8 @@ def _run_hook(cmd_name, shell_cmd):
     :type shell_cmd: `list` of `str` or `str`
 
     :returns: stderr if there was any"""
-    err, _ = execute(cmd_name, shell_cmd)
+    err, _ = misc.execute_command(cmd_name, shell_cmd, env=util.env_no_snap_for_external_calls())
     return err
-
-
-def execute(cmd_name, shell_cmd):
-    """Run a command.
-
-    :param str cmd_name: the user facing name of the hook being run
-    :param shell_cmd: shell command to execute
-    :type shell_cmd: `list` of `str` or `str`
-
-    :returns: `tuple` (`str` stderr, `str` stdout)"""
-    logger.info("Running %s command: %s", cmd_name, shell_cmd)
-
-    # universal_newlines causes Popen.communicate()
-    # to return str objects instead of bytes in Python 3
-    cmd = Popen(shell_cmd, shell=True, stdout=PIPE,
-                stderr=PIPE, universal_newlines=True)
-    out, err = cmd.communicate()
-    base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
-    if out:
-        logger.info('Output from %s command %s:\n%s', cmd_name, base_cmd, out)
-    if cmd.returncode != 0:
-        logger.error('%s command "%s" returned error code %d',
-                     cmd_name, shell_cmd, cmd.returncode)
-    if err:
-        logger.error('Error output from %s command %s:\n%s', cmd_name, base_cmd, err)
-    return err, out
 
 
 def list_hooks(dir_path):

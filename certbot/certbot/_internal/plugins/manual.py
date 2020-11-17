@@ -8,7 +8,9 @@ from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter
+from certbot import util
 from certbot._internal import hooks
+from certbot.compat import misc
 from certbot.compat import os
 from certbot.plugins import common
 
@@ -35,7 +37,11 @@ class Authenticator(common.Plugin):
         'is the validation string, and $CERTBOT_TOKEN is the filename of the '
         'resource requested when performing an HTTP-01 challenge. An additional '
         'cleanup script can also be provided and can use the additional variable '
-        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script.')
+        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script. '
+        'For both authenticator and cleanup script, on HTTP-01 and DNS-01 challenges, '
+        '$CERTBOT_REMAINING_CHALLENGES will be equal to the number of challenges that '
+        'remain after the current one, and $CERTBOT_ALL_DOMAINS contains a comma-separated '
+        'list of all domains that are challenged for the current certificate.')
     _DNS_INSTRUCTIONS = """\
 Please deploy a DNS TXT record under the name
 {domain} with the following value:
@@ -67,7 +73,7 @@ permitted by DNS standards.)
         super(Authenticator, self).__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
-        self.env = dict() \
+        self.env = {} \
         # type: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]]
         self.subsequent_dns_challenge = False
         self.subsequent_any_challenge = False
@@ -78,8 +84,7 @@ permitted by DNS standards.)
             help='Path or command to execute for the authentication script')
         add('cleanup-hook',
             help='Path or command to execute for the cleanup script')
-        add('public-ip-logging-ok', action='store_true',
-            help='Automatically allows public IP logging (default: Ask)')
+        util.add_deprecated_argument(add, 'public-ip-logging-ok', 0)
 
     def prepare(self):  # pylint: disable=missing-function-docstring
         if self.config.noninteractive_mode and not self.conf('auth-hook'):
@@ -108,35 +113,20 @@ permitted by DNS standards.)
         return [challenges.HTTP01, challenges.DNS01]
 
     def perform(self, achalls):  # pylint: disable=missing-function-docstring
-        self._verify_ip_logging_ok()
-        if self.conf('auth-hook'):
-            perform_achall = self._perform_achall_with_script
-        else:
-            perform_achall = self._perform_achall_manually
-
         responses = []
         for achall in achalls:
-            perform_achall(achall)
+            if self.conf('auth-hook'):
+                self._perform_achall_with_script(achall, achalls)
+            else:
+                self._perform_achall_manually(achall)
             responses.append(achall.response(achall.account_key))
         return responses
 
-    def _verify_ip_logging_ok(self):
-        if not self.conf('public-ip-logging-ok'):
-            cli_flag = '--{0}'.format(self.option_name('public-ip-logging-ok'))
-            msg = ('NOTE: The IP of this machine will be publicly logged as '
-                   "having requested this certificate. If you're running "
-                   'certbot in manual mode on a machine that is not your '
-                   "server, please ensure you're okay with that.\n\n"
-                   'Are you OK with your IP being logged?')
-            display = zope.component.getUtility(interfaces.IDisplay)
-            if display.yesno(msg, cli_flag=cli_flag, force_interactive=True):
-                setattr(self.config, self.dest('public-ip-logging-ok'), True)
-            else:
-                raise errors.PluginError('Must agree to IP logging to proceed')
-
-    def _perform_achall_with_script(self, achall):
+    def _perform_achall_with_script(self, achall, achalls):
         env = dict(CERTBOT_DOMAIN=achall.domain,
-                   CERTBOT_VALIDATION=achall.validation(achall.account_key))
+                   CERTBOT_VALIDATION=achall.validation(achall.account_key),
+                   CERTBOT_ALL_DOMAINS=','.join(one_achall.domain for one_achall in achalls),
+                   CERTBOT_REMAINING_CHALLENGES=str(len(achalls) - achalls.index(achall) - 1))
         if isinstance(achall.chall, challenges.HTTP01):
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
         else:
@@ -181,4 +171,5 @@ permitted by DNS standards.)
         self.reverter.recovery_routine()
 
     def _execute_hook(self, hook_name):
-        return hooks.execute(self.option_name(hook_name), self.conf(hook_name))
+        return misc.execute_command(self.option_name(hook_name), self.conf(hook_name),
+                                    env=util.env_no_snap_for_external_calls())

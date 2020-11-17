@@ -1,18 +1,17 @@
+from distutils.version import LooseVersion
+import os
 import sys
 
+from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
-from setuptools.command.test import test as TestCommand
 
-version = '1.3.0.dev0'
+version = '1.10.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'acme>=0.29.0',
-    'certbot>=1.1.0',
     'google-api-python-client>=1.5.5',
-    'mock',
     'oauth2client>=4.0',
     'setuptools',
     'zope.interface',
@@ -20,24 +19,30 @@ install_requires = [
     'httplib2'
 ]
 
+if not os.environ.get('SNAP_BUILD'):
+    install_requires.extend([
+        'acme>=0.29.0',
+        'certbot>=1.1.0',
+    ])
+elif 'bdist_wheel' in sys.argv[1:]:
+    raise RuntimeError('Unset SNAP_BUILD when building wheels '
+                       'to include certbot dependencies.')
+if os.environ.get('SNAP_BUILD'):
+    install_requires.append('packaging')
+
+setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
+if setuptools_known_environment_markers:
+    install_requires.append('mock ; python_version < "3.3"')
+elif 'bdist_wheel' in sys.argv[1:]:
+    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
+                       'of setuptools. Version 36.2+ of setuptools is required.')
+elif sys.version_info < (3,3):
+    install_requires.append('mock')
+
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
 ]
-
-class PyTest(TestCommand):
-    user_options = []
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.pytest_args = ''
-
-    def run_tests(self):
-        import shlex
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(shlex.split(self.pytest_args))
-        sys.exit(errno)
 
 setup(
     name='certbot-dns-google',
@@ -47,7 +52,7 @@ setup(
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
@@ -58,7 +63,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
@@ -81,7 +85,4 @@ setup(
             'dns-google = certbot_dns_google._internal.dns_google:Authenticator',
         ],
     },
-    tests_require=["pytest"],
-    test_suite='certbot_dns_google',
-    cmdclass={"test": PyTest},
 )

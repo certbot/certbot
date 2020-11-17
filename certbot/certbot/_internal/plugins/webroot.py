@@ -1,7 +1,6 @@
 """Webroot plugin."""
 import argparse
 import collections
-import errno
 import json
 import logging
 
@@ -71,7 +70,7 @@ to serve all files under specified web root ({0})."""
         super(Authenticator, self).__init__(*args, **kwargs)
         self.full_roots = {}  # type: Dict[str, str]
         self.performed = collections.defaultdict(set) \
-        # type: DefaultDict[str, Set[achallenges.KeyAuthorizationAnnotatedChallenge]]
+            # type: DefaultDict[str, Set[achallenges.KeyAuthorizationAnnotatedChallenge]]
         # stack of dirs successfully created by this authenticator
         self._created_dirs = []  # type: List[str]
 
@@ -137,7 +136,7 @@ to serve all files under specified web root ({0})."""
                     "webroot when using the webroot plugin.")
             return None if index == 0 else known_webroots[index - 1]  # code == display_util.OK
 
-    def _prompt_for_new_webroot(self, domain, allowraise=False):
+    def _prompt_for_new_webroot(self, domain, allowraise=False):  # pylint: no-self-use
         code, webroot = ops.validated_directory(
             _validate_webroot,
             "Input the webroot for {0}:".format(domain),
@@ -165,11 +164,15 @@ to serve all files under specified web root ({0})."""
             # Change the permissions to be writable (GH #1389)
             # Umask is used instead of chmod to ensure the client can also
             # run as non-root (GH #1795)
-            old_umask = os.umask(0o022)
+            old_umask = filesystem.umask(0o022)
             try:
                 # We ignore the last prefix in the next iteration,
                 # as it does not correspond to a folder path ('/' or 'C:')
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
+                    if os.path.isdir(prefix):
+                        # Don't try to create directory if it already exists, as some filesystems
+                        # won't reliably raise EEXIST or EISDIR if directory exists.
+                        continue
                     try:
                         # Set owner as parent directory if possible, apply mode for Linux/Windows.
                         # For Linux, this is coupled with the "umask" call above because
@@ -184,14 +187,13 @@ to serve all files under specified web root ({0})."""
                             logger.info("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)
                     except OSError as exception:
-                        if exception.errno not in (errno.EEXIST, errno.EISDIR):
-                            raise errors.PluginError(
-                                "Couldn't create root for {0} http-01 "
-                                "challenge responses: {1}".format(name, exception))
+                        raise errors.PluginError(
+                            "Couldn't create root for {0} http-01 "
+                            "challenge responses: {1}".format(name, exception))
             finally:
-                os.umask(old_umask)
+                filesystem.umask(old_umask)
 
-    def _get_validation_path(self, root_path, achall):
+    def _get_validation_path(self, root_path, achall):  # pylint: no-self-use
         return os.path.join(root_path, achall.chall.encode("token"))
 
     def _perform_single(self, achall):
@@ -202,13 +204,13 @@ to serve all files under specified web root ({0})."""
         logger.debug("Attempting to save validation to %s", validation_path)
 
         # Change permissions to be world-readable, owner-writable (GH #1795)
-        old_umask = os.umask(0o022)
+        old_umask = filesystem.umask(0o022)
 
         try:
             with safe_open(validation_path, mode="wb", chmod=0o644) as validation_file:
                 validation_file.write(validation.encode())
         finally:
-            os.umask(old_umask)
+            filesystem.umask(old_umask)
 
         self.performed[root_path].add(achall)
         return response

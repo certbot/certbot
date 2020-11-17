@@ -5,7 +5,10 @@ import unittest
 
 import augeas
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import zope.component
 
 from certbot.compat import os
@@ -23,8 +26,6 @@ class ApacheTest(unittest.TestCase):
               config_root="debian_apache_2_4/multiple_vhosts/apache2",
               vhost_root="debian_apache_2_4/multiple_vhosts/apache2/sites-available"):
         # pylint: disable=arguments-differ
-        super(ApacheTest, self).setUp()
-
         self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
             test_dir=test_dir,
             pkg=__name__)
@@ -85,7 +86,8 @@ def get_apache_configurator(
         config_dir, work_dir, version=(2, 4, 7),
         os_info="generic",
         conf_vhost_path=None,
-        use_parsernode=False):
+        use_parsernode=False,
+        openssl_version="1.1.1a"):
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -118,7 +120,8 @@ def get_apache_configurator(
                     except KeyError:
                         config_class = configurator.ApacheConfigurator
                     config = config_class(config=mock_le_config, name="apache",
-                                          version=version, use_parsernode=use_parsernode)
+                                          version=version, use_parsernode=use_parsernode,
+                                          openssl_version=openssl_version)
                     if not conf_vhost_path:
                         config_class.OS_DEFAULTS["vhost_root"] = vhost_path
                     else:
@@ -140,71 +143,71 @@ def get_vh_truth(temp_dir, config_name):
             obj.VirtualHost(
                 os.path.join(prefix, "encryption-example.conf"),
                 os.path.join(aug_pre, "encryption-example.conf/Virtualhost"),
-                set([obj.Addr.fromstring("*:80")]),
+                {obj.Addr.fromstring("*:80")},
                 False, True, "encryption-example.demo"),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl.conf"),
                 os.path.join(aug_pre,
                              "default-ssl.conf/IfModule/VirtualHost"),
-                set([obj.Addr.fromstring("_default_:443")]), True, True),
+                {obj.Addr.fromstring("_default_:443")}, True, True),
             obj.VirtualHost(
                 os.path.join(prefix, "000-default.conf"),
                 os.path.join(aug_pre, "000-default.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80"),
-                     obj.Addr.fromstring("[::]:80")]),
+                {obj.Addr.fromstring("*:80"),
+                     obj.Addr.fromstring("[::]:80")},
                 False, True, "ip-172-30-0-17"),
             obj.VirtualHost(
                 os.path.join(prefix, "certbot.conf"),
                 os.path.join(aug_pre, "certbot.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True,
+                {obj.Addr.fromstring("*:80")}, False, True,
                 "certbot.demo", aliases=["www.certbot.demo"]),
             obj.VirtualHost(
                 os.path.join(prefix, "mod_macro-example.conf"),
                 os.path.join(aug_pre,
                              "mod_macro-example.conf/Macro/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True,
+                {obj.Addr.fromstring("*:80")}, False, True,
                 modmacro=True),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl-port-only.conf"),
                 os.path.join(aug_pre, ("default-ssl-port-only.conf/"
                                        "IfModule/VirtualHost")),
-                set([obj.Addr.fromstring("_default_:443")]), True, True),
+                {obj.Addr.fromstring("_default_:443")}, True, True),
             obj.VirtualHost(
                 os.path.join(prefix, "wildcard.conf"),
                 os.path.join(aug_pre, "wildcard.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True,
+                {obj.Addr.fromstring("*:80")}, False, True,
                 "ip-172-30-0-17", aliases=["*.blue.purple.com"]),
             obj.VirtualHost(
                 os.path.join(prefix, "ocsp-ssl.conf"),
                 os.path.join(aug_pre, "ocsp-ssl.conf/IfModule/VirtualHost"),
-                set([obj.Addr.fromstring("10.2.3.4:443")]), True, True,
+                {obj.Addr.fromstring("10.2.3.4:443")}, True, True,
                 "ocspvhost.com"),
             obj.VirtualHost(
                 os.path.join(prefix, "non-symlink.conf"),
                 os.path.join(aug_pre, "non-symlink.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True,
+                {obj.Addr.fromstring("*:80")}, False, True,
                 "nonsym.link"),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl-port-only.conf"),
                 os.path.join(aug_pre,
                              "default-ssl-port-only.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), True, True, ""),
+                {obj.Addr.fromstring("*:80")}, True, True, ""),
             obj.VirtualHost(
                 os.path.join(temp_dir, config_name,
                              "apache2/apache2.conf"),
                 "/files" + os.path.join(temp_dir, config_name,
                                         "apache2/apache2.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True,
+                {obj.Addr.fromstring("*:80")}, False, True,
                 "vhost.in.rootconf"),
             obj.VirtualHost(
                 os.path.join(prefix, "duplicatehttp.conf"),
                 os.path.join(aug_pre, "duplicatehttp.conf/VirtualHost"),
-                set([obj.Addr.fromstring("10.2.3.4:80")]), False, True,
+                {obj.Addr.fromstring("10.2.3.4:80")}, False, True,
                 "duplicate.example.com"),
             obj.VirtualHost(
                 os.path.join(prefix, "duplicatehttps.conf"),
                 os.path.join(aug_pre, "duplicatehttps.conf/IfModule/VirtualHost"),
-                set([obj.Addr.fromstring("10.2.3.4:443")]), True, True,
+                {obj.Addr.fromstring("10.2.3.4:443")}, True, True,
                 "duplicate.example.com")]
         return vh_truth
     if config_name == "debian_apache_2_4/multi_vhosts":
@@ -215,27 +218,27 @@ def get_vh_truth(temp_dir, config_name):
             obj.VirtualHost(
                 os.path.join(prefix, "default.conf"),
                 os.path.join(aug_pre, "default.conf/VirtualHost[1]"),
-                set([obj.Addr.fromstring("*:80")]),
+                {obj.Addr.fromstring("*:80")},
                 False, True, "ip-172-30-0-17"),
             obj.VirtualHost(
                 os.path.join(prefix, "default.conf"),
                 os.path.join(aug_pre, "default.conf/VirtualHost[2]"),
-                set([obj.Addr.fromstring("*:80")]),
+                {obj.Addr.fromstring("*:80")},
                 False, True, "banana.vomit.com"),
             obj.VirtualHost(
                 os.path.join(prefix, "multi-vhost.conf"),
                 os.path.join(aug_pre, "multi-vhost.conf/VirtualHost[1]"),
-                set([obj.Addr.fromstring("*:80")]),
+                {obj.Addr.fromstring("*:80")},
                 False, True, "1.multi.vhost.tld"),
             obj.VirtualHost(
                 os.path.join(prefix, "multi-vhost.conf"),
                 os.path.join(aug_pre, "multi-vhost.conf/IfModule/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]),
+                {obj.Addr.fromstring("*:80")},
                 False, True, "2.multi.vhost.tld"),
             obj.VirtualHost(
                 os.path.join(prefix, "multi-vhost.conf"),
                 os.path.join(aug_pre, "multi-vhost.conf/VirtualHost[2]"),
-                set([obj.Addr.fromstring("*:80")]),
+                {obj.Addr.fromstring("*:80")},
                 False, True, "3.multi.vhost.tld")]
         return vh_truth
     return None  # pragma: no cover

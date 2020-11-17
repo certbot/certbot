@@ -4,7 +4,10 @@ import sys
 import unittest
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import zope.component
 
 from acme import messages
@@ -126,26 +129,6 @@ class ChooseAccountTest(test_util.TempDirTestCase):
     def test_cancel(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 1)
         self.assertTrue(self._call([self.acc1, self.acc2]) is None)
-
-
-class GenSSLLabURLs(unittest.TestCase):
-    """Loose test of _gen_ssl_lab_urls. URL can change easily in the future."""
-    def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
-                                                               False))
-
-    @classmethod
-    def _call(cls, domains):
-        from certbot.display.ops import _gen_ssl_lab_urls
-        return _gen_ssl_lab_urls(domains)
-
-    def test_zero(self):
-        self.assertEqual(self._call([]), [])
-
-    def test_two(self):
-        urls = self._call(["eff.org", "umich.edu"])
-        self.assertTrue("eff.org" in urls[0])
-        self.assertTrue("umich.edu" in urls[1])
 
 
 class GenHttpsNamesTest(unittest.TestCase):
@@ -271,7 +254,7 @@ class ChooseNamesTest(unittest.TestCase):
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_names_valid_return(self, mock_util):
-        self.mock_install.get_all_names.return_value = set(["example.com"])
+        self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
 
         names = self._call(self.mock_install)
@@ -280,7 +263,7 @@ class ChooseNamesTest(unittest.TestCase):
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_namees_override_question(self, mock_util):
-        self.mock_install.get_all_names.return_value = set(["example.com"])
+        self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
         names = self._call(self.mock_install, "Custom")
         self.assertEqual(names, ["example.com"])
@@ -289,14 +272,14 @@ class ChooseNamesTest(unittest.TestCase):
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_names_nothing_selected(self, mock_util):
-        self.mock_install.get_all_names.return_value = set(["example.com"])
+        self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, [])
 
         self.assertEqual(self._call(self.mock_install), [])
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_names_cancel(self, mock_util):
-        self.mock_install.get_all_names.return_value = set(["example.com"])
+        self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (
             display_util.CANCEL, ["example.com"])
 
@@ -401,16 +384,14 @@ class SuccessRevocationTest(unittest.TestCase):
         success_revocation(path)
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_success_revocation(self, mock_util):
-        mock_util().notification.return_value = None
+    @mock.patch("certbot.display.util.notify")
+    def test_success_revocation(self, mock_notify, unused_mock_util):
         path = "/path/to/cert.pem"
         self._call(path)
-        mock_util().notification.assert_called_once_with(
+        mock_notify.assert_called_once_with(
             "Congratulations! You have successfully revoked the certificate "
-            "that was located at {0}{1}{1}".format(
-                path,
-                os.linesep), pause=False)
-        self.assertTrue(path in mock_util().notification.call_args[0][0])
+            "that was located at {0}.".format(path)
+        )
 
 
 class ValidatorTests(unittest.TestCase):

@@ -235,7 +235,11 @@ class _WindowsLockMechanism(_BaseLockMechanism):
             # Under Windows, filesystem.open will raise directly an EACCES error
             # if the lock file is already locked.
             fd = filesystem.open(self._path, open_mode, 0o600)
-            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+            # The need for this "type: ignore" was fixed in
+            # https://github.com/python/typeshed/pull/3607 and included in
+            # newer versions of mypy so it can be removed when mypy is
+            # upgraded.
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)  # type: ignore
         except (IOError, OSError) as err:
             if fd:
                 os.close(fd)
@@ -250,7 +254,11 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     def release(self):
         """Release the lock."""
         try:
-            msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
+            # The need for this "type: ignore" was fixed in
+            # https://github.com/python/typeshed/pull/3607 and included in
+            # newer versions of mypy so it can be removed when mypy is
+            # upgraded.
+            msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)  # type: ignore
             os.close(self._fd)
 
             try:

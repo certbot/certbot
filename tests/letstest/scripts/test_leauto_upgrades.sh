@@ -23,8 +23,8 @@ if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | se
     INITIAL_VERSION="0.20.0"
     RUN_RHEL6_TESTS=1
 else
-    # 0.37.x is the oldest version of letsencrypt-auto that works on RHEL 8.
-    INITIAL_VERSION="0.37.1"
+    # 0.39.0 is the oldest version of letsencrypt-auto that works on CentOS 8.
+    INITIAL_VERSION="0.39.0"
 fi
 
 git checkout -f "v$INITIAL_VERSION" letsencrypt-auto
@@ -105,9 +105,18 @@ if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python
     exit 1
 fi
 
-EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
+# On systems like Debian where certbot-auto is deprecated, we expect it to
+# leave existing Certbot installations unmodified so we check for the same
+# version that was initially installed below.  Once certbot-auto is deprecated
+# on RHEL systems, we can unconditionally check for INITIAL_VERSION.
+if [ -f /etc/debian_version ]; then
+    EXPECTED_VERSION="$INITIAL_VERSION"
+else
+    EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
+fi
+
 if ! /opt/eff.org/certbot/venv/bin/letsencrypt --version 2>&1 | tail -n1 | grep "^certbot $EXPECTED_VERSION$" ; then
-    echo upgrade appeared to fail
+    echo unexpected certbot version found
     exit 1
 fi
 

@@ -4,17 +4,17 @@ import signal
 import sys
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 
-from acme.magic_typing import Callable  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot.compat import os
 
 
 def get_signals(signums):
     """Get the handlers for an iterable of signums."""
-    return dict((s, signal.getsignal(s)) for s in signums)
+    return {s: signal.getsignal(s) for s in signums}
 
 
 def set_signals(sig_handler_dict):
@@ -28,7 +28,7 @@ def signal_receiver(signums):
     """Context manager to catch signals"""
     signals = []
     prev_handlers = get_signals(signums)  # type: Dict[int, Union[int, None, Callable]]
-    set_signals(dict((s, lambda s, _: signals.append(s)) for s in signums))
+    set_signals({s: lambda s, _: signals.append(s) for s in signums})
     yield signals
     set_signals(prev_handlers)
 
@@ -45,7 +45,7 @@ class ErrorHandlerTest(unittest.TestCase):
         from certbot._internal import error_handler
 
         self.init_func = mock.MagicMock()
-        self.init_args = set((42,))
+        self.init_args = {42,}
         self.init_kwargs = {'foo': 'bar'}
         self.handler = error_handler.ErrorHandler(self.init_func,
                                                   *self.init_args,

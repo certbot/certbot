@@ -1,47 +1,18 @@
-FROM debian:stretch
+FROM debian:buster
 MAINTAINER Brad Warren <bmw@eff.org>
 
-# no need to mkdir anything:
-# https://docs.docker.com/reference/builder/#copy
-# If <dest> doesn't exist, it is created along with all missing
-# directories in its path.
+RUN apt-get update && \
+    apt install python3-dev python3-venv gcc libaugeas0 libssl-dev \
+                 libffi-dev ca-certificates openssl -y
 
-# TODO: Install non-default Python versions for tox.
-# TODO: Install Apache/Nginx for plugin development.
-COPY letsencrypt-auto-source /opt/certbot/src/letsencrypt-auto-source
-RUN /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+WORKDIR /opt/certbot/src
 
-# the above is not likely to change, so by putting it further up the
-# Dockerfile we make sure we cache as much as possible
+# We copy all contents of the build directory to allow us to easily use
+# things like tools/venv3.py which expects all of our packages to be available.
+COPY . .
 
-COPY certbot/setup.py certbot/README.rst certbot/CHANGELOG.md certbot/MANIFEST.in linter_plugin.py tox.cover.py tox.ini .pylintrc /opt/certbot/src/
-
-# all above files are necessary for setup.py, however, package source
-# code directory has to be copied separately to a subdirectory...
-# https://docs.docker.com/reference/builder/#copy: "If <src> is a
-# directory, the entire contents of the directory are copied,
-# including filesystem metadata. Note: The directory itself is not
-# copied, just its contents." Order again matters, three files are far
-# more likely to be cached than the whole project directory
-
-COPY certbot /opt/certbot/src/certbot/
-COPY acme /opt/certbot/src/acme/
-COPY certbot-apache /opt/certbot/src/certbot-apache/
-COPY certbot-nginx /opt/certbot/src/certbot-nginx/
-COPY certbot-compatibility-test /opt/certbot/src/certbot-compatibility-test/
-COPY tools /opt/certbot/src/tools
-
-RUN VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages -p python2 /opt/certbot/venv && \
-    /opt/certbot/venv/bin/pip install -U setuptools && \
-    /opt/certbot/venv/bin/pip install -U pip
-ENV PATH /opt/certbot/venv/bin:$PATH
-RUN /opt/certbot/venv/bin/python \
-    /opt/certbot/src/tools/pip_install_editable.py \
-    /opt/certbot/src/acme \
-    /opt/certbot/src/certbot \
-    /opt/certbot/src/certbot-apache \
-    /opt/certbot/src/certbot-nginx \
-    /opt/certbot/src/certbot-compatibility-test
+RUN tools/venv3.py
+ENV PATH /opt/certbot/src/venv3/bin:$PATH
 
 # install in editable mode (-e) to save space: it's not possible to
 # "rm -rf /opt/certbot/src" (it's stays in the underlaying image);

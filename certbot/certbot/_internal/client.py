@@ -28,7 +28,6 @@ from certbot._internal import constants
 from certbot._internal import eff
 from certbot._internal import error_handler
 from certbot._internal import storage
-from certbot._internal.display import enhancements
 from certbot._internal.plugins import selection as plugin_selection
 from certbot.compat import os
 from certbot.display import ops as display_ops
@@ -159,7 +158,7 @@ def register(config, account_storage, tos_cb=None):
             logger.warning(msg)
             raise errors.Error(msg)
         if not config.dry_run:
-            logger.info("Registering without email!")
+            logger.debug("Registering without email!")
 
     # If --dry-run is used, and there is no staging account, create one with no email.
     if config.dry_run:
@@ -176,10 +175,9 @@ def register(config, account_storage, tos_cb=None):
     regr = perform_registration(acme, config, tos_cb)
 
     acc = account.Account(regr, key)
-    account.report_new_account(config)
     account_storage.save(acc, acme)
 
-    eff.handle_subscription(config)
+    eff.prepare_subscription(config, acc)
 
     return acc, acme
 
@@ -289,8 +287,16 @@ class Client(object):
             orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
 
         deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
-        orderr = self.acme.finalize_order(orderr, deadline)
-        cert, chain = crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
+        get_alt_chains = self.config.preferred_chain is not None
+        orderr = self.acme.finalize_order(orderr, deadline,
+                                          fetch_alternative_chains=get_alt_chains)
+        fullchain = orderr.fullchain_pem
+        if get_alt_chains and orderr.alternative_fullchains_pem:
+            fullchain = crypto_util.find_chain_with_issuer([fullchain] + \
+                                                           orderr.alternative_fullchains_pem,
+                                                           self.config.preferred_chain,
+                                                           not self.config.dry_run)
+        cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 
     def obtain_certificate(self, domains, old_keypath=None):
@@ -390,6 +396,7 @@ class Client(object):
 
         authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
         return orderr.update(authorizations=authzr)
+
     def obtain_and_enroll_certificate(self, domains, certname):
         """Obtain and enroll certificate.
 
@@ -521,12 +528,13 @@ class Client(object):
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains, chain_path, ask_redirect=True):
+    def enhance_config(self, domains, chain_path, redirect_default=True):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
         :param chain_path: chain file path
         :type chain_path: `str` or `None`
+        :param redirect_default: boolean value that the "redirect" flag should default to
 
         :raises .errors.Error: if no installer is specified in the
             client.
@@ -548,14 +556,8 @@ class Client(object):
         for config_name, enhancement_name, option in enhancement_info:
             config_value = getattr(self.config, config_name)
             if enhancement_name in supported:
-                if ask_redirect:
-                    if config_name == "redirect" and config_value is None:
-                        config_value = enhancements.ask(enhancement_name)
-                        if not config_value:
-                            logger.warning("Future versions of Certbot will automatically "
-                                "configure the webserver so that all requests redirect to secure "
-                                "HTTPS access. You can control this behavior and disable this "
-                                "warning with the --redirect and --no-redirect flags.")
+                if config_name == "redirect" and config_value is None:
+                    config_value = redirect_default
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True

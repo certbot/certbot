@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+if [ "$(snapctl get trust-plugin-with-root)" = "ok" ]; then
+    # allow the connection, but reset config to allow for other slots to go through this auth flow
+    snapctl unset trust-plugin-with-root
+    exit 0
+else
+    echo "Only connect this interface if you trust the plugin author to have root on the system."
+    echo "Run \`snap set $SNAP_NAME trust-plugin-with-root=ok\` to acknowledge this and then run this command again to perform the connection."
+    echo "If that doesn't work, you may need to remove all certbot-dns-* plugins from the system, then try installing the certbot snap again."
+    exit 1
+fi

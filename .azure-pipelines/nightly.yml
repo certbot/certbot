@@ -1,0 +1,18 @@
+# Nightly pipeline running each day for master.
+trigger: none
+pr: none
+schedules:
+  - cron: "30 4 * * *"
+    displayName: Nightly build
+    branches:
+      include:
+      - master
+    always: true
+
+variables:
+  dockerTag: nightly
+
+stages:
+  - template: templates/stages/test-and-package-stage.yml
+  - template: templates/stages/deploy-stage.yml
+  - template: templates/stages/notify-failure-stage.yml

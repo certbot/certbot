@@ -11,9 +11,7 @@ import zope.interface
 
 from zope.interface import interfaces as zope_interfaces
 
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Any, Dict, Optional
-# pylint: enable=unused-import, no-name-in-module
+from acme.magic_typing import Any, Dict
 
 from certbot import crypto_util
 from certbot import errors
@@ -194,8 +192,8 @@ class HelpfulArgumentParser(object):
         if self.detect_defaults:
             return parsed_args
 
-        self.defaults = dict((key, copy.deepcopy(self.parser.get_default(key)))
-                             for key in vars(parsed_args))
+        self.defaults = {key: copy.deepcopy(self.parser.get_default(key))
+                             for key in vars(parsed_args)}
 
         # Do any post-parsing homework here
 

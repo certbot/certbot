@@ -64,7 +64,7 @@ Translates over to:
     "/files/etc/apache2/apache2.conf/bLoCk[1]",
 ]
 """
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set
 from certbot import errors
 from certbot.compat import os
 
@@ -339,7 +339,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
     def find_blocks(self, name, exclude=True):
         """Recursive search of BlockNodes from the sequence of children"""
 
-        nodes = list()
+        nodes = []
         paths = self._aug_find_blocks(name)
         if exclude:
             paths = self.parser.exclude_dirs(paths)
@@ -351,7 +351,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
     def find_directives(self, name, exclude=True):
         """Recursive search of DirectiveNodes from the sequence of children"""
 
-        nodes = list()
+        nodes = []
         ownpath = self.metadata.get("augeaspath")
 
         directives = self.parser.find_dir(name, start=ownpath, exclude=exclude)
@@ -374,7 +374,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         :param str comment: Comment content to search for.
         """
 
-        nodes = list()
+        nodes = []
         ownpath = self.metadata.get("augeaspath")
 
         comments = self.parser.find_comments(comment, start=ownpath)

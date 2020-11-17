@@ -2,7 +2,10 @@
 import shutil
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import os
@@ -114,7 +117,7 @@ class BasicParserTest(util.ParserTest):
         """
         from certbot_apache._internal.parser import get_aug_path
         # This makes sure that find_dir will work
-        self.parser.modules.add("mod_ssl.c")
+        self.parser.modules["mod_ssl.c"] = "/fake/path"
 
         self.parser.add_dir_to_ifmodssl(
             get_aug_path(self.parser.loc["default"]),
@@ -128,7 +131,7 @@ class BasicParserTest(util.ParserTest):
     def test_add_dir_to_ifmodssl_multiple(self):
         from certbot_apache._internal.parser import get_aug_path
         # This makes sure that find_dir will work
-        self.parser.modules.add("mod_ssl.c")
+        self.parser.modules["mod_ssl.c"] = "/fake/path"
 
         self.parser.add_dir_to_ifmodssl(
             get_aug_path(self.parser.loc["default"]),
@@ -260,7 +263,7 @@ class BasicParserTest(util.ParserTest):
         expected_vars = {"TEST": "", "U_MICH": "", "TLS": "443",
                          "example_path": "Documents/path"}
 
-        self.parser.modules = set()
+        self.parser.modules = {}
         with mock.patch(
             "certbot_apache._internal.parser.ApacheParser.parse_file") as mock_parse:
             self.parser.update_runtime_variables()
@@ -282,7 +285,7 @@ class BasicParserTest(util.ParserTest):
                  os.path.dirname(self.parser.loc["root"]))
 
         mock_cfg.return_value = inc_val
-        self.parser.modules = set()
+        self.parser.modules = {}
 
         with mock.patch(
             "certbot_apache._internal.parser.ApacheParser.parse_file") as mock_parse:

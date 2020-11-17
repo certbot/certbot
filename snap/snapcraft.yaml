@@ -1,0 +1,103 @@
+name: certbot
+summary: Automatically configure HTTPS using Let's Encrypt
+description: |
+ The objective of Certbot, Let's Encrypt, and the ACME (Automated
+ Certificate Management Environment) protocol is to make it possible
+ to set up an HTTPS server and have it automatically obtain a
+ browser-trusted certificate, without any human intervention. This is
+ accomplished by running a certificate management agent on the web
+ server.
+
+ This agent is used to:
+   - Automatically prove to the Let's Encrypt CA that you control the website
+   - Obtain a browser-trusted certificate and set it up on your web server
+   - Keep track of when your certificate is going to expire, and renew it
+   - Help you revoke the certificate if that ever becomes necessary.
+confinement: classic
+base: core20
+grade: stable
+adopt-info: certbot
+
+apps:
+  certbot:
+    command: bin/python3 $SNAP/bin/certbot
+    environment:
+      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+      AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
+      CERTBOT_SNAPPED: "True"
+  renew:
+    command: bin/python3 $SNAP/bin/certbot -q renew
+    daemon: oneshot
+    environment:
+      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+      AUGEAS_LENS_LIB: $SNAP/usr/share/augeas/lenses/dist
+      CERTBOT_SNAPPED: "True"
+    # Run approximately twice a day with randomization
+    timer: 00:00~24:00/2
+
+
+parts:
+  certbot:
+    plugin: python
+    source: .
+    constraints: [$SNAPCRAFT_PART_SRC/snap-constraints.txt]
+    python-packages:
+      - git+https://github.com/certbot/python-augeas.git@certbot-patched
+      - ./acme
+      - ./certbot
+      - ./certbot-apache
+      - ./certbot-nginx
+    stage:
+      - -usr/lib/python3.8/sitecustomize.py # maybe unnecessary
+      # Old versions of this file used to unstage
+      # lib/python3.8/site-packages/augeas.py to avoid conflicts between
+      # python-augeas 0.5.0 which was pinned in snap-constraints.txt and
+      # our python-augeas fork which creates an auto-generated cffi file at
+      # the same path. Since we've combined things in one part and removed the
+      # python-augeas pinning, unstaging this file had a different, unintended
+      # effect so we now stage the file to keep the auto-generated cffi file.
+    stage-packages:
+      - libaugeas0
+      - libpython3.8-dev
+      # added to stage python:
+      - libpython3-stdlib
+      - libpython3.8-stdlib
+      - libpython3.8-minimal
+      - python3-pip
+      - python3-setuptools
+      - python3-wheel
+      - python3-venv
+      - python3-minimal
+      - python3-distutils
+      - python3-pkg-resources
+      - python3.8-minimal
+    # To build cryptography and cffi if needed
+    build-packages: [gcc, libffi-dev, libssl-dev, git, libaugeas-dev, python3-dev]
+    build-environment:
+      - SNAPCRAFT_PYTHON_VENV_ARGS: --system-site-packages
+      - PIP_NO_BUILD_ISOLATION: "no"
+    override-pull: |
+        snapcraftctl pull
+        cd $SNAPCRAFT_PART_SRC
+        python3 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt | grep -v python-augeas > snap-constraints.txt
+        snapcraftctl set-version `grep -oP "__version__ = '\K.*(?=')" $SNAPCRAFT_PART_SRC/certbot/certbot/__init__.py`
+  shared-metadata:
+    plugin: dump
+    source: .
+    override-pull: |
+      snapcraftctl pull
+      mkdir -p certbot-metadata
+      grep -oP "__version__ = '\K.*(?=')" $SNAPCRAFT_PART_SRC/certbot/certbot/__init__.py > certbot-metadata/certbot-version.txt
+    stage: [certbot-metadata/certbot-version.txt]
+
+plugs:
+  plugin:
+    interface: content
+    content: certbot-1
+    target: $SNAP/certbot-plugin
+
+slots:
+  certbot-metadata:
+    interface: content
+    content: metadata-1
+    read: [$SNAP/certbot-metadata]

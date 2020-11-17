@@ -4,12 +4,14 @@ to use appropriate extension for vector filenames: .pem for PEM and
 
 The following command has been used to generate test keys:
 
-  for x in 256 512 1024 2048; do openssl genrsa -out rsa${k}_key.pem $k; done
+  for k in 256 512 1024 2048 4096; do openssl genrsa -out rsa${k}_key.pem $k; done
 
 and for the CSR:
 
   openssl req -key rsa2048_key.pem -new -subj '/CN=example.com' -outform DER > csr.der
 
-and for the certificate:
+and for the certificates:
 
-  openssl req -key rsa2047_key.pem -new -subj '/CN=example.com' -x509 -outform DER > cert.der
+  openssl req -key rsa2048_key.pem -new -subj '/CN=example.com' -x509 -outform DER > cert.der
+  openssl req -key rsa2048_key.pem -new -subj '/CN=example.com' -x509 > rsa2048_cert.pem
+  openssl req -key rsa1024_key.pem -new -subj '/CN=example.com' -x509 > rsa1024_cert.pem

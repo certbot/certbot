@@ -3,7 +3,10 @@ import os
 import shutil
 import subprocess
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 import zope.interface
 
 from certbot import errors as le_errors
@@ -54,7 +57,7 @@ class Proxy(configurators_common.Proxy):
 
     def _prepare_configurator(self):
         """Prepares the Apache plugin for testing"""
-        for k in entrypoint.ENTRYPOINT.OS_DEFAULTS.keys():
+        for k in entrypoint.ENTRYPOINT.OS_DEFAULTS:
             setattr(self.le_config, "apache_" + k,
                     entrypoint.ENTRYPOINT.OS_DEFAULTS[k])
 

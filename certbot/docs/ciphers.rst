@@ -110,12 +110,8 @@ to most-backwards compatible). The client will follow the Mozilla defaults
 for the *Intermediate* configuration by default, at least with regards to
 ciphersuites and TLS versions. Mozilla's web site describes which client
 software will be compatible with each configuration. You can also use
-the Qualys SSL Labs site, which Certbot will suggest
-when installing a certificate, to test your server and see whether it
+the Qualys SSL Labs site to test your server and see whether it
 will be compatible with particular software versions.
-
-It will be possible to ask Certbot to instead apply (and track) Modern
-or Old configurations.
 
 The Let's Encrypt project expects to follow the Mozilla recommendations
 in the future as those recommendations are updated. (For example, some
@@ -159,51 +155,6 @@ welcome suggestions of other resources to add to this list. Please keep
 in mind that different recommendations may reflect different priorities
 or evaluations of trade-offs, especially related to compatibility!
 
-
-Changing your settings
-----------------------
-
-This will probably look something like
-
-.. code-block:: shell
-
-  certbot --cipher-recommendations mozilla-secure
-  certbot --cipher-recommendations mozilla-intermediate
-  certbot --cipher-recommendations mozilla-old
-
-to track Mozilla's *Secure*, *Intermediate*, or *Old* recommendations,
-and
-
-.. code-block:: shell
-
-  certbot --update-ciphers on
-
-to enable updating ciphers with each new Certbot release, or
-
-.. code-block:: shell
-
-  certbot --update-ciphers off
-
-to disable automatic configuration updates. These features have not yet
-been implemented and this syntax may change when they are implemented.
-
-
-TODO
-----
-
-The status of this feature is tracked as part of issue #1123 in our
-bug tracker.
-
-https://github.com/certbot/certbot/issues/1123
-
-Prior to implementation of #1123, the client does not actually modify
-ciphersuites (this is intended to be implemented as a "configuration
-enhancement", but the only configuration enhancement implemented
-so far is redirecting HTTP requests to HTTPS in web servers, the
-"redirect" enhancement). The changes here would probably be either a new
-"ciphersuite" enhancement in each plugin that provides an installer,
-or a family of enhancements, one per selectable ciphersuite configuration.
-
 Feedback
 ========
 We receive lots of feedback on the type of ciphersuites that Let's Encrypt supports and list some collated feedback below. This section aims to track suggestions and references that people have offered or identified to improve the ciphersuites that Let's Encrypt enables when configuring TLS on servers.
@@ -241,7 +192,7 @@ Mozilla
 
 Mozilla's general server configuration guidance is available at https://wiki.mozilla.org/Security/Server_Side_TLS
 
-Mozilla has also produced a configuration generator: https://mozilla.github.io/server-side-tls/ssl-config-generator/
+Mozilla has also produced a configuration generator: https://ssl-config.mozilla.org
 
 Dutch National Cyber Security Centre
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -257,17 +208,17 @@ Keylength.com
 
 Damien Giry collects recommendations by academic researchers and standards organizations about keylengths for particular cryptoperiods, years, or security levels.  The keylength recommendations of the various sources are summarized in a chart.  This site has been updated over time and includes expert guidance from eight sources published between 2000 and 2017.
 
-http://www.keylength.com/
+https://www.keylength.com/
 
 NIST
 ~~~~
-NISA published its "NIST Special Publication 800-52 Revision 1: Guidelines for the Selection, Configuration, and Use of Transport Layer Security (TLS) Implementations"
+NIST published its "NIST Special Publication 800-52 Revision 2: Guidelines for the Selection, Configuration, and Use of Transport Layer Security (TLS) Implementations"
 
-http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-52r1.pdf
+https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-52r2.pdf
 
-and its "NIST Special Publication 800-57: Recommendation for Key Management – Part 1: General (Revision 3)"
+and its "NIST Special Publication 800-57: Recommendation for Key Management – Part 1: General (Revision 5)"
 
-http://csrc.nist.gov/publications/nistpubs/800-57/sp800-57_part1_rev3_general.pdf
+https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r5.pdf
 
 ENISA
 ~~~~~

@@ -1,2 +1,2 @@
 # Remember to update setup.py to match the package versions below.
-acme[dev]==0.40.0
+acme[dev]==1.8.0

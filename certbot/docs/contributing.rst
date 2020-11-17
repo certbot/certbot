@@ -18,6 +18,7 @@ Windows, you'll need to set up a (virtual) machine running an OS such as Linux
 and continue with these instructions on that UNIX-like OS.
 
 .. _local copy:
+.. _prerequisites:
 
 Running a local copy of the client
 ----------------------------------
@@ -117,13 +118,11 @@ either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
 For debugging, we recommend putting
 ``import ipdb; ipdb.set_trace()`` statements inside the source code.
 
-Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
-run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
-2.7).
-
-Once all the unittests pass, check for sufficient test coverage using ``tox -e
-py27-cover``, and then check for code style with ``tox -e lint`` (all files) or
-``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
+Once you are done with your code changes, and the tests in ``foo_test.py``
+pass, run all of the unit tests for Certbot and check for coverage with ``tox
+-e py3-cover``. You should then check for code style with ``tox -e lint`` (all
+files) or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a
+time).
 
 Once all of the above is successful, you may run the full test suite using
 ``tox --skip-missing-interpreters``. We recommend running the commands above
@@ -139,7 +138,7 @@ of output can make it hard to find specific failures when they happen.
 Running automated integration tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generally it is sufficient to open a pull request and let Github and Travis run
+Generally it is sufficient to open a pull request and let Github and Azure Pipelines run
 integration tests for you. However, you may want to run them locally before submitting
 your pull request. You need Docker and docker-compose installed and working.
 
@@ -170,7 +169,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv.py` contains two commands
+The virtual environment set up with `python tools/venv3.py` contains two CLI tools
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -180,6 +179,9 @@ that can be used once the virtual environment is activated:
 - Starts a local instance of Pebble and runs in the foreground printing its logs.
 - Press CTRL+C to stop this instance.
 - This instance is configured to validate challenges against certbot executed locally.
+
+.. note:: Some options are available to tweak the local ACME server. You can execute
+    ``run_acme_server --help`` to see the inline help of the ``run_acme_server`` tool.
 
 .. code-block:: shell
 
@@ -204,12 +206,8 @@ using an HTTP-01 challenge on a machine with Python 3:
 Running tests in CI
 ~~~~~~~~~~~~~~~~~~~
 
-Certbot uses both Azure Pipelines and Travis to run continuous integration
-tests. If you are using our Azure and Travis setup, a branch whose name starts
-with `test-` will run all Azure and Travis tests on that branch. If the branch
-name starts with `azure-test-`, it will run all of our Azure tests and none of
-our Travis tests. If the branch stats with `travis-test-`, only our Travis
-tests will be run.
+Certbot uses Azure Pipelines to run continuous integration tests. If you are using our
+Azure setup, a branch whose name starts with `test-` will run all tests on that branch.
 
 Code components and layout
 ==========================
@@ -247,8 +245,8 @@ built-in Standalone authenticator, implement just one interface.
 There are also `~certbot.interfaces.IDisplay` plugins,
 which can change how prompts are displayed to a user.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
+.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/plugins/common.py#L45
 
 
 Authenticators
@@ -308,7 +306,7 @@ configuration checkpoints and rollback.
 .. _dev-plugin:
 
 Writing your own plugin
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 .. note:: The Certbot team is not currently accepting any new DNS plugins
     because we want to rethink our approach to the challenge and resolve some
@@ -343,13 +341,71 @@ it was not installed properly.
 Once you've finished your plugin and published it, you can have your
 users install it system-wide with `pip install`. Note that this will
 only work for users who have Certbot installed from OS packages or via
-pip. Users who run `certbot-auto` are currently unable to use third-party
-plugins. It's technically possible to install third-party plugins into
-the virtualenv used by `certbot-auto`, but they will be wiped away when
-`certbot-auto` upgrades.
+pip.
 
 .. _`setuptools entry points`:
-    http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
+    https://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
+
+Writing your own plugin snap
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you'd like your plugin to be used alongside the Certbot snap, you
+will also have to publish your plugin as a snap. Plugin snaps are
+regular confined snaps, but normally do not provide any "apps"
+themselves. Plugin snaps export loadable Python modules to the Certbot
+snap.
+
+When the Certbot snap runs, it will use its version of Python and prefer
+Python modules contained in its own snap over modules contained in
+external snaps. This means that your snap doesn't have to contain things
+like an extra copy of Python, Certbot, or their dependencies, but also
+that if you need a different version of a dependency than is already
+installed in the Certbot snap, the Certbot snap will have to be updated.
+
+Certbot plugin snaps expose their Python modules to the Certbot snap via a
+`snap content interface`_ where ``certbot-1`` is the value for the ``content``
+attribute. The Certbot snap only uses this to find the names of connected
+plugin snaps and it expects to find the Python modules to be loaded under
+``lib/python3.8/site-packages/`` in the plugin snap. This location is the
+default when using the ``core20`` `base snap`_ and the `python snapcraft
+plugin`_.
+
+The Certbot snap also provides a separate content interface which
+you can use to get metadata about the Certbot snap using the ``content``
+identifier ``metadata-1``.
+
+The script used to generate the snapcraft.yaml files for our own externally
+snapped plugins can be found at
+https://github.com/certbot/certbot/blob/master/tools/snap/generate_dnsplugins_snapcraft.sh.
+
+For more information on building externally snapped plugins, see the section on
+:ref:`Building snaps`.
+
+Once you have created your own snap, if you have the snap file locally,
+it can be installed for use with Certbot by running:
+
+.. code-block:: shell
+
+    snap install --classic certbot
+    snap set certbot trust-plugin-with-root=ok
+    snap install --dangerous your-snap-filename.snap
+    sudo snap connect certbot:plugin your-snap-name
+    sudo /snap/bin/certbot plugins
+
+If everything worked, the last command should list your plugin in the
+list of plugins found by Certbot. Once your snap is published to the
+snap store, it will be installable through the name of the snap on the
+snap store without the ``--dangerous`` flag. If you are also using
+Certbot's metadata interface, you can run ``sudo snap connect
+your-snap-name:your-plug-name-for-metadata certbot:certbot-metadata`` to
+connect your snap to it.
+
+.. _`snap content interface`:
+    https://snapcraft.io/docs/content-interface
+.. _`base snap`:
+    https://snapcraft.io/docs/base-snaps
+.. _`python snapcraft plugin`:
+    https://snapcraft.io/docs/python-plugin
 
 .. _coding-style:
 
@@ -380,7 +436,7 @@ Please:
 
 .. _Google Python Style Guide:
   https://google.github.io/styleguide/pyguide.html
-.. _Sphinx-style: http://sphinx-doc.org/
+.. _Sphinx-style: https://www.sphinx-doc.org/
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
 
@@ -457,7 +513,7 @@ Steps:
    containing your pull request to squash or amend commits. We use `squash
    merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
    rewriting commits makes changes harder to track between reviews.
-6. Did your tests pass on Travis? If they didn't, fix any errors.
+6. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
 
 .. _ask for help:
 
@@ -483,6 +539,15 @@ on this platform.
 Use of EFFOSCCP is subject to the `EFF Code of Conduct
 <https://www.eff.org/pages/eppcode>`_. When investigating an alleged Code of
 Conduct violation, EFF may review discussion channels or direct messages.
+
+.. _Building snaps:
+
+Building the Certbot and DNS plugin snaps
+=========================================
+
+Instructions for how to manually build and run the Certbot snap and the externally
+snapped DNS plugins that the Certbot project supplies are located in the README
+file at https://github.com/certbot/certbot/tree/master/tools/snap.
 
 Updating certbot-auto and letsencrypt-auto
 ==========================================
@@ -581,33 +646,3 @@ effect. To do this, run::
 Now running the check for linting errors described above is as easy as::
 
   tox -e lint
-
-.. _prerequisites:
-
-Notes on OS dependencies
-========================
-
-OS-level dependencies can be installed like so:
-
-.. code-block:: shell
-
-   ./certbot-auto --debug --os-packages-only
-
-In general...
-
-* ``sudo`` is required as a suggested way of running privileged process
-* `Python`_ 2.7 or 3.5+ is required
-* `Augeas`_ is required for the Python bindings
-* ``virtualenv`` is used for managing other Python library dependencies
-
-.. _Python: https://wiki.python.org/moin/BeginnersGuide/Download
-.. _Augeas: http://augeas.net/
-.. _Virtualenv: https://virtualenv.pypa.io
-
-
-FreeBSD
--------
-
-FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
-above), you will need a compatible shell, e.g. ``pkg install bash &&
-bash``.

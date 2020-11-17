@@ -1,8 +1,15 @@
+# These images are located in us-east-1.
+
 targets:
   #-----------------------------------------------------------------------------
   #Ubuntu
-  - ami: ami-08ab45c4343f5f5c6
-    name: ubuntu19.04
+  - ami: ami-0f2e2c076f4c2f941
+    name: ubuntu20.10
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  - ami: ami-0758470213bdd23b1
+    name: ubuntu20.04
     type: ubuntu
     virt: hvm
     user: ubuntu
@@ -23,29 +30,17 @@ targets:
     type: ubuntu
     virt: hvm
     user: admin
+  - ami: ami-0dcd54b7d2fff584f
+    name: debian10_arm64
+    type: ubuntu
+    virt: hvm
+    user: admin
+    machine_type: a1.medium
   - ami: ami-003f19e0e687de1cd
     name: debian9
     type: ubuntu
     virt: hvm
     user: admin
-  - ami: ami-0ed54dd1b25657636
-    name: debian9_arm64
-    type: ubuntu
-    virt: hvm
-    user: admin
-    machine_type: a1.medium
-  - ami: ami-077bf3962f29d3fa4
-    name: debian8.1
-    type: ubuntu
-    virt: hvm
-    user: admin
-  #-----------------------------------------------------------------------------
-  # Fedora
-  - ami: ami-00bbc6858140f19ed
-    name: fedora30
-    type: centos
-    virt: hvm
-    user: fedora
   #-----------------------------------------------------------------------------
   # CentOS
   - ami: ami-9887c6e7

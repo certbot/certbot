@@ -11,6 +11,13 @@ configured by the user. Any logged messages before
 Special care is taken by both methods to ensure all errors are logged
 and properly flushed before program exit.
 
+The `logging` module is useful for recording messages about about what
+Certbot is doing under the hood, but do not necessarily need to be shown
+to the user on the terminal. The default verbosity is INFO.
+
+The preferred method to display important information to the user is to
+use `certbot.display.util` and `certbot.display.ops`.
+
 """
 from __future__ import print_function
 
@@ -319,18 +326,29 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
     # logger.DEBUG should be used
     if debug or not issubclass(exc_type, Exception):
         assert constants.QUIET_LOGGING_LEVEL <= logging.ERROR
+        if exc_type is KeyboardInterrupt:
+            logger.error('Exiting due to user request.')
+            sys.exit(1)
         logger.error('Exiting abnormally:', exc_info=exc_info)
     else:
         logger.debug('Exiting abnormally:', exc_info=exc_info)
+        # Use logger to print the error message to take advantage of
+        # our logger printing warnings and errors in red text.
         if issubclass(exc_type, errors.Error):
-            sys.exit(exc_value)
+            logger.error(str(exc_value))
+            sys.exit(1)
         logger.error('An unexpected error occurred:')
         if messages.is_acme_error(exc_value):
             # Remove the ACME error prefix from the exception
             _, _, exc_str = str(exc_value).partition(':: ')
             logger.error(exc_str)
         else:
-            traceback.print_exception(exc_type, exc_value, None)
+            output = traceback.format_exception_only(exc_type, exc_value)
+            # format_exception_only returns a list of strings each
+            # terminated by a newline. We combine them into one string
+            # and remove the final newline before passing it to
+            # logger.error.
+            logger.error(''.join(output).rstrip())
     exit_with_log_path(log_path)
 
 

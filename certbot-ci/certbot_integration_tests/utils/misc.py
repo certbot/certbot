@@ -19,14 +19,28 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
+from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import crypto
 import pkg_resources
 import requests
 from six.moves import SimpleHTTPServer
 from six.moves import socketserver
 
+from certbot_integration_tests.utils.constants import \
+     PEBBLE_ALTERNATE_ROOTS, PEBBLE_MANAGEMENT_URL
+
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
+
+
+def _suppress_x509_verification_warnings():
+    try:
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    except ImportError:
+        # Handle old versions of request with vendorized urllib3
+        from requests.packages.urllib3.exceptions import InsecureRequestWarning
+        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 def check_until_timeout(url, attempts=30):
@@ -37,14 +51,7 @@ def check_until_timeout(url, attempts=30):
     :param int attempts: the number of times to try to connect to the URL
     :raise ValueError: exception raised if unable to reach the URL
     """
-    try:
-        import urllib3
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    except ImportError:
-        # Handle old versions of request with vendorized urllib3
-        from requests.packages.urllib3.exceptions import InsecureRequestWarning
-        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
+    _suppress_x509_verification_warnings()
     for _ in range(attempts):
         time.sleep(1)
         try:
@@ -140,13 +147,12 @@ def generate_test_file_hooks(config_dir, hook_probe):
             entrypoint_script = '''\
 #!/usr/bin/env bash
 set -e
-"{0}" "{1}" "{2}" "{3}"
+"{0}" "{1}" "{2}" >> "{3}"
 '''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
         else:
-            entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.bat')
+            entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.ps1')
             entrypoint_script = '''\
-@echo off
-"{0}" "{1}" "{2}" "{3}"
+& "{0}" "{1}" "{2}" >> "{3}"
             '''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
 
         with open(entrypoint_script_path, 'w') as file_h:
@@ -236,7 +242,7 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
         file_h.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
 
     req = crypto.X509Req()
-    san = ', '.join(['DNS:{0}'.format(item) for item in domains])
+    san = ', '.join('DNS:{0}'.format(item) for item in domains)
     san_constraint = crypto.X509Extension(b'subjectAltName', False, san.encode('utf-8'))
     req.add_extensions([san_constraint])
 
@@ -273,16 +279,17 @@ def load_sample_data_path(workspace):
     shutil.copytree(original, copied, symlinks=True)
 
     if os.name == 'nt':
-        # Fix the symlinks on Windows since GIT is not creating them upon checkout
+        # Fix the symlinks on Windows if GIT is not configured to create them upon checkout
         for lineage in ['a.encryption-example.com', 'b.encryption-example.com']:
             current_live = os.path.join(copied, 'live', lineage)
             for name in os.listdir(current_live):
                 if name != 'README':
                     current_file = os.path.join(current_live, name)
-                    with open(current_file) as file_h:
-                        src = file_h.read()
-                    os.unlink(current_file)
-                    os.symlink(os.path.join(current_live, src), current_file)
+                    if not os.path.islink(current_file):
+                        with open(current_file) as file_h:
+                            src = file_h.read()
+                        os.unlink(current_file)
+                        os.symlink(os.path.join(current_live, src), current_file)
 
     return copied
 
@@ -300,3 +307,23 @@ def echo(keyword, path=None):
                          .format(keyword))
     return '{0} -c "from __future__ import print_function; print(\'{1}\')"{2}'.format(
         os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
+
+
+def get_acme_issuers(context):
+    """Gets the list of one or more issuer certificates from the ACME server used by the
+    context.
+    :param context: the testing context.
+    :return: the `list of x509.Certificate` representing the list of issuers.
+    """
+    # TODO: in fact, Boulder has alternate chains in config-next/, just not yet in config/.
+    if context.acme_server != "pebble":
+        raise NotImplementedError()
+
+    _suppress_x509_verification_warnings()
+
+    issuers = []
+    for i in range(PEBBLE_ALTERNATE_ROOTS + 1):
+        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/{}'.format(i), verify=False)
+        issuers.append(load_pem_x509_certificate(request.content, default_backend()))
+
+    return issuers

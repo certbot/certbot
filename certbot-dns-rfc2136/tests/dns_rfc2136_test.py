@@ -14,7 +14,10 @@ import dns.rdtypes.ANY.CNAME
 import dns.rdtypes.ANY.DNAME
 import dns.rdtypes.ANY.SOA
 import dns.tsig
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 
@@ -29,7 +32,7 @@ PORT = 53
 NAME = 'a-tsig-key.'
 SECRET = 'SSB3b25kZXIgd2hvIHdpbGwgYm90aGVyIHRvIGRlY29kZSB0aGlzIHRleHQK'
 VALID_CONFIG = {"rfc2136_server": SERVER, "rfc2136_name": NAME, "rfc2136_secret": SECRET}
-
+TIMEOUT = 45
 
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
 
@@ -92,7 +95,8 @@ class RFC2136ClientTest(unittest.TestCase):
     def setUp(self):
         from certbot_dns_rfc2136._internal.dns_rfc2136 import _RFC2136Client
 
-        self.rfc2136_client = _RFC2136Client(SERVER, PORT, NAME, SECRET, dns.tsig.HMAC_MD5)
+        self.rfc2136_client = _RFC2136Client(SERVER, PORT, NAME, SECRET, dns.tsig.HMAC_MD5,
+        TIMEOUT)
         self.domain = dns.name.from_text(DOMAIN)
         self.prefix = dict()  # type: Dict[str, dns.name.Name]
         self.subdom = dict()  # type: Dict[str, dns.name.Name]
@@ -127,7 +131,7 @@ class RFC2136ClientTest(unittest.TestCase):
 
         self.rfc2136_client.add_txt_record("bar"+DOMAIN, "baz", 42)
 
-        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        query_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
         self.assertTrue("bar 42 IN TXT \"baz\"" in str(query_mock.call_args[0][0]))
 
     @mock.patch("dns.query.tcp")
@@ -160,7 +164,7 @@ class RFC2136ClientTest(unittest.TestCase):
 
         self.rfc2136_client.del_txt_record("bar", "baz")
 
-        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        query_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
         self.assertTrue("bar 0 NONE TXT \"baz\"" in str(query_mock.call_args[0][0]))
 
     @mock.patch("dns.query.tcp")
@@ -225,7 +229,7 @@ class RFC2136ClientTest(unittest.TestCase):
             # _find_domain | pylint: disable=protected-access
             self.rfc2136_client._find_domain, 'error.bad.domain')
 
-    def _stub_dns_noerror(self, dns_query, server, port=PORT):  # pylint: disable=unused-argument
+    def _stub_dns_noerror(self, dns_query, server, port):  # pylint: disable=unused-argument
         response = dns.message.make_response(dns_query)
         response.rcode = dns.rcode.NOERROR
         response.flags = dns.flags.AA
@@ -238,10 +242,10 @@ class RFC2136ClientTest(unittest.TestCase):
         # _query_soa | pylint: disable=protected-access
         result = self.rfc2136_client._query_soa(self.domain)
 
-        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        query_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
         self.assertTrue(result == (True, None))
 
-    def _stub_dns_nxdomain(self, dns_query, server, port=PORT):  # pylint: disable=unused-argument
+    def _stub_dns_nxdomain(self, dns_query, server, port):  # pylint: disable=unused-argument
         response = dns.message.make_response(dns_query)
         response.rcode = dns.rcode.NXDOMAIN
         response.flags = dns.flags.AA
@@ -254,7 +258,7 @@ class RFC2136ClientTest(unittest.TestCase):
         # _query_soa | pylint: disable=protected-access
         result = self.rfc2136_client._query_soa(self.domain)
 
-        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        query_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
         self.assertTrue(result == (True, None))
 
     @mock.patch("dns.query.tcp")
@@ -277,8 +281,8 @@ class RFC2136ClientTest(unittest.TestCase):
         # _query_soa | pylint: disable=protected-access
         result = self.rfc2136_client._query_soa(DOMAIN)
 
-        tcp_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
-        udp_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        tcp_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
+        udp_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
         self.assertTrue(result)
 
 

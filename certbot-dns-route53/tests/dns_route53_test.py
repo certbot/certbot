@@ -4,7 +4,10 @@ import unittest
 
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import os
@@ -32,7 +35,6 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         # Remove the dummy credentials from env vars
         del os.environ["AWS_ACCESS_KEY_ID"]
         del os.environ["AWS_SECRET_ACCESS_KEY"]
-        super(AuthenticatorTest, self).tearDown()
 
     def test_perform(self):
         self.auth._change_txt_record = mock.MagicMock()
@@ -125,8 +127,6 @@ class ClientTest(unittest.TestCase):
     def setUp(self):
         from certbot_dns_route53._internal.dns_route53 import Authenticator
 
-        super(ClientTest, self).setUp()
-
         self.config = mock.MagicMock()
 
         # Set up dummy credentials for testing
@@ -139,7 +139,6 @@ class ClientTest(unittest.TestCase):
         # Remove the dummy credentials from env vars
         del os.environ["AWS_ACCESS_KEY_ID"]
         del os.environ["AWS_SECRET_ACCESS_KEY"]
-        super(ClientTest, self).tearDown()
 
     def test_find_zone_id_for_domain(self):
         self.client.r53.get_paginator = mock.MagicMock()

@@ -15,6 +15,7 @@ import certbot
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
+from certbot import ocsp
 from certbot import util
 from certbot._internal import cli
 from certbot._internal import constants
@@ -126,7 +127,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
 
     config["renewalparams"].update(relevant_data)
 
-    for k in config["renewalparams"].keys():
+    for k in config["renewalparams"]:
         if k not in relevant_data:
             del config["renewalparams"][k]
 
@@ -882,27 +883,33 @@ class RenewableCert(interfaces.RenewableCert):
         with open(target) as f:
             return crypto_util.get_names_from_cert(f.read())
 
-    def ocsp_revoked(self, version=None):
-        # pylint: disable=unused-argument
+    def ocsp_revoked(self, version):
         """Is the specified cert version revoked according to OCSP?
 
-        Also returns True if the cert version is declared as intended
-        to be revoked according to Let's Encrypt OCSP extensions.
-        (If no version is specified, uses the current version.)
-
-        This method is not yet implemented and currently always returns
-        False.
+        Also returns True if the cert version is declared as revoked
+        according to OCSP. If OCSP status could not be determined, False
+        is returned.
 
         :param int version: the desired version number
 
-        :returns: whether the certificate is or will be revoked
+        :returns: True if the certificate is revoked, otherwise, False
         :rtype: bool
 
         """
-        # XXX: This query and its associated network service aren't
-        # implemented yet, so we currently return False (indicating that the
-        # certificate is not revoked).
-        return False
+        cert_path = self.version("cert", version)
+        chain_path = self.version("chain", version)
+        # While the RevocationChecker should return False if it failed to
+        # determine the OCSP status, let's ensure we don't crash Certbot by
+        # catching all exceptions here.
+        try:
+            return ocsp.RevocationChecker().ocsp_revoked_by_paths(cert_path,
+                                                                  chain_path)
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning(
+                "An error occurred determining the OCSP status of %s.",
+                cert_path)
+            logger.debug(str(e))
+            return False
 
     def autorenewal_is_enabled(self):
         """Is automatic renewal enabled for this cert?
@@ -1000,18 +1007,18 @@ class RenewableCert(interfaces.RenewableCert):
         lineagename = lineagename_for_filename(config_filename)
         archive = full_archive_path(None, cli_config, lineagename)
         live_dir = _full_live_path(cli_config, lineagename)
-        if os.path.exists(archive):
+        if os.path.exists(archive) and (not os.path.isdir(archive) or os.listdir(archive)):
             config_file.close()
             raise errors.CertStorageError(
                 "archive directory exists for " + lineagename)
-        if os.path.exists(live_dir):
+        if os.path.exists(live_dir) and (not os.path.isdir(live_dir) or os.listdir(live_dir)):
             config_file.close()
             raise errors.CertStorageError(
                 "live directory exists for " + lineagename)
-        filesystem.mkdir(archive)
-        filesystem.mkdir(live_dir)
-        logger.debug("Archive directory %s and live "
-                     "directory %s created.", archive, live_dir)
+        for i in (archive, live_dir):
+            if not os.path.exists(i):
+                filesystem.makedirs(i)
+                logger.debug("Creating directory %s.", i)
 
         # Put the data into the appropriate files on disk
         target = {kind: os.path.join(live_dir, kind + ".pem") for kind in ALL_FOUR}
@@ -1119,7 +1126,7 @@ class RenewableCert(interfaces.RenewableCert):
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(new_cert + new_chain)
 
-        symlinks = dict((kind, self.configuration[kind]) for kind in ALL_FOUR)
+        symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
         # Update renewal config file
         self.configfile = update_configuration(
             self.lineagename, self.archive_dir, symlinks, cli_config)

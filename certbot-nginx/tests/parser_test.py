@@ -4,7 +4,6 @@ import re
 import shutil
 import unittest
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.compat import os
 from certbot_nginx._internal import nginxparser
@@ -127,7 +126,7 @@ class NginxParserTest(util.NginxTest):
         vhost = obj.VirtualHost(nparser.abs_path('sites-enabled/globalssl.com'),
                                 [obj.Addr('4.8.2.6', '57', True, False,
                                           False, False)],
-                                True, True, set(['globalssl.com']), [], [0])
+                                True, True, {'globalssl.com'}, [], [0])
 
         globalssl_com = [x for x in vhosts if 'globalssl.com' in x.filep][0]
         self.assertEqual(vhost, globalssl_com)
@@ -140,8 +139,8 @@ class NginxParserTest(util.NginxTest):
                                  [obj.Addr('', '8080', False, False,
                                            False, False)],
                                  False, True,
-                                 set(['localhost',
-                                      r'~^(www\.)?(example|bar)\.']),
+                                 {'localhost',
+                                      r'~^(www\.)?(example|bar)\.'},
                                  [], [10, 1, 9])
         vhost2 = obj.VirtualHost(nparser.abs_path('nginx.conf'),
                                  [obj.Addr('somename', '8080', False, False,
@@ -149,7 +148,7 @@ class NginxParserTest(util.NginxTest):
                                   obj.Addr('', '8000', False, False,
                                            False, False)],
                                  False, True,
-                                 set(['somename', 'another.alias', 'alias']),
+                                 {'somename', 'another.alias', 'alias'},
                                  [], [10, 1, 12])
         vhost3 = obj.VirtualHost(nparser.abs_path('sites-enabled/example.com'),
                                  [obj.Addr('69.50.225.155', '9000',
@@ -157,19 +156,19 @@ class NginxParserTest(util.NginxTest):
                                   obj.Addr('127.0.0.1', '', False, False,
                                            False, False)],
                                  False, True,
-                                 set(['.example.com', 'example.*']), [], [0])
+                                 {'.example.com', 'example.*'}, [], [0])
         vhost4 = obj.VirtualHost(nparser.abs_path('sites-enabled/default'),
                                  [obj.Addr('myhost', '', False, True,
                                            False, False),
                                   obj.Addr('otherhost', '', False, True,
                                            False, False)],
-                                 False, True, set(['www.example.org']),
+                                 False, True, {'www.example.org'},
                                  [], [0])
         vhost5 = obj.VirtualHost(nparser.abs_path('foo.conf'),
                                  [obj.Addr('*', '80', True, True,
                                            False, False)],
-                                 True, True, set(['*.www.foo.com',
-                                                  '*.www.example.com']),
+                                 True, True, {'*.www.foo.com',
+                                                  '*.www.example.com'},
                                  [], [2, 1, 0])
 
         self.assertEqual(14, len(vhosts))
@@ -209,11 +208,11 @@ class NginxParserTest(util.NginxTest):
         nparser = parser.NginxParser(self.config_path)
         mock_vhost = obj.VirtualHost(nparser.abs_path('nginx.conf'),
                                      None, None, None,
-                                     set(['localhost',
-                                           r'~^(www\.)?(example|bar)\.']),
+                                     {'localhost',
+                                           r'~^(www\.)?(example|bar)\.'},
                                      None, [10, 1, 9])
         example_com = nparser.abs_path('sites-enabled/example.com')
-        names = set(['.example.com', 'example.*'])
+        names = {'.example.com', 'example.*'}
         mock_vhost.filep = example_com
         mock_vhost.names = names
         mock_vhost.path = [0]
@@ -233,8 +232,8 @@ class NginxParserTest(util.NginxTest):
         nparser = parser.NginxParser(self.config_path)
         mock_vhost = obj.VirtualHost(nparser.abs_path('nginx.conf'),
                                      None, None, None,
-                                     set(['localhost',
-                                           r'~^(www\.)?(example|bar)\.']),
+                                     {'localhost',
+                                           r'~^(www\.)?(example|bar)\.'},
                                      None, [10, 1, 9])
         nparser.add_server_directives(mock_vhost,
                                       [['foo', 'bar'], ['\n ', 'ssl_certificate', ' ',
@@ -244,7 +243,7 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(1, len(re.findall(ssl_re, dump)))
 
         example_com = nparser.abs_path('sites-enabled/example.com')
-        names = set(['.example.com', 'example.*'])
+        names = {'.example.com', 'example.*'}
         mock_vhost.filep = example_com
         mock_vhost.names = names
         mock_vhost.path = [0]
@@ -265,7 +264,7 @@ class NginxParserTest(util.NginxTest):
                            ]]])
 
         server_conf = nparser.abs_path('server.conf')
-        names = set(['alias', 'another.alias', 'somename'])
+        names = {'alias', 'another.alias', 'somename'}
         mock_vhost.filep = server_conf
         mock_vhost.names = names
         mock_vhost.path = []
@@ -280,7 +279,7 @@ class NginxParserTest(util.NginxTest):
         example_com = nparser.abs_path('sites-enabled/example.com')
         mock_vhost = obj.VirtualHost(example_com,
                                      None, None, None,
-                                     set(['.example.com', 'example.*']),
+                                     {'.example.com', 'example.*'},
                                      None, [0])
         nparser.add_server_directives(mock_vhost,
                                       [['\n  ', '#', ' ', 'what a nice comment']])
@@ -302,7 +301,7 @@ class NginxParserTest(util.NginxTest):
 
     def test_replace_server_directives(self):
         nparser = parser.NginxParser(self.config_path)
-        target = set(['.example.com', 'example.*'])
+        target = {'.example.com', 'example.*'}
         filep = nparser.abs_path('sites-enabled/example.com')
         mock_vhost = obj.VirtualHost(filep, None, None, None, target, None, [0])
         nparser.update_or_add_server_directives(
@@ -315,7 +314,7 @@ class NginxParserTest(util.NginxTest):
                            ['server_name', 'foobar.com'], ['#', COMMENT],
                            ['server_name', 'example.*'], []
                            ]]])
-        mock_vhost.names = set(['foobar.com', 'example.*'])
+        mock_vhost.names = {'foobar.com', 'example.*'}
         nparser.update_or_add_server_directives(
             mock_vhost, [['ssl_certificate', 'cert.pem']])
         self.assertEqual(
@@ -329,19 +328,21 @@ class NginxParserTest(util.NginxTest):
 
     def test_get_best_match(self):
         target_name = 'www.eff.org'
-        names = [set(['www.eff.org', 'irrelevant.long.name.eff.org', '*.org']),
-                 set(['eff.org', 'ww2.eff.org', 'test.www.eff.org']),
-                 set(['*.eff.org', '.www.eff.org']),
-                 set(['.eff.org', '*.org']),
-                 set(['www.eff.', 'www.eff.*', '*.www.eff.org']),
-                 set(['example.com', r'~^(www\.)?(eff.+)', '*.eff.*']),
-                 set(['*', r'~^(www\.)?(eff.+)']),
-                 set(['www.*', r'~^(www\.)?(eff.+)', '.test.eff.org']),
-                 set(['*.org', r'*.eff.org', 'www.eff.*']),
-                 set(['*.www.eff.org', 'www.*']),
-                 set(['*.org']),
-                 set([]),
-                 set(['example.com'])]
+        names = [{'www.eff.org', 'irrelevant.long.name.eff.org', '*.org'},
+                 {'eff.org', 'ww2.eff.org', 'test.www.eff.org'},
+                 {'*.eff.org', '.www.eff.org'},
+                 {'.eff.org', '*.org'},
+                 {'www.eff.', 'www.eff.*', '*.www.eff.org'},
+                 {'example.com', r'~^(www\.)?(eff.+)', '*.eff.*'},
+                 {'*', r'~^(www\.)?(eff.+)'},
+                 {'www.*', r'~^(www\.)?(eff.+)', '.test.eff.org'},
+                 {'*.org', r'*.eff.org', 'www.eff.*'},
+                 {'*.www.eff.org', 'www.*'},
+                 {'*.org'},
+                 set(),
+                 {'example.com'},
+                 {'www.Eff.org'},
+                 {'.efF.org'}]
         winners = [('exact', 'www.eff.org'),
                    (None, None),
                    ('exact', '.www.eff.org'),
@@ -354,7 +355,9 @@ class NginxParserTest(util.NginxTest):
                    ('wildcard_end', 'www.*'),
                    ('wildcard_start', '*.org'),
                    (None, None),
-                   (None, None)]
+                   (None, None),
+                   ('exact', 'www.Eff.org'),
+                   ('wildcard_start', '.efF.org')]
 
         for i, winner in enumerate(winners):
             self.assertEqual(winner,
@@ -482,7 +485,43 @@ class NginxParserTest(util.NginxTest):
                 called = True
         self.assertTrue(called)
 
+    def test_valid_unicode_characters(self):
+        nparser = parser.NginxParser(self.config_path)
+        path = nparser.abs_path('valid_unicode_comments.conf')
+        parsed = nparser._parse_files(path)  # pylint: disable=protected-access
+        self.assertEqual(['server'], parsed[0][2][0])
+        self.assertEqual(['listen', '80'], parsed[0][2][1][3])
 
+    def test_invalid_unicode_characters(self):
+        with self.assertLogs() as log:
+            nparser = parser.NginxParser(self.config_path)
+            path = nparser.abs_path('invalid_unicode_comments.conf')
+            parsed = nparser._parse_files(path)  # pylint: disable=protected-access
+
+        self.assertEqual([], parsed)
+        self.assertTrue(any(
+            ('invalid character' in output) and ('UTF-8' in output)
+            for output in log.output
+        ))
+
+    def test_valid_unicode_characters_in_ssl_options(self):
+        nparser = parser.NginxParser(self.config_path)
+        path = nparser.abs_path('valid_unicode_comments.conf')
+        parsed = parser._parse_ssl_options(path)  # pylint: disable=protected-access
+        self.assertEqual(['server'], parsed[2][0])
+        self.assertEqual(['listen', '80'], parsed[2][1][3])
+
+    def test_invalid_unicode_characters_in_ssl_options(self):
+        with self.assertLogs() as log:
+            nparser = parser.NginxParser(self.config_path)
+            path = nparser.abs_path('invalid_unicode_comments.conf')
+            parsed = parser._parse_ssl_options(path)  # pylint: disable=protected-access
+
+        self.assertEqual([], parsed)
+        self.assertTrue(any(
+            ('invalid character' in output) and ('UTF-8' in output)
+            for output in log.output
+        ))
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

@@ -59,7 +59,7 @@ mv "dist.$version" "dist.$version.$(date +%s).bak" || true
 git tag --delete "$tag" || true
 
 tmpvenv=$(mktemp -d)
-VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages -p python2 $tmpvenv
+python3 -m venv "$tmpvenv"
 . $tmpvenv/bin/activate
 # update setuptools/pip just like in other places in the repo
 pip install -U setuptools
@@ -157,10 +157,10 @@ done
 echo "Testing packages"
 cd "dist.$version"
 # start local PyPI
-python -m SimpleHTTPServer $PORT &
+python -m http.server $PORT &
 # cd .. is NOT done on purpose: we make sure that all subpackages are
 # installed from local PyPI rather than current directory (repo root)
-VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages ../venv
+VIRTUALENV_NO_DOWNLOAD=1 virtualenv ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip
@@ -202,7 +202,7 @@ done
 # pin pip hashes of the things we just built
 for pkg in $SUBPKGS_IN_AUTO ; do
     echo $pkg==$version \\
-    pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
+    pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python -c 'from sys import stdin; input = stdin.read(); print("   ", input.replace("\n--hash", " \\\n    --hash"), end="")'
 done > letsencrypt-auto-source/pieces/certbot-requirements.txt
 deactivate
 
@@ -278,8 +278,8 @@ git commit -m "Add contents to certbot/CHANGELOG.md for next version"
 
 echo "New root: $root"
 echo "Test commands (in the letstest repo):"
-echo 'python multitester.py targets.yaml $AWS_KEY $USERNAME scripts/test_leauto_upgrades.sh --alt_pip $YOUR_PIP_REPO --branch public-beta'
-echo 'python multitester.py  targets.yaml $AWK_KEY $USERNAME scripts/test_letsencrypt_auto_certonly_standalone.sh --branch candidate-0.1.1'
+echo 'python multitester.py auto_targets.yaml $AWS_KEY $USERNAME scripts/test_leauto_upgrades.sh --alt_pip $YOUR_PIP_REPO --branch public-beta'
+echo 'python multitester.py auto_targets.yaml $AWK_KEY $USERNAME scripts/test_letsencrypt_auto_certonly_standalone.sh --branch candidate-0.1.1'
 echo 'python multitester.py --saveinstances targets.yaml $AWS_KEY $USERNAME scripts/test_apache2.sh'
 echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"

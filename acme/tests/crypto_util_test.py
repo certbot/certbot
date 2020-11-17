@@ -11,13 +11,11 @@ import six
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
 from acme import errors
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 import test_util
 
 
 class SSLSocketAndProbeSNITest(unittest.TestCase):
     """Tests for acme.crypto_util.SSLSocket/probe_sni."""
-
 
     def setUp(self):
         self.cert = test_util.load_comparable_cert('rsa2048_cert.pem')
@@ -32,7 +30,8 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
             # six.moves.* | pylint: disable=attribute-defined-outside-init,no-init
 
             def server_bind(self):  # pylint: disable=missing-docstring
-                self.socket = SSLSocket(socket.socket(), certs=certs)
+                self.socket = SSLSocket(socket.socket(),
+                        certs)
                 socketserver.TCPServer.server_bind(self)
 
         self.server = _TestServer(('', 0), socketserver.BaseRequestHandler)
@@ -71,6 +70,18 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
             self.assertRaises(errors.Error, self._probe, b'bar')
         finally:
             socket.setdefaulttimeout(original_timeout)
+
+
+class SSLSocketTest(unittest.TestCase):
+    """Tests for acme.crypto_util.SSLSocket."""
+
+    def test_ssl_socket_invalid_arguments(self):
+        from acme.crypto_util import SSLSocket
+        with self.assertRaises(ValueError):
+            _ = SSLSocket(None, {'sni': ('key', 'cert')},
+                    cert_selection=lambda _: None)
+        with self.assertRaises(ValueError):
+            _ = SSLSocket(None)
 
 
 class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):

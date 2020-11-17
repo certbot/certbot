@@ -8,6 +8,7 @@ import hashlib
 import logging
 import warnings
 
+import re
 # See https://github.com/pyca/cryptography/issues/4275
 from cryptography import x509  # type: ignore
 from cryptography.exceptions import InvalidSignature
@@ -454,11 +455,14 @@ def _notAfterBefore(cert_path, method):
     reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
                              timestamp[6:8], b"T", timestamp[8:10], b":",
                              timestamp[10:12], b":", timestamp[12:]]
-    timestamp_str = b"".join(reformatted_timestamp)
-    # pyrfc3339 uses "native" strings. That is, bytes on Python 2 and unicode
-    # on Python 3
+    # pyrfc3339 always uses the type `str`. This means that in Python 2, it
+    # expects str/bytes and in Python 3 it expects its str type or the Python 2
+    # equivalent of the type unicode.
+    timestamp_bytes = b"".join(reformatted_timestamp)
     if six.PY3:
-        timestamp_str = timestamp_str.decode('ascii')
+        timestamp_str = timestamp_bytes.decode('ascii')
+    else:
+        timestamp_str = timestamp_bytes
     return pyrfc3339.parse(timestamp_str)
 
 
@@ -478,6 +482,17 @@ def sha256sum(filename):
         sha256.update(file_d.read().encode('UTF-8'))
     return sha256.hexdigest()
 
+# Finds one CERTIFICATE stricttextualmsg according to rfc7468#section-3.
+# Does not validate the base64text - use crypto.load_certificate.
+CERT_PEM_REGEX = re.compile(
+    b"""-----BEGIN CERTIFICATE-----\r?
+.+?\r?
+-----END CERTIFICATE-----\r?
+""",
+    re.DOTALL # DOTALL (/s) because the base64text may include newlines
+)
+
+
 def cert_and_chain_from_fullchain(fullchain_pem):
     """Split fullchain_pem into cert_pem and chain_pem
 
@@ -486,8 +501,65 @@ def cert_and_chain_from_fullchain(fullchain_pem):
     :returns: tuple of string cert_pem and chain_pem
     :rtype: tuple
 
+    :raises errors.Error: If there are less than 2 certificates in the chain.
+
     """
-    cert = crypto.dump_certificate(crypto.FILETYPE_PEM,
-        crypto.load_certificate(crypto.FILETYPE_PEM, fullchain_pem)).decode()
-    chain = fullchain_pem[len(cert):].lstrip()
-    return (cert, chain)
+    # First pass: find the boundary of each certificate in the chain.
+    # TODO: This will silently skip over any "explanatory text" in between boundaries,
+    # which is prohibited by RFC8555.
+    certs = CERT_PEM_REGEX.findall(fullchain_pem.encode())
+    if len(certs) < 2:
+        raise errors.Error("failed to parse fullchain into cert and chain: " +
+                           "less than 2 certificates in chain")
+
+    # Second pass: for each certificate found, parse it using OpenSSL and re-encode it,
+    # with the effect of normalizing any encoding variations (e.g. CRLF, whitespace).
+    certs_normalized = [crypto.dump_certificate(crypto.FILETYPE_PEM,
+        crypto.load_certificate(crypto.FILETYPE_PEM, cert)).decode() for cert in certs]
+
+    # Since each normalized cert has a newline suffix, no extra newlines are required.
+    return (certs_normalized[0], "".join(certs_normalized[1:]))
+
+def get_serial_from_cert(cert_path):
+    """Retrieve the serial number of a certificate from certificate path
+
+    :param str cert_path: path to a cert in PEM format
+
+    :returns: serial number of the certificate
+    :rtype: int
+    """
+    # pylint: disable=redefined-outer-name
+    with open(cert_path) as f:
+        x509 = crypto.load_certificate(crypto.FILETYPE_PEM,
+                                                           f.read())
+    return x509.get_serial_number()
+
+
+def find_chain_with_issuer(fullchains, issuer_cn, warn_on_no_match=False):
+    """Chooses the first certificate chain from fullchains which contains an
+    Issuer Subject Common Name matching issuer_cn.
+
+    :param fullchains: The list of fullchains in PEM chain format.
+    :type fullchains: `list` of `str`
+    :param `str` issuer_cn: The exact Subject Common Name to match against any
+        issuer in the certificate chain.
+
+    :returns: The best-matching fullchain, PEM-encoded, or the first if none match.
+    :rtype: `str`
+    """
+    for chain in fullchains:
+        certs = [x509.load_pem_x509_certificate(cert, default_backend()) \
+                 for cert in CERT_PEM_REGEX.findall(chain.encode())]
+        # Iterate the fullchain beginning from the leaf. For each certificate encountered,
+        # match against Issuer Subject CN.
+        for cert in certs:
+            cert_issuer_cn = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+            if cert_issuer_cn and cert_issuer_cn[0].value == issuer_cn:
+                return chain
+
+    # Nothing matched, return whatever was first in the list.
+    if warn_on_no_match:
+        logger.info("Certbot has been configured to prefer certificate chains with "
+                    "issuer '%s', but no chain from the CA matched this issuer. Using "
+                    "the default certificate chain instead.", issuer_cn)
+    return fullchains[0]

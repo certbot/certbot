@@ -4,7 +4,10 @@ import json
 import unittest
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import pytz
 
 from acme import messages
@@ -13,6 +16,7 @@ from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
 import certbot.tests.util as test_util
+
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
@@ -53,23 +57,31 @@ class AccountTest(unittest.TestCase):
         self.assertTrue(repr(self.acc).startswith(
           "<Account(i_am_a_regr, 7adac10320f585ddf118429c0c4af2cd, Meta("))
 
-class ReportNewAccountTest(test_util.ConfigTestCase):
-    """Tests for certbot._internal.account.report_new_account."""
 
-    def _call(self):
-        from certbot._internal.account import report_new_account
-        report_new_account(self.config)
+class MetaTest(unittest.TestCase):
+    """Tests for certbot._internal.account.Meta."""
+    def test_deserialize_partial(self):
+        from certbot._internal.account import Account
+        meta = Account.Meta.json_loads(
+            '{'
+            '   "creation_dt": "2020-06-13T07:46:45Z",'
+            '   "creation_host": "hyperion.localdomain"'
+            '}')
+        self.assertIsNotNone(meta.creation_dt)
+        self.assertIsNotNone(meta.creation_host)
+        self.assertIsNone(meta.register_to_eff)
 
-    @mock.patch("certbot._internal.account.zope.component.queryUtility")
-    def test_no_reporter(self, mock_zope):
-        mock_zope.return_value = None
-        self._call()
-
-    @mock.patch("certbot._internal.account.zope.component.queryUtility")
-    def test_it(self, mock_zope):
-        self._call()
-        call_list = mock_zope().add_message.call_args_list
-        self.assertTrue(self.config.config_dir in call_list[0][0][0])
+    def test_deserialize_full(self):
+        from certbot._internal.account import Account
+        meta = Account.Meta.json_loads(
+            '{'
+            '   "creation_dt": "2020-06-13T07:46:45Z",'
+            '   "creation_host": "hyperion.localdomain",'
+            '   "register_to_eff": "bar"'
+            '}')
+        self.assertIsNotNone(meta.creation_dt)
+        self.assertIsNotNone(meta.creation_host)
+        self.assertIsNotNone(meta.register_to_eff)
 
 
 class AccountMemoryStorageTest(unittest.TestCase):
@@ -135,15 +147,23 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
             regr = json.load(f)
         self.assertTrue("new_authzr_uri" in regr)
 
-    def test_save_regr(self):
-        self.storage.save_regr(self.acc, self.mock_client)
+    def test_update_regr(self):
+        self.storage.update_regr(self.acc, self.mock_client)
         account_path = os.path.join(self.config.accounts_dir, self.acc.id)
         self.assertTrue(os.path.exists(account_path))
-        self.assertTrue(os.path.exists(os.path.join(
-            account_path, "regr.json")))
-        for file_name in "meta.json", "private_key.json":
-            self.assertFalse(os.path.exists(
-                os.path.join(account_path, file_name)))
+        self.assertTrue(os.path.exists(os.path.join(account_path, "regr.json")))
+
+        self.assertFalse(os.path.exists(os.path.join(account_path, "meta.json")))
+        self.assertFalse(os.path.exists(os.path.join(account_path, "private_key.json")))
+
+    def test_update_meta(self):
+        self.storage.update_meta(self.acc)
+        account_path = os.path.join(self.config.accounts_dir, self.acc.id)
+        self.assertTrue(os.path.exists(account_path))
+        self.assertTrue(os.path.exists(os.path.join(account_path, "meta.json")))
+
+        self.assertFalse(os.path.exists(os.path.join(account_path, "regr.json")))
+        self.assertFalse(os.path.exists(os.path.join(account_path, "private_key.json")))
 
     def test_find_all(self):
         self.storage.save(self.acc, self.mock_client)

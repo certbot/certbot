@@ -1,7 +1,10 @@
 """Test for certbot_apache._internal.configurator for Fedora 29+ overrides"""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import filesystem
@@ -120,7 +123,7 @@ class MultipleVhostsTestFedora(util.ApacheTest):
                 return mod_val
             return ""
         mock_get.side_effect = mock_get_cfg
-        self.config.parser.modules = set()
+        self.config.parser.modules = {}
         self.config.parser.variables = {}
 
         with mock.patch("certbot.util.get_os_info") as mock_osi:
@@ -131,7 +134,7 @@ class MultipleVhostsTestFedora(util.ApacheTest):
         self.assertEqual(mock_get.call_count, 3)
         self.assertEqual(len(self.config.parser.modules), 4)
         self.assertEqual(len(self.config.parser.variables), 2)
-        self.assertTrue("TEST2" in self.config.parser.variables.keys())
+        self.assertTrue("TEST2" in self.config.parser.variables)
         self.assertTrue("mod_another.c" in self.config.parser.modules)
 
     @mock.patch("certbot_apache._internal.configurator.util.run_script")
@@ -169,11 +172,11 @@ class MultipleVhostsTestFedora(util.ApacheTest):
             mock_osi.return_value = ("fedora", "29")
             self.config.parser.update_runtime_variables()
 
-        self.assertTrue("mock_define" in self.config.parser.variables.keys())
-        self.assertTrue("mock_define_too" in self.config.parser.variables.keys())
-        self.assertTrue("mock_value" in self.config.parser.variables.keys())
+        self.assertTrue("mock_define" in self.config.parser.variables)
+        self.assertTrue("mock_define_too" in self.config.parser.variables)
+        self.assertTrue("mock_value" in self.config.parser.variables)
         self.assertEqual("TRUE", self.config.parser.variables["mock_value"])
-        self.assertTrue("MOCK_NOSEP" in self.config.parser.variables.keys())
+        self.assertTrue("MOCK_NOSEP" in self.config.parser.variables)
         self.assertEqual("NOSEP_VAL", self.config.parser.variables["NOSEP_TWO"])
 
     @mock.patch("certbot_apache._internal.configurator.util.run_script")

@@ -96,14 +96,16 @@ def test_authenticator(plugin, config, temp_dir):
 
 def _create_achalls(plugin):
     """Returns a list of annotated challenges to test on plugin"""
-    achalls = list()
+    achalls = []
     names = plugin.get_testable_domain_names()
     for domain in names:
         prefs = plugin.get_chall_pref(domain)
         for chall_type in prefs:
             if chall_type == challenges.HTTP01:
+                # challenges.HTTP01.TOKEN_SIZE is a float but os.urandom
+                # expects an integer.
                 chall = challenges.HTTP01(
-                    token=os.urandom(challenges.HTTP01.TOKEN_SIZE))
+                    token=os.urandom(int(challenges.HTTP01.TOKEN_SIZE)))
                 challb = acme_util.chall_to_challb(
                     chall, messages.STATUS_PENDING)
                 achall = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -137,7 +139,7 @@ def test_deploy_cert(plugin, temp_dir, domains):
     """Tests deploy_cert returning True if the tests are successful"""
     cert = crypto_util.gen_ss_cert(util.KEY, domains)
     cert_path = os.path.join(temp_dir, "cert.pem")
-    with open(cert_path, "w") as f:
+    with open(cert_path, "wb") as f:
         f.write(OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, cert))
 
@@ -273,7 +275,7 @@ def _dirs_are_unequal(dir1, dir2):
             logger.error(str(dircmp.diff_files))
             return True
 
-        for subdir in dircmp.subdirs.itervalues():
+        for subdir in dircmp.subdirs.values():
             dircmps.append(subdir)
 
     return False

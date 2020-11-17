@@ -3,13 +3,15 @@
 # Some dev package versions specified here may be overridden by higher level constraints
 # files during tests (eg. letsencrypt-auto-source/pieces/dependency-requirements.txt).
 alabaster==0.7.10
-apacheconfig==0.3.1
+apacheconfig==0.3.2
 apipkg==1.4
 appnope==0.1.0
 asn1crypto==0.22.0
 astroid==2.3.3
 attrs==17.3.0
+azure-devops==6.0.0b2
 Babel==2.5.1
+backcall==0.2.0
 backports.functools-lru-cache==1.5
 backports.shutil-get-terminal-size==1.0.0
 backports.ssl-match-hostname==3.7.0.1
@@ -18,11 +20,11 @@ boto3==1.11.7
 botocore==1.14.7
 cached-property==1.5.1
 cloudflare==2.3.1
-codecov==2.0.15
 configparser==3.7.4
 contextlib2==0.6.0.post1
 coverage==4.5.4
 decorator==4.4.1
+deprecated==1.2.10
 dns-lexicon==3.3.17
 dnspython==1.15.0
 docker==3.7.2
@@ -37,13 +39,15 @@ future==0.16.0
 futures==3.3.0
 filelock==3.0.12
 google-api-python-client==1.5.5
-httplib2==0.10.3
+httplib2==0.18.1
 imagesize==0.7.1
 importlib-metadata==0.23
 ipdb==0.12.3
-ipython==5.8.0
+ipython==7.9.0
 ipython-genutils==0.2.0
+isodate==0.6.0
 isort==4.3.21
+jedi==0.17.1
 Jinja2==2.9.6
 jmespath==0.9.4
 josepy==1.1.0
@@ -54,24 +58,29 @@ logilab-common==1.4.1
 MarkupSafe==1.0
 mccabe==0.6.1
 more-itertools==5.0.0
+msrest==0.6.18
 mypy==0.710
 mypy-extensions==0.4.3
 ndg-httpsclient==0.3.2
 oauth2client==4.0.0
+oauthlib==3.1.0
 packaging==19.2
 paramiko==2.4.2
+parso==0.7.0
 pathlib2==2.3.5
 pexpect==4.7.0
 pickleshare==0.7.5
 pkginfo==1.4.2
 pluggy==0.13.0
 ply==3.4
-prompt-toolkit==1.0.18
+prompt-toolkit==2.0.10
 ptyprocess==0.6.0
 py==1.8.0
 pyasn1==0.1.9
 pyasn1-modules==0.0.10
+PyGithub==1.52
 Pygments==2.2.0
+pyjwt==1.7.1
 pylint==2.4.3
 # If pynsist version is upgraded, our NSIS template windows-installer/template.nsi
 # must be upgraded if necessary using the new built-in one from pynsist.
@@ -89,6 +98,7 @@ pywin32==227
 PyYAML==3.13
 repoze.sphinx.autointerface==0.8
 requests-file==1.4.2
+requests-oauthlib==1.3.0
 requests-toolbelt==0.8.0
 rsa==3.4.2
 s3transfer==0.3.1

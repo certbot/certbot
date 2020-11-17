@@ -14,7 +14,7 @@ from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 
-ACCOUNT_URL = 'https://dash.cloudflare.com/profile/api-tokens'
+ACCOUNT_URL = 'https://dash.cloudflare.com/?to=/:account/profile/api-tokens'
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -118,7 +118,7 @@ class _CloudflareClient(object):
             code = int(e)
             hint = None
 
-            if code == 9109:
+            if code == 1009:
                 hint = 'Does your API token have "Zone:DNS:Edit" permissions?'
 
             logger.error('Encountered CloudFlareAPIError adding TXT record: %d %s', e, e)
@@ -210,11 +210,22 @@ class _CloudflareClient(object):
                 logger.debug('Found zone_id of %s for %s using name %s', zone_id, domain, zone_name)
                 return zone_id
 
-        raise errors.PluginError('Unable to determine zone_id for {0} using zone names: {1}. '
-                                'Please confirm that the domain name has been entered correctly '
-                                'and is already associated with the supplied Cloudflare account.{2}'
-                                .format(domain, zone_name_guesses, ' The error from Cloudflare was:'
-                                ' {0} {1}'.format(code, msg) if code is not None else ''))
+        if msg is not None:
+            if 'com.cloudflare.api.account.zone.list' in msg:
+                raise errors.PluginError('Unable to determine zone_id for {0} using zone names: '
+                                         '{1}. Please confirm that the domain name has been '
+                                         'entered correctly and your Cloudflare Token has access '
+                                         'to the domain.'.format(domain, zone_name_guesses))
+            else:
+                raise errors.PluginError('Unable to determine zone_id for {0} using zone names: '
+                                         '{1}. The error from Cloudflare was: {2} {3}.'
+                                         .format(domain, zone_name_guesses, code, msg))
+        else:
+            raise errors.PluginError('Unable to determine zone_id for {0} using zone names: '
+                                     '{1}. Please confirm that the domain name has been '
+                                     'entered correctly and is already associated with the '
+                                     'supplied Cloudflare account.'
+                                     .format(domain, zone_name_guesses))
 
     def _find_txt_record_id(self, zone_id, record_name, record_content):
         """

@@ -2,10 +2,12 @@
 import sys
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import zope.component
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot import interfaces
 from certbot._internal.plugins.disco import PluginsRegistry
@@ -172,6 +174,7 @@ class ChoosePluginTest(unittest.TestCase):
 
         self.assertTrue("default" in mock_util().menu.call_args[1])
 
+
 class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.plugins.selection.get_unprepared_installer."""
 
@@ -179,10 +182,10 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
         super(GetUnpreparedInstallerTest, self).setUp()
         self.mock_apache_fail_ep = mock.Mock(
             description_with_name="afail")
-        self.mock_apache_fail_ep.name = "afail"
+        self.mock_apache_fail_ep.check_name = lambda name: name == "afail"
         self.mock_apache_ep = mock.Mock(
             description_with_name="apache")
-        self.mock_apache_ep.name = "apache"
+        self.mock_apache_ep.check_name = lambda name: name == "apache"
         self.mock_apache_plugin = mock.MagicMock()
         self.mock_apache_ep.init.return_value = self.mock_apache_plugin
         self.plugins = PluginsRegistry({
@@ -211,7 +214,7 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
     def test_multiple_installers_returned(self):
         self.config.configurator = "apache"
         # Two plugins with the same name
-        self.mock_apache_fail_ep.name = "apache"
+        self.mock_apache_fail_ep.check_name = lambda name: name == "apache"
         self.assertRaises(errors.PluginSelectionError, self._call)
 
 

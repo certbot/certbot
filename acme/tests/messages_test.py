@@ -2,10 +2,12 @@
 import unittest
 
 import josepy as jose
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
 from acme import challenges
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 import test_util
 
 CERT = test_util.load_comparable_cert('cert.der')
@@ -252,6 +254,19 @@ class RegistrationTest(unittest.TestCase):
         from acme.messages import Registration
         hash(Registration.from_json(self.jobj_from))
 
+    def test_default_not_transmitted(self):
+        from acme.messages import NewRegistration
+        empty_new_reg = NewRegistration()
+        new_reg_with_contact = NewRegistration(contact=())
+
+        self.assertEqual(empty_new_reg.contact, ())
+        self.assertEqual(new_reg_with_contact.contact, ())
+
+        self.assertTrue('contact' not in empty_new_reg.to_partial_json())
+        self.assertTrue('contact' not in empty_new_reg.fields_to_partial_json())
+        self.assertTrue('contact' in new_reg_with_contact.to_partial_json())
+        self.assertTrue('contact' in new_reg_with_contact.fields_to_partial_json())
+
 
 class UpdateRegistrationTest(unittest.TestCase):
     """Tests for acme.messages.UpdateRegistration."""
@@ -453,6 +468,7 @@ class OrderResourceTest(unittest.TestCase):
             'authorizations': None,
         })
 
+
 class NewOrderTest(unittest.TestCase):
     """Tests for acme.messages.NewOrder."""
 
@@ -465,6 +481,19 @@ class NewOrderTest(unittest.TestCase):
         self.assertEqual(self.reg.to_json(), {
             'identifiers': mock.sentinel.identifiers,
         })
+
+
+class JWSPayloadRFC8555Compliant(unittest.TestCase):
+    """Test for RFC8555 compliance of JWS generated from resources/challenges"""
+    def test_message_payload(self):
+        from acme.messages import NewAuthorization
+
+        new_order = NewAuthorization()
+        new_order.le_acme_version = 2
+
+        jobj = new_order.json_dumps(indent=2).encode()
+        # RFC8555 states that JWS bodies must not have a resource field.
+        self.assertEqual(jobj, b'{}')
 
 
 if __name__ == '__main__':

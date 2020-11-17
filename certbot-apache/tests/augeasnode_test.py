@@ -1,14 +1,27 @@
 """Tests for AugeasParserNode classes"""
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
 
+import os
 import util
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 
 from certbot_apache._internal import assertions
+from certbot_apache._internal import augeasparser
 
 
+def _get_augeasnode_mock(filepath):
+    """ Helper function for mocking out DualNode instance with an AugeasNode """
+    def augeasnode_mock(metadata):
+        return augeasparser.AugeasBlockNode(
+            name=assertions.PASS,
+            ancestor=None,
+            filepath=filepath,
+            metadata=metadata)
+    return augeasnode_mock
 
 class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-methods
     """Test AugeasParserNode using available test configurations"""
@@ -16,8 +29,11 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
     def setUp(self):  # pylint: disable=arguments-differ
         super(AugeasParserNodeTest, self).setUp()
 
-        self.config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir, self.work_dir, use_parsernode=True)
+        with mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.get_parsernode_root") as mock_parsernode:
+            mock_parsernode.side_effect = _get_augeasnode_mock(
+                                              os.path.join(self.config_path, "apache2.conf"))
+            self.config = util.get_apache_configurator(
+                self.config_path, self.vhost_path, self.config_dir, self.work_dir, use_parsernode=True)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
@@ -111,7 +127,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
                 name=servernames[0].name,
                 parameters=["test", "setting", "these"],
                 ancestor=assertions.PASS,
-                metadata=servernames[0].primary.metadata
+                metadata=servernames[0].metadata
             )
             self.assertTrue(mock_set.called)
             self.assertEqual(
@@ -146,26 +162,26 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         self.assertTrue(found)
 
     def test_add_child_comment(self):
-        newc = self.config.parser_root.primary.add_child_comment("The content")
+        newc = self.config.parser_root.add_child_comment("The content")
         comments = self.config.parser_root.find_comments("The content")
         self.assertEqual(len(comments), 1)
         self.assertEqual(
             newc.metadata["augeaspath"],
-            comments[0].primary.metadata["augeaspath"]
+            comments[0].metadata["augeaspath"]
         )
         self.assertEqual(newc.comment, comments[0].comment)
 
     def test_delete_child(self):
-        listens = self.config.parser_root.primary.find_directives("Listen")
+        listens = self.config.parser_root.find_directives("Listen")
         self.assertEqual(len(listens), 1)
-        self.config.parser_root.primary.delete_child(listens[0])
+        self.config.parser_root.delete_child(listens[0])
 
-        listens = self.config.parser_root.primary.find_directives("Listen")
+        listens = self.config.parser_root.find_directives("Listen")
         self.assertEqual(len(listens), 0)
 
     def test_delete_child_not_found(self):
         listen = self.config.parser_root.find_directives("Listen")[0]
-        listen.primary.metadata["augeaspath"] = "/files/something/nonexistent"
+        listen.metadata["augeaspath"] = "/files/something/nonexistent"
 
         self.assertRaises(
             errors.PluginError,
@@ -178,10 +194,10 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
             "NewBlock",
             ["first", "second"]
         )
-        rpath, _, directive = nb.primary.metadata["augeaspath"].rpartition("/")
+        rpath, _, directive = nb.metadata["augeaspath"].rpartition("/")
         self.assertEqual(
             rpath,
-            self.config.parser_root.primary.metadata["augeaspath"]
+            self.config.parser_root.metadata["augeaspath"]
         )
         self.assertTrue(directive.startswith("NewBlock"))
 
@@ -190,8 +206,8 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
             "Beginning",
             position=0
         )
-        parser = self.config.parser_root.primary.parser
-        root_path = self.config.parser_root.primary.metadata["augeaspath"]
+        parser = self.config.parser_root.parser
+        root_path = self.config.parser_root.metadata["augeaspath"]
         # Get first child
         first = parser.aug.match("{}/*[1]".format(root_path))
         self.assertTrue(first[0].endswith("Beginning"))
@@ -200,8 +216,8 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         self.config.parser_root.add_child_block(
             "VeryLast",
         )
-        parser = self.config.parser_root.primary.parser
-        root_path = self.config.parser_root.primary.metadata["augeaspath"]
+        parser = self.config.parser_root.parser
+        root_path = self.config.parser_root.metadata["augeaspath"]
         # Get last child
         last = parser.aug.match("{}/*[last()]".format(root_path))
         self.assertTrue(last[0].endswith("VeryLast"))
@@ -211,8 +227,8 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
             "VeryLastAlt",
             position=99999
         )
-        parser = self.config.parser_root.primary.parser
-        root_path = self.config.parser_root.primary.metadata["augeaspath"]
+        parser = self.config.parser_root.parser
+        root_path = self.config.parser_root.metadata["augeaspath"]
         # Get last child
         last = parser.aug.match("{}/*[last()]".format(root_path))
         self.assertTrue(last[0].endswith("VeryLastAlt"))
@@ -222,15 +238,15 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
             "Middle",
             position=5
         )
-        parser = self.config.parser_root.primary.parser
-        root_path = self.config.parser_root.primary.metadata["augeaspath"]
+        parser = self.config.parser_root.parser
+        root_path = self.config.parser_root.metadata["augeaspath"]
         # Augeas indices start at 1 :(
         middle = parser.aug.match("{}/*[6]".format(root_path))
         self.assertTrue(middle[0].endswith("Middle"))
 
     def test_add_child_block_existing_name(self):
-        parser = self.config.parser_root.primary.parser
-        root_path = self.config.parser_root.primary.metadata["augeaspath"]
+        parser = self.config.parser_root.parser
+        root_path = self.config.parser_root.metadata["augeaspath"]
         # There already exists a single VirtualHost in the base config
         new_block = parser.aug.match("{}/VirtualHost[2]".format(root_path))
         self.assertEqual(len(new_block), 0)
@@ -239,7 +255,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         )
         new_block = parser.aug.match("{}/VirtualHost[2]".format(root_path))
         self.assertEqual(len(new_block), 1)
-        self.assertTrue(vh.primary.metadata["augeaspath"].endswith("VirtualHost[2]"))
+        self.assertTrue(vh.metadata["augeaspath"].endswith("VirtualHost[2]"))
 
     def test_node_init_error_bad_augeaspath(self):
         from certbot_apache._internal.augeasparser import AugeasBlockNode
@@ -284,7 +300,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         self.assertEqual(len(dirs), 1)
         self.assertEqual(dirs[0].parameters, ("with", "parameters"))
         # The new directive was added to the very first line of the config
-        self.assertTrue(dirs[0].primary.metadata["augeaspath"].endswith("[1]"))
+        self.assertTrue(dirs[0].metadata["augeaspath"].endswith("[1]"))
 
     def test_add_child_directive_exception(self):
         self.assertRaises(
@@ -314,6 +330,6 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         self.assertTrue(nonmacro_test)
 
     def test_find_ancestors_bad_path(self):
-        self.config.parser_root.primary.metadata["augeaspath"] = ""
-        ancs = self.config.parser_root.primary.find_ancestors("Anything")
+        self.config.parser_root.metadata["augeaspath"] = ""
+        ancs = self.config.parser_root.find_ancestors("Anything")
         self.assertEqual(len(ancs), 0)

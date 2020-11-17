@@ -1,7 +1,10 @@
 """Tests for certbot._internal.renewal"""
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError:  # pragma: no cover
+    from unittest import mock
 
 from acme import challenges
 from certbot import errors
@@ -50,6 +53,26 @@ class RenewalTest(test_util.ConfigTestCase):
         renewal._restore_webroot_config(self.config, renewalparams)  # pylint: disable=protected-access
         self.assertEqual(self.config.webroot_map, {})
         self.assertEqual(self.config.webroot_path, ['/var/www/test'])
+
+    def test_reuse_key_renewal_params(self):
+        self.config.rsa_key_size = 'INVALID_VALUE'
+        self.config.reuse_key = True
+        self.config.dry_run = True
+        config = configuration.NamespaceConfig(self.config)
+
+        rc_path = test_util.make_lineage(
+            self.config.config_dir, 'sample-renewal.conf')
+        lineage = storage.RenewableCert(rc_path, config)
+
+        le_client = mock.MagicMock()
+        le_client.obtain_certificate.return_value = (None, None, None, None)
+
+        from certbot._internal import renewal
+
+        with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
+            renewal.renew_cert(self.config, None, le_client, lineage)
+
+        assert self.config.rsa_key_size == 2048
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
@@ -106,6 +129,14 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         renewalparams = {'must_staple': 'maybe'}
         self.assertRaises(
             errors.Error, self._call, self.config, renewalparams)
+
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
+    def test_ancient_server_renewal_conf(self, mock_set_by_cli):
+        from certbot._internal import constants
+        self.config.server = None
+        mock_set_by_cli.return_value = False
+        self._call(self.config, {'server': constants.V1_URI})
+        self.assertEqual(self.config.server, constants.CLI_DEFAULTS['server'])
 
 
 if __name__ == "__main__":

@@ -2,7 +2,10 @@
 import sys
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import six
 
 from acme import challenges
@@ -29,8 +32,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             # initialization.
         self.config = mock.MagicMock(
             http01_port=0, manual_auth_hook=None, manual_cleanup_hook=None,
-            manual_public_ip_logging_ok=False, noninteractive_mode=False,
-            validate_hooks=False,
+            noninteractive_mode=False, validate_hooks=False,
             config_dir=os.path.join(self.tempdir, "config_dir"),
             work_dir=os.path.join(self.tempdir, "work_dir"),
             backup_dir=os.path.join(self.tempdir, "backup_dir"),
@@ -57,31 +59,26 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.assertEqual(self.auth.get_chall_pref('example.org'),
                          [challenges.HTTP01, challenges.DNS01])
 
-    @test_util.patch_get_utility()
-    def test_ip_logging_not_ok(self, mock_get_utility):
-        mock_get_utility().yesno.return_value = False
-        self.assertRaises(errors.PluginError, self.auth.perform, [])
-
-    @test_util.patch_get_utility()
-    def test_ip_logging_ok(self, mock_get_utility):
-        mock_get_utility().yesno.return_value = True
-        self.auth.perform([])
-        self.assertTrue(self.config.manual_public_ip_logging_ok)
-
     def test_script_perform(self):
-        self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = (
             '{0} -c "from __future__ import print_function;'
-            'from certbot.compat import os;  print(os.environ.get(\'CERTBOT_DOMAIN\'));'
+            'from certbot.compat import os;'
+            'print(os.environ.get(\'CERTBOT_DOMAIN\'));'
             'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'
-            'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));"'
+            'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));'
+            'print(os.environ.get(\'CERTBOT_ALL_DOMAINS\'));'
+            'print(os.environ.get(\'CERTBOT_REMAINING_CHALLENGES\'));"'
             .format(sys.executable))
-        dns_expected = '{0}\n{1}\n{2}'.format(
+        dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
             self.dns_achall.domain, 'notoken',
-            self.dns_achall.validation(self.dns_achall.account_key))
-        http_expected = '{0}\n{1}\n{2}'.format(
+            self.dns_achall.validation(self.dns_achall.account_key),
+            ','.join(achall.domain for achall in self.achalls),
+            len(self.achalls) - self.achalls.index(self.dns_achall) - 1)
+        http_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
             self.http_achall.domain, self.http_achall.chall.encode('token'),
-            self.http_achall.validation(self.http_achall.account_key))
+            self.http_achall.validation(self.http_achall.account_key),
+            ','.join(achall.domain for achall in self.achalls),
+            len(self.achalls) - self.achalls.index(self.http_achall) - 1)
 
         self.assertEqual(
             self.auth.perform(self.achalls),
@@ -95,7 +92,6 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
     @test_util.patch_get_utility()
     def test_manual_perform(self, mock_get_utility):
-        self.config.manual_public_ip_logging_ok = True
         self.assertEqual(
             self.auth.perform(self.achalls),
             [achall.response(achall.account_key) for achall in self.achalls])
@@ -106,7 +102,6 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.assertFalse(kwargs['wrap'])
 
     def test_cleanup(self):
-        self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = ('{0} -c "import sys; sys.stdout.write(\'foo\')"'
                                         .format(sys.executable))
         self.config.manual_cleanup_hook = '# cleanup'
