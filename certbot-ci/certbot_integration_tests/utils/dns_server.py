@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Module to setup an RFC2136-capable DNS server"""
+from __future__ import print_function
+
 import os
 import os.path
 from pkg_resources import resource_filename
@@ -38,6 +40,8 @@ class DNSServer(object):
 
         self.bind_root = tempfile.mkdtemp()
 
+        self.process = None
+
         self.dns_xdist = {
             'address': BIND_BIND_ADDRESS[0],
             'port': BIND_BIND_ADDRESS[1]
@@ -58,11 +62,12 @@ class DNSServer(object):
 
     def stop(self):
         """Stop the DNS server, and clean its resources"""
-        try:
-            self.process.terminate()
-            self.process.wait()
-        except BaseException as e:
-            print("BIND9 did not stop cleanly: {}".format(e), file=sys.stderr)
+        if self.process:
+          try:
+              self.process.terminate()
+              self.process.wait()
+          except BaseException as e:
+              print("BIND9 did not stop cleanly: {}".format(e), file=sys.stderr)
 
         shutil.rmtree(self.bind_root, ignore_errors=True)
 
@@ -72,7 +77,8 @@ class DNSServer(object):
     def _configure_bind(self):
         """Configure the BIND9 server based on the prebaked configuration"""
         bind_conf_src = resource_filename('certbot_integration_tests', 'assets/bind-config')
-        shutil.copytree(bind_conf_src, self.bind_root, dirs_exist_ok=True)
+        for dir in ('conf', 'zones'):
+          shutil.copytree(os.path.join(bind_conf_src, dir), os.path.join(self.bind_root, dir))
 
     def _start_bind(self):
         """Launch the BIND9 server as a Docker container"""
