@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Module to setup an RFC2136-capable DNS server"""
+from __future__ import print_function
+
 import os
 import os.path
 from pkg_resources import resource_filename
