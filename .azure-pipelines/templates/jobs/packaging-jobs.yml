@@ -56,7 +56,7 @@ jobs:
     steps:
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: 3.7
+          versionSpec: 3.8
           architecture: x86
           addToPath: true
       - script: python windows-installer/construct.py
