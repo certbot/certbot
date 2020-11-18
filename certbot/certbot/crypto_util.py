@@ -447,9 +447,8 @@ def _notAfterBefore(cert_path, method):
 
     """
     # pylint: disable=redefined-outer-name
-    with open(cert_path) as f:
-        x509 = crypto.load_certificate(crypto.FILETYPE_PEM,
-                                               f.read())
+    with open(cert_path, "rb") as f:  # type: IO[bytes]
+        x509 = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
     # pyopenssl always returns bytes
     timestamp = method(x509)
     reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
@@ -520,6 +519,7 @@ def cert_and_chain_from_fullchain(fullchain_pem):
     # Since each normalized cert has a newline suffix, no extra newlines are required.
     return (certs_normalized[0], "".join(certs_normalized[1:]))
 
+
 def get_serial_from_cert(cert_path):
     """Retrieve the serial number of a certificate from certificate path
 
@@ -529,9 +529,8 @@ def get_serial_from_cert(cert_path):
     :rtype: int
     """
     # pylint: disable=redefined-outer-name
-    with open(cert_path) as f:
-        x509 = crypto.load_certificate(crypto.FILETYPE_PEM,
-                                                           f.read())
+    with open(cert_path, "rb") as f:  # type: IO[bytes]
+        x509 = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
     return x509.get_serial_number()
 
 
