@@ -154,7 +154,7 @@ class RFC2136ClientTest(unittest.TestCase):
         # _find_domain | pylint: disable=protected-access
         domain = self.rfc2136_client._find_domain('foo.bar.'+DOMAIN)
 
-        self.assertTrue(domain == DOMAIN)
+        self.assertEqual(domain, DOMAIN)
 
     def test_find_domain_wraps_errors(self):
         # _query_soa | pylint: disable=protected-access

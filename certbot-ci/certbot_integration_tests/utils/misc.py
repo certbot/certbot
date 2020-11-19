@@ -280,7 +280,11 @@ def load_sample_data_path(workspace):
 
     if os.name == 'nt':
         # Fix the symlinks on Windows if GIT is not configured to create them upon checkout
-        for lineage in ['a.encryption-example.com', 'b.encryption-example.com']:
+        for lineage in [
+            'a.encryption-example.com',
+            'b.encryption-example.com',
+            'c.encryption-example.com',
+        ]:
             current_live = os.path.join(copied, 'live', lineage)
             for name in os.listdir(current_live):
                 if name != 'README':

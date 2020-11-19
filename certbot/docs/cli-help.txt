@@ -1,4 +1,4 @@
-usage: 
+usage:
   certbot [SUBCOMMAND] [options] [-d DOMAIN] [-d DOMAIN] ...
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
@@ -188,6 +188,12 @@ security:
   Security parameters & server settings
 
   --rsa-key-size N      Size of the RSA key. (default: 2048)
+  --key-type type       The type of algorithm to use for the the private key.
+                        Either ``rsa`` or ``ecdsa``. (default: ``rsa``).
+  --elliptic-curve      The elliptic curve to use when choosing ``ecdsa`` as the key
+                        type. Accepted values are SECG curve names as defined by
+                        the cryptography library. ``secp256r1``, ``secp384r1``,
+                        ``secp521r1``. (default: secp256r1).
   --must-staple         Adds the OCSP Must Staple extension to the
                         certificate. Autoconfigures OCSP Stapling for
                         supported setups (Apache version >= 2.3.3 ). (default:
