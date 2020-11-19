@@ -16,7 +16,7 @@ jobs:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.6
           TOXENV: py36
-        windows-py37-cover:
+        windows-py38-cover:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.8
           TOXENV: py38-cover
