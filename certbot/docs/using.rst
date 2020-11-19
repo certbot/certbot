@@ -463,7 +463,7 @@ certificate, however, you could manually configure your software to use the
 different certificates depending on your needs.
 
 When obtaining both ECDSA and RSA certificates for the same domains with
-Certbot, we recommend using using the ``--cert-name`` option to give your
+Certbot, we recommend using the ``--cert-name`` option to give your
 certificates names so that you can easily identify them. For instance, you may
 want to append "ecdsa" to the name of your ECDSA certificate by using a command
 like
