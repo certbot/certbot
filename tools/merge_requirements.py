@@ -24,6 +24,12 @@ def process_entries(entries):
     for e in entries:
         e = e.strip()
         if e and not e.startswith('#') and not e.startswith('-e'):
+            # Support for <= was added as part of
+            # https://github.com/certbot/certbot/pull/8460 because we weren't
+            # able to pin a package to an exact version. Normally, this
+            # functionality shouldn't be needed so we could remove it in the
+            # future. If you do so, make sure to update other places in this
+            # file related to this behavior such as this file's docstring.
             for comparison in ('==', '<=',):
                 parts = e.split(comparison)
                 if len(parts) == 2:
