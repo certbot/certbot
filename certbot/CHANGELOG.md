@@ -9,8 +9,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Added timeout to DNS query function calls for dns-rfc2136 plugin.
 * Confirmation when deleting certificates
 * CLI flag `--key-type` has been added to specify 'rsa' or 'ecdsa' (default 'rsa').
-  Only accepts a single value at this time.
-* CLI flag `--elliptic-curve` has been added which takes an NIST/SECG elliptic curve. Either of
+* CLI flag `--elliptic-curve` has been added which takes an NIST/SECG elliptic curve. Any of
   `secp256r1`, `secp284r1` and `secp521r1` are accepted values.
 * The command `certbot certficates` lists the which type of the private key that was used
   for the private key.
