@@ -434,15 +434,22 @@ Please:
 
 4. Remember to use ``pylint``.
 
+5. You may consider installing a plugin for `editorconfig`_ in
+   your editor to prevent some linting warnings.
+
+6. Please avoid `unittest.assertTrue` or `unittest.assertFalse` when
+   possible, and use `assertEqual` or more specific assert. They give
+   better messages when it's failing, and are generally more correct.
+
 .. _Google Python Style Guide:
   https://google.github.io/styleguide/pyguide.html
 .. _Sphinx-style: https://www.sphinx-doc.org/
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
+.. _editorconfig: https://editorconfig.org/
 
 Use ``certbot.compat.os`` instead of ``os``
 ===========================================
-
 
 Python's standard library ``os`` module lacks full support for several Windows
 security features about file permissions (eg. DACLs). However several files

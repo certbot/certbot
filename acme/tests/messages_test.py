@@ -108,11 +108,11 @@ class ConstantTest(unittest.TestCase):
 
     def test_equality(self):
         const_a_prime = self.MockConstant('a')
-        self.assertFalse(self.const_a == self.const_b)
-        self.assertTrue(self.const_a == const_a_prime)
+        self.assertNotEqual(self.const_a, self.const_b)
+        self.assertEqual(self.const_a, const_a_prime)
 
-        self.assertTrue(self.const_a != self.const_b)
-        self.assertFalse(self.const_a != const_a_prime)
+        self.assertNotEqual(self.const_a, self.const_b)
+        self.assertEqual(self.const_a, const_a_prime)
 
 
 class DirectoryTest(unittest.TestCase):

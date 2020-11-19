@@ -10,7 +10,7 @@ import time
 import traceback
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import OpenSSL
 import six
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "renew_hook", "pre_hook", "post_hook", "http01_address",
-                    "preferred_chain"]
+                    "preferred_chain", "key_type", "elliptic_curve"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "http01_port"]
 BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key",
                      "autorenew"]
@@ -506,6 +506,10 @@ def _update_renewal_params_from_key(key_path, config):
     with open(key_path, 'rb') as file_h:
         key = load_pem_private_key(file_h.read(), password=None, backend=default_backend())
     if isinstance(key, rsa.RSAPrivateKey):
+        config.key_type = 'rsa'
         config.rsa_key_size = key.key_size
+    elif isinstance(key, ec.EllipticCurvePrivateKey):
+        config.key_type = 'ecdsa'
+        config.elliptic_curve = key.curve.name
     else:
         raise errors.Error('Key at {0} is of an unsupported type: {1}.'.format(key_path, type(key)))

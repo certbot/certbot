@@ -93,7 +93,7 @@ def load_pyopenssl_private_key(*names):
     return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
 
 
-def make_lineage(config_dir, testfile):
+def make_lineage(config_dir, testfile, ec=False):
     """Creates a lineage defined by testfile.
 
     This creates the archive, live, and renewal directories if
@@ -119,7 +119,7 @@ def make_lineage(config_dir, testfile):
         if not os.path.exists(directory):
             filesystem.makedirs(directory)
 
-    sample_archive = vector_path('sample-archive')
+    sample_archive = vector_path('sample-archive{}'.format('-ec' if ec else ''))
     for kind in os.listdir(sample_archive):
         shutil.copyfile(os.path.join(sample_archive, kind),
                         os.path.join(archive_dir, kind))
