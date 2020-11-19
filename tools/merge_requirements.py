@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """Merges multiple Python requirements files into one file.
 
-Requirements files specified later take precedence over earlier ones. Only
-simple SomeProject==1.2.3 format is currently supported.
+Requirements files specified later take precedence over earlier ones.
+Only the simple formats SomeProject==1.2.3 or SomeProject<=1.2.3 are
+currently supported.
 
 """
 from __future__ import print_function
@@ -16,17 +17,28 @@ def process_entries(entries):
 
     :param list entries: List of entries
 
-    :returns: mapping from a project to its pinned version
+    :returns: mapping from a project to its version specifier
     :rtype: dict
     """
     data = {}
     for e in entries:
         e = e.strip()
         if e and not e.startswith('#') and not e.startswith('-e'):
-            project, version = e.split('==')
-            if not version:
+            # Support for <= was added as part of
+            # https://github.com/certbot/certbot/pull/8460 because we weren't
+            # able to pin a package to an exact version. Normally, this
+            # functionality shouldn't be needed so we could remove it in the
+            # future. If you do so, make sure to update other places in this
+            # file related to this behavior such as this file's docstring.
+            for comparison in ('==', '<=',):
+                parts = e.split(comparison)
+                if len(parts) == 2:
+                    project_name = parts[0]
+                    version = parts[1]
+                    data[project_name] = comparison + version
+                    break
+            else:
                 raise ValueError("Unexpected syntax '{0}'".format(e))
-            data[project] = version
     return data
 
 def read_file(file_path):
@@ -44,10 +56,11 @@ def read_file(file_path):
 def output_requirements(requirements):
     """Prepare print requirements to stdout.
 
-    :param dict requirements: mapping from a project to its pinned version
+    :param dict requirements: mapping from a project to its version
+        specifier
 
     """
-    return '\n'.join('{0}=={1}'.format(key, value)
+    return '\n'.join('{0}{1}'.format(key, value)
                      for key, value in sorted(requirements.items()))
 
 

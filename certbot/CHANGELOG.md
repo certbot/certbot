@@ -13,6 +13,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `secp256r1`, `secp284r1` and `secp521r1` are accepted values.
 * The command `certbot certficates` lists the which type of the private key that was used
   for the private key.
+* Support for Python 3.9 was added to Certbot and all of its components.
 
 ### Changed
 
