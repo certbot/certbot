@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
+import sys
 
 from acme.magic_typing import List
 
@@ -361,7 +362,8 @@ def realpath(file_path):
     """
     original_path = file_path
 
-    if POSIX_MODE:
+    # Since Python 3.8, os.path.realpath also resolves symlinks on Windows.
+    if POSIX_MODE or sys.version_info >= (3, 8):
         path = os.path.realpath(file_path)
         if os.path.islink(path):
             # If path returned by realpath is still a link, it means that it failed to

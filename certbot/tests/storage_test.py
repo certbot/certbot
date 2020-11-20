@@ -330,7 +330,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc._update_link_to("chain", 3000)
         # However, current_version doesn't allow querying the resulting
         # version (because it's a broken link).
-        self.assertEqual(os.path.basename(os.readlink(self.test_rc.chain)),
+        self.assertEqual(os.path.basename(filesystem.realpath(self.test_rc.chain)),
                          "chain3000.pem")
 
     def test_version(self):
@@ -514,7 +514,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         # privkey.
         for i in (6, 7, 8):
             self.assertTrue(os.path.islink(self.test_rc.version("privkey", i)))
-            self.assertEqual("privkey3.pem", os.path.basename(os.readlink(
+            self.assertEqual("privkey3.pem", os.path.basename(filesystem.realpath(
                 self.test_rc.version("privkey", i))))
 
         for kind in ALL_FOUR:
