@@ -325,7 +325,7 @@ class AccountFileStorage(interfaces.AccountStorage):
             if server_path in reused_servers:
                 next_server_path = reused_servers[server_path]
                 next_dir_path = link_func(next_server_path)
-                if os.path.islink(next_dir_path) and filesystem.realpath(next_dir_path) == dir_path:
+                if os.path.islink(next_dir_path) and filesystem.readlink(next_dir_path) == dir_path:
                     possible_next_link = True
                     server_path = next_server_path
                     dir_path = next_dir_path
@@ -333,7 +333,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         # if there's not a next one up to delete, then delete me
         # and whatever I link to
         while os.path.islink(dir_path):
-            target = filesystem.realpath(dir_path)
+            target = filesystem.readlink(dir_path)
             os.unlink(dir_path)
             dir_path = target
 

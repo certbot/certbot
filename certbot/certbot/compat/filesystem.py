@@ -385,8 +385,29 @@ def realpath(file_path):
     return os.path.abspath(file_path)
 
 
+def readlink(link_path):
+    # type: (str) -> str
+    """
+    Return a string representing the path to which the symbolic link points.
+
+    :param str link_path: The symlink path to resolve
+    :return: The path the symlink points to
+    :returns: str
+    """
+    path = os.readlink(link_path)
+
+    # Max length of a normal path is 260 characters on Windows, including the non printable
+    # termination character "<NUL>". The termination character is not included in Python
+    # strings, giving a max length of 259 characters, + 4 characters for the extended form
+    # prefix, to an effective max length of the studied path of 263 characters.
+    if not POSIX_MODE and path.startswith('\\\\?\\') and len(path) < 264:
+        path = path[4:]
+
+    return path
+
+
 # On Windows is_executable run from an unprivileged shell may claim that a path is
-# executable when it is excutable only if run from a privileged shell. This result
+# executable when it is executable only if run from a privileged shell. This result
 # is due to the fact that GetEffectiveRightsFromAcl calculate effective rights
 # without taking into consideration if the target user has currently required the
 # elevated privileges or not. However this is not a problem since certbot always

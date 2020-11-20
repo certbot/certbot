@@ -214,7 +214,7 @@ def get_link_target(link):
 
     """
     try:
-        target = filesystem.realpath(link)
+        target = filesystem.readlink(link)
     except OSError:
         raise errors.CertStorageError(
             "Expected {0} to be a symlink".format(link))
@@ -666,7 +666,7 @@ class RenewableCert(interfaces.RenewableCert):
                 current_link = getattr(self, kind)
                 if os.path.lexists(current_link):
                     os.unlink(current_link)
-                os.symlink(filesystem.realpath(previous_link), current_link)
+                os.symlink(filesystem.readlink(previous_link), current_link)
 
         for _, link in previous_symlinks:
             if os.path.exists(link):
@@ -847,7 +847,7 @@ class RenewableCert(interfaces.RenewableCert):
         link = getattr(self, kind)
         filename = "{0}{1}.pem".format(kind, version)
         # Relative rather than absolute target directory
-        target_directory = os.path.dirname(filesystem.realpath(link))
+        target_directory = os.path.dirname(filesystem.readlink(link))
         # TODO: it could be safer to make the link first under a temporary
         #       filename, then unlink the old link, then rename the new link
         #       to the old link; this ensures that this process is able to
@@ -1122,7 +1122,7 @@ class RenewableCert(interfaces.RenewableCert):
             # The behavior below keeps the prior key by creating a new
             # symlink to the old key or the target of the old key symlink.
             if os.path.islink(old_privkey):
-                old_privkey = filesystem.realpath(old_privkey)
+                old_privkey = filesystem.readlink(old_privkey)
             else:
                 old_privkey = "privkey{0}.pem".format(prior_version)
             logger.debug("Writing symlink to old private key, %s.", old_privkey)
