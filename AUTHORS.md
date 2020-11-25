@@ -263,6 +263,7 @@ Authors
 * [Ville Skyttä](https://github.com/scop)
 * [Vinney Cavallo](https://github.com/vcavallo)
 * [Vladimir Rutsky](https://github.com/rutsky)
+* [Vitaly Rybnikov](https://github.com/Frodox)
 * [Wang Yu](https://github.com/wyhitcs)
 * [Ward Vandewege](https://github.com/cure)
 * [Whyfoo](https://github.com/whyfoo)
