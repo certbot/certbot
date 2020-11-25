@@ -3,6 +3,9 @@ The `~certbot_dns_route53.dns_route53` plugin automates the process of
 completing a ``dns-01`` challenge (`~acme.challenges.DNS01`) by creating, and
 subsequently removing, TXT records using the Amazon Web Services Route 53 API.
 
+.. note::
+   The plugin is not installed by default, it can be installed using Snap
+   or by running ``pip install certbot-dns-route53``.
 
 Named Arguments
 ---------------

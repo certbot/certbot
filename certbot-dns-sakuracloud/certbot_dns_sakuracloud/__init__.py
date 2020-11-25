@@ -3,6 +3,9 @@ The `~certbot_dns_sakuracloud.dns_sakuracloud` plugin automates the process of c
 a ``dns-01`` challenge (`~acme.challenges.DNS01`) by creating, and subsequently
 removing, TXT records using the Sakura Cloud DNS API.
 
+.. note::
+   The plugin is not installed by default, it can be installed using Snap
+   or by running ``pip install certbot-dns-sakuracloud``.
 
 Named Arguments
 ---------------
