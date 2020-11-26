@@ -6,7 +6,7 @@ subsequently removing, TXT records using the LuaDNS API.
 .. note::
    The plugin is not installed by default, it can be installed using Snap
    or by running ``pip install certbot-dns-luadns``.
-   
+
 Named Arguments
 ---------------
 

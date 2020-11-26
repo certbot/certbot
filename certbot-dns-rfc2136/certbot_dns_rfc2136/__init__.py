@@ -6,7 +6,7 @@ subsequently removing, TXT records using RFC 2136 Dynamic Updates.
 .. note::
    The plugin is not installed by default, it can be installed using Snap
    or by running ``pip install certbot-dns-rfc2136``.
-   
+
 Named Arguments
 ---------------
 

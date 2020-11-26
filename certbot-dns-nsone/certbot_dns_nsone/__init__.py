@@ -6,7 +6,7 @@ removing, TXT records using the NS1 API.
 .. note::
    The plugin is not installed by default, it can be installed using Snap
    or by running ``pip install certbot-dns-nsone``.
-   
+
 Named Arguments
 ---------------
 
