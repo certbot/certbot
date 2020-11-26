@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """General purpose nginx test configuration generator."""
 import getpass
 
@@ -42,6 +43,8 @@ events {{
   worker_connections 1024;
 }}
 
+# “This comment contains valid Unicode”.
+
 http {{
   # Set an array of temp, cache and log file options that will otherwise default to
   # restricted locations accessible only to root.
@@ -51,61 +54,61 @@ http {{
   #scgi_temp_path {nginx_root}/scgi_temp;
   #uwsgi_temp_path {nginx_root}/uwsgi_temp;
   access_log {nginx_root}/error.log;
-  
+
   # This should be turned off in a Virtualbox VM, as it can cause some
   # interesting issues with data corruption in delivered files.
   sendfile off;
-  
+
   tcp_nopush on;
   tcp_nodelay on;
   keepalive_timeout 65;
   types_hash_max_size 2048;
-  
+
   #include /etc/nginx/mime.types;
   index index.html index.htm index.php;
-  
+
   log_format   main '$remote_addr - $remote_user [$time_local] $status '
     '"$request" $body_bytes_sent "$http_referer" '
     '"$http_user_agent" "$http_x_forwarded_for"';
-    
+
   default_type application/octet-stream;
-  
+
   server {{
     # IPv4.
     listen {http_port} {default_server};
     # IPv6.
     listen [::]:{http_port} {default_server};
     server_name nginx.{wtf_prefix}.wtf nginx2.{wtf_prefix}.wtf;
-    
+
     root {nginx_webroot};
-    
+
     location / {{
       # First attempt to serve request as file, then as directory, then fall
       # back to index.html.
       try_files $uri $uri/ /index.html;
     }}
   }}
-  
+
   server {{
     listen {http_port};
     listen [::]:{http_port};
     server_name nginx3.{wtf_prefix}.wtf;
-    
+
     root {nginx_webroot};
-    
+
     location /.well-known/ {{
       return 404;
     }}
-    
+
     return 301 https://$host$request_uri;
   }}
-  
+
   server {{
     listen {other_port};
     listen [::]:{other_port};
     server_name nginx4.{wtf_prefix}.wtf nginx5.{wtf_prefix}.wtf;
   }}
-  
+
   server {{
     listen {http_port};
     listen [::]:{http_port};
