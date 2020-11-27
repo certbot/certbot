@@ -1,5 +1,6 @@
 """A class that performs HTTP-01 challenges for Nginx"""
 
+import io
 import logging
 
 from acme import challenges
@@ -102,7 +103,7 @@ class NginxHttp01(common.ChallengePerformer):
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
 
-        with open(self.challenge_conf, "w") as new_conf:
+        with io.open(self.challenge_conf, "w", encoding="utf-8") as new_conf:
             nginxparser.dump(config, new_conf)
 
     def _default_listen_addresses(self):
