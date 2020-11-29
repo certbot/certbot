@@ -108,6 +108,17 @@ class GoogleClientTest(unittest.TestCase):
         self.assertTrue(get_project_id_mock.called)
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
+    def test_client_bad_credentials_file(self, credential_mock):
+        credential_mock.side_effect = ValueError('Some exception buried in oauth2client')
+        with self.assertRaises(errors.PluginError) as cm:
+            self._setUp_client_with_mock([])
+        self.assertEqual(
+            str(cm.exception),
+            "Error parsing credentials file '/not/a/real/path.json': "
+            "Some exception buried in oauth2client"
+        )
+
+    @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
     @mock.patch('certbot_dns_google._internal.dns_google._GoogleClient.get_project_id')

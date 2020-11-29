@@ -85,9 +85,13 @@ class _GoogleClient(object):
 
         scopes = ['https://www.googleapis.com/auth/ndev.clouddns.readwrite']
         if account_json is not None:
-            credentials = ServiceAccountCredentials.from_json_keyfile_name(account_json, scopes)
-            with open(account_json) as account:
-                self.project_id = json.load(account)['project_id']
+            try:
+                credentials = ServiceAccountCredentials.from_json_keyfile_name(account_json, scopes)
+                with open(account_json) as account:
+                    self.project_id = json.load(account)['project_id']
+            except Exception as e:
+                raise errors.PluginError(
+                    "Error parsing credentials file '{}': {}".format(account_json, e))
         else:
             credentials = None
             self.project_id = self.get_project_id()
