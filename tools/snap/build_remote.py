@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 import argparse
-import glob
 import datetime
-from multiprocessing import Pool, Process, Manager, Event
+import glob
 import re
 import subprocess
 import sys
-import tempfile
+from multiprocessing import Pool, Process, Manager, Event
 from os.path import join, realpath, dirname, basename, exists
-
 
 CERTBOT_DIR = dirname(dirname(dirname(realpath(__file__))))
 PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*'))]
@@ -19,12 +17,15 @@ def _execute_build(target, archs, status, workspace):
         'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover', '--build-on', ','.join(archs)
     ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, cwd=workspace)
 
-    process_output = []
-    for line in process.stdout:
-        process_output.append(line)
-        _extract_state(target, line, status)
+    try:
+        process_output = []
+        for line in process.stdout:
+            process_output.append(line)
+            _extract_state(target, line, status)
 
-    return process.wait(), process_output
+        return process.wait(), process_output
+    finally:
+        process.terminate()
 
 
 def _build_snap(target, archs, status, lock):
@@ -137,12 +138,46 @@ def _dump_results(targets, archs, status, workspaces):
     return failures
 
 
+def _run(archs, targets, stop_event):
+    print('Start remote snap builds...')
+    print(f' - archs: {", ".join(archs)}')
+    print(f' - projects: {", ".join(sorted(targets))}')
+    print()
+
+    with Manager() as manager, Pool(processes=len(targets)) as pool:
+        status = manager.dict()
+        lock = manager.Lock()
+
+        state_process = Process(target=_dump_status, args=(archs, status, stop_event))
+        state_process.start()
+
+        try:
+            async_results = [pool.apply_async(_build_snap, (target, archs, status, lock)) for target in targets]
+
+            workspaces = {}
+            for async_result in async_results:
+                workspaces.update(async_result.get())
+
+            stop_event.set()
+            state_process.join()
+
+            failures = _dump_results(targets, archs, status, workspaces)
+            _dump_status_final(archs, status)
+
+            if failures:
+                raise ValueError("There were failures during the build!")
+        finally:
+            state_process.terminate()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('targets', nargs='+', choices=['ALL', 'DNS_PLUGINS', 'certbot', *PLUGINS],
                         help='the list of snaps to build')
     parser.add_argument('--archs', nargs='+', choices=['amd64', 'arm64', 'armhf'], default=['amd64'],
                         help='the architectures for which snaps are built')
+    parser.add_argument('--timeout', type=int, default=None,
+                        help='build process will fail after the provided timeout (in seconds)')
     args = parser.parse_args()
 
     archs = set(args.archs)
@@ -162,32 +197,17 @@ def main():
         subprocess.run(['tools/snap/generate_dnsplugins_all.sh'],
                        check=True, cwd=CERTBOT_DIR)
 
-    print('Start remote snap builds...')
-    print(f' - archs: {", ".join(archs)}')
-    print(f' - projects: {", ".join(sorted(targets))}')
-    print()
+    stop_event = Event()
+    process = Process(target=_run, args=(archs, targets, stop_event))
+    process.start()
+    process.join(args.timeout)
 
-    with Manager() as manager, Pool(processes=len(targets)) as pool:
-        status = manager.dict()
-        lock = manager.Lock()
-
-        stop_event = Event()
-        state_process = Process(target=_dump_status, args=(archs, status, stop_event))
-        state_process.start()
-
-        async_results = [pool.apply_async(_build_snap, (target, archs, status, lock)) for target in targets]
-
-        workspaces = {}
-        for async_result in async_results:
-            workspaces.update(async_result.get())
-
+    if process.is_alive():
         stop_event.set()
-        state_process.join()
+        process.terminate()
+        raise ValueError("Timeout out reached ({} seconds) during the build!".format(args.timeout))
 
-        failures = _dump_results(targets, archs, status, workspaces)
-        _dump_status_final(archs, status)
-
-        return 1 if failures else 0
+    return process.exitcode
 
 
 if __name__ == '__main__':
