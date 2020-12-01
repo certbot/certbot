@@ -43,6 +43,7 @@ Authors
 * [Chad Whitacre](https://github.com/whit537)
 * [Chhatoi Pritam Baral](https://github.com/pritambaral)
 * [Chris Johns](https://github.com/ter0)
+* [Chris Jones](https://github.com/magikid)
 * [Chris Lamb](https://github.com/lamby)
 * [chrismarget](https://github.com/chrismarget)
 * [Christian Gärtner](https://github.com/ChristianGaertner)
