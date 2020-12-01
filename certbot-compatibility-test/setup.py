@@ -5,7 +5,7 @@ from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.10.0.dev0'
+version = '1.10.0'
 
 install_requires = [
     'certbot',
