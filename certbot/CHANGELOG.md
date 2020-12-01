@@ -26,7 +26,7 @@ More details about these changes can be found on our GitHub repo.
 * Confirmation when deleting certificates
 * CLI flag `--key-type` has been added to specify 'rsa' or 'ecdsa' (default 'rsa').
 * CLI flag `--elliptic-curve` has been added which takes an NIST/SECG elliptic curve. Any of
-  `secp256r1`, `secp284r1` and `secp521r1` are accepted values.
+  `secp256r1`, `secp384r1` and `secp521r1` are accepted values.
 * The command `certbot certficates` lists the which type of the private key that was used
   for the private key.
 * Support for Python 3.9 was added to Certbot and all of its components.
