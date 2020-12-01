@@ -36,7 +36,6 @@ More details about these changes can be found on our GitHub repo.
 * certbot-auto was deprecated on Debian based systems.
 * CLI flag `--manual-public-ip-logging-ok` is now a no-op, generates a
   deprecation warning, and will be removed in a future release.
-*
 
 ### Fixed
 
