@@ -85,6 +85,9 @@ class _DigitalOceanClient(object):
                                      .format(e, ' ({0})'.format(hint) if hint else ''))
 
         try:
+            # Set a TTL of 30 seconds on our new record
+            record_content['ttl'] = 30
+            
             result = domain.create_new_domain_record(
                 type='TXT',
                 name=self._compute_record_name(domain, record_name),
