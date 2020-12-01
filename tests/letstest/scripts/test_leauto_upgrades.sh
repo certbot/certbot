@@ -105,15 +105,10 @@ if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python
     exit 1
 fi
 
-# On systems like Debian where certbot-auto is deprecated, we expect it to
-# leave existing Certbot installations unmodified so we check for the same
-# version that was initially installed below.  Once certbot-auto is deprecated
-# on RHEL systems, we can unconditionally check for INITIAL_VERSION.
-if [ -f /etc/debian_version ]; then
-    EXPECTED_VERSION="$INITIAL_VERSION"
-else
-    EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
-fi
+# Since certbot-auto is deprecated, we expect it to leave existing Certbot
+# installations unmodified so we check for the same version that was initially
+# installed below.
+EXPECTED_VERSION="$INITIAL_VERSION"
 
 if ! /opt/eff.org/certbot/venv/bin/letsencrypt --version 2>&1 | tail -n1 | grep "^certbot $EXPECTED_VERSION$" ; then
     echo unexpected certbot version found
@@ -124,22 +119,3 @@ if ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
     echo letsencrypt-auto and letsencrypt-auto-source/letsencrypt-auto differ
     exit 1
 fi
-
-if [ "$RUN_RHEL6_TESTS" = 1 ]; then
-    # Add the SCL python release to PATH in order to resolve python3 command
-    PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
-    if ! command -v python3; then
-        echo "Python3 wasn't properly installed"
-        exit 1
-    fi
-    if [ "$(/opt/eff.org/certbot/venv/bin/python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1)" != 3 ]; then
-        echo "Python3 wasn't used in venv!"
-        exit 1
-    fi
-
-    if [ "$("$PYTHON_NAME" tools/readlink.py $OLD_VENV_PATH)" != "/opt/eff.org/certbot/venv" ]; then
-        echo symlink from old venv path not properly created!
-        exit 1
-    fi
-fi
-echo upgrade appeared to be successful
