@@ -20,7 +20,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * certbot-auto was deprecated on Debian based systems.
 * CLI flag `--manual-public-ip-logging-ok` is now a no-op, generates a
   deprecation warning, and will be removed in a future release.
-*
+* Set 30 second TTL for DigitalOcean validation records
 
 ### Fixed
 
