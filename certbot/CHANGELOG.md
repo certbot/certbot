@@ -14,7 +14,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed a bug in `certbot.util.add_deprecated_argument` that caused the
+  deprecated `--manual-public-ip-logging-ok` flag to crash Certbot in some
+  scenarios.
 
 More details about these changes can be found on our GitHub repo.
 
