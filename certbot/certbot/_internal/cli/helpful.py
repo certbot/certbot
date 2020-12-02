@@ -2,8 +2,10 @@
 from __future__ import print_function
 import argparse
 import copy
+import functools
 import glob
 import sys
+
 import configargparse
 import six
 import zope.component
@@ -357,7 +359,7 @@ class HelpfulArgumentParser(object):
 
         """
         action = kwargs.get("action")
-        if isinstance(action, util.DeprecatedArgumentAction):
+        if action is util.DeprecatedArgumentAction:
             # If the argument is deprecated through
             # certbot.util.add_deprecated_argument, it is not shown in the help
             # output and any value given to the argument is thrown away during
@@ -367,6 +369,7 @@ class HelpfulArgumentParser(object):
             # can cause bugs like
             # https://github.com/certbot/certbot/issues/8495.
             self.parser.add_argument(*args, **kwargs)
+            return
 
         if isinstance(topics, list):
             # if this flag can be listed in multiple sections, try to pick the one
@@ -421,7 +424,22 @@ class HelpfulArgumentParser(object):
         :param int nargs: Number of arguments the option takes.
 
         """
-        util.add_deprecated_argument(self.add, argument_name, num_args)
+        # certbot.util.add_deprecated_arguments expects the normal add_argument
+        # interface provided by argparse. This is what is given including when
+        # certbot.util.add_deprecated_arguments is used by plugins, however, in
+        # that case the first argument to certbot.util.add_deprecated_arguments
+        # is certbot._internal.cli.HelpfulArgumentGroup.add_argument which
+        # internally calls the add method of this class.
+        #
+        # The difference between the add method of this class and the standard
+        # argparse add_argument method caused a bug in the past (see
+        # https://github.com/certbot/certbot/issues/8495) so we use the same
+        # code path here for consistency and to ensure it works. To do that, we
+        # wrap the add method in a similar way to
+        # HelpfulArgumentGroup.add_argument by providing a help topic (which in
+        # this case is set to None).
+        add_func = functools.partial(self.add, None)
+        util.add_deprecated_argument(add_func, argument_name, num_args)
 
     def add_group(self, topic, verbs=(), **kwargs):
         """Create a new argument group.
