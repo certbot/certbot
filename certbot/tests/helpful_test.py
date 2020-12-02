@@ -1,6 +1,11 @@
 """Tests for certbot.helpful_parser"""
 import unittest
 
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 from certbot import errors
 from certbot._internal.cli import HelpfulArgumentParser
 from certbot._internal.cli import _DomainsAction
@@ -187,6 +192,17 @@ class TestParseArgsErrors(unittest.TestCase):
         arg_parser.add(None, "--allow-subset-of-names")
         with self.assertRaises(errors.Error):
             arg_parser.parse_args()
+
+
+class TestAddDeprecatedArgument(unittest.TestCase):
+    """Tests for add_deprecated_argument method of HelpfulArgumentParser"""
+
+    @mock.patch.object(HelpfulArgumentParser, "modify_kwargs_for_default_detection")
+    def test_no_default_detection_modifications(self, mock_modify):
+        arg_parser = HelpfulArgumentParser(["run"], {}, detect_defaults=True)
+        arg_parser.add_deprecated_argument("--foo", 0)
+        arg_parser.parse_args()
+        mock_modify.assert_not_called()
 
 
 if __name__ == '__main__':

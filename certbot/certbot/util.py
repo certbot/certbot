@@ -439,7 +439,7 @@ def safe_email(email):
     return False
 
 
-class _ShowWarning(argparse.Action):
+class DeprecatedArgumentAction(argparse.Action):
     """Action to log a warning when an argument is used."""
     def __call__(self, unused1, unused2, unused3, option_string=None):
         logger.warning("Use of %s is deprecated.", option_string)
@@ -458,16 +458,16 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
     :param nargs: Value for nargs when adding the argument to argparse.
 
     """
-    if _ShowWarning not in configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE:
+    if DeprecatedArgumentAction not in configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE:
         # In version 0.12.0 ACTION_TYPES_THAT_DONT_NEED_A_VALUE was
         # changed from a set to a tuple.
         if isinstance(configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE, set):
             configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE.add(
-                _ShowWarning)
+                DeprecatedArgumentAction)
         else:
             configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE += (
-                _ShowWarning,)
-    add_argument(argument_name, action=_ShowWarning,
+                DeprecatedArgumentAction,)
+    add_argument(argument_name, action=DeprecatedArgumentAction,
                  help=argparse.SUPPRESS, nargs=nargs)
 
 
