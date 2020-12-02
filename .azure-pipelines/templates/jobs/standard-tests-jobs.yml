@@ -58,9 +58,9 @@ jobs:
         apache-compat:
           IMAGE_NAME: ubuntu-18.04
           TOXENV: apache_compat
-        le-auto-centos6:
+        le-modification:
           IMAGE_NAME: ubuntu-18.04
-          TOXENV: le_auto_centos6
+          TOXENV: modification
         apacheconftest:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 2.7
