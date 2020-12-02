@@ -356,6 +356,17 @@ class HelpfulArgumentParser(object):
         :param dict **kwargs: various argparse settings for this argument
 
         """
+        action = kwargs.get("action")
+        if isinstance(action, util.DeprecatedArgumentAction):
+            # If the argument is deprecated through
+            # certbot.util.add_deprecated_argument, it is not shown in the help
+            # output and any value given to the argument is thrown away during
+            # argument parsing. Because of this, we handle this case early
+            # skipping putting the argument in different help topics and
+            # handling default detection since these actions aren't needed and
+            # can cause bugs like
+            # https://github.com/certbot/certbot/issues/8495.
+            self.parser.add_argument(*args, **kwargs)
 
         if isinstance(topics, list):
             # if this flag can be listed in multiple sections, try to pick the one
@@ -410,8 +421,7 @@ class HelpfulArgumentParser(object):
         :param int nargs: Number of arguments the option takes.
 
         """
-        util.add_deprecated_argument(
-            self.parser.add_argument, argument_name, num_args)
+        util.add_deprecated_argument(self.add, argument_name, num_args)
 
     def add_group(self, topic, verbs=(), **kwargs):
         """Create a new argument group.
