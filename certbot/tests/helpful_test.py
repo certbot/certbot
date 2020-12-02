@@ -200,7 +200,7 @@ class TestAddDeprecatedArgument(unittest.TestCase):
     @mock.patch.object(HelpfulArgumentParser, "modify_kwargs_for_default_detection")
     def test_no_default_detection_modifications(self, mock_modify):
         arg_parser = HelpfulArgumentParser(["run"], {}, detect_defaults=True)
-        arg_parser.add_deprecated_argument("--geqgeqgeqgeq", 0)
+        arg_parser.add_deprecated_argument("--foo", 0)
         arg_parser.parse_args()
         mock_modify.assert_not_called()
 
