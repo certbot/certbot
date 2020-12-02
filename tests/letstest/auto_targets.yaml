@@ -56,17 +56,6 @@ targets:
     type: centos
     virt: hvm
     user: centos
-  # centos6 requires EPEL repo added
-  - ami: ami-1585c46a
-    name: centos6
-    type: centos
-    virt: hvm
-    user: centos
-    userdata: |
-      #cloud-config
-      runcmd:
-        - yum install -y epel-release
-        - iptables -F
   - ami: ami-01ca03df4a6012157
     name: centos8
     type: centos
