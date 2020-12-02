@@ -424,9 +424,9 @@ class HelpfulArgumentParser(object):
         :param int nargs: Number of arguments the option takes.
 
         """
-        # certbot.util.add_deprecated_arguments expects the normal add_argument
+        # certbot.util.add_deprecated_argument expects the normal add_argument
         # interface provided by argparse. This is what is given including when
-        # certbot.util.add_deprecated_arguments is used by plugins, however, in
+        # certbot.util.add_deprecated_argument is used by plugins, however, in
         # that case the first argument to certbot.util.add_deprecated_argument
         # is certbot._internal.cli.HelpfulArgumentGroup.add_argument which
         # internally calls the add method of this class.
