@@ -1,4 +1,6 @@
 """Manual authenticator plugin"""
+import argparse
+import logging
 import zope.component
 import zope.interface
 
@@ -13,6 +15,8 @@ from certbot._internal import hooks
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.plugins import common
+
+logger = logging.getLogger(__name__)
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -84,7 +88,8 @@ permitted by DNS standards.)
             help='Path or command to execute for the authentication script')
         add('cleanup-hook',
             help='Path or command to execute for the cleanup script')
-        util.add_deprecated_argument(add, 'public-ip-logging-ok', 0)
+        # TODO: remove this deprecated argument
+        add('public-ip-logging-ok', action='store_true', help=argparse.SUPPRESS)
 
     def prepare(self):  # pylint: disable=missing-function-docstring
         if self.config.noninteractive_mode and not self.conf('auth-hook'):
@@ -113,6 +118,8 @@ permitted by DNS standards.)
         return [challenges.HTTP01, challenges.DNS01]
 
     def perform(self, achalls):  # pylint: disable=missing-function-docstring
+        if self.conf('public-ip-logging-ok'):
+            logger.warning('Use of --manual-public-ip-logging-ok is deprecated.')
         responses = []
         for achall in achalls:
             if self.conf('auth-hook'):

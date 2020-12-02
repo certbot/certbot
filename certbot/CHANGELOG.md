@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Using the deprecated `--manual-public-ip-logging-ok` flag would cause
+  Certbot to crash on obtaining a certificate.
 
 More details about these changes can be found on our GitHub repo.
 
