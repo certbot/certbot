@@ -351,6 +351,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     # type: (interfaces.IConfig, List[str], List[str], List[str], List[str]) -> None
     """
     Print a report to the terminal about the results of the renewal process.
+
     :param interfaces.IConfig config: Configuration
     :param list renew_successes: list of fullchain paths which were renewed
     :param list renew_failures: list of fullchain paths which failed to be renewed
