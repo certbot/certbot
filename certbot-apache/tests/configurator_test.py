@@ -1630,7 +1630,7 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertTrue(commented_rewrite_rule in conf_text)
         self.assertTrue(uncommented_rewrite_rule in conf_text)
         self.assertEqual(mock_notify.call_count, 1)
-        self.assertTrue("Some rewrite rules" in mock_notify.call_args[0][0])
+        self.assertIn("Some rewrite rules", mock_notify.call_args[0][0])
 
     @mock.patch("certbot_apache._internal.configurator.display_util.notify")
     def test_make_vhost_ssl_with_existing_rewrite_conds(self, mock_notify):
@@ -1659,7 +1659,7 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertTrue(commented_cond2 in conf_line_set)
         self.assertTrue(commented_rewrite_rule in conf_line_set)
         self.assertEqual(mock_notify.call_count, 1)
-        self.assertTrue("Some rewrite rules" in mock_notify.call_args[0][0])
+        self.assertIn("Some rewrite rules", mock_notify.call_args[0][0])
 
 
 class InstallSslOptionsConfTest(util.ApacheTest):
