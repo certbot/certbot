@@ -13,7 +13,6 @@ except ImportError: # pragma: no cover
 from certbot import errors
 from certbot import util
 from certbot._internal import account
-from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 
