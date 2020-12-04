@@ -163,5 +163,70 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         self.assertEqual(self.config.server, constants.CLI_DEFAULTS['server'])
 
 
+class DescribeResultsTest(unittest.TestCase):
+    """Tests for certbot._internal.renewal._renew_describe_results."""
+    def setUp(self):
+        self.patchers = {
+            'log_error': mock.patch('certbot._internal.renewal.logger.error'),
+            'notify': mock.patch('certbot._internal.renewal.display_util.notify')}
+        self.mock_notify = self.patchers['notify'].start()
+        self.mock_error = self.patchers['log_error'].start()
+
+    def tearDown(self):
+        for patch in self.patchers.values():
+            patch.stop()
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot._internal.renewal import _renew_describe_results
+        _renew_describe_results(*args, **kwargs)
+
+    def _assert_success_output(self, lines):
+        self.mock_notify.assert_has_calls([mock.call(l) for l in lines])
+
+    def test_no_renewal_attempts(self):
+        self._call(mock.MagicMock(dry_run=True), [], [], [], [])
+        self._assert_success_output(['No simulated renewals were attempted.'])
+
+    def test_successful_renewal(self):
+        self._call(mock.MagicMock(dry_run=False), ['good.pem'], None, None, None)
+        self._assert_success_output([
+            '\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+            'Congratulations, all renewals succeeded: ',
+            '  good.pem (success)',
+            '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+        ])
+
+    def test_failed_renewal(self):
+        self._call(mock.MagicMock(dry_run=False), [], ['bad.pem'], [], [])
+        self._assert_success_output([
+            '\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+            '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+        ])
+        self.mock_error.assert_has_calls([
+            mock.call('All %ss failed. The following certs could not be renewed:', 'renewal'),
+            mock.call('  bad.pem (failure)'),
+        ])
+
+    def test_all_renewal(self):
+        self._call(mock.MagicMock(dry_run=True),
+                   ['good.pem', 'good2.pem'], ['bad.pem', 'bad2.pem'],
+                   ['foo.pem expires on 123'], ['errored.conf'])
+        self._assert_success_output([
+            '\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+            'The following certs are not due for renewal yet:',
+            '  foo.pem expires on 123 (skipped)',
+            'The following simulated renewals succeeded:',
+            '  good.pem (success)\n  good2.pem (success)\n',
+            '\nAdditionally, the following renewal configurations were invalid: ',
+            '  errored.conf (parsefail)',
+            '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+        ])
+        self.mock_error.assert_has_calls([
+            mock.call('The following %ss failed:', 'simulated renewal'),
+            mock.call('  bad.pem (failure)\n  bad2.pem (failure)'),
+        ])
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

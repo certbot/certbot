@@ -19,6 +19,7 @@ import zope.component
 from acme.magic_typing import List
 from acme.magic_typing import Optional  # pylint: disable=unused-import
 from certbot import crypto_util
+from certbot.display import util as display_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -347,40 +348,42 @@ def report(msgs, category):
 
 def _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures):
+    # type: (interfaces.IConfig, List[str], List[str], List[str], List[str]) -> None
+    """
+    Print a report to the terminal about the results of the renewal process.
 
-    out = []  # type: List[str]
-    notify = out.append
-    disp = zope.component.getUtility(interfaces.IDisplay)
+    :param interfaces.IConfig config: Configuration
+    :param list renew_successes: list of fullchain paths which were renewed
+    :param list renew_failures: list of fullchain paths which failed to be renewed
+    :param list renew_skipped: list of messages to print about skipped certificates
+    :param list parse_failures: list of renewal parameter paths which had erorrs
+    """
+    notify = display_util.notify
+    notify_error = logger.error
 
-    def notify_error(err):
-        """Notify and log errors."""
-        notify(str(err))
-        logger.error(err)
+    notify('\n{}'.format(display_util.SIDE_FRAME))
 
-    if config.dry_run:
-        notify("** DRY RUN: simulating 'certbot renew' close to cert expiry")
-        notify("**          (The test certificates below have not been saved.)")
-    notify("")
+    renewal_noun = "simulated renewal" if config.dry_run else "renewal"
+
     if renew_skipped:
         notify("The following certs are not due for renewal yet:")
         notify(report(renew_skipped, "skipped"))
     if not renew_successes and not renew_failures:
-        notify("No renewals were attempted.")
+        notify("No {renewal}s were attempted.".format(renewal=renewal_noun))
         if (config.pre_hook is not None or
                 config.renew_hook is not None or config.post_hook is not None):
             notify("No hooks were run.")
     elif renew_successes and not renew_failures:
-        notify("Congratulations, all renewals succeeded. The following certs "
-               "have been renewed:")
+        notify("Congratulations, all {renewal}s succeeded: ".format(renewal=renewal_noun))
         notify(report(renew_successes, "success"))
     elif renew_failures and not renew_successes:
-        notify_error("All renewal attempts failed. The following certs could "
-               "not be renewed:")
+        notify_error("All %ss failed. The following certs could "
+               "not be renewed:", renewal_noun)
         notify_error(report(renew_failures, "failure"))
     elif renew_failures and renew_successes:
-        notify("The following certs were successfully renewed:")
+        notify("The following {renewal}s succeeded:".format(renewal=renewal_noun))
         notify(report(renew_successes, "success") + "\n")
-        notify_error("The following certs could not be renewed:")
+        notify_error("The following %ss failed:", renewal_noun)
         notify_error(report(renew_failures, "failure"))
 
     if parse_failures:
@@ -388,11 +391,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
                "were invalid: ")
         notify(report(parse_failures, "parsefail"))
 
-    if config.dry_run:
-        notify("** DRY RUN: simulating 'certbot renew' close to cert expiry")
-        notify("**          (The test certificates above have not been saved.)")
-
-    disp.notification("\n".join(out), wrap=False)
+    notify(display_util.SIDE_FRAME)
 
 
 def handle_renewal_request(config):
@@ -482,9 +481,10 @@ def handle_renewal_request(config):
 
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
-            logger.warning("Attempting to renew cert (%s) from %s produced an "
-                           "unexpected error: %s. Skipping.", lineagename,
-                               renewal_file, e)
+            logger.error(
+                "Failed to renew cert %s with error: %s",
+                lineagename, e
+            )
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             renew_failures.append(renewal_candidate.fullchain)
 
