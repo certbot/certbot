@@ -503,8 +503,6 @@ class Client(object):
             cert_file.write(cert_pem)
         finally:
             cert_file.close()
-        logger.info("Server issued certificate; certificate written to %s",
-                    abs_cert_path)
 
         chain_file, abs_chain_path =\
                 _open_pem_file('chain_path', chain_path)
@@ -758,5 +756,3 @@ def _save_chain(chain_pem, chain_file):
         chain_file.write(chain_pem)
     finally:
         chain_file.close()
-
-    logger.info("Cert chain written to %s", chain_file.name)

@@ -26,7 +26,7 @@ import six
 import zope.component
 
 from acme import crypto_util as acme_crypto_util
-from acme.magic_typing import IO  # pylint: disable=unused-import
+from acme.magic_typing import IO, Any, List  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -435,6 +435,19 @@ def get_names_from_cert(csr, typ=crypto.FILETYPE_PEM):
     """
     return _get_names_from_cert_or_req(
         csr, crypto.load_certificate, typ)
+
+
+def get_names_from_req(csr, typ=crypto.FILETYPE_PEM):
+    # type: (str, Any) -> List[str]
+    """Get a list of domains from a CSR, including the CN if it is set.
+
+    :param str cert: CSR (encoded).
+    :param typ: `crypto.FILETYPE_PEM` or `crypto.FILETYPE_ASN1`
+    :returns: A list of domain names.
+    :rtype: list
+
+    """
+    return _get_names_from_cert_or_req(csr, crypto.load_certificate_request, typ)
 
 
 def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
