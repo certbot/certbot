@@ -4,6 +4,7 @@ import logging
 import time
 
 import zope.component
+from josepy.jwk import JWK # pylint: disable=unused-import
 
 from acme import challenges
 from acme import errors as acme_errors
@@ -15,6 +16,7 @@ from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import error_handler
+from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
@@ -394,39 +396,8 @@ def _report_no_chall_path(challbs):
     raise errors.AuthorizationError(msg)
 
 
-_ERROR_HELP_COMMON = (
-    "To fix these errors, please make sure that your domain name was entered "
-    "correctly and the DNS A/AAAA record(s) for that domain contain(s) the "
-    "right IP address.")
-
-
-_ERROR_HELP = {
-    "connection":
-        _ERROR_HELP_COMMON + " Additionally, please check that your computer "
-        "has a publicly routable IP address and that no firewalls are preventing "
-        "the server from communicating with the client. If you're using the "
-        "webroot plugin, you should also verify that you are serving files "
-        "from the webroot path you provided.",
-    "dnssec":
-        _ERROR_HELP_COMMON + " Additionally, if you have DNSSEC enabled for "
-        "your domain, please ensure that the signature is valid.",
-    "malformed":
-        "To fix these errors, please make sure that you did not provide any "
-        "invalid information to the client, and try running Certbot "
-        "again.",
-    "serverInternal":
-        "Unfortunately, an error on the ACME server prevented you from completing "
-        "authorization. Please try again later.",
-    "tls":
-        _ERROR_HELP_COMMON + " Additionally, please check that you have an "
-        "up-to-date TLS configuration that allows the server to communicate "
-        "with the Certbot client.",
-    "unauthorized": _ERROR_HELP_COMMON,
-    "unknownHost": _ERROR_HELP_COMMON,
-}
-
-
 def _report_failed_authzrs(failed_authzrs, account_key):
+    # type: (List[messages.AuthorizationResource], JWK) -> None
     """Notifies the user about failed authorizations."""
     problems = {}  # type: Dict[str, List[achallenges.AnnotatedChallenge]]
     failed_achalls = [challb_to_achall(challb, account_key, authzr.body.identifier.value)
@@ -436,18 +407,24 @@ def _report_failed_authzrs(failed_authzrs, account_key):
     for achall in failed_achalls:
         problems.setdefault(achall.error.typ, []).append(achall)
 
-    reporter = zope.component.getUtility(interfaces.IReporter)
+    config = zope.component.getUtility(interfaces.IConfig)
+    msg = ["\nCertbot encountered errors for these domains "
+           "while requesting the certificate (using the {} plugin):"
+           .format(config.authenticator)]
+
     for achalls in problems.values():
-        reporter.add_message(_generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY)
+        msg.append(_generate_failed_chall_msg(achalls))
+
+    display_util.notify("".join(msg))
 
 
 def _generate_failed_chall_msg(failed_achalls):
+    # type: (List[achallenges.AnnotatedChallenge]) -> str
     """Creates a user friendly error message about failed challenges.
 
     :param list failed_achalls: A list of failed
         :class:`certbot.achallenges.AnnotatedChallenge` with the same error
         type.
-
     :returns: A formatted error message for the client.
     :rtype: str
 
@@ -456,14 +433,10 @@ def _generate_failed_chall_msg(failed_achalls):
     typ = error.typ
     if messages.is_acme_error(error):
         typ = error.code
-    msg = ["The following errors were reported by the server:"]
+    msg = []
 
     for achall in failed_achalls:
-        msg.append("\n\nDomain: %s\nType:   %s\nDetail: %s" % (
+        msg.append("\n  Domain: %s\n  Type:   %s\n  Detail: %s\n" % (
             achall.domain, typ, achall.error.detail))
-
-    if typ in _ERROR_HELP:
-        msg.append("\n\n")
-        msg.append(_ERROR_HELP[typ])
 
     return "".join(msg)

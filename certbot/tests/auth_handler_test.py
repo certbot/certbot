@@ -504,21 +504,47 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         self.authzr2.body.identifier.value = 'foo.bar'
         self.authzr2.body.challenges = [http_01_diff]
 
+    @mock.patch('certbot._internal.auth_handler.display_util.notify')
     @test_util.patch_get_utility()
-    def test_same_error_and_domain(self, mock_zope):
+    def test_same_error_and_domain(self, mock_util, mock_notify):
         from certbot._internal import auth_handler
-
+        mock_util().authenticator = "foobaz"
         auth_handler._report_failed_authzrs([self.authzr1], 'key')
-        call_list = mock_zope().add_message.call_args_list
-        self.assertEqual(len(call_list), 1)
-        self.assertTrue("Domain: example.com\nType:   tls\nDetail: detail" in call_list[0][0][0])
+        mock_notify.assert_called_with(
+            '\n'
+            'Certbot encountered errors for these domains while requesting the '
+            'certificate (using the foobaz plugin):\n'
+            '  Domain: example.com\n'
+            '  Type:   tls\n'
+            '  Detail: detail\n'
+            '\n'
+            '  Domain: example.com\n'
+            '  Type:   tls\n'
+            '  Detail: detail\n'
+        )
 
+    @mock.patch('certbot._internal.auth_handler.display_util.notify')
     @test_util.patch_get_utility()
-    def test_different_errors_and_domains(self, mock_zope):
+    def test_different_errors_and_domains(self, mock_util, mock_notify):
         from certbot._internal import auth_handler
-
+        mock_util().authenticator = "quux"
         auth_handler._report_failed_authzrs([self.authzr1, self.authzr2], 'key')
-        self.assertEqual(mock_zope().add_message.call_count, 2)
+        mock_notify.assert_called_with(
+            '\n'
+            'Certbot encountered errors for these domains while requesting the '
+            'certificate (using the quux plugin):\n'
+            '  Domain: example.com\n'
+            '  Type:   tls\n'
+            '  Detail: detail\n'
+            '\n'
+            '  Domain: example.com\n'
+            '  Type:   tls\n'
+            '  Detail: detail\n'
+            '\n'
+            '  Domain: foo.bar\n'
+            '  Type:   dnssec\n'
+            '  Detail: detail\n'
+        )
 
 
 def gen_auth_resp(chall_list):
