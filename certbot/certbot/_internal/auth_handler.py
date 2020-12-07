@@ -412,7 +412,7 @@ def _report_failed_authzrs(failed_authzrs, account_key):
            "while requesting the certificate (using the {} plugin):"
            .format(config.authenticator)]
 
-    for achalls in problems.values():
+    for _, achalls in sorted(problems.items(), key=lambda item: item[0]):
         msg.append(_generate_failed_chall_msg(achalls))
 
     display_util.notify("".join(msg))
