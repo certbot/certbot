@@ -4,8 +4,9 @@ completing a ``dns-01`` challenge (`~acme.challenges.DNS01`) by creating, and
 subsequently removing, TXT records using the DigitalOcean API.
 
 .. note::
-   The plugin is not installed by default, it can be installed using Snap
-   or by running ``pip install certbot-dns-digitalocean``.
+   The plugin is not installed by default. It can be installed by heading to
+   `certbot.eff.org <https://certbot.eff.org/>`_, choosing your system and
+   selecting the Wildcard tab.
 
 Named Arguments
 ---------------
