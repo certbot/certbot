@@ -11,7 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * We deprecated support for Python 2 in Certbot and its ACME library.
-  Support for Python 2 will be removed in the next major release of Certbot.
+  Support for Python 2 will be removed in the next planned release of Certbot.
 
 ### Fixed
 
