@@ -516,11 +516,13 @@ Steps:
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
-5. Submit the PR. Once your PR is open, please do not force push to the branch
+5. If any documentation should be added or updated as part of the changes you
+   have made, please include the documentation changes in your PR.
+6. Submit the PR. Once your PR is open, please do not force push to the branch
    containing your pull request to squash or amend commits. We use `squash
    merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
    rewriting commits makes changes harder to track between reviews.
-6. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
+7. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
 
 .. _ask for help:
 
