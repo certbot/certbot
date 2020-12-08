@@ -198,6 +198,13 @@ class IConfig(zope.interface.Interface):
         "register multiple emails, ex: u1@example.com,u2@example.com. "
         "(default: Ask).")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
+    elliptic_curve = zope.interface.Attribute(
+        "The SECG elliptic curve name to use. Please see RFC 8446 "
+        "for supported values."
+    )
+    key_type = zope.interface.Attribute(
+        "Type of generated private key"
+        "(Only *ONE* per invocation can be provided at this time)")
     must_staple = zope.interface.Attribute(
         "Adds the OCSP Must Staple extension to the certificate. "
         "Autoconfigures OCSP Stapling for supported setups "
@@ -259,6 +266,7 @@ class IConfig(zope.interface.Interface):
         "an issuer matching this Subject Common Name. If no match, the default "
         "offered chain will be used."
     )
+
 
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.

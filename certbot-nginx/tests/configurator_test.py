@@ -466,14 +466,18 @@ class NginxConfiguratorTest(util.NginxTest):
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 0
         self.config.restart()
+        self.assertEqual(mocked.communicate.call_count, 1)
         mock_time.sleep.assert_called_once_with(0.1234)
 
     @mock.patch("certbot_nginx._internal.configurator.subprocess.Popen")
-    def test_nginx_restart_fail(self, mock_popen):
+    @mock.patch("certbot_nginx._internal.configurator.logger.debug")
+    def test_nginx_restart_fail(self, mock_log_debug, mock_popen):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 1
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
+        self.assertEqual(mocked.communicate.call_count, 2)
+        mock_log_debug.assert_called_once_with("nginx reload failed:\n%s", "")
 
     @mock.patch("certbot_nginx._internal.configurator.subprocess.Popen")
     def test_no_nginx_start(self, mock_popen):
@@ -838,7 +842,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.recovery_routine()
         self.config.revert_challenge_config()
         self.config.rollback_checkpoints()
-        self.assertTrue(mock_parser_load.call_count == 3)
+        self.assertEqual(mock_parser_load.call_count, 3)
 
     def test_choose_vhosts_wildcard(self):
         # pylint: disable=protected-access

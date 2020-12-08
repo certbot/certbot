@@ -21,7 +21,7 @@ PORT = 53
 NAME = 'a-tsig-key.'
 SECRET = 'SSB3b25kZXIgd2hvIHdpbGwgYm90aGVyIHRvIGRlY29kZSB0aGlzIHRleHQK'
 VALID_CONFIG = {"rfc2136_server": SERVER, "rfc2136_name": NAME, "rfc2136_secret": SECRET}
-
+TIMEOUT = 45
 
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
 
@@ -78,7 +78,8 @@ class RFC2136ClientTest(unittest.TestCase):
     def setUp(self):
         from certbot_dns_rfc2136._internal.dns_rfc2136 import _RFC2136Client
 
-        self.rfc2136_client = _RFC2136Client(SERVER, PORT, NAME, SECRET, dns.tsig.HMAC_MD5)
+        self.rfc2136_client = _RFC2136Client(SERVER, PORT, NAME, SECRET, dns.tsig.HMAC_MD5,
+        TIMEOUT)
 
     @mock.patch("dns.query.tcp")
     def test_add_txt_record(self, query_mock):
@@ -88,7 +89,7 @@ class RFC2136ClientTest(unittest.TestCase):
 
         self.rfc2136_client.add_txt_record("bar", "baz", 42)
 
-        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        query_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
         self.assertTrue("bar. 42 IN TXT \"baz\"" in str(query_mock.call_args[0][0]))
 
     @mock.patch("dns.query.tcp")
@@ -121,7 +122,7 @@ class RFC2136ClientTest(unittest.TestCase):
 
         self.rfc2136_client.del_txt_record("bar", "baz")
 
-        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        query_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
         self.assertTrue("bar. 0 NONE TXT \"baz\"" in str(query_mock.call_args[0][0]))
 
     @mock.patch("dns.query.tcp")
@@ -153,7 +154,7 @@ class RFC2136ClientTest(unittest.TestCase):
         # _find_domain | pylint: disable=protected-access
         domain = self.rfc2136_client._find_domain('foo.bar.'+DOMAIN)
 
-        self.assertTrue(domain == DOMAIN)
+        self.assertEqual(domain, DOMAIN)
 
     def test_find_domain_wraps_errors(self):
         # _query_soa | pylint: disable=protected-access
@@ -173,7 +174,7 @@ class RFC2136ClientTest(unittest.TestCase):
         # _query_soa | pylint: disable=protected-access
         result = self.rfc2136_client._query_soa(DOMAIN)
 
-        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        query_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
         self.assertTrue(result)
 
     @mock.patch("dns.query.tcp")
@@ -183,7 +184,7 @@ class RFC2136ClientTest(unittest.TestCase):
         # _query_soa | pylint: disable=protected-access
         result = self.rfc2136_client._query_soa(DOMAIN)
 
-        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        query_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
         self.assertFalse(result)
 
     @mock.patch("dns.query.tcp")
@@ -206,8 +207,8 @@ class RFC2136ClientTest(unittest.TestCase):
         # _query_soa | pylint: disable=protected-access
         result = self.rfc2136_client._query_soa(DOMAIN)
 
-        tcp_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
-        udp_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
+        tcp_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
+        udp_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
         self.assertTrue(result)
 
 

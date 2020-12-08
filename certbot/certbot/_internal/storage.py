@@ -10,6 +10,9 @@ import configobj
 import parsedatetime
 import pytz
 import six
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 import certbot
 from certbot import crypto_util
@@ -45,6 +48,7 @@ def renewal_conf_files(config):
     result = glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
     result.sort()
     return result
+
 
 def renewal_file_for_certname(config, certname):
     """Return /path/to/certname.conf in the renewal conf directory"""
@@ -127,7 +131,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
 
     config["renewalparams"].update(relevant_data)
 
-    for k in config["renewalparams"].keys():
+    for k in config["renewalparams"]:
         if k not in relevant_data:
             del config["renewalparams"][k]
 
@@ -1055,6 +1059,23 @@ class RenewableCert(interfaces.RenewableCert):
             target, values)
         return cls(new_config.filename, cli_config)
 
+    @property
+    def private_key_type(self):
+        """
+        :returns: The type of algorithm for the private, RSA or ECDSA
+        :rtype: str
+        """
+        with open(self.configuration["privkey"], "rb") as priv_key_file:
+            key = load_pem_private_key(
+                data=priv_key_file.read(),
+                password=None,
+                backend=default_backend()
+            )
+        if isinstance(key, RSAPrivateKey):
+            return "RSA"
+        else:
+            return "ECDSA"
+
     def save_successor(self, prior_version, new_cert,
                        new_privkey, new_chain, cli_config):
         """Save new cert and chain as a successor of a prior version.
@@ -1126,7 +1147,7 @@ class RenewableCert(interfaces.RenewableCert):
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(new_cert + new_chain)
 
-        symlinks = dict((kind, self.configuration[kind]) for kind in ALL_FOUR)
+        symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
         # Update renewal config file
         self.configfile = update_configuration(
             self.lineagename, self.archive_dir, symlinks, cli_config)

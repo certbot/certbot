@@ -234,6 +234,9 @@ class PluginsRegistry(Mapping):
                 constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
         for entry_point in entry_points:
             plugin_ep = cls._load_entry_point(entry_point, plugins, with_prefix=False)
+            # entry_point.dist cannot be None here, we would have blown up
+            # earlier, however, this assertion is needed for mypy.
+            assert entry_point.dist is not None
             if entry_point.dist.key not in PREFIX_FREE_DISTRIBUTIONS:
                 prefixed_plugin_ep = cls._load_entry_point(entry_point, plugins, with_prefix=True)
                 prefixed_plugin_ep.hidden = True
@@ -277,8 +280,8 @@ class PluginsRegistry(Mapping):
 
     def filter(self, pred):
         """Filter plugins based on predicate."""
-        return type(self)(dict((name, plugin_ep) for name, plugin_ep
-                               in six.iteritems(self._plugins) if pred(plugin_ep)))
+        return type(self)({name: plugin_ep for name, plugin_ep
+                               in six.iteritems(self._plugins) if pred(plugin_ep)})
 
     def visible(self):
         """Filter plugins based on visibility."""

@@ -1,3 +1,13 @@
+# type: ignore
+# pylint: disable=no-member
+# Many attributes of dnspython are now dynamically defined which causes both
+# mypy and pylint to error about accessing attributes they think do not exist.
+# This is the case even in up-to-date versions of mypy and pylint which as of
+# writing this are 0.790 and 2.6.0 respectively. This problem may be fixed in
+# dnspython 2.1.0. See https://github.com/rthalley/dnspython/issues/598. For
+# now, let's disable these checks. This is done at the very top of the file
+# like this because "type: ignore" must be the first line in the file to be
+# respected by mypy.
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
 import logging
 
@@ -18,6 +28,7 @@ from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_NETWORK_TIMEOUT = 45
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -91,13 +102,15 @@ class _RFC2136Client(object):
     """
     Encapsulates all communication with the target DNS server.
     """
-    def __init__(self, server, port, key_name, key_secret, key_algorithm):
+    def __init__(self, server, port, key_name, key_secret, key_algorithm,
+        timeout=DEFAULT_NETWORK_TIMEOUT):
         self.server = server
         self.port = port
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
         })
         self.algorithm = key_algorithm
+        self._default_timeout = timeout
 
     def add_txt_record(self, record_name, record_content, record_ttl):
         """
@@ -122,7 +135,7 @@ class _RFC2136Client(object):
         update.add(rel, record_ttl, dns.rdatatype.TXT, record_content)
 
         try:
-            response = dns.query.tcp(update, self.server, port=self.port)
+            response = dns.query.tcp(update, self.server, self._default_timeout, self.port)
         except Exception as e:
             raise errors.PluginError('Encountered error adding TXT record: {0}'
                                      .format(e))
@@ -157,7 +170,7 @@ class _RFC2136Client(object):
         update.delete(rel, dns.rdatatype.TXT, record_content)
 
         try:
-            response = dns.query.tcp(update, self.server, port=self.port)
+            response = dns.query.tcp(update, self.server, self._default_timeout, self.port)
         except Exception as e:
             raise errors.PluginError('Encountered error deleting TXT record: {0}'
                                      .format(e))
@@ -207,10 +220,10 @@ class _RFC2136Client(object):
 
         try:
             try:
-                response = dns.query.tcp(request, self.server, port=self.port)
-            except OSError as e:
+                response = dns.query.tcp(request, self.server, self._default_timeout, self.port)
+            except (OSError, dns.exception.Timeout) as e:
                 logger.debug('TCP query failed, fallback to UDP: %s', e)
-                response = dns.query.udp(request, self.server, port=self.port)
+                response = dns.query.udp(request, self.server, self._default_timeout, self.port)
             rcode = response.rcode()
 
             # Authoritative Answer bit should be set

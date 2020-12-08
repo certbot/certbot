@@ -158,7 +158,7 @@ def register(config, account_storage, tos_cb=None):
             logger.warning(msg)
             raise errors.Error(msg)
         if not config.dry_run:
-            logger.info("Registering without email!")
+            logger.debug("Registering without email!")
 
     # If --dry-run is used, and there is no staging account, create one with no email.
     if config.dry_run:
@@ -175,7 +175,6 @@ def register(config, account_storage, tos_cb=None):
     regr = perform_registration(acme, config, tos_cb)
 
     acc = account.Account(regr, key)
-    account.report_new_account(config)
     account_storage.save(acc, acme)
 
     eff.prepare_subscription(config, acc)
@@ -313,7 +312,6 @@ class Client(object):
         :rtype: tuple
 
         """
-
         # We need to determine the key path, key PEM data, CSR path,
         # and CSR PEM data.  For a dry run, the paths are None because
         # they aren't permanently saved to disk.  For a lineage with
@@ -336,16 +334,41 @@ class Client(object):
             # The key is set to None here but will be created below.
             key = None
 
+        key_size = self.config.rsa_key_size
+        elliptic_curve = None
+
+        # key-type defaults to a list, but we are only handling 1 currently
+        if isinstance(self.config.key_type, list):
+            self.config.key_type = self.config.key_type[0]
+        if self.config.elliptic_curve and self.config.key_type == 'ecdsa':
+            elliptic_curve = self.config.elliptic_curve
+            self.config.auth_chain_path = "./chain-ecdsa.pem"
+            self.config.auth_cert_path = "./cert-ecdsa.pem"
+            self.config.key_path = "./key-ecdsa.pem"
+        elif self.config.rsa_key_size and self.config.key_type.lower() == 'rsa':
+            key_size = self.config.rsa_key_size
+
         # Create CSR from names
         if self.config.dry_run:
-            key = key or util.Key(file=None,
-                                  pem=crypto_util.make_key(self.config.rsa_key_size))
+            key = key or util.Key(
+                file=None,
+                pem=crypto_util.make_key(
+                    bits=key_size,
+                    elliptic_curve=elliptic_curve,
+                    key_type=self.config.key_type,
+
+                ),
+            )
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            key = key or crypto_util.init_save_key(self.config.rsa_key_size,
-                                                   self.config.key_dir)
+            key = key or crypto_util.init_save_key(
+                key_size=key_size,
+                key_dir=self.config.key_dir,
+                key_type=self.config.key_type,
+                elliptic_curve=elliptic_curve,
+            )
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)

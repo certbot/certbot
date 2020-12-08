@@ -359,6 +359,21 @@ class ParseTest(unittest.TestCase):
         self.assertFalse(cli.option_was_set(
             'authenticator', cli.flag_default('authenticator')))
 
+    def test_ecdsa_key_option(self):
+        elliptic_curve_option = 'elliptic_curve'
+        elliptic_curve_option_value = cli.flag_default(elliptic_curve_option)
+        self.parse('--elliptic-curve {0}'.format(elliptic_curve_option_value).split())
+        self.assertIs(cli.option_was_set(elliptic_curve_option, elliptic_curve_option_value), True)
+
+    def test_invalid_key_type(self):
+        key_type_option = 'key_type'
+        key_type_value = cli.flag_default(key_type_option)
+        self.parse('--key-type {0}'.format(key_type_value).split())
+        self.assertIs(cli.option_was_set(key_type_option, key_type_value), True)
+
+        with self.assertRaises(SystemExit):
+            self.parse("--key-type foo")
+
     def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
             namespace = self.parse(['--reason', reason])
@@ -504,43 +519,6 @@ class SetByCliTest(unittest.TestCase):
         args = '-w /var/www/html -d example.com'.split()
         verb = 'renew'
         self.assertTrue(_call_set_by_cli('webroot_map', args, verb))
-
-    def test_report_config_interaction_str(self):
-        cli.report_config_interaction('manual_public_ip_logging_ok',
-                                      'manual_auth_hook')
-        cli.report_config_interaction('manual_auth_hook', 'manual')
-
-        self._test_report_config_interaction_common()
-
-    def test_report_config_interaction_iterable(self):
-        cli.report_config_interaction(('manual_public_ip_logging_ok',),
-                                      ('manual_auth_hook',))
-        cli.report_config_interaction(('manual_auth_hook',), ('manual',))
-
-        self._test_report_config_interaction_common()
-
-    def _test_report_config_interaction_common(self):
-        """Tests implied interaction between manual flags.
-
-        --manual implies --manual-auth-hook which implies
-        --manual-public-ip-logging-ok. These interactions don't actually
-        exist in the client, but are used here for testing purposes.
-
-        """
-
-        args = ['--manual']
-        verb = 'renew'
-        for v in ('manual', 'manual_auth_hook', 'manual_public_ip_logging_ok'):
-            self.assertTrue(_call_set_by_cli(v, args, verb))
-
-        # https://github.com/python/mypy/issues/2087
-        cli.set_by_cli.detector = None  # type: ignore
-
-        args = ['--manual-auth-hook', 'command']
-        for v in ('manual_auth_hook', 'manual_public_ip_logging_ok'):
-            self.assertTrue(_call_set_by_cli(v, args, verb))
-
-        self.assertFalse(_call_set_by_cli('manual', args, verb))
 
 
 def _call_set_by_cli(var, args, verb):

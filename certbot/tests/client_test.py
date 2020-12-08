@@ -13,7 +13,6 @@ except ImportError: # pragma: no cover
 from certbot import errors
 from certbot import util
 from certbot._internal import account
-from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 
@@ -93,25 +92,22 @@ class RegisterTest(test_util.ConfigTestCase):
             mock_client.new_account_and_tos().terms_of_service = "http://tos"
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
-                with mock.patch("certbot._internal.account.report_new_account"):
-                    mock_client().new_account_and_tos.side_effect = errors.Error
-                    self.assertRaises(errors.Error, self._call)
-                    self.assertFalse(mock_prepare.called)
+                mock_client().new_account_and_tos.side_effect = errors.Error
+                self.assertRaises(errors.Error, self._call)
+                self.assertFalse(mock_prepare.called)
 
-                    mock_client().new_account_and_tos.side_effect = None
-                    self._call()
-                    self.assertTrue(mock_prepare.called)
+                mock_client().new_account_and_tos.side_effect = None
+                self._call()
+                self.assertTrue(mock_prepare.called)
 
     def test_it(self):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
-            with mock.patch("certbot._internal.account.report_new_account"):
-                with mock.patch("certbot._internal.eff.handle_subscription"):
-                    self._call()
+            with mock.patch("certbot._internal.eff.handle_subscription"):
+                self._call()
 
-    @mock.patch("certbot._internal.account.report_new_account")
     @mock.patch("certbot._internal.client.display_ops.get_email")
-    def test_email_retry(self, _rep, mock_get_email):
+    def test_email_retry(self, mock_get_email):
         from acme import messages
         self.config.noninteractive_mode = False
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
@@ -124,8 +120,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 self.assertEqual(mock_get_email.call_count, 1)
                 self.assertTrue(mock_prepare.called)
 
-    @mock.patch("certbot._internal.account.report_new_account")
-    def test_email_invalid_noninteractive(self, _rep):
+    def test_email_invalid_noninteractive(self):
         from acme import messages
         self.config.noninteractive_mode = True
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
@@ -145,28 +140,25 @@ class RegisterTest(test_util.ConfigTestCase):
         with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
             with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_clnt:
                 mock_clnt().external_account_required.side_effect = self._false_mock
-                with mock.patch("certbot._internal.account.report_new_account"):
-                    self.config.email = None
-                    self.config.register_unsafely_without_email = True
-                    self.config.dry_run = False
-                    self._call()
-                    mock_logger.info.assert_called_once_with(mock.ANY)
-                    self.assertTrue(mock_prepare.called)
+                self.config.email = None
+                self.config.register_unsafely_without_email = True
+                self.config.dry_run = False
+                self._call()
+                mock_logger.debug.assert_called_once_with(mock.ANY)
+                self.assertTrue(mock_prepare.called)
 
-    @mock.patch("certbot._internal.account.report_new_account")
     @mock.patch("certbot._internal.client.display_ops.get_email")
-    def test_dry_run_no_staging_account(self, _rep, mock_get_email):
+    def test_dry_run_no_staging_account(self, mock_get_email):
         """Tests dry-run for no staging account, expect account created with no email"""
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
-                with mock.patch("certbot._internal.account.report_new_account"):
-                    self.config.dry_run = True
-                    self._call()
-                    # check Certbot did not ask the user to provide an email
-                    self.assertFalse(mock_get_email.called)
-                    # check Certbot created an account with no email. Contact should return empty
-                    self.assertFalse(mock_client().new_account_and_tos.call_args[0][0].contact)
+                self.config.dry_run = True
+                self._call()
+                # check Certbot did not ask the user to provide an email
+                self.assertFalse(mock_get_email.called)
+                # check Certbot created an account with no email. Contact should return empty
+                self.assertFalse(mock_client().new_account_and_tos.call_args[0][0].contact)
 
     def test_with_eab_arguments(self):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
@@ -336,7 +328,11 @@ class ClientTest(ClientTestCommon):
         self._test_obtain_certificate_common(mock.sentinel.key, csr)
 
         mock_crypto_util.init_save_key.assert_called_once_with(
-            self.config.rsa_key_size, self.config.key_dir)
+            key_size=self.config.rsa_key_size,
+            key_dir=self.config.key_dir,
+            key_type=self.config.key_type,
+            elliptic_curve=None,  # elliptic curve is not set
+        )
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, self.eg_domains, self.config.csr_dir)
         mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
@@ -372,7 +368,11 @@ class ClientTest(ClientTestCommon):
         self.client.config.dry_run = True
         self._test_obtain_certificate_common(key, csr)
 
-        mock_crypto.make_key.assert_called_once_with(self.config.rsa_key_size)
+        mock_crypto.make_key.assert_called_once_with(
+            bits=self.config.rsa_key_size,
+            elliptic_curve=None,  # not making an elliptic private key
+            key_type=self.config.key_type,
+        )
         mock_acme_crypto.make_csr.assert_called_once_with(
             mock.sentinel.key_pem, self.eg_domains, self.config.must_staple)
         mock_crypto.init_save_key.assert_not_called()
@@ -483,7 +483,6 @@ class ClientTest(ClientTestCommon):
     def test_save_certificate(self, mock_parser):
         certs = ["cert_512.pem", "cert-san_512.pem"]
         tmp_path = tempfile.mkdtemp()
-        filesystem.chmod(tmp_path, 0o755)  # TODO: really??
 
         cert_pem = test_util.load_vector(certs[0])
         chain_pem = (test_util.load_vector(certs[0]) + test_util.load_vector(certs[1]))

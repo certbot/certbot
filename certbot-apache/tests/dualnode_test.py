@@ -412,9 +412,9 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
                                                     ancestor=self.block,
                                                     filepath="/path/to/whatever",
                                                     metadata=self.metadata)
-        self.assertFalse(self.block == ne_block)
-        self.assertFalse(self.directive == ne_directive)
-        self.assertFalse(self.comment == ne_comment)
+        self.assertNotEqual(self.block, ne_block)
+        self.assertNotEqual(self.directive, ne_directive)
+        self.assertNotEqual(self.comment, ne_comment)
 
     def test_parsed_paths(self):
         mock_p = mock.MagicMock(return_value=['/path/file.conf',

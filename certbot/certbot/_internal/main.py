@@ -5,13 +5,14 @@ from __future__ import print_function
 import functools
 import logging.handlers
 import sys
+import warnings
 
 import configobj
 import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
-from acme.magic_typing import Union, Iterable, Optional  # pylint: disable=unused-import
+from acme.magic_typing import Union, Iterable, Optional, List, Tuple  # pylint: disable=unused-import
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -28,6 +29,7 @@ from certbot._internal import hooks
 from certbot._internal import log
 from certbot._internal import renewal
 from certbot._internal import reporter
+from certbot._internal import snap_config
 from certbot._internal import storage
 from certbot._internal import updater
 from certbot._internal.plugins import disco as plugins_disco
@@ -112,12 +114,24 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
         if lineage is not None:
             # Renewal, where we already know the specific lineage we're
             # interested in
-            logger.info("Renewing an existing certificate")
+            display_util.notify(
+                "{action} for {domains}".format(
+                    action="Simulating renewal of an existing certificate"
+                            if config.dry_run else "Renewing an existing certificate",
+                    domains=display_util.summarize_domain_list(domains or lineage.names())
+                )
+            )
             renewal.renew_cert(config, domains, le_client, lineage)
         else:
             # TREAT AS NEW REQUEST
             assert domains is not None
-            logger.info("Obtaining a new certificate")
+            display_util.notify(
+                "{action} for {domains}".format(
+                    action="Simulating a certificate request" if config.dry_run else
+                           "Requesting a certificate",
+                    domains=display_util.summarize_domain_list(domains)
+                )
+            )
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
@@ -129,7 +143,33 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
     return lineage
 
 
-def _handle_subset_cert_request(config, domains, cert):
+def _handle_unexpected_key_type_migration(config, cert):
+    # type: (configuration.NamespaceConfig, storage.RenewableCert) -> None
+    """
+    This function ensures that the user will not implicitly migrate an existing key
+    from one type to another in the situation where a certificate for that lineage
+    already exist and they have not provided explicitly --key-type and --cert-name.
+    :param config: Current configuration provided by the client
+    :param cert: Matching certificate that could be renewed
+    """
+    if not cli.set_by_cli("key_type") or not cli.set_by_cli("certname"):
+
+        new_key_type = config.key_type.upper()
+        cur_key_type = cert.private_key_type.upper()
+
+        if new_key_type != cur_key_type:
+            msg = ('Are you trying to change the key type of the certificate named {0} '
+                   'from {1} to {2}? Please provide both --cert-name and --key-type on '
+                   'the command line confirm the change you are trying to make.')
+            msg = msg.format(cert.lineagename, cur_key_type, new_key_type)
+            raise errors.Error(msg)
+
+
+def _handle_subset_cert_request(config,  # type: configuration.NamespaceConfig
+                                domains,  # type: List[str]
+                                cert  # type: storage.RenewableCert
+                                ):
+    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
     """Figure out what to do if a previous cert had a subset of the names now requested
 
     :param config: Configuration object
@@ -146,6 +186,8 @@ def _handle_subset_cert_request(config, domains, cert):
     :rtype: `tuple` of `str`
 
     """
+    _handle_unexpected_key_type_migration(config, cert)
+
     existing = ", ".join(cert.names())
     question = (
         "You have an existing certificate that contains a portion of "
@@ -162,8 +204,7 @@ def _handle_subset_cert_request(config, domains, cert):
                                        cli_flag="--expand",
                                        force_interactive=True):
         return "renew", cert
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message(
+    display_util.notify(
         "To obtain a new certificate that contains these names without "
         "replacing your existing certificate for {0}, you must use the "
         "--duplicate option.{br}{br}"
@@ -171,12 +212,14 @@ def _handle_subset_cert_request(config, domains, cert):
             existing,
             sys.argv[0], " ".join(sys.argv[1:]),
             br=os.linesep
-        ),
-        reporter_util.HIGH_PRIORITY)
+        ))
     raise errors.Error(USER_CANCELLED)
 
 
-def _handle_identical_cert_request(config, lineage):
+def _handle_identical_cert_request(config,  # type: configuration.NamespaceConfig
+                                   lineage,  # type: storage.RenewableCert
+                                   ):
+    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
     """Figure out what to do if a lineage has the same names as a previously obtained one
 
     :param config: Configuration object
@@ -190,6 +233,8 @@ def _handle_identical_cert_request(config, lineage):
     :rtype: `tuple` of `str`
 
     """
+    _handle_unexpected_key_type_migration(config, lineage)
+
     if not lineage.ensure_deployed():
         return "reinstall", lineage
     if renewal.should_renew(config, lineage):
@@ -265,6 +310,7 @@ def _find_lineage_for_domains(config, domains):
         return _handle_subset_cert_request(config, domains, subset_names_cert)
     return None, None
 
+
 def _find_cert(config, domains, certname):
     """Finds an existing certificate object given domains and/or a certificate name.
 
@@ -288,7 +334,12 @@ def _find_cert(config, domains, certname):
         logger.info("Keeping the existing certificate")
     return (action != "reinstall"), lineage
 
-def _find_lineage_for_domains_and_certname(config, domains, certname):
+
+def _find_lineage_for_domains_and_certname(config,  # type: configuration.NamespaceConfig
+                                           domains,  # type: List[str]
+                                           certname  # type: str
+                                           ):
+    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
     """Find appropriate lineage based on given domains and/or certname.
 
     :param config: Configuration object
@@ -315,8 +366,9 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
     if lineage:
         if domains:
             if set(cert_manager.domains_for_certname(config, certname)) != set(domains):
+                _handle_unexpected_key_type_migration(config, lineage)
                 _ask_user_to_confirm_new_names(config, domains, certname,
-                    lineage.names()) # raises if no
+                                               lineage.names())  # raises if no
                 return "renew", lineage
         # unnecessarily specified domains or no domains specified
         return _handle_identical_cert_request(config, lineage)
@@ -384,6 +436,7 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     obj = zope.component.getUtility(interfaces.IDisplay)
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
+
 
 def _find_domains_or_certname(config, installer, question=None):
     """Retrieve domains and certname from config or user input.
@@ -489,11 +542,9 @@ def _determine_account(config):
             return True
         msg = ("Please read the Terms of Service at {0}. You "
                "must agree in order to register with the ACME "
-               "server at {1}".format(
-                   terms_of_service, config.server))
+               "server. Do you agree?".format(terms_of_service))
         obj = zope.component.getUtility(interfaces.IDisplay)
-        result = obj.yesno(msg, "Agree", "Cancel",
-                         cli_flag="--agree-tos", force_interactive=True)
+        result = obj.yesno(msg, cli_flag="--agree-tos", force_interactive=True)
         if not result:
             raise errors.Error(
                 "Registration cannot proceed without accepting "
@@ -517,6 +568,7 @@ def _determine_account(config):
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
+                display_util.notify("Account registered.")
             except errors.MissingCommandlineFlag:
                 raise
             except errors.Error:
@@ -542,7 +594,6 @@ def _delete_if_appropriate(config):
         archive dir is found for the specified lineage, etc ...
     """
     display = zope.component.getUtility(interfaces.IDisplay)
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
 
     attempt_deletion = config.delete_after_revoke
     if attempt_deletion is None:
@@ -552,7 +603,6 @@ def _delete_if_appropriate(config):
                 force_interactive=True, default=True)
 
     if not attempt_deletion:
-        reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)
         return
 
     # config.cert_path must have been set
@@ -570,9 +620,8 @@ def _delete_if_appropriate(config):
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
             lambda x: x.archive_dir, lambda x: x)
     except errors.OverlappingMatchFound:
-        msg = ('Not deleting revoked certs due to overlapping archive dirs. More than '
-                'one lineage is using {0}'.format(archive_dir))
-        reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
+        logger.warning("Not deleting revoked certs due to overlapping archive dirs. More than "
+                       "one certificate is using %s", archive_dir)
         return
     except Exception as e:
         msg = ('config.default_archive_dir: {0}, config.live_dir: {1}, archive_dir: {2},'
@@ -625,7 +674,6 @@ def unregister(config, unused_plugins):
     """
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
 
     if not accounts:
         return "Could not find existing account to deactivate."
@@ -647,7 +695,7 @@ def unregister(config, unused_plugins):
     # delete local account files
     account_files.delete(config.account)
 
-    reporter_util.add_message("Account deactivated.", reporter_util.MEDIUM_PRIORITY)
+    display_util.notify("Account deactivated.")
     return None
 
 
@@ -698,8 +746,6 @@ def update_account(config, unused_plugins):
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     if not accounts:
         return "Could not find an existing account to update."
@@ -724,10 +770,11 @@ def update_account(config, unused_plugins):
     account_storage.update_regr(acc, cb_client.acme)
 
     if config.email is None:
-        add_msg("Any contact information associated with this account has been removed.")
+        display_util.notify("Any contact information associated "
+                            "with this account has been removed.")
     else:
         eff.prepare_subscription(config, acc)
-        add_msg("Your e-mail address was updated to {0}.".format(config.email))
+        display_util.notify("Your e-mail address was updated to {0}.".format(config.email))
 
     return None
 
@@ -1009,6 +1056,7 @@ def delete(config, unused_plugins):
     """
     cert_manager.delete(config)
 
+
 def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
 
@@ -1023,6 +1071,7 @@ def certificates(config, unused_plugins):
 
     """
     cert_manager.certificates(config)
+
 
 # TODO: coop with renewal config
 def revoke(config, unused_plugins):
@@ -1109,7 +1158,9 @@ def run(config, plugins):
     cert_path = new_lineage.cert_path if new_lineage else None
     fullchain_path = new_lineage.fullchain_path if new_lineage else None
     key_path = new_lineage.key_path if new_lineage else None
-    _report_new_cert(config, cert_path, fullchain_path, key_path)
+
+    if should_get_cert:
+        _report_new_cert(config, cert_path, fullchain_path, key_path)
 
     _install_cert(config, le_client, domains, new_lineage)
 
@@ -1153,6 +1204,7 @@ def _csr_get_and_save_cert(config, le_client):
         cert, chain, os.path.normpath(config.cert_path),
         os.path.normpath(config.chain_path), os.path.normpath(config.fullchain_path))
     return cert_path, fullchain_path
+
 
 def renew_cert(config, plugins, lineage):
     """Renew & save an existing cert. Do not install it.
@@ -1325,6 +1377,9 @@ def main(cli_args=None):
 
     log.pre_arg_parse_setup()
 
+    if os.environ.get('CERTBOT_SNAPPED') == 'True':
+        cli_args = snap_config.prepare_env(cli_args)
+
     plugins = plugins_disco.PluginsRegistry.find_all()
     logger.debug("certbot version: %s", certbot.__version__)
     # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
@@ -1347,6 +1402,13 @@ def main(cli_args=None):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
+
+    if sys.version_info[0] == 2:
+        warnings.warn(
+            "Python 2 support will be dropped in the next release of Certbot. "
+            "Please upgrade your Python version.",
+            PendingDeprecationWarning,
+        )  # pragma: no cover
 
     set_displayer(config)
 

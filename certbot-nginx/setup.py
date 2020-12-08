@@ -4,9 +4,8 @@ import sys
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
-from setuptools.command.test import test as TestCommand
 
-version = '1.8.0.dev0'
+version = '1.11.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
@@ -27,22 +26,6 @@ elif 'bdist_wheel' in sys.argv[1:]:
                        'of setuptools. Version 36.2+ of setuptools is required.')
 elif sys.version_info < (3,3):
     install_requires.append('mock')
-
-
-class PyTest(TestCommand):
-    user_options = []
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.pytest_args = ''
-
-    def run_tests(self):
-        import shlex
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(shlex.split(self.pytest_args))
-        sys.exit(errno)
-
 
 setup(
     name='certbot-nginx',
@@ -66,6 +49,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',
@@ -82,7 +66,4 @@ setup(
             'nginx = certbot_nginx._internal.configurator:NginxConfigurator',
         ],
     },
-    test_suite='certbot_nginx',
-    tests_require=["pytest"],
-    cmdclass={"test": PyTest},
 )

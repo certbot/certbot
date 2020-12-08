@@ -16,6 +16,7 @@ from acme import crypto_util as acme_crypto_util
 from acme.magic_typing import Dict
 from acme.magic_typing import List
 from acme.magic_typing import Set
+from acme.magic_typing import Text
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -1175,23 +1176,29 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
 
     """
     try:
-        proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
-                                env=util.env_no_snap_for_external_calls())
-        proc.communicate()
+        reload_output = u"" # type: Text
+        with tempfile.TemporaryFile() as out:
+            proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
+                                    env=util.env_no_snap_for_external_calls(),
+                                    stdout=out, stderr=out)
+            proc.communicate()
+            out.seek(0)
+            reload_output = out.read().decode("utf-8")
 
         if proc.returncode != 0:
-            # Maybe Nginx isn't running
+            logger.debug("nginx reload failed:\n%s", reload_output)
+            # Maybe Nginx isn't running - try start it
             # Write to temporary files instead of piping because of communication issues on Arch
             # https://github.com/certbot/certbot/issues/4324
             with tempfile.TemporaryFile() as out:
-                with tempfile.TemporaryFile() as err:
-                    nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
-                        stdout=out, stderr=err, env=util.env_no_snap_for_external_calls())
-                    nginx_proc.communicate()
-                    if nginx_proc.returncode != 0:
-                        # Enter recovery routine...
-                        raise errors.MisconfigurationError(
-                            "nginx restart failed:\n%s\n%s" % (out.read(), err.read()))
+                nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
+                    stdout=out, stderr=out, env=util.env_no_snap_for_external_calls())
+                nginx_proc.communicate()
+                if nginx_proc.returncode != 0:
+                    out.seek(0)
+                    # Enter recovery routine...
+                    raise errors.MisconfigurationError(
+                        "nginx restart failed:\n%s" % out.read().decode("utf-8"))
 
     except (OSError, ValueError):
         raise errors.MisconfigurationError("nginx restart failed")

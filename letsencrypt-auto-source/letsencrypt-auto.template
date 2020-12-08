@@ -321,18 +321,12 @@ DeterminePythonVersion() {
 # that function. If Bootstrap is set to a function that doesn't install any
 # packages BOOTSTRAP_VERSION is not set.
 if [ -f /etc/debian_version ]; then
-  Bootstrap() {
-    BootstrapMessage "Debian-based OSes"
-    BootstrapDebCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapDebCommon $BOOTSTRAP_DEB_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/mageia-release ]; then
   # Mageia has both /etc/mageia-release and /etc/redhat-release
-  Bootstrap() {
-    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/redhat-release ]; then
+  DEPRECATED_OS=1
   # Run DeterminePythonVersion to decide on the basis of available Python versions
   # whether to use 2.x or 3.x on RedHat-like systems.
   # Then, revert LE_PYTHON to its previous state.
@@ -365,12 +359,7 @@ elif [ -f /etc/redhat-release ]; then
       INTERACTIVE_BOOTSTRAP=1
     fi
 
-    Bootstrap() {
-      BootstrapMessage "Legacy RedHat-based OSes that will use Python3"
-      BootstrapRpmPython3Legacy
-    }
     USE_PYTHON_3=1
-    BOOTSTRAP_VERSION="BootstrapRpmPython3Legacy $BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION"
 
     # Try now to enable SCL rh-python36 for systems already bootstrapped
     # NB: EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
@@ -389,48 +378,17 @@ elif [ -f /etc/redhat-release ]; then
     fi
 
     if [ "$RPM_USE_PYTHON_3" = 1 ]; then
-      Bootstrap() {
-        BootstrapMessage "RedHat-based OSes that will use Python3"
-        BootstrapRpmPython3
-      }
       USE_PYTHON_3=1
-      BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
-    else
-      Bootstrap() {
-        BootstrapMessage "RedHat-based OSes"
-        BootstrapRpmCommon
-      }
-      BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
     fi
   fi
 
   LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
-  Bootstrap() {
-    BootstrapMessage "openSUSE-based OSes"
-    BootstrapSuseCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapSuseCommon $BOOTSTRAP_SUSE_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/arch-release ]; then
-  Bootstrap() {
-    if [ "$DEBUG" = 1 ]; then
-      BootstrapMessage "Archlinux"
-      BootstrapArchCommon
-    else
-      error "Please use pacman to install letsencrypt packages:"
-      error "# pacman -S certbot certbot-apache"
-      error
-      error "If you would like to use the virtualenv way, please run the script again with the"
-      error "--debug flag."
-      exit 1
-    fi
-  }
-  BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/manjaro-release ]; then
-  Bootstrap() {
-    ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/gentoo-release ]; then
   DEPRECATED_OS=1
 elif uname | grep -iq FreeBSD ; then
@@ -438,24 +396,11 @@ elif uname | grep -iq FreeBSD ; then
 elif uname | grep -iq Darwin ; then
   DEPRECATED_OS=1
 elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
-  Bootstrap() {
-    ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
-  Bootstrap() {
-    ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
-  }
-  BOOTSTRAP_VERSION="BootstrapSmartOS $BOOTSTRAP_SMARTOS_VERSION"
+  DEPRECATED_OS=1
 else
-  Bootstrap() {
-    error "Sorry, I don't know how to bootstrap Certbot on your operating system!"
-    error
-    error "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
-    error "Please see https://certbot.eff.org/docs/contributing.html#prerequisites"
-    error "for more info."
-    exit 1
-  }
+  DEPRECATED_OS=1
 fi
 
 # We handle this case after determining the normal bootstrap version to allow

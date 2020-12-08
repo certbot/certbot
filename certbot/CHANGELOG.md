@@ -2,11 +2,93 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.8.0 - master
+## 1.11.0 - master
 
 ### Added
 
-* Added the ability to remove email and phone contact information from an account 
+*
+
+### Changed
+
+* We deprecated support for Python 2 in Certbot and its ACME library.
+  Support for Python 2 will be removed in the next planned release of Certbot.
+* certbot-auto was deprecated on all systems.
+
+### Fixed
+
+* The Certbot snap no longer loads packages installed via `pip install --user`. This
+  was unintended and DNS plugins should be installed via `snap` instead.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.10.1 - 2020-12-03
+
+### Fixed
+
+* Fixed a bug in `certbot.util.add_deprecated_argument` that caused the
+  deprecated `--manual-public-ip-logging-ok` flag to crash Certbot in some
+  scenarios.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.10.0 - 2020-12-01
+
+### Added
+
+* Added timeout to DNS query function calls for dns-rfc2136 plugin.
+* Confirmation when deleting certificates
+* CLI flag `--key-type` has been added to specify 'rsa' or 'ecdsa' (default 'rsa').
+* CLI flag `--elliptic-curve` has been added which takes an NIST/SECG elliptic curve. Any of
+  `secp256r1`, `secp384r1` and `secp521r1` are accepted values.
+* The command `certbot certficates` lists the which type of the private key that was used
+  for the private key.
+* Support for Python 3.9 was added to Certbot and all of its components.
+
+### Changed
+
+* certbot-auto was deprecated on Debian based systems.
+* CLI flag `--manual-public-ip-logging-ok` is now a no-op, generates a
+  deprecation warning, and will be removed in a future release.
+
+### Fixed
+
+* Fixed a Unicode-related crash in the nginx plugin when running under Python 2.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.9.0 - 2020-10-06
+
+### Added
+
+* `--preconfigured-renewal` flag, for packager use only.
+  See the [packaging guide](https://certbot.eff.org/docs/packaging.html).
+
+### Changed
+
+* certbot-auto was deprecated on all systems except for those based on Debian or RHEL.
+* Update the packaging instructions to promote usage of `python -m pytest` to test Certbot
+  instead of the deprecated `python setup.py test` setuptools approach.
+* Reduced CLI logging when reloading nginx, if it is not running.
+* Reduced CLI logging when handling some kinds of errors.
+
+### Fixed
+
+* Fixed `server_name` case-sensitivity in the nginx plugin.
+* The minimum version of the `acme` library required by Certbot was corrected.
+  In the previous release, Certbot said it required `acme>=1.6.0` when it
+  actually required `acme>=1.8.0` to properly support removing contact
+  information from an ACME account.
+* Upgraded the version of httplib2 used in our snaps and Docker images to add
+  support for proxy environment variables and fix the plugin for Google Cloud
+  DNS.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.8.0 - 2020-09-08
+
+### Added
+
+* Added the ability to remove email and phone contact information from an account
   using `update_account --register-unsafely-without-email`
 
 ### Changed
@@ -18,7 +100,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The problem causing the Apache plugin in the Certbot snap on ARM systems to
   fail to load the Augeas library it depends on has been fixed.
 * The `acme` library can now tell the ACME server to clear contact information by passing an empty
-  `tuple` to the `contact` field of a `Registration` message. 
+  `tuple` to the `contact` field of a `Registration` message.
 * Fixed the `*** stack smashing detected ***` error in the Certbot snap on some systems.
 
 More details about these changes can be found on our GitHub repo.

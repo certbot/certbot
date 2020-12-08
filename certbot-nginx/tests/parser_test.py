@@ -340,7 +340,9 @@ class NginxParserTest(util.NginxTest):
                  {'*.www.eff.org', 'www.*'},
                  {'*.org'},
                  set(),
-                 {'example.com'}]
+                 {'example.com'},
+                 {'www.Eff.org'},
+                 {'.efF.org'}]
         winners = [('exact', 'www.eff.org'),
                    (None, None),
                    ('exact', '.www.eff.org'),
@@ -353,7 +355,9 @@ class NginxParserTest(util.NginxTest):
                    ('wildcard_end', 'www.*'),
                    ('wildcard_start', '*.org'),
                    (None, None),
-                   (None, None)]
+                   (None, None),
+                   ('exact', 'www.Eff.org'),
+                   ('wildcard_start', '.efF.org')]
 
         for i, winner in enumerate(winners):
             self.assertEqual(winner,
@@ -487,6 +491,14 @@ class NginxParserTest(util.NginxTest):
         parsed = nparser._parse_files(path)  # pylint: disable=protected-access
         self.assertEqual(['server'], parsed[0][2][0])
         self.assertEqual(['listen', '80'], parsed[0][2][1][3])
+
+    def test_valid_unicode_roundtrip(self):
+        """This tests the parser's ability to load and save a config containing Unicode"""
+        nparser = parser.NginxParser(self.config_path)
+        nparser._parse_files(
+            nparser.abs_path('valid_unicode_comments.conf')
+        ) # pylint: disable=protected-access
+        nparser.filedump(lazy=False)
 
     def test_invalid_unicode_characters(self):
         with self.assertLogs() as log:

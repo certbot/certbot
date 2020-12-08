@@ -43,7 +43,7 @@ class GetEmailTest(unittest.TestCase):
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
-            self.assertTrue(self._call() == "foo@bar.baz")
+            self.assertEqual(self._call(), "foo@bar.baz")
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_ok_not_safe(self, mock_get_utility):
@@ -51,7 +51,7 @@ class GetEmailTest(unittest.TestCase):
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.side_effect = [False, True]
-            self.assertTrue(self._call() == "foo@bar.baz")
+            self.assertEqual(self._call(), "foo@bar.baz")
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_invalid_flag(self, mock_get_utility):
@@ -129,26 +129,6 @@ class ChooseAccountTest(test_util.TempDirTestCase):
     def test_cancel(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 1)
         self.assertTrue(self._call([self.acc1, self.acc2]) is None)
-
-
-class GenSSLLabURLs(unittest.TestCase):
-    """Loose test of _gen_ssl_lab_urls. URL can change easily in the future."""
-    def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
-                                                               False))
-
-    @classmethod
-    def _call(cls, domains):
-        from certbot.display.ops import _gen_ssl_lab_urls
-        return _gen_ssl_lab_urls(domains)
-
-    def test_zero(self):
-        self.assertEqual(self._call([]), [])
-
-    def test_two(self):
-        urls = self._call(["eff.org", "umich.edu"])
-        self.assertTrue("eff.org" in urls[0])
-        self.assertTrue("umich.edu" in urls[1])
 
 
 class GenHttpsNamesTest(unittest.TestCase):
@@ -404,16 +384,14 @@ class SuccessRevocationTest(unittest.TestCase):
         success_revocation(path)
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_success_revocation(self, mock_util):
-        mock_util().notification.return_value = None
+    @mock.patch("certbot.display.util.notify")
+    def test_success_revocation(self, mock_notify, unused_mock_util):
         path = "/path/to/cert.pem"
         self._call(path)
-        mock_util().notification.assert_called_once_with(
+        mock_notify.assert_called_once_with(
             "Congratulations! You have successfully revoked the certificate "
-            "that was located at {0}{1}{1}".format(
-                path,
-                os.linesep), pause=False)
-        self.assertTrue(path in mock_util().notification.call_args[0][0])
+            "that was located at {0}.".format(path)
+        )
 
 
 class ValidatorTests(unittest.TestCase):

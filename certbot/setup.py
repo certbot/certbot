@@ -7,10 +7,9 @@ import sys
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
-from setuptools.command.test import test as TestCommand
 
-# Workaround for http://bugs.python.org/issue8876, see
-# http://bugs.python.org/issue8876#msg208792
+# Workaround for https://bugs.python.org/issue8876, see
+# https://bugs.python.org/issue8876#msg208792
 # This can be removed when using Python 2.7.9 or later:
 # https://hg.python.org/cpython/raw-file/v2.7.9/Misc/NEWS
 if os.path.abspath(__file__).split(os.path.sep)[1] == 'vagrant':
@@ -36,7 +35,7 @@ version = meta['version']
 # specified here to avoid masking the more specific request requirements in
 # acme. See https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
-    'acme>=1.6.0',
+    'acme>=1.8.0',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
@@ -108,22 +107,6 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
-
-class PyTest(TestCommand):
-    user_options = []
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.pytest_args = ''
-
-    def run_tests(self):
-        import shlex
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(shlex.split(self.pytest_args))
-        sys.exit(errno)
-
-
 setup(
     name='certbot',
     version=version,
@@ -148,6 +131,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',
@@ -165,10 +149,6 @@ setup(
         'dev3': dev3_extras,
         'docs': docs_extras,
     },
-
-    test_suite='certbot',
-    tests_require=["pytest"],
-    cmdclass={"test": PyTest},
 
     entry_points={
         'console_scripts': [

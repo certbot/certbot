@@ -11,14 +11,16 @@ import warnings
 import re
 # See https://github.com/pyca/cryptography/issues/4275
 from cryptography import x509  # type: ignore
-from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
-from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.ec import ECDSA, EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore
+
 import pyrfc3339
 import six
 import zope.component
@@ -34,7 +36,9 @@ logger = logging.getLogger(__name__)
 
 
 # High level functions
-def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
+def init_save_key(
+        key_size, key_dir, key_type="rsa", elliptic_curve="secp256r1", keyname="key-certbot.pem"
+):
     """Initializes and saves a privkey.
 
     Inits key and saves it in PEM format on the filesystem.
@@ -42,8 +46,10 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
     .. note:: keyname is the attempted filename, it may be different if a file
         already exists at the path.
 
-    :param int key_size: RSA key size in bits
+    :param int key_size: key size in bits if key size is rsa.
     :param str key_dir: Key save directory.
+    :param str key_type: Key Type [rsa, ecdsa]
+    :param str elliptic_curve: Name of the elliptic curve if key type is ecdsa.
     :param str keyname: Filename of key
 
     :returns: Key
@@ -53,7 +59,9 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
 
     """
     try:
-        key_pem = make_key(key_size)
+        key_pem = make_key(
+            bits=key_size, elliptic_curve=elliptic_curve or "secp256r1", key_type=key_type,
+        )
     except ValueError as err:
         logger.error("", exc_info=True)
         raise err
@@ -65,7 +73,10 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
         os.path.join(key_dir, keyname), 0o600, "wb")
     with key_f:
         key_f.write(key_pem)
-    logger.debug("Generating key (%d bits): %s", key_size, key_path)
+    if key_type == 'rsa':
+        logger.debug("Generating RSA key (%d bits): %s", key_size, key_path)
+    else:
+        logger.debug("Generating ECDSA key (%d bits): %s", key_size, key_path)
 
     return util.Key(key_path, key_pem)
 
@@ -174,18 +185,45 @@ def import_csr_file(csrfile, data):
     return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
-def make_key(bits):
-    """Generate PEM encoded RSA key.
+def make_key(bits=1024, key_type="rsa", elliptic_curve=None):
+    """Generate PEM encoded RSA|EC key.
 
-    :param int bits: Number of bits, at least 1024.
+    :param int bits: Number of bits if key_type=rsa. At least 1024 for RSA.
 
-    :returns: new RSA key in PEM form with specified number of bits
+    :param str ec_curve: The elliptic curve to use.
+
+    :returns: new RSA or ECDSA key in PEM form with specified number of bits
+              or of type ec_curve when key_type ecdsa is used.
     :rtype: str
-
     """
-    assert bits >= 1024  # XXX
-    key = crypto.PKey()
-    key.generate_key(crypto.TYPE_RSA, bits)
+    if key_type == 'rsa':
+        if bits < 1024:
+            raise errors.Error("Unsupported RSA key length: {}".format(bits))
+
+        key = crypto.PKey()
+        key.generate_key(crypto.TYPE_RSA, bits)
+    elif key_type == 'ecdsa':
+        try:
+            name = elliptic_curve.upper()
+            if name in ('SECP256R1', 'SECP384R1', 'SECP512R1'):
+                _key = ec.generate_private_key(
+                    curve=getattr(ec, elliptic_curve.upper(), None)(),
+                    backend=default_backend()
+                )
+            else:
+                raise errors.Error("Unsupported elliptic curve: {}".format(elliptic_curve))
+        except TypeError:
+            raise errors.Error("Unsupported elliptic curve: {}".format(elliptic_curve))
+        except UnsupportedAlgorithm as e:
+            raise six.raise_from(e, errors.Error(str(e)))
+        _key_pem = _key.private_bytes(
+            encoding=Encoding.PEM,
+            format=PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=NoEncryption()
+        )
+        key = crypto.load_privatekey(crypto.FILETYPE_PEM, _key_pem)
+    else:
+        raise errors.Error("Invalid key_type specified: {}.  Use [rsa|ecdsa]".format(key_type))
     return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
 
 
@@ -447,19 +485,21 @@ def _notAfterBefore(cert_path, method):
 
     """
     # pylint: disable=redefined-outer-name
-    with open(cert_path) as f:
-        x509 = crypto.load_certificate(crypto.FILETYPE_PEM,
-                                               f.read())
+    with open(cert_path, "rb") as f:  # type: IO[bytes]
+        x509 = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
     # pyopenssl always returns bytes
     timestamp = method(x509)
     reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
                              timestamp[6:8], b"T", timestamp[8:10], b":",
                              timestamp[10:12], b":", timestamp[12:]]
-    timestamp_str = b"".join(reformatted_timestamp)
-    # pyrfc3339 uses "native" strings. That is, bytes on Python 2 and unicode
-    # on Python 3
+    # pyrfc3339 always uses the type `str`. This means that in Python 2, it
+    # expects str/bytes and in Python 3 it expects its str type or the Python 2
+    # equivalent of the type unicode.
+    timestamp_bytes = b"".join(reformatted_timestamp)
     if six.PY3:
-        timestamp_str = timestamp_str.decode('ascii')
+        timestamp_str = timestamp_bytes.decode('ascii')
+    else:
+        timestamp_str = timestamp_bytes
     return pyrfc3339.parse(timestamp_str)
 
 
@@ -517,6 +557,7 @@ def cert_and_chain_from_fullchain(fullchain_pem):
     # Since each normalized cert has a newline suffix, no extra newlines are required.
     return (certs_normalized[0], "".join(certs_normalized[1:]))
 
+
 def get_serial_from_cert(cert_path):
     """Retrieve the serial number of a certificate from certificate path
 
@@ -526,9 +567,8 @@ def get_serial_from_cert(cert_path):
     :rtype: int
     """
     # pylint: disable=redefined-outer-name
-    with open(cert_path) as f:
-        x509 = crypto.load_certificate(crypto.FILETYPE_PEM,
-                                                           f.read())
+    with open(cert_path, "rb") as f:  # type: IO[bytes]
+        x509 = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
     return x509.get_serial_number()
 
 

@@ -249,7 +249,7 @@ class NginxParser(object):
                     continue
                 out = nginxparser.dumps(tree)
                 logger.debug('Writing nginx conf tree to %s:\n%s', filename, out)
-                with open(filename, 'w') as _file:
+                with io.open(filename, 'w', encoding='utf-8') as _file:
                     _file.write(out)
 
             except IOError:
@@ -496,7 +496,8 @@ def get_best_match(target_name, names):
 
 
 def _exact_match(target_name, name):
-    return name in (target_name, '.' + target_name)
+    target_lower = target_name.lower()
+    return name.lower() in (target_lower, '.' + target_lower)
 
 
 def _wildcard_match(target_name, name, start):
@@ -517,11 +518,11 @@ def _wildcard_match(target_name, name, start):
     if first not in ('*', ''):
         return False
 
-    target_name = '.'.join(parts)
-    name = '.'.join(match_parts)
+    target_name_lower = '.'.join(parts).lower()
+    name_lower = '.'.join(match_parts).lower()
 
     # Ex: www.eff.org matches *.eff.org, eff.org does not match *.eff.org
-    return target_name.endswith('.' + name)
+    return target_name_lower.endswith('.' + name_lower)
 
 
 def _regex_match(target_name, name):

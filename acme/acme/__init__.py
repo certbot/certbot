@@ -20,3 +20,10 @@ for mod in list(sys.modules):
     # preserved (acme.jose.* is josepy.*)
     if mod == 'josepy' or mod.startswith('josepy.'):
         sys.modules['acme.' + mod.replace('josepy', 'jose', 1)] = sys.modules[mod]
+
+if sys.version_info[0] == 2:
+    warnings.warn(
+        "Python 2 support will be dropped in the next release of acme. "
+        "Please upgrade your Python version.",
+        PendingDeprecationWarning,
+    )  # pragma: no cover

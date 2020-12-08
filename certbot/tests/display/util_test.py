@@ -13,6 +13,7 @@ import six
 from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
+import certbot.tests.util as test_util
 
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
@@ -66,11 +67,13 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.mock_stdout = mock.MagicMock()
         self.displayer = display_util.FileDisplay(self.mock_stdout, False)
 
-    def test_notification_no_pause(self):
+    @mock.patch("certbot.display.util.logger")
+    def test_notification_no_pause(self, mock_logger):
         self.displayer.notification("message", False)
         string = self.mock_stdout.write.call_args[0][0]
 
         self.assertTrue("message" in string)
+        mock_logger.debug.assert_called_with("Notifying user: %s", "message")
 
     def test_notification_pause(self):
         input_with_timeout = "certbot.display.util.input_with_timeout"
@@ -96,6 +99,16 @@ class FileOutputDisplayTest(unittest.TestCase):
         self._force_noninteractive(self.displayer.notification, "message2")
         string = self.mock_stdout.write.call_args[0][0]
         self.assertTrue("message2" in string)
+
+    def test_notification_decoration(self):
+        from certbot.compat import os
+        self.displayer.notification("message", pause=False, decorate=False)
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertEqual(string, "message" + os.linesep)
+
+        self.displayer.notification("message2", pause=False)
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertTrue("- - - " in string and ("message2" + os.linesep) in string)
 
     @mock.patch("certbot.display.util."
                 "FileDisplay._get_valid_int_ans")
@@ -326,15 +339,26 @@ class FileOutputDisplayTest(unittest.TestCase):
 class NoninteractiveDisplayTest(unittest.TestCase):
     """Test non-interactive display. These tests are pretty easy!"""
     def setUp(self):
-        super(NoninteractiveDisplayTest, self).setUp()
         self.mock_stdout = mock.MagicMock()
         self.displayer = display_util.NoninteractiveDisplay(self.mock_stdout)
 
-    def test_notification_no_pause(self):
+    @mock.patch("certbot.display.util.logger")
+    def test_notification_no_pause(self, mock_logger):
         self.displayer.notification("message", 10)
         string = self.mock_stdout.write.call_args[0][0]
 
         self.assertTrue("message" in string)
+        mock_logger.debug.assert_called_with("Notifying user: %s", "message")
+
+    def test_notification_decoration(self):
+        from certbot.compat import os
+        self.displayer.notification("message", pause=False, decorate=False)
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertEqual(string, "message" + os.linesep)
+
+        self.displayer.notification("message2", pause=False)
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertTrue("- - - " in string and ("message2" + os.linesep) in string)
 
     def test_input(self):
         d = "an incomputable value"
@@ -428,6 +452,39 @@ class PlaceParensTest(unittest.TestCase):
     def test_multiple(self):
         self.assertEqual("(L)abel", self._call("Label"))
         self.assertEqual("(y)es please", self._call("yes please"))
+
+
+class SummarizeDomainListTest(unittest.TestCase):
+    @classmethod
+    def _call(cls, domains):
+        from certbot.display.util import summarize_domain_list
+        return summarize_domain_list(domains)
+
+    def test_single_domain(self):
+        self.assertEqual("example.com", self._call(["example.com"]))
+
+    def test_two_domains(self):
+        self.assertEqual("example.com and example.org",
+                         self._call(["example.com", "example.org"]))
+
+    def test_many_domains(self):
+        self.assertEqual("example.com and 2 more domains",
+                         self._call(["example.com", "example.org", "a.example.com"]))
+
+    def test_empty_domains(self):
+        self.assertEqual("", self._call([]))
+
+
+class NotifyTest(unittest.TestCase):
+    """Test the notify function """
+
+    @test_util.patch_get_utility()
+    def test_notify(self, mock_util):
+        from certbot.display.util import notify
+        notify("Hello World")
+        mock_util().notification.assert_called_with(
+            "Hello World", pause=False, decorate=False, wrap=False
+        )
 
 
 if __name__ == "__main__":

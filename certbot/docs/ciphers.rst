@@ -80,8 +80,8 @@ its preferences in accordance with its own policy or its administrators'
 preferences, and use different cryptographic mechanisms or parameters,
 or a different priority order, than the defaults provided by Certbot.
 
-If you don't use Certbot to configure your server directly, because the 
-client doesn't integrate with your server software or because you chose 
+If you don't use Certbot to configure your server directly, because the
+client doesn't integrate with your server software or because you chose
 not to use this integration, then the cryptographic defaults haven't been
 modified, and the cryptography chosen by the server will still be whatever
 the default for your software was.  For example, if you obtain a
@@ -208,17 +208,17 @@ Keylength.com
 
 Damien Giry collects recommendations by academic researchers and standards organizations about keylengths for particular cryptoperiods, years, or security levels.  The keylength recommendations of the various sources are summarized in a chart.  This site has been updated over time and includes expert guidance from eight sources published between 2000 and 2017.
 
-http://www.keylength.com/
+https://www.keylength.com/
 
 NIST
 ~~~~
-NISA published its "NIST Special Publication 800-52 Revision 1: Guidelines for the Selection, Configuration, and Use of Transport Layer Security (TLS) Implementations"
+NIST published its "NIST Special Publication 800-52 Revision 2: Guidelines for the Selection, Configuration, and Use of Transport Layer Security (TLS) Implementations"
 
-http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-52r1.pdf
+https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-52r2.pdf
 
-and its "NIST Special Publication 800-57: Recommendation for Key Management – Part 1: General (Revision 3)"
+and its "NIST Special Publication 800-57: Recommendation for Key Management – Part 1: General (Revision 5)"
 
-http://csrc.nist.gov/publications/nistpubs/800-57/sp800-57_part1_rev3_general.pdf
+https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r5.pdf
 
 ENISA
 ~~~~~
@@ -254,7 +254,7 @@ https://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/elb-secur
 U.S. Government 18F
 ~~~~~~~~~~~~~~~~~~~
 
-The 18F site (https://18f.gsa.gov/) is using 
+The 18F site (https://18f.gsa.gov/) is using
 
 ::
 

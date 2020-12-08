@@ -1,10 +1,22 @@
-"""Certbot display."""
+"""Certbot display.
+
+This module (`certbot.display.util`) or its companion `certbot.display.ops`
+should be used whenever:
+
+- Displaying status information to the user on the terminal
+- Collecting information from the user via prompts
+
+Other messages can use the `logging` module. See `log.py`.
+
+"""
 import logging
 import sys
 import textwrap
 
 import zope.interface
+import zope.component
 
+from acme.magic_typing import List
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
@@ -86,6 +98,18 @@ def input_with_timeout(prompt=None, timeout=36000.0):
     return line.rstrip('\n')
 
 
+def notify(msg):
+    # type: (str) -> None
+    """Display a basic status message.
+
+    :param str msg: message to display
+
+    """
+    zope.component.getUtility(interfaces.IDisplay).notification(
+        msg, pause=False, decorate=False, wrap=False
+    )
+
+
 @zope.interface.implementer(interfaces.IDisplay)
 class FileDisplay(object):
     """File-based display."""
@@ -98,7 +122,8 @@ class FileDisplay(object):
         self.skipped_interaction = False
 
     def notification(self, message, pause=True,
-                     wrap=True, force_interactive=False):
+                     wrap=True, force_interactive=False,
+                     decorate=True):
         """Displays a notification and waits for user acceptance.
 
         :param str message: Message to display
@@ -107,14 +132,23 @@ class FileDisplay(object):
         :param bool wrap: Whether or not the application should wrap text
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
+        :param bool decorate: Whether to surround the message with a
+            decorated frame
 
         """
         if wrap:
             message = _wrap_lines(message)
+
+        logger.debug("Notifying user: %s", message)
+
         self.outfile.write(
-            "{line}{frame}{line}{msg}{line}{frame}{line}".format(
-                line='\n', frame=SIDE_FRAME, msg=message))
+            (("{line}{frame}{line}" if decorate else "") +
+             "{msg}{line}" +
+             ("{frame}{line}" if decorate else ""))
+            .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
+        )
         self.outfile.flush()
+
         if pause:
             if self._can_interact(force_interactive):
                 input_with_timeout("Press Enter to Continue")
@@ -461,19 +495,26 @@ class NoninteractiveDisplay(object):
             msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
         raise errors.MissingCommandlineFlag(msg)
 
-    def notification(self, message, pause=False, wrap=True, **unused_kwargs):  # pylint: disable=unused-argument
+    def notification(self, message, pause=False, wrap=True, decorate=True, **unused_kwargs):  # pylint: disable=unused-argument
         """Displays a notification without waiting for user acceptance.
 
         :param str message: Message to display to stdout
         :param bool pause: The NoninteractiveDisplay waits for no keyboard
         :param bool wrap: Whether or not the application should wrap text
+        :param bool decorate: Whether to apply a decorated frame to the message
 
         """
         if wrap:
             message = _wrap_lines(message)
+
+        logger.debug("Notifying user: %s", message)
+
         self.outfile.write(
-            "{line}{frame}{line}{msg}{line}{frame}{line}".format(
-                line=os.linesep, frame=SIDE_FRAME, msg=message))
+            (("{line}{frame}{line}" if decorate else "") +
+             "{msg}{line}" +
+             ("{frame}{line}" if decorate else ""))
+            .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
+        )
         self.outfile.flush()
 
     def menu(self, message, choices, ok_label=None, cancel_label=None,
@@ -593,3 +634,28 @@ def _parens_around_char(label):
 
     """
     return "({first}){rest}".format(first=label[0], rest=label[1:])
+
+
+def summarize_domain_list(domains):
+    # type: (List[str]) -> str
+    """Summarizes a list of domains in the format of:
+        example.com.com and N more domains
+    or if there is are only two domains:
+        example.com and www.example.com
+    or if there is only one domain:
+        example.com
+
+    :param list domains: `str` list of domains
+    :returns: the domain list summary
+    :rtype: str
+    """
+    if not domains:
+        return ""
+
+    l = len(domains)
+    if l == 1:
+        return domains[0]
+    elif l == 2:
+        return " and ".join(domains)
+    else:
+        return "{0} and {1} more domains".format(domains[0], l-1)

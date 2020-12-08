@@ -8,6 +8,7 @@ stages:
           vmImage: ubuntu-latest
         steps:
           - bash: |
+              set -e
               MESSAGE="\
               ---\n\
               ##### Azure Pipeline

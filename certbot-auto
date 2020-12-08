@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="1.7.0"
+LE_AUTO_VERSION="1.10.1"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -258,7 +258,7 @@ DeprecationBootstrap() {
 
 MIN_PYTHON_2_VERSION="2.7"
 MIN_PYVER2=$(echo "$MIN_PYTHON_2_VERSION" | sed 's/\.//')
-MIN_PYTHON_3_VERSION="3.5"
+MIN_PYTHON_3_VERSION="3.6"
 MIN_PYVER3=$(echo "$MIN_PYTHON_3_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version.
@@ -799,17 +799,10 @@ BootstrapMageiaCommon() {
 # that function. If Bootstrap is set to a function that doesn't install any
 # packages BOOTSTRAP_VERSION is not set.
 if [ -f /etc/debian_version ]; then
-  Bootstrap() {
-    BootstrapMessage "Debian-based OSes"
-    BootstrapDebCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapDebCommon $BOOTSTRAP_DEB_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/mageia-release ]; then
   # Mageia has both /etc/mageia-release and /etc/redhat-release
-  Bootstrap() {
-    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/redhat-release ]; then
   # Run DeterminePythonVersion to decide on the basis of available Python versions
   # whether to use 2.x or 3.x on RedHat-like systems.
@@ -884,31 +877,11 @@ elif [ -f /etc/redhat-release ]; then
 
   LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
-  Bootstrap() {
-    BootstrapMessage "openSUSE-based OSes"
-    BootstrapSuseCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapSuseCommon $BOOTSTRAP_SUSE_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/arch-release ]; then
-  Bootstrap() {
-    if [ "$DEBUG" = 1 ]; then
-      BootstrapMessage "Archlinux"
-      BootstrapArchCommon
-    else
-      error "Please use pacman to install letsencrypt packages:"
-      error "# pacman -S certbot certbot-apache"
-      error
-      error "If you would like to use the virtualenv way, please run the script again with the"
-      error "--debug flag."
-      exit 1
-    fi
-  }
-  BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/manjaro-release ]; then
-  Bootstrap() {
-    ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/gentoo-release ]; then
   DEPRECATED_OS=1
 elif uname | grep -iq FreeBSD ; then
@@ -921,19 +894,9 @@ elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
   }
   BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
 elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
-  Bootstrap() {
-    ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
-  }
-  BOOTSTRAP_VERSION="BootstrapSmartOS $BOOTSTRAP_SMARTOS_VERSION"
+  DEPRECATED_OS=1
 else
-  Bootstrap() {
-    error "Sorry, I don't know how to bootstrap Certbot on your operating system!"
-    error
-    error "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
-    error "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
-    error "for more info."
-    exit 1
-  }
+  DEPRECATED_OS=1
 fi
 
 # We handle this case after determining the normal bootstrap version to allow
@@ -1530,18 +1493,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==1.7.0 \
-    --hash=sha256:84877127caf779c212d131d36399a45a8e13e06274e7a5e029845df5c84cd974 \
-    --hash=sha256:10b95bb86fb8f1dbbd27558bb42454d5995cbdb45d6c00d961ebba2a4bdc4355
-acme==1.7.0 \
-    --hash=sha256:ef0e84d670f59c096e9ed8c3bf9e6a7d22ee378fdb4175503c06cc485672c79a \
-    --hash=sha256:288d9bbb075278961d224e43f7f386c491d25366a98ed89a62771c5022978386
-certbot-apache==1.7.0 \
-    --hash=sha256:514c09a892964332c2485a38bd5720e4cf93e35998341af36eef5401ab165d89 \
-    --hash=sha256:99943b6406e0315f31c1f81e2ced6be38aee3ea24974ef4d7aeeda8202c1c3bc
-certbot-nginx==1.7.0 \
-    --hash=sha256:fea2387c92155635fbddb02758d5ba73f0d7af459959f91be0a1606fd2e43c55 \
-    --hash=sha256:d52ec3e711884100636c42b639d8959378562ea78183a273d120df808de2724f
+certbot==1.10.1 \
+    --hash=sha256:011ac980fa21b9f29e02c9b8d8b86e8a4bf4670b51b6ad91656e401e9d2d2231 \
+    --hash=sha256:0d9ee3fc09e0d03b2d1b1f1c4916e61ecfc6904b4216ddef4e6a5ca1424d9cb7
+acme==1.10.1 \
+    --hash=sha256:752d598e54e98ad1e874de53fd50c61044f1b566d6deb790db5676ce9c573546 \
+    --hash=sha256:fcbb559aedc96b404edf593e78517dcd7291984d5a37036c3fc77f3c5c122fd8
+certbot-apache==1.10.1 \
+    --hash=sha256:f077b4b7f166627ef5e0921fe7cde57700670fc86e9ad9dbdfaf2c573cc0f2fa \
+    --hash=sha256:97ed637b4c7b03820db6c69aa90145dc989933351d46a3d62baf6b71674f0a10
+certbot-nginx==1.10.1 \
+    --hash=sha256:7c36459021f8a1ec3b6c062e4c4fc866bfaa1dbf26ccd29e043dd6848003be08 \
+    --hash=sha256:c0bbeccf85f46b728fd95e6bb8c2649d32d3383d7f47ea4b9c312d12bf04d2f0
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1615,6 +1578,11 @@ maybe_argparse = (
     if sys.version_info < (2, 7, 0) else [])
 
 
+# Be careful when updating the pinned versions here, in particular for pip.
+# Indeed starting from 10.0, pip will build dependencies in isolation if the
+# related projects are compliant with PEP 517. This is not something we want
+# as of now, so the isolation build will need to be disabled wherever
+# pipstrap is used (see https://github.com/certbot/certbot/issues/8256).
 PACKAGES = maybe_argparse + [
     # Pip has no dependencies, as it vendors everything:
     ('11/b6/abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/'
