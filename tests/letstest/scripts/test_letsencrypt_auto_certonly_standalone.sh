@@ -16,58 +16,14 @@ sudo chown root "$LE_AUTO_PATH"
 sudo chmod 0755 "$LE_AUTO_PATH"
 export PATH="$LE_AUTO_DIR:$PATH"
 
-# On systems like Debian where certbot-auto is deprecated, we expect
-# certbot-auto to error and refuse to install Certbot.  Once certbot-auto is
-# deprecated on RHEL systems, we can unconditionally run this code.
-if [ -f /etc/debian_version ]; then
-    set +o pipefail
-    if ! letsencrypt-auto --debug --version | grep "Certbot cannot be installed."; then
-        echo "letsencrypt-auto didn't report being uninstallable."
-        exit 1
-    fi
-    if [ ${PIPESTATUS[0]} != 1 ]; then
-        echo "letsencrypt-auto didn't exit with status 1 as expected"
-        exit 1
-    fi
-    # letsencrypt-auto is deprecated and cannot be installed on this system so
-    # we cannot run the rest of this test.
-    exit 0
-fi
-
-letsencrypt-auto --os-packages-only --debug --version
-
-# This script sets the environment variables PYTHON_NAME, VENV_PATH, and
-# VENV_SCRIPT based on the version of Python available on the system. For
-# instance, Fedora uses Python 3 and Python 2 is not installed.
-. tests/letstest/scripts/set_python_envvars.sh
-
-# Create a venv-like layout at the old virtual environment path to test that a
-# symlink is properly created when letsencrypt-auto runs.
-HOME=${HOME:-~root}
-XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
-OLD_VENV_BIN="$XDG_DATA_HOME/letsencrypt/bin"
-mkdir -p "$OLD_VENV_BIN"
-touch "$OLD_VENV_BIN/letsencrypt"
-
-letsencrypt-auto certonly --no-self-upgrade -v --standalone --debug \
-                   --text --agree-tos \
-                   --renew-by-default --redirect \
-                   --register-unsafely-without-email \
-                   --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
-
-LINK_PATH=$("$PYTHON_NAME" tools/readlink.py ${XDG_DATA_HOME:-~/.local/share}/letsencrypt)
-if [ "$LINK_PATH" != "/opt/eff.org/certbot/venv" ]; then
-    echo symlink from old venv path not properly created!
+# Since certbot-auto is deprecated, we expect certbot-auto to error and
+# refuse to install Certbot.
+set +o pipefail
+if ! letsencrypt-auto --debug --version | grep "Certbot cannot be installed."; then
+    echo "letsencrypt-auto didn't report being uninstallable."
     exit 1
 fi
-
-if ! letsencrypt-auto --help --no-self-upgrade | grep -F "letsencrypt-auto [SUBCOMMAND]"; then
-    echo "letsencrypt-auto not included in help output!"
-    exit 1
-fi
-
-OUTPUT_LEN=$(letsencrypt-auto --install-only --no-self-upgrade --quiet 2>&1 | wc -c)
-if [ "$OUTPUT_LEN" != 0 ]; then
-    echo letsencrypt-auto produced unexpected output!
+if [ ${PIPESTATUS[0]} != 1 ]; then
+    echo "letsencrypt-auto didn't exit with status 1 as expected"
     exit 1
 fi

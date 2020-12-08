@@ -12,10 +12,22 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * We deprecated support for Python 2 in Certbot and its ACME library.
   Support for Python 2 will be removed in the next planned release of Certbot.
+* certbot-auto was deprecated on all systems.
 
 ### Fixed
 
-*
+* The Certbot snap no longer loads packages installed via `pip install --user`. This
+  was unintended and DNS plugins should be installed via `snap` instead.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.10.1 - 2020-12-03
+
+### Fixed
+
+* Fixed a bug in `certbot.util.add_deprecated_argument` that caused the
+  deprecated `--manual-public-ip-logging-ok` flag to crash Certbot in some
+  scenarios.
 
 More details about these changes can be found on our GitHub repo.
 

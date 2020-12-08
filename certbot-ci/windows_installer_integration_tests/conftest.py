@@ -9,8 +9,6 @@ See https://docs.pytest.org/en/latest/reference.html#hook-reference
 from __future__ import print_function
 import os
 
-import pytest
-
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 
