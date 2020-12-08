@@ -6,6 +6,7 @@ This module is an implementation of the `ACME protocol`_.
 
 """
 import sys
+import warnings
 
 # This code exists to keep backwards compatibility with people using acme.jose
 # before it became the standalone josepy package.
