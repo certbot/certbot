@@ -92,6 +92,7 @@ class GoogleClientTest(unittest.TestCase):
                 response = {"rrsets": [{"name": "_acme-challenge.example.org.", "type": "TXT",
                               "rrdatas": ["\"example-txt-contents\""]}]}
             class x:
+                @staticmethod
                 def execute():
                     if rrs_list_error is not None:
                         raise rrs_list_error
