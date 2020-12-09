@@ -240,9 +240,10 @@ class _GoogleClient(object):
 
         """
         rrs_request = self.dns.resourceRecordSets()
-        request = rrs_request.list(managedZone=zone_id, project=self.project_id)
         # Add dot as the API returns absolute domains
         record_name += "."
+        request = rrs_request.list(project=self.project_id, managedZone=zone_id, name=record_name,
+                                   type="TXT")
         try:
             response = request.execute()
         except googleapiclient_errors.Error:
@@ -250,10 +251,8 @@ class _GoogleClient(object):
                         "requesting a wildcard certificate, this might not work.")
             logger.debug("Error was:", exc_info=True)
         else:
-            if response:
-                for rr in response["rrsets"]:
-                    if rr["name"] == record_name and rr["type"] == "TXT":
-                        return rr["rrdatas"]
+            if response and len(response["rrsets"]) != 0:
+                return response["rrsets"][0]["rrdatas"]
         return None
 
     def _find_managed_zone_id(self, domain):

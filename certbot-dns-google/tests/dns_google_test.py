@@ -70,7 +70,7 @@ class GoogleClientTest(unittest.TestCase):
     zone = "ZONE_ID"
     change = "an-id"
 
-    def _setUp_client_with_mock(self, zone_request_side_effect):
+    def _setUp_client_with_mock(self, zone_request_side_effect, rrs_list_error=None):
         from certbot_dns_google._internal.dns_google import _GoogleClient
 
         pwd = os.path.dirname(__file__)
@@ -86,9 +86,18 @@ class GoogleClientTest(unittest.TestCase):
         mock_mz.list.return_value.execute.side_effect = zone_request_side_effect
 
         mock_rrs = mock.MagicMock()
-        rrsets = {"rrsets": [{"name": "_acme-challenge.example.org.", "type": "TXT",
+        def rrs_list(project=None, managedZone=None, name="foo", type="TXT"):
+            response = {"rrsets": []}
+            if name == "_acme-challenge.example.org.":
+                response = {"rrsets": [{"name": "_acme-challenge.example.org.", "type": "TXT",
                               "rrdatas": ["\"example-txt-contents\""]}]}
-        mock_rrs.list.return_value.execute.return_value = rrsets
+            class x:
+                def execute():
+                    if rrs_list_error is not None:
+                        raise rrs_list_error
+                    return response
+            return x
+        mock_rrs.list.side_effect = rrs_list
         mock_changes = mock.MagicMock()
 
         client.dns.managedZones = mock.MagicMock(return_value=mock_mz)
@@ -301,10 +310,7 @@ class GoogleClientTest(unittest.TestCase):
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
     def test_get_existing_fallback(self, unused_credential_mock):
         client, unused_changes = self._setUp_client_with_mock(
-            [{'managedZones': [{'id': self.zone}]}])
-        mock_execute = client.dns.resourceRecordSets.return_value.list.return_value.execute
-        mock_execute.side_effect = API_ERROR
-
+            [{'managedZones': [{'id': self.zone}]}], API_ERROR)
         rrset = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
         self.assertFalse(rrset)
 
