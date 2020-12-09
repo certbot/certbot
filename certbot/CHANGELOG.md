@@ -16,6 +16,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * The Certbot snap no longer loads packages installed via `pip install --user`. This
   was unintended and DNS plugins should be installed via `snap` instead.
+* Fixed #6036. A bug on certbot-dns-google while fetching existing TXT records. 
 
 More details about these changes can be found on our GitHub repo.
 
