@@ -150,7 +150,7 @@ class KeyAuthorizationChallenge(_TokenChallenge):
     """Challenge based on Key Authorization.
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
-        that will be used to generate `response`.
+        that will be used to generate ``response``.
     :param str typ: type of the challenge
     """
     typ = NotImplemented
