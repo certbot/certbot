@@ -3,37 +3,37 @@ jobs:
     strategy:
       matrix:
         acme:
-          PATH: acme
+          folder_path: acme
         certbot:
-          PATH: certbot
+          folder_path: certbot
         cloudflare:
-          PATH: certbot-dns-cloudflare
+          folder_path: certbot-dns-cloudflare
         cloudxns:
-          PATH: certbot-dns-cloudxns
+          folder_path: certbot-dns-cloudxns
         digitalocean:
-          PATH: certbot-dns-digitalocean
+          folder_path: certbot-dns-digitalocean
         dnsimple:
-          PATH: certbot-dns-dnsimple
+          folder_path: certbot-dns-dnsimple
         dnsmadeeasy:
-          PATH: certbot-dns-dnsmadeeasy
+          folder_path: certbot-dns-dnsmadeeasy
         gehim:
-          PATH: certbot-dns-gehim
+          folder_path: certbot-dns-gehim
         google:
-          PATH: certbot-dns-google
+          folder_path: certbot-dns-google
         linode:
-          PATH: certbot-dns-linode
+          folder_path: certbot-dns-linode
         luadns:
-          PATH: certbot-dns-luadns
+          folder_path: certbot-dns-luadns
         nsone:
-          PATH: certbot-dns-nsone
+          folder_path: certbot-dns-nsone
         ovh:
-          PATH: certbot-dns-ovh
+          folder_path: certbot-dns-ovh
         rfc2136:
-          PATH: certbot-dns-rfc2136
+          folder_path: certbot-dns-rfc2136
         route53:
-          PATH: certbot-dns-route53
+          folder_path: certbot-dns-route53
         sakuracloud:
-          PATH: certbot-dns-sakuracloud
+          folder_path: certbot-dns-sakuracloud
     pool:
       vmImage: ubuntu-latest
     
@@ -42,5 +42,5 @@ jobs:
           set -e
           python3 -m venv venv
           venv/bin/python tools/pipstrap.py
-          venv/bin/python tools/pip_install_editable.py $(PATH)[docs]
-          venv/bin/python sphinx-build -W -b html ./$(PATH)/docs _build
+          venv/bin/python tools/pip_install_editable.py $(folder_path)[docs]
+          venv/bin/python sphinx-build -W -b html ./$(folder_path)/docs _build
