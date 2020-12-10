@@ -16,8 +16,8 @@ jobs:
           folder_path: certbot-dns-dnsimple
         dns_dnsmadeeasy:
           folder_path: certbot-dns-dnsmadeeasy
-        dns_gehim:
-          folder_path: certbot-dns-gehim
+        dns_gehirn:
+          folder_path: certbot-dns-gehirn
         dns_google:
           folder_path: certbot-dns-google
         dns_linode:
