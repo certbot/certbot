@@ -1,0 +1,45 @@
+jobs:
+  - job: doc-test
+    strategy:
+      matrix:
+        acme:
+          PATH: acme
+        certbot:
+          PATH: certbot
+        cloudflare:
+          PATH: certbot-dns-cloudflare
+        cloudxns:
+          PATH: certbot-dns-cloudxns
+        digitalocean:
+          PATH: certbot-dns-digitalocean
+        dnsimple:
+          PATH: certbot-dns-dnsimple
+        dnsmadeeasy:
+          PATH: certbot-dns-dnsmadeeasy
+        gehim:
+          PATH: certbot-dns-gehim
+        google:
+          PATH: certbot-dns-google
+        linode:
+          PATH: certbot-dns-linode
+        luadns:
+          PATH: certbot-dns-luadns
+        nsone:
+          PATH: certbot-dns-nsone
+        ovh:
+          PATH: certbot-dns-ovh
+        rfc2136:
+          PATH: certbot-dns-rfc2136
+        route53:
+          PATH: certbot-dns-route53
+        sakuracloud:
+          PATH: certbot-dns-sakuracloud
+    pool:
+      vmImage: ubuntu-latest
+    
+    steps:
+      -script: |
+          python3 -m venv venv
+          venv/bin/python tools/pipstrap.py
+          venv/bin/python tools/pip_install_editable.py $(PATH)[docs]
+          venv/bin/python sphinx-build -W -b html ./$(PATH)/docs _build

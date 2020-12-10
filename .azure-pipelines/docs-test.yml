@@ -1,0 +1,5 @@
+trigger:
+  - test_sphinx
+
+jobs:
+  - template: templates/jobs/documentation-tests-jobs.yml
