@@ -1,5 +1,5 @@
 jobs:
-  - job: doc-test
+  - job: doc_test
     strategy:
       matrix:
         acme:
