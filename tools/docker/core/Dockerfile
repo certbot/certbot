@@ -42,5 +42,5 @@ RUN apk add --no-cache --virtual .build-deps \
         musl-dev \
         libffi-dev \
     && python tools/pipstrap.py \
-    && python tools/pip_install_editable.py src/acme src/certbot \
+    && PIP_NO_BUILD_CACHE=no python tools/pip_install_editable.py src/acme src/certbot \
     && apk del .build-deps
