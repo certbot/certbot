@@ -6,33 +6,33 @@ jobs:
           folder_path: acme
         certbot:
           folder_path: certbot
-        cloudflare:
+        dns_cloudflare:
           folder_path: certbot-dns-cloudflare
-        cloudxns:
+        dns_cloudxns:
           folder_path: certbot-dns-cloudxns
-        digitalocean:
+        dns_digitalocean:
           folder_path: certbot-dns-digitalocean
-        dnsimple:
+        dns_dnsimple:
           folder_path: certbot-dns-dnsimple
-        dnsmadeeasy:
+        dns_dnsmadeeasy:
           folder_path: certbot-dns-dnsmadeeasy
-        gehim:
+        dns_gehim:
           folder_path: certbot-dns-gehim
-        google:
+        dns_google:
           folder_path: certbot-dns-google
-        linode:
+        dns_linode:
           folder_path: certbot-dns-linode
-        luadns:
+        dns_luadns:
           folder_path: certbot-dns-luadns
-        nsone:
+        dns_nsone:
           folder_path: certbot-dns-nsone
-        ovh:
+        dns_ovh:
           folder_path: certbot-dns-ovh
-        rfc2136:
+        dns_rfc2136:
           folder_path: certbot-dns-rfc2136
-        route53:
+        dns_route53:
           folder_path: certbot-dns-route53
-        sakuracloud:
+        dns_sakuracloud:
           folder_path: certbot-dns-sakuracloud
     pool:
       vmImage: ubuntu-latest
@@ -45,3 +45,4 @@ jobs:
           python tools/pipstrap.py
           python tools/pip_install_editable.py $(folder_path)[docs]
           sphinx-build -W -b html ./$(folder_path)/docs _build
+        displayName: Build Sphinx Documentation
