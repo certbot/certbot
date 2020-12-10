@@ -42,4 +42,4 @@ jobs:
           set -e
           python3 tools/pipstrap.py
           python3 tools/pip_install_editable.py $(folder_path)[docs]
-          python3 sphinx-build -W -b html ./$(folder_path)/docs _build
+          sphinx-build -W -b html ./$(folder_path)/docs _build
