@@ -38,7 +38,7 @@ jobs:
       vmImage: ubuntu-latest
     
     steps:
-      -script: |
+      - script: |
           python3 -m venv venv
           venv/bin/python tools/pipstrap.py
           venv/bin/python tools/pip_install_editable.py $(PATH)[docs]
