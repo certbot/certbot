@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* We deprecated support for Apache 2.2 in certbot-apache plugin and it will be
+  removed in the next release of Certbot.
 
 ### Fixed
 
