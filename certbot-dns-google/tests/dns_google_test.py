@@ -91,12 +91,6 @@ class GoogleClientTest(unittest.TestCase):
             if name == "_acme-challenge.example.org.":
                 response = {"rrsets": [{"name": "_acme-challenge.example.org.", "type": "TXT",
                               "rrdatas": ["\"example-txt-contents\""], "ttl": 60}]}
-            # elif name == "_acme-challenge.non-default-ttl.org":
-            #     response = {"rrsets": [{"name": "_acme-challenge.non-default-ttl.org.", "type": "TXT",
-            #                   "rrdatas": ["\"example-txt-contents\""], "ttl": 300}]}
-            # elif name == "_acme-challenge.delete.org":
-            #     response = {"rrsets": [{"name": "_acme-challenge.delete.org.", "type": "TXT",
-            #                   "rrdatas": ["\"foo\"", "\"bar\""], "ttl": 300}]}
             class x:
                 @staticmethod
                 def execute():
@@ -257,12 +251,9 @@ class GoogleClientTest(unittest.TestCase):
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
     def test_del_txt_record(self, unused_credential_mock):
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
-
         # pylint: disable=line-too-long
         mock_get_rrs = "certbot_dns_google._internal.dns_google._GoogleClient.get_existing_txt_rrset"
         with mock.patch(mock_get_rrs) as mock_rrs:
-            # can we have this mock in the setup ? 
-            # should we test different ttl ? 
             mock_rrs.return_value = {"rrdatas": ["\"sample-txt-contents\"",
                                      "\"example-txt-contents\""], "ttl": self.record_ttl}
             client.del_txt_record(DOMAIN, "_acme-challenge.example.org",
