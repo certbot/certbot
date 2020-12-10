@@ -169,7 +169,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv3.py` contains two commands
+The virtual environment set up with `python tools/venv3.py` contains two CLI tools
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -179,6 +179,9 @@ that can be used once the virtual environment is activated:
 - Starts a local instance of Pebble and runs in the foreground printing its logs.
 - Press CTRL+C to stop this instance.
 - This instance is configured to validate challenges against certbot executed locally.
+
+.. note:: Some options are available to tweak the local ACME server. You can execute
+    ``run_acme_server --help`` to see the inline help of the ``run_acme_server`` tool.
 
 .. code-block:: shell
 
@@ -431,15 +434,22 @@ Please:
 
 4. Remember to use ``pylint``.
 
+5. You may consider installing a plugin for `editorconfig`_ in
+   your editor to prevent some linting warnings.
+
+6. Please avoid `unittest.assertTrue` or `unittest.assertFalse` when
+   possible, and use `assertEqual` or more specific assert. They give
+   better messages when it's failing, and are generally more correct.
+
 .. _Google Python Style Guide:
   https://google.github.io/styleguide/pyguide.html
 .. _Sphinx-style: https://www.sphinx-doc.org/
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
+.. _editorconfig: https://editorconfig.org/
 
 Use ``certbot.compat.os`` instead of ``os``
 ===========================================
-
 
 Python's standard library ``os`` module lacks full support for several Windows
 security features about file permissions (eg. DACLs). However several files
@@ -506,11 +516,13 @@ Steps:
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
-5. Submit the PR. Once your PR is open, please do not force push to the branch
+5. If any documentation should be added or updated as part of the changes you
+   have made, please include the documentation changes in your PR.
+6. Submit the PR. Once your PR is open, please do not force push to the branch
    containing your pull request to squash or amend commits. We use `squash
    merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
    rewriting commits makes changes harder to track between reviews.
-6. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
+7. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
 
 .. _ask for help:
 

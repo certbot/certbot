@@ -75,7 +75,7 @@ class AddrTest(unittest.TestCase):
         new_addr1 = Addr.fromstring("192.168.1.1 spdy")
         self.assertEqual(self.addr1, new_addr1)
         self.assertNotEqual(self.addr1, self.addr2)
-        self.assertFalse(self.addr1 == 3333)
+        self.assertNotEqual(self.addr1, 3333)
 
     def test_equivalent_any_addresses(self):
         from certbot_nginx._internal.obj import Addr
@@ -168,7 +168,7 @@ class VirtualHostTest(unittest.TestCase):
 
         self.assertEqual(vhost1b, self.vhost1)
         self.assertEqual(str(vhost1b), str(self.vhost1))
-        self.assertFalse(vhost1b == 1234)
+        self.assertNotEqual(vhost1b, 1234)
 
     def test_str(self):
         stringified = '\n'.join(['file: filep', 'addrs: localhost',

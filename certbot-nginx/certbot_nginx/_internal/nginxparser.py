@@ -16,6 +16,7 @@ from pyparsing import stringEnd
 from pyparsing import White
 from pyparsing import ZeroOrMore
 import six
+from acme.magic_typing import IO, Any # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 
@@ -130,26 +131,27 @@ def load(_file):
 
 
 def dumps(blocks):
-    """Dump to a string.
+    # type: (UnspacedList) -> six.text_type
+    """Dump to a Unicode string.
 
     :param UnspacedList block: The parsed tree
-    :param int indentation: The number of spaces to indent
-    :rtype: str
+    :rtype: six.text_type
 
     """
-    return str(RawNginxDumper(blocks.spaced))
+    return six.text_type(RawNginxDumper(blocks.spaced))
 
 
 def dump(blocks, _file):
+    # type: (UnspacedList, IO[Any]) -> None
     """Dump to a file.
 
     :param UnspacedList block: The parsed tree
-    :param file _file: The file to dump to
-    :param int indentation: The number of spaces to indent
-    :rtype: NoneType
+    :param IO[Any] _file: The file stream to dump to. It must be opened with
+                          Unicode encoding.
+    :rtype: None
 
     """
-    return _file.write(dumps(blocks))
+    _file.write(dumps(blocks))
 
 
 spacey = lambda x: (isinstance(x, six.string_types) and x.isspace()) or x == ''

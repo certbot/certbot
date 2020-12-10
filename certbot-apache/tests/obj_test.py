@@ -27,14 +27,14 @@ class VirtualHostTest(unittest.TestCase):
             "certbot_apache._internal.obj.Addr(('127.0.0.1', '443'))")
 
     def test_eq(self):
-        self.assertTrue(self.vhost1b == self.vhost1)
-        self.assertFalse(self.vhost1 == self.vhost2)
+        self.assertEqual(self.vhost1b, self.vhost1)
+        self.assertNotEqual(self.vhost1, self.vhost2)
         self.assertEqual(str(self.vhost1b), str(self.vhost1))
-        self.assertFalse(self.vhost1b == 1234)
+        self.assertNotEqual(self.vhost1b, 1234)
 
     def test_ne(self):
-        self.assertTrue(self.vhost1 != self.vhost2)
-        self.assertFalse(self.vhost1 != self.vhost1b)
+        self.assertNotEqual(self.vhost1, self.vhost2)
+        self.assertEqual(self.vhost1, self.vhost1b)
 
     def test_conflicts(self):
         from certbot_apache._internal.obj import Addr
@@ -128,13 +128,13 @@ class AddrTest(unittest.TestCase):
         self.assertTrue(self.addr1.conflicts(self.addr2))
 
     def test_equal(self):
-        self.assertTrue(self.addr1 == self.addr2)
-        self.assertFalse(self.addr == self.addr1)
-        self.assertFalse(self.addr == 123)
+        self.assertEqual(self.addr1, self.addr2)
+        self.assertNotEqual(self.addr, self.addr1)
+        self.assertNotEqual(self.addr, 123)
 
     def test_not_equal(self):
-        self.assertFalse(self.addr1 != self.addr2)
-        self.assertTrue(self.addr != self.addr1)
+        self.assertEqual(self.addr1, self.addr2)
+        self.assertNotEqual(self.addr, self.addr1)
 
 
 if __name__ == "__main__":

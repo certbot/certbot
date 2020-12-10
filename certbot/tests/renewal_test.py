@@ -74,6 +74,30 @@ class RenewalTest(test_util.ConfigTestCase):
 
         assert self.config.rsa_key_size == 2048
 
+    def test_reuse_ec_key_renewal_params(self):
+        self.config.elliptic_curve = 'INVALID_CURVE'
+        self.config.reuse_key = True
+        self.config.dry_run = True
+        self.config.key_type = 'ecdsa'
+        config = configuration.NamespaceConfig(self.config)
+
+        rc_path = test_util.make_lineage(
+            self.config.config_dir,
+            'sample-renewal-ec.conf',
+            ec=True,
+        )
+        lineage = storage.RenewableCert(rc_path, config)
+
+        le_client = mock.MagicMock()
+        le_client.obtain_certificate.return_value = (None, None, None, None)
+
+        from certbot._internal import renewal
+
+        with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
+            renewal.renew_cert(self.config, None, le_client, lineage)
+
+        assert self.config.elliptic_curve == 'secp256r1'
+
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.renewal.restore_required_config_elements."""
@@ -137,6 +161,71 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         mock_set_by_cli.return_value = False
         self._call(self.config, {'server': constants.V1_URI})
         self.assertEqual(self.config.server, constants.CLI_DEFAULTS['server'])
+
+
+class DescribeResultsTest(unittest.TestCase):
+    """Tests for certbot._internal.renewal._renew_describe_results."""
+    def setUp(self):
+        self.patchers = {
+            'log_error': mock.patch('certbot._internal.renewal.logger.error'),
+            'notify': mock.patch('certbot._internal.renewal.display_util.notify')}
+        self.mock_notify = self.patchers['notify'].start()
+        self.mock_error = self.patchers['log_error'].start()
+
+    def tearDown(self):
+        for patch in self.patchers.values():
+            patch.stop()
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot._internal.renewal import _renew_describe_results
+        _renew_describe_results(*args, **kwargs)
+
+    def _assert_success_output(self, lines):
+        self.mock_notify.assert_has_calls([mock.call(l) for l in lines])
+
+    def test_no_renewal_attempts(self):
+        self._call(mock.MagicMock(dry_run=True), [], [], [], [])
+        self._assert_success_output(['No simulated renewals were attempted.'])
+
+    def test_successful_renewal(self):
+        self._call(mock.MagicMock(dry_run=False), ['good.pem'], None, None, None)
+        self._assert_success_output([
+            '\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+            'Congratulations, all renewals succeeded: ',
+            '  good.pem (success)',
+            '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+        ])
+
+    def test_failed_renewal(self):
+        self._call(mock.MagicMock(dry_run=False), [], ['bad.pem'], [], [])
+        self._assert_success_output([
+            '\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+            '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+        ])
+        self.mock_error.assert_has_calls([
+            mock.call('All %ss failed. The following certs could not be renewed:', 'renewal'),
+            mock.call('  bad.pem (failure)'),
+        ])
+
+    def test_all_renewal(self):
+        self._call(mock.MagicMock(dry_run=True),
+                   ['good.pem', 'good2.pem'], ['bad.pem', 'bad2.pem'],
+                   ['foo.pem expires on 123'], ['errored.conf'])
+        self._assert_success_output([
+            '\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+            'The following certs are not due for renewal yet:',
+            '  foo.pem expires on 123 (skipped)',
+            'The following simulated renewals succeeded:',
+            '  good.pem (success)\n  good2.pem (success)\n',
+            '\nAdditionally, the following renewal configurations were invalid: ',
+            '  errored.conf (parsefail)',
+            '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
+        ])
+        self.mock_error.assert_has_calls([
+            mock.call('The following %ss failed:', 'simulated renewal'),
+            mock.call('  bad.pem (failure)\n  bad2.pem (failure)'),
+        ])
 
 
 if __name__ == "__main__":

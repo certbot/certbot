@@ -10,6 +10,9 @@ import configobj
 import parsedatetime
 import pytz
 import six
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 import certbot
 from certbot import crypto_util
@@ -45,6 +48,7 @@ def renewal_conf_files(config):
     result = glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
     result.sort()
     return result
+
 
 def renewal_file_for_certname(config, certname):
     """Return /path/to/certname.conf in the renewal conf directory"""
@@ -1054,6 +1058,23 @@ class RenewableCert(interfaces.RenewableCert):
         new_config = write_renewal_config(config_filename, config_filename, archive,
             target, values)
         return cls(new_config.filename, cli_config)
+
+    @property
+    def private_key_type(self):
+        """
+        :returns: The type of algorithm for the private, RSA or ECDSA
+        :rtype: str
+        """
+        with open(self.configuration["privkey"], "rb") as priv_key_file:
+            key = load_pem_private_key(
+                data=priv_key_file.read(),
+                password=None,
+                backend=default_backend()
+            )
+        if isinstance(key, RSAPrivateKey):
+            return "RSA"
+        else:
+            return "ECDSA"
 
     def save_successor(self, prior_version, new_cert,
                        new_privkey, new_chain, cli_config):
