@@ -33,7 +33,7 @@ class AnnotatedChallenge(jose.ImmutableMap):
     Wraps around server provided challenge and annotates with data
     useful for the client.
 
-    :ivar challb: Wrapped `~.ChallengeBody`.
+    :ivar ~.challb: Wrapped `~.ChallengeBody`.
 
     """
     __slots__ = ('challb',)
