@@ -204,7 +204,8 @@ class _GoogleClient(object):
         }
 
         # Remove the record being deleted from the list
-        readd_contents = [r for r in record_contents["rrdatas"] if r != "\"" + record_content + "\""]
+        readd_contents = [r for r in record_contents["rrdatas"]
+                            if r != "\"" + record_content + "\""]
         if readd_contents:
             # We need to remove old records in the same request
             data["additions"] = [
