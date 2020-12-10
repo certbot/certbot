@@ -245,7 +245,7 @@ class GoogleClientTest(unittest.TestCase):
 
         self.assertRaises(errors.PluginError, client.add_txt_record,
                           DOMAIN, self.record_name, self.record_content, self.record_ttl)
-                                               
+
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
