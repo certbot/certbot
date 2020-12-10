@@ -13,6 +13,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * We deprecated support for Python 2 in Certbot and its ACME library.
   Support for Python 2 will be removed in the next planned release of Certbot.
 * certbot-auto was deprecated on all systems.
+* We deprecated support for Apache 2.2 in the certbot-apache plugin and it will
+  be removed in a future release of Certbot.
 
 ### Fixed
 
