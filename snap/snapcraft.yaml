@@ -73,10 +73,11 @@ parts:
     build-packages: [gcc, libffi-dev, libssl-dev, git, libaugeas-dev, python3-dev]
     build-environment:
       - SNAPCRAFT_PYTHON_VENV_ARGS: --upgrade
-      # Constraints are passed through the environment variable PIP_CONSTRAINTS instead of using the
-      # parts.[part_name].constraints available in snapcraft.yaml when Python plugin is used, in order
-      # to let these constraints be applied not only on the certbot package build, but also on any
-      # isolated build that pip could trigger to construct transitively dependant wheels.
+      # Constraints are passed through the environment variable PIP_CONSTRAINTS instead of using the 
+      # parts.[part_name].constraints option available in snapcraft.yaml when the Python plugin is
+      # used. This is done to let these constraints be applied not only on the certbot package
+      # build, but also on any isolated build that pip could trigger when building wheels for 
+      # dependencies. See https://github.com/certbot/certbot/pull/8443 for more info.
       - PIP_CONSTRAINT: $SNAPCRAFT_PART_SRC/snap-constraints.txt
     override-build: |
       python3 -m venv "${SNAPCRAFT_PART_INSTALL}"
