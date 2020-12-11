@@ -11,4 +11,4 @@ COPY qemu-${QEMU_ARCH}-static /usr/bin/
 COPY . /opt/certbot/src/plugin
 
 # Install the DNS plugin
-RUN PIP_NO_BUILD_CACHE=no python tools/pip_install_editable.py /opt/certbot/src/plugin
+RUN python tools/pip_install.py --no-cache-dir --editable /opt/certbot/src/plugin
