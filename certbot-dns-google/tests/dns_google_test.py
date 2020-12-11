@@ -87,7 +87,7 @@ class GoogleClientTest(unittest.TestCase):
 
         mock_rrs = mock.MagicMock()
         def rrs_list(project=None, managedZone=None, name="foo", type="TXT"):
-            response = {"rrsets": []}
+            response = None
             if name == "_acme-challenge.example.org.":
                 response = {"rrsets": [{"name": "_acme-challenge.example.org.", "type": "TXT",
                               "rrdatas": ["\"example-txt-contents\""], "ttl": 60}]}
