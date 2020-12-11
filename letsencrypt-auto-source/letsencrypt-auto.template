@@ -326,6 +326,7 @@ elif [ -f /etc/mageia-release ]; then
   # Mageia has both /etc/mageia-release and /etc/redhat-release
   DEPRECATED_OS=1
 elif [ -f /etc/redhat-release ]; then
+  DEPRECATED_OS=1
   # Run DeterminePythonVersion to decide on the basis of available Python versions
   # whether to use 2.x or 3.x on RedHat-like systems.
   # Then, revert LE_PYTHON to its previous state.
@@ -358,12 +359,7 @@ elif [ -f /etc/redhat-release ]; then
       INTERACTIVE_BOOTSTRAP=1
     fi
 
-    Bootstrap() {
-      BootstrapMessage "Legacy RedHat-based OSes that will use Python3"
-      BootstrapRpmPython3Legacy
-    }
     USE_PYTHON_3=1
-    BOOTSTRAP_VERSION="BootstrapRpmPython3Legacy $BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION"
 
     # Try now to enable SCL rh-python36 for systems already bootstrapped
     # NB: EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
@@ -382,18 +378,7 @@ elif [ -f /etc/redhat-release ]; then
     fi
 
     if [ "$RPM_USE_PYTHON_3" = 1 ]; then
-      Bootstrap() {
-        BootstrapMessage "RedHat-based OSes that will use Python3"
-        BootstrapRpmPython3
-      }
       USE_PYTHON_3=1
-      BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
-    else
-      Bootstrap() {
-        BootstrapMessage "RedHat-based OSes"
-        BootstrapRpmCommon
-      }
-      BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
     fi
   fi
 
@@ -411,10 +396,7 @@ elif uname | grep -iq FreeBSD ; then
 elif uname | grep -iq Darwin ; then
   DEPRECATED_OS=1
 elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
-  Bootstrap() {
-    ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
   DEPRECATED_OS=1
 else

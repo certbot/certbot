@@ -92,6 +92,7 @@ def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_por
         '--no-verify-ssl',
         '--http-01-port', str(http_01_port),
         '--https-port', str(tls_alpn_01_port),
+        '--manual-public-ip-logging-ok',
         '--config-dir', config_dir,
         '--work-dir', os.path.join(workspace, 'work'),
         '--logs-dir', os.path.join(workspace, 'logs'),

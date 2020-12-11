@@ -149,10 +149,10 @@ class ACMEServer(object):
             [pebble_path, '-config', pebble_config_path, '-dnsserver', dns_server, '-strict'],
             env=environ)
 
-        # pebble_ocsp_server is imported here and not at the top of module in order to avoid a useless
-        # ImportError, in the case where cryptography dependency is too old to support ocsp, but
-        # Boulder is used instead of Pebble, so pebble_ocsp_server is not used. This is the typical
-        # situation of integration-certbot-oldest tox testenv.
+        # pebble_ocsp_server is imported here and not at the top of module in order to avoid a
+        # useless ImportError, in the case where cryptography dependency is too old to support ocsp,
+        # but Boulder is used instead of Pebble, so pebble_ocsp_server is not used. This is the
+        # typical situation of integration-certbot-oldest tox testenv.
         from certbot_integration_tests.utils import pebble_ocsp_server
         self._launch_process([sys.executable, pebble_ocsp_server.__file__])
 
@@ -178,11 +178,12 @@ class ACMEServer(object):
 
         if self._dns_server:
             # Change Boulder config to use the provided DNS server
-            with open(join(instance_path, 'test/config/va.json'), 'r') as file_h:
-                config = json.loads(file_h.read())
-            config['va']['dnsResolvers'] = [self._dns_server]
-            with open(join(instance_path, 'test/config/va.json'), 'w') as file_h:
-                file_h.write(json.dumps(config, indent=2, separators=(',', ': ')))
+            for suffix in ["", "-remote-a", "-remote-b"]:
+                with open(join(instance_path, 'test/config/va{}.json'.format(suffix)), 'r') as f:
+                    config = json.loads(f.read())
+                config['va']['dnsResolvers'] = [self._dns_server]
+                with open(join(instance_path, 'test/config/va{}.json'.format(suffix)), 'w') as f:
+                    f.write(json.dumps(config, indent=2, separators=(',', ': ')))
 
         try:
             # Launch the Boulder server
