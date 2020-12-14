@@ -8,12 +8,6 @@ VENV_PATH=venv3
 # install OS packages
 sudo $BOOTSTRAP_SCRIPT
 
-if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
-  # RHEL/CentOS 6 will need a special treatment, so we need to detect that environment
-  # Enable the SCL Python 3.6 installed by letsencrypt-auto bootstrap
-  PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
-fi
-
 # setup venv
 # We strip the hashes because the venv creation script includes unhashed
 # constraints in the commands given to pip and the mix of hashed and unhashed
