@@ -147,8 +147,7 @@ def make_instance(ec2_client,
                   keyname,
                   security_group_id,
                   subnet_id,
-                  machine_type='t2.micro',
-                  userdata=""): #userdata contains bash or cloud-init script
+                  machine_type='t2.micro'):
     block_device_mappings = _get_block_device_mappings(ec2_client, ami_id)
     tags = [{'Key': 'Name', 'Value': instance_name}]
     tag_spec = [{'ResourceType': 'instance', 'Tags': tags}]
@@ -160,7 +159,6 @@ def make_instance(ec2_client,
         KeyName=keyname,
         MinCount=1,
         MaxCount=1,
-        UserData=userdata,
         InstanceType=machine_type,
         TagSpecifications=tag_spec)[0]
 
@@ -322,10 +320,6 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id):
     else:
         # 32 bit systems
         machine_type = 'c1.medium'
-    if 'userdata' in target:
-        userdata = target['userdata']
-    else:
-        userdata = ''
     name = 'le-%s'%target['name']
     print(name, end=" ")
     return make_instance(ec2_client,
@@ -334,8 +328,7 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id):
                          KEYNAME,
                          machine_type=machine_type,
                          security_group_id=security_group_id,
-                         subnet_id=subnet_id,
-                         userdata=userdata)
+                         subnet_id=subnet_id)
 
 
 def test_client_process(fab_config, inqueue, outqueue, boulder_url, log_dir):
