@@ -78,74 +78,6 @@ choosing "snapd" in the "System" dropdown menu. (You should select "snapd"
 regardless of your operating system, as our instructions are the same across
 all systems.)
 
-.. _certbot-auto:
-
-Certbot-Auto
-------------
-
-The ``certbot-auto`` wrapper script installs Certbot, obtaining some dependencies
-from your web server OS and putting others in a python virtual environment. You can
-download and run it as follows::
-
-  wget https://dl.eff.org/certbot-auto
-  sudo mv certbot-auto /usr/local/bin/certbot-auto
-  sudo chown root /usr/local/bin/certbot-auto
-  sudo chmod 0755 /usr/local/bin/certbot-auto
-  /usr/local/bin/certbot-auto --help
-
-To remove certbot-auto, just delete it and the files it places under /opt/eff.org, along with any cronjob or systemd timer you may have created.
-
-To check the integrity of the ``certbot-auto`` script,
-you can use these steps::
-
-
-	    user@webserver:~$ wget -N https://dl.eff.org/certbot-auto.asc
-	    user@webserver:~$ gpg2 --keyserver pool.sks-keyservers.net --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-	    user@webserver:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc /usr/local/bin/certbot-auto
-
-
-
-The output of the last command should look something like::
-
-
-	    gpg: Signature made Wed 02 May 2018 05:29:12 AM IST
-	    gpg:                using RSA key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-	    gpg: key 4D17C995CD9775F2 marked as ultimately trusted
-	    gpg: checking the trustdb
-	    gpg: marginals needed: 3  completes needed: 1  trust model: pgp
-	    gpg: depth: 0  valid:   2  signed:   2  trust: 0-, 0q, 0n, 0m, 0f, 2u
-	    gpg: depth: 1  valid:   2  signed:   0  trust: 2-, 0q, 0n, 0m, 0f, 0u
-	    gpg: next trustdb check due at 2027-11-22
-	    gpg: Good signature from "Let's Encrypt Client Team <letsencrypt-client@eff.org>" [ultimate]
-
-
-
-The ``certbot-auto`` command updates to the latest client release automatically.
-Since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
-the same command line flags and arguments. For more information, see
-`Certbot command-line options <https://certbot.eff.org/docs/using.html#command-line-options>`_.
-
-For full command line help, you can type::
-
-  /usr/local/bin/certbot-auto --help all
-
-Problems with Python virtual environment
-----------------------------------------
-
-On a low memory system such as VPS with less than 512MB of RAM, the required dependencies of Certbot will fail to build.
-This can be identified if the pip outputs contains something like ``internal compiler error: Killed (program cc1)``.
-You can workaround this restriction by creating a temporary swapfile::
-
-  user@webserver:~$ sudo fallocate -l 1G /tmp/swapfile
-  user@webserver:~$ sudo chmod 600 /tmp/swapfile
-  user@webserver:~$ sudo mkswap /tmp/swapfile
-  user@webserver:~$ sudo swapon /tmp/swapfile
-
-Disable and remove the swapfile once the virtual environment is constructed::
-
-  user@webserver:~$ sudo swapoff /tmp/swapfile
-  user@webserver:~$ sudo rm /tmp/swapfile
-
 .. _docker-user:
 
 Running with Docker
@@ -302,6 +234,33 @@ They need to be installed separately if you require their functionality.
 OS packaging is an ongoing effort. If you'd like to package
 Certbot for your distribution of choice please have a
 look at the :doc:`packaging`.
+
+.. _certbot-auto:
+
+Certbot-Auto
+------------
+
+We used to have a shell script named ``certbot-auto`` to help people install
+Certbot on UNIX operating systems, however, this script is no longer supported.
+
+Problems with Python virtual environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using ``certbot-auto`` on a low memory system such as VPS with less than
+512MB of RAM, the required dependencies of Certbot may fail to build.  This can
+be identified if the pip outputs contains something like ``internal compiler
+error: Killed (program cc1)``.  You can workaround this restriction by creating
+a temporary swapfile::
+
+  user@webserver:~$ sudo fallocate -l 1G /tmp/swapfile
+  user@webserver:~$ sudo chmod 600 /tmp/swapfile
+  user@webserver:~$ sudo mkswap /tmp/swapfile
+  user@webserver:~$ sudo swapon /tmp/swapfile
+
+Disable and remove the swapfile once the virtual environment is constructed::
+
+  user@webserver:~$ sudo swapoff /tmp/swapfile
+  user@webserver:~$ sudo rm /tmp/swapfile
 
 Installing from source
 ----------------------
