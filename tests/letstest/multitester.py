@@ -147,8 +147,8 @@ def make_instance(ec2_client,
                   keyname,
                   security_group_id,
                   subnet_id,
-                  machine_type='t2.micro',
-                  self_destruct):
+                  self_destruct,
+                  machine_type='t2.micro'):
     """Creates an instance using the given parameters.
 
     If self_destruct is True, the instance will be configured to shutdown after
@@ -341,7 +341,7 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id, sel
                          machine_type=machine_type,
                          security_group_id=security_group_id,
                          subnet_id=subnet_id,
-                         self_destruct)
+                         self_destruct=self_destruct)
 
 
 def test_client_process(fab_config, inqueue, outqueue, boulder_url, log_dir):
@@ -507,7 +507,7 @@ def main():
                                        #machine_type='t2.medium',
                                        security_group_id=security_group_id,
                                        subnet_id=subnet_id,
-                                       self_destruct)
+                                       self_destruct=self_destruct)
 
     instances = []
     try:
