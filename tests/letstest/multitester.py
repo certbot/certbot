@@ -159,15 +159,15 @@ def make_instance(ec2_client,
     tags = [{'Key': 'Name', 'Value': instance_name}]
     tag_spec = [{'ResourceType': 'instance', 'Tags': tags}]
     kwargs = {
-        BlockDeviceMappings=block_device_mappings,
-        ImageId=ami_id,
-        SecurityGroupIds=[security_group_id],
-        SubnetId=subnet_id,
-        KeyName=keyname,
-        MinCount=1,
-        MaxCount=1,
-        InstanceType=machine_type,
-        TagSpecifications=tag_spec
+        'BlockDeviceMappings': block_device_mappings,
+        'ImageId': ami_id,
+        'SecurityGroupIds': [security_group_id],
+        'SubnetId': subnet_id,
+        'KeyName': keyname,
+        'MinCount': 1,
+        'MaxCount': 1,
+        'InstanceType': machine_type,
+        'TagSpecifications': tag_spec
     }
     if self_destruct:
             kwargs['InstanceInitiatedShutdownBehavior'] = 'terminate'
