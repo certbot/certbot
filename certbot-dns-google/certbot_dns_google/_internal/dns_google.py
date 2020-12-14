@@ -251,7 +251,7 @@ class _GoogleClient(object):
                         "requesting a wildcard certificate, this might not work.")
             logger.debug("Error was:", exc_info=True)
         else:
-            if response and len(response["rrsets"]) != 0:
+            if response and response["rrsets"]:
                 return response["rrsets"][0]["rrdatas"]
         return None
 
