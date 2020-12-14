@@ -147,11 +147,18 @@ def make_instance(ec2_client,
                   keyname,
                   security_group_id,
                   subnet_id,
-                  machine_type='t2.micro'):
+                  machine_type='t2.micro',
+                  self_destruct):
+    """Creates an instance using the given parameters.
+
+    If self_destruct is True, the instance will be configured to shutdown after
+    1 hour and to terminate itself on shutdown.
+
+    """
     block_device_mappings = _get_block_device_mappings(ec2_client, ami_id)
     tags = [{'Key': 'Name', 'Value': instance_name}]
     tag_spec = [{'ResourceType': 'instance', 'Tags': tags}]
-    return ec2_client.create_instances(
+    kwargs = {
         BlockDeviceMappings=block_device_mappings,
         ImageId=ami_id,
         SecurityGroupIds=[security_group_id],
@@ -160,7 +167,12 @@ def make_instance(ec2_client,
         MinCount=1,
         MaxCount=1,
         InstanceType=machine_type,
-        TagSpecifications=tag_spec)[0]
+        TagSpecifications=tag_spec
+    }
+    if self_destruct:
+            kwargs['InstanceInitiatedShutdownBehavior'] = 'terminate'
+            kwargs['UserData'] = '#!/bin/bash\nshutdown -P +60\n'
+    return ec2_client.create_instances(**kwargs)[0]
 
 def _get_block_device_mappings(ec2_client, ami_id):
     """Returns the list of block device mappings to ensure cleanup.
@@ -311,7 +323,7 @@ def grab_certbot_log(cxn):
         'cat ./certbot.log; else echo "[nolocallog]"; fi\'')
 
 
-def create_client_instance(ec2_client, target, security_group_id, subnet_id):
+def create_client_instance(ec2_client, target, security_group_id, subnet_id, self_destruct):
     """Create a single client instance for running tests."""
     if 'machine_type' in target:
         machine_type = target['machine_type']
@@ -328,7 +340,8 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id):
                          KEYNAME,
                          machine_type=machine_type,
                          security_group_id=security_group_id,
-                         subnet_id=subnet_id)
+                         subnet_id=subnet_id,
+                         self_destruct)
 
 
 def test_client_process(fab_config, inqueue, outqueue, boulder_url, log_dir):
@@ -483,6 +496,9 @@ def main():
         boulder_preexists = True
     else:
         print("Can't find a boulder server, starting one...")
+        # If we want to kill boulder on shutdown, have it self-destruct in case
+        # cleanup fails.
+        self_destruct = cl_args.killboulder
         boulder_server = make_instance(ec2_client,
                                        'le-boulderserver',
                                        BOULDER_AMI,
@@ -490,16 +506,20 @@ def main():
                                        machine_type='t2.micro',
                                        #machine_type='t2.medium',
                                        security_group_id=security_group_id,
-                                       subnet_id=subnet_id)
+                                       subnet_id=subnet_id,
+                                       self_destruct)
 
     instances = []
     try:
         if not cl_args.boulderonly:
             print("Creating instances: ", end="")
+            # If we want to preserve instances, do not have them self-destruct.
+            self_destruct = not cl_args.saveinstances
             for target in targetlist:
                 instances.append(
                     create_client_instance(ec2_client, target,
-                                           security_group_id, subnet_id)
+                                           security_group_id, subnet_id,
+                                           self_destruct)
                 )
             print()
 
