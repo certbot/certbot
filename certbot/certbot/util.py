@@ -441,6 +441,11 @@ def safe_email(email):
 
 class DeprecatedArgumentAction(argparse.Action):
     """Action to log a warning when an argument is used."""
+    def __init__(self, option_strings, dest, **kwargs):
+         dest = argparse.SUPPRESS
+         super(DeprecatedArgumentAction, self).__init__(
+             option_strings, dest, **kwargs)
+
     def __call__(self, unused1, unused2, unused3, option_string=None):
         logger.warning("Use of %s is deprecated.", option_string)
 

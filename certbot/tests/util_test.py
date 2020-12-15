@@ -343,6 +343,24 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         from certbot.util import add_deprecated_argument
         add_deprecated_argument(self.parser.add_argument, argument_name, nargs)
 
+    def test_no_dest_no_args(self):
+        self._call("--unset-option", 0)
+        self._call("--set-option", 0)
+        # We capture logging calls to avoid generating unnecessary output.
+        with mock.patch("certbot.util.logger.warning") as mock_warn:
+            args = self.parser.parse_args(["--set-option"])
+        self.assertNotIn("unset_option", args)
+        self.assertNotIn("set_option", args)
+
+    def test_no_dest_with_args(self):
+        self._call("--unset-option", 1)
+        self._call("--set-option", 1)
+        # We capture logging calls to avoid generating unnecessary output.
+        with mock.patch("certbot.util.logger.warning") as mock_warn:
+            args = self.parser.parse_args(["--set-option", "some-value"])
+        self.assertNotIn("unset_option", args)
+        self.assertNotIn("set_option", args)
+
     def test_warning_no_arg(self):
         self._call("--old-option", 0)
         with mock.patch("certbot.util.logger.warning") as mock_warn:
