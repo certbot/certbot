@@ -1382,6 +1382,7 @@ def main(cli_args=None):
 
     plugins = plugins_disco.PluginsRegistry.find_all()
     logger.debug("certbot version: %s", certbot.__version__)
+    logger.debug("Location of certbot entry point: %s", sys.argv[0])
     # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
     logger.debug("Arguments: %r", cli_args)
     logger.debug("Discovered plugins: %r", plugins)
