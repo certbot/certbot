@@ -153,18 +153,27 @@ def _restore_plugin_configs(config, renewalparams):
         plugin_prefixes.append(renewalparams["installer"])
 
     for plugin_prefix in set(plugin_prefixes):
-        plugin_prefix = plugin_prefix.replace('-', '_')
+        plugin_prefix = plugin_prefix.replace('-', '_') + '_'
         for config_item, config_value in six.iteritems(renewalparams):
-            if config_item.startswith(plugin_prefix + "_") and not cli.set_by_cli(config_item):
-                # Values None, True, and False need to be treated specially,
-                # As their types aren't handled correctly by configobj
-                if config_value in ("None", "True", "False"):
-                    # bool("False") == True
-                    # pylint: disable=eval-used
-                    setattr(config, config_item, eval(config_value))
-                else:
-                    cast = cli.argparse_type(config_item)
-                    setattr(config, config_item, cast(config_value))
+            # As is consistent with our strategy of explicitly listing the
+            # configuration items we allow and dropping all others, if the
+            # config item starts with the plugin name but is not part of the
+            # current Certbot configuration, the value is dropped. This results
+            # in plugin flags that have been deprecated and are now a noop or
+            # flags that have been removed entirely being dropped from the
+            # config.
+            if config_item.startswith(plugin_prefix) and config_item in config:
+                if not cli.set_by_cli(config_item):
+                    # Values None, True, and False need to be treated
+                    # specially, As their types aren't handled correctly by
+                    # configobj
+                    if config_value in ("None", "True", "False"):
+                        # bool("False") == True
+                        # pylint: disable=eval-used
+                        setattr(config, config_item, eval(config_value))
+                    else:
+                        cast = cli.argparse_type(config_item)
+                        setattr(config, config_item, cast(config_value))
 
 
 def restore_required_config_elements(config, renewalparams):
