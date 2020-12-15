@@ -769,7 +769,7 @@ def update_account(config, unused_plugins):
     acc.regr = acc.regr.update(uri=prev_regr_uri)
     account_storage.update_regr(acc, cb_client.acme)
 
-    if config.email is None:
+    if not config.email:
         display_util.notify("Any contact information associated "
                             "with this account has been removed.")
     else:
