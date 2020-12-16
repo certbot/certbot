@@ -44,17 +44,6 @@ supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/constants.py>`_
 modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin.
 
-
-Additional integrity verification of certbot-auto script can be done by verifying its digital signature.
-This requires a local installation of gpg2, which comes packaged in many Linux distributions under name gnupg or gnupg2.
-
-
-Installing with ``certbot-auto`` requires 512MB of RAM in order to build some
-of the dependencies. Installing from pre-built OS packages avoids this
-requirement. You can also temporarily set a swap file. See "Problems with
-Python virtual environment" below for details.
-
-
 Alternate installation methods
 ================================
 
