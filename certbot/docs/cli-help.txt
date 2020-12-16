@@ -118,12 +118,12 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.9.0 (certbot(-auto);
-                        OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
-                        (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
-                        The flags encoded in the user agent are: --duplicate,
-                        --force-renew, --allow-subset-of-names, -n, and
-                        whether any hooks are set.
+                        "". (default: CertbotACMEClient/1.10.1
+                        (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
+                        Installer/YYY (SUBCOMMAND; flags: FLAGS)
+                        Py/major.minor.patchlevel). The flags encoded in the
+                        user agent are: --duplicate, --force-renew, --allow-
+                        subset-of-names, -n, and whether any hooks are set.
   --user-agent-comment USER_AGENT_COMMENT
                         Add a comment to the default user agent string. May be
                         used when repackaging Certbot or calling it from
@@ -188,6 +188,12 @@ security:
   Security parameters & server settings
 
   --rsa-key-size N      Size of the RSA key. (default: 2048)
+  --key-type {rsa,ecdsa}
+                        Type of generated private key(Only *ONE* per
+                        invocation can be provided at this time) (default:
+                        rsa)
+  --elliptic-curve N    The SECG elliptic curve name to use. Please see RFC
+                        8446 for supported values. (default: secp256r1)
   --must-staple         Adds the OCSP Must Staple extension to the
                         certificate. Autoconfigures OCSP Stapling for
                         supported setups (Apache version >= 2.3.3 ). (default:
@@ -688,8 +694,6 @@ manual:
   --manual-cleanup-hook MANUAL_CLEANUP_HOOK
                         Path or command to execute for the cleanup script
                         (default: None)
-  --manual-public-ip-logging-ok
-                        Automatically allows public IP logging (default: Ask)
 
 nginx:
   Nginx Web Server plugin

@@ -179,10 +179,9 @@ If you'd like to obtain a wildcard certificate from Let's Encrypt or run
 Certbot's DNS plugins.
 
 These plugins are not included in a default Certbot installation and must be
-installed separately. While the DNS plugins cannot currently be used with
-``certbot-auto``, they are available in many OS package managers, as Docker
-images, and as snaps. Visit https://certbot.eff.org to learn the best way to use
-the DNS plugins on your system.
+installed separately. They are available in many OS package managers, as Docker
+images, and as snaps. Visit https://certbot.eff.org to learn the best way to
+use the DNS plugins on your system.
 
 Once installed, you can find documentation on how to use each plugin at:
 
@@ -319,6 +318,7 @@ This returns information in the following format::
       Domains: example.com, www.example.com
       Expiry Date: 2017-02-19 19:53:00+00:00 (VALID: 30 days)
       Certificate Path: /etc/letsencrypt/live/example.com/fullchain.pem
+      Key Type: RSA
       Private Key Path: /etc/letsencrypt/live/example.com/privkey.pem
 
 ``Certificate Name`` shows the name of the certificate. Pass this name
@@ -345,7 +345,6 @@ The ``--force-renewal``, ``--duplicate``, and ``--expand`` options
 control Certbot's behavior when re-creating
 a certificate with the same name as an existing certificate.
 If you don't specify a requested behavior, Certbot may ask you what you intended.
-
 
 ``--force-renewal`` tells Certbot to request a new certificate
 with the same domains as an existing certificate. Each domain
@@ -380,7 +379,6 @@ If you prefer, you can specify the domains individually like this:
 Consider using ``--cert-name`` instead of ``--expand``, as it gives more control
 over which certificate is modified and it lets you remove domains as well as adding them.
 
-
 ``--allow-subset-of-names`` tells Certbot to continue with certificate generation if
 only some of the specified domain authorizations can be obtained. This may
 be useful if some domains specified in a certificate no longer point at this
@@ -410,6 +408,68 @@ replace that set entirely::
 
   certbot certonly --cert-name example.com -d example.org,www.example.org
 
+
+Using ECDSA keys
+----------------
+
+As of version 1.10, Certbot supports two types of private key algorithms:
+``rsa`` and ``ecdsa``. The type of key used by Certbot can be controlled
+through the ``--key-type`` option. You can also use the ``--elliptic-curve``
+option to control the curve used in ECDSA certificates.
+
+.. warning:: If you obtain certificates using ECDSA keys, you should be careful
+   not to downgrade your Certbot installation since ECDSA keys are not
+   supported by older versions of Certbot. Downgrades like this are possible if
+   you switch from something like the snaps or certbot-auto to packages
+   provided by your operating system which often lag behind.
+
+Changing existing certificates from RSA to ECDSA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Unless you are aware that you need to support very old HTTPS clients that are
+not supported by most sites, you can safely just transition your site to use
+ECDSA keys instead of RSA keys. To accomplish this if you have existing
+certificates managed by Certbot, you may freely change the certificate to a new
+private key.
+
+If you want to use ECDSA keys for all certificates in the future, you can
+simply add the following line to Certbot's :ref:`configuration file <config-file>`
+
+.. code-block:: ini
+
+  key-type = ecdsa
+
+After this option is set, newly obtained certificates will use ECDSA keys. This
+includes certificates managed by Certbot that previously used RSA keys.
+
+If you want to change a single certificate to use ECDSA keys, you'll need to
+issue a new Certbot command setting ``--key-type ecdsa`` on the command line
+like
+
+.. code-block:: shell
+
+  certbot renew --key-type ecdsa --cert-name example.com --force-renewal
+
+Obtaining ECDSA certificates in addition to RSA certificates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When Certbot configures the certificates it obtains with Apache or Nginx, all
+HTTPS clients that we try to support can use certificates with ECDSA keys. If,
+however, you are aware of having a specific need to support very old TLS
+clients, you may want to obtain both ECDSA and RSA certificates for the same
+domains. Certbot can only configure Apache or Nginx to use a single
+certificate, however, you could manually configure your software to use the
+different certificates depending on your needs.
+
+When obtaining both ECDSA and RSA certificates for the same domains with
+Certbot, we recommend using the ``--cert-name`` option to give your
+certificates names so that you can easily identify them. For instance, you may
+want to append "ecdsa" to the name of your ECDSA certificate by using a command
+like
+
+.. code-block:: shell
+
+  certbot certonly --key-type ecdsa --cert-name example.com-ecdsa
 
 Revoking certificates
 ---------------------

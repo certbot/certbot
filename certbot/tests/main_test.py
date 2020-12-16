@@ -49,14 +49,51 @@ RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
 SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 
 
-class TestHandleIdenticalCerts(unittest.TestCase):
-    """Test for certbot._internal.main._handle_identical_cert_request"""
-    def test_handle_identical_cert_request_pending(self):
+class TestHandleCerts(unittest.TestCase):
+    """Test for certbot._internal.main._handle_* methods"""
+    @mock.patch("certbot._internal.main._handle_unexpected_key_type_migration")
+    def test_handle_identical_cert_request_pending(self, mock_handle_migration):
         mock_lineage = mock.Mock()
         mock_lineage.ensure_deployed.return_value = False
         # pylint: disable=protected-access
         ret = main._handle_identical_cert_request(mock.Mock(), mock_lineage)
         self.assertEqual(ret, ("reinstall", mock_lineage))
+        self.assertTrue(mock_handle_migration.called)
+
+    @mock.patch("certbot._internal.main._handle_unexpected_key_type_migration")
+    def test_handle_subset_cert_request(self, mock_handle_migration):
+        mock_config = mock.Mock()
+        mock_config.expand = True
+        mock_lineage = mock.Mock()
+        mock_lineage.names.return_value = ["dummy1", "dummy2"]
+        ret = main._handle_subset_cert_request(mock_config, ["dummy1"], mock_lineage)
+        self.assertEqual(ret, ("renew", mock_lineage))
+        self.assertTrue(mock_handle_migration.called)
+
+    @mock.patch("certbot._internal.main.cli.set_by_cli")
+    def test_handle_unexpected_key_type_migration(self, mock_set):
+        config = mock.Mock()
+        config.key_type = "rsa"
+        cert = mock.Mock()
+        cert.private_key_type = "ecdsa"
+
+        mock_set.return_value = True
+        main._handle_unexpected_key_type_migration(config, cert)
+
+        mock_set.return_value = False
+        with self.assertRaises(errors.Error) as raised:
+            main._handle_unexpected_key_type_migration(config, cert)
+        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
+
+        mock_set.side_effect = lambda var: var != "certname"
+        with self.assertRaises(errors.Error) as raised:
+            main._handle_unexpected_key_type_migration(config, cert)
+        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
+
+        mock_set.side_effect = lambda var: var != "key_type"
+        with self.assertRaises(errors.Error) as raised:
+            main._handle_unexpected_key_type_migration(config, cert)
+        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
 
 
 class RunTest(test_util.ConfigTestCase):
@@ -163,31 +200,35 @@ class CertonlyTest(unittest.TestCase):
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.cert_manager.domains_for_certname')
     @mock.patch('certbot._internal.renewal.renew_cert')
+    @mock.patch('certbot._internal.main._handle_unexpected_key_type_migration')
     @mock.patch('certbot._internal.main._report_new_cert')
     def test_find_lineage_for_domains_and_certname(self, mock_report_cert,
-        mock_renew_cert, mock_domains, mock_lineage):
+        mock_handle_type, mock_renew_cert, mock_domains, mock_lineage):
         domains = ['example.com', 'test.org']
         mock_domains.return_value = domains
         mock_lineage.names.return_value = domains
         self._call(('certonly --webroot -d example.com -d test.org '
             '--cert-name example.com').split())
-        self.assertTrue(mock_lineage.call_count == 1)
-        self.assertTrue(mock_domains.call_count == 1)
-        self.assertTrue(mock_renew_cert.call_count == 1)
-        self.assertTrue(mock_report_cert.call_count == 1)
+
+        self.assertEqual(mock_lineage.call_count, 1)
+        self.assertEqual(mock_domains.call_count, 1)
+        self.assertEqual(mock_renew_cert.call_count, 1)
+        self.assertEqual(mock_report_cert.call_count, 1)
+        self.assertEqual(mock_handle_type.call_count, 1)
 
         # user confirms updating lineage with new domains
         self._call(('certonly --webroot -d example.com -d test.com '
             '--cert-name example.com').split())
-        self.assertTrue(mock_lineage.call_count == 2)
-        self.assertTrue(mock_domains.call_count == 2)
-        self.assertTrue(mock_renew_cert.call_count == 2)
-        self.assertTrue(mock_report_cert.call_count == 2)
+        self.assertEqual(mock_lineage.call_count, 2)
+        self.assertEqual(mock_domains.call_count, 2)
+        self.assertEqual(mock_renew_cert.call_count, 2)
+        self.assertEqual(mock_report_cert.call_count, 2)
+        self.assertEqual(mock_handle_type.call_count, 2)
 
         # error in _ask_user_to_confirm_new_names
         self.mock_get_utility().yesno.return_value = False
         self.assertRaises(errors.ConfigurationError, self._call,
-            ('certonly --webroot -d example.com -d test.com --cert-name example.com').split())
+            'certonly --webroot -d example.com -d test.com --cert-name example.com'.split())
 
     @mock.patch('certbot._internal.cert_manager.domains_for_certname')
     @mock.patch('certbot.display.ops.choose_names')
@@ -200,14 +241,15 @@ class CertonlyTest(unittest.TestCase):
         # no lineage with this name but we specified domains so create a new cert
         self._call(('certonly --webroot -d example.com -d test.com '
             '--cert-name example.com').split())
-        self.assertTrue(mock_lineage.call_count == 1)
-        self.assertTrue(mock_report_cert.call_count == 1)
+        self.assertEqual(mock_lineage.call_count, 1)
+        self.assertEqual(mock_report_cert.call_count, 1)
 
         # no lineage with this name and we didn't give domains
         mock_choose_names.return_value = ["somename"]
         mock_domains_for_certname.return_value = None
         self._call(('certonly --webroot --cert-name example.com').split())
-        self.assertTrue(mock_choose_names.called)
+        self.assertIs(mock_choose_names.called, True)
+
 
 class FindDomainsOrCertnameTest(unittest.TestCase):
     """Tests for certbot._internal.main._find_domains_or_certname."""
@@ -718,7 +760,7 @@ class MainTest(test_util.ConfigTestCase):
         # This needed two calls to find_all(), which we're avoiding for now
         # because of possible side effects:
         # https://github.com/letsencrypt/letsencrypt/commit/51ed2b681f87b1eb29088dd48718a54f401e4855
-        #with mock.patch('certbot._internal.cli.plugins_testable') as plugins:
+        # with mock.patch('certbot._internal.cli.plugins_testable') as plugins:
         #    plugins.return_value = {"apache": True, "nginx": True}
         #    ret, _, _, _ = self._call(args)
         #    self.assertTrue("Too many flags setting" in ret)
@@ -981,6 +1023,7 @@ class MainTest(test_util.ConfigTestCase):
         mock_lineage.should_autorenew.return_value = due_for_renewal
         mock_lineage.has_pending_deployment.return_value = False
         mock_lineage.names.return_value = ['isnot.org']
+        mock_lineage.private_key_type = 'RSA'
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()

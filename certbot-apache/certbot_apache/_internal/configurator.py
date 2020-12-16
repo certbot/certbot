@@ -327,6 +327,9 @@ class ApacheConfigurator(common.Installer):
         if self.version < (2, 2):
             raise errors.NotSupportedError(
                 "Apache Version {0} not supported.".format(str(self.version)))
+        elif self.version < (2, 4):
+            logger.warning('Support for Apache 2.2 is deprecated and will be removed in a '
+                           'future release.')
 
         # Recover from previous crash before Augeas initialization to have the
         # correct parse tree from the get go.

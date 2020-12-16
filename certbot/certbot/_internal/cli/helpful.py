@@ -2,8 +2,10 @@
 from __future__ import print_function
 import argparse
 import copy
+import functools
 import glob
 import sys
+
 import configargparse
 import six
 import zope.component
@@ -230,6 +232,10 @@ class HelpfulArgumentParser(object):
             raise errors.Error(
                 "Parameters --hsts and --auto-hsts cannot be used simultaneously.")
 
+        if isinstance(parsed_args.key_type, list) and len(parsed_args.key_type) > 1:
+            raise errors.Error(
+                "Only *one* --key-type type may be provided at this time.")
+
         return parsed_args
 
     def set_test_server(self, parsed_args):
@@ -352,6 +358,18 @@ class HelpfulArgumentParser(object):
         :param dict **kwargs: various argparse settings for this argument
 
         """
+        action = kwargs.get("action")
+        if action is util.DeprecatedArgumentAction:
+            # If the argument is deprecated through
+            # certbot.util.add_deprecated_argument, it is not shown in the help
+            # output and any value given to the argument is thrown away during
+            # argument parsing. Because of this, we handle this case early
+            # skipping putting the argument in different help topics and
+            # handling default detection since these actions aren't needed and
+            # can cause bugs like
+            # https://github.com/certbot/certbot/issues/8495.
+            self.parser.add_argument(*args, **kwargs)
+            return
 
         if isinstance(topics, list):
             # if this flag can be listed in multiple sections, try to pick the one
@@ -406,8 +424,22 @@ class HelpfulArgumentParser(object):
         :param int nargs: Number of arguments the option takes.
 
         """
-        util.add_deprecated_argument(
-            self.parser.add_argument, argument_name, num_args)
+        # certbot.util.add_deprecated_argument expects the normal add_argument
+        # interface provided by argparse. This is what is given including when
+        # certbot.util.add_deprecated_argument is used by plugins, however, in
+        # that case the first argument to certbot.util.add_deprecated_argument
+        # is certbot._internal.cli.HelpfulArgumentGroup.add_argument which
+        # internally calls the add method of this class.
+        #
+        # The difference between the add method of this class and the standard
+        # argparse add_argument method caused a bug in the past (see
+        # https://github.com/certbot/certbot/issues/8495) so we use the same
+        # code path here for consistency and to ensure it works. To do that, we
+        # wrap the add method in a similar way to
+        # HelpfulArgumentGroup.add_argument by providing a help topic (which in
+        # this case is set to None).
+        add_func = functools.partial(self.add, None)
+        util.add_deprecated_argument(add_func, argument_name, num_args)
 
     def add_group(self, topic, verbs=(), **kwargs):
         """Create a new argument group.

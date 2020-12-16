@@ -1,3 +1,4 @@
+"""Module to handle the context of nginx integration tests."""
 import os
 import subprocess
 

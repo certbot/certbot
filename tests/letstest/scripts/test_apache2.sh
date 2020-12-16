@@ -64,12 +64,6 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
-  # RHEL/CentOS 6 will need a special treatment, so we need to detect that environment
-  # Enable the SCL Python 3.6 installed by letsencrypt-auto bootstrap
-  PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
-fi
-
 tools/venv3.py -e acme[dev] -e certbot[dev,docs] -e certbot-apache
 
 sudo "venv3/bin/certbot" -v --debug --text --agree-tos \

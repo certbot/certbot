@@ -10,7 +10,9 @@ from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
 
 # Modules in theses packages can import the os module.
-WHITELIST_PACKAGES = ['acme', 'certbot_compatibility_test', 'lock_test']
+WHITELIST_PACKAGES = [
+    'acme', 'certbot_integration_tests', 'certbot_compatibility_test', 'lock_test'
+]
 
 
 class ForbidStandardOsModule(BaseChecker):
@@ -25,8 +27,8 @@ class ForbidStandardOsModule(BaseChecker):
         'E5001': (
             'Forbidden use of os module, certbot.compat.os must be used instead',
             'os-module-forbidden',
-            'Some methods from the standard os module cannot be used for security reasons on Windows: '
-            'the safe wrapper certbot.compat.os must be used instead in Certbot.'
+            'Some methods from the standard os module cannot be used for security reasons on '
+            'Windows: the safe wrapper certbot.compat.os must be used instead in Certbot.'
         )
     }
     priority = -1

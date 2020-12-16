@@ -1360,10 +1360,10 @@ class MultipleVhostsTest(util.ApacheTest):
 
             # And the actual returned values
             self.assertEqual(len(vhs), 1)
-            self.assertTrue(vhs[0].name == "certbot.demo")
+            self.assertEqual(vhs[0].name, "certbot.demo")
             self.assertTrue(vhs[0].ssl)
 
-            self.assertFalse(vhs[0] == self.vh_truth[3])
+            self.assertNotEqual(vhs[0], self.vh_truth[3])
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.make_vhost_ssl")
     def test_choose_vhosts_wildcard_no_ssl(self, mock_makessl):
@@ -1474,10 +1474,10 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.aug.match = mock_match
         vhs = self.config.get_virtual_hosts()
         self.assertEqual(len(vhs), 2)
-        self.assertTrue(vhs[0] == self.vh_truth[1])
+        self.assertEqual(vhs[0], self.vh_truth[1])
         # mock_vhost should have replaced the vh_truth[0], because its filepath
         # isn't a symlink
-        self.assertTrue(vhs[1] == mock_vhost)
+        self.assertEqual(vhs[1], mock_vhost)
 
 
 class AugeasVhostsTest(util.ApacheTest):

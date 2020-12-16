@@ -1,3 +1,13 @@
+# type: ignore
+# pylint: disable=no-member
+# Many attributes of dnspython are now dynamically defined which causes both
+# mypy and pylint to error about accessing attributes they think do not exist.
+# This is the case even in up-to-date versions of mypy and pylint which as of
+# writing this are 0.790 and 2.6.0 respectively. This problem may be fixed in
+# dnspython 2.1.0. See https://github.com/rthalley/dnspython/issues/598. For
+# now, let's disable these checks. This is done at the very top of the file
+# like this because "type: ignore" must be the first line in the file to be
+# respected by mypy.
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
 import logging
 

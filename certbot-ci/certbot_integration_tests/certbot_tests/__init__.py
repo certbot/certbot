@@ -1,3 +1,4 @@
+# pylint: disable=missing-module-docstring
 import pytest
 
 # Custom assertions defined in the following package need to be registered to be properly
