@@ -314,7 +314,7 @@ the ``certificates`` subcommand:
 
 This returns information in the following format::
 
-  Found the following certs:
+  Found the following certificates:
     Certificate Name: example.com
       Domains: example.com, www.example.com
       Expiry Date: 2017-02-19 19:53:00+00:00 (VALID: 30 days)
