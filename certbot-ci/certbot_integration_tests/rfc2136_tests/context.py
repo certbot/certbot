@@ -1,7 +1,10 @@
-from contextlib import contextmanager
-from pytest import skip
-from pkg_resources import resource_filename
+"""Module to handle the context of RFC2136 integration tests."""
+
 import tempfile
+from contextlib import contextmanager
+
+from pkg_resources import resource_filename
+from pytest import skip
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import certbot_call
@@ -33,7 +36,6 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
 
     @contextmanager
     def rfc2136_credentials(self, label='default'):
-        # type: (str) -> str
         """
         Produces the contents of a certbot-dns-rfc2136 credentials file.
         :param str label: which RFC2136 credential to use
@@ -52,10 +54,10 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
             )
 
         with tempfile.NamedTemporaryFile('w+', prefix='rfc2136-creds-{}'.format(label),
-                                         suffix='.ini', dir=self.workspace) as f:
-            f.write(contents)
-            f.flush()
-            yield f.name
+                                         suffix='.ini', dir=self.workspace) as fp:
+            fp.write(contents)
+            fp.flush()
+            yield fp.name
 
     def skip_if_no_bind9_server(self):
         """Skips the test if there was no RFC2136-capable DNS server configured
