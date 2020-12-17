@@ -183,9 +183,9 @@ class GoogleClientTest(unittest.TestCase):
             mock_rrs.return_value = {"rrdatas": ["sample-txt-contents"], "ttl": self.record_ttl}
             client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
             self.assertTrue(changes.create.called)
-            delRecord = changes.create.call_args_list[0][1]["body"]["deletions"][0]
-            self.assertTrue("sample-txt-contents" in delRecord["rrdatas"])
-            self.assertEqual(self.record_ttl, delRecord["ttl"])
+            deletions = changes.create.call_args_list[0][1]["body"]["deletions"][0]
+            self.assertTrue("sample-txt-contents" in deletions["rrdatas"])
+            self.assertEqual(self.record_ttl, deletions["ttl"])
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -200,9 +200,9 @@ class GoogleClientTest(unittest.TestCase):
             mock_rrs.return_value = {"rrdatas": ["sample-txt-contents"], "ttl": custom_ttl}
             client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
             self.assertTrue(changes.create.called)
-            delRecord = changes.create.call_args_list[0][1]["body"]["deletions"][0]
-            self.assertTrue("sample-txt-contents" in delRecord["rrdatas"])
-            self.assertEqual(custom_ttl, delRecord["ttl"]) #otherwise HTTP 412
+            deletions = changes.create.call_args_list[0][1]["body"]["deletions"][0]
+            self.assertTrue("sample-txt-contents" in deletions["rrdatas"])
+            self.assertEqual(custom_ttl, deletions["ttl"]) #otherwise HTTP 412
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -246,7 +246,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_del_txt_record(self, unused_credential_mock):
+    def test_del_txt_record_multi_rrdatas(self, unused_credential_mock):
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
         # pylint: disable=line-too-long
         mock_get_rrs = "certbot_dns_google._internal.dns_google._GoogleClient.get_existing_txt_rrset"
@@ -273,6 +273,35 @@ class GoogleClientTest(unittest.TestCase):
                     "type": "TXT",
                     "name": "_acme-challenge.example.org.",
                     "rrdatas": ["\"sample-txt-contents\"", ],
+                    "ttl": self.record_ttl,
+                },
+            ],
+        }
+
+        changes.create.assert_called_with(body=expected_body,
+                                               managedZone=self.zone,
+                                               project=PROJECT_ID)
+
+    @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
+    @mock.patch('certbot_dns_google._internal.dns_google.open',
+                mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
+    def test_del_txt_record_single_rrdatas(self, unused_credential_mock):
+        client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
+        # pylint: disable=line-too-long
+        mock_get_rrs = "certbot_dns_google._internal.dns_google._GoogleClient.get_existing_txt_rrset"
+        with mock.patch(mock_get_rrs) as mock_rrs:
+            mock_rrs.return_value = {"rrdatas": ["\"example-txt-contents\""], "ttl": self.record_ttl}
+            client.del_txt_record(DOMAIN, "_acme-challenge.example.org",
+                                "example-txt-contents", self.record_ttl)
+
+        expected_body = {
+            "kind": "dns#change",
+            "deletions": [
+                {
+                    "kind": "dns#resourceRecordSet",
+                    "type": "TXT",
+                    "name": "_acme-challenge.example.org.",
+                    "rrdatas": ["\"example-txt-contents\""],
                     "ttl": self.record_ttl,
                 },
             ],
