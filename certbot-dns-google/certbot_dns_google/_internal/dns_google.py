@@ -237,7 +237,7 @@ class _GoogleClient(object):
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
 
         :returns: The resourceRecordSet corresponding to `record_name` or None
-        :rtype: `resourceRecordSet <https://cloud.google.com/dns/docs/reference/v1/resourceRecordSets#resource>` or `None`
+        :rtype: `resourceRecordSet <https://cloud.google.com/dns/docs/reference/v1/resourceRecordSets#resource>` or `None` # pylint: disable=line-too-long
 
         """
         rrs_request = self.dns.resourceRecordSets()
