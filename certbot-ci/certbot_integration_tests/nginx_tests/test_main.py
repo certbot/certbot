@@ -2,6 +2,7 @@
 import os
 import ssl
 
+from typing import List
 import pytest
 
 from certbot_integration_tests.nginx_tests import context as nginx_context
@@ -32,7 +33,7 @@ def test_context(request):
     ], {'default_server': False}),
 ], indirect=['context'])
 def test_certificate_deployment(certname_pattern, params, context):
-    # type: (str, list, nginx_context.IntegrationTestsContext) -> None
+    # type: (str, List[str], nginx_context.IntegrationTestsContext) -> None
     """
     Test various scenarios to deploy a certificate to nginx using certbot.
     """
