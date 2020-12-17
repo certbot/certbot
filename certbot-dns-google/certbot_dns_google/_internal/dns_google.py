@@ -236,8 +236,8 @@ class _GoogleClient(object):
         :param str zone_id: The ID of the managed zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
 
-        :returns: The TXT record that corresponds to `record_name` or None
-        :rtype: `object` or `None`
+        :returns: The resourceRecordSet corresponding to `record_name` or None
+        :rtype: `resourceRecordSet <https://cloud.google.com/dns/docs/reference/v1/resourceRecordSets#resource>` or `None`
 
         """
         rrs_request = self.dns.resourceRecordSets()
