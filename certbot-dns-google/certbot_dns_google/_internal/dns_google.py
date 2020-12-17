@@ -118,7 +118,7 @@ class _GoogleClient(object):
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
         if record_contents is None:
-            record_contents = {"rrdatas": [], "ttl": record_ttl}
+            record_contents = {"rrdatas": []}
         add_records = record_contents["rrdatas"][:]
 
         if "\""+record_content+"\"" in record_contents["rrdatas"]:
