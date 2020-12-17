@@ -13,9 +13,9 @@ import sys
 import tempfile
 import time
 
+from typing import List
 import requests
 
-from acme.magic_typing import List
 from certbot_integration_tests.utils import misc
 from certbot_integration_tests.utils import pebble_artifacts
 from certbot_integration_tests.utils import proxy
@@ -49,7 +49,7 @@ class ACMEServer(object):
         self._acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
         self._proxy = http_proxy
         self._workspace = tempfile.mkdtemp()
-        self._processes = []  # type: List
+        self._processes = []  # type: List[subprocess.Popen]
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w')
         self._dns_server = dns_server
 
