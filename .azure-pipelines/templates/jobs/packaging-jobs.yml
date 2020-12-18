@@ -4,7 +4,7 @@ jobs:
       vmImage: ubuntu-18.04
     timeoutInMinutes: 0
     variables:
-        ARCHS: amd64 arm64 armhf
+        ARCHS: amd64
     steps:
       - script: |
           set -e
