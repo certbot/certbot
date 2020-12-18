@@ -5,7 +5,7 @@ subsequently removing, TXT records using the Cloudflare API.
 
 .. note::
    The plugin is not installed by default. It can be installed by heading to
-   `certbot.eff.org <https://certbot.eff.org/>`_, choosing your system and
+   `certbot.eff.org <https://certbot.eff.org/instructions#wildcard/>`_, choosing your system and
    selecting the Wildcard tab.
 
 Named Arguments
