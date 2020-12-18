@@ -118,6 +118,9 @@ class _GoogleClient(object):
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
         if record_contents is None:
+        # If it wasn't possible to fetch the records at this label (missing .list permission),
+        # assume there aren't any (#5678). If there are actually records here, this will fail
+        # with HTTP 409/412 API errors.
             record_contents = {"rrdatas": []}
         add_records = record_contents["rrdatas"][:]
 
@@ -188,6 +191,9 @@ class _GoogleClient(object):
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
         if record_contents is None:
+            # If it wasn't possible to fetch the records at this label (missing .list permission),
+            # assume there aren't any (#5678). If there are actually records here, this will fail
+            # with HTTP 409/412 API errors.
             record_contents = {"rrdatas": ["\"" + record_content + "\""], "ttl": record_ttl}
 
         data = {
