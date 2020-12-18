@@ -32,7 +32,7 @@ parts:
       # used. This is done to let these constraints be applied not only on the certbot package
       # build, but also on any isolated build that pip could trigger when building wheels for
       # dependencies. See https://github.com/certbot/certbot/pull/8443 for more info.
-      - PIP_CONSTRAINT: $SNAPCRAFT_PART_SRC/snap-constraints.txt
+      - PIP_CONSTRAINT: \$SNAPCRAFT_PART_SRC/snap-constraints.txt
       - SNAP_BUILD: "True"
     # To build cryptography and cffi if needed
     build-packages: [gcc, libffi-dev, libssl-dev, python3-dev]
