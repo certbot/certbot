@@ -1720,7 +1720,7 @@ class UpdateAccountTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.main.update_account"""
 
     def setUp(self):
-        self.patches = {
+        patches = {
             'account': mock.patch('certbot._internal.main.account'),
             'atexit': mock.patch('certbot.util.atexit'),
             'client': mock.patch('certbot._internal.main.client'),
@@ -1729,15 +1729,11 @@ class UpdateAccountTest(test_util.ConfigTestCase):
             'prepare_sub': mock.patch('certbot._internal.eff.prepare_subscription'),
             'util': test_util.patch_get_utility()
         }
-        self.mocks = { k: self.patches[k].start() for k in self.patches }
+        self.mocks = { k: patches[k].start() for k in patches }
+        for patch in patches.values():
+            self.addCleanup(patch.stop)
 
         return super(UpdateAccountTest, self).setUp()
-
-    def tearDown(self):
-        for patch in self.patches.values():
-            patch.stop()
-
-        return super(UpdateAccountTest, self).tearDown()
 
     def _call(self, args):
         with mock.patch('certbot._internal.main.sys.stdout'), \
