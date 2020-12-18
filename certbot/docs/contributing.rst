@@ -282,8 +282,8 @@ support for IIS, Icecast and Plesk.
 Installers and Authenticators will oftentimes be the same class/object
 (because for instance both tasks can be performed by a webserver like nginx)
 though this is not always the case (the standalone plugin is an authenticator
-that listens on port 80, but it cannot install certs; a postfix plugin would
-be an installer but not an authenticator).
+that listens on port 80, but it cannot install certificates; a postfix plugin
+would be an installer but not an authenticator).
 
 Installers and Authenticators are kept separate because
 it should be possible to use the `~.StandaloneAuthenticator` (it sets

@@ -99,7 +99,7 @@ def _reconstitute(config, full_path):
         config.domains = [util.enforce_domain_sanity(d)
                           for d in renewal_candidate.names()]
     except errors.ConfigurationError as error:
-        logger.warning("Renewal configuration file %s references a cert "
+        logger.warning("Renewal configuration file %s references a certificate "
                        "that contains an invalid domain name. The problem "
                        "was: %s. Skipping.", full_path, error)
         return None
@@ -482,7 +482,7 @@ def handle_renewal_request(config):
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.error(
-                "Failed to renew cert %s with error: %s",
+                "Failed to renew certificate %s with error: %s",
                 lineagename, e
             )
             logger.debug("Traceback was:\n%s", traceback.format_exc())
