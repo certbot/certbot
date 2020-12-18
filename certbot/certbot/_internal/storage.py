@@ -809,7 +809,7 @@ class RenewableCert(interfaces.RenewableCert):
         May need to recover from rare interrupted / crashed states."""
 
         if self.has_pending_deployment():
-            logger.warning("Found a new certiifcate /archive/ that was not "
+            logger.warning("Found a new certificate /archive/ that was not "
                            "linked to in /live/; fixing...")
             self.update_all_links_to(self.latest_common_version())
             return False
