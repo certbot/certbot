@@ -56,7 +56,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         try:
             change_ids = [
                 self._change_txt_record("UPSERT",
-                  achall.validation_domain_name(achall.domain),
+                  self.validation_domain_name(achall),
                   achall.validation(achall.account_key))
                 for achall in achalls
             ]

@@ -301,7 +301,7 @@ class TempDirTestCase(unittest.TestCase):
     """Base test class which sets up and tears down a temporary directory"""
 
     def setUp(self):
-        """Execute before test"""
+        super(TempDirTestCase, self).setUp()
         self.tempdir = tempfile.mkdtemp()
 
     def tearDown(self):

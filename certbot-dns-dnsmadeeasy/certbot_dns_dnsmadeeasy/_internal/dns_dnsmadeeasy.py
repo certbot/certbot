@@ -52,10 +52,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
 
     def _perform(self, domain, validation_name, validation):
-        self._get_dnsmadeeasy_client().add_txt_record(domain, validation_name, validation)
+        self._get_dnsmadeeasy_client().add_txt_record(validation_name, validation)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_dnsmadeeasy_client().del_txt_record(domain, validation_name, validation)
+        self._get_dnsmadeeasy_client().del_txt_record(validation_name, validation)
 
     def _get_dnsmadeeasy_client(self):
         return _DNSMadeEasyLexiconClient(self.credentials.conf('api-key'),

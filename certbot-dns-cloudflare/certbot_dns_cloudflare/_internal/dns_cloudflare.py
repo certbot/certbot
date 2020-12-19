@@ -74,10 +74,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
 
     def _perform(self, domain, validation_name, validation):
-        self._get_cloudflare_client().add_txt_record(domain, validation_name, validation, self.ttl)
+        self._get_cloudflare_client().add_txt_record(validation_name, validation, self.ttl)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_cloudflare_client().del_txt_record(domain, validation_name, validation)
+        self._get_cloudflare_client().del_txt_record(validation_name, validation)
 
     def _get_cloudflare_client(self):
         if self.credentials.conf('api-token'):
@@ -93,18 +93,17 @@ class _CloudflareClient(object):
     def __init__(self, email, api_key):
         self.cf = CloudFlare.CloudFlare(email, api_key)
 
-    def add_txt_record(self, domain, record_name, record_content, record_ttl):
+    def add_txt_record(self, record_name, record_content, record_ttl):
         """
         Add a TXT record using the supplied information.
 
-        :param str domain: The domain to use to look up the Cloudflare zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :param int record_ttl: The record TTL (number of seconds that the record may be cached).
         :raises certbot.errors.PluginError: if an error occurs communicating with the Cloudflare API
         """
 
-        zone_id = self._find_zone_id(domain)
+        zone_id = self._find_zone_id(record_name)
 
         data = {'type': 'TXT',
                 'name': record_name,
@@ -128,7 +127,7 @@ class _CloudflareClient(object):
         record_id = self._find_txt_record_id(zone_id, record_name, record_content)
         logger.debug('Successfully added TXT record with record_id: %s', record_id)
 
-    def del_txt_record(self, domain, record_name, record_content):
+    def del_txt_record(self, record_name, record_content):
         """
         Delete a TXT record using the supplied information.
 
@@ -137,13 +136,12 @@ class _CloudflareClient(object):
 
         Failures are logged, but not raised.
 
-        :param str domain: The domain to use to look up the Cloudflare zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         """
 
         try:
-            zone_id = self._find_zone_id(domain)
+            zone_id = self._find_zone_id(record_name)
         except errors.PluginError as e:
             logger.debug('Encountered error finding zone_id during deletion: %s', e)
             return

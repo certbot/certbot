@@ -1,6 +1,7 @@
 """Common code for DNS Authenticator Plugins."""
 
 import abc
+import argparse
 import logging
 from time import sleep
 
@@ -19,6 +20,30 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
+class ValidationDomainAction(argparse.Action):
+    """Action class for parsing validation-domain."""
+
+    def __init__(self, *args, **kwargs):
+        super(ValidationDomainAction, self).__init__(*args, **kwargs)
+        self.dest = kwargs['dest']
+        self.dest_map = self.dest + "_map"
+
+    def __call__(self, parser, namespace, validation_domain, option_string=None):
+        challenge_map = getattr(namespace, self.dest_map)
+
+        # For all domains before this override, set challenge map entry
+        # to previous override (or default if none was given yet).
+
+        for domain in namespace.domains:
+            challenge_map.setdefault(domain,
+                                     getattr(namespace, self.dest))
+
+        # All subsequent domains are getting the specified value as
+        # challenge override.
+
+        setattr(namespace, self.dest, validation_domain)
+
+
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class DNSAuthenticator(common.Plugin):
@@ -30,12 +55,67 @@ class DNSAuthenticator(common.Plugin):
         self._attempt_cleanup = False
 
     @classmethod
+    def inject_parser_options(cls, parser, name):
+        """Set up argument parsing for this DNS plugin.
+
+        This is called by the plugin management framework to set up
+        the argument parser.
+
+        :param ArgumentParser parser: (Almost) top-level CLI parser.
+        :param str name: Unique plugin name.
+        """
+
+        # The inherited method will call add_parser_arguments to set up
+        # the parser of each argument.
+
+        super(DNSAuthenticator, cls).inject_parser_options(parser, name)
+
+        # Create an additional entry in the parser namespace for the
+        # validation-domain map. This is an initially empty dict associating
+        # each requested certificate domain with the corresponding challenge
+        # override (see help for --dns-<plugin>-validation-domain).
+
+        # Use set_default to provide this dict as an entry in the namespace
+        # object returned by the parser. Note that set_default uses keyword
+        # arguments to determine the name of the entry to be set, and
+        # here the name is dynamically computed (depending on the plugin
+        # name), which is why we need to use ** syntax.
+
+        challenge_map_opt = common.dest_namespace(name) + "validation_domain_map"
+        parser.set_defaults(**{challenge_map_opt: {}})
+
+
+    @classmethod
     def add_parser_arguments(cls, add, default_propagation_seconds=10):  # pylint: disable=arguments-differ
         add('propagation-seconds',
             default=default_propagation_seconds,
             type=int,
-            help='The number of seconds to wait for DNS to propagate before asking the ACME server '
-                 'to verify the DNS record.')
+            help='The number of seconds to wait for DNS to propagate before '
+                 'asking the ACME server to verify the DNS record.')
+        add('validation-domain',
+            action=ValidationDomainAction,
+            default="{acme}",
+            help='Override default challenge for following domains on the '
+                 'command line. Validation depends on a CNAME having been '
+                 'provisioned at the standard location '
+                 '(_acme-challenge.<domain>), pointing to the alternate '
+                 'location. The specified value may include "{domain}" '
+                 'and "{acme}" format strings, which will respectively '
+                 'expand to the domain being requested, and the corresponding '
+                 'standard ACME challenge location. For instance, when '
+                 'requesting "example.com", {domain} is "example.com", and '
+                 '{acme} is "_acme-challenge.example.com".')
+
+    def validation_domain_name(self, achall):  # pylint: disable=missing-docstring
+
+        domain = achall.domain
+        acme_loc = achall.validation_domain_name(achall.domain)
+
+        challenge_map = self.conf('validation-domain-map')
+        challenge_ovr = self.conf('validation-domain')
+        challenge_str = challenge_map.get(domain, challenge_ovr)
+
+        return challenge_str.format(domain=domain, acme=acme_loc)
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=missing-function-docstring
         return [challenges.DNS01]
@@ -50,11 +130,15 @@ class DNSAuthenticator(common.Plugin):
 
         responses = []
         for achall in achalls:
-            domain = achall.domain
-            validation_domain_name = achall.validation_domain_name(domain)
+            validation_domain_name = self.validation_domain_name(achall)
             validation = achall.validation(achall.account_key)
 
-            self._perform(domain, validation_domain_name, validation)
+            # Note: achall.domain used to be passed as the first parameter to _perform.
+            # However, validation_domain_name may be overridden and be unrelated to the
+            # original domain (with _acme-challenge.<domain> being a CNAME). We now pass
+            # validation_domain_name for both parameters to avoid confusion in plugins.
+
+            self._perform(validation_domain_name, validation_domain_name, validation)
             responses.append(achall.response(achall.account_key))
 
         # DNS updates take time to propagate and checking to see if the update has occurred is not
@@ -69,11 +153,13 @@ class DNSAuthenticator(common.Plugin):
     def cleanup(self, achalls):  # pylint: disable=missing-function-docstring
         if self._attempt_cleanup:
             for achall in achalls:
-                domain = achall.domain
-                validation_domain_name = achall.validation_domain_name(domain)
+                validation_domain_name = self.validation_domain_name(achall)
                 validation = achall.validation(achall.account_key)
 
-                self._cleanup(domain, validation_domain_name, validation)
+                # Note: achall.domain used to be passed as the first parameter to _cleanup,
+                # see discussion in perform above.
+
+                self._cleanup(validation_domain_name, validation_domain_name, validation)
 
     @abc.abstractmethod
     def _setup_credentials(self):  # pragma: no cover
@@ -87,7 +173,11 @@ class DNSAuthenticator(common.Plugin):
         """
         Performs a dns-01 challenge by creating a DNS TXT record.
 
-        :param str domain: The domain being validated.
+        Note: the two parameters domain and validation_domain_name always
+        have the same value. "domain" is retained for backwards compatibility,
+        but should be ignored; plugins should only reference validation_domain_name.
+
+        :param str domain: The validation record domain name.
         :param str validation_domain_name: The validation record domain name.
         :param str validation: The validation record content.
         :raises errors.PluginError: If the challenge cannot be performed
@@ -101,7 +191,11 @@ class DNSAuthenticator(common.Plugin):
 
         Fails gracefully if no such record exists.
 
-        :param str domain: The domain being validated.
+        Note: the two parameters domain and validation_domain_name always
+        have the same value. "domain" is retained for backwards compatibility,
+        but should be ignored; plugins should only reference validation_domain_name.
+
+        :param str domain: The validation record domain name.
         :param str validation_domain_name: The validation record domain name.
         :param str validation: The validation record content.
         """

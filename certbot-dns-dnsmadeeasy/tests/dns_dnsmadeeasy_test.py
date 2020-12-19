@@ -11,7 +11,6 @@ from requests.exceptions import HTTPError
 from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins import dns_test_common_lexicon
-from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
 API_KEY = 'foo'
@@ -31,10 +30,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
                                "dnsmadeeasy_secret_key": SECRET_KEY},
                               path)
 
-        self.config = mock.MagicMock(dnsmadeeasy_credentials=path,
-                                     dnsmadeeasy_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "dnsmadeeasy")
+        self.configure(Authenticator(self.config, "dnsmadeeasy"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_dnsmadeeasy_client | pylint: disable=protected-access
@@ -43,8 +39,12 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 
 class DNSMadeEasyLexiconClientTest(unittest.TestCase,
                                    dns_test_common_lexicon.BaseLexiconClientTest):
-    DOMAIN_NOT_FOUND = HTTPError('404 Client Error: Not Found for url: {0}.'.format(DOMAIN))
-    LOGIN_ERROR = HTTPError('403 Client Error: Forbidden for url: {0}.'.format(DOMAIN))
+
+    def login_error(self, domain):
+        return HTTPError('403 Client Error: Forbidden for url: {0}.'.format(domain))
+
+    def domain_not_found(self, domain):
+        return HTTPError('404 Client Error: Not Found for url: {0}.'.format(domain))
 
     def setUp(self):
         from certbot_dns_dnsmadeeasy._internal.dns_dnsmadeeasy import _DNSMadeEasyLexiconClient

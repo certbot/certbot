@@ -83,6 +83,10 @@ class HelpfulArgumentGroup(object):
         """Add a new command line argument to the argument group."""
         self._parser.add(self._topic, *args, **kwargs)
 
+    def set_defaults(self, **kwargs):
+        """Set default value for an option."""
+        self._parser.parser.set_defaults(**kwargs)
+
 
 class CustomHelpFormatter(argparse.HelpFormatter):
     """This is a clone of ArgumentDefaultsHelpFormatter, with bugfixes.

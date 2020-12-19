@@ -31,16 +31,15 @@ class LexiconClient(object):
     def __init__(self):
         self.provider = None
 
-    def add_txt_record(self, domain, record_name, record_content):
+    def add_txt_record(self, record_name, record_content):
         """
         Add a TXT record using the supplied information.
 
-        :param str domain: The domain to use to look up the managed zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :raises errors.PluginError: if an error occurs communicating with the DNS Provider API
         """
-        self._find_domain_id(domain)
+        self._find_domain_id(record_name)
 
         try:
             self.provider.create_record(type='TXT', name=record_name, content=record_content)
@@ -48,17 +47,16 @@ class LexiconClient(object):
             logger.debug('Encountered error adding TXT record: %s', e, exc_info=True)
             raise errors.PluginError('Error adding TXT record: {0}'.format(e))
 
-    def del_txt_record(self, domain, record_name, record_content):
+    def del_txt_record(self, record_name, record_content):
         """
         Delete a TXT record using the supplied information.
 
-        :param str domain: The domain to use to look up the managed zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :raises errors.PluginError: if an error occurs communicating with the DNS Provider  API
         """
         try:
-            self._find_domain_id(domain)
+            self._find_domain_id(record_name)
         except errors.PluginError as e:
             logger.debug('Encountered error finding domain_id during deletion: %s', e,
                          exc_info=True)

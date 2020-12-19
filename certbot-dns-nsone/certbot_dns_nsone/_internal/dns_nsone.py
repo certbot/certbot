@@ -48,10 +48,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
 
     def _perform(self, domain, validation_name, validation):
-        self._get_nsone_client().add_txt_record(domain, validation_name, validation)
+        self._get_nsone_client().add_txt_record(validation_name, validation)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_nsone_client().del_txt_record(domain, validation_name, validation)
+        self._get_nsone_client().del_txt_record(validation_name, validation)
 
     def _get_nsone_client(self):
         return _NS1LexiconClient(self.credentials.conf('api-key'), self.ttl)

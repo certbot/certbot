@@ -50,10 +50,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
 
     def _perform(self, domain, validation_name, validation):
-        self._get_cloudxns_client().add_txt_record(domain, validation_name, validation)
+        self._get_cloudxns_client().add_txt_record(validation_name, validation)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_cloudxns_client().del_txt_record(domain, validation_name, validation)
+        self._get_cloudxns_client().del_txt_record(validation_name, validation)
 
     def _get_cloudxns_client(self):
         return _CloudXNSLexiconClient(self.credentials.conf('api-key'),

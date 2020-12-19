@@ -33,10 +33,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write(VALID_CONFIG, path)
 
-        self.config = mock.MagicMock(rfc2136_credentials=path,
-                                     rfc2136_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "rfc2136")
+        self.configure(Authenticator(self.config, "rfc2136"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_rfc2136_client | pylint: disable=protected-access
@@ -101,7 +98,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.rfc2136_client.add_txt_record,
-             "bar", "baz", 42)
+            "bar", "baz", 42)
 
     @mock.patch("dns.query.tcp")
     def test_add_txt_record_server_error(self, query_mock):
@@ -112,7 +109,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.rfc2136_client.add_txt_record,
-             "bar", "baz", 42)
+            "bar", "baz", 42)
 
     @mock.patch("dns.query.tcp")
     def test_del_txt_record(self, query_mock):
@@ -134,7 +131,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.rfc2136_client.del_txt_record,
-             "bar", "baz")
+            "bar", "baz")
 
     @mock.patch("dns.query.tcp")
     def test_del_txt_record_server_error(self, query_mock):
@@ -145,7 +142,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.rfc2136_client.del_txt_record,
-             "bar", "baz")
+            "bar", "baz")
 
     def test_find_domain(self):
         # _query_soa | pylint: disable=protected-access

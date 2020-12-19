@@ -27,10 +27,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"linode_key": TOKEN}, path)
 
-        self.config = mock.MagicMock(linode_credentials=path,
-                                     linode_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "linode")
+        self.configure(Authenticator(self.config, "linode"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_linode_client | pylint: disable=protected-access
@@ -121,7 +118,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 
 class LinodeLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
 
-    DOMAIN_NOT_FOUND = Exception('Domain not found')
+    def domain_not_found(self, domain):
+        return Exception('Domain not found')
 
     def setUp(self):
         from certbot_dns_linode._internal.dns_linode import _LinodeLexiconClient

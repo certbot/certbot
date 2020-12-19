@@ -15,7 +15,7 @@ from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
 
 
-class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest):
+class AuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
     # pylint: disable=protected-access
 
     def setUp(self):
@@ -23,7 +23,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         super(AuthenticatorTest, self).setUp()
 
-        self.config = mock.MagicMock()
+        self.configure(Authenticator(self.config, "route53"))
 
         # Set up dummy credentials for testing
         os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"

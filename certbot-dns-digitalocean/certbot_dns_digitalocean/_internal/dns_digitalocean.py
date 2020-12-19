@@ -44,10 +44,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
 
     def _perform(self, domain, validation_name, validation):
-        self._get_digitalocean_client().add_txt_record(domain, validation_name, validation)
+        self._get_digitalocean_client().add_txt_record(validation_name, validation)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_digitalocean_client().del_txt_record(domain, validation_name, validation)
+        self._get_digitalocean_client().del_txt_record(validation_name, validation)
 
     def _get_digitalocean_client(self):
         return _DigitalOceanClient(self.credentials.conf('token'))
@@ -61,11 +61,10 @@ class _DigitalOceanClient(object):
     def __init__(self, token):
         self.manager = digitalocean.Manager(token=token)
 
-    def add_txt_record(self, domain_name, record_name, record_content):
+    def add_txt_record(self, record_name, record_content):
         """
         Add a TXT record using the supplied information.
 
-        :param str domain_name: The domain to use to associate the record with.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :raises certbot.errors.PluginError: if an error occurs communicating with the DigitalOcean
@@ -73,7 +72,7 @@ class _DigitalOceanClient(object):
         """
 
         try:
-            domain = self._find_domain(domain_name)
+            domain = self._find_domain(record_name)
         except digitalocean.Error as e:
             hint = None
 
@@ -98,7 +97,7 @@ class _DigitalOceanClient(object):
             raise errors.PluginError('Error adding TXT record using the DigitalOcean API: {0}'
                                      .format(e))
 
-    def del_txt_record(self, domain_name, record_name, record_content):
+    def del_txt_record(self, record_name, record_content):
         """
         Delete a TXT record using the supplied information.
 
@@ -107,13 +106,12 @@ class _DigitalOceanClient(object):
 
         Failures are logged, but not raised.
 
-        :param str domain_name: The domain to use to associate the record with.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         """
 
         try:
-            domain = self._find_domain(domain_name)
+            domain = self._find_domain(record_name)
         except digitalocean.Error as e:
             logger.debug('Error finding domain using the DigitalOcean API: %s', e)
             return
