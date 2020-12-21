@@ -1,7 +1,7 @@
 #!/bin/bash -x
 set -eo pipefail
 
-# $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL are dynamically set at execution
+# $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME are dynamically set at execution
 
 # with curl, instance metadata available from EC2 metadata service:
 #public_host=$(curl -s http://169.254.169.254/2014-11-05/meta-data/public-hostname)

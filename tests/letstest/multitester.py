@@ -1,7 +1,6 @@
 """
 Certbot Integration Test Tool
 
-- Configures (canned) boulder server
 - Launches EC2 instances with a given list of AMIs for different distros
 - Copies certbot repo and puts it on the instances
 - Runs certbot tests (bash scripts) on all of these
@@ -81,12 +80,6 @@ parser.add_argument('--saveinstances',
 parser.add_argument('--alt_pip',
                     default='',
                     help="server from which to pull candidate release packages")
-parser.add_argument('--killboulder',
-                    action='store_true',
-                    help="do not leave a persistent boulder server running")
-parser.add_argument('--boulderonly',
-                    action='store_true',
-                    help="only make a boulder server")
 cl_args = parser.parse_args()
 
 # Credential Variables
@@ -98,7 +91,6 @@ PROFILE = None if cl_args.aws_profile == 'SET_BY_ENV' else cl_args.aws_profile
 
 # Globals
 #-------------------------------------------------------------------------------
-BOULDER_AMI = 'ami-072a9534772bec854' # premade shared boulder AMI 18.04LTS us-east-1
 SECURITY_GROUP_NAME = 'certbot-security-group'
 SENTINEL = None #queue kill signal
 SUBNET_NAME = 'certbot-subnet'
@@ -133,10 +125,6 @@ def make_security_group(vpc):
     mysg = vpc.create_security_group(GroupName=SECURITY_GROUP_NAME,
                                      Description='security group for automated testing')
     mysg.authorize_ingress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=22, ToPort=22)
-    mysg.authorize_ingress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=80, ToPort=80)
-    mysg.authorize_ingress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=443, ToPort=443)
-    # for boulder wfe (http) server
-    mysg.authorize_ingress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=4000, ToPort=4000)
     # for mosh
     mysg.authorize_ingress(IpProtocol="udp", CidrIp="0.0.0.0/0", FromPort=60000, ToPort=61000)
     return mysg
@@ -193,23 +181,6 @@ def _get_block_device_mappings(ec2_client, ami_id):
 
 # Helper Routines
 #-------------------------------------------------------------------------------
-def block_until_http_ready(urlstring, wait_time=10, timeout=240):
-    "Blocks until server at urlstring can respond to http requests"
-    server_ready = False
-    t_elapsed = 0
-    while not server_ready and t_elapsed < timeout:
-        try:
-            sys.stdout.write('.')
-            sys.stdout.flush()
-            req = urllib_request.Request(urlstring)
-            response = urllib_request.urlopen(req)
-            #if response.code == 200:
-            server_ready = True
-        except urllib_error.URLError:
-            pass
-        time.sleep(wait_time)
-        t_elapsed += wait_time
-
 def block_until_ssh_open(ipstring, wait_time=10, timeout=120):
     "Blocks until server at ipstring has an open port 22"
     reached = False
@@ -288,26 +259,15 @@ def deploy_script(cxn, scriptpath, *args):
     args_str = ' '.join(args)
     cxn.run('./'+scriptfile+' '+args_str)
 
-def run_boulder(cxn):
-    boulder_path = '$GOPATH/src/github.com/letsencrypt/boulder'
-    cxn.run('cd %s && sudo docker-compose up -d' % boulder_path)
-
-def config_and_launch_boulder(cxn, instance):
-    # yes, we're hardcoding the gopath. it's a predetermined AMI.
-    with cxn.prefix('export GOPATH=/home/ubuntu/gopath'):
-        deploy_script(cxn, 'scripts/boulder_config.sh')
-        run_boulder(cxn)
-
-def install_and_launch_certbot(cxn, instance, boulder_url, target, log_dir):
+def install_and_launch_certbot(cxn, instance, target, log_dir):
     local_repo_to_remote(cxn, log_dir)
     # This needs to be like this, I promise. 1) The env argument to run doesn't work.
     # See https://github.com/fabric/fabric/issues/1744. 2) prefix() sticks an && between
     # the commands, so it needs to be exports rather than no &&s in between for the script subshell.
-    with cxn.prefix('export BOULDER_URL=%s && export PUBLIC_IP=%s && export PRIVATE_IP=%s && '
+    with cxn.prefix('export PUBLIC_IP=%s && export PRIVATE_IP=%s && '
                     'export PUBLIC_HOSTNAME=%s && export PIP_EXTRA_INDEX_URL=%s && '
                     'export OS_TYPE=%s' %
-                    (boulder_url,
-                    instance.public_ip_address,
+                    (instance.public_ip_address,
                     instance.private_ip_address,
                     instance.public_dns_name,
                     cl_args.alt_pip,
@@ -344,7 +304,7 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id, sel
                          self_destruct=self_destruct)
 
 
-def test_client_process(fab_config, inqueue, outqueue, boulder_url, log_dir):
+def test_client_process(fab_config, inqueue, outqueue, log_dir):
     cur_proc = mp.current_process()
     for inreq in iter(inqueue.get, SENTINEL):
         ii, instance_id, target = inreq
@@ -366,7 +326,7 @@ def test_client_process(fab_config, inqueue, outqueue, boulder_url, log_dir):
 
         with Connection(host_string, config=fab_config) as cxn:
             try:
-                install_and_launch_certbot(cxn, instance, boulder_url, target, log_dir)
+                install_and_launch_certbot(cxn, instance, target, log_dir)
                 outqueue.put((ii, target, Status.PASS))
                 print("%s - %s SUCCESS"%(target['ami'], target['name']))
             except:
@@ -385,15 +345,13 @@ def test_client_process(fab_config, inqueue, outqueue, boulder_url, log_dir):
                 pass
 
 
-def cleanup(cl_args, instances, targetlist, boulder_server, log_dir):
+def cleanup(cl_args, instances, targetlist, log_dir):
     print('Logs in ', log_dir)
     # If lengths of instances and targetlist aren't equal, instances failed to
     # start before running tests so leaving instances running for debugging
     # isn't very useful. Let's cleanup after ourselves instead.
     if len(instances) != len(targetlist) or not cl_args.saveinstances:
         print('Terminating EC2 Instances')
-        if cl_args.killboulder:
-            boulder_server.terminate()
         for instance in instances:
             instance.terminate()
     else:
@@ -483,70 +441,18 @@ def main():
         security_group_id = make_security_group(vpc).id
         time.sleep(30)
 
-    boulder_preexists = False
-    boulder_servers = ec2_client.instances.filter(Filters=[
-        {'Name': 'tag:Name',            'Values': ['le-boulderserver']},
-        {'Name': 'instance-state-name', 'Values': ['running']}])
-
-    boulder_server = next(iter(boulder_servers), None)
-
-    print("Requesting Instances...")
-    if boulder_server:
-        print("Found existing boulder server:", boulder_server)
-        boulder_preexists = True
-    else:
-        print("Can't find a boulder server, starting one...")
-        # If we want to kill boulder on shutdown, have it self-destruct in case
-        # cleanup fails.
-        self_destruct = cl_args.killboulder
-        boulder_server = make_instance(ec2_client,
-                                       'le-boulderserver',
-                                       BOULDER_AMI,
-                                       KEYNAME,
-                                       machine_type='t2.micro',
-                                       #machine_type='t2.medium',
-                                       security_group_id=security_group_id,
-                                       subnet_id=subnet_id,
-                                       self_destruct=self_destruct)
-
     instances = []
     try:
-        if not cl_args.boulderonly:
-            print("Creating instances: ", end="")
-            # If we want to preserve instances, do not have them self-destruct.
-            self_destruct = not cl_args.saveinstances
-            for target in targetlist:
-                instances.append(
-                    create_client_instance(ec2_client, target,
-                                           security_group_id, subnet_id,
-                                           self_destruct)
-                )
-            print()
-
-        # Configure and launch boulder server
-        #-------------------------------------------------------------------------------
-        print("Waiting on Boulder Server")
-        boulder_server = block_until_instance_ready(boulder_server)
-        print(" server %s"%boulder_server)
-
-
-        # host_string defines the ssh user and host for connection
-        host_string = "ubuntu@%s"%boulder_server.public_ip_address
-        print("Boulder Server at (SSH):", host_string)
-        if not boulder_preexists:
-            print("Configuring and Launching Boulder")
-            with Connection(host_string, config=fab_config) as boulder_cxn:
-                config_and_launch_boulder(boulder_cxn, boulder_server)
-                # blocking often unnecessary, but cheap EC2 VMs can get very slow
-                block_until_http_ready('http://%s:4000'%boulder_server.public_ip_address,
-                                           wait_time=10, timeout=500)
-
-        boulder_url = "http://%s:4000/directory"%boulder_server.private_ip_address
-        print("Boulder Server at (public ip): http://%s:4000/directory"%boulder_server.public_ip_address)
-        print("Boulder Server at (EC2 private ip): %s"%boulder_url)
-
-        if cl_args.boulderonly:
-            sys.exit(0)
+        print("Creating instances: ", end="")
+        # If we want to preserve instances, do not have them self-destruct.
+        self_destruct = not cl_args.saveinstances
+        for target in targetlist:
+            instances.append(
+                create_client_instance(ec2_client, target,
+                                       security_group_id, subnet_id,
+                                       self_destruct)
+            )
+        print()
 
         # Install and launch client scripts in parallel
         #-------------------------------------------------------------------------------
@@ -564,7 +470,7 @@ def main():
 
 
         # initiate process execution
-        client_process_args=(fab_config, inqueue, outqueue, boulder_url, log_dir)
+        client_process_args=(fab_config, inqueue, outqueue, log_dir)
         for i in range(num_processes):
             p = mp.Process(target=test_client_process, args=client_process_args)
             jobs.append(p)
@@ -615,7 +521,7 @@ def main():
             sys.exit(1)
 
     finally:
-        cleanup(cl_args, instances, targetlist, boulder_server, log_dir)
+        cleanup(cl_args, instances, targetlist, log_dir)
 
 
 if __name__ == '__main__':

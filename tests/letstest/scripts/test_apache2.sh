@@ -64,11 +64,35 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-tools/venv3.py -e acme[dev] -e certbot[dev,docs] -e certbot-apache
+tools/venv3.py -e acme[dev] -e certbot[dev,docs] -e certbot-apache -e certbot-ci
+PEBBLE_LOGS="acme_server.log"
+PEBBLE_URL="https://localhost:14000/dir"
+venv3/bin/run_acme_server > "${PEBBLE_LOGS}" 2>&1 &
 
-sudo "venv3/bin/certbot" -v --debug --text --agree-tos \
+DumpPebbleLogs() {
+    if [ -f "${PEBBLE_LOGS}" ] ; then
+        echo "Pebble's logs were:"
+        cat "${PEBBLE_LOGS}"
+    fi
+}
+
+for n in $(seq 1 150) ; do
+    if curl --insecure "${PEBBLE_URL}" 2>/dev/null; then
+        break
+    else
+        echo "waiting for pebble"
+        sleep 1
+    fi
+done
+if ! curl --insecure "${PEBBLE_URL}" 2>/dev/null; then
+  echo "timed out waiting for pebble to start"
+  DumpPebbleLogs
+  exit 1
+fi
+
+sudo "venv3/bin/certbot" -v --debug --text --agree-tos --no-verify-ssl \
                    --renew-by-default --redirect --register-unsafely-without-email \
-                   --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
+                   --domain "${PUBLIC_HOSTNAME}" --server "${PEBBLE_URL}"
 if [ $? -ne 0 ] ; then
     FAIL=1
 fi
@@ -90,7 +114,7 @@ fi
 
 
 if [ "$OS_TYPE" = "ubuntu" ] ; then
-    export SERVER="$BOULDER_URL"
+    export SERVER="${PEBBLE_URL}"
     "venv3/bin/tox" -e apacheconftest
 else
     echo Not running hackish apache tests on $OS_TYPE
@@ -102,5 +126,6 @@ fi
 
 # return error if any of the subtests failed
 if [ "$FAIL" = 1 ] ; then
+    DumpPebbleLogs
     exit 1
 fi
