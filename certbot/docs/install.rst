@@ -243,6 +243,8 @@ Certbot-Auto
 
 We used to have a shell script named ``certbot-auto`` to help people install
 Certbot on UNIX operating systems, however, this script is no longer supported.
+If you want to uninstall ``certbot-auto``, you can follow our instructions
+:doc:`here <uninstall>`.
 
 Problems with Python virtual environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
