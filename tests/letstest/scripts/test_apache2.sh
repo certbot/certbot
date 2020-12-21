@@ -7,7 +7,7 @@ if [ "$OS_TYPE" = "ubuntu" ]
 then
     CONFFILE=/etc/apache2/sites-available/000-default.conf
     sudo apt-get update
-    sudo apt-get -y --no-upgrade install apache2 #curl
+    sudo apt-get -y --no-upgrade install apache2 curl
     sudo apt-get -y install realpath # needed for test-apache-conf
     # For apache 2.4, set up ServerName
     sudo sed -i '/ServerName/ s/#ServerName/ServerName/' $CONFFILE
@@ -67,7 +67,13 @@ fi
 tools/venv3.py -e acme[dev] -e certbot[dev,docs] -e certbot-apache -e certbot-ci
 PEBBLE_LOGS="acme_server.log"
 PEBBLE_URL="https://localhost:14000/dir"
-venv3/bin/run_acme_server > "${PEBBLE_LOGS}" 2>&1 &
+# We configure Pebble to use port 80 for http-01 validation rather than an
+# alternate port because:
+#   1) It allows us to test with Apache configurations that are more realistic
+#   and closer to the default configuration on various OSes.
+#   2) As of writing this, Certbot's Apache plugin requires there to be an
+#   existing virtual host for the port used for http-01 validation.
+venv3/bin/run_acme_server --http-01-port 80 > "${PEBBLE_LOGS}" 2>&1 &
 
 DumpPebbleLogs() {
     if [ -f "${PEBBLE_LOGS}" ] ; then
