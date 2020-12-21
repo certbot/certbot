@@ -118,10 +118,13 @@ class _GoogleClient(object):
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
         if record_contents is None:
-            record_contents = []
-        add_records = record_contents[:]
+        # If it wasn't possible to fetch the records at this label (missing .list permission),
+        # assume there aren't any (#5678). If there are actually records here, this will fail
+        # with HTTP 409/412 API errors.
+            record_contents = {"rrdatas": []}
+        add_records = record_contents["rrdatas"][:]
 
-        if "\""+record_content+"\"" in record_contents:
+        if "\""+record_content+"\"" in record_contents["rrdatas"]:
             # The process was interrupted previously and validation token exists
             return
 
@@ -140,15 +143,15 @@ class _GoogleClient(object):
             ],
         }
 
-        if record_contents:
+        if record_contents["rrdatas"]:
             # We need to remove old records in the same request
             data["deletions"] = [
                 {
                     "kind": "dns#resourceRecordSet",
                     "type": "TXT",
                     "name": record_name + ".",
-                    "rrdatas": record_contents,
-                    "ttl": record_ttl,
+                    "rrdatas": record_contents["rrdatas"],
+                    "ttl": record_contents["ttl"],
                 },
             ]
 
@@ -188,7 +191,10 @@ class _GoogleClient(object):
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
         if record_contents is None:
-            record_contents = ["\"" + record_content + "\""]
+            # If it wasn't possible to fetch the records at this label (missing .list permission),
+            # assume there aren't any (#5678). If there are actually records here, this will fail
+            # with HTTP 409/412 API errors.
+            record_contents = {"rrdatas": ["\"" + record_content + "\""], "ttl": record_ttl}
 
         data = {
             "kind": "dns#change",
@@ -197,14 +203,15 @@ class _GoogleClient(object):
                     "kind": "dns#resourceRecordSet",
                     "type": "TXT",
                     "name": record_name + ".",
-                    "rrdatas": record_contents,
-                    "ttl": record_ttl,
+                    "rrdatas": record_contents["rrdatas"],
+                    "ttl": record_contents["ttl"],
                 },
             ],
         }
 
         # Remove the record being deleted from the list
-        readd_contents = [r for r in record_contents if r != "\"" + record_content + "\""]
+        readd_contents = [r for r in record_contents["rrdatas"]
+                            if r != "\"" + record_content + "\""]
         if readd_contents:
             # We need to remove old records in the same request
             data["additions"] = [
@@ -213,7 +220,7 @@ class _GoogleClient(object):
                     "type": "TXT",
                     "name": record_name + ".",
                     "rrdatas": readd_contents,
-                    "ttl": record_ttl,
+                    "ttl": record_contents["ttl"],
                 },
             ]
 
@@ -235,8 +242,8 @@ class _GoogleClient(object):
         :param str zone_id: The ID of the managed zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
 
-        :returns: List of TXT record values or None
-        :rtype: `list` of `string` or `None`
+        :returns: The resourceRecordSet corresponding to `record_name` or None
+        :rtype: `resourceRecordSet <https://cloud.google.com/dns/docs/reference/v1/resourceRecordSets#resource>` or `None` # pylint: disable=line-too-long
 
         """
         rrs_request = self.dns.resourceRecordSets()
@@ -252,7 +259,7 @@ class _GoogleClient(object):
             logger.debug("Error was:", exc_info=True)
         else:
             if response and response["rrsets"]:
-                return response["rrsets"][0]["rrdatas"]
+                return response["rrsets"][0]
         return None
 
     def _find_managed_zone_id(self, domain):

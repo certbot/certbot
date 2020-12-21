@@ -22,7 +22,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * The Certbot snap no longer loads packages installed via `pip install --user`. This
   was unintended and DNS plugins should be installed via `snap` instead.
-* `certbot-dns-google` would sometimes crash with HTTP 409/412 errors when used with very large zones (#6036)
+* `certbot-dns-google` would sometimes crash with HTTP 409/412 errors when used with very large zones. See [#6036](https://github.com/certbot/certbot/issues/6036).
+* `certbot-dns-google` would sometimes crash with an HTTP 412 error if preexisting records had an unexpected TTL, i.e.: different than Certbot's default TTL for this plugin. See [#8551](https://github.com/certbot/certbot/issues/8551).
 
 More details about these changes can be found on our GitHub repo.
 
