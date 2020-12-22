@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 set -o pipefail
 
-# $OS_TYPE $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL
+# $OS_TYPE $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME
 # are dynamically set at execution
 
 cd letsencrypt

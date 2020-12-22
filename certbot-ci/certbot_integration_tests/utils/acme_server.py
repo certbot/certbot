@@ -35,7 +35,8 @@ class ACMEServer(object):
     ACMEServer is also a context manager, and so can be used to ensure ACME server is
     started/stopped upon context enter/exit.
     """
-    def __init__(self, acme_server, nodes, http_proxy=True, stdout=False, dns_server=None):
+    def __init__(self, acme_server, nodes, http_proxy=True, stdout=False,
+                 dns_server=None, http_01_port=DEFAULT_HTTP_01_PORT):
         """
         Create an ACMEServer instance.
         :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
@@ -43,6 +44,8 @@ class ACMEServer(object):
         :param bool http_proxy: if False do not start the HTTP proxy
         :param bool stdout: if True stream all subprocesses stdout to standard stdout
         :param str dns_server: if set, Pebble/Boulder will use it to resolve domains
+        :param int http_01_port: port to use for http-01 validation; currently
+            only supported for pebble without an HTTP proxy
         """
         self._construct_acme_xdist(acme_server, nodes)
 
@@ -52,6 +55,11 @@ class ACMEServer(object):
         self._processes = []  # type: List[subprocess.Popen]
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w')
         self._dns_server = dns_server
+        self._http_01_port = http_01_port
+        if http_01_port != DEFAULT_HTTP_01_PORT:
+            if self._acme_type != 'pebble' or self._proxy:
+                raise ValueError('setting http_01_port is not currently supported '
+                                  'with boulder or the HTTP proxy')
 
     def start(self):
         """Start the test stack"""
@@ -134,7 +142,8 @@ class ACMEServer(object):
     def _prepare_pebble_server(self):
         """Configure and launch the Pebble server"""
         print('=> Starting pebble instance deployment...')
-        pebble_path, challtestsrv_path, pebble_config_path = pebble_artifacts.fetch(self._workspace)
+        pebble_artifacts_rv = pebble_artifacts.fetch(self._workspace, self._http_01_port)
+        pebble_path, challtestsrv_path, pebble_config_path = pebble_artifacts_rv
 
         # Configure Pebble at full speed (PEBBLE_VA_NOSLEEP=1) and not randomly refusing valid
         # nonce (PEBBLE_WFE_NONCEREJECT=0) to have a stable test environment.
@@ -223,7 +232,7 @@ class ACMEServer(object):
         print('=> Configuring the HTTP proxy...')
         mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
                    for node, port in self.acme_xdist['http_port'].items()}
-        command = [sys.executable, proxy.__file__, str(HTTP_01_PORT), json.dumps(mapping)]
+        command = [sys.executable, proxy.__file__, str(DEFAULT_HTTP_01_PORT), json.dumps(mapping)]
         self._launch_process(command)
         print('=> Finished configuring the HTTP proxy.')
 
@@ -251,11 +260,14 @@ def main():
                         help='specify the DNS server as `IP:PORT` to use by '
                              'Pebble; if not specified, a local mock DNS server will be used to '
                              'resolve domains to localhost.')
+    parser.add_argument('--http-01-port', type=int, default=DEFAULT_HTTP_01_PORT,
+                        help='specify the port to use for http-01 validation; '
+                             'this is currently only supported for Pebble.')
     args = parser.parse_args()
 
     acme_server = ACMEServer(
         args.server_type, [], http_proxy=False, stdout=True,
-        dns_server=args.dns_server
+        dns_server=args.dns_server, http_01_port=args.http_01_port,
     )
 
     try:
