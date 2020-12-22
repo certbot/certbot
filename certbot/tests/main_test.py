@@ -1169,7 +1169,7 @@ class MainTest(test_util.ConfigTestCase):
         _, _, stdout = self._test_renewal_common(False, extra_args=None, should_renew=False,
                                                  args=['renew'], expiry_date=expiry)
         self.assertTrue('No renewals were attempted.' in stdout.getvalue())
-        self.assertTrue('The following certs are not due for renewal yet:' in stdout.getvalue())
+        self.assertTrue('The following certificates are not due for renewal yet:' in stdout.getvalue())
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_quiet_renew(self, _):

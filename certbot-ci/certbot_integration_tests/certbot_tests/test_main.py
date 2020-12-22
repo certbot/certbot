@@ -629,7 +629,7 @@ def test_revoke_multiple_lineages(context):
     ])
 
     with open(join(context.workspace, 'logs', 'letsencrypt.log'), 'r') as f:
-        assert 'Not deleting revoked certs due to overlapping archive dirs' in f.read()
+        assert 'Not deleting revoked certificates due to overlapping archive dirs' in f.read()
 
 
 def test_wildcard_certificates(context):

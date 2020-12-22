@@ -254,7 +254,7 @@ def _handle_identical_cert_request(config,  # type: configuration.NamespaceConfi
     elif config.verb == "certonly":
         keep_opt = "Keep the existing certificate for now"
     choices = [keep_opt,
-               "Renew & replace the cert (may be subject to CA rate limits)"]
+               "Renew & replace the certificate (may be subject to CA rate limits)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
     response = display.menu(question, choices,
@@ -434,8 +434,8 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
                _format_list("-", removed),
                br=os.linesep))
     obj = zope.component.getUtility(interfaces.IDisplay)
-    if not obj.yesno(msg, "Update cert", "Cancel", default=True):
-        raise errors.ConfigurationError("Specified mismatched cert name and domains.")
+    if not obj.yesno(msg, "Update certificate", "Cancel", default=True):
+        raise errors.ConfigurationError("Specified mismatched certificate name and domains.")
 
 
 def _find_domains_or_certname(config, installer, question=None):
@@ -513,7 +513,7 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
     # and say something more informative here.
     msg = ('Congratulations! Your certificate and chain have been saved at:{br}'
            '{0}{br}{1}'
-           'Your cert will expire on {2}. To obtain a new or tweaked version of this '
+           'Your certificate will expire on {2}. To obtain a new or tweaked version of this '
            'certificate in the future, simply run {3} again{4}. '
            'To non-interactively renew *all* of your certificates, run "{3} renew"'
            .format(fullchain_path, privkey_statement, expiry, cli.cli_command, verbswitch,
@@ -597,8 +597,8 @@ def _delete_if_appropriate(config):
 
     attempt_deletion = config.delete_after_revoke
     if attempt_deletion is None:
-        msg = ("Would you like to delete the cert(s) you just revoked, along with all earlier and "
-            "later versions of the cert?")
+        msg = ("Would you like to delete the certificate(s) you just revoked, "
+               "along with all earlier and later versions of the certificate?")
         attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
                 force_interactive=True, default=True)
 
@@ -620,8 +620,8 @@ def _delete_if_appropriate(config):
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
             lambda x: x.archive_dir, lambda x: x)
     except errors.OverlappingMatchFound:
-        logger.warning("Not deleting revoked certs due to overlapping archive dirs. More than "
-                       "one certificate is using %s", archive_dir)
+        logger.warning("Not deleting revoked certificates due to overlapping archive dirs. "
+                       "More than one certificate is using %s", archive_dir)
         return
     except Exception as e:
         msg = ('config.default_archive_dir: {0}, config.live_dir: {1}, archive_dir: {2},'
@@ -1098,7 +1098,7 @@ def revoke(config, unused_plugins):
         raise errors.Error("Error! Exactly one of --cert-path or --cert-name must be specified!")
 
     if config.key_path is not None:  # revocation by cert key
-        logger.debug("Revoking %s using cert key %s",
+        logger.debug("Revoking %s using certificate key %s",
                      config.cert_path[0], config.key_path[0])
         crypto_util.verify_cert_matches_priv_key(config.cert_path[0], config.key_path[0])
         key = jose.JWK.load(config.key_path[1])

@@ -82,7 +82,7 @@ Docker if you are sure you know what you are doing and have a good reason to do
 so.
 
 You should definitely read the :ref:`where-certs` section, in order to
-know how to manage the certs
+know how to manage the certificates
 manually. `Our ciphersuites page <ciphers.html>`__
 provides some information about recommended ciphersuites. If none of
 these make much sense to you, you should definitely use the installation method
@@ -206,8 +206,8 @@ Optionally to install the Certbot Apache plugin, you can use:
 
 **Gentoo**
 
-The official Certbot client is available in Gentoo Portage. From the 
-official Certbot plugins, three of them are also available in Portage. 
+The official Certbot client is available in Gentoo Portage. From the
+official Certbot plugins, three of them are also available in Portage.
 They need to be installed separately if you require their functionality.
 
 .. code-block:: shell
@@ -217,7 +217,7 @@ They need to be installed separately if you require their functionality.
    emerge -av app-crypt/certbot-nginx
    emerge -av app-crypt/certbot-dns-nsone
 
-.. Note:: The ``app-crypt/certbot-dns-nsone`` package has a different 
+.. Note:: The ``app-crypt/certbot-dns-nsone`` package has a different
    maintainer than the other packages and can lag behind in version.
 
 **NetBSD**

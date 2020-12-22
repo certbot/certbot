@@ -92,7 +92,7 @@ Current Features
   - apache/2.x
   - nginx/0.8.48+
   - webroot (adds files to webroot directories in order to prove control of
-    domains and obtain certs)
+    domains and obtain certificates)
   - standalone (runs its own simple webserver to prove you control a domain)
   - other server software via `third party plugins <https://certbot.eff.org/docs/using.html#third-party-plugins>`_
 

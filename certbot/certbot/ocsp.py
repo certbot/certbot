@@ -167,7 +167,7 @@ def _determine_ocsp_server(cert_path):
 
     if host:
         return url, host
-    logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
+    logger.info("Cannot process OCSP host from URL (%s) in certificate at %s", url, cert_path)
     return None, None
 
 
