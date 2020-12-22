@@ -912,7 +912,7 @@ Changing the ACME Server
 ========================
 
 By default, Certbot uses Let's Encrypt's production server at
-https://acme-v02.api.letsencrypt.org/. You can tell Certbot to use a
+https://acme-v02.api.letsencrypt.org/directory. You can tell Certbot to use a
 different CA by providing ``--server`` on the command line or in a
 :ref:`configuration file <config-file>` with the URL of the server's
 ACME directory. For example, if you would like to use Let's Encrypt's
