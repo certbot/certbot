@@ -179,10 +179,9 @@ If you'd like to obtain a wildcard certificate from Let's Encrypt or run
 Certbot's DNS plugins.
 
 These plugins are not included in a default Certbot installation and must be
-installed separately. While the DNS plugins cannot currently be used with
-``certbot-auto``, they are available in many OS package managers, as Docker
-images, and as snaps. Visit https://certbot.eff.org to learn the best way to use
-the DNS plugins on your system.
+installed separately. They are available in many OS package managers, as Docker
+images, and as snaps. Visit https://certbot.eff.org to learn the best way to
+use the DNS plugins on your system.
 
 Once installed, you can find documentation on how to use each plugin at:
 
@@ -314,7 +313,7 @@ the ``certificates`` subcommand:
 
 This returns information in the following format::
 
-  Found the following certs:
+  Found the following certificates:
     Certificate Name: example.com
       Domains: example.com, www.example.com
       Expiry Date: 2017-02-19 19:53:00+00:00 (VALID: 30 days)
@@ -913,7 +912,7 @@ Changing the ACME Server
 ========================
 
 By default, Certbot uses Let's Encrypt's production server at
-https://acme-v02.api.letsencrypt.org/. You can tell Certbot to use a
+https://acme-v02.api.letsencrypt.org/directory. You can tell Certbot to use a
 different CA by providing ``--server`` on the command line or in a
 :ref:`configuration file <config-file>` with the URL of the server's
 ACME directory. For example, if you would like to use Let's Encrypt's

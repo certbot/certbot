@@ -279,7 +279,7 @@ def verify_renewable_cert_sig(renewable_cert):
             verify_signed_payload(pk, cert.signature, cert.tbs_certificate_bytes,
                                   cert.signature_hash_algorithm)
     except (IOError, ValueError, InvalidSignature) as e:
-        error_str = "verifying the signature of the cert located at {0} has failed. \
+        error_str = "verifying the signature of the certificate located at {0} has failed. \
                 Details: {1}".format(renewable_cert.cert_path, e)
         logger.exception(error_str)
         raise errors.Error(error_str)
@@ -330,7 +330,7 @@ def verify_cert_matches_priv_key(cert_path, key_path):
         context.use_privatekey_file(key_path)
         context.check_privatekey()
     except (IOError, SSL.Error) as e:
-        error_str = "verifying the cert located at {0} matches the \
+        error_str = "verifying the certificate located at {0} matches the \
                 private key located at {1} has failed. \
                 Details: {2}".format(cert_path,
                         key_path, e)

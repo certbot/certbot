@@ -29,8 +29,9 @@ from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
 from certbot_integration_tests.utils import misc
 
 
-@pytest.fixture()
-def context(request):
+@pytest.fixture(name='context')
+def test_context(request):
+    # pylint: disable=missing-function-docstring
     # Fixture request is a built-in pytest fixture describing current test request.
     integration_test_context = certbot_context.IntegrationTestsContext(request)
     try:
@@ -222,14 +223,16 @@ def test_renew_files_propagate_permissions(context):
     if os.name != 'nt':
         os.chmod(privkey1, 0o444)
     else:
-        import win32security
-        import ntsecuritycon
+        import win32security  # pylint: disable=import-error
+        import ntsecuritycon  # pylint: disable=import-error
         # Get the current DACL of the private key
         security = win32security.GetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION)
         dacl = security.GetSecurityDescriptorDacl()
         # Create a read permission for Everybody group
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
-        dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_GENERIC_READ, everybody)
+        dacl.AddAccessAllowedAce(
+            win32security.ACL_REVISION, ntsecuritycon.FILE_GENERIC_READ, everybody
+        )
         # Apply the updated DACL to the private key
         security.SetSecurityDescriptorDacl(1, dacl, 0)
         win32security.SetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION, security)
@@ -238,12 +241,14 @@ def test_renew_files_propagate_permissions(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     if os.name != 'nt':
-        # On Linux, read world permissions + all group permissions will be copied from the previous private key
+        # On Linux, read world permissions + all group permissions
+        # will be copied from the previous private key
         assert_world_read_permissions(privkey2)
         assert_equals_world_read_permissions(privkey1, privkey2)
         assert_equals_group_permissions(privkey1, privkey2)
     else:
-        # On Windows, world will never have any permissions, and group permission is irrelevant for this platform
+        # On Windows, world will never have any permissions, and
+        # group permission is irrelevant for this platform
         assert_world_no_permissions(privkey2)
 
 
@@ -609,19 +614,22 @@ def test_revoke_multiple_lineages(context):
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'r') as file:
         data = file.read()
 
-    data = re.sub('archive_dir = .*\n',
-                  'archive_dir = {0}\n'.format(join(context.config_dir, 'archive', cert1).replace('\\', '\\\\')),
-                  data)
+    data = re.sub(
+        'archive_dir = .*\n',
+        'archive_dir = {0}\n'.format(
+            join(context.config_dir, 'archive', cert1).replace('\\', '\\\\')
+        ), data
+    )
 
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'w') as file:
         file.write(data)
 
-    output = context.certbot([
+    context.certbot([
         'revoke', '--cert-path', join(context.config_dir, 'live', cert1, 'cert.pem')
     ])
 
     with open(join(context.workspace, 'logs', 'letsencrypt.log'), 'r') as f:
-        assert 'Not deleting revoked certs due to overlapping archive dirs' in f.read()
+        assert 'Not deleting revoked certificates due to overlapping archive dirs' in f.read()
 
 
 def test_wildcard_certificates(context):

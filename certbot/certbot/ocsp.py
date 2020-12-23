@@ -167,7 +167,7 @@ def _determine_ocsp_server(cert_path):
 
     if host:
         return url, host
-    logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
+    logger.info("Cannot process OCSP host from URL (%s) in certificate at %s", url, cert_path)
     return None, None
 
 
@@ -222,7 +222,7 @@ def _check_ocsp_cryptography(cert_path, chain_path, url, timeout):
 
 
 def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
-    """Verify that the OCSP is valid for serveral criteria"""
+    """Verify that the OCSP is valid for several criteria"""
     # Assert OCSP response corresponds to the certificate we are talking about
     if response_ocsp.serial_number != request_ocsp.serial_number:
         raise AssertionError('the certificate in response does not correspond '

@@ -1,7 +1,6 @@
 # letstest
 Simple AWS testfarm scripts for certbot client testing
 
-- Configures (canned) boulder server
 - Launches EC2 instances with a given list of AMIs for different distros
 - Copies certbot repo and puts it on the instances
 - Runs certbot tests (bash scripts) on all of these
@@ -56,11 +55,6 @@ It will take a minute for these instances to shut down and become available agai
 A folder named `letest-<timestamp>` is also created with a log file from each instance of the test and a file named "results" containing the output above.
 The tests take quite a while to run.
 
-Also, the way all of the tests work is to check if there is already a boulder server running and if not start one. The boulder server is left running between tests,
-and there are known issues if two instances of boulder attempt to be started. After starting your first test, wait until you see "Found existing boulder server:" or if you see output
-about creating a boulder server, wait a minute before starting the 2nd test. You only have to do this after starting your first session of tests or after running
-the `aws ec2 terminate-instances` command above.
-
 ## Scripts
 Example scripts are in the 'scripts' directory, these are just bash scripts that have a few parameters passed
 to them at runtime via environment variables.  test_apache2.sh is a useful reference.
@@ -73,5 +67,4 @@ See:
 - https://docs.aws.amazon.com/cli/latest/userguide/cli-ec2-keypairs.html
 
 Main repos:
-- https://github.com/letsencrypt/boulder
 - https://github.com/letsencrypt/letsencrypt

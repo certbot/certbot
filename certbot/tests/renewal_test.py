@@ -204,7 +204,7 @@ class DescribeResultsTest(unittest.TestCase):
             '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
         ])
         self.mock_error.assert_has_calls([
-            mock.call('All %ss failed. The following certs could not be renewed:', 'renewal'),
+            mock.call('All %ss failed. The following certificates could not be renewed:', 'renewal'),
             mock.call('  bad.pem (failure)'),
         ])
 
@@ -214,7 +214,7 @@ class DescribeResultsTest(unittest.TestCase):
                    ['foo.pem expires on 123'], ['errored.conf'])
         self._assert_success_output([
             '\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
-            'The following certs are not due for renewal yet:',
+            'The following certificates are not due for renewal yet:',
             '  foo.pem expires on 123 (skipped)',
             'The following simulated renewals succeeded:',
             '  good.pem (success)\n  good2.pem (success)\n',

@@ -547,8 +547,7 @@ class OsInfoTest(unittest.TestCase):
             m_distro.linux_distribution.return_value = ("something", "else")
             self.assertEqual(cbutil.get_os_info(), ("something", "else"))
 
-    @mock.patch("certbot.util.subprocess.Popen")
-    def test_non_systemd_os_info(self, popen_mock):
+    def test_non_systemd_os_info(self):
         import certbot.util as cbutil
         with mock.patch('certbot.util._USE_DISTRO', False):
             with mock.patch('platform.system_alias',
@@ -557,13 +556,14 @@ class OsInfoTest(unittest.TestCase):
 
             with mock.patch('platform.system_alias',
                             return_value=('darwin', '', '')):
-                comm_mock = mock.Mock()
-                comm_attrs = {'communicate.return_value':
-                            ('42.42.42', 'error')}
-                comm_mock.configure_mock(**comm_attrs)
-                popen_mock.return_value = comm_mock
-                self.assertEqual(cbutil.get_python_os_info()[0], 'darwin')
-                self.assertEqual(cbutil.get_python_os_info()[1], '42.42.42')
+                with mock.patch("subprocess.Popen") as popen_mock:
+                    comm_mock = mock.Mock()
+                    comm_attrs = {'communicate.return_value':
+                                ('42.42.42', 'error')}
+                    comm_mock.configure_mock(**comm_attrs)
+                    popen_mock.return_value = comm_mock
+                    self.assertEqual(cbutil.get_python_os_info()[0], 'darwin')
+                    self.assertEqual(cbutil.get_python_os_info()[1], '42.42.42')
 
             with mock.patch('platform.system_alias',
                             return_value=('freebsd', '9.3-RC3-p1', '')):

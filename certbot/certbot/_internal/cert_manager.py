@@ -369,7 +369,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
     notify = out.append
 
     if not parsed_certs and not parse_failures:
-        notify("No certs found.")
+        notify("No certificates found.")
     else:
         if parsed_certs:
             match = "matching " if config.certname or config.domains else ""
