@@ -512,8 +512,8 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         auth_handler._report_failed_authzrs([self.authzr1], 'key')
         mock_notify.assert_called_with(
             '\n'
-            'Certbot encountered errors for these domains while requesting the '
-            'certificate (using the foobaz plugin):\n'
+            'Certbot failed to authenticate some domains (using the foobaz plugin). '
+            'The ACME server reported these problems:\n'
             '  Domain: example.com\n'
             '  Type:   tls\n'
             '  Detail: detail\n'
@@ -521,6 +521,9 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
             '  Domain: example.com\n'
             '  Type:   tls\n'
             '  Detail: detail\n'
+            '\nHint: the Certificate Authority externally verifies the local changes that '
+            'Certbot makes. Ensure the above domains are configured correctly and that '
+            'changes made by the foobaz plugin are accessible from the internet.\n'
         )
 
     @mock.patch('certbot._internal.auth_handler.display_util.notify')
@@ -531,8 +534,8 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         auth_handler._report_failed_authzrs([self.authzr1, self.authzr2], 'key')
         mock_notify.assert_called_with(
             '\n'
-            'Certbot encountered errors for these domains while requesting the '
-            'certificate (using the quux plugin):\n'
+            'Certbot failed to authenticate some domains (using the quux plugin). '
+            'The ACME server reported these problems:\n'
             '  Domain: foo.bar\n'
             '  Type:   dnssec\n'
             '  Detail: detail\n'
@@ -544,6 +547,9 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
             '  Domain: example.com\n'
             '  Type:   tls\n'
             '  Detail: detail\n'
+            '\nHint: the Certificate Authority externally verifies the local changes that '
+            'Certbot makes. Ensure the above domains are configured correctly and that '
+            'changes made by the quux plugin are accessible from the internet.\n'
         )
 
 

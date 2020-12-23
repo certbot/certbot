@@ -408,13 +408,18 @@ def _report_failed_authzrs(failed_authzrs, account_key):
         problems.setdefault(achall.error.typ, []).append(achall)
 
     config = zope.component.getUtility(interfaces.IConfig)
-    msg = ["\nCertbot encountered errors for these domains "
-           "while requesting the certificate (using the {} plugin):"
-           .format(config.authenticator)]
+    msg = ["\nCertbot failed to authenticate some domains (using the {} plugin)."
+           " The ACME server reported these problems:".format(config.authenticator)]
 
     for _, achalls in sorted(problems.items(), key=lambda item: item[0]):
         msg.append(_generate_failed_chall_msg(achalls))
 
+    msg.append(
+        '\nHint: the Certificate Authority externally verifies the local changes that '
+        'Certbot makes. Ensure the above domains are configured correctly and that changes '
+        'made by the {} plugin are accessible from the internet.\n'
+        .format(config.authenticator)
+    )
     display_util.notify("".join(msg))
 
 
