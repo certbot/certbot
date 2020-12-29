@@ -5,4 +5,4 @@ pr:
 
 jobs:
   - template: templates/jobs/standard-tests-jobs.yml
-  - template: templates/jobs/documentation-tests-jobs.yml
+
