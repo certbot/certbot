@@ -149,6 +149,7 @@ Authors
 * [Lior Sabag](https://github.com/liorsbg)
 * [Lipis](https://github.com/lipis)
 * [lord63](https://github.com/lord63)
+* [Lorenzo Fundaró](https://github.com/lfundaro)
 * [Luca Beltrame](https://github.com/lbeltrame)
 * [Luca Ebach](https://github.com/lucebac)
 * [Luca Olivetti](https://github.com/olivluca)

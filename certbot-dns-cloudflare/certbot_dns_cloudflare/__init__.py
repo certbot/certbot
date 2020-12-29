@@ -3,6 +3,10 @@ The `~certbot_dns_cloudflare.dns_cloudflare` plugin automates the process of
 completing a ``dns-01`` challenge (`~acme.challenges.DNS01`) by creating, and
 subsequently removing, TXT records using the Cloudflare API.
 
+.. note::
+   The plugin is not installed by default. It can be installed by heading to
+   `certbot.eff.org <https://certbot.eff.org/instructions#wildcard>`_, choosing your system and
+   selecting the Wildcard tab.
 
 Named Arguments
 ---------------

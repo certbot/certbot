@@ -809,8 +809,8 @@ class RenewableCert(interfaces.RenewableCert):
         May need to recover from rare interrupted / crashed states."""
 
         if self.has_pending_deployment():
-            logger.warning("Found a new cert /archive/ that was not linked to in /live/; "
-                        "fixing...")
+            logger.warning("Found a new certificate /archive/ that was not "
+                           "linked to in /live/; fixing...")
             self.update_all_links_to(self.latest_common_version())
             return False
         return True
@@ -883,7 +883,7 @@ class RenewableCert(interfaces.RenewableCert):
         """
         target = self.current_target("cert")
         if target is None:
-            raise errors.CertStorageError("could not find cert file")
+            raise errors.CertStorageError("could not find the certificate file")
         with open(target) as f:
             return crypto_util.get_names_from_cert(f.read())
 

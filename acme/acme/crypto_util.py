@@ -186,6 +186,7 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
             raise errors.Error(error)
     return client_ssl.get_peer_certificate()
 
+
 def make_csr(private_key_pem, domains, must_staple=False):
     """Generate a CSR containing a list of domains as subjectAltNames.
 
@@ -217,6 +218,7 @@ def make_csr(private_key_pem, domains, must_staple=False):
     return crypto.dump_certificate_request(
         crypto.FILETYPE_PEM, csr)
 
+
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
     common_name = loaded_cert_or_req.get_subject().CN
     sans = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
@@ -224,6 +226,7 @@ def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
     if common_name is None:
         return sans
     return [common_name] + [d for d in sans if d != common_name]
+
 
 def _pyopenssl_cert_or_req_san(cert_or_req):
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
@@ -316,6 +319,7 @@ def gen_ss_cert(key, domains, not_before=None,
     cert.set_pubkey(key)
     cert.sign(key, "sha256")
     return cert
+
 
 def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
     """Dump certificate chain into a bundle.
