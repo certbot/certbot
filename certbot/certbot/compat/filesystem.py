@@ -393,17 +393,23 @@ def readlink(link_path):
     :param str link_path: The symlink path to resolve
     :return: The path the symlink points to
     :returns: str
+    :raise: ValueError if a long path (260> characters) is encountered on Windows
     """
     path = os.readlink(link_path)
+
+    if POSIX_MODE or not path.startswith('\\\\?\\'):
+        return path
+
+    # At that point, we are on Windows and the path returned uses the long form (Python 3.8+).
 
     # Max length of a normal path is 260 characters on Windows, including the non printable
     # termination character "<NUL>". The termination character is not included in Python
     # strings, giving a max length of 259 characters, + 4 characters for the extended form
-    # prefix, to an effective max length of the studied path of 263 characters.
-    if not POSIX_MODE and path.startswith('\\\\?\\') and len(path) < 264:
-        path = path[4:]
+    # prefix, to an effective max length 263 characters on a string representing a normal path.
+    if len(path) < 264:
+        return path[4:]
 
-    return path
+    raise ValueError("Long paths are not supported by Certbot on Windows.")
 
 
 # On Windows is_executable run from an unprivileged shell may claim that a path is
