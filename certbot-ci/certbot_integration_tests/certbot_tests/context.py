@@ -77,6 +77,6 @@ class IntegrationTestsContext(object):
         appending the pytest worker id to the subdomain, using this pattern:
         {subdomain}.{worker_id}.wtf
         :param subdomain: the subdomain to use in the generated domain (default 'le')
-        :return: the well-formed domain suitable for redirection on 
+        :return: the well-formed domain suitable for redirection on
         """
         return '{0}.{1}.wtf'.format(subdomain, self.worker_id)

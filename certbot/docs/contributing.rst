@@ -282,8 +282,8 @@ support for IIS, Icecast and Plesk.
 Installers and Authenticators will oftentimes be the same class/object
 (because for instance both tasks can be performed by a webserver like nginx)
 though this is not always the case (the standalone plugin is an authenticator
-that listens on port 80, but it cannot install certs; a postfix plugin would
-be an installer but not an authenticator).
+that listens on port 80, but it cannot install certificates; a postfix plugin
+would be an installer but not an authenticator).
 
 Installers and Authenticators are kept separate because
 it should be possible to use the `~.StandaloneAuthenticator` (it sets
@@ -516,11 +516,13 @@ Steps:
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
-5. Submit the PR. Once your PR is open, please do not force push to the branch
+5. If any documentation should be added or updated as part of the changes you
+   have made, please include the documentation changes in your PR.
+6. Submit the PR. Once your PR is open, please do not force push to the branch
    containing your pull request to squash or amend commits. We use `squash
    merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
    rewriting commits makes changes harder to track between reviews.
-6. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
+7. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
 
 .. _ask for help:
 

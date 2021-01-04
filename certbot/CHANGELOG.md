@@ -2,7 +2,42 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.10.0 - master
+## 1.11.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* We deprecated support for Python 2 in Certbot and its ACME library.
+  Support for Python 2 will be removed in the next planned release of Certbot.
+* certbot-auto was deprecated on all systems. For more information about this
+  change, see
+  https://community.letsencrypt.org/t/certbot-auto-no-longer-works-on-debian-based-systems/139702/7.
+* We deprecated support for Apache 2.2 in the certbot-apache plugin and it will
+  be removed in a future release of Certbot.
+
+### Fixed
+
+* The Certbot snap no longer loads packages installed via `pip install --user`. This
+  was unintended and DNS plugins should be installed via `snap` instead.
+* `certbot-dns-google` would sometimes crash with HTTP 409/412 errors when used with very large zones. See [#6036](https://github.com/certbot/certbot/issues/6036).
+* `certbot-dns-google` would sometimes crash with an HTTP 412 error if preexisting records had an unexpected TTL, i.e.: different than Certbot's default TTL for this plugin. See [#8551](https://github.com/certbot/certbot/issues/8551).
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.10.1 - 2020-12-03
+
+### Fixed
+
+* Fixed a bug in `certbot.util.add_deprecated_argument` that caused the
+  deprecated `--manual-public-ip-logging-ok` flag to crash Certbot in some
+  scenarios.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.10.0 - 2020-12-01
 
 ### Added
 
@@ -10,7 +45,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Confirmation when deleting certificates
 * CLI flag `--key-type` has been added to specify 'rsa' or 'ecdsa' (default 'rsa').
 * CLI flag `--elliptic-curve` has been added which takes an NIST/SECG elliptic curve. Any of
-  `secp256r1`, `secp284r1` and `secp521r1` are accepted values.
+  `secp256r1`, `secp384r1` and `secp521r1` are accepted values.
 * The command `certbot certficates` lists the which type of the private key that was used
   for the private key.
 * Support for Python 3.9 was added to Certbot and all of its components.
@@ -20,11 +55,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * certbot-auto was deprecated on Debian based systems.
 * CLI flag `--manual-public-ip-logging-ok` is now a no-op, generates a
   deprecation warning, and will be removed in a future release.
-*
 
 ### Fixed
 
-*
+* Fixed a Unicode-related crash in the nginx plugin when running under Python 2.
 
 More details about these changes can be found on our GitHub repo.
 
