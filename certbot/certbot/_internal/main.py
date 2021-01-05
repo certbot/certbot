@@ -666,7 +666,7 @@ def unregister(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -706,7 +706,7 @@ def register(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None` or a string indicating and error
     :rtype: None or str
@@ -736,7 +736,7 @@ def update_account(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None` or a string indicating and error
     :rtype: None or str
@@ -813,7 +813,7 @@ def install(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -896,7 +896,7 @@ def plugins_cmd(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -935,7 +935,7 @@ def enhance(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -994,7 +994,7 @@ def rollback(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1012,7 +1012,7 @@ def update_symlinks(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1030,7 +1030,7 @@ def rename(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1048,7 +1048,7 @@ def delete(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1064,7 +1064,7 @@ def certificates(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1081,7 +1081,7 @@ def revoke(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None` or string indicating error in case of error
     :rtype: None or str
@@ -1126,7 +1126,7 @@ def run(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1213,7 +1213,7 @@ def renew_cert(config, plugins, lineage):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :param lineage: Certificate lineage object
     :type lineage: storage.RenewableCert
@@ -1258,7 +1258,7 @@ def certonly(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1308,7 +1308,7 @@ def renew(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
