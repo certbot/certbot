@@ -510,7 +510,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
 
         auth_handler._report_failed_authzrs([self.authzr1], 'key')
         call_list = mock_zope().add_message.call_args_list
-        self.assertTrue(len(call_list) == 1)
+        self.assertEqual(len(call_list), 1)
         self.assertTrue("Domain: example.com\nType:   tls\nDetail: detail" in call_list[0][0][0])
 
     @test_util.patch_get_utility()
@@ -518,7 +518,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         from certbot._internal import auth_handler
 
         auth_handler._report_failed_authzrs([self.authzr1, self.authzr2], 'key')
-        self.assertTrue(mock_zope().add_message.call_count == 2)
+        self.assertEqual(mock_zope().add_message.call_count, 2)
 
 
 def gen_auth_resp(chall_list):

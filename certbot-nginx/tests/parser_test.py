@@ -492,6 +492,14 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(['server'], parsed[0][2][0])
         self.assertEqual(['listen', '80'], parsed[0][2][1][3])
 
+    def test_valid_unicode_roundtrip(self):
+        """This tests the parser's ability to load and save a config containing Unicode"""
+        nparser = parser.NginxParser(self.config_path)
+        nparser._parse_files(
+            nparser.abs_path('valid_unicode_comments.conf')
+        ) # pylint: disable=protected-access
+        nparser.filedump(lazy=False)
+
     def test_invalid_unicode_characters(self):
         with self.assertLogs() as log:
             nparser = parser.NginxParser(self.config_path)

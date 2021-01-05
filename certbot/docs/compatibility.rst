@@ -9,7 +9,7 @@ application itself. This means that we will not change behavior in a backwards
 incompatible way except in a new major version of the project.
 
 .. note:: None of this applies to the behavior of Certbot distribution
-    mechanisms such as :ref:`certbot-auto <certbot-auto>` or OS packages whose
+    mechanisms such as :ref:`our snaps <snap-install>` or OS packages whose
     behavior may change at any time. Semantic versioning only applies to the
     common Certbot components that are installed by various distribution
     methods.

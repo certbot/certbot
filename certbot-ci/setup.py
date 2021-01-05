@@ -18,7 +18,7 @@ install_requires = [
     'python-dateutil',
     'pyyaml',
     'requests',
-    'six',
+    'six'
 ]
 
 # Add pywin32 on Windows platforms to handle low-level system calls.
@@ -52,6 +52,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
     ],
