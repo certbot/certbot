@@ -400,7 +400,8 @@ def readlink(link_path):
     if POSIX_MODE or not path.startswith('\\\\?\\'):
         return path
 
-    # At that point, we are on Windows and the path returned uses the long form (Python 3.8+).
+    # At this point, we know we are on Windows and that the path returned uses
+    # the extended form which is done for all paths in Python 3.8+
 
     # Max length of a normal path is 260 characters on Windows, including the non printable
     # termination character "<NUL>". The termination character is not included in Python
