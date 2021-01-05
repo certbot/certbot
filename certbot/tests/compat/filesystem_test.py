@@ -597,6 +597,32 @@ class IsExecutableTest(test_util.TempDirTestCase):
             self.assertFalse(filesystem.is_executable("exe"))
 
 
+class ReadlinkTest(unittest.TestCase):
+    @unittest.skipUnless(POSIX_MODE, reason='Tests specific to Linux')
+    @mock.patch("certbot.compat.filesystem.os.readlink")
+    def test_path_posix(self, mock_readlink):
+        mock_readlink.return_value = "/normal/path"
+        self.assertEqual(filesystem.readlink("dummy"), "/normal/path")
+
+    @unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows')
+    @mock.patch("certbot.compat.filesystem.os.readlink")
+    def test_normal_path_windows(self, mock_readlink):
+        # Python <3.8
+        mock_readlink.return_value = "C:\\short\\path"
+        self.assertEqual(filesystem.readlink("dummy"), "C:\\short\\path")
+
+        # Python >=3.8 (os.readlink always returns the extended form)
+        mock_readlink.return_value = "\\\\?\\C:\\short\\path"
+        self.assertEqual(filesystem.readlink("dummy"), "C:\\short\\path")
+
+    @unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows')
+    @mock.patch("certbot.compat.filesystem.os.readlink")
+    def test_extended_path_windows(self, mock_readlink):
+        # Following path is largely over the 260 characters permitted in the normal form.
+        mock_readlink.return_value = "\\\\?\\C:\\long" + 1000 * "\\path"
+        with self.assertRaises(ValueError):
+            filesystem.readlink("dummy")
+
 @contextlib.contextmanager
 def _fix_windows_runtime():
     if os.name != 'nt':

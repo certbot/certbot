@@ -152,3 +152,14 @@ def fstat(*unused_args, **unused_kwargs):
     raise RuntimeError('Usage of os.fstat() is forbidden. '
                        'Use certbot.compat.filesystem functions instead '
                        '(eg. has_min_permissions, has_same_ownership).')
+
+
+# Method os.readlink has a significant behavior change with Python 3.8+. Starting
+# with this version, it will return the resolved path in its "extended-style" form
+# unconditionally, which allows to use more than 259 characters, and its string
+# representation is prepended with "\\?\". Problem is that it does it for any path,
+# and will make equality comparison fail with paths that will use the simple form.
+def readlink(*unused_args, **unused_kwargs):
+    """Method os.readlink() is forbidden"""
+    raise RuntimeError('Usage of os.readlink() is forbidden. '
+                       'Use certbot.compat.filesystem.realpath() instead.')
