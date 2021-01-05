@@ -216,8 +216,21 @@ fi
 # ensure we have the latest built version of leauto
 letsencrypt-auto-source/build.py
 
-# and that it's signed correctly
-tools/offline-sigrequest.sh || true
+# Now we have to sign the built version of leauto. If
+# RELEASE_OPENSSL_WITH_YUBIKEY is set, try to use the yubikey to sign
+# letsencrypt-auto, otherwise, use tools/offline-sigrequest.sh.
+if [ -n "$RELEASE_OPENSSL_WITH_YUBIKEY" ]; then
+    SignLEAuto() {
+        yubico-piv-tool -a verify-pin --sign -s 9c -i letsencrypt-auto-source/letsencrypt-auto -o letsencrypt-auto-source/letsencrypt-auto.sig
+    }
+else
+    SignLEAuto() {
+        tools/offline-sigrequest.sh
+    }
+fi
+
+# Loop until letsencrypt-auto is signed correctly.
+SignLEAuto || true
 while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
         letsencrypt-auto-source/letsencrypt-auto.sig \
         letsencrypt-auto-source/letsencrypt-auto            ; do
@@ -225,7 +238,7 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
     read -p "Would you like this script to try and sign it again [Y/n]?" response
     case $response in
       [yY][eE][sS]|[yY]|"")
-        tools/offline-sigrequest.sh || true;;
+        SignLEAuto || true;;
       *)
         ;;
     esac
