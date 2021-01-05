@@ -113,11 +113,16 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
 
         from certbot._internal.account import Account
         new_authzr_uri = "hi"
+        meta = Account.Meta(
+            creation_host="test.example.org",
+            creation_dt=datetime.datetime(
+                2021, 1, 5, 14, 4, 10, tzinfo=pytz.UTC))
         self.acc = Account(
             regr=messages.RegistrationResource(
                 uri=None, body=messages.Registration(),
                 new_authzr_uri=new_authzr_uri),
-            key=KEY)
+            key=KEY,
+            meta=meta)
         self.mock_client = mock.MagicMock()
         self.mock_client.directory.new_authz = new_authzr_uri
 
