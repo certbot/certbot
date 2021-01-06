@@ -1,8 +1,17 @@
 # This file contains the oldest versions of our dependencies we say we require
-# in our packages or versions we need to support to maintain compatibility with
-# the versions included in the various Linux distros where we are packaged.
+# in our packages. These version numbers are often taken from the versions of
+# our dependencies available in popular LTS Linux distros to make it easier to
+# update the Certbot packages there.
+#
+# When updating these dependencies, we should try to only update them to the
+# oldest version of the package that is found in a non-EOL'd version of
+# CentOS, Debian, or Ubuntu that has Certbot packages in their OS repositories
+# using a version of Python we support. If the distro is EOL'd or using a
+# version of Python we don't support, it can be ignored.
 
 # CentOS/RHEL 7 EPEL constraints
+# Some of these constraints may be stricter than necessary because they
+# initially referred to the Python 2 packages in CentOS/RHEL 7 with EPEL.
 cffi==1.9.1
 chardet==2.2.1
 configobj==4.7.2
@@ -23,9 +32,8 @@ zope.event==4.0.3
 zope.interface==4.0.5
 
 # Debian Jessie Backports constraints
-# Debian Jessie has reached end of life. However:
-# When it becomes necessary to upgrade any of these dependencies, you should only update them to the oldest version of the package found
-# in a non-EOL'd version of CentOS, Debian, or Ubuntu that has Certbot packages in their OS repositories.
+# Debian Jessie has reached end of life so these dependencies can probably be
+# updated as needed or desired.
 PyICU==1.8
 colorama==0.3.2
 enum34==1.0.3
@@ -45,6 +53,8 @@ python-digitalocean==1.11
 requests[security]==2.6.0
 
 # Ubuntu Xenial constraints
+# Ubuntu Xenial only has versions of Python which we do not support available
+# so these dependencies can probably be updated as needed or desired.
 ConfigArgParse==0.10.0
 funcsigs==0.4
 zope.hookable==4.0.4
