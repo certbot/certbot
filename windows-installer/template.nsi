@@ -1,4 +1,4 @@
-; This NSIS template is based on the built-in one in pynsist 2.3.
+; This NSIS template is based on the built-in one in pynsist 2.6.
 ; Added lines are enclosed within "CERTBOT CUSTOM BEGIN/END" comments.
 ; If pynsist is upgraded, this template must be updated if necessary using the new built-in one.
 ; Original file can be found here: https://github.com/takluyver/pynsist/blob/2.4/nsist/pyapp.nsi
@@ -14,8 +14,13 @@
 
 ; Marker file to tell the uninstaller that it's a user installation
 !define USER_INSTALL_MARKER _user_install_marker
- 
+
 SetCompressor lzma
+
+!if "${NSIS_PACKEDVERSION}" >= 0x03000000
+  Unicode true
+  ManifestDPIAware true
+!endif
 
 ; CERTBOT CUSTOM BEGIN
 ; Administrator privileges are required to insert a new task in Windows Scheduler.
@@ -35,9 +40,10 @@ SetCompressor lzma
 !define MULTIUSER_INSTALLMODE_FUNCTION correct_prog_files
 [% endif %]
 !include MultiUser.nsh
+!include FileFunc.nsh
 
 [% block modernui %]
-; Modern UI installer stuff 
+; Modern UI installer stuff
 !include "MUI2.nsh"
 !define MUI_ABORTWARNING
 !define MUI_ICON "[[icon]]"
@@ -66,6 +72,8 @@ Name "${PRODUCT_NAME} (beta) ${PRODUCT_VERSION}"
 ; CERTBOT CUSTOM END
 OutFile "${INSTALLER_NAME}"
 ShowInstDetails show
+
+Var cmdLineInstallDir
 
 Section -SETTINGS
   SetOutPath "$INSTDIR"
@@ -96,14 +104,14 @@ Section "!${PRODUCT_NAME}" sec_app
       File "[[ file ]]"
     [% endfor %]
   [% endfor %]
-  
+
   ; Install directories
   [% for dir, destination in ib.install_dirs %]
     SetOutPath "[[ pjoin(destination, dir) ]]"
     File /r "[[dir]]\*.*"
   [% endfor %]
   [% endblock install_files %]
-  
+
   [% block install_shortcuts %]
   ; Install shortcuts
   ; The output path becomes the working directory for shortcuts
@@ -127,7 +135,6 @@ Section "!${PRODUCT_NAME}" sec_app
   [% block install_commands %]
   [% if has_commands %]
     DetailPrint "Setting up command-line launchers..."
-    nsExec::ExecToLog '[[ python ]] -Es "$INSTDIR\_assemble_launchers.py" [[ python ]] "$INSTDIR\bin"'
 
     StrCmp $MultiUser.InstallMode CurrentUser 0 AddSysPathSystem
       ; Add to PATH for current user
@@ -139,7 +146,7 @@ Section "!${PRODUCT_NAME}" sec_app
     AddedSysPath:
   [% endif %]
   [% endblock install_commands %]
-  
+
   ; Byte-compile Python files.
   DetailPrint "Byte-compiling Python modules..."
   nsExec::ExecToLog '[[ python ]] -m compileall -q "$INSTDIR\pkgs"'
@@ -238,12 +245,25 @@ Function .onMouseOverSection
     [% block mouseover_messages %]
     StrCmp $0 ${sec_app} "" +2
       SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
-    
+
     [% endblock mouseover_messages %]
 FunctionEnd
 
 Function .onInit
+  ; Multiuser.nsh breaks /D command line parameter. Parse /INSTDIR instead.
+  ; Cribbing from https://nsis-dev.github.io/NSIS-Forums/html/t-299280.html
+  ${GetParameters} $0
+  ClearErrors
+  ${GetOptions} '$0' "/INSTDIR=" $1
+  IfErrors +2  ; Error means flag not found
+    StrCpy $cmdLineInstallDir $1
+  ClearErrors
+
   !insertmacro MULTIUSER_INIT
+
+  ; If cmd line included /INSTDIR, override the install dir set by MultiUser
+  StrCmp $cmdLineInstallDir "" +2
+    StrCpy $INSTDIR $cmdLineInstallDir
 FunctionEnd
 
 Function un.onInit
