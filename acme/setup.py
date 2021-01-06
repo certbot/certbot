@@ -9,20 +9,17 @@ version = '1.12.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    # load_pem_private/public_key (>=0.6)
-    # rsa_recover_prime_factors (>=0.8)
     'cryptography>=2.1.4',
     # formerly known as acme.jose:
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
-    # Connection.set_tlsext_host_name (>=0.13) + matching Xenial requirements (>=0.15.1)
-    'PyOpenSSL>=0.15.1',
+    'PyOpenSSL>=17.3.0',
     'pyrfc3339',
     'pytz',
     'requests[security]>=2.6.0',  # security extras added in 2.4.1
     'requests-toolbelt>=0.3.0',
-    'setuptools',
+    'setuptools>=39.0.1',
     'six>=1.9.0',  # needed for python_2_unicode_compatible
 ]
 

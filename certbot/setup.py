@@ -49,7 +49,7 @@ install_requires = [
     'parsedatetime>=1.3',  # Calendar.parseDT
     'pyrfc3339',
     'pytz',
-    'setuptools',
+    'setuptools>=39.0.1',
     'zope.component',
     'zope.interface',
 ]

@@ -12,9 +12,9 @@ version = '1.12.0.dev0'
 install_requires = [
     'acme>=1.4.0',
     'certbot>=1.6.0',
-    'PyOpenSSL',
+    'PyOpenSSL>=17.3.0',
     'pyparsing>=1.5.5',  # Python3 support
-    'setuptools',
+    'setuptools>=39.0.1',
     'zope.interface',
 ]
 
