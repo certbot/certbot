@@ -26,10 +26,10 @@ jobs:
           TOXENV: integration-certbot
         linux-oldest-tests-1:
           IMAGE_NAME: ubuntu-18.04
-          TOXENV: py27-{acme,apache,apache-v2,certbot}-oldest
+          TOXENV: {acme,apache,apache-v2,certbot}-oldest
         linux-oldest-tests-2:
           IMAGE_NAME: ubuntu-18.04
-          TOXENV: py27-{dns,nginx}-oldest
+          TOXENV: {dns,nginx}-oldest
         linux-py27:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 2.7
