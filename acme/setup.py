@@ -11,7 +11,7 @@ version = '1.12.0.dev0'
 install_requires = [
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
-    'cryptography>=1.2.3',
+    'cryptography>=2.1.4',
     # formerly known as acme.jose:
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.

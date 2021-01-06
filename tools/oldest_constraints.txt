@@ -43,7 +43,6 @@ google-api-python-client==1.5.5
 # Our setup.py constraints
 apacheconfig==0.3.2
 cloudflare==1.5.1
-cryptography==1.2.3
 parsedatetime==1.3
 pyparsing==1.5.5
 python-digitalocean==1.11
@@ -56,6 +55,7 @@ funcsigs==0.4
 zope.hookable==4.0.4
 
 # Ubuntu Bionic constraints.
+cryptography==2.1.4
 distro==1.0.1
 # Lexicon oldest constraint is overridden appropriately on relevant DNS provider plugins
 # using their local-oldest-requirements.txt
