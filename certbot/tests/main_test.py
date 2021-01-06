@@ -983,10 +983,12 @@ class MainTest(test_util.ConfigTestCase):
         # Asserts we don't suggest donating after a successful dry run
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
+    @mock.patch('certbot._internal.main.util.atexit_register')
     @mock.patch('certbot._internal.eff.handle_subscription')
     @mock.patch('certbot.crypto_util.notAfter')
     @test_util.patch_get_utility()
-    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter, mock_subscription):
+    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter,
+                                          mock_subscription, mock_register):
         cert_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/foo.bar'))
         key_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/baz.qux'))
         date = '1970-01-01'
@@ -1003,8 +1005,7 @@ class MainTest(test_util.ConfigTestCase):
         self.assertTrue(cert_path in cert_msg)
         self.assertTrue(date in cert_msg)
         self.assertTrue(key_path in cert_msg)
-        self.assertTrue(
-            'donate' in mock_get_utility().add_message.call_args[0][0])
+        self.assertIn('donate',  mock_register.call_args[0][1])
         self.assertTrue(mock_subscription.called)
 
     @mock.patch('certbot._internal.eff.handle_subscription')
@@ -1092,15 +1093,16 @@ class MainTest(test_util.ConfigTestCase):
 
         return mock_lineage, mock_get_utility, stdout
 
+    @mock.patch('certbot._internal.main.util.atexit_register')
     @mock.patch('certbot.crypto_util.notAfter')
-    def test_certonly_renewal(self, _):
+    def test_certonly_renewal(self, _, mock_register):
         lineage, get_utility, _ = self._test_renewal_common(True, [])
         self.assertEqual(lineage.save_successor.call_count, 1)
         lineage.update_all_links_to.assert_called_once_with(
             lineage.latest_common_version())
         cert_msg = get_utility().add_message.call_args_list[0][0][0]
         self.assertTrue('fullchain.pem' in cert_msg)
-        self.assertTrue('donate' in get_utility().add_message.call_args[0][0])
+        self.assertIn('donate', mock_register.call_args[0][1])
 
     @mock.patch('certbot._internal.log.logging.handlers.RotatingFileHandler.doRollover')
     @mock.patch('certbot.crypto_util.notAfter')
@@ -1373,14 +1375,14 @@ class MainTest(test_util.ConfigTestCase):
 
         return mock_get_utility
 
+    @mock.patch('certbot._internal.main.util.atexit_register')
     @mock.patch('certbot._internal.eff.handle_subscription')
-    def test_certonly_csr(self, mock_subscription):
+    def test_certonly_csr(self, mock_subscription, mock_register):
         mock_get_utility = self._test_certonly_csr_common()
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
         self.assertTrue('fullchain.pem' in cert_msg)
         self.assertFalse('Your key file has been saved at' in cert_msg)
-        self.assertTrue(
-            'donate' in mock_get_utility().add_message.call_args[0][0])
+        self.assertIn('donate', mock_register.call_args[0][1])
         self.assertTrue(mock_subscription.called)
 
     def test_certonly_csr_dry_run(self):
