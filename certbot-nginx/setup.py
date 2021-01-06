@@ -13,7 +13,7 @@ install_requires = [
     'acme>=1.4.0',
     'certbot>=1.6.0',
     'PyOpenSSL>=17.3.0',
-    'pyparsing>=1.5.5',  # Python3 support
+    'pyparsing>=2.2.0',
     'setuptools>=39.0.1',
     'zope.interface',
 ]
