@@ -48,7 +48,6 @@ def _compile_wheels(repo_path, build_path, venv_python):
     with _prepare_constraints(repo_path) as constraints_file_path:
         env = os.environ.copy()
         env['PIP_CONSTRAINT'] = constraints_file_path
-        subprocess.check_call([venv_python, '-m', 'pip', '--version'])
         command = [venv_python, '-m', 'pip', 'wheel', '-w', wheels_path]
         command.extend(wheels_project)
         subprocess.check_call(command, env=env)
