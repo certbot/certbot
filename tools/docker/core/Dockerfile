@@ -28,7 +28,8 @@ RUN apk add --no-cache --virtual .certbot-deps \
         libssl1.1 \
         openssl \
         ca-certificates \
-        binutils
+        binutils \
+        curl
 
 # Install certbot from sources
 #
