@@ -48,7 +48,6 @@ pyparsing==2.2.0
 # Our setup.py constraints
 apacheconfig==0.3.2
 cloudflare==1.5.1
-parsedatetime==1.3
 python-digitalocean==1.11
 requests[security]==2.6.0
 
@@ -71,6 +70,7 @@ setuptools==39.0.1
 
 # Ubuntu Focal constraints
 configobj==5.0.6
+parsedatetime==2.4
 
 # Plugin constraints
 # These aren't necessarily the oldest versions we need to support

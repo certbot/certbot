@@ -46,7 +46,7 @@ install_requires = [
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
-    'parsedatetime>=1.3',  # Calendar.parseDT
+    'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz',
     'setuptools>=39.0.1',
