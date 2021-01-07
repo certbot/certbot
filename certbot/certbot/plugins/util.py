@@ -10,9 +10,11 @@ logger = logging.getLogger(__name__)
 
 def get_prefixes(path):
     """Retrieves all possible path prefixes of a path, in descending order
-    of length. For instance,
-        (linux) /a/b/c returns ['/a/b/c', '/a/b', '/a', '/']
-        (windows) C:\\a\\b\\c returns ['C:\\a\\b\\c', 'C:\\a\\b', 'C:\\a', 'C:']
+    of length. For instance:
+
+      * (Linux) `/a/b/c` returns `['/a/b/c', '/a/b', '/a', '/']`
+      * (Windows) `C:\\a\\b\\c` returns `['C:\\a\\b\\c', 'C:\\a\\b', 'C:\\a', 'C:']`
+
     :param str path: the path to break into prefixes
 
     :returns: all possible path prefixes of given path in descending order

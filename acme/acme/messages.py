@@ -275,7 +275,7 @@ class Resource(jose.JSONObjectWithFields):
 class ResourceWithURI(Resource):
     """ACME Resource with URI.
 
-    :ivar unicode uri: Location of the resource.
+    :ivar unicode ~.uri: Location of the resource.
 
     """
     uri = jose.Field('uri')  # no ChallengeResource.uri
@@ -627,7 +627,7 @@ class Order(ResourceBody):
     :ivar str finalize: URL to POST to to request issuance once all
         authorizations have "valid" status.
     :ivar datetime.datetime expires: When the order expires.
-    :ivar .Error error: Any error that occurred during finalization, if applicable.
+    :ivar ~.Error error: Any error that occurred during finalization, if applicable.
     """
     identifiers = jose.Field('identifiers', omitempty=True)
     status = jose.Field('status', decoder=Status.from_json,
