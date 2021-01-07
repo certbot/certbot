@@ -40,7 +40,7 @@ install_requires = [
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
     'ConfigArgParse>=0.9.3',
-    'configobj',
+    'configobj>=5.0.6',
     'cryptography>=2.1.4',
     'distro>=1.0.1',
     # 1.1.0+ is required to avoid the warnings described at
