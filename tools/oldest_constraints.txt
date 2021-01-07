@@ -1,7 +1,8 @@
-# This file contains the oldest versions of our dependencies we say we require
-# in our packages. These version numbers are often taken from the versions of
-# our dependencies available in popular LTS Linux distros to make it easier to
-# update the Certbot packages there.
+# This file contains the oldest versions of our dependencies we're trying to
+# support. Usually these version numbers are taken from the packages of our
+# dependencies available in popular LTS Linux distros. Keeping compatibility
+# with those versions makes it much easier for OS maintainers to update their
+# Certbot packages.
 #
 # When updating these dependencies, we should try to only update them to the
 # oldest version of the package that is found in a non-EOL'd version of
