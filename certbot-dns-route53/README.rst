@@ -1,1 +1,1 @@
-Amazon Web Services Route 53 Authenticator plugin for Certbot
+Amazon Web Services Route 53 DNS Authenticator plugin for Certbot
