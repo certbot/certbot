@@ -20,7 +20,7 @@ install_requires = [
     'requests[security]>=2.6.0',  # security extras added in 2.4.1
     'requests-toolbelt>=0.3.0',
     'setuptools>=39.0.1',
-    'six>=1.9.0',  # needed for python_2_unicode_compatible
+    'six>=1.11.0',
 ]
 
 setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
