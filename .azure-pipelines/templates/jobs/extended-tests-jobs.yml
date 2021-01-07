@@ -33,14 +33,6 @@ jobs:
         linux-boulder-v2-integration-nginx-oldest:
           TOXENV: integration-nginx-oldest
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-py27-integration:
-          PYTHON_VERSION: 2.7
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
-        linux-boulder-v2-py27-integration:
-          PYTHON_VERSION: 2.7
-          TOXENV: integration
-          ACME_SERVER: boulder-v2
         linux-boulder-v1-py36-integration:
           PYTHON_VERSION: 3.6
           TOXENV: integration
