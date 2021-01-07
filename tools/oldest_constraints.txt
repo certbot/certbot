@@ -69,6 +69,7 @@ setuptools==39.0.1
 six==1.11.0
 
 # Ubuntu Focal constraints
+asn1crypto==0.24.0
 configobj==5.0.6
 parsedatetime==2.4
 
