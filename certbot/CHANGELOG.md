@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed the apache component on openSUSE Tumbleweed which no longer provides
+  an apache2ctl symlink and uses apachectl instead.
 
 More details about these changes can be found on our GitHub repo.
 
