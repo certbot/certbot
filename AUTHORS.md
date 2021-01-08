@@ -1,6 +1,7 @@
 Authors
 =======
 
+* [Aaron Gable](https://github.com/aarongable)
 * [Aaron Zirbes](https://github.com/aaronzirbes)
 * Aaron Zuehlke
 * Ada Lovelace
