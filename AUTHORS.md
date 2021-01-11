@@ -60,6 +60,7 @@ Authors
 * [DanCld](https://github.com/DanCld)
 * [Daniel Albers](https://github.com/AID)
 * [Daniel Aleksandersen](https://github.com/da2x)
+* [Daniel Almasi](https://github.com/almasen)
 * [Daniel Convissor](https://github.com/convissor)
 * [Daniel "Drex" Drexler](https://github.com/aeturnum)
 * [Daniel Huang](https://github.com/dhuang)

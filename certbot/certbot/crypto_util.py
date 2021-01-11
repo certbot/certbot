@@ -205,7 +205,7 @@ def make_key(bits=1024, key_type="rsa", elliptic_curve=None):
     elif key_type == 'ecdsa':
         try:
             name = elliptic_curve.upper()
-            if name in ('SECP256R1', 'SECP384R1', 'SECP512R1'):
+            if name in ('SECP256R1', 'SECP384R1', 'SECP521R1'):
                 _key = ec.generate_private_key(
                     curve=getattr(ec, elliptic_curve.upper(), None)(),
                     backend=default_backend()
