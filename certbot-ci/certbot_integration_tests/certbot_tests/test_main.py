@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import time
 
-from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1, SECP384R1
+from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1, SECP384R1, SECP521R1
 from cryptography.x509 import NameOID
 
 import pytest
@@ -498,6 +498,13 @@ def test_renew_with_ec_keys(context):
     assert_elliptic_key(key2, SECP384R1)
     assert 280 < os.stat(key2).st_size < 320  # ec keys of 384 bits are ~310 bytes
 
+    context.certbot(['renew', '--elliptic-curve', 'secp521r1'])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 3)
+    key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
+    assert_elliptic_key(key3, SECP521R1)
+    assert 340 < os.stat(key3).st_size < 390  # ec keys of 521 bits are ~365 bytes
+
     # We expect here that the command will fail because without --key-type specified,
     # Certbot must error out to prevent changing an existing certificate key type,
     # without explicit user consent (by specifying both --cert-name and --key-type).
@@ -511,9 +518,9 @@ def test_renew_with_ec_keys(context):
     # We expect that the previous behavior of requiring both --cert-name and
     # --key-type to be set to not apply to the renew subcommand.
     context.certbot(['renew', '--force-renewal', '--key-type', 'rsa'])
-    assert_cert_count_for_lineage(context.config_dir, certname, 3)
-    key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
-    assert_rsa_key(key3)
+    assert_cert_count_for_lineage(context.config_dir, certname, 4)
+    key4 = join(context.config_dir, 'archive', certname, 'privkey4.pem')
+    assert_rsa_key(key4)
 
 
 def test_ocsp_must_staple(context):
