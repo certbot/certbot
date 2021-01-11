@@ -216,18 +216,10 @@ fi
 # ensure we have the latest built version of leauto
 letsencrypt-auto-source/build.py
 
-# Now we have to sign the built version of leauto. If
-# RELEASE_OPENSSL_WITH_YUBIKEY is set, try to use the yubikey to sign
-# letsencrypt-auto, otherwise, use tools/offline-sigrequest.sh.
-if [ -n "$RELEASE_OPENSSL_WITH_YUBIKEY" ]; then
-    SignLEAuto() {
-        yubico-piv-tool -a verify-pin --sign -s 9c -i letsencrypt-auto-source/letsencrypt-auto -o letsencrypt-auto-source/letsencrypt-auto.sig
-    }
-else
-    SignLEAuto() {
-        tools/offline-sigrequest.sh
-    }
-fi
+# Now we have to sign the built version of leauto.
+SignLEAuto() {
+    yubico-piv-tool -a verify-pin --sign -s 9c -i letsencrypt-auto-source/letsencrypt-auto -o letsencrypt-auto-source/letsencrypt-auto.sig
+}
 
 # Loop until letsencrypt-auto is signed correctly.
 SignLEAuto || true
