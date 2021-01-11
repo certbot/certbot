@@ -30,6 +30,7 @@ class Authenticator(common.Plugin):
     hidden = True
     long_description = (
         'Authenticate through manual configuration or custom shell scripts. '
+        'Without shell scripts, automatic renewal is NOT supported. '
         'When using shell scripts, an authenticator script must be provided. '
         'The environment variables available to this script depend on the '
         'type of challenge. $CERTBOT_DOMAIN will always contain the domain '
@@ -92,6 +93,17 @@ permitted by DNS standards.)
                 'An authentication script must be provided with --{0} when '
                 'using the manual plugin non-interactively.'.format(
                     self.option_name('auth-hook')))
+        elif not self.conf('auth-hook'):
+            if not zope.component.getUtility(interfaces.IDisplay).yesno(
+                'WARNING: Using the --manual plugin without --manual-auth-hook means that Certbot '
+                'will not be able to automatically renew this certificate. To renew, you will be '
+                'required to run this command again and follow the instructions each time. '
+                '\n\nIf possible, use a Certbot plugin supporting automatic renewal or provide a '
+                '--manual-auth-hook to automate the process (see "certbot --help manual").'
+                '\n\nAre you sure you want to create this certificate manually?',
+                default=True
+            ):
+                raise errors.PluginError('User declined to create a manual certificate.')
         self._validate_hooks()
 
     def _validate_hooks(self):

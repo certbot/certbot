@@ -45,7 +45,26 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
     def test_prepare_no_hook_noninteractive(self):
         self.config.noninteractive_mode = True
-        self.assertRaises(errors.PluginError, self.auth.prepare)
+        with self.assertRaises(errors.PluginError) as e:
+            self.auth.prepare()
+        self.assertEqual(
+            str(e.exception),
+            'An authentication script must be provided with --manual-auth-hook when using the '
+            'manual plugin non-interactively.'
+        )
+
+    @test_util.patch_get_utility()
+    def test_prepare_no_hook_interactive(self, mock_get_utility):
+        mock_get_utility().yesno.return_value = False
+        with self.assertRaises(errors.PluginError) as e:
+            self.auth.prepare()
+        mock_get_utility().yesno.assert_called_once()
+        self.assertIn('WARNING: Using the --manual plugin without --manual-auth-hook',
+                      mock_get_utility().yesno.call_args[0][0])
+        self.assertEqual(str(e.exception), 'User declined to create a manual certificate.')
+
+        mock_get_utility().yesno.return_value = True
+        self.auth.prepare()
 
     def test_prepare_bad_hook(self):
         self.config.manual_auth_hook = os.path.abspath(os.sep)  # is / on UNIX
