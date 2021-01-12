@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Added an interactive prompt warning about renewal when using `--manual` without an authentication
+  hook.
 
 ### Fixed
 
