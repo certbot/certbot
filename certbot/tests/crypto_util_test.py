@@ -184,11 +184,13 @@ class MakeKeyTest(unittest.TestCase):
     def test_ec(self):  # pylint: disable=no-self-use
         # ECDSA Key Type Tests
         from certbot.crypto_util import make_key
-        # Do not test larger keys as it takes too long.
 
-        # Try a good key size for ECDSA
-        OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, make_key(elliptic_curve="secp256r1", key_type='ecdsa'))
+        for (name, bits) in [('secp256r1', 256), ('secp384r1', 384), ('secp521r1', 521)]:
+            pkey = OpenSSL.crypto.load_privatekey(
+                OpenSSL.crypto.FILETYPE_PEM,
+                make_key(elliptic_curve=name, key_type='ecdsa')
+            )
+            self.assertEqual(pkey.bits(), bits)
 
     def test_bad_key_sizes(self):
         from certbot.crypto_util import make_key
