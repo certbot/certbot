@@ -157,7 +157,7 @@ to serve all files under specified web root ({0})."""
                 "--webroot-path and --domains, or --webroot-map. Run with "
                 " --help webroot for examples.")
         for name, path in path_map.items():
-            self.full_roots[name] = os.path.join(path, challenges.HTTP01.URI_ROOT_PATH)
+            self.full_roots[name] = os.path.join(path, os.path.normcase(challenges.HTTP01.URI_ROOT_PATH))
             logger.debug("Creating root challenges validation dir at %s",
                          self.full_roots[name])
 
