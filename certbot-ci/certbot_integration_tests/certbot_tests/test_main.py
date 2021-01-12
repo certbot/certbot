@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import time
 
-from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1, SECP384R1
+from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1, SECP384R1, SECP521R1
 from cryptography.x509 import NameOID
 
 import pytest
@@ -474,6 +474,28 @@ def test_default_curve_type(context):
     ])
     key1 = join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname))
     assert_elliptic_key(key1, SECP256R1)
+
+
+@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
+    # Curve name, Curve class, ACME servers to skip
+    ('secp256r1', SECP256R1, []),
+    ('secp384r1', SECP384R1, []),
+    ('secp521r1', SECP521R1, ['boulder-v1', 'boulder-v2'])]
+)
+def test_ecdsa_curves(context, curve, curve_cls, skip_servers):
+    """Test issuance for each supported ECDSA curve"""
+    if context.acme_server in skip_servers:
+        pytest.skip('ACME server {} does not support ECDSA curve {}'
+                    .format(context.acme_server, curve))
+
+    domain = context.get_domain('curve')
+    context.certbot([
+        'certonly',
+        '--key-type', 'ecdsa', '--elliptic-curve', curve,
+        '--force-renewal', '-d', domain,
+    ])
+    key = join(context.config_dir, "live", domain, 'privkey.pem')
+    assert_elliptic_key(key, curve_cls)
 
 
 def test_renew_with_ec_keys(context):
