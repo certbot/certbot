@@ -148,6 +148,17 @@ def test_certonly(context):
     """Test the certonly verb on certbot."""
     context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname')])
 
+    assert_cert_count_for_lineage(context.config_dir, 'newname', 1)
+
+
+def test_certonly_webroot(context):
+    """Test the certonly verb with webroot plugin"""
+    with misc.create_http_server(context.http_01_port) as webroot:
+        certname = context.get_domain('webroot')
+        context.certbot(['certonly', '-a', 'webroot', '--webroot-path', webroot, '-d', certname])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
 
 def test_auth_and_install_with_csr(context):
     """Test certificate issuance and install using an existing CSR."""
