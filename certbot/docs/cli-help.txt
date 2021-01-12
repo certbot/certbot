@@ -99,9 +99,9 @@ optional arguments:
                         before submitting to CA (default: False)
   --preferred-chain PREFERRED_CHAIN
                         If the CA offers multiple certificate chains, prefer
-                        the chain whose topmost certificate was issued from
-                        this Subject Common Name. If no match, the default
-                        offered chain will be used. (default: None)
+                        the chain with an issuer matching this Subject Common
+                        Name. If no match, the default offered chain will be
+                        used. (default: None)
   --preferred-challenges PREF_CHALLS
                         A sorted, comma delimited list of the preferred
                         challenge to use during authorization with the most
