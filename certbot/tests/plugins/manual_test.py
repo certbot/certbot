@@ -58,7 +58,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         mock_get_utility().yesno.return_value = False
         with self.assertRaises(errors.PluginError) as e:
             self.auth.prepare()
-        mock_get_utility().yesno.assert_called_once()
+        self.assertEqual(mock_get_utility().yesno.call_count, 1)
         self.assertIn('WARNING: Using the --manual plugin without --manual-auth-hook',
                       mock_get_utility().yesno.call_args[0][0])
         self.assertEqual(str(e.exception), 'User declined to create a manual certificate.')
