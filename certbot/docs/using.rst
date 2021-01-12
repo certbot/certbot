@@ -211,6 +211,11 @@ the UI, you can use the plugin to obtain a certificate by specifying
 to copy and paste commands into another terminal session, which may
 be on a different computer.
 
+Obtaining a certificate using the manual plugin does **not** support
+automatic certificate renewal, unless using hooks (described below). You will
+be required to run the same command and repeat the manual steps every time you
+need to renew your certificate.
+
 The manual plugin can use either the ``http`` or the ``dns`` challenge. You can use the ``--preferred-challenges`` option
 to choose the challenge of your preference.
 
