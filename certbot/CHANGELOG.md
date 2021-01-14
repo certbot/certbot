@@ -10,7 +10,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* The `--preferred-chain` flag now only checks the Issuer Common Name of the
+  topmost (closest to the root) certificate in the chain, instead of checking
+  every certificate in the chain.
+  See [#8577](https://github.com/certbot/certbot/issues/8577).
 
 ### Fixed
 

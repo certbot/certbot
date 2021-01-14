@@ -474,6 +474,19 @@ class FindChainWithIssuerTest(unittest.TestCase):
         self.assertEqual(matched, fullchains[1])
 
     @mock.patch('certbot.crypto_util.logger.info')
+    def test_intermediate_match(self, mock_info):
+        """Don't pick a chain where only an intermediate matches"""
+        fullchains = self._all_fullchains()
+        # Make the second chain actually only contain "Pebble Root CA 0cc6f0"
+        # as an intermediate, not as the root. This wouldn't be a valid chain
+        # (the CERT_ISSUER cert didn't issue the CERT_ALT_ISSUER cert), but the
+        # function under test here doesn't care about that.
+        fullchains[1] = fullchains[1] + CERT_ISSUER.decode()
+        matched = self._call(fullchains, "Pebble Root CA 0cc6f0")
+        self.assertEqual(matched, fullchains[0])
+        mock_info.assert_not_called()
+
+    @mock.patch('certbot.crypto_util.logger.info')
     def test_no_match(self, mock_info):
         fullchains = self._all_fullchains()
         matched = self._call(fullchains, "non-existent issuer")
