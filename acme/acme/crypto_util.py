@@ -166,7 +166,7 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
             " from {0}:{1}".format(
                 source_address[0],
                 source_address[1]
-            ) if socket_kwargs else ""
+            ) if any(source_address) else ""
         )
         socket_tuple = (host, port)  # type: Tuple[str, int]
         sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore
