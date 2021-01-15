@@ -12,8 +12,3 @@ jobs:
       vmImage: $(IMAGE_NAME)
     steps:
       - template: ../steps/tox-steps.yml
-  - job: test_sphinx_builds
-    pool:
-      vmImage: ubuntu-20.04
-    steps:
-      - template: ../steps/sphinx-steps.yml
