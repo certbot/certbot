@@ -36,6 +36,11 @@ elif 'bdist_wheel' in sys.argv[1:]:
 elif sys.version_info < (3,3):
     install_requires.append('mock')
 
+docs_extras = [
+    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
+    'sphinx_rtd_theme',
+]
+
 setup(
     name='certbot-dns-route53',
     version=version,
@@ -70,6 +75,9 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     keywords=['certbot', 'route53', 'aws'],
+    extras_require={
+        'docs': docs_extras,
+    },
     entry_points={
         'certbot.plugins': [
             'dns-route53 = certbot_dns_route53._internal.dns_route53:Authenticator',

@@ -16,13 +16,13 @@ jobs:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.6
           TOXENV: py36
-        windows-py37-cover:
+        windows-py38-cover:
           IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.7
-          TOXENV: py37-cover
+          PYTHON_VERSION: 3.8
+          TOXENV: py38-cover
         windows-integration-certbot:
           IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.8
           TOXENV: integration-certbot
         linux-oldest-tests-1:
           IMAGE_NAME: ubuntu-18.04
@@ -75,3 +75,8 @@ jobs:
       vmImage: $(IMAGE_NAME)
     steps:
       - template: ../steps/tox-steps.yml
+  - job: test_sphinx_builds
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - template: ../steps/sphinx-steps.yml

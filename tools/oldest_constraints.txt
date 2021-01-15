@@ -33,7 +33,6 @@ zope.interface==4.0.5
 # Debian Jessie Backports constraints
 # Debian Jessie has reached end of life so these dependencies can probably be
 # updated as needed or desired.
-PyICU==1.8
 colorama==0.3.2
 enum34==1.0.3
 html5lib==0.999

@@ -240,6 +240,11 @@ look at the :doc:`packaging`.
 
 Certbot-Auto
 ------------
+.. toctree::
+   :hidden:
+
+   uninstall
+
 
 We used to have a shell script named ``certbot-auto`` to help people install
 Certbot on UNIX operating systems, however, this script is no longer supported.
