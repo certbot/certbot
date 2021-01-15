@@ -1,6 +1,7 @@
 steps:
   - bash: |
       set -e
+      exit 1
       brew install augeas
     condition: startswith(variables['IMAGE_NAME'], 'macOS')
     displayName: Install MacOS dependencies
