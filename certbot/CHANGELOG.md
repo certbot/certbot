@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* 
 
 ### Changed
 
@@ -20,6 +20,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Fixed the apache component on openSUSE Tumbleweed which no longer provides
   an apache2ctl symlink and uses apachectl instead.
 * Fixed a typo in `certbot/crypto_util.py` causing an error upon attempting `secp521r1` key generation
+* Allow user to provide an email address containing '!'.
 
 More details about these changes can be found on our GitHub repo.
 
