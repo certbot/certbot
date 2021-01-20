@@ -108,6 +108,34 @@ permitted by DNS standards.)
             'validation challenges either through shell scripts provided by '
             'the user or by performing the setup manually.')
 
+    def auth_hint(self, chall_type):
+        is_dns = chall_type == 'dns-01'
+        if self.conf('auth-hook'):
+            return (
+                'The Certificate Authority failed to verify the changes made by the '
+                '--manual-auth-hook. Ensure that this hook is functioning correctly{dns_hint}. '
+                'Refer to {certbot} --help manual.'
+                .format(
+                    certbot='certbot',
+                    dns_hint=(
+                        ' and that it waits a sufficient duration '
+                        'of time after creating a DNS TXT record'
+                    ) if is_dns else ''
+                )
+            )
+        else:
+            return (
+                'The Certificate Authority failed to {verify} the manually created {resources}. '
+                'Ensure that you created the {resources} in the correct location{dns_hint}.'
+                .format(
+                    verify='verify' if is_dns else 'download',
+                    resources='DNS TXT records' if is_dns else 'challenge files',
+                    dns_hint=(
+                        ' or try waiting longer for DNS propagation on the next attempt'
+                     ) if is_dns else ''
+                )
+            )
+
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01, challenges.DNS01]

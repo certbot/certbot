@@ -97,6 +97,26 @@ class Plugin(object):
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
 
+    def auth_hint(self, chall_type):
+        # type: (str) -> str
+        """Human-readable string to help the user troubleshoot the authenticator.
+
+        Shown to the user if one or more of the attempted challenges were not a success.
+
+        Should describe, in simple language, what the authenticator tried to do, what went
+        wrong and what the user should try as their "next steps".
+
+        :param str chall_type: The challenge type (label of ACME Validation Method)
+
+        :rtype str:
+        """
+        # This is a fallback hint. Authenticators should implement their own auth_hint that
+        # addresses the specific mechanics of that authenticator.
+        return ("The Certificate Authority couldn't exterally verify that the {name} plugin "
+                "completed the required {chall_type} challenges. Ensure the plugin is configured "
+                "correctly and that the changes it makes are accessible from the internet."
+                .format(name=self.name, chall_type=chall_type))
+
 
 class Installer(Plugin):
     """An installer base class with reverter and ssl_dhparam methods defined.

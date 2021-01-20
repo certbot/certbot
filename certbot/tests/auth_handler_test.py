@@ -327,7 +327,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         mock_order = mock.MagicMock(authorizations=authzrs)
 
-        with mock.patch('certbot._internal.auth_handler._report_failed_authzrs') as mock_report:
+        with mock.patch('certbot._internal.auth_handler.AuthHandler._report_failed_authzrs') \
+            as mock_report:
             valid_authzr = self.handler.handle_authorizations(mock_order, True)
 
         # Because best_effort=True, we did not blow up. Instead ...
@@ -474,10 +475,18 @@ class GenChallengePathTest(unittest.TestCase):
 
 
 class ReportFailedAuthzrsTest(unittest.TestCase):
-    """Tests for certbot._internal.auth_handler._report_failed_authzrs."""
+    """Tests for certbot._internal.auth_handler.AuthHandler._report_failed_authzrs."""
     # pylint: disable=protected-access
 
+
     def setUp(self):
+        from certbot._internal.auth_handler import AuthHandler
+
+        self.mock_auth = mock.MagicMock(name="buzz")
+        self.mock_auth.name = "buzz"
+        self.mock_auth.auth_hint.return_value = "the buzz hint"
+        self.handler = AuthHandler(self.mock_auth, mock.MagicMock(), mock.MagicMock(), [])
+
         kwargs = {
             "chall": acme_util.HTTP01,
             "uri": "uri",
@@ -505,15 +514,12 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         self.authzr2.body.challenges = [http_01_diff]
 
     @mock.patch('certbot._internal.auth_handler.display_util.notify')
-    @test_util.patch_get_utility()
-    def test_same_error_and_domain(self, mock_util, mock_notify):
-        from certbot._internal import auth_handler
-        mock_util().authenticator = "foobaz"
-        auth_handler._report_failed_authzrs([self.authzr1], 'key')
+    def test_same_error_and_domain(self, mock_notify):
+        self.handler._report_failed_authzrs([self.authzr1])
         mock_notify.assert_called_with(
             '\n'
-            'Certbot failed to authenticate some domains (using the foobaz plugin). '
-            'The ACME server reported these problems:\n'
+            'Certbot failed to authenticate some domains (using the buzz plugin). '
+            'The Certificate Authority reported these problems:\n'
             '  Domain: example.com\n'
             '  Type:   tls\n'
             '  Detail: detail\n'
@@ -521,21 +527,18 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
             '  Domain: example.com\n'
             '  Type:   tls\n'
             '  Detail: detail\n'
-            '\nHint: the Certificate Authority externally verifies the local changes that '
-            'Certbot makes. Ensure the above domains are configured correctly and that '
-            'changes made by the foobaz plugin are accessible from the internet.\n'
+            '\nHint: the buzz hint\n'
         )
 
     @mock.patch('certbot._internal.auth_handler.display_util.notify')
-    @test_util.patch_get_utility()
-    def test_different_errors_and_domains(self, mock_util, mock_notify):
-        from certbot._internal import auth_handler
-        mock_util().authenticator = "quux"
-        auth_handler._report_failed_authzrs([self.authzr1, self.authzr2], 'key')
+    def test_different_errors_and_domains(self, mock_notify):
+        self.mock_auth.name = "quux"
+        self.mock_auth.auth_hint.return_value = "quuuuuux"
+        self.handler._report_failed_authzrs([self.authzr1, self.authzr2])
         mock_notify.assert_called_with(
             '\n'
             'Certbot failed to authenticate some domains (using the quux plugin). '
-            'The ACME server reported these problems:\n'
+            'The Certificate Authority reported these problems:\n'
             '  Domain: foo.bar\n'
             '  Type:   dnssec\n'
             '  Detail: detail\n'
@@ -547,9 +550,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
             '  Domain: example.com\n'
             '  Type:   tls\n'
             '  Detail: detail\n'
-            '\nHint: the Certificate Authority externally verifies the local changes that '
-            'Certbot makes. Ensure the above domains are configured correctly and that '
-            'changes made by the quux plugin are accessible from the internet.\n'
+            '\nHint: quuuuuux\n'
         )
 
 

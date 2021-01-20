@@ -176,7 +176,7 @@ class AuthHandler(object):
 
         # In case of failed authzrs, create a report to the user.
         if authzrs_failed_to_report:
-            _report_failed_authzrs(authzrs_failed_to_report, self.account.key)
+            self._report_failed_authzrs(authzrs_failed_to_report)
             if not best_effort:
                 # Without best effort, having failed authzrs is critical and fail the process.
                 raise errors.AuthorizationError('Some challenges have failed.')
@@ -266,6 +266,31 @@ class AuthHandler(object):
                 challb, self.account.key, authzr.body.identifier.value))
 
         return achalls
+
+    def _report_failed_authzrs(self, failed_authzrs):
+        # type: (List[messages.AuthorizationResource]) -> None
+        """Notifies the user about failed authorizations."""
+        problems = {}  # type: Dict[str, List[achallenges.AnnotatedChallenge]]
+        failed_achalls = [challb_to_achall(challb, self.account.key, authzr.body.identifier.value)
+                        for authzr in failed_authzrs for challb in authzr.body.challenges
+                        if challb.error]
+
+        for achall in failed_achalls:
+            problems.setdefault(achall.error.typ, []).append(achall)
+
+        msg = ["\nCertbot failed to authenticate some domains (using the {} plugin)."
+            " The Certificate Authority reported these problems:".format(self.auth.name)]
+
+        for _, achalls in sorted(problems.items(), key=lambda item: item[0]):
+            msg.append(_generate_failed_chall_msg(achalls))
+
+        # Show a hint for whatever the first failed challenge was. Every failed challenge will
+        # almost certainly be the same type, except for very exotic --manual setups.
+        if failed_achalls:
+            chall_type = failed_achalls[0].typ
+            msg.append('\nHint: {}\n'.format(self.auth.auth_hint(chall_type)))
+
+        display_util.notify("".join(msg))
 
 
 def challb_to_achall(challb, account_key, domain):
@@ -394,33 +419,6 @@ def _report_no_chall_path(challbs):
             "plugin that can do challenges over DNS.")
     logger.critical(msg)
     raise errors.AuthorizationError(msg)
-
-
-def _report_failed_authzrs(failed_authzrs, account_key):
-    # type: (List[messages.AuthorizationResource], JWK) -> None
-    """Notifies the user about failed authorizations."""
-    problems = {}  # type: Dict[str, List[achallenges.AnnotatedChallenge]]
-    failed_achalls = [challb_to_achall(challb, account_key, authzr.body.identifier.value)
-                      for authzr in failed_authzrs for challb in authzr.body.challenges
-                      if challb.error]
-
-    for achall in failed_achalls:
-        problems.setdefault(achall.error.typ, []).append(achall)
-
-    config = zope.component.getUtility(interfaces.IConfig)
-    msg = ["\nCertbot failed to authenticate some domains (using the {} plugin)."
-           " The ACME server reported these problems:".format(config.authenticator)]
-
-    for _, achalls in sorted(problems.items(), key=lambda item: item[0]):
-        msg.append(_generate_failed_chall_msg(achalls))
-
-    msg.append(
-        '\nHint: the Certificate Authority externally verifies the local changes that '
-        'Certbot makes. Ensure the above domains are configured correctly and that changes '
-        'made by the {} plugin are accessible from the internet.\n'
-        .format(config.authenticator)
-    )
-    display_util.notify("".join(msg))
 
 
 def _generate_failed_chall_msg(failed_achalls):

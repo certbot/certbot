@@ -37,6 +37,13 @@ class DNSAuthenticator(common.Plugin):
             help='The number of seconds to wait for DNS to propagate before asking the ACME server '
                  'to verify the DNS record.')
 
+    def auth_hint(self, chall_type):
+        return (
+            'The Certificate Authority failed to verify the DNS TXT records created by the '
+            '--{name} plugin. Ensure that the above domains are managed by that DNS provider, '
+            'or try increasing --{name}-propagation-seconds.'.format(name=self.name)
+        )
+
     def get_chall_pref(self, unused_domain):  # pylint: disable=missing-function-docstring
         return [challenges.DNS01]
 
