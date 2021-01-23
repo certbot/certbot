@@ -9,6 +9,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import reverter
 from certbot import util
+from certbot._internal.cli import cli_constants
 from certbot._internal import hooks
 from certbot.compat import misc
 from certbot.compat import os
@@ -108,31 +109,39 @@ permitted by DNS standards.)
             'validation challenges either through shell scripts provided by '
             'the user or by performing the setup manually.')
 
-    def auth_hint(self, chall_type):
-        is_dns = chall_type == 'dns-01'
+    def auth_hint(self, failed_achalls):
+        has_chall = lambda cls: any(isinstance(achall.chall, cls) for achall in failed_achalls)
+
+        has_dns = has_chall(challenges.DNS01)
+        resource_names = {
+            challenges.DNS01: 'DNS TXT records',
+            challenges.HTTP01: 'challenge files',
+            challenges.TLSALPN01: 'TLS-ALPN certificates'
+        }
+        resources = ' and '.join(sorted([v for k, v in resource_names.items() if has_chall(k)]))
+
         if self.conf('auth-hook'):
             return (
-                'The Certificate Authority failed to verify the changes made by the '
+                'The Certificate Authority failed to verify the {resources} created by the '
                 '--manual-auth-hook. Ensure that this hook is functioning correctly{dns_hint}. '
-                'Refer to {certbot} --help manual.'
+                'Refer to "{certbot} --help manual".'
                 .format(
-                    certbot='certbot',
+                    certbot=cli_constants.cli_command,
+                    resources=resources,
                     dns_hint=(
-                        ' and that it waits a sufficient duration '
-                        'of time after creating a DNS TXT record'
-                    ) if is_dns else ''
+                        ' and that it waits a sufficient duration of time for DNS propagation'
+                    ) if has_dns else ''
                 )
             )
         else:
             return (
-                'The Certificate Authority failed to {verify} the manually created {resources}. '
-                'Ensure that you created the {resources} in the correct location{dns_hint}.'
+                'The Certificate Authority failed to verify the manually created {resources}. '
+                'Ensure that you created these in the correct location{dns_hint}.'
                 .format(
-                    verify='verify' if is_dns else 'download',
-                    resources='DNS TXT records' if is_dns else 'challenge files',
+                    resources=resources,
                     dns_hint=(
-                        ' or try waiting longer for DNS propagation on the next attempt'
-                     ) if is_dns else ''
+                        ', or try waiting longer for DNS propagation on the next attempt'
+                     ) if has_dns else ''
                 )
             )
 

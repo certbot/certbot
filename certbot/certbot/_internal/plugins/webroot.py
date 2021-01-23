@@ -62,7 +62,7 @@ to serve all files under specified web root ({0})."""
                  "file, it needs to be on a single line, like: webroot-map = "
                  '{"example.com":"/var/www"}.')
 
-    def auth_hint(self, chall_type):
+    def auth_hint(self, failed_achalls):
         return ("The Certificate Authority failed to download the temporary challenge files "
                 "created by the --webroot plugin. Ensure that the above domains serve their "
                 "content from the provided --webroot-path/-w and that files created there "

@@ -284,11 +284,8 @@ class AuthHandler(object):
         for _, achalls in sorted(problems.items(), key=lambda item: item[0]):
             msg.append(_generate_failed_chall_msg(achalls))
 
-        # Show a hint for whatever the first failed challenge was. Every failed challenge will
-        # almost certainly be the same type, except for very exotic --manual setups.
         if failed_achalls:
-            chall_type = failed_achalls[0].typ
-            msg.append('\nHint: {}\n'.format(self.auth.auth_hint(chall_type)))
+            msg.append('\nHint: {}\n'.format(self.auth.auth_hint(failed_achalls)))
 
         display_util.notify("".join(msg))
 
