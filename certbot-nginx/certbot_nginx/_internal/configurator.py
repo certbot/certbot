@@ -1029,7 +1029,7 @@ class NginxConfigurator(common.Installer):
                 version=".".join(str(i) for i in self.version))
         )
 
-    def auth_hint(self, failed_achalls):
+    def auth_hint(self, failed_achalls): # pragma: no cover
         return (
             "The Certificate Authority failed to verify the temporary nginx configuration changes "
             "made by the --nginx plugin. Ensure the above domains point to this nginx server and "
