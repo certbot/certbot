@@ -1,6 +1,7 @@
 Authors
 =======
 
+* [Aaron Gable](https://github.com/aarongable)
 * [Aaron Zirbes](https://github.com/aaronzirbes)
 * Aaron Zuehlke
 * Ada Lovelace
@@ -60,6 +61,7 @@ Authors
 * [DanCld](https://github.com/DanCld)
 * [Daniel Albers](https://github.com/AID)
 * [Daniel Aleksandersen](https://github.com/da2x)
+* [Daniel Almasi](https://github.com/almasen)
 * [Daniel Convissor](https://github.com/convissor)
 * [Daniel "Drex" Drexler](https://github.com/aeturnum)
 * [Daniel Huang](https://github.com/dhuang)
@@ -149,6 +151,7 @@ Authors
 * [Lior Sabag](https://github.com/liorsbg)
 * [Lipis](https://github.com/lipis)
 * [lord63](https://github.com/lord63)
+* [Lorenzo Fundaró](https://github.com/lfundaro)
 * [Luca Beltrame](https://github.com/lbeltrame)
 * [Luca Ebach](https://github.com/lucebac)
 * [Luca Olivetti](https://github.com/olivluca)

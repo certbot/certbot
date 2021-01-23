@@ -6,7 +6,7 @@ from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.11.0.dev0'
+version = '1.12.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
@@ -35,6 +35,11 @@ elif 'bdist_wheel' in sys.argv[1:]:
                        'of setuptools. Version 36.2+ of setuptools is required.')
 elif sys.version_info < (3,3):
     install_requires.append('mock')
+
+docs_extras = [
+    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
+    'sphinx_rtd_theme',
+]
 
 setup(
     name='certbot-dns-route53',
@@ -70,6 +75,9 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     keywords=['certbot', 'route53', 'aws'],
+    extras_require={
+        'docs': docs_extras,
+    },
     entry_points={
         'certbot.plugins': [
             'dns-route53 = certbot_dns_route53._internal.dns_route53:Authenticator',

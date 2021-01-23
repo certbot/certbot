@@ -205,7 +205,7 @@ def make_key(bits=1024, key_type="rsa", elliptic_curve=None):
     elif key_type == 'ecdsa':
         try:
             name = elliptic_curve.upper()
-            if name in ('SECP256R1', 'SECP384R1', 'SECP512R1'):
+            if name in ('SECP256R1', 'SECP384R1', 'SECP521R1'):
                 _key = ec.generate_private_key(
                     curve=getattr(ec, elliptic_curve.upper(), None)(),
                     backend=default_backend()
@@ -279,7 +279,7 @@ def verify_renewable_cert_sig(renewable_cert):
             verify_signed_payload(pk, cert.signature, cert.tbs_certificate_bytes,
                                   cert.signature_hash_algorithm)
     except (IOError, ValueError, InvalidSignature) as e:
-        error_str = "verifying the signature of the cert located at {0} has failed. \
+        error_str = "verifying the signature of the certificate located at {0} has failed. \
                 Details: {1}".format(renewable_cert.cert_path, e)
         logger.exception(error_str)
         raise errors.Error(error_str)
@@ -291,7 +291,7 @@ def verify_signed_payload(public_key, signature, payload, signature_hash_algorit
     :param RSAPublicKey/EllipticCurvePublicKey public_key: the public_key to check signature
     :param bytes signature: the signature bytes
     :param bytes payload: the payload bytes
-    :param cryptography.hazmat.primitives.hashes.HashAlgorithm
+    :param cryptography.hazmat.primitives.hashes.HashAlgorithm \
            signature_hash_algorithm: algorithm used to hash the payload
 
     :raises InvalidSignature: If signature verification fails.
@@ -330,7 +330,7 @@ def verify_cert_matches_priv_key(cert_path, key_path):
         context.use_privatekey_file(key_path)
         context.check_privatekey()
     except (IOError, SSL.Error) as e:
-        error_str = "verifying the cert located at {0} matches the \
+        error_str = "verifying the certificate located at {0} matches the \
                 private key located at {1} has failed. \
                 Details: {2}".format(cert_path,
                         key_path, e)
@@ -573,8 +573,9 @@ def get_serial_from_cert(cert_path):
 
 
 def find_chain_with_issuer(fullchains, issuer_cn, warn_on_no_match=False):
-    """Chooses the first certificate chain from fullchains which contains an
-    Issuer Subject Common Name matching issuer_cn.
+    """Chooses the first certificate chain from fullchains whose topmost
+    intermediate has an Issuer Common Name matching issuer_cn (in other words
+    the first chain which chains to a root whose name matches issuer_cn).
 
     :param fullchains: The list of fullchains in PEM chain format.
     :type fullchains: `list` of `str`
@@ -585,14 +586,11 @@ def find_chain_with_issuer(fullchains, issuer_cn, warn_on_no_match=False):
     :rtype: `str`
     """
     for chain in fullchains:
-        certs = [x509.load_pem_x509_certificate(cert, default_backend()) \
-                 for cert in CERT_PEM_REGEX.findall(chain.encode())]
-        # Iterate the fullchain beginning from the leaf. For each certificate encountered,
-        # match against Issuer Subject CN.
-        for cert in certs:
-            cert_issuer_cn = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-            if cert_issuer_cn and cert_issuer_cn[0].value == issuer_cn:
-                return chain
+        certs = CERT_PEM_REGEX.findall(chain.encode())
+        top_cert = x509.load_pem_x509_certificate(certs[-1], default_backend())
+        top_issuer_cn = top_cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+        if top_issuer_cn and top_issuer_cn[0].value == issuer_cn:
+            return chain
 
     # Nothing matched, return whatever was first in the list.
     if warn_on_no_match:

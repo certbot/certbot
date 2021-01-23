@@ -4,8 +4,9 @@ import pytest
 from certbot_integration_tests.rfc2136_tests import context as rfc2136_context
 
 
-@pytest.fixture()
-def context(request):
+@pytest.fixture(name="context")
+def pytest_context(request):
+    # pylint: disable=missing-function-docstring
     # Fixture request is a built-in pytest fixture describing current test request.
     integration_test_context = rfc2136_context.IntegrationTestsContext(request)
     try:

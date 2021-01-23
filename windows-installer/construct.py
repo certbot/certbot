@@ -9,10 +9,10 @@ import sys
 import tempfile
 import time
 
-PYTHON_VERSION = (3, 7, 4)
+PYTHON_VERSION = (3, 8, 6)
 PYTHON_BITNESS = 32
-PYWIN32_VERSION = 227  # do not forget to edit pywin32 dependency accordingly in setup.py
-NSIS_VERSION = '3.04'
+PYWIN32_VERSION = 300  # do not forget to edit pywin32 dependency accordingly in setup.py
+NSIS_VERSION = '3.06.1'
 
 
 def main():
@@ -46,9 +46,11 @@ def _compile_wheels(repo_path, build_path, venv_python):
     wheels_project = [os.path.join(repo_path, package) for package in certbot_packages]
 
     with _prepare_constraints(repo_path) as constraints_file_path:
-        command = [venv_python, '-m', 'pip', 'wheel', '-w', wheels_path, '--constraint', constraints_file_path]
+        env = os.environ.copy()
+        env['PIP_CONSTRAINT'] = constraints_file_path
+        command = [venv_python, '-m', 'pip', 'wheel', '-w', wheels_path]
         command.extend(wheels_project)
-        subprocess.check_call(command)
+        subprocess.check_call(command, env=env)
 
 
 def _prepare_build_tools(venv_path, venv_python, repo_path):
@@ -61,15 +63,20 @@ def _prepare_build_tools(venv_path, venv_python, repo_path):
 
 @contextlib.contextmanager
 def _prepare_constraints(repo_path):
-    requirements = os.path.join(repo_path, 'letsencrypt-auto-source', 'pieces', 'dependency-requirements.txt')
-    constraints = subprocess.check_output(
-        [sys.executable, os.path.join(repo_path, 'tools', 'strip_hashes.py'), requirements],
+    reqs_certbot = os.path.join(repo_path, 'letsencrypt-auto-source', 'pieces', 'dependency-requirements.txt')
+    reqs_pipstrap = os.path.join(repo_path, 'tools', 'pipstrap_constraints.txt')
+    constraints_certbot = subprocess.check_output(
+        [sys.executable, os.path.join(repo_path, 'tools', 'strip_hashes.py'), reqs_certbot],
+        universal_newlines=True)
+    constraints_pipstrap = subprocess.check_output(
+        [sys.executable, os.path.join(repo_path, 'tools', 'strip_hashes.py'), reqs_pipstrap],
         universal_newlines=True)
     workdir = tempfile.mkdtemp()
     try:
         constraints_file_path = os.path.join(workdir, 'constraints.txt')
         with open(constraints_file_path, 'a') as file_h:
-            file_h.write(constraints)
+            file_h.write(constraints_pipstrap)
+            file_h.write(constraints_certbot)
             file_h.write('pywin32=={0}'.format(PYWIN32_VERSION))
         yield constraints_file_path
     finally:
@@ -90,32 +97,6 @@ def _copy_assets(build_path, repo_path):
 
 def _generate_pynsist_config(repo_path, build_path):
     print('Generate pynsist configuration')
-
-    pywin32_paths_file = os.path.join(build_path, 'pywin32_paths.py')
-
-    # Pywin32 uses non-standard folders to hold its packages. We need to instruct pynsist bootstrap
-    # explicitly to add them into sys.path. This is done with a custom "pywin32_paths.py" that is
-    # referred in the pynsist configuration as an "extra_preamble".
-    # Reference example: https://github.com/takluyver/pynsist/tree/master/examples/pywebview
-    with open(pywin32_paths_file, 'w') as file_h:
-        file_h.write('''\
-pkgdir = os.path.join(os.path.dirname(installdir), 'pkgs')
-
-sys.path.extend([
-    os.path.join(pkgdir, 'win32'),
-    os.path.join(pkgdir, 'win32', 'lib'),
-])
-
-# Preload pywintypes and pythoncom
-pwt = os.path.join(pkgdir, 'pywin32_system32', 'pywintypes{0}{1}.dll')
-pcom = os.path.join(pkgdir, 'pywin32_system32', 'pythoncom{0}{1}.dll')
-import warnings
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    import imp
-imp.load_dynamic('pywintypes', pwt)
-imp.load_dynamic('pythoncom', pcom)
-'''.format(PYTHON_VERSION[0], PYTHON_VERSION[1]))
 
     installer_cfg_path = os.path.join(build_path, 'installer.cfg')
 
@@ -151,7 +132,6 @@ files=run.bat
 
 [Command certbot]
 entry_point=certbot.main:main
-extra_preamble=pywin32_paths.py
 '''.format(certbot_version=certbot_version,
            installer_suffix='win_amd64' if PYTHON_BITNESS == 64 else 'win32',
            python_bitness=PYTHON_BITNESS,

@@ -98,41 +98,6 @@ BootstrapRpmCommonBase() {
   fi
 }
 
-# This bootstrap concerns old RedHat-based distributions that do not ship by default
-# with Python 2.7, but only Python 2.6. We bootstrap them by enabling SCL and installing
-# Python 3.6. Some of these distributions are: CentOS/RHEL/OL/SL 6.
-BootstrapRpmPython3Legacy() {
-  # Tested with:
-  #   - CentOS 6
-
-  InitializeRPMCommonBase
-
-  if ! "${TOOL}" list rh-python36 >/dev/null 2>&1; then
-    echo "To use Certbot on this operating system, packages from the SCL repository need to be installed."
-    if ! "${TOOL}" list centos-release-scl >/dev/null 2>&1; then
-      error "Enable the SCL repository and try running Certbot again."
-      exit 1
-    fi
-    if ! "${TOOL}" install -y centos-release-scl; then
-      error "Could not enable SCL. Aborting bootstrap!"
-      exit 1
-    fi
-  fi
-
-  # CentOS 6 must use rh-python36 from SCL
-  if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
-    python_pkgs="rh-python36-python
-      rh-python36-python-virtualenv
-      rh-python36-python-devel
-    "
-  else
-    error "No supported Python package available to install. Aborting bootstrap!"
-    exit 1
-  fi
-
-  BootstrapRpmCommonBase "${python_pkgs}"
-}
-
 BootstrapRpmPython3() {
   InitializeRPMCommonBase
 
@@ -154,16 +119,9 @@ if [ -f /etc/debian_version ]; then
   }
 elif [ -f /etc/redhat-release ]; then
   DeterminePythonVersion
-  # Handle legacy RPM distributions
-  if [ "$PYVER" -eq 26 ]; then
-    Bootstrap() {
-      BootstrapRpmPython3Legacy
-    }
-  else
-    Bootstrap() {
-      BootstrapRpmPython3
-    }
-  fi
+  Bootstrap() {
+    BootstrapRpmPython3
+  }
 
 fi
 

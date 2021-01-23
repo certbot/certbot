@@ -226,7 +226,7 @@ class NginxConfigurator(common.Installer):
         if not fullchain_path:
             raise errors.PluginError(
                 "The nginx plugin currently requires --fullchain-path to "
-                "install a cert.")
+                "install a certificate.")
 
         vhosts = self.choose_vhosts(domain, create_if_no_match=True)
         for vhost in vhosts:

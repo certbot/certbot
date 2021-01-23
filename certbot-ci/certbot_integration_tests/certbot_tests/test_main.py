@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import time
 
-from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1, SECP384R1
+from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1, SECP384R1, SECP521R1
 from cryptography.x509 import NameOID
 
 import pytest
@@ -29,8 +29,9 @@ from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
 from certbot_integration_tests.utils import misc
 
 
-@pytest.fixture()
-def context(request):
+@pytest.fixture(name='context')
+def test_context(request):
+    # pylint: disable=missing-function-docstring
     # Fixture request is a built-in pytest fixture describing current test request.
     integration_test_context = certbot_context.IntegrationTestsContext(request)
     try:
@@ -147,6 +148,17 @@ def test_certonly(context):
     """Test the certonly verb on certbot."""
     context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname')])
 
+    assert_cert_count_for_lineage(context.config_dir, 'newname', 1)
+
+
+def test_certonly_webroot(context):
+    """Test the certonly verb with webroot plugin"""
+    with misc.create_http_server(context.http_01_port) as webroot:
+        certname = context.get_domain('webroot')
+        context.certbot(['certonly', '-a', 'webroot', '--webroot-path', webroot, '-d', certname])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
 
 def test_auth_and_install_with_csr(context):
     """Test certificate issuance and install using an existing CSR."""
@@ -222,14 +234,16 @@ def test_renew_files_propagate_permissions(context):
     if os.name != 'nt':
         os.chmod(privkey1, 0o444)
     else:
-        import win32security
-        import ntsecuritycon
+        import win32security  # pylint: disable=import-error
+        import ntsecuritycon  # pylint: disable=import-error
         # Get the current DACL of the private key
         security = win32security.GetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION)
         dacl = security.GetSecurityDescriptorDacl()
         # Create a read permission for Everybody group
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
-        dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_GENERIC_READ, everybody)
+        dacl.AddAccessAllowedAce(
+            win32security.ACL_REVISION, ntsecuritycon.FILE_GENERIC_READ, everybody
+        )
         # Apply the updated DACL to the private key
         security.SetSecurityDescriptorDacl(1, dacl, 0)
         win32security.SetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION, security)
@@ -238,12 +252,14 @@ def test_renew_files_propagate_permissions(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     if os.name != 'nt':
-        # On Linux, read world permissions + all group permissions will be copied from the previous private key
+        # On Linux, read world permissions + all group permissions
+        # will be copied from the previous private key
         assert_world_read_permissions(privkey2)
         assert_equals_world_read_permissions(privkey1, privkey2)
         assert_equals_group_permissions(privkey1, privkey2)
     else:
-        # On Windows, world will never have any permissions, and group permission is irrelevant for this platform
+        # On Windows, world will never have any permissions, and
+        # group permission is irrelevant for this platform
         assert_world_no_permissions(privkey2)
 
 
@@ -471,6 +487,28 @@ def test_default_curve_type(context):
     assert_elliptic_key(key1, SECP256R1)
 
 
+@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
+    # Curve name, Curve class, ACME servers to skip
+    ('secp256r1', SECP256R1, []),
+    ('secp384r1', SECP384R1, []),
+    ('secp521r1', SECP521R1, ['boulder-v1', 'boulder-v2'])]
+)
+def test_ecdsa_curves(context, curve, curve_cls, skip_servers):
+    """Test issuance for each supported ECDSA curve"""
+    if context.acme_server in skip_servers:
+        pytest.skip('ACME server {} does not support ECDSA curve {}'
+                    .format(context.acme_server, curve))
+
+    domain = context.get_domain('curve')
+    context.certbot([
+        'certonly',
+        '--key-type', 'ecdsa', '--elliptic-curve', curve,
+        '--force-renewal', '-d', domain,
+    ])
+    key = join(context.config_dir, "live", domain, 'privkey.pem')
+    assert_elliptic_key(key, curve_cls)
+
+
 def test_renew_with_ec_keys(context):
     """Test proper renew with updated private key complexity."""
     certname = context.get_domain('renew')
@@ -609,19 +647,22 @@ def test_revoke_multiple_lineages(context):
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'r') as file:
         data = file.read()
 
-    data = re.sub('archive_dir = .*\n',
-                  'archive_dir = {0}\n'.format(join(context.config_dir, 'archive', cert1).replace('\\', '\\\\')),
-                  data)
+    data = re.sub(
+        'archive_dir = .*\n',
+        'archive_dir = {0}\n'.format(
+            join(context.config_dir, 'archive', cert1).replace('\\', '\\\\')
+        ), data
+    )
 
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'w') as file:
         file.write(data)
 
-    output = context.certbot([
+    context.certbot([
         'revoke', '--cert-path', join(context.config_dir, 'live', cert1, 'cert.pem')
     ])
 
     with open(join(context.workspace, 'logs', 'letsencrypt.log'), 'r') as f:
-        assert 'Not deleting revoked certs due to overlapping archive dirs' in f.read()
+        assert 'Not deleting revoked certificates due to overlapping archive dirs' in f.read()
 
 
 def test_wildcard_certificates(context):

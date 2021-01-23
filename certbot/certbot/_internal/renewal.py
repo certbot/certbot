@@ -99,7 +99,7 @@ def _reconstitute(config, full_path):
         config.domains = [util.enforce_domain_sanity(d)
                           for d in renewal_candidate.names()]
     except errors.ConfigurationError as error:
-        logger.warning("Renewal configuration file %s references a cert "
+        logger.warning("Renewal configuration file %s references a certificate "
                        "that contains an invalid domain name. The problem "
                        "was: %s. Skipping.", full_path, error)
         return None
@@ -293,13 +293,13 @@ def should_renew(config, lineage):
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
     "Do not renew a valid cert with one from a staging server!"
-    # Some lineages may have begun with --staging, but then had production certs
-    # added to them
+    # Some lineages may have begun with --staging, but then had production
+    # certificates added to them
     with open(lineage.cert) as the_file:
         contents = the_file.read()
     latest_cert = OpenSSL.crypto.load_certificate(
         OpenSSL.crypto.FILETYPE_PEM, contents)
-    # all our test certs are from happy hacker fake CA, though maybe one day
+    # all our test certificates are from happy hacker fake CA, though maybe one day
     # we should test more methodically
     now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
 
@@ -366,7 +366,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     renewal_noun = "simulated renewal" if config.dry_run else "renewal"
 
     if renew_skipped:
-        notify("The following certs are not due for renewal yet:")
+        notify("The following certificates are not due for renewal yet:")
         notify(report(renew_skipped, "skipped"))
     if not renew_successes and not renew_failures:
         notify("No {renewal}s were attempted.".format(renewal=renewal_noun))
@@ -377,7 +377,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         notify("Congratulations, all {renewal}s succeeded: ".format(renewal=renewal_noun))
         notify(report(renew_successes, "success"))
     elif renew_failures and not renew_successes:
-        notify_error("All %ss failed. The following certs could "
+        notify_error("All %ss failed. The following certificates could "
                "not be renewed:", renewal_noun)
         notify_error(report(renew_failures, "failure"))
     elif renew_failures and renew_successes:
@@ -482,7 +482,7 @@ def handle_renewal_request(config):
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.error(
-                "Failed to renew cert %s with error: %s",
+                "Failed to renew certificate %s with error: %s",
                 lineagename, e
             )
             logger.debug("Traceback was:\n%s", traceback.format_exc())
