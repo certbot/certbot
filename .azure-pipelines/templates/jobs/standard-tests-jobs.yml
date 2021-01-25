@@ -4,10 +4,10 @@ jobs:
       PYTHON_VERSION: 3.9
     strategy:
       matrix:
-        macos-py27:
+        macos-py36:
           IMAGE_NAME: macOS-10.15
-          PYTHON_VERSION: 2.7
-          TOXENV: py27
+          PYTHON_VERSION: 3.6
+          TOXENV: py36
         macos-py39:
           IMAGE_NAME: macOS-10.15
           PYTHON_VERSION: 3.9
@@ -32,10 +32,6 @@ jobs:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.6
           TOXENV: '{dns,nginx}-oldest'
-        linux-py27:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
-          TOXENV: py27
         linux-py36:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.6
@@ -65,11 +61,11 @@ jobs:
           TOXENV: modification
         apacheconftest:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
+          PYTHON_VERSION: 3.6
           TOXENV: apacheconftest-with-pebble
         nginxroundtrip:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
+          PYTHON_VERSION: 3.6
           TOXENV: nginxroundtrip
     pool:
       vmImage: $(IMAGE_NAME)
