@@ -14,6 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   topmost (closest to the root) certificate in the chain, instead of checking
   every certificate in the chain.
   See [#8577](https://github.com/certbot/certbot/issues/8577).
+* Support for Python 2 has been removed.
 
 ### Fixed
 
