@@ -12,8 +12,8 @@ version = '1.12.0.dev0'
 # acme/certbot version.
 install_requires = [
     'python-digitalocean>=1.11',
-    'setuptools',
-    'six',
+    'setuptools>=39.0.1',
+    'six>=1.11.0',
     'zope.interface',
 ]
 

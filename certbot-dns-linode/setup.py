@@ -11,7 +11,7 @@ version = '1.12.0.dev0'
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'dns-lexicon>=2.2.3',
-    'setuptools',
+    'setuptools>=39.0.1',
     'zope.interface',
 ]
 

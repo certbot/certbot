@@ -12,7 +12,7 @@ version = '1.12.0.dev0'
 # acme/certbot version.
 install_requires = [
     'dns-lexicon>=2.7.14',  # Correct proxy use on OVH provider
-    'setuptools',
+    'setuptools>=39.0.1',
     'zope.interface',
 ]
 

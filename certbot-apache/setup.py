@@ -13,7 +13,7 @@ install_requires = [
     'acme>=0.29.0',
     'certbot>=1.6.0',
     'python-augeas',
-    'setuptools',
+    'setuptools>=39.0.1',
     'zope.component',
     'zope.interface',
 ]
