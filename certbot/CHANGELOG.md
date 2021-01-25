@@ -10,11 +10,16 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* The `--preferred-chain` flag now only checks the Issuer Common Name of the
+  topmost (closest to the root) certificate in the chain, instead of checking
+  every certificate in the chain.
+  See [#8577](https://github.com/certbot/certbot/issues/8577).
 
 ### Fixed
 
-*
+* Fixed the apache component on openSUSE Tumbleweed which no longer provides
+  an apache2ctl symlink and uses apachectl instead.
+* Fixed a typo in `certbot/crypto_util.py` causing an error upon attempting `secp521r1` key generation
 
 More details about these changes can be found on our GitHub repo.
 

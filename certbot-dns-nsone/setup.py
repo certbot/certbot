@@ -12,7 +12,7 @@ version = '1.12.0.dev0'
 # acme/certbot version.
 install_requires = [
     'dns-lexicon>=2.2.1',  # Support for >1 TXT record per name
-    'setuptools',
+    'setuptools>=39.0.1',
     'zope.interface',
 ]
 

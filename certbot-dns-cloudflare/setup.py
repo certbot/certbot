@@ -12,7 +12,7 @@ version = '1.12.0.dev0'
 # acme/certbot version.
 install_requires = [
     'cloudflare>=1.5.1',
-    'setuptools',
+    'setuptools>=39.0.1',
     'zope.interface',
 ]
 

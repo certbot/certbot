@@ -11,7 +11,7 @@ version = '1.12.0.dev0'
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'setuptools',
+    'setuptools>=39.0.1',
     'zope.interface',
 ]
 

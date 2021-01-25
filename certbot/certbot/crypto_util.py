@@ -205,7 +205,7 @@ def make_key(bits=1024, key_type="rsa", elliptic_curve=None):
     elif key_type == 'ecdsa':
         try:
             name = elliptic_curve.upper()
-            if name in ('SECP256R1', 'SECP384R1', 'SECP512R1'):
+            if name in ('SECP256R1', 'SECP384R1', 'SECP521R1'):
                 _key = ec.generate_private_key(
                     curve=getattr(ec, elliptic_curve.upper(), None)(),
                     backend=default_backend()
@@ -573,8 +573,9 @@ def get_serial_from_cert(cert_path):
 
 
 def find_chain_with_issuer(fullchains, issuer_cn, warn_on_no_match=False):
-    """Chooses the first certificate chain from fullchains which contains an
-    Issuer Subject Common Name matching issuer_cn.
+    """Chooses the first certificate chain from fullchains whose topmost
+    intermediate has an Issuer Common Name matching issuer_cn (in other words
+    the first chain which chains to a root whose name matches issuer_cn).
 
     :param fullchains: The list of fullchains in PEM chain format.
     :type fullchains: `list` of `str`
@@ -585,14 +586,11 @@ def find_chain_with_issuer(fullchains, issuer_cn, warn_on_no_match=False):
     :rtype: `str`
     """
     for chain in fullchains:
-        certs = [x509.load_pem_x509_certificate(cert, default_backend()) \
-                 for cert in CERT_PEM_REGEX.findall(chain.encode())]
-        # Iterate the fullchain beginning from the leaf. For each certificate encountered,
-        # match against Issuer Subject CN.
-        for cert in certs:
-            cert_issuer_cn = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-            if cert_issuer_cn and cert_issuer_cn[0].value == issuer_cn:
-                return chain
+        certs = CERT_PEM_REGEX.findall(chain.encode())
+        top_cert = x509.load_pem_x509_certificate(certs[-1], default_backend())
+        top_issuer_cn = top_cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+        if top_issuer_cn and top_issuer_cn[0].value == issuer_cn:
+            return chain
 
     # Nothing matched, return whatever was first in the list.
     if warn_on_no_match:

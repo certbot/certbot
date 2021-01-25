@@ -40,16 +40,16 @@ install_requires = [
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
     'ConfigArgParse>=0.9.3',
-    'configobj',
-    'cryptography>=1.2.3',  # load_pem_x509_certificate
+    'configobj>=5.0.6',
+    'cryptography>=2.1.4',
     'distro>=1.0.1',
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
-    'parsedatetime>=1.3',  # Calendar.parseDT
+    'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz',
-    'setuptools',
+    'setuptools>=39.0.1',
     'zope.component',
     'zope.interface',
 ]
