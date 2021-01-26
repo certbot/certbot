@@ -17,6 +17,7 @@ from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.plugins import common as plugin_common
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
@@ -482,7 +483,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
     def setUp(self):
         from certbot._internal.auth_handler import AuthHandler
 
-        self.mock_auth = mock.MagicMock(name="buzz")
+        self.mock_auth = mock.MagicMock(spec=plugin_common.Plugin, name="buzz")
         self.mock_auth.name = "buzz"
         self.mock_auth.auth_hint.return_value = "the buzz hint"
         self.handler = AuthHandler(self.mock_auth, mock.MagicMock(), mock.MagicMock(), [])
@@ -552,6 +553,18 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
             '  Detail: detail\n'
             '\nHint: quuuuuux\n'
         )
+
+    @mock.patch('certbot._internal.auth_handler.display_util.notify')
+    def test_non_subclassed_authenticator(self, mock_notify):
+        """If authenticator not derived from common.Plugin, we shouldn't call .auth_hint"""
+        from certbot._internal.auth_handler import AuthHandler
+
+        self.mock_auth = mock.MagicMock(name="quuz")
+        self.mock_auth.name = "quuz"
+        self.mock_auth.auth_hint.side_effect = Exception
+        self.handler = AuthHandler(self.mock_auth, mock.MagicMock(), mock.MagicMock(), [])
+        self.handler._report_failed_authzrs([self.authzr1])
+        self.assertEqual(mock_notify.call_count, 1)
 
 
 def gen_auth_resp(chall_list):

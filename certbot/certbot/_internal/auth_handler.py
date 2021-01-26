@@ -17,6 +17,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot._internal import error_handler
 from certbot.display import util as display_util
+from certbot.plugins import common as plugin_common
 
 logger = logging.getLogger(__name__)
 
@@ -284,7 +285,7 @@ class AuthHandler(object):
         for _, achalls in sorted(problems.items(), key=lambda item: item[0]):
             msg.append(_generate_failed_chall_msg(achalls))
 
-        if failed_achalls:
+        if failed_achalls and isinstance(self.auth, plugin_common.Plugin):
             msg.append('\nHint: {}\n'.format(self.auth.auth_hint(failed_achalls)))
 
         display_util.notify("".join(msg))
