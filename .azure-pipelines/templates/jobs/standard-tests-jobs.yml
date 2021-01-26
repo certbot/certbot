@@ -4,10 +4,10 @@ jobs:
       PYTHON_VERSION: 3.9
     strategy:
       matrix:
-        macos-py27:
+        macos-py36:
           IMAGE_NAME: macOS-10.15
-          PYTHON_VERSION: 2.7
-          TOXENV: py27
+          PYTHON_VERSION: 3.6
+          TOXENV: py36
         macos-py39:
           IMAGE_NAME: macOS-10.15
           PYTHON_VERSION: 3.9
@@ -26,14 +26,12 @@ jobs:
           TOXENV: integration-certbot
         linux-oldest-tests-1:
           IMAGE_NAME: ubuntu-18.04
-          TOXENV: py27-{acme,apache,apache-v2,certbot}-oldest
+          PYTHON_VERSION: 3.6
+          TOXENV: '{acme,apache,apache-v2,certbot}-oldest'
         linux-oldest-tests-2:
           IMAGE_NAME: ubuntu-18.04
-          TOXENV: py27-{dns,nginx}-oldest
-        linux-py27:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
-          TOXENV: py27
+          PYTHON_VERSION: 3.6
+          TOXENV: '{dns,nginx}-oldest'
         linux-py36:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.6
@@ -63,11 +61,11 @@ jobs:
           TOXENV: modification
         apacheconftest:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
+          PYTHON_VERSION: 3.6
           TOXENV: apacheconftest-with-pebble
         nginxroundtrip:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 2.7
+          PYTHON_VERSION: 3.6
           TOXENV: nginxroundtrip
     pool:
       vmImage: $(IMAGE_NAME)
@@ -75,6 +73,6 @@ jobs:
       - template: ../steps/tox-steps.yml
   - job: test_sphinx_builds
     pool:
-      vmImage: ubuntu-latest
+      vmImage: ubuntu-20.04
     steps:
       - template: ../steps/sphinx-steps.yml

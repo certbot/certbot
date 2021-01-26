@@ -40,16 +40,16 @@ install_requires = [
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
     'ConfigArgParse>=0.9.3',
-    'configobj',
-    'cryptography>=1.2.3',  # load_pem_x509_certificate
+    'configobj>=5.0.6',
+    'cryptography>=2.1.4',
     'distro>=1.0.1',
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
-    'parsedatetime>=1.3',  # Calendar.parseDT
+    'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz',
-    'setuptools',
+    'setuptools>=39.0.1',
     'zope.component',
     'zope.interface',
 ]
@@ -116,7 +116,7 @@ setup(
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*',
+    python_requires='>=3.6',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -125,8 +125,6 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',

@@ -28,7 +28,7 @@ your system.
 System Requirements
 ===================
 
-Certbot currently requires Python 2.7 or 3.6+ running on a UNIX-like operating
+Certbot currently requires Python 3.6+ running on a UNIX-like operating
 system. By default, it requires root access in order to write to
 ``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
 bind to port 80 (if you use the ``standalone`` plugin) and to read and
@@ -197,12 +197,12 @@ Optionally to install the Certbot Apache plugin, you can use:
 
 .. code-block:: shell
 
-    sudo dnf install certbot python2-certbot-apache
+    sudo dnf install certbot python3-certbot-apache
 
 **FreeBSD**
 
   * Port: ``cd /usr/ports/security/py-certbot && make install clean``
-  * Package: ``pkg install py27-certbot``
+  * Package: ``pkg install py37-certbot``
 
 **Gentoo**
 
@@ -223,7 +223,7 @@ They need to be installed separately if you require their functionality.
 **NetBSD**
 
   * Build from source: ``cd /usr/pkgsrc/security/py-certbot && make install clean``
-  * Install pre-compiled package: ``pkg_add py27-certbot``
+  * Install pre-compiled package: ``pkg_add py37-certbot``
 
 **OpenBSD**
 
