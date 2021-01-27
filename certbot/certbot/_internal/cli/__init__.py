@@ -28,7 +28,8 @@ from certbot._internal.cli.cli_constants import (
     ARGPARSE_PARAMS_TO_REMOVE,
     EXIT_ACTIONS,
     ZERO_ARG_ACTIONS,
-    VAR_MODIFIERS
+    VAR_MODIFIERS,
+    DEPRECATED_OPTIONS
 )
 
 from certbot._internal.cli.cli_utils import (
