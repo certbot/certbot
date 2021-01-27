@@ -1,4 +1,6 @@
 """Tests for certbot._internal.renewal"""
+import copy
+
 import unittest
 
 try:
@@ -97,6 +99,23 @@ class RenewalTest(test_util.ConfigTestCase):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
         assert self.config.elliptic_curve == 'secp256r1'
+
+    @test_util.patch_get_utility()
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
+    def test_remove_deprecated_config_elements(self, mock_set_by_cli, unused_mock_get_utility):
+        mock_set_by_cli.return_value = False
+        config = configuration.NamespaceConfig(self.config)
+        config.certname = "sample-renewal-deprecated-option"
+
+        rc_path = test_util.make_lineage(
+            self.config.config_dir, 'sample-renewal-deprecated-option.conf')
+
+        from certbot._internal import renewal
+        lineage_config = copy.deepcopy(self.config)
+        renewal_candidate = renewal._reconstitute(lineage_config, rc_path)
+        # This means that manual_public_ip_logging_ok was not modified in the config based on its
+        # value in the renewal conf file
+        self.assertTrue(isinstance(lineage_config.manual_public_ip_logging_ok, mock.MagicMock))
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
