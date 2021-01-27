@@ -105,3 +105,5 @@ VAR_MODIFIERS = {"account": {"server",},
                  "renew_hook": {"deploy_hook",},
                  "server": {"dry_run", "staging",},
                  "webroot_map": {"webroot_path",}}
+
+DEPRECATED_OPTIONS = {"manual_public_ip_logging_ok",}

@@ -85,6 +85,7 @@ def _reconstitute(config, full_path):
         return None
     # Now restore specific values along with their data types, if
     # those elements are present.
+    renewalparams = _remove_deprecated_config_elements(renewalparams)
     try:
         restore_required_config_elements(config, renewalparams)
         _restore_plugin_configs(config, renewalparams)
@@ -186,6 +187,11 @@ def restore_required_config_elements(config, renewalparams):
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])
             setattr(config, item_name, value)
+
+
+def _remove_deprecated_config_elements(renewalparams):
+    return {option_name : v for option_name, v in renewalparams.iteritems()
+        if option_name not in cli.DEPRECATED_OPTIONS}
 
 
 def _restore_pref_challs(unused_name, value):

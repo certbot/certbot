@@ -471,6 +471,9 @@ def set_by_cli(var):
     (CLI or config file) including if the user explicitly set it to the
     default.  Returns False if the variable was assigned a default value.
     """
+    if var in DEPRECATED_OPTIONS:
+        return False
+
     detector = set_by_cli.detector  # type: ignore
     if detector is None and helpful_parser is not None:
         # Setup on first run: `detector` is a weird version of config in which
@@ -531,6 +534,8 @@ def option_was_set(option, value):
     :rtype: bool
 
     """
+    if option in DEPRECATED_OPTIONS:
+        return False
     return set_by_cli(option) or not has_default_value(option, value)
 
 
