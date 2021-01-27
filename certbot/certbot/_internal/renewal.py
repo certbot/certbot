@@ -190,7 +190,7 @@ def restore_required_config_elements(config, renewalparams):
 
 
 def _remove_deprecated_config_elements(renewalparams):
-    return {option_name : v for (option_name, v) in renewalparams.items()
+    return {option_name: v for (option_name, v) in renewalparams.items()
         if option_name not in cli.DEPRECATED_OPTIONS}
 
 
