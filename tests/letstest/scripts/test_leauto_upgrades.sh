@@ -119,3 +119,36 @@ if ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
     echo letsencrypt-auto and letsencrypt-auto-source/letsencrypt-auto differ
     exit 1
 fi
+
+# Now let's test if we still try to upgrade.
+#
+# First, we modify letsencrypt-auto so we can tell if we upgraded and update
+# the signature.
+sed -i "s/^LE_AUTO_VERSION=.*/LE_AUTO_VERSION=\"$FAKE_VERSION_NUM\"/" "$NEW_LE_AUTO_PATH"
+openssl dgst -sha256 -sign "$SIGNING_KEY" -out "$NEW_LE_AUTO_PATH.sig" "$NEW_LE_AUTO_PATH"
+
+# Next we run letsencrypt-auto and make sure there were no problems checking
+# for updates, the Certbot install still works, and the version number is what
+# we expect.
+if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python" ; then
+    echo "Had problems checking for updates!"
+    exit 1
+fi
+if ! ./letsencrypt-auto -v --debug --version 2>&1 | tail -n1 | grep "^certbot $EXPECTED_VERSION$" ; then
+    echo unexpected certbot version found
+    exit 1
+fi
+
+# Finally, we check if the script itself updated depending on the OS.
+# Eventually, all OSes will be expected to not have updated.
+if [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue; then
+    if ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
+        echo letsencrypt-auto updated to a new version unexpectedly
+        exit 1
+    fi
+else
+    if ! diff letsencrypt-auto "$NEW_LE_AUTO_PATH" ; then
+        echo letsencrypt-auto did not upgrade as expected
+        exit 1
+    fi
+fi
