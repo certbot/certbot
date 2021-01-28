@@ -1233,19 +1233,10 @@ def renew_cert(config, plugins, lineage):
 
     renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
 
-    notify = zope.component.getUtility(interfaces.IDisplay).notification
-    if installer is None:
-        notify("new certificate deployed without reload, fullchain is {0}".format(
-               lineage.fullchain), pause=False)
-    else:
+    if installer and not config.dry_run:
         # In case of a renewal, reload server to pick up new certificate.
-        # In principle we could have a configuration option to inhibit this
-        # from happening.
-        # Run deployer
         updater.run_renewal_deployer(config, renewed_lineage, installer)
         installer.restart()
-        notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
-               config.installer, lineage.fullchain), pause=False)
 
 
 def certonly(config, plugins):
