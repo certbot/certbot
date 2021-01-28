@@ -77,6 +77,17 @@ class RelevantValuesTest(unittest.TestCase):
 
         self.assertEqual(self._call(self.values), expected_relevant_values)
 
+    @mock.patch("certbot._internal.cli.set_by_cli")
+    def test_deprecated_item(self, unused_mock_set_by_cli):
+        # deprecated items should never be relevant to store
+        expected_relevant_values = self.values.copy()
+        self.values["manual_public_ip_logging_ok"] = None
+        self.assertEqual(self._call(self.values), expected_relevant_values)
+        self.values["manual_public_ip_logging_ok"] = True
+        self.assertEqual(self._call(self.values), expected_relevant_values)
+        self.values["manual_public_ip_logging_ok"] = False
+        self.assertEqual(self._call(self.values), expected_relevant_values)
+
 
 class BaseRenewableCertTest(test_util.ConfigTestCase):
     """Base class for setting up Renewable Cert tests.
