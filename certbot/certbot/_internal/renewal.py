@@ -190,6 +190,14 @@ def restore_required_config_elements(config, renewalparams):
 
 
 def _remove_deprecated_config_elements(renewalparams):
+    """Removes deprecated config options from the parsed renewalparams.
+
+    :param dict renewalparams: list of parsed renewalparams
+
+    :returns: list of renewalparams with deprecated config options removed
+    :rtype: dict
+
+    """
     return {option_name: v for (option_name, v) in renewalparams.items()
         if option_name not in cli.DEPRECATED_OPTIONS}
 
