@@ -325,6 +325,7 @@ if [ -f /etc/debian_version ]; then
 elif [ -f /etc/mageia-release ]; then
   # Mageia has both /etc/mageia-release and /etc/redhat-release
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/redhat-release ]; then
   DEPRECATED_OS=1
   # Run DeterminePythonVersion to decide on the basis of available Python versions
@@ -385,22 +386,31 @@ elif [ -f /etc/redhat-release ]; then
   LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/arch-release ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/manjaro-release ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/gentoo-release ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif uname | grep -iq FreeBSD ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif uname | grep -iq Darwin ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 else
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 fi
 
 # We handle this case after determining the normal bootstrap version to allow
