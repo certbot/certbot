@@ -15,6 +15,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   every certificate in the chain.
   See [#8577](https://github.com/certbot/certbot/issues/8577).
 * Support for Python 2 has been removed.
+* certbot-auto will stop receiving updates on systems other than those based on
+  Debian or RHEL (excluding Amazon Linux who stopped receiving updates in this
+  release). We plan to make this change to the certbot-auto script for all
+  users in the coming months.
 
 ### Fixed
 
