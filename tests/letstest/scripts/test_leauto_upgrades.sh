@@ -138,13 +138,17 @@ cp "$LOG_FILE" "$PREVIOUS_LOG_FILE"
 
 # Next we run letsencrypt-auto and make sure there were no problems checking
 # for updates, the Certbot install still works, the version number is what
-# we expect.
+# we expect, and it prints a message about not receiving updates.
 if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python" ; then
     echo "Had problems checking for updates!"
     exit 1
 fi
 if ! ./letsencrypt-auto -v --debug --version 2>&1 | tail -n1 | grep "^certbot $EXPECTED_VERSION$" ; then
     echo unexpected certbot version found
+    exit 1
+fi
+if ! ./letsencrypt-auto -v --debug --version 2>&1 | grep "certbot-auto will no longer receive updates" ; then
+    echo script did not print warning about not receiving updates!
     exit 1
 fi
 
