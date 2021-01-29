@@ -47,7 +47,7 @@ LOG_FILE="$MY_TEMP_DIR/log"
 SERVER_PATH=$("$PYTHON_NAME" tools/readlink.py tools/simple_http_server.py)
 cd "$MY_TEMP_DIR"
 # We set PYTHONUNBUFFERED to disable buffering of output to LOG_FILE
-PYTHONUNBUFFERED=1 "$PYTHON_NAME" "$SERVER_PATH" 0 > $PORT_FILE 2 > "$LOG_FILE" &
+PYTHONUNBUFFERED=1 "$PYTHON_NAME" "$SERVER_PATH" 0 > $PORT_FILE 2> "$LOG_FILE" &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" && rm -rf "$MY_TEMP_DIR"' EXIT
 cd ~-
