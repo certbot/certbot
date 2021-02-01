@@ -1117,7 +1117,9 @@ if [ "$1" = "--le-auto-phase2" ]; then
     fi
 
     if [ -f "$VENV_BIN/letsencrypt" -a "$INSTALL_ONLY" != 1 ]; then
-      error "certbot-auto will no longer receive updates and may stop working in the future."
+      error "certbot-auto and its Certbot installation will no longer receive updates."
+      error "You will not receive any bug fixes including those fixing server compatibility"
+      error "or security problems."
       error "Please visit https://certbot.eff.org/ to check for other alternatives."
       "$VENV_BIN/letsencrypt" "$@"
       exit 0

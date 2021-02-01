@@ -147,7 +147,7 @@ if ! ./letsencrypt-auto -v --debug --version 2>&1 | tail -n1 | grep "^certbot $E
     echo unexpected certbot version found
     exit 1
 fi
-if ! ./letsencrypt-auto -v --debug --version 2>&1 | grep "certbot-auto will no longer receive updates" ; then
+if ! ./letsencrypt-auto -v --debug --version 2>&1 | grep "will no longer receive updates" ; then
     echo script did not print warning about not receiving updates!
     exit 1
 fi
