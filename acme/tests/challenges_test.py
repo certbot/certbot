@@ -1,12 +1,9 @@
 """Tests for acme.challenges."""
 import unittest
+from unittest import mock
 
 import josepy as jose
 import OpenSSL
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import requests
 from six.moves.urllib import parse as urllib_parse
 

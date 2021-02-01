@@ -4,12 +4,9 @@ import copy
 import datetime
 import json
 import unittest
+from unittest import mock
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import OpenSSL
 import requests
 from six.moves import http_client  # pylint: disable=import-error
