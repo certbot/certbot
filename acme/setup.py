@@ -17,7 +17,7 @@ install_requires = [
     'PyOpenSSL>=17.3.0',
     'pyrfc3339',
     'pytz',
-    'requests[security]>=2.6.0',  # security extras added in 2.4.1
+    'requests>=2.6.0',
     'requests-toolbelt>=0.3.0',
     'setuptools>=39.0.1',
     'six>=1.11.0',
