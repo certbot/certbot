@@ -6,7 +6,6 @@ from email.utils import parsedate_tz
 import heapq
 import logging
 import re
-import sys
 import time
 
 import josepy as jose
