@@ -15,6 +15,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   every certificate in the chain.
   See [#8577](https://github.com/certbot/certbot/issues/8577).
 * Support for Python 2 has been removed.
+* The acme library no longer depends on the `security` extras from `requests`
+  which was needed to support SNI in TLS requests when using old versions of
+  Python 2.
 
 ### Fixed
 
