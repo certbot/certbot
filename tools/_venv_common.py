@@ -1,13 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# Developer virtualenv setup for Certbot client
 """Aids in creating a developer virtual environment for Certbot.
 
 When this module is run as a script, it takes the arguments that should
 be passed to pip to install the Certbot packages as command line
-arguments. The virtual environment will be created with the name "venv"
-in the current working directory and will use the default version of
-Python for the virtualenv executable in your PATH. You can change the
-name of the virtual environment by setting the environment variable
-VENV_NAME.
+arguments. If no arguments are provided, all Certbot packages and their
+development dependencies are installed. The virtual environment will be
+created with the name "venv" in the current working directory. You can
+change the name of the virtual environment by setting the environment
+variable VENV_NAME.
+
 """
 
 from __future__ import print_function
@@ -23,7 +25,7 @@ import time
 
 REQUIREMENTS = [
     '-e acme[dev]',
-    '-e certbot[dev,docs]',
+    '-e certbot[dev,dev3,docs]',
     '-e certbot-apache',
     '-e certbot-dns-cloudflare',
     '-e certbot-dns-cloudxns',
@@ -51,8 +53,7 @@ class PythonExecutableNotFoundError(Exception):
     pass
 
 
-def find_python_executable(python_major):
-    # type: (int) -> str
+def find_python_executable() -> str:
     """
     Find the relevant python executable that is of the given python major version.
     Will test, in decreasing priority order:
@@ -65,7 +66,6 @@ def find_python_executable(python_major):
     Incompatible python versions for Certbot will be evicted (e.g. Python 3
     versions less than 3.6).
 
-    :param int python_major: the Python major version to target (2 or 3)
     :rtype: str
     :return: the relevant python executable path
     :raise RuntimeError: if no relevant python executable path could be found
@@ -74,17 +74,16 @@ def find_python_executable(python_major):
 
     # First try, current python executable
     if _check_version('{0}.{1}.{2}'.format(
-            sys.version_info[0], sys.version_info[1], sys.version_info[2]), python_major):
+            sys.version_info[0], sys.version_info[1], sys.version_info[2])):
         return sys.executable
 
     # Second try, with python executables in path
-    versions_to_test = ['2.7', '2', ''] if python_major == 2 else ['3', '']
-    for one_version in versions_to_test:
+    for one_version in ('3', '',):
         try:
             one_python = 'python{0}'.format(one_version)
             output = subprocess.check_output([one_python, '--version'],
                                              universal_newlines=True, stderr=subprocess.STDOUT)
-            if _check_version(output.strip().split()[1], python_major):
+            if _check_version(output.strip().split()[1]):
                 return subprocess.check_output([one_python, '-c',
                                                 'import sys; sys.stdout.write(sys.executable);'],
                                                universal_newlines=True)
@@ -93,10 +92,9 @@ def find_python_executable(python_major):
 
     # Last try, with Windows Python launcher
     try:
-        env_arg = '-{0}'.format(python_major)
-        output_version = subprocess.check_output(['py', env_arg, '--version'],
+        output_version = subprocess.check_output(['py', '-3', '--version'],
                                                  universal_newlines=True, stderr=subprocess.STDOUT)
-        if _check_version(output_version.strip().split()[1], python_major):
+        if _check_version(output_version.strip().split()[1]):
             return subprocess.check_output(['py', env_arg, '-c',
                                             'import sys; sys.stdout.write(sys.executable);'],
                                            universal_newlines=True)
@@ -104,11 +102,10 @@ def find_python_executable(python_major):
         pass
 
     if not python_executable_path:
-        raise RuntimeError('Error, no compatible Python {0} executable for Certbot could be found.'
-                           .format(python_major))
+        raise RuntimeError('Error, no compatible Python executable for Certbot could be found.')
 
 
-def _check_version(version_str, major_version):
+def _check_version(version_str):
     search = VERSION_PATTERN.search(version_str)
 
     if not search:
@@ -116,11 +113,7 @@ def _check_version(version_str, major_version):
 
     version = (int(search.group(1)), int(search.group(2)))
 
-    minimal_version_supported = (2, 7)
-    if major_version == 3:
-        minimal_version_supported = (3, 6)
-
-    if version >= minimal_version_supported:
+    if version >= (3, 6):
         return True
 
     print('Incompatible python version for Certbot found: {0}'.format(version_str))
@@ -242,3 +235,28 @@ def install_packages(venv_name, pip_args):
         print('---------------------------------------------------------------------------')
     else:
         raise ValueError('Error, directory {0} is not a valid venv.'.format(venv_name))
+
+
+def create_venv(venv_path):
+    """Create a Python virtual environment at venv_path.
+
+    :param str venv_path: path where the venv should be created
+
+    """
+    python = find_python_executable()
+    command = [python, '-m', 'venv', venv_path]
+    subprocess_with_print(command)
+
+
+def main(pip_args=None):
+    venv_path = prepare_venv_path('venv')
+    create_venv(venv_path)
+
+    if not pip_args:
+        pip_args = REQUIREMENTS
+
+    install_packages(venv_path, pip_args)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
