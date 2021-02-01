@@ -33,10 +33,11 @@ if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 |
     exit 1
 fi
 
-# This script sets the environment variables PYTHON_NAME, VENV_PATH, and
-# VENV_SCRIPT based on the version of Python available on the system. For
-# instance, Fedora uses Python 3 and Python 2 is not installed.
-. tests/letstest/scripts/set_python_envvars.sh
+if command -v python; then
+    PYTHON_NAME="python"
+else
+    PYTHON_NAME="python3"
+fi
 
 # Now that python and openssl have been installed, we can set up a fake server
 # to provide a new version of letsencrypt-auto. First, we start the server and
