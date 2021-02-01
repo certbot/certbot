@@ -20,6 +20,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   certbot-auto script itself. This release includes Amazon Linux users, and all
   other systems that are not based on Debian or RHEL. We plan to make this
   change to the certbot-auto script for all users in the coming months.
+* Certbot no longer conditionally depends on an external mock module. Certbot's
+  test API will continue to use it if it is available for backwards
+  compatibility, however, this behavior has been deprecated and will be removed
+  in a future release.
 
 ### Fixed
 
