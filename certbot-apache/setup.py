@@ -5,7 +5,7 @@ from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.12.0.dev0'
+version = '1.12.0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
