@@ -208,6 +208,9 @@ FORCE_INTERACTIVE_FLAG = "--force-interactive"
 EFF_SUBSCRIBE_URI = "https://supporters.eff.org/subscribe/certbot"
 """EFF URI used to submit the e-mail address of users who opt-in."""
 
+# If we're changing the path used here, it'd be nice to post an update
+# to https://github.com/certbot/certbot/issues/7584 where there is at
+# least one person relying on this behavior.
 SSL_DHPARAMS_DEST = "ssl-dhparams.pem"
 """Name of the ssl_dhparams file as saved in `IConfig.config_dir`."""
 

@@ -242,6 +242,9 @@ class ApacheConfigurator(common.Installer):
     @property
     def mod_ssl_conf(self):
         """Full absolute path to SSL configuration file."""
+        # If we're changing the path used here, it'd be nice to post an update
+        # to https://github.com/certbot/certbot/issues/7584 where there is at
+        # least one person relying on this behavior.
         return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
 
     @property
@@ -354,6 +357,10 @@ class ApacheConfigurator(common.Installer):
         # We may try to enable mod_ssl later. If so, we shouldn't warn if we can't find it now.
         # This is currently only true for debian/ubuntu.
         warn_on_no_mod_ssl = not self.option("handle_modules")
+        # If we're no longer creating the TLS options file during prepare, it'd
+        # be nice to post an update to
+        # https://github.com/certbot/certbot/issues/7584 where there is at
+        # least one person relying on this behavior.
         self.install_ssl_options_conf(self.mod_ssl_conf,
                                       self.updated_mod_ssl_conf_digest,
                                       warn_on_no_mod_ssl)

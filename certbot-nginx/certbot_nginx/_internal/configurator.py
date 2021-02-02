@@ -161,6 +161,9 @@ class NginxConfigurator(common.Installer):
     @property
     def mod_ssl_conf(self):
         """Full absolute path to SSL configuration file."""
+        # If we're changing the path used here, it'd be nice to post an update
+        # to https://github.com/certbot/certbot/issues/7584 where there is at
+        # least one person relying on this behavior.
         return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
 
     @property
@@ -198,8 +201,11 @@ class NginxConfigurator(common.Installer):
         if self.openssl_version is None:
             self.openssl_version = self._get_openssl_version()
 
+        # If we're no longer creating the TLS options or DH params files during
+        # prepare, it'd be nice to post an update to
+        # https://github.com/certbot/certbot/issues/7584 where there is at
+        # least one person relying on this behavior.
         self.install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
-
         self.install_ssl_dhparams()
 
         # Prevent two Nginx plugins from modifying a config at once

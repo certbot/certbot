@@ -23,6 +23,9 @@ CLI_DEFAULTS = dict(
 """CLI defaults."""
 
 
+# If we're changing the path used here, it'd be nice to post an update
+# to https://github.com/certbot/certbot/issues/7584 where there is at
+# least one person relying on this behavior.
 MOD_SSL_CONF_DEST = "options-ssl-nginx.conf"
 """Name of the mod_ssl config file as saved in `IConfig.config_dir`."""
 

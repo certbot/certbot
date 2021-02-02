@@ -185,6 +185,9 @@ class Installer(Plugin):
     @property
     def ssl_dhparams(self):
         """Full absolute path to ssl_dhparams file."""
+        # If we're changing the path used here, it'd be nice to post an update
+        # to https://github.com/certbot/certbot/issues/7584 where there is at
+        # least one person relying on this behavior.
         return os.path.join(self.config.config_dir, constants.SSL_DHPARAMS_DEST)
 
     @property
