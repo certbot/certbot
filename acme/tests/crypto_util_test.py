@@ -8,7 +8,6 @@ import unittest
 
 import josepy as jose
 import OpenSSL
-import six
 
 from acme import errors
 import test_util
@@ -26,8 +25,6 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
         from acme.crypto_util import SSLSocket
 
         class _TestServer(socketserver.TCPServer):
-
-            # six.moves.* | pylint: disable=attribute-defined-outside-init,no-init
 
             def server_bind(self):  # pylint: disable=missing-docstring
                 self.socket = SSLSocket(socket.socket(),
@@ -62,7 +59,6 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
         self.assertRaises(errors.Error, self._probe, b'bar')
 
     def test_probe_connection_error(self):
-        # pylint has a hard time with six
         self.server.server_close()
         original_timeout = socket.getdefaulttimeout()
         try:
@@ -121,9 +117,9 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
     @classmethod
     def _get_idn_names(cls):
         """Returns expected names from '{cert,csr}-idnsans.pem'."""
-        chars = [six.unichr(i) for i in itertools.chain(range(0x3c3, 0x400),
-                                                        range(0x641, 0x6fc),
-                                                        range(0x1820, 0x1877))]
+        chars = [chr(i) for i in itertools.chain(range(0x3c3, 0x400),
+                                                 range(0x641, 0x6fc),
+                                                 range(0x1820, 0x1877))]
         return [''.join(chars[i: i + 45]) + '.invalid'
                 for i in range(0, len(chars), 45)]
 
