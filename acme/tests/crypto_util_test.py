@@ -1,6 +1,7 @@
 """Tests for acme.crypto_util."""
 import itertools
 import socket
+import socketserver
 import threading
 import time
 import unittest
@@ -8,7 +9,6 @@ import unittest
 import josepy as jose
 import OpenSSL
 import six
-from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
 from acme import errors
 import test_util

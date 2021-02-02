@@ -1,4 +1,5 @@
 """Tests for acme.challenges."""
+import urllib.parse as urllib_parse
 import unittest
 
 import josepy as jose
@@ -8,7 +9,6 @@ try:
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
 import requests
-from six.moves.urllib import parse as urllib_parse
 
 from acme import errors
 

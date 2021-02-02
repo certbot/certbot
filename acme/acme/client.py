@@ -4,6 +4,7 @@ import collections
 import datetime
 from email.utils import parsedate_tz
 import heapq
+import http.client as http_client
 import logging
 import re
 import sys
@@ -16,7 +17,6 @@ from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
 from requests_toolbelt.adapters.source import SourceAddressAdapter
 import six
-from six.moves import http_client
 
 from acme import crypto_util
 from acme import errors
@@ -260,7 +260,7 @@ class Client(ClientBase):
         if net is None:
             net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl)
 
-        if isinstance(directory, six.string_types):
+        if isinstance(directory, str):
             directory = messages.Directory.from_json(
                 net.get(directory).json())
         super(Client, self).__init__(directory=directory,

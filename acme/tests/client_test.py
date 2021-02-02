@@ -2,6 +2,7 @@
 # pylint: disable=too-many-lines
 import copy
 import datetime
+import http.client as http_client
 import json
 import unittest
 
@@ -12,7 +13,6 @@ except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
 import OpenSSL
 import requests
-from six.moves import http_client  # pylint: disable=import-error
 
 from acme import challenges
 from acme import errors
