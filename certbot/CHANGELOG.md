@@ -2,7 +2,23 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.12.0 - master
+## 1.13.0 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.12.0 - 2021-02-02
 
 ### Added
 
@@ -14,6 +30,12 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   topmost (closest to the root) certificate in the chain, instead of checking
   every certificate in the chain.
   See [#8577](https://github.com/certbot/certbot/issues/8577).
+* Support for Python 2 has been removed.
+* In previous releases, we caused certbot-auto to stop updating its Certbot
+  installation. In this release, we are beginning to disable updates to the
+  certbot-auto script itself. This release includes Amazon Linux users, and all
+  other systems that are not based on Debian or RHEL. We plan to make this
+  change to the certbot-auto script for all users in the coming months.
 
 ### Fixed
 

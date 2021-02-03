@@ -28,7 +28,8 @@ from certbot._internal.cli.cli_constants import (
     ARGPARSE_PARAMS_TO_REMOVE,
     EXIT_ACTIONS,
     ZERO_ARG_ACTIONS,
-    VAR_MODIFIERS
+    VAR_MODIFIERS,
+    DEPRECATED_OPTIONS
 )
 
 from certbot._internal.cli.cli_utils import (
@@ -471,6 +472,11 @@ def set_by_cli(var):
     (CLI or config file) including if the user explicitly set it to the
     default.  Returns False if the variable was assigned a default value.
     """
+    # We should probably never actually hit this code. But if we do,
+    # a deprecated option has logically never been set by the CLI.
+    if var in DEPRECATED_OPTIONS:
+        return False
+
     detector = set_by_cli.detector  # type: ignore
     if detector is None and helpful_parser is not None:
         # Setup on first run: `detector` is a weird version of config in which
@@ -531,6 +537,9 @@ def option_was_set(option, value):
     :rtype: bool
 
     """
+    # If an option is deprecated, it was effectively not set by the user.
+    if option in DEPRECATED_OPTIONS:
+        return False
     return set_by_cli(option) or not has_default_value(option, value)
 
 

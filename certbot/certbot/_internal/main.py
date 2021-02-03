@@ -5,7 +5,6 @@ from __future__ import print_function
 import functools
 import logging.handlers
 import sys
-import warnings
 
 import configobj
 import josepy as jose
@@ -1409,13 +1408,6 @@ def main(cli_args=None):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
-
-    if sys.version_info[0] == 2:
-        warnings.warn(
-            "Python 2 support will be dropped in the next release of Certbot. "
-            "Please upgrade your Python version.",
-            PendingDeprecationWarning,
-        )  # pragma: no cover
 
     set_displayer(config)
 
