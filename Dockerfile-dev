@@ -15,6 +15,6 @@ RUN apt-get update && \
            /tmp/* \
            /var/tmp/*
 
-RUN VENV_NAME="../venv3" python3 tools/venv3.py
+RUN VENV_NAME="../venv" python3 tools/venv.py
 
-ENV PATH /opt/certbot/venv3/bin:$PATH
+ENV PATH /opt/certbot/venv/bin:$PATH

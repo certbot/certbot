@@ -2,7 +2,25 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.12.0 - master
+## 1.13.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* The acme library no longer depends on the `security` extras from `requests`
+  which was needed to support SNI in TLS requests when using old versions of
+  Python 2.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.12.0 - 2021-02-02
 
 ### Added
 
@@ -15,9 +33,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   every certificate in the chain.
   See [#8577](https://github.com/certbot/certbot/issues/8577).
 * Support for Python 2 has been removed.
-* The acme library no longer depends on the `security` extras from `requests`
-  which was needed to support SNI in TLS requests when using old versions of
-  Python 2.
+* In previous releases, we caused certbot-auto to stop updating its Certbot
+  installation. In this release, we are beginning to disable updates to the
+  certbot-auto script itself. This release includes Amazon Linux users, and all
+  other systems that are not based on Debian or RHEL. We plan to make this
+  change to the certbot-auto script for all users in the coming months.
 
 ### Fixed
 
