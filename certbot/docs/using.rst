@@ -299,7 +299,7 @@ dns-hetzner_       Y    N    DNS Authentication using Hetzner DNS Public API
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 .. _dns-lightsail: https://github.com/noi/certbot-dns-lightsail
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
-.. _dns-hetzner: https://github.com/BigMichi1/certbot-dns-hetzner
+.. _dns-hetzner: https://snapcraft.io/certbot-dns-hetzner
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
