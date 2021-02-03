@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="1.12.0.dev0"
+LE_AUTO_VERSION="1.13.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -1487,18 +1487,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==1.11.0 \
-    --hash=sha256:b7faa66c40a1ce5a31bfc8668d8feb5d2db6f7af9e791079a6d95c77b6593bf4 \
-    --hash=sha256:6b0ce04e55379aff0a47f873fa05c084538ad0f4a9b79f33108dbb0a7a668b43
-acme==1.11.0 \
-    --hash=sha256:77d6ce61b155315d7d7031489bbd245c0ea42c0453a04d4304393414e741a56d \
-    --hash=sha256:092eb09a074a935da4c10f66cb8634ffb2cc2d2cc1035d2998d608996efab924
-certbot-apache==1.11.0 \
-    --hash=sha256:ea7ac88733aad91a89c700289effda2a0c0658778da1ae2c54a0aefaee351285 \
-    --hash=sha256:3ed001427ec0b49324f2b9af7170fa6e6e88948fa51c3678b07bf17f8138863d
-certbot-nginx==1.11.0 \
-    --hash=sha256:79de69782a1199e577787ff9790dee02a44aac17dbecd6a7287593030842a306 \
-    --hash=sha256:9afe611f99a78b8898941b8ad7bdcf7f3c2b6e0fce27125268f7c713e64b34ee
+certbot==1.12.0 \
+    --hash=sha256:f4bb3da5391e4a28e9a2e52ab54986171c0864feff17eaaaca6729a1d4c433a6 \
+    --hash=sha256:5ee738773479bcb7794e43fedd2415acc0969b75bdd2a21f451e3bff9d99df59
+acme==1.12.0 \
+    --hash=sha256:ca4ad044429f1b8b670b958e5c7ea38159def9d601f4af2359355993918c3317 \
+    --hash=sha256:aa363474d50e9fdda27acb8b1aa7efb26fecc5650e02039a0de3a3f0e696c2f2
+certbot-apache==1.12.0 \
+    --hash=sha256:38899f6fa08799de9535795d919acf968f288d7208909baf7733f9a763c15227 \
+    --hash=sha256:e5679b40d99bd241f4fcd9fe44b73e6e25ccc969a617131ff6ebc90d562a49f2
+certbot-nginx==1.12.0 \
+    --hash=sha256:332cd70067bbcf6db52a002650ffa4844d0bd9780279d662aa6725b43f776c14 \
+    --hash=sha256:3fb6a55290d37ad466681a89a85ceca4c4026fdd8702f3010b87a74266a6fe7b
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
