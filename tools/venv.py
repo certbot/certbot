@@ -25,7 +25,7 @@ import time
 
 REQUIREMENTS = [
     '-e acme[dev]',
-    '-e certbot[dev,dev3,docs]',
+    '-e certbot[dev,docs]',
     '-e certbot-apache',
     '-e certbot-dns-cloudflare',
     '-e certbot-dns-cloudxns',

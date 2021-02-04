@@ -81,22 +81,19 @@ elif sys.version_info < (3,3):
     install_requires.append('mock')
 
 dev_extras = [
+    'astroid',
+    'azure-devops',
     'coverage',
+    'ipdb',
+    'mypy',
+    'PyGithub',
+    'pylint',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
     'tox',
     'twine',
     'wheel',
-]
-
-dev3_extras = [
-    'astroid',
-    'azure-devops',
-    'ipdb',
-    'mypy',
-    'PyGithub',
-    'pylint',
 ]
 
 docs_extras = [
@@ -144,7 +141,6 @@ setup(
     install_requires=install_requires,
     extras_require={
         'dev': dev_extras,
-        'dev3': dev3_extras,
         'docs': docs_extras,
     },
 
