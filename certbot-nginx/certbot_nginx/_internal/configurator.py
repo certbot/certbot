@@ -253,6 +253,7 @@ class NginxConfigurator(common.Installer):
 
     def _choose_vhosts_wildcard(self, domain, prefer_ssl, no_ssl_filter_port=None):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
+        logger.info("Vhost selection for domain: %s ", domain)
         if prefer_ssl:
             vhosts_cache = self._wildcard_vhosts
             preference_test = lambda x: x.ssl
@@ -279,16 +280,24 @@ class NginxConfigurator(common.Installer):
             for name in vhost.names:
                 if preference_test(vhost):
                     # Prefer either SSL or non-SSL vhosts
-                    filtered_vhosts[name] = vhost
+                    filtered_vhosts[name+"-"+str(vhost.addrs)] = vhost
                 elif name not in filtered_vhosts:
                     # Add if not in list previously
-                    filtered_vhosts[name] = vhost
-
+                    filtered_vhosts[name+"-"+str(vhost.addrs)] = vhost
+        
         # Only unique VHost objects
         dialog_input = set(filtered_vhosts.values())
+        
+        return_vhosts = []
+        for val in dialog_input:
+            logger.info("Virtual host names: %s , for address: %s", val.names, val.addrs)
+            if domain in val.names:
+                return_vhosts.append(val)
+                logger.info("Got virtual host names match with domain: %s ",domain)
 
         # Ask the user which of names to enable, expect list of names back
-        return_vhosts = display_ops.select_vhost_multiple(list(dialog_input))
+        # commenting below call to skip user interactive mode and proceed with matching CN from above block
+        #return_vhosts = display_ops.select_vhost_multiple(list(dialog_input))
 
         for vhost in return_vhosts:
             if domain not in vhosts_cache:
@@ -326,8 +335,10 @@ class NginxConfigurator(common.Installer):
         """
         if util.is_wildcard_domain(target_name):
             # Ask user which VHosts to support.
+            logger.info("wildcard flow ")
             vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
         else:
+            logger.info("non-wildcard flow ")
             vhosts = self._choose_vhost_single(target_name)
         if not vhosts:
             if create_if_no_match:
@@ -454,6 +465,7 @@ class NginxConfigurator(common.Installer):
             wildcards = [x for x in matches if x['rank'] == rank]
             return max(wildcards, key=lambda x: len(x['name']))['vhost']
         # Exact or regex match
+        logger.info("returning matches[0]['vhost'] : %s", matches)
         return matches[0]['vhost']
 
     def _rank_matches_by_name(self, vhost_list, target_name):
@@ -505,9 +517,11 @@ class NginxConfigurator(common.Installer):
 
         """
         matches = self._rank_matches_by_name(vhost_list, target_name)
-        for match in matches:
-            if not match['vhost'].ssl:
-                match['rank'] += NO_SSL_MODIFIER
+        logger.info("_rank_matches_by_name : %s", matches)
+        ## commenting below 3 lines to asure exact match domain name should get higher preference
+        #for match in matches:
+        #    if not match['vhost'].ssl:
+        #        match['rank'] += NO_SSL_MODIFIER
         return sorted(matches, key=lambda x: x['rank'])
 
     def choose_redirect_vhosts(self, target_name, port, create_if_no_match=False):

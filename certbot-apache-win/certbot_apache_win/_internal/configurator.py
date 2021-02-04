@@ -451,6 +451,7 @@ class ApacheConfigurator(common.Installer):
         """
 
         if self._wildcard_domain(domain):
+            logger.info("wildcard flow: %s ", domain)
             if domain in self._wildcard_vhosts:
                 # Vhosts for a wildcard domain were already selected
                 return self._wildcard_vhosts[domain]
@@ -458,6 +459,7 @@ class ApacheConfigurator(common.Installer):
             # Returned objects are guaranteed to be ssl vhosts
             return self._choose_vhosts_wildcard(domain, create_if_no_ssl)
         else:
+            logger.info("Non-wildcard flow: %s ", domain)
             return [self.choose_vhost(domain, create_if_no_ssl)]
 
     def _vhosts_for_wildcard(self, domain):
@@ -489,7 +491,7 @@ class ApacheConfigurator(common.Installer):
 
     def _choose_vhosts_wildcard(self, domain, create_ssl=True):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
-
+        logger.info("Vhost selection for domain: %s ", domain)
         # Get all vhosts that are covered by the wildcard domain
         vhosts = self._vhosts_for_wildcard(domain)
 
@@ -507,9 +509,17 @@ class ApacheConfigurator(common.Installer):
 
         # Only unique VHost objects
         dialog_input = set(filtered_vhosts.values())
+        
+        dialog_output = []
+        for val in dialog_input:
+            logger.info("Virtual host names: %s ", val.get_names())
+            if domain in val.get_names():
+                dialog_output.append(val)
+                logger.info("Got virtual host names match with domain: %s ",domain)
 
         # Ask the user which of names to enable, expect list of names back
-        dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
+        # commenting below call to skip user interactive mode and proceed with matching CN from above block
+        #dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
 
         if not dialog_output:
             logger.error(
@@ -738,6 +748,7 @@ class ApacheConfigurator(common.Installer):
         :returns: VHost or None
 
         """
+        logger.info("finding sutable VHost by weightage for : %s ", target_name)        
         # Points 6 - Servername SSL
         # Points 5 - Wildcard SSL
         # Points 4 - Address name with SSL
@@ -767,11 +778,7 @@ class ApacheConfigurator(common.Installer):
 
             
             print("Points:{0} Best Points:{1}".format(points,best_points))
-
-            if vhost.ssl:
-                points += 3
-
-            
+                        
             if points > best_points:
                 best_points = points
                 best_candidate = vhost

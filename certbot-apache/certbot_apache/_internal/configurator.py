@@ -552,7 +552,7 @@ class ApacheConfigurator(common.Installer):
 
     def _choose_vhosts_wildcard(self, domain, create_ssl=True):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
-
+        logger.info("Vhost selection for domain: %s ", domain)
         # Get all vhosts that are covered by the wildcard domain
         vhosts = self._vhosts_for_wildcard(domain)
 
@@ -570,9 +570,15 @@ class ApacheConfigurator(common.Installer):
 
         # Only unique VHost objects
         dialog_input = set(filtered_vhosts.values())
-
+        dialog_output = []
+        for val in dialog_input:
+            logger.info("Virtual host names: %s ", val.get_names())
+            if domain in val.get_names():
+                dialog_output.append(val)
+                logger.info("Got virtual host names match with domain: %s ",domain)
         # Ask the user which of names to enable, expect list of names back
-        dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
+        # commenting below call to skip user interactive mode and proceed with matching CN from above block
+        # dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
 
         if not dialog_output:
             logger.error(

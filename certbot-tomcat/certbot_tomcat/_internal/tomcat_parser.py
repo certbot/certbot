@@ -38,36 +38,65 @@ class TomcatParser(object):
 
     def _process_cert_change(self, domain, certpath, keypath):
         attr_cert = {"certificateKeyFile": keypath, "certificateFile": certpath,
-                     "type": "RSA"}
-        is_certificate = False
+                     "type": "RSA"}        
         hostNameFound = False
+        print("CN: ",domain)
         root = self.tree.getroot()
-        for child in root.iter("Connector"):
-            if not len(child) == 0:
-                for ele in child:
-                    if ele.tag.__eq__("SSLHostConfig"):
-                        if "hostName" in ele.attrib:
-                            print(ele.attrib["hostName"])
-                            print(domain)
-                            if domain.lower().__eq__(ele.attrib["hostName"].lower()):
-                                hostNameFound=True
-                                print("matched")
-                                print(ele.attrib["hostName"])
-                                print(domain)
-                                for childEle in ele:
-                                    if childEle.tag.__eq__("Certificate"):
-                                        childEle.attrib["certificateFile"] = certpath
-                                        childEle.attrib["certificateKeyFile"] = keypath
-                                        childEle.attrib["type"] = "RSA"
-                                        childEle.attrib.pop("certificateChainFile", None)
-                                        childEle.attrib.pop("certificateKeystoreFile", None)
-                                        is_certificate = True
-                                if not is_certificate:
-                                    ele.append(etree.Element("Certificate", attrib=attr_cert))
-                                if child.attrib['port'].__eq__('80'):
-                                    child.attrib['port'] = "443" #Support 80->443 redirect
-                                child.attrib['SSLEnabled'] = "true"
-
+        if domain.startswith("*."):
+            print("installing wildcard cert..")
+            for child in root.iter("Connector"):
+                print("looping connector with port: ",child.attrib["port"])
+                domainPattern = domain[2:]
+                print("cn pattern ends with: ",domainPattern)
+                if not len(child) == 0:
+                    for ele in child:
+                        if ele.tag.__eq__("SSLHostConfig"):
+                            if "hostName" in ele.attrib:
+                                print("configured hostName: ", ele.attrib["hostName"])                            
+                                if (ele.attrib["hostName"].lower().endswith(domainPattern.lower())):
+                                    is_certificate = False
+                                    hostNameFound=True
+                                    print("matched")
+                                    for childEle in ele:
+                                        if childEle.tag.__eq__("Certificate"):
+                                            childEle.attrib["certificateFile"] = certpath
+                                            childEle.attrib["certificateKeyFile"] = keypath
+                                            childEle.attrib["type"] = "RSA"
+                                            childEle.attrib.pop("certificateChainFile", None)
+                                            childEle.attrib.pop("certificateKeystoreFile", None)
+                                            is_certificate = True
+                                    if not is_certificate:
+                                        ele.append(etree.Element("Certificate", attrib=attr_cert))
+                                    if child.attrib['port'].__eq__('80'):
+                                        child.attrib['port'] = "443" #Support 80->443 redirect
+                                    child.attrib['SSLEnabled'] = "true"
+                                    is_certificate = False
+        else:        
+            for child in root.iter("Connector"):
+                print("looping connector with port: ",child.attrib["port"])
+                if not len(child) == 0:
+                    for ele in child:
+                        if ele.tag.__eq__("SSLHostConfig"):
+                            if "hostName" in ele.attrib:
+                                print("configured hostName: ", ele.attrib["hostName"])                            
+                                if domain.lower().__eq__(ele.attrib["hostName"].lower()):
+                                    is_certificate = False
+                                    hostNameFound=True
+                                    print("matched")
+                                    for childEle in ele:
+                                        if childEle.tag.__eq__("Certificate"):
+                                            childEle.attrib["certificateFile"] = certpath
+                                            childEle.attrib["certificateKeyFile"] = keypath
+                                            childEle.attrib["type"] = "RSA"
+                                            childEle.attrib.pop("certificateChainFile", None)
+                                            childEle.attrib.pop("certificateKeystoreFile", None)
+                                            is_certificate = True
+                                    if not is_certificate:
+                                        ele.append(etree.Element("Certificate", attrib=attr_cert))
+                                    if child.attrib['port'].__eq__('80'):
+                                        child.attrib['port'] = "443" #Support 80->443 redirect
+                                    child.attrib['SSLEnabled'] = "true"
+                                    is_certificate = False
         if not hostNameFound:
             raise errors.NoInstallationError("could not find provided domain name as server name in server.xml")
 
