@@ -67,7 +67,7 @@ logger = logging.getLogger(__name__)
 
 
 # Global, to save us from a lot of argument passing within the scope of this module
-helpful_parser = None  # type: Optional[HelpfulArgumentParser]
+helpful_parser: Optional[HelpfulArgumentParser] = None
 
 
 def prepare_and_parse_args(plugins, args, detect_defaults=False):

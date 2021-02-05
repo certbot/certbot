@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class Challenge(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge."""
-    TYPES = {}  # type: dict
+    TYPES: dict = {}
 
     @classmethod
     def from_json(cls, jobj):
@@ -38,7 +38,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
 class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
-    TYPES = {}  # type: dict
+    TYPES: dict = {}
     resource_type = 'challenge'
     resource = fields.Resource(resource_type)
 

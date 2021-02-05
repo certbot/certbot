@@ -24,7 +24,7 @@ class Parsable(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, parent=None):
-        self._data = [] # type: List[object]
+        self._data: List[object] = []
         self._tabs = None
         self.parent = parent
 
@@ -183,7 +183,7 @@ class Statements(Parsable):
 
 def _space_list(list_):
     """ Inserts whitespace between adjacent non-whitespace tokens. """
-    spaced_statement = [] # type: List[str]
+    spaced_statement: List[str] = []
     for i in reversed(six.moves.xrange(len(list_))):
         spaced_statement.insert(0, list_[i])
         if i > 0 and not list_[i].isspace() and not list_[i-1].isspace():
@@ -272,8 +272,8 @@ class Block(Parsable):
     """
     def __init__(self, parent=None):
         super(Block, self).__init__(parent)
-        self.names = None # type: Sentence
-        self.contents = None # type: Block
+        self.names: Sentence = None
+        self.contents: Block = None
 
     @staticmethod
     def should_parse(lists):

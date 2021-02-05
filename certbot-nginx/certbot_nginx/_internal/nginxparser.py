@@ -130,8 +130,7 @@ def load(_file):
     return loads(_file.read())
 
 
-def dumps(blocks):
-    # type: (UnspacedList) -> six.text_type
+def dumps(blocks: UnspacedList) -> six.text_type:
     """Dump to a Unicode string.
 
     :param UnspacedList block: The parsed tree
@@ -141,8 +140,7 @@ def dumps(blocks):
     return six.text_type(RawNginxDumper(blocks.spaced))
 
 
-def dump(blocks, _file):
-    # type: (UnspacedList, IO[Any]) -> None
+def dump(blocks: UnspacedList, _file: IO[Any]) -> None:
     """Dump to a file.
 
     :param UnspacedList block: The parsed tree

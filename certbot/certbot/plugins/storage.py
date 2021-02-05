@@ -42,7 +42,7 @@ class PluginStorage(object):
 
         :raises .errors.PluginStorageError: when unable to open or read the file
         """
-        data = {}  # type: Dict[str, Any]
+        data: Dict[str, Any] = {}
         filedata = ""
         try:
             with open(self._storagepath, 'r') as fh:

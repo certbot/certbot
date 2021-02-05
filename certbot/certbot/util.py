@@ -59,7 +59,7 @@ _INITIAL_PID = os.getpid()
 # the dict are attempted to be cleaned up at program exit. If the
 # program exits before the lock is cleaned up, it is automatically
 # released, but the file isn't deleted.
-_LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
+_LOCKS: OrderedDict[str, lock.LockFile] = OrderedDict()
 
 
 def env_no_snap_for_external_calls():
@@ -217,10 +217,10 @@ def safe_open(path, mode="w", chmod=None):
         if ``None``.
 
     """
-    open_args = ()  # type: Union[Tuple[()], Tuple[int]]
+    open_args: Union[Tuple[()], Tuple[int]] = ()
     if chmod is not None:
         open_args = (chmod,)
-    fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
+    fdopen_args: Union[Tuple[()], Tuple[int]] = ()
     fd = filesystem.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
     return os.fdopen(fd, mode, *fdopen_args)
 
@@ -578,7 +578,7 @@ def is_wildcard_domain(domain):
     :rtype: bool
 
     """
-    wildcard_marker = b"*."  # type: Union[Text, bytes]
+    wildcard_marker: Union[Text, bytes] = b"*."
     if isinstance(domain, six.text_type):
         wildcard_marker = u"*."
     return domain.startswith(wildcard_marker)

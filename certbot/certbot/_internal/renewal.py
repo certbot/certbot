@@ -144,7 +144,7 @@ def _restore_plugin_configs(config, renewalparams):
     #      longer defined, stored copies of that parameter will be
     #      deserialized as strings by this logic even if they were
     #      originally meant to be some other type.
-    plugin_prefixes = []  # type: List[str]
+    plugin_prefixes: List[str] = []
     if renewalparams["authenticator"] == "webroot":
         _restore_webroot_config(config, renewalparams)
     else:
@@ -327,8 +327,7 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                     "unless you use the --break-my-certs flag!".format(names))
 
 
-def renew_cert(config, domains, le_client, lineage):
-    # type: (interfaces.IConfig, Optional[List[str]], client.Client, storage.RenewableCert) -> None
+def renew_cert(config: interfaces.IConfig, domains: Optional[List[str]], le_client: client.Client, lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
@@ -360,9 +359,8 @@ def report(msgs, category):
     return "  " + "\n  ".join(lines)
 
 
-def _renew_describe_results(config, renew_successes, renew_failures,
-                            renew_skipped, parse_failures):
-    # type: (interfaces.IConfig, List[str], List[str], List[str], List[str]) -> None
+def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[str], renew_failures: List[str],
+                            renew_skipped: List[str], parse_failures: List[str]) -> None:
     """
     Print a report to the terminal about the results of the renewal process.
 
@@ -515,8 +513,7 @@ def handle_renewal_request(config):
     logger.debug("no renewal failures")
 
 
-def _update_renewal_params_from_key(key_path, config):
-    # type: (str, interfaces.IConfig) -> None
+def _update_renewal_params_from_key(key_path: str, config: interfaces.IConfig) -> None:
     with open(key_path, 'rb') as file_h:
         key = load_pem_private_key(file_h.read(), password=None, backend=default_backend())
     if isinstance(key, rsa.RSAPrivateKey):

@@ -16,8 +16,7 @@ from certbot.interfaces import IConfig  # pylint: disable=unused-import
 logger = logging.getLogger(__name__)
 
 
-def prepare_subscription(config, acc):
-    # type: (IConfig, Account) -> None
+def prepare_subscription(config: IConfig, acc: Account) -> None:
     """High level function to store potential EFF newsletter subscriptions.
 
     The user may be asked if they want to sign up for the newsletter if
@@ -45,8 +44,7 @@ def prepare_subscription(config, acc):
         storage.update_meta(acc)
 
 
-def handle_subscription(config, acc):
-    # type: (IConfig, Account) -> None
+def handle_subscription(config: IConfig, acc: Account) -> None:
     """High level function to take care of EFF newsletter subscriptions.
 
     Once subscription is handled, it will not be handled again.
@@ -65,8 +63,7 @@ def handle_subscription(config, acc):
         storage.update_meta(acc)
 
 
-def _want_subscription():
-    # type: () -> bool
+def _want_subscription() -> bool:
     """Does the user want to be subscribed to the EFF newsletter?
 
     :returns: True if we should subscribe the user, otherwise, False
@@ -83,8 +80,7 @@ def _want_subscription():
     return display.yesno(prompt, default=False)
 
 
-def subscribe(email):
-    # type: (str) -> None
+def subscribe(email: str) -> None:
     """Subscribe the user to the EFF mailing list.
 
     :param str email: the e-mail address to subscribe
@@ -99,8 +95,7 @@ def subscribe(email):
     _check_response(requests.post(url, data=data))
 
 
-def _check_response(response):
-    # type: (requests.Response) -> None
+def _check_response(response: requests.Response) -> None:
     """Check for errors in the server's response.
 
     If an error occurred, it will be reported to the user.
@@ -120,8 +115,7 @@ def _check_response(response):
         _report_failure('there was a problem with the server response')
 
 
-def _report_failure(reason=None):
-    # type: (Optional[str]) -> None
+def _report_failure(reason: Optional[str] = None) -> None:
     """Notify the user of failing to sign them up for the newsletter.
 
     :param reason: a phrase describing what the problem was

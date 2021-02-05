@@ -84,7 +84,7 @@ class ConstantTest(unittest.TestCase):
         from acme.messages import _Constant
 
         class MockConstant(_Constant):  # pylint: disable=missing-docstring
-            POSSIBLE_NAMES = {} # type: Dict
+            POSSIBLE_NAMES: Dict = {}
 
         self.MockConstant = MockConstant  # pylint: disable=invalid-name
         self.const_a = MockConstant('a')

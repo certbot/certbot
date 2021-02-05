@@ -142,8 +142,7 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
     return lineage
 
 
-def _handle_unexpected_key_type_migration(config, cert):
-    # type: (configuration.NamespaceConfig, storage.RenewableCert) -> None
+def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig, cert: storage.RenewableCert) -> None:
     """
     This function ensures that the user will not implicitly migrate an existing key
     from one type to another in the situation where a certificate for that lineage
@@ -164,11 +163,10 @@ def _handle_unexpected_key_type_migration(config, cert):
             raise errors.Error(msg)
 
 
-def _handle_subset_cert_request(config,  # type: configuration.NamespaceConfig
-                                domains,  # type: List[str]
-                                cert  # type: storage.RenewableCert
-                                ):
-    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
+def _handle_subset_cert_request(config: configuration.NamespaceConfig,
+                                domains: List[str],
+                                cert: storage.RenewableCert
+                                ) -> Tuple[str, Optional[storage.RenewableCert]]:
     """Figure out what to do if a previous cert had a subset of the names now requested
 
     :param config: Configuration object
@@ -215,10 +213,9 @@ def _handle_subset_cert_request(config,  # type: configuration.NamespaceConfig
     raise errors.Error(USER_CANCELLED)
 
 
-def _handle_identical_cert_request(config,  # type: configuration.NamespaceConfig
-                                   lineage,  # type: storage.RenewableCert
-                                   ):
-    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
+def _handle_identical_cert_request(config: configuration.NamespaceConfig,
+                                   lineage: storage.RenewableCert,
+                                   ) -> Tuple[str, Optional[storage.RenewableCert]]:
     """Figure out what to do if a lineage has the same names as a previously obtained one
 
     :param config: Configuration object
@@ -334,11 +331,10 @@ def _find_cert(config, domains, certname):
     return (action != "reinstall"), lineage
 
 
-def _find_lineage_for_domains_and_certname(config,  # type: configuration.NamespaceConfig
-                                           domains,  # type: List[str]
-                                           certname  # type: str
-                                           ):
-    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
+def _find_lineage_for_domains_and_certname(config: configuration.NamespaceConfig,
+                                           domains: List[str],
+                                           certname: str
+                                           ) -> Tuple[str, Optional[storage.RenewableCert]]:
     """Find appropriate lineage based on given domains and/or certname.
 
     :param config: Configuration object
@@ -755,7 +751,7 @@ def update_account(config, unused_plugins):
     cb_client = client.Client(config, acc, None, None, acme=acme)
     # Empty list of contacts in case the user is removing all emails
 
-    acc_contacts = () # type: Iterable[str]
+    acc_contacts: Iterable[str] = ()
     if config.email:
         acc_contacts = ['mailto:' + email for email in config.email.split(',')]
     # We rely on an exception to interrupt this process if it didn't work.
@@ -1351,8 +1347,7 @@ def set_displayer(config):
     """
     if config.quiet:
         config.noninteractive_mode = True
-        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w")) \
-        # type: Union[None, display_util.NoninteractiveDisplay, display_util.FileDisplay]
+        displayer: Union[None, display_util.NoninteractiveDisplay, display_util.FileDisplay] = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:

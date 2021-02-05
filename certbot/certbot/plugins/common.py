@@ -313,8 +313,8 @@ class ChallengePerformer(object):
 
     def __init__(self, configurator):
         self.configurator = configurator
-        self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
-        self.indices = []  # type: List[int]
+        self.achalls: List[achallenges.KeyAuthorizationAnnotatedChallenge] = []
+        self.indices: List[int] = []
 
     def add_chall(self, achall, idx=None):
         """Store challenge to be performed when perform() is called.

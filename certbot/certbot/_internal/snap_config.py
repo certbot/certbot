@@ -33,8 +33,7 @@ _ARCH_TRIPLET_MAP = {
 LOGGER = logging.getLogger(__name__)
 
 
-def prepare_env(cli_args):
-    # type: (List[str]) -> List[str]
+def prepare_env(cli_args: List[str]) -> List[str]:
     """
     Prepare runtime environment for a certbot execution in snap.
     :param list cli_args: List of command line arguments

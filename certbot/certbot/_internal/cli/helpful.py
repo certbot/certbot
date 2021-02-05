@@ -106,9 +106,9 @@ class HelpfulArgumentParser(object):
         self.visible_topics = self.determine_help_topics(self.help_arg)
 
         # elements are added by .add_group()
-        self.groups = {}  # type: Dict[str, argparse._ArgumentGroup]
+        self.groups: Dict[str, argparse._ArgumentGroup] = {}
         # elements are added by .parse_args()
-        self.defaults = {}  # type: Dict[str, Any]
+        self.defaults: Dict[str, Any] = {}
 
         self.parser = configargparse.ArgParser(
             prog="certbot",

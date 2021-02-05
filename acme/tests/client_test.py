@@ -64,7 +64,7 @@ class ClientTestBase(unittest.TestCase):
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key())
-        the_arg = dict(reg)  # type: Dict
+        the_arg: Dict = dict(reg)
         self.new_reg = messages.NewRegistration(**the_arg)
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')

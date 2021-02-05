@@ -164,7 +164,7 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
 
 class Status(_Constant):
     """ACME "status" field."""
-    POSSIBLE_NAMES = {}  # type: dict
+    POSSIBLE_NAMES: dict = {}
 STATUS_UNKNOWN = Status('unknown')
 STATUS_PENDING = Status('pending')
 STATUS_PROCESSING = Status('processing')
@@ -177,7 +177,7 @@ STATUS_DEACTIVATED = Status('deactivated')
 
 class IdentifierType(_Constant):
     """ACME identifier type."""
-    POSSIBLE_NAMES = {}  # type: dict
+    POSSIBLE_NAMES: dict = {}
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 
 
@@ -195,7 +195,7 @@ class Identifier(jose.JSONObjectWithFields):
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES = {}  # type: dict
+    _REGISTERED_TYPES: dict = {}
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""

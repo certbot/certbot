@@ -109,8 +109,8 @@ class NginxConfigurator(common.Installer):
 
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
-        self._wildcard_redirect_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_vhosts: Dict[str, List[obj.VirtualHost]] = {}
+        self._wildcard_redirect_vhosts: Dict[str, List[obj.VirtualHost]] = {}
 
         # Add number of outstanding challenges
         self._chall_out = 0
@@ -595,7 +595,7 @@ class NginxConfigurator(common.Installer):
         :rtype: set
 
         """
-        all_names = set()  # type: Set[str]
+        all_names: Set[str] = set()
 
         for vhost in self.parser.get_vhosts():
             try:
@@ -1176,7 +1176,7 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
 
     """
     try:
-        reload_output = u"" # type: Text
+        reload_output: Text = u""
         with tempfile.TemporaryFile() as out:
             proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
                                     env=util.env_no_snap_for_external_calls(),

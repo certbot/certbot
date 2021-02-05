@@ -125,8 +125,7 @@ class ClientBase(object):
         """
         return self.update_registration(regr, update={'status': 'deactivated'})
 
-    def deactivate_authorization(self, authzr):
-        # type: (messages.AuthorizationResource) -> messages.AuthorizationResource
+    def deactivate_authorization(self, authzr: messages.AuthorizationResource) -> messages.AuthorizationResource:
         """Deactivate authorization.
 
         :param messages.AuthorizationResource authzr: The Authorization resource
@@ -436,7 +435,7 @@ class Client(ClientBase):
 
         """
         assert max_attempts > 0
-        attempts = collections.defaultdict(int) # type: Dict[messages.AuthorizationResource, int]
+        attempts: Dict[messages.AuthorizationResource, int] = collections.defaultdict(int)
         exhausted = set()
 
         # priority queue with datetime.datetime (based on Retry-After) as key,
@@ -549,7 +548,7 @@ class Client(ClientBase):
         :rtype: `list` of `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
 
         """
-        chain = [] # type: List[jose.ComparableX509]
+        chain: List[jose.ComparableX509] = []
         uri = certr.cert_chain_uri
         while uri is not None and len(chain) < max_length:
             response, cert = self._get_cert(uri)
@@ -981,7 +980,7 @@ class ClientNetwork(object):
         self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
-        self._nonces = set() # type: Set[Text]
+        self._nonces: Set[Text] = set()
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout

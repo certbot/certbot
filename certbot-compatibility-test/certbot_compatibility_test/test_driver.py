@@ -178,7 +178,7 @@ def test_enhancements(plugin, domains):
                      "enhancements")
         return False
 
-    domains_and_info = [(domain, []) for domain in domains]  # type: List[Tuple[str, List[bool]]]
+    domains_and_info: List[Tuple[str, List[bool]]] = [(domain, []) for domain in domains]
 
     for domain, info in domains_and_info:
         try:

@@ -210,23 +210,23 @@ class ApacheConfigurator(common.Installer):
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Add name_server association dict
-        self.assoc = {}  # type: Dict[str, obj.VirtualHost]
+        self.assoc: Dict[str, obj.VirtualHost] = {}
         # Outstanding challenges
-        self._chall_out = set()  # type: Set[KeyAuthorizationAnnotatedChallenge]
+        self._chall_out: Set[KeyAuthorizationAnnotatedChallenge] = set()
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = {}  # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_vhosts: Dict[str, List[obj.VirtualHost]] = {}
         # Maps enhancements to vhosts we've enabled the enhancement for
-        self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
+        self._enhanced_vhosts: DefaultDict[str, Set[obj.VirtualHost]] = defaultdict(set)
         # Temporary state for AutoHSTS enhancement
-        self._autohsts = {}  # type: Dict[str, Dict[str, Union[int, float]]]
+        self._autohsts: Dict[str, Dict[str, Union[int, float]]] = {}
         # Reverter save notes
         self.save_notes = ""
         # Should we use ParserNode implementation instead of the old behavior
         self.USE_PARSERNODE = use_parsernode
         # Saves the list of file paths that were parsed initially, and
         # not added to parser tree by self.conf("vhost-root") for example.
-        self.parsed_paths = []  # type: List[str]
+        self.parsed_paths: List[str] = []
         # These will be set in the prepare function
         self._prepared = False
         self.parser = None
@@ -832,7 +832,7 @@ class ApacheConfigurator(common.Installer):
         :rtype: set
 
         """
-        all_names = set()  # type: Set[str]
+        all_names: Set[str] = set()
 
         vhost_macro = []
 
@@ -996,8 +996,8 @@ class ApacheConfigurator(common.Installer):
 
         """
         # Search base config, and all included paths for VirtualHosts
-        file_paths = {}  # type: Dict[str, str]
-        internal_paths = defaultdict(set)  # type: DefaultDict[str, Set[str]]
+        file_paths: Dict[str, str] = {}
+        internal_paths: DefaultDict[str, Set[str]] = defaultdict(set)
         vhs = []
         # Make a list of parser paths because the parser_paths
         # dictionary may be modified during the loop.
@@ -2156,7 +2156,7 @@ class ApacheConfigurator(common.Installer):
         # There can be other RewriteRule directive lines in vhost config.
         # rewrite_args_dict keys are directive ids and the corresponding value
         # for each is a list of arguments to that directive.
-        rewrite_args_dict = defaultdict(list)  # type: DefaultDict[str, List[str]]
+        rewrite_args_dict: DefaultDict[str, List[str]] = defaultdict(list)
         pat = r'(.*directive\[\d+\]).*'
         for match in rewrite_path:
             m = re.match(pat, match)
@@ -2250,7 +2250,7 @@ class ApacheConfigurator(common.Installer):
         if ssl_vhost.aliases:
             serveralias = "ServerAlias " + " ".join(ssl_vhost.aliases)
 
-        rewrite_rule_args = []  # type: List[str]
+        rewrite_rule_args: List[str] = []
         if self.get_version() >= (2, 3, 9):
             rewrite_rule_args = constants.REWRITE_HTTPS_ARGS_WITH_END
         else:

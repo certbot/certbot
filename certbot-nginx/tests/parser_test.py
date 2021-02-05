@@ -111,7 +111,7 @@ class NginxParserTest(util.NginxTest):
                    ([[[0], [3], [4]], [[5], [3], [0]]], [])]
 
         for mylist, result in mylists:
-            paths = [] # type: List[List[int]]
+            paths: List[List[int]] = []
             parser._do_for_subarray(mylist,
                                     lambda x: isinstance(x, list) and
                                     len(x) >= 1 and

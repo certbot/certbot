@@ -328,7 +328,7 @@ class Client(object):
             with open(old_keypath, "rb") as f:
                 keypath = old_keypath
                 keypem = f.read()
-            key = util.Key(file=keypath, pem=keypem) # type: Optional[util.Key]
+            key: Optional[util.Key] = util.Key(file=keypath, pem=keypem)
             logger.info("Reusing existing private key from %s.", old_keypath)
         else:
             # The key is set to None here but will be created below.
@@ -390,8 +390,7 @@ class Client(object):
             cert, chain = self.obtain_certificate_from_csr(csr, orderr)
             return cert, chain, key, csr
 
-    def _get_order_and_authorizations(self, csr_pem, best_effort):
-        # type: (str, bool) -> List[messages.OrderResource]
+    def _get_order_and_authorizations(self, csr_pem: str, best_effort: bool) -> List[messages.OrderResource]:
         """Request a new order and complete its authorizations.
 
         :param str csr_pem: A CSR in PEM format.

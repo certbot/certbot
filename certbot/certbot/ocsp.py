@@ -59,8 +59,7 @@ class RevocationChecker(object):
             else:
                 self.host_args = lambda host: ["Host", host]
 
-    def ocsp_revoked(self, cert):
-        # type: (RenewableCert) -> bool
+    def ocsp_revoked(self, cert: RenewableCert) -> bool:
         """Get revoked status for a particular cert version.
 
         .. todo:: Make this a non-blocking call
@@ -72,8 +71,7 @@ class RevocationChecker(object):
         """
         return self.ocsp_revoked_by_paths(cert.cert_path, cert.chain_path)
 
-    def ocsp_revoked_by_paths(self, cert_path, chain_path, timeout=10):
-        # type: (str, str, int) -> bool
+    def ocsp_revoked_by_paths(self, cert_path: str, chain_path: str, timeout: int = 10) -> bool:
         """Performs the OCSP revocation check
 
         :param str cert_path: Certificate filepath
@@ -102,8 +100,7 @@ class RevocationChecker(object):
             return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, timeout)
         return _check_ocsp_cryptography(cert_path, chain_path, url, timeout)
 
-    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url, timeout):
-        # type: (str, str, str, str, int) -> bool
+    def _check_ocsp_openssl_bin(self, cert_path: str, chain_path: str, host: str, url: str, timeout: int) -> bool:
         # Minimal implementation of proxy selection logic as seen in, e.g., cURL
         # Some things that won't work, but may well be in use somewhere:
         # - username and password for proxy authentication
@@ -140,8 +137,7 @@ class RevocationChecker(object):
         return _translate_ocsp_query(cert_path, output, err)
 
 
-def _determine_ocsp_server(cert_path):
-    # type: (str) -> Tuple[Optional[str], Optional[str]]
+def _determine_ocsp_server(cert_path: str) -> Tuple[Optional[str], Optional[str]]:
     """Extract the OCSP server host from a certificate.
 
     :param str cert_path: Path to the cert we're checking OCSP for
@@ -171,8 +167,7 @@ def _determine_ocsp_server(cert_path):
     return None, None
 
 
-def _check_ocsp_cryptography(cert_path, chain_path, url, timeout):
-    # type: (str, str, str, int) -> bool
+def _check_ocsp_cryptography(cert_path: str, chain_path: str, url: str, timeout: int) -> bool:
     # Retrieve OCSP response
     with open(chain_path, 'rb') as file_handler:
         issuer = x509.load_pem_x509_certificate(file_handler.read(), default_backend())

@@ -68,11 +68,10 @@ to serve all files under specified web root ({0})."""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.full_roots = {}  # type: Dict[str, str]
-        self.performed = collections.defaultdict(set) \
-            # type: DefaultDict[str, Set[achallenges.KeyAuthorizationAnnotatedChallenge]]
+        self.full_roots: Dict[str, str] = {}
+        self.performed: DefaultDict[str, Set[achallenges.KeyAuthorizationAnnotatedChallenge]] = collections.defaultdict(set)
         # stack of dirs successfully created by this authenticator
-        self._created_dirs = []  # type: List[str]
+        self._created_dirs: List[str] = []
 
     def prepare(self):  # pylint: disable=missing-function-docstring
         pass
@@ -225,7 +224,7 @@ to serve all files under specified web root ({0})."""
                 os.remove(validation_path)
                 self.performed[root_path].remove(achall)
 
-        not_removed = []  # type: List[str]
+        not_removed: List[str] = []
         while self._created_dirs:
             path = self._created_dirs.pop()
             try:

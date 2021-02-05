@@ -355,7 +355,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         ownpath = self.metadata.get("augeaspath")
 
         directives = self.parser.find_dir(name, start=ownpath, exclude=exclude)
-        already_parsed = set()  # type: Set[str]
+        already_parsed: Set[str] = set()
         for directive in directives:
             # Remove the /arg part from the Augeas path
             directive = directive.partition("/arg")[0]

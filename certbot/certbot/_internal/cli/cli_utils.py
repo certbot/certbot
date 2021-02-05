@@ -62,7 +62,7 @@ def config_help(name, hidden=False):
     """Extract the help message for an `.IConfig` attribute."""
     if hidden:
         return argparse.SUPPRESS
-    field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute
+    field: zope.interface.interface.Attribute = interfaces.IConfig.__getitem__(name)
     return field.__doc__
 
 

@@ -43,7 +43,7 @@ class ServerManager(object):
 
     """
     def __init__(self, certs, http_01_resources):
-        self._instances = {}  # type: Dict[int, acme_standalone.BaseDualNetworkedServers]
+        self._instances: Dict[int, acme_standalone.BaseDualNetworkedServers] = {}
         self.certs = certs
         self.http_01_resources = http_01_resources
 
@@ -123,15 +123,14 @@ class Authenticator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
 
-        self.served = collections.defaultdict(set)  # type: ServedType
+        self.served: ServedType = collections.defaultdict(set)
 
         # Stuff below is shared across threads (i.e. servers read
         # values, main thread writes). Due to the nature of CPython's
         # GIL, the operations are safe, c.f.
         # https://docs.python.org/2/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe
-        self.certs = {}  # type: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]]
-        self.http_01_resources = set() \
-        # type: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
+        self.certs: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]] = {}
+        self.http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = set()
 
         self.servers = ServerManager(self.certs, self.http_01_resources)
 

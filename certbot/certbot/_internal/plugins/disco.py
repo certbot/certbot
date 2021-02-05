@@ -220,7 +220,7 @@ class PluginsRegistry(Mapping):
     @classmethod
     def find_all(cls):
         """Find plugins using setuptools entry points."""
-        plugins = {}  # type: Dict[str, PluginEntryPoint]
+        plugins: Dict[str, PluginEntryPoint] = {}
         plugin_paths_string = os.getenv('CERTBOT_PLUGIN_PATH')
         plugin_paths = plugin_paths_string.split(':') if plugin_paths_string else []
         # XXX should ensure this only happens once
