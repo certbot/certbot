@@ -83,7 +83,8 @@ def umask(mask: int) -> int:
 # Since copying and editing arbitrary DACL is very difficult, and since we actually know
 # the mode to apply at the time the owner of a file should change, it is easier to just
 # change the owner, then reapply the known mode, as copy_ownership_and_apply_mode() does.
-def copy_ownership_and_apply_mode(src: str, dst: str, mode: int, copy_user: bool, copy_group: bool) -> None:
+def copy_ownership_and_apply_mode(src: str, dst: str, mode: int,
+                                  copy_user: bool, copy_group: bool) -> None:
     """
     Copy ownership (user and optionally group on Linux) from the source to the
     destination, then apply given mode in compatible way for Linux and Windows.
@@ -115,7 +116,8 @@ def copy_ownership_and_apply_mode(src: str, dst: str, mode: int, copy_user: bool
 # equivalent POSIX mode, because ownership and mode are copied altogether on the destination
 # file, so no recomputing of the DACL against the new owner is needed, as it would be
 # for a copy_ownership alone method.
-def copy_ownership_and_mode(src: str, dst: str, copy_user: bool = True, copy_group: bool = True) -> None:
+def copy_ownership_and_mode(src: str, dst: str,
+                            copy_user: bool = True, copy_group: bool = True) -> None:
     """
     Copy ownership (user and optionally group on Linux) and mode/DACL
     from the source to the destination.

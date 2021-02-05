@@ -125,7 +125,9 @@ class ClientBase(object):
         """
         return self.update_registration(regr, update={'status': 'deactivated'})
 
-    def deactivate_authorization(self, authzr: messages.AuthorizationResource) -> messages.AuthorizationResource:
+    def deactivate_authorization(self,
+                                 authzr: messages.AuthorizationResource
+                                 ) -> messages.AuthorizationResource:
         """Deactivate authorization.
 
         :param messages.AuthorizationResource authzr: The Authorization resource

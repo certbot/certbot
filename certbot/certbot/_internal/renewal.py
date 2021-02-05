@@ -291,7 +291,7 @@ def _restore_str(name, value):
 
 
 def should_renew(config, lineage):
-    "Return true if any of the circumstances for automatic renewal apply."
+    """Return true if any of the circumstances for automatic renewal apply."""
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
         return True
@@ -306,7 +306,7 @@ def should_renew(config, lineage):
 
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
-    "Do not renew a valid cert with one from a staging server!"
+    """Do not renew a valid cert with one from a staging server!"""
     # Some lineages may have begun with --staging, but then had production
     # certificates added to them
     with open(lineage.cert) as the_file:
@@ -327,7 +327,8 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                     "unless you use the --break-my-certs flag!".format(names))
 
 
-def renew_cert(config: interfaces.IConfig, domains: Optional[List[str]], le_client: client.Client, lineage: storage.RenewableCert) -> None:
+def renew_cert(config: interfaces.IConfig, domains: Optional[List[str]], le_client: client.Client,
+               lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
@@ -354,13 +355,14 @@ def renew_cert(config: interfaces.IConfig, domains: Optional[List[str]], le_clie
 
 
 def report(msgs, category):
-    "Format a results report for a category of renewal outcomes"
+    """Format a results report for a category of renewal outcomes"""
     lines = ("%s (%s)" % (m, category) for m in msgs)
     return "  " + "\n  ".join(lines)
 
 
-def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[str], renew_failures: List[str],
-                            renew_skipped: List[str], parse_failures: List[str]) -> None:
+def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[str],
+                            renew_failures: List[str], renew_skipped: List[str],
+                            parse_failures: List[str]) -> None:
     """
     Print a report to the terminal about the results of the renewal process.
 

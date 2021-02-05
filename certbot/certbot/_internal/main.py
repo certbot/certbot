@@ -142,7 +142,8 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
     return lineage
 
 
-def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig, cert: storage.RenewableCert) -> None:
+def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
+                                          cert: storage.RenewableCert) -> None:
     """
     This function ensures that the user will not implicitly migrate an existing key
     from one type to another in the situation where a certificate for that lineage
@@ -1347,7 +1348,8 @@ def set_displayer(config):
     """
     if config.quiet:
         config.noninteractive_mode = True
-        displayer: Union[None, display_util.NoninteractiveDisplay, display_util.FileDisplay] = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
+        displayer: Union[None, display_util.NoninteractiveDisplay, display_util.FileDisplay] =\
+            display_util.NoninteractiveDisplay(open(os.devnull, "w"))
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:

@@ -13,7 +13,7 @@ from acme.magic_typing import DefaultDict
 from acme.magic_typing import Dict
 from acme.magic_typing import List
 from acme.magic_typing import Set
-from certbot import achallenges  # pylint: disable=unused-import
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge as AnnotatedChallenge
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import cli
@@ -69,7 +69,7 @@ to serve all files under specified web root ({0})."""
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.full_roots: Dict[str, str] = {}
-        self.performed: DefaultDict[str, Set[achallenges.KeyAuthorizationAnnotatedChallenge]] = collections.defaultdict(set)
+        self.performed: DefaultDict[str, Set[AnnotatedChallenge]] = collections.defaultdict(set)
         # stack of dirs successfully created by this authenticator
         self._created_dirs: List[str] = []
 

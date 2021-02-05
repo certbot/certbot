@@ -100,7 +100,8 @@ class RevocationChecker(object):
             return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, timeout)
         return _check_ocsp_cryptography(cert_path, chain_path, url, timeout)
 
-    def _check_ocsp_openssl_bin(self, cert_path: str, chain_path: str, host: str, url: str, timeout: int) -> bool:
+    def _check_ocsp_openssl_bin(self, cert_path: str, chain_path: str,
+                                host: str, url: str, timeout: int) -> bool:
         # Minimal implementation of proxy selection logic as seen in, e.g., cURL
         # Some things that won't work, but may well be in use somewhere:
         # - username and password for proxy authentication

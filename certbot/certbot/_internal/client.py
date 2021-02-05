@@ -390,7 +390,8 @@ class Client(object):
             cert, chain = self.obtain_certificate_from_csr(csr, orderr)
             return cert, chain, key, csr
 
-    def _get_order_and_authorizations(self, csr_pem: str, best_effort: bool) -> List[messages.OrderResource]:
+    def _get_order_and_authorizations(self, csr_pem: str,
+                                      best_effort: bool) -> List[messages.OrderResource]:
         """Request a new order and complete its authorizations.
 
         :param str csr_pem: A CSR in PEM format.

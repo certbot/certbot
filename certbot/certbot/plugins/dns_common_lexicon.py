@@ -116,7 +116,9 @@ class LexiconClient(object):
         return None
 
 
-def build_lexicon_config(lexicon_provider_name: str, lexicon_options: Dict, provider_options: Dict) -> Union[ConfigResolver, Dict]:
+def build_lexicon_config(lexicon_provider_name: str,
+                         lexicon_options: Dict, provider_options: Dict
+                         ) -> Union[ConfigResolver, Dict]:
     """
     Convenient function to build a Lexicon 2.x/3.x config object.
     :param str lexicon_provider_name: the name of the lexicon provider to use
