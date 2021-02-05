@@ -20,6 +20,7 @@ from acme.magic_typing import IO, Any # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 
+
 class RawNginxParser(object):
     # pylint: disable=pointless-statement
     """A class that parses nginx configuration with pyparsing."""
@@ -70,6 +71,7 @@ class RawNginxParser(object):
         """Returns the parsed tree as a list."""
         return self.parse().asList()
 
+
 class RawNginxDumper(object):
     """A class that dumps nginx configuration from the provided tree."""
     def __init__(self, blocks):
@@ -105,54 +107,8 @@ class RawNginxDumper(object):
         return ''.join(self)
 
 
-# Shortcut functions to respect Python's serialization interface
-# (like pyyaml, picker or json)
-
-def loads(source):
-    """Parses from a string.
-
-    :param str source: The string to parse
-    :returns: The parsed tree
-    :rtype: list
-
-    """
-    return UnspacedList(RawNginxParser(source).as_list())
-
-
-def load(_file):
-    """Parses from a file.
-
-    :param file _file: The file to parse
-    :returns: The parsed tree
-    :rtype: list
-
-    """
-    return loads(_file.read())
-
-
-def dumps(blocks: UnspacedList) -> six.text_type:
-    """Dump to a Unicode string.
-
-    :param UnspacedList block: The parsed tree
-    :rtype: six.text_type
-
-    """
-    return six.text_type(RawNginxDumper(blocks.spaced))
-
-
-def dump(blocks: UnspacedList, _file: IO[Any]) -> None:
-    """Dump to a file.
-
-    :param UnspacedList block: The parsed tree
-    :param IO[Any] _file: The file stream to dump to. It must be opened with
-                          Unicode encoding.
-    :rtype: None
-
-    """
-    _file.write(dumps(blocks))
-
-
 spacey = lambda x: (isinstance(x, six.string_types) and x.isspace()) or x == ''
+
 
 class UnspacedList(list):
     """Wrap a list [of lists], making any whitespace entries magically invisible"""
@@ -272,3 +228,50 @@ class UnspacedList(list):
                 idx -= 1
             pos += 1
         return idx0 + spaces
+
+
+# Shortcut functions to respect Python's serialization interface
+# (like pyyaml, picker or json)
+
+def loads(source):
+    """Parses from a string.
+
+    :param str source: The string to parse
+    :returns: The parsed tree
+    :rtype: list
+
+    """
+    return UnspacedList(RawNginxParser(source).as_list())
+
+
+def load(_file):
+    """Parses from a file.
+
+    :param file _file: The file to parse
+    :returns: The parsed tree
+    :rtype: list
+
+    """
+    return loads(_file.read())
+
+
+def dumps(blocks: UnspacedList) -> six.text_type:
+    """Dump to a Unicode string.
+
+    :param UnspacedList block: The parsed tree
+    :rtype: six.text_type
+
+    """
+    return six.text_type(RawNginxDumper(blocks.spaced))
+
+
+def dump(blocks: UnspacedList, _file: IO[Any]) -> None:
+    """Dump to a file.
+
+    :param UnspacedList block: The parsed tree
+    :param IO[Any] _file: The file stream to dump to. It must be opened with
+                          Unicode encoding.
+    :rtype: None
+
+    """
+    _file.write(dumps(blocks))

@@ -8,6 +8,7 @@ except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
 
 from acme import challenges
+from acme.magic_typing import Dict
 import test_util
 
 CERT = test_util.load_comparable_cert('cert.der')

@@ -17,6 +17,7 @@ import sys
 import configargparse
 import six
 
+from acme.magic_typing import Dict
 from acme.magic_typing import Text
 from acme.magic_typing import Tuple
 from acme.magic_typing import Union
@@ -59,7 +60,7 @@ _INITIAL_PID = os.getpid()
 # the dict are attempted to be cleaned up at program exit. If the
 # program exits before the lock is cleaned up, it is automatically
 # released, but the file isn't deleted.
-_LOCKS: OrderedDict[str, lock.LockFile] = OrderedDict()
+_LOCKS: Dict[str, lock.LockFile] = OrderedDict()
 
 
 def env_no_snap_for_external_calls():

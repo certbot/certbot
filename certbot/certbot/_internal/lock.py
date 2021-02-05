@@ -16,25 +16,7 @@ else:
     POSIX_MODE = True
 
 
-
 logger = logging.getLogger(__name__)
-
-
-def lock_dir(dir_path: str) -> LockFile:
-    """Place a lock file on the directory at dir_path.
-
-    The lock file is placed in the root of dir_path with the name
-    .certbot.lock.
-
-    :param str dir_path: path to directory
-
-    :returns: the locked LockFile object
-    :rtype: LockFile
-
-    :raises errors.LockError: if unable to acquire the lock
-
-    """
-    return LockFile(os.path.join(dir_path, '.certbot.lock'))
 
 
 class LockFile(object):
@@ -257,3 +239,20 @@ class _WindowsLockMechanism(_BaseLockMechanism):
                 logger.debug(str(e))
         finally:
             self._fd = None
+
+
+def lock_dir(dir_path: str) -> LockFile:
+    """Place a lock file on the directory at dir_path.
+
+    The lock file is placed in the root of dir_path with the name
+    .certbot.lock.
+
+    :param str dir_path: path to directory
+
+    :returns: the locked LockFile object
+    :rtype: LockFile
+
+    :raises errors.LockError: if unable to acquire the lock
+
+    """
+    return LockFile(os.path.join(dir_path, '.certbot.lock'))
