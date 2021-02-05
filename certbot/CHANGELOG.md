@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* CLI flags `--os-packages-only`, `--no-self-upgrade`, `--no-bootstrap` and `--no-permissions-check`,
+  which are related to certbot-auto, are deprecated and will be removed in a future release.
 
 ### Fixed
 
