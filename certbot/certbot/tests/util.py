@@ -6,12 +6,19 @@ import shutil
 import sys
 import tempfile
 import unittest
+import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
 try:
     import mock
+    warnings.warn(
+        "The external mock module is being used for backwards compatibility "
+        "since it is available, however, future versions of Certbot's tests will "
+        "use unittest.mock. Be sure to update your code accordingly.",
+        PendingDeprecationWarning
+    )
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
 import OpenSSL

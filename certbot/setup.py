@@ -72,14 +72,6 @@ elif os.name == 'nt':
     # setuptools, pywin32 will not be specified as a dependency.
     install_requires.append(pywin32_req)
 
-if setuptools_known_environment_markers:
-    install_requires.append('mock ; python_version < "3.3"')
-elif 'bdist_wheel' in sys.argv[1:]:
-    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
-                       'of setuptools. Version 36.2+ of setuptools is required.')
-elif sys.version_info < (3,3):
-    install_requires.append('mock')
-
 dev_extras = [
     'astroid',
     'azure-devops',
