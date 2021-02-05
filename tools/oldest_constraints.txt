@@ -47,7 +47,7 @@ pyparsing==2.2.0
 apacheconfig==0.3.2
 cloudflare==1.5.1
 python-digitalocean==1.11
-requests[security]==2.6.0
+requests==2.6.0
 
 # Ubuntu Xenial constraints
 # Ubuntu Xenial only has versions of Python which we do not support available
