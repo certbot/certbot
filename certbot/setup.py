@@ -73,22 +73,19 @@ elif os.name == 'nt':
     install_requires.append(pywin32_req)
 
 dev_extras = [
+    'astroid',
+    'azure-devops',
     'coverage',
+    'ipdb',
+    'mypy',
+    'PyGithub',
+    'pylint',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
     'tox',
     'twine',
     'wheel',
-]
-
-dev3_extras = [
-    'astroid',
-    'azure-devops',
-    'ipdb',
-    'mypy',
-    'PyGithub',
-    'pylint',
 ]
 
 docs_extras = [
@@ -136,7 +133,6 @@ setup(
     install_requires=install_requires,
     extras_require={
         'dev': dev_extras,
-        'dev3': dev3_extras,
         'docs': docs_extras,
     },
 
