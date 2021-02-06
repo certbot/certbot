@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """Uses pip to upgrade Python packaging tools to pinned versions."""
 from __future__ import absolute_import
+
 import os
 
 import pip_install
-
 
 _REQUIREMENTS_PATH = os.path.join(os.path.dirname(__file__), "pipstrap_constraints.txt")
 

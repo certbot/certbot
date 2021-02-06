@@ -5,7 +5,6 @@ import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 import sys
-
 from typing import List
 
 try:

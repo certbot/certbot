@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-import pytest
-import subprocess
 import glob
 import os
 import re
+import subprocess
+
+import pytest
 
 
 @pytest.fixture(autouse=True, scope="module")

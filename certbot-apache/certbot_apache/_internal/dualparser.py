@@ -1,7 +1,7 @@
 """ Dual ParserNode implementation """
+from certbot_apache._internal import apacheparser
 from certbot_apache._internal import assertions
 from certbot_apache._internal import augeasparser
-from certbot_apache._internal import apacheparser
 
 
 class DualNodeBase(object):

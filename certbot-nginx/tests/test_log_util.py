@@ -3,8 +3,8 @@
 Most of the idea and code are from CPython implementation.
 https://github.com/python/cpython/blob/b76518d43fb82ed9e5d27025d18c90a23d525c90/Lib/unittest/case.py
 """
-import logging
 import collections
+import logging
 
 __all__ = ['AssertLogsMixin']
 

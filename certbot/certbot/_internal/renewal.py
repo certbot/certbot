@@ -8,18 +8,18 @@ import random
 import sys
 import time
 import traceback
+from typing import List
+from typing import Optional  # pylint: disable=unused-import
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import OpenSSL
 import six
 import zope.component
 
-from typing import List
-from typing import Optional  # pylint: disable=unused-import
 from certbot import crypto_util
-from certbot.display import util as display_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -31,6 +31,7 @@ from certbot._internal import storage
 from certbot._internal import updater
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import os
+from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 

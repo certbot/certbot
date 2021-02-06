@@ -5,6 +5,8 @@ import copy
 import functools
 import glob
 import sys
+from typing import Any
+from typing import Dict
 
 import configargparse
 import six
@@ -12,8 +14,6 @@ import zope.component
 import zope.interface
 
 from zope.interface import interfaces as zope_interfaces
-
-from typing import Any, Dict
 
 from certbot import crypto_util
 from certbot import errors

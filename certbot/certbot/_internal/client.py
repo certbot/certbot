@@ -2,6 +2,8 @@
 import datetime
 import logging
 import platform
+from typing import List
+from typing import Optional
 
 from cryptography.hazmat.backends import default_backend
 # See https://github.com/pyca/cryptography/issues/4275
@@ -14,8 +16,6 @@ from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
-from typing import List
-from typing import Optional
 import certbot
 from certbot import crypto_util
 from certbot import errors

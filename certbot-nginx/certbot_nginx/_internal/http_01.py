@@ -2,9 +2,9 @@
 
 import io
 import logging
+from typing import List
 
 from acme import challenges
-from typing import List
 from certbot import errors
 from certbot.compat import os
 from certbot.plugins import common

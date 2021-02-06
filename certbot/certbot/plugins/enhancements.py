@@ -1,11 +1,11 @@
 """New interface style Certbot enhancements"""
 import abc
-
-import six
-
 from typing import Any
 from typing import Dict
 from typing import List
+
+import six
+
 from certbot._internal import constants
 
 ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]

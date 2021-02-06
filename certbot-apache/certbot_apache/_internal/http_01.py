@@ -1,9 +1,9 @@
 """A class that performs HTTP-01 challenges for Apache"""
-import logging
 import errno
-
+import logging
 from typing import List
 from typing import Set
+
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os

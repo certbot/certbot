@@ -100,8 +100,8 @@ For this reason the internal representation of data should not ignore the case.
 """
 
 import abc
-import six
 
+import six
 
 
 @six.add_metaclass(abc.ABCMeta)

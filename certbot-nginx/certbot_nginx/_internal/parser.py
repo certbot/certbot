@@ -5,15 +5,15 @@ import glob
 import io
 import logging
 import re
-
-import pyparsing
-import six
-
 from typing import Dict
 from typing import List
 from typing import Set
 from typing import Tuple
 from typing import Union
+
+import pyparsing
+import six
+
 from certbot import errors
 from certbot.compat import os
 from certbot_nginx._internal import nginxparser

@@ -1,16 +1,15 @@
 """Subscribes users to the EFF newsletter."""
 import logging
+from typing import Optional  # pylint: disable=unused-import
 
 import requests
 import zope.component
 
-from typing import Optional  # pylint: disable=unused-import
-
 from certbot import interfaces
-from certbot.display import util as display_util
 from certbot._internal import constants
 from certbot._internal.account import Account  # pylint: disable=unused-import
 from certbot._internal.account import AccountFileStorage
+from certbot.display import util as display_util
 from certbot.interfaces import IConfig  # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)

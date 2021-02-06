@@ -3,12 +3,12 @@ import functools
 import logging
 import signal
 import traceback
-
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Union
+
 from certbot import errors
 from certbot.compat import os
 

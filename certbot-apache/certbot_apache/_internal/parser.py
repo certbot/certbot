@@ -4,11 +4,11 @@ import fnmatch
 import logging
 import re
 import sys
+from typing import Dict
+from typing import List
 
 import six
 
-from typing import Dict
-from typing import List
 from certbot import errors
 from certbot.compat import os
 from certbot_apache._internal import apache_util

@@ -3,13 +3,13 @@ import collections
 import itertools
 import logging
 import sys
+from typing import Dict
 
 import pkg_resources
 import six
 import zope.interface
 import zope.interface.verify
 
-from typing import Dict
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants

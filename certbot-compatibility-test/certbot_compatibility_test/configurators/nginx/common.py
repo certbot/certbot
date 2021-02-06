@@ -2,10 +2,10 @@
 import os
 import shutil
 import subprocess
+from typing import Set
 
 import zope.interface
 
-from typing import Set
 from certbot._internal import configuration
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces

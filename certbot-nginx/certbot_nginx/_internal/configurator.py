@@ -6,6 +6,10 @@ import socket
 import subprocess
 import tempfile
 import time
+from typing import Dict
+from typing import List
+from typing import Set
+from typing import Text
 
 import OpenSSL
 import pkg_resources
@@ -13,10 +17,6 @@ import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
-from typing import Dict
-from typing import List
-from typing import Set
-from typing import Text
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces

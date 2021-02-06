@@ -4,6 +4,7 @@ import functools
 import logging
 import socket
 import threading
+from typing import List
 
 from six.moves import BaseHTTPServer  # type: ignore
 from six.moves import http_client
@@ -11,7 +12,6 @@ from six.moves import socketserver  # type: ignore
 
 from acme import challenges
 from acme import crypto_util
-from typing import List
 
 logger = logging.getLogger(__name__)
 

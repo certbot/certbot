@@ -12,14 +12,14 @@ import subprocess
 import sys
 import tempfile
 import time
-
 from typing import List
+
 import requests
 
+# pylint: disable=wildcard-import,unused-wildcard-import
 from certbot_integration_tests.utils import misc
 from certbot_integration_tests.utils import pebble_artifacts
 from certbot_integration_tests.utils import proxy
-# pylint: disable=wildcard-import,unused-wildcard-import
 from certbot_integration_tests.utils.constants import *
 
 

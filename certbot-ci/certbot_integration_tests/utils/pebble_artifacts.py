@@ -7,7 +7,8 @@ import stat
 import pkg_resources
 import requests
 
-from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT, MOCK_OCSP_SERVER_PORT
+from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
+from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 
 PEBBLE_VERSION = 'v2.3.0'
 ASSETS_PATH = pkg_resources.resource_filename('certbot_integration_tests', 'assets')

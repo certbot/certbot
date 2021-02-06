@@ -19,8 +19,8 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot._internal import constants
-from certbot.compat import os
 from certbot.compat import filesystem
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 

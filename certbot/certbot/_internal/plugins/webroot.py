@@ -3,16 +3,16 @@ import argparse
 import collections
 import json
 import logging
+from typing import DefaultDict
+from typing import Dict
+from typing import List
+from typing import Set
 
 import six
 import zope.component
 import zope.interface
 
 from acme import challenges
-from typing import DefaultDict
-from typing import Dict
-from typing import List
-from typing import Set
 from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces

@@ -5,15 +5,15 @@ import logging
 import os
 import re
 import socket
+from typing import Callable
+from typing import Tuple
+from typing import Union
 
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 
 from acme import errors
-from typing import Callable
-from typing import Tuple
-from typing import Union
 
 logger = logging.getLogger(__name__)
 
