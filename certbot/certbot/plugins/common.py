@@ -8,7 +8,7 @@ from josepy import util as jose_util
 import pkg_resources
 import zope.interface
 
-from acme.magic_typing import List
+from typing import List
 from certbot import achallenges  # pylint: disable=unused-import
 from certbot import crypto_util
 from certbot import errors

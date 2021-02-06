@@ -6,7 +6,7 @@ import os  # pylint: disable=os-module-forbidden
 import stat
 import sys
 
-from acme.magic_typing import List
+from typing import List
 
 try:
     import ntsecuritycon

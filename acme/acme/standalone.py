@@ -11,7 +11,7 @@ from six.moves import socketserver  # type: ignore
 
 from acme import challenges
 from acme import crypto_util
-from acme.magic_typing import List
+from typing import List
 
 logger = logging.getLogger(__name__)
 

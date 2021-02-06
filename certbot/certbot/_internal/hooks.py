@@ -3,8 +3,8 @@ from __future__ import print_function
 
 import logging
 
-from acme.magic_typing import List
-from acme.magic_typing import Set
+from typing import List
+from typing import Set
 from certbot import errors
 from certbot import util
 from certbot.compat import filesystem

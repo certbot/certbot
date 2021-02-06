@@ -8,9 +8,9 @@ import zope.component
 from acme import challenges
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Tuple
+from typing import Dict
+from typing import List
+from typing import Tuple
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces

@@ -4,9 +4,9 @@ import logging
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
-from acme.magic_typing import Any
-from acme.magic_typing import Dict
-from acme.magic_typing import Union
+from typing import Any
+from typing import Dict
+from typing import Union
 from certbot import errors
 from certbot.plugins import dns_common
 

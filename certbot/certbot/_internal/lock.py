@@ -2,7 +2,7 @@
 import errno
 import logging
 
-from acme.magic_typing import Optional
+from typing import Optional
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os

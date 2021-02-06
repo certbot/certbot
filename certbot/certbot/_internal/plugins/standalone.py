@@ -11,11 +11,11 @@ import zope.interface
 
 from acme import challenges
 from acme import standalone as acme_standalone
-from acme.magic_typing import DefaultDict
-from acme.magic_typing import Dict
-from acme.magic_typing import Set
-from acme.magic_typing import Tuple
-from acme.magic_typing import TYPE_CHECKING
+from typing import DefaultDict
+from typing import Dict
+from typing import Set
+from typing import Tuple
+from typing import TYPE_CHECKING
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces

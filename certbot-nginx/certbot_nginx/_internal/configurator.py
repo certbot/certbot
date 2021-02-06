@@ -13,10 +13,10 @@ import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Set
-from acme.magic_typing import Text
+from typing import Dict
+from typing import List
+from typing import Set
+from typing import Text
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces

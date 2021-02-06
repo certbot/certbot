@@ -8,7 +8,7 @@ import sys
 import certbot._internal.plugins.selection as plugin_selection
 from certbot._internal.plugins import disco as plugins_disco
 
-from acme.magic_typing import Optional
+from typing import Optional
 
 # pylint: disable=ungrouped-imports
 import certbot

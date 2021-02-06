@@ -16,7 +16,7 @@ from pyparsing import stringEnd
 from pyparsing import White
 from pyparsing import ZeroOrMore
 import six
-from acme.magic_typing import IO, Any # pylint: disable=unused-import
+from typing import IO, Any # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 

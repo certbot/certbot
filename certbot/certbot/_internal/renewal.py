@@ -16,8 +16,8 @@ import OpenSSL
 import six
 import zope.component
 
-from acme.magic_typing import List
-from acme.magic_typing import Optional  # pylint: disable=unused-import
+from typing import List
+from typing import Optional  # pylint: disable=unused-import
 from certbot import crypto_util
 from certbot.display import util as display_util
 from certbot import errors

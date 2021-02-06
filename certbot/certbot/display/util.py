@@ -16,7 +16,7 @@ import textwrap
 import zope.interface
 import zope.component
 
-from acme.magic_typing import List
+from typing import List
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants

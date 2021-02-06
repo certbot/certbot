@@ -17,9 +17,9 @@ import sys
 import configargparse
 import six
 
-from acme.magic_typing import Text
-from acme.magic_typing import Tuple
-from acme.magic_typing import Union
+from typing import Text
+from typing import Tuple
+from typing import Union
 from certbot import errors
 from certbot._internal import constants
 from certbot._internal import lock

@@ -2,8 +2,8 @@
 import logging
 import errno
 
-from acme.magic_typing import List
-from acme.magic_typing import Set
+from typing import List
+from typing import Set
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
