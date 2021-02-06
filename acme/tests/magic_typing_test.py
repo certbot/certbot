@@ -1,6 +1,7 @@
 """Tests for acme.magic_typing."""
 import sys
 import unittest
+import warnings
 from unittest import mock
 
 
