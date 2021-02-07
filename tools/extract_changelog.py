@@ -33,6 +33,8 @@ def main():
         i = i + 1
 
     changelog = [entry for entry in changelog if entry]
+    if changelog[-1] == "More details about these changes can be found on our GitHub repo.":
+        changelog.insert(-1, "")
 
     print('\n'.join(changelog))
 
