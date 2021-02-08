@@ -1776,8 +1776,8 @@ class ReportNewCertTest(unittest.TestCase):
             '\nSuccessfully received certificate.\n'
             'Certificate is saved at: /path/to/fullchain.pem\n'
             'Key is saved at:         /path/to/privkey.pem\n'
-            'These files will be automatically updated every time the certificate is renewed.\n'
-            'This certificate expires on 1970-01-01.'
+            'This certificate expires on 1970-01-01.\n'
+            'Certbot will automatically renew this certificate in the background.\n'
         )
 
     def test_report_no_key(self):
@@ -1788,9 +1788,24 @@ class ReportNewCertTest(unittest.TestCase):
         self.mock_notify.assert_called_with(
             '\nSuccessfully received certificate.\n'
             'Certificate is saved at: /path/to/fullchain.pem\n'
-            'These files will be automatically updated every time the certificate is renewed.\n'
-            'This certificate expires on 1970-01-01.'
+            'This certificate expires on 1970-01-01.\n'
+            'Certbot will automatically renew this certificate in the background.\n'
         )
+
+    def test_report_no_preconfigured_renewal(self):
+        self._call(mock.Mock(dry_run=False, preconfigured_renewal=False),
+                  '/path/to/cert.pem', '/path/to/fullchain.pem',
+                  '/path/to/privkey.pem')
+
+        self.mock_notify.assert_called_with(
+            '\nSuccessfully received certificate.\n'
+            'Certificate is saved at: /path/to/fullchain.pem\n'
+            'Key is saved at:         /path/to/privkey.pem\n'
+            'This certificate expires on 1970-01-01.\n'
+            'These files will be updated when the certificate renews. '
+            'Run "certbot renew" to renew all expiring certificates.\n'
+        )
+
 
     def test_csr_report(self):
         self._call_csr(mock.Mock(dry_run=False), '/path/to/cert.pem',
