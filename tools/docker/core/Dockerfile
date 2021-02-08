@@ -14,10 +14,6 @@ WORKDIR /opt/certbot
 
 # Copy certbot code
 COPY CHANGELOG.md README.rst src/
-# We keep the relative path to the requirements file the same because, as of
-# writing this, tools/pip_install.py is used in the Dockerfile for Certbot
-# plugins and this script expects to find the requirements file there.
-COPY letsencrypt-auto-source/pieces/dependency-requirements.txt letsencrypt-auto-source/pieces/
 COPY tools tools
 COPY acme src/acme
 COPY certbot src/certbot
