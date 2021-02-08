@@ -214,7 +214,7 @@ def make_key(bits=1024, key_type="rsa", elliptic_curve=None):
         except TypeError:
             raise errors.Error("Unsupported elliptic curve: {}".format(elliptic_curve))
         except UnsupportedAlgorithm as e:
-            raise six.raise_from(e, errors.Error(str(e)))
+            raise e from errors.Error(str(e))
         _key_pem = _key.private_bytes(
             encoding=Encoding.PEM,
             format=PrivateFormat.TraditionalOpenSSL,
@@ -491,14 +491,9 @@ def _notAfterBefore(cert_path, method):
     reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
                              timestamp[6:8], b"T", timestamp[8:10], b":",
                              timestamp[10:12], b":", timestamp[12:]]
-    # pyrfc3339 always uses the type `str`. This means that in Python 2, it
-    # expects str/bytes and in Python 3 it expects its str type or the Python 2
-    # equivalent of the type unicode.
+    # pyrfc3339 always uses the type `str`
     timestamp_bytes = b"".join(reformatted_timestamp)
-    if six.PY3:
-        timestamp_str = timestamp_bytes.decode('ascii')
-    else:
-        timestamp_str = timestamp_bytes
+    timestamp_str = timestamp_bytes.decode('ascii')
     return pyrfc3339.parse(timestamp_str)
 
 
