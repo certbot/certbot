@@ -211,7 +211,7 @@ class VirtualHost(object):
     def contains_list(self, test):
         """Determine if raw server block contains test list at top level
         """
-        for i in six.moves.range(0, len(self.raw) - len(test) + 1):
+        for i in range(0, len(self.raw) - len(test) + 1):
             if self.raw[i:i + len(test)] == test:
                 return True
         return False
