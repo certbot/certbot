@@ -1,14 +1,12 @@
 """Certbot client interfaces."""
 import abc
 
-import six
 import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument,inherit-non-class
 
 
-@six.add_metaclass(abc.ABCMeta)
-class AccountStorage(object):
+class AccountStorage(object, metaclass=abc.ABCMeta):
     """Accounts storage interface."""
 
     @abc.abstractmethod
@@ -547,8 +545,7 @@ class IReporter(zope.interface.Interface):
         """Prints messages to the user and clears the message queue."""
 
 
-@six.add_metaclass(abc.ABCMeta)
-class RenewableCert(object):
+class RenewableCert(object, metaclass=abc.ABCMeta):
     """Interface to a certificate lineage."""
 
     @abc.abstractproperty
@@ -613,8 +610,7 @@ class RenewableCert(object):
 # an update during the run or install subcommand, it should do so when
 # :func:`IInstaller.deploy_cert` is called.
 
-@six.add_metaclass(abc.ABCMeta)
-class GenericUpdater(object):
+class GenericUpdater(object, metaclass=abc.ABCMeta):
     """Interface for update types not currently specified by Certbot.
 
     This class allows plugins to perform types of updates that Certbot hasn't
@@ -646,8 +642,7 @@ class GenericUpdater(object):
         """
 
 
-@six.add_metaclass(abc.ABCMeta)
-class RenewDeployer(object):
+class RenewDeployer(object, metaclass=abc.ABCMeta):
     """Interface for update types run when a lineage is renewed
 
     This class allows plugins to perform types of updates that need to run at
