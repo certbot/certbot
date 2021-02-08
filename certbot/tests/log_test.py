@@ -327,7 +327,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
 
     def test_acme_error(self):
         # Get an arbitrary error code
-        acme_code = next(messages.ERROR_CODES.keys())
+        acme_code = next(iter(messages.ERROR_CODES))
 
         def get_acme_error(msg):
             """Wraps ACME errors so the constructor takes only a msg."""
