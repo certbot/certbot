@@ -1,19 +1,22 @@
 """Test :mod:`certbot.display.util`."""
 import inspect
+import io
 import socket
 import tempfile
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 import six
 
 from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
@@ -34,7 +37,7 @@ class InputWithTimeoutTest(unittest.TestCase):
 
     def test_input(self, prompt=None):
         expected = "foo bar"
-        stdin = six.StringIO(expected + "\n")
+        stdin = io.StringIO(expected + "\n")
         with mock.patch("certbot.compat.misc.select.select") as mock_select:
             mock_select.return_value = ([stdin], [], [],)
             self.assertEqual(self._call(prompt), expected)

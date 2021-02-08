@@ -1,4 +1,5 @@
 """Test utilities."""
+import io
 import logging
 from multiprocessing import Event
 from multiprocessing import Process
@@ -10,10 +11,6 @@ import unittest
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import OpenSSL
 import pkg_resources
 import six
@@ -28,6 +25,12 @@ from certbot._internal import storage
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
+
 
 
 def vector_path(*names):
@@ -170,7 +173,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
     :rtype: mock.MagicMock
 
     """
-    stdout = stdout if stdout else six.StringIO()
+    stdout = stdout if stdout else io.StringIO()
 
     freezable_mock = _create_get_utility_mock_with_stdout(stdout)
     return mock.patch(target, new=freezable_mock)

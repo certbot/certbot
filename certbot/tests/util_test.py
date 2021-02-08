@@ -1,13 +1,10 @@
 """Tests for certbot.util."""
 import argparse
 import errno
+import io
 import sys
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
@@ -15,6 +12,12 @@ from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 
 class EnvNoSnapForExternalCallsTest(unittest.TestCase):
@@ -361,7 +364,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
 
     def test_help(self):
         self._call("--old-option", 2)
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with mock.patch("sys.stdout", new=stdout):
             try:
                 self.parser.parse_args(["-h"])
