@@ -18,11 +18,11 @@ class Validator(object):
         """Verifies the certificate presented at name is cert"""
         if alt_host is None:
             host = socket.gethostbyname(name).encode()
-        elif isinstance(alt_host, six.binary_type):
+        elif isinstance(alt_host, bytes):
             host = alt_host
         else:
             host = alt_host.encode()
-        name = name if isinstance(name, six.binary_type) else name.encode()
+        name = name if isinstance(name, bytes) else name.encode()
 
         try:
             presented_cert = crypto_util.probe_sni(name, host, port)

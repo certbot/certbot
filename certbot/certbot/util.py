@@ -517,7 +517,7 @@ def enforce_domain_sanity(domain):
     """
     # Unicode
     try:
-        if isinstance(domain, six.binary_type):
+        if isinstance(domain, bytes):
             domain = domain.decode('utf-8')
         domain.encode('ascii')
     except UnicodeError:
