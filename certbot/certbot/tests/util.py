@@ -1,4 +1,5 @@
 """Test utilities."""
+from importlib import reload as reload_module
 import io
 import logging
 from multiprocessing import Event
@@ -13,7 +14,6 @@ from cryptography.hazmat.primitives import serialization
 import josepy as jose
 import OpenSSL
 import pkg_resources
-from six.moves import reload_module
 
 from certbot import interfaces
 from certbot import util

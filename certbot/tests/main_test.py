@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 import datetime
+from importlib import reload as reload_module
 import io
 import itertools
 import json
@@ -15,7 +16,6 @@ import unittest
 
 import josepy as jose
 import pytz
-from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import crypto_util
 from certbot import errors
@@ -34,7 +34,6 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import enhancements
 import certbot.tests.util as test_util
-
 
 try:
     import mock

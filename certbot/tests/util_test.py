@@ -1,11 +1,10 @@
 """Tests for certbot.util."""
 import argparse
 import errno
+from importlib import reload as reload_module
 import io
 import sys
 import unittest
-
-from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors
 from certbot.compat import filesystem
