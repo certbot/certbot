@@ -180,9 +180,9 @@ def restore_required_config_elements(config, renewalparams):
 
     required_items = itertools.chain(
         (("pref_challs", _restore_pref_challs),),
-        six.moves.zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
-        six.moves.zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
-        six.moves.zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
+        zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
+        zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
+        zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])

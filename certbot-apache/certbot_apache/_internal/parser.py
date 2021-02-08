@@ -275,7 +275,7 @@ class ApacheParser(object):
         while len(mods) != prev_size:
             prev_size = len(mods)
 
-            for match_name, match_filename in six.moves.zip(
+            for match_name, match_filename in zip(
                     iterator, iterator):
                 mod_name = self.get_arg(match_name)
                 mod_filename = self.get_arg(match_filename)
