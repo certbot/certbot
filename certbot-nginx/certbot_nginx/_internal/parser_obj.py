@@ -184,7 +184,7 @@ class Statements(Parsable):
 def _space_list(list_):
     """ Inserts whitespace between adjacent non-whitespace tokens. """
     spaced_statement = [] # type: List[str]
-    for i in reversed(six.moves.xrange(len(list_))):
+    for i in reversed(range(len(list_))):
         spaced_statement.insert(0, list_[i])
         if i > 0 and not list_[i].isspace() and not list_[i-1].isspace():
             spaced_statement.insert(0, " ")

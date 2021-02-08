@@ -4,7 +4,6 @@ import socket
 
 import requests
 import six
-from six.moves import xrange
 
 from acme import crypto_util
 from acme import errors as acme_errors
@@ -62,7 +61,7 @@ class Validator(object):
         else:
             response = requests.get(url, allow_redirects=False)
 
-        return response.status_code in xrange(300, 309)
+        return response.status_code in range(300, 309)
 
     def hsts(self, name):
         """Test for HTTP Strict Transport Security header"""
