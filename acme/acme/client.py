@@ -7,7 +7,6 @@ import heapq
 import http.client as http_client
 import logging
 import re
-import sys
 import time
 
 import josepy as jose
@@ -28,17 +27,6 @@ from acme.magic_typing import Text
 from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
-
-# Prior to Python 2.7.9 the stdlib SSL module did not allow a user to configure
-# many important security related options. On these platforms we use PyOpenSSL
-# for SSL, which does allow these options to be configured.
-# https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
-if sys.version_info < (2, 7, 9):  # pragma: no cover
-    try:
-        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
-    except AttributeError:
-        import urllib3.contrib.pyopenssl
-        urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 DEFAULT_NETWORK_TIMEOUT = 45
 

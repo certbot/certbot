@@ -2,7 +2,29 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.12.0 - master
+## 1.13.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* Certbot no longer conditionally depends on an external mock module. Certbot's
+  test API will continue to use it if it is available for backwards
+  compatibility, however, this behavior has been deprecated and will be removed
+  in a future release.
+* The acme library no longer depends on the `security` extras from `requests`
+  which was needed to support SNI in TLS requests when using old versions of
+  Python 2.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.12.0 - 2021-02-02
 
 ### Added
 

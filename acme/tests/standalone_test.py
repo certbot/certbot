@@ -4,12 +4,9 @@ import socket
 import socketserver
 import threading
 import unittest
+from unittest import mock
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import requests
 
 from acme import challenges

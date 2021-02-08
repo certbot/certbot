@@ -3,7 +3,7 @@
 cd letsencrypt
 
 BOOTSTRAP_SCRIPT="tests/letstest/scripts/bootstrap_os_packages.sh"
-VENV_PATH=venv3
+VENV_PATH=venv
 
 # install OS packages
 sudo $BOOTSTRAP_SCRIPT
@@ -18,7 +18,7 @@ python3 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirem
 # marker that'd normally prevent it from being installed, and this package is
 # not needed for any OS tested here.
 sed -i '/enum34/d' requirements.txt
-CERTBOT_PIP_NO_BINARY=:all: tools/venv3.py --requirement requirements.txt
+CERTBOT_PIP_NO_BINARY=:all: tools/venv.py --requirement requirements.txt
 . "$VENV_PATH/bin/activate"
 # pytest is needed to run tests on some of our packages so we install a pinned version here.
 tools/pip_install.py pytest

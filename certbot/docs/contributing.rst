@@ -56,18 +56,18 @@ Set up the Python virtual environment that will host your Certbot local instance
 .. code-block:: shell
 
    cd certbot
-   python tools/venv3.py
+   python tools/venv.py
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
 
 You can now run the copy of Certbot from git either by executing
-``venv3/bin/certbot``, or by activating the virtual environment. You can do the
+``venv/bin/certbot``, or by activating the virtual environment. You can do the
 latter by running:
 
 .. code-block:: shell
 
-   source venv3/bin/activate
+   source venv/bin/activate
 
 After running this command, ``certbot`` and development tools like ``ipdb``,
 ``ipython``, ``pytest``, and ``tox`` are available in the shell where you ran
@@ -169,7 +169,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv3.py` contains two CLI tools
+The virtual environment set up with `python tools/venv.py` contains two CLI tools
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -197,8 +197,8 @@ using an HTTP-01 challenge on a machine with Python 3:
 
 .. code-block:: shell
 
-    python tools/venv3.py
-    source venv3/bin/activate
+    python tools/venv.py
+    source venv/bin/activate
     run_acme_server &
     certbot_test certonly --standalone -d test.example.com
     # To stop Pebble, launch `fg` to get back the background job, then press CTRL+C

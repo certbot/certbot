@@ -1,13 +1,10 @@
 """Tests for acme.challenges."""
 import urllib.parse as urllib_parse
 import unittest
+from unittest import mock
 
 import josepy as jose
 import OpenSSL
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import requests
 
 from acme import errors
