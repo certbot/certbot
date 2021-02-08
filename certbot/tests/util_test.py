@@ -269,7 +269,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
             items.append(self._call("wow"))
         f, name = items[-1]
         self.assertTrue(isinstance(f, file_type))
-        self.assertTrue(isinstance(name, six.string_types))
+        self.assertTrue(isinstance(name, str))
         self.assertTrue("wow-0009.conf" in name)
         for f, _ in items:
             f.close()

@@ -120,7 +120,7 @@ def _restore_webroot_config(config, renewalparams):
     # see https://github.com/certbot/certbot/pull/7095
     if "webroot_path" in renewalparams and not cli.set_by_cli("webroot_path"):
         wp = renewalparams["webroot_path"]
-        if isinstance(wp, six.string_types):  # prior to 0.1.0, webroot_path was a string
+        if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
             wp = [wp]
         config.webroot_path = wp
 
@@ -220,7 +220,7 @@ def _restore_pref_challs(unused_name, value):
     # If pref_challs has only one element, configobj saves the value
     # with a trailing comma so it's parsed as a list. If this comma is
     # removed by the user, the value is parsed as a str.
-    value = [value] if isinstance(value, six.string_types) else value
+    value = [value] if isinstance(value, str) else value
     return cli.parse_preferred_challenges(value)
 
 

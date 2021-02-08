@@ -31,7 +31,7 @@ class BaseAuthenticatorTest(object):
         challb=acme_util.DNS01, domain=DOMAIN, account_key=KEY)
 
     def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), six.string_types))  # pylint: disable=no-member
+        self.assertTrue(isinstance(self.auth.more_info(), str))  # pylint: disable=no-member
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref(None), [challenges.DNS01])  # pylint: disable=no-member

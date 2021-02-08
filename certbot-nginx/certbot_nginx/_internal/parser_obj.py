@@ -152,7 +152,7 @@ class Statements(Parsable):
         if not isinstance(raw_list, list):
             raise errors.MisconfigurationError("Statements parsing expects a list!")
         # If there's a trailing whitespace in the list of statements, keep track of it.
-        if raw_list and isinstance(raw_list[-1], six.string_types) and raw_list[-1].isspace():
+        if raw_list and isinstance(raw_list[-1], str) and raw_list[-1].isspace():
             self._trailing_whitespace = raw_list[-1]
             raw_list = raw_list[:-1]
         self._data = [parse_raw(elem, self, add_spaces) for elem in raw_list]
@@ -206,7 +206,7 @@ class Sentence(Parsable):
         :returns: whether this lists is parseable by `Sentence`.
         """
         return isinstance(lists, list) and len(lists) > 0 and \
-            all(isinstance(elem, six.string_types) for elem in lists)
+            all(isinstance(elem, str) for elem in lists)
 
     def parse(self, raw_list, add_spaces=False):
         """ Parses a list of string types into this object.
@@ -214,7 +214,7 @@ class Sentence(Parsable):
         if add_spaces:
             raw_list = _space_list(raw_list)
         if not isinstance(raw_list, list) or \
-                any(not isinstance(elem, six.string_types) for elem in raw_list):
+                any(not isinstance(elem, str) for elem in raw_list):
             raise errors.MisconfigurationError("Sentence parsing expects a list of string types.")
         self._data = raw_list
 

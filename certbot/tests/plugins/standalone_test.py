@@ -91,7 +91,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.servers = mock.MagicMock()
 
     def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
+        self.assertTrue(isinstance(self.auth.more_info(), str))
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref(domain=None),

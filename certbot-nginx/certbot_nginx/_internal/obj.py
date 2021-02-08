@@ -250,7 +250,7 @@ def _find_directive(directives, directive_name, match_content=None):
     """Find a directive of type directive_name in directives. If match_content is given,
        Searches for `match_content` in the directive arguments.
     """
-    if not directives or isinstance(directives, six.string_types):
+    if not directives or isinstance(directives, str):
         return None
 
     # If match_content is None, just match on directive type. Otherwise, match on

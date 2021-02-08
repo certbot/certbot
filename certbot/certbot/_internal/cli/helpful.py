@@ -99,7 +99,7 @@ class HelpfulArgumentParser(object):
         if isinstance(help1, bool) and isinstance(help2, bool):
             self.help_arg = help1 or help2
         else:
-            self.help_arg = help1 if isinstance(help1, six.string_types) else help2
+            self.help_arg = help1 if isinstance(help1, str) else help2
 
         short_usage = self._usage_string(plugins, self.help_arg)
 
