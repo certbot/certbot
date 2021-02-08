@@ -579,7 +579,7 @@ def is_wildcard_domain(domain):
 
     """
     wildcard_marker = b"*."  # type: Union[Text, bytes]
-    if isinstance(domain, six.text_type):
+    if isinstance(domain, str):
         wildcard_marker = u"*."
     return domain.startswith(wildcard_marker)
 
