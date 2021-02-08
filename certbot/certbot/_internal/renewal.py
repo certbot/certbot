@@ -155,7 +155,7 @@ def _restore_plugin_configs(config, renewalparams):
 
     for plugin_prefix in set(plugin_prefixes):
         plugin_prefix = plugin_prefix.replace('-', '_')
-        for config_item, config_value in six.iteritems(renewalparams):
+        for config_item, config_value in renewalparams.items():
             if config_item.startswith(plugin_prefix + "_") and not cli.set_by_cli(config_item):
                 # Values None, True, and False need to be treated specially,
                 # As their types aren't handled correctly by configobj

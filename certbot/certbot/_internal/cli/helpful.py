@@ -470,7 +470,7 @@ class HelpfulArgumentParser(object):
         may or may not be displayed as help topics.
 
         """
-        for name, plugin_ep in six.iteritems(plugins):
+        for name, plugin_ep in plugins.items():
             parser_or_group = self.add_group(name,
                                              description=plugin_ep.long_description)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)

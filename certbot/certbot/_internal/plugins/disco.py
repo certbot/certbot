@@ -215,7 +215,7 @@ class PluginsRegistry(Mapping):
         # This prevents deadlock caused by plugins acquiring a lock
         # and ensures at least one concurrent Certbot instance will run
         # successfully.
-        self._plugins = collections.OrderedDict(sorted(six.iteritems(plugins)))
+        self._plugins = collections.OrderedDict(sorted(plugins.items()))
 
     @classmethod
     def find_all(cls):
@@ -281,7 +281,7 @@ class PluginsRegistry(Mapping):
     def filter(self, pred):
         """Filter plugins based on predicate."""
         return type(self)({name: plugin_ep for name, plugin_ep
-                               in six.iteritems(self._plugins) if pred(plugin_ep)})
+                               in self._plugins.items() if pred(plugin_ep)})
 
     def visible(self):
         """Filter plugins based on visibility."""
