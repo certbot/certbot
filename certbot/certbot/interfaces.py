@@ -262,9 +262,9 @@ class IConfig(zope.interface.Interface):
         " with \"renew\" verb should be disabled.")
 
     preferred_chain = zope.interface.Attribute(
-        "If the CA offers multiple certificate chains, prefer the chain with "
-        "an issuer matching this Subject Common Name. If no match, the default "
-        "offered chain will be used."
+        "If the CA offers multiple certificate chains, prefer the chain whose "
+        "topmost certificate was issued from this Subject Common Name. "
+        "If no match, the default offered chain will be used."
     )
 
 

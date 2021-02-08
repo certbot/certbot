@@ -814,8 +814,10 @@ class MainTest(test_util.ConfigTestCase):
         self._call_no_clientmock(['delete'])
         self.assertEqual(1, mock_cert_manager.call_count)
 
+    @mock.patch('certbot._internal.main.plugins_disco')
+    @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
-    def test_plugins(self, _):
+    def test_plugins(self, _, _det, mock_disco):
         flags = ['--init', '--prepare', '--authenticators', '--installers']
         for args in itertools.chain(
                 *(itertools.combinations(flags, r)
