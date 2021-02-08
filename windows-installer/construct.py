@@ -63,7 +63,7 @@ def _prepare_build_tools(venv_path, venv_python, repo_path):
 
 @contextlib.contextmanager
 def _prepare_constraints(repo_path):
-    reqs_certbot = os.path.join(repo_path, 'letsencrypt-auto-source', 'pieces', 'dependency-requirements.txt')
+    reqs_certbot = os.path.join(repo_path, 'tools', 'certbot_requirements.txt')
     reqs_pipstrap = os.path.join(repo_path, 'tools', 'pipstrap_constraints.txt')
     constraints_certbot = subprocess.check_output(
         [sys.executable, os.path.join(repo_path, 'tools', 'strip_hashes.py'), reqs_certbot],
