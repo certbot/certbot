@@ -112,18 +112,6 @@ BootstrapRpmPython3() {
   BootstrapRpmCommonBase "$python_pkgs"
 }
 
-BootstrapSuseCommon() {
-  zypper -nq in -l \
-    python3 \
-    python3-devel \
-    python3-virtualenv \
-    gcc \
-    augeas-lenses \
-    libopenssl-devel \
-    libffi-devel \
-    ca-certificates
-}
-
 # Set Bootstrap to the function that installs OS dependencies on this system.
 if [ -f /etc/debian_version ]; then
   Bootstrap() {
@@ -134,10 +122,7 @@ elif [ -f /etc/redhat-release ]; then
   Bootstrap() {
     BootstrapRpmPython3
   }
-elif [ -f /etc/os-release ] && grep -q openSUSE /etc/os-release; then
-  Bootstrap() {
-    BootstrapSuseCommon
-  }
+
 fi
 
 Bootstrap
