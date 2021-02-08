@@ -31,9 +31,9 @@ meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", read_file(init_fn)))
 readme = read_file(os.path.join(here, 'README.rst'))
 version = meta['version']
 
-# This package relies on PyOpenSSL, requests, and six, however, it isn't
-# specified here to avoid masking the more specific request requirements in
-# acme. See https://github.com/pypa/pip/issues/988 for more info.
+# This package relies on PyOpenSSL and requests, however, it isn't specified
+# here to avoid masking the more specific request requirements in acme. See
+# https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
     'acme>=1.8.0',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but

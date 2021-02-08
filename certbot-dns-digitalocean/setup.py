@@ -13,7 +13,6 @@ version = '1.12.0.dev0'
 install_requires = [
     'python-digitalocean>=1.11',
     'setuptools>=39.0.1',
-    'six>=1.11.0',
     'zope.interface',
 ]
 
