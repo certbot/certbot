@@ -3,7 +3,6 @@ import io
 import sys
 import unittest
 
-import six
 
 try:
     import mock

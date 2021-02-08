@@ -7,7 +7,6 @@ import logging
 import re
 
 import pyparsing
-import six
 
 from acme.magic_typing import Dict
 from acme.magic_typing import List

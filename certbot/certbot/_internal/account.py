@@ -10,7 +10,6 @@ from cryptography.hazmat.primitives import serialization
 import josepy as jose
 import pyrfc3339
 import pytz
-import six
 
 from acme import fields as acme_fields
 from acme import messages

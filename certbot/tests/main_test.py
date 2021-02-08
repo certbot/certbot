@@ -15,7 +15,6 @@ import unittest
 
 import josepy as jose
 import pytz
-import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import crypto_util

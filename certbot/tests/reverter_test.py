@@ -9,7 +9,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
-import six
 
 from certbot import errors
 from certbot.compat import os

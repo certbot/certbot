@@ -15,7 +15,6 @@ import subprocess
 import sys
 
 import configargparse
-import six
 
 from acme.magic_typing import Text
 from acme.magic_typing import Tuple

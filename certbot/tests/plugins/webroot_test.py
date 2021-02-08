@@ -14,7 +14,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
-import six
 
 from acme import challenges
 from certbot import achallenges

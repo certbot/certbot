@@ -6,7 +6,6 @@ import sys
 import time
 import unittest
 
-import six
 
 from acme import messages
 from certbot import errors

@@ -4,7 +4,6 @@ import collections
 import json
 import logging
 
-import six
 import zope.component
 import zope.interface
 

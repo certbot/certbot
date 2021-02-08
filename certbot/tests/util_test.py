@@ -5,7 +5,6 @@ import io
 import sys
 import unittest
 
-import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors

@@ -10,7 +10,6 @@ try:
 except ImportError: # pragma: no cover
     from unittest import mock
 import OpenSSL.crypto  # pylint: disable=unused-import
-import six
 
 from acme import challenges
 from acme import standalone as acme_standalone  # pylint: disable=unused-import

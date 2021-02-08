@@ -13,7 +13,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import OpenSSL
-import six
 import zope.component
 
 from acme.magic_typing import List

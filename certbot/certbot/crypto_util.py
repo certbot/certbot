@@ -22,7 +22,6 @@ from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore
 
 import pyrfc3339
-import six
 import zope.component
 
 from acme import crypto_util as acme_crypto_util

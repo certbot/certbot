@@ -7,7 +7,6 @@ import glob
 import sys
 
 import configargparse
-import six
 import zope.component
 import zope.interface
 

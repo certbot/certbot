@@ -5,7 +5,6 @@ import logging
 import re
 import sys
 
-import six
 
 from acme.magic_typing import Dict
 from acme.magic_typing import List

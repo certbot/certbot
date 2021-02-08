@@ -5,7 +5,6 @@ import socket
 import tempfile
 import unittest
 
-import six
 
 from certbot import errors
 from certbot import interfaces

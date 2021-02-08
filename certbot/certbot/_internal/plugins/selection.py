@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import logging
 
-import six
 import zope.component
 
 from certbot import errors

@@ -11,7 +11,6 @@ try:
 except ImportError: # pragma: no cover
     from unittest import mock
 import pytz
-import six
 
 import certbot
 from certbot import errors

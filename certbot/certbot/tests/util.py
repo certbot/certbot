@@ -13,7 +13,6 @@ from cryptography.hazmat.primitives import serialization
 import josepy as jose
 import OpenSSL
 import pkg_resources
-import six
 from six.moves import reload_module
 
 from certbot import interfaces

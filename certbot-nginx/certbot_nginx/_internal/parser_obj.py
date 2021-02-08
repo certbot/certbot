@@ -4,7 +4,6 @@ raw lists of tokens from pyparsing. """
 import abc
 import logging
 
-import six
 
 from acme.magic_typing import List
 from certbot import errors

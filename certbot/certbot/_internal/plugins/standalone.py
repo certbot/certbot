@@ -6,7 +6,6 @@ import socket
 from socket import errno as socket_errors  # type: ignore
 
 import OpenSSL  # pylint: disable=unused-import
-import six
 import zope.interface
 
 from acme import challenges

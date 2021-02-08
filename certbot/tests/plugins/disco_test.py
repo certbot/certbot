@@ -8,7 +8,6 @@ try:
 except ImportError:  # pragma: no cover
     from unittest import mock
 import pkg_resources
-import six
 import zope.interface
 
 from certbot import errors

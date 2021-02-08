@@ -2,7 +2,6 @@
 import datetime
 
 import josepy as jose
-import six
 
 from acme import challenges
 from acme import messages

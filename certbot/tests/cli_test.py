@@ -5,7 +5,6 @@ import io
 import tempfile
 import unittest
 
-import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import challenges

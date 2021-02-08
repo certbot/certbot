@@ -3,7 +3,6 @@ import logging
 import socket
 
 import requests
-import six
 
 from acme import crypto_util
 from acme import errors as acme_errors

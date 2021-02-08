@@ -5,7 +5,6 @@ import logging
 import sys
 
 import pkg_resources
-import six
 import zope.interface
 import zope.interface.verify
 

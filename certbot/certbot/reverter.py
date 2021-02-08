@@ -7,7 +7,6 @@ import sys
 import time
 import traceback
 
-import six
 
 from certbot import errors
 from certbot import util

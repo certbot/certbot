@@ -1,7 +1,6 @@
 """Module contains classes used by the Nginx Configurator."""
 import re
 
-import six
 
 from certbot.plugins import common
 
