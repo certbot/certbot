@@ -83,7 +83,7 @@ class AuthenticatorTest(unittest.TestCase):
             self.assertTrue(self.achall.domain in call[0][0])
             self.assertTrue(all(
                 webroot in call[0][1]
-                for webroot in six.itervalues(self.config.webroot_map)))
+                for webroot in self.config.webroot_map.values()))
         self.assertEqual(self.config.webroot_map[self.achall.domain],
                          self.path)
 
@@ -100,7 +100,7 @@ class AuthenticatorTest(unittest.TestCase):
             self.assertTrue(self.achall.domain in call[0][0])
             self.assertTrue(all(
                 webroot in call[0][1]
-                for webroot in six.itervalues(self.config.webroot_map)))
+                for webroot in self.config.webroot_map.values()))
 
     @test_util.patch_get_utility()
     def test_new_webroot(self, mock_get_utility):

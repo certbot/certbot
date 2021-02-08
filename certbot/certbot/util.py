@@ -153,7 +153,7 @@ def lock_dir_until_exit(dir_path):
 
 
 def _release_locks():
-    for dir_lock in six.itervalues(_LOCKS):
+    for dir_lock in _LOCKS.values():
         try:
             dir_lock.release()
         except:  # pylint: disable=bare-except

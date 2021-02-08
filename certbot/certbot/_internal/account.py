@@ -101,7 +101,7 @@ class AccountMemoryStorage(interfaces.AccountStorage):
         self.accounts = initial_accounts if initial_accounts is not None else {}
 
     def find_all(self):
-        return list(six.itervalues(self.accounts))
+        return list(self.accounts.values())
 
     def save(self, account, client):
         if account.id in self.accounts:

@@ -92,7 +92,7 @@ to serve all files under specified web root ({0})."""
             for achall in achalls:
                 self.conf("map").setdefault(achall.domain, webroot_path)
         else:
-            known_webroots = list(set(six.itervalues(self.conf("map"))))
+            known_webroots = list(set(self.conf("map").values()))
             for achall in achalls:
                 if achall.domain not in self.conf("map"):
                     new_webroot = self._prompt_for_webroot(achall.domain,
