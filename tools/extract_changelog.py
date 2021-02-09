@@ -24,17 +24,13 @@ def main():
     i = 0
     while i < len(lines):
         if section_pattern.match(lines[i]):
-            i = i + 1
+            i = i + 2
             while i < len(lines):
                 if NEW_SECTION_PATTERN.match(lines[i]):
                     break
                 changelog.append(lines[i])
                 i = i + 1
         i = i + 1
-
-    changelog = [entry for entry in changelog if entry]
-    if changelog[-1] == "More details about these changes can be found on our GitHub repo.":
-        changelog.insert(-1, "")
 
     print('\n'.join(changelog))
 
