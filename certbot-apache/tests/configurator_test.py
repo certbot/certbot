@@ -10,7 +10,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
-import six  # pylint: disable=unused-import  # six is used in mock.patch()
 
 from acme import challenges
 from certbot import achallenges
@@ -726,7 +725,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # This calls open
         self.config.reverter.register_file_creation = mock.Mock()
         mock_open.side_effect = IOError
-        with mock.patch("six.moves.builtins.open", mock_open):
+        with mock.patch("builtins.open", mock_open):
             self.assertRaises(
                 errors.PluginError,
                 self.config.make_vhost_ssl, self.vh_truth[0])
@@ -1834,7 +1833,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
 
     def test_open_module_file(self):
         mock_open = mock.mock_open(read_data="testing 12 3")
-        with mock.patch("six.moves.builtins.open", mock_open):
+        with mock.patch("builtins.open", mock_open):
             self.assertEqual(self.config._open_module_file("/nonsense/"), "testing 12 3")
 
 if __name__ == "__main__":

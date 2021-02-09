@@ -1,11 +1,11 @@
 """Tests for acme.challenges."""
+import urllib.parse as urllib_parse
 import unittest
 from unittest import mock
 
 import josepy as jose
 import OpenSSL
 import requests
-from six.moves.urllib import parse as urllib_parse
 
 from acme import errors
 

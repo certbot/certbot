@@ -18,7 +18,6 @@ install_requires = [
     'requests>=2.6.0',
     'requests-toolbelt>=0.3.0',
     'setuptools>=39.0.1',
-    'six>=1.11.0',
 ]
 
 dev_extras = [

@@ -2,7 +2,6 @@
 import datetime
 
 import josepy as jose
-import six
 
 from acme import challenges
 from acme import messages
@@ -69,7 +68,7 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     """
     challbs = tuple(
         chall_to_challb(chall, status)
-        for chall, status in six.moves.zip(challs, statuses)
+        for chall, status in zip(challs, statuses)
     )
     authz_kwargs = {
         "identifier": messages.Identifier(

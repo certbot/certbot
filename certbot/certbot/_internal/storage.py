@@ -9,7 +9,6 @@ import stat
 import configobj
 import parsedatetime
 import pytz
-import six
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
@@ -275,7 +274,7 @@ def relevant_values(all_values):
 
     rv = dict(
         (option, value)
-        for option, value in six.iteritems(all_values)
+        for option, value in all_values.items()
         if _relevant(namespaces, option) and cli.option_was_set(option, value))
     # We always save the server value to help with forward compatibility
     # and behavioral consistency when versions of Certbot with different
