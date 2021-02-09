@@ -191,7 +191,7 @@ Optionally to install the Certbot Apache plugin, you can use:
 
 .. code-block:: shell
 
-   sudo apt-get install python-certbot-apache
+   sudo apt-get install python3-certbot-apache
 
 **Fedora**
 
