@@ -13,6 +13,14 @@ sudo $BOOTSTRAP_SCRIPT
 # constraints in the commands given to pip and the mix of hashed and unhashed
 # packages makes pip error out.
 python3 tools/strip_hashes.py tools/certbot_constraints.txt > requirements.txt
+
+# We pin cryptography to 3.1.1 specifically for CentOS 7 / RHEL 7 because these systems ship
+# only with OpenSSL 1.0.2, and this OpenSSL version support has been dropped on cryptography>=3.2.
+# Using this old version of OpenSSL would break the cryptography wheel build.
+if [ -f /etc/redhat-release ] && [ "$(. /etc/os-release 2> /dev/null && echo "$VERSION_ID")" -eq 7 ]; then
+  sed -i 's|cryptography==.*|cryptography==3.1.1|g' requirements.txt
+fi
+
 CERTBOT_PIP_NO_BINARY=:all: tools/venv.py --requirement requirements.txt
 . "$VENV_PATH/bin/activate"
 # pytest is needed to run tests on some of our packages so we install a pinned version here.
