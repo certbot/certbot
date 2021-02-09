@@ -133,6 +133,7 @@ def main(args):
                 pip_install_with_print('--force-reinstall --no-deps --requirement "{0}"'
                                        .format(requirements))
 
+            print(' '.join(args))
             pip_install_with_print(' '.join(args), env=env)
 
 
