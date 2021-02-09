@@ -3,7 +3,7 @@
 import copy
 import logging
 from typing import Any  # pylint: disable=unused-import
-from typing import IO
+from typing import IO  # pylint: disable=unused-import
 
 from pyparsing import Combine
 from pyparsing import Forward

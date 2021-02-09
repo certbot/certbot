@@ -13,13 +13,13 @@ import re
 import socket
 import subprocess
 import sys
+from typing import Text
+from typing import Tuple
+from typing import Union
 
 import configargparse
 import six
 
-from typing import Text
-from typing import Tuple
-from typing import Union
 from certbot import errors
 from certbot._internal import constants
 from certbot._internal import lock
