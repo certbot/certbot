@@ -19,7 +19,7 @@ python3 tools/strip_hashes.py tools/certbot_constraints.txt > requirements.txt
 # because these systems ship only with OpenSSL 1.0.2, and this OpenSSL version support has been
 # dropped on cryptography>=3.2 and pyOpenSSL>=20.0.0.
 # Using this old version of OpenSSL would break the cryptography and pyOpenSSL wheels builds.
-if [ -f /etc/redhat-release ] && [ "$(. /etc/os-release 2> /dev/null && echo "$VERSION_ID")" -eq 7 ]; then
+if [ -f /etc/redhat-release ] && [ "$(. /etc/os-release 2> /dev/null && echo "$VERSION_ID" | cut -d '.' -f1)" -eq 7 ]; then
   sed -i 's|cryptography==.*|cryptography==3.1.1|g' requirements.txt
   sed -i 's|pyOpenSSL==.*|pyOpenSSL==19.1.0|g' requirements.txt
 fi
