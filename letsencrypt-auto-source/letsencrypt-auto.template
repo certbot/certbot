@@ -328,6 +328,7 @@ elif [ -f /etc/mageia-release ]; then
   NO_SELF_UPGRADE=1
 elif [ -f /etc/redhat-release ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
   # Run DeterminePythonVersion to decide on the basis of available Python versions
   # whether to use 2.x or 3.x on RedHat-like systems.
   # Then, revert LE_PYTHON to its previous state.
