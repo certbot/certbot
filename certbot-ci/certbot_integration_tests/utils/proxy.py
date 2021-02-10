@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # pylint: disable=missing-module-docstring
 
+import http.server as BaseHTTPServer
 import json
 import re
 import sys
 
 import requests
-from six.moves import BaseHTTPServer
 
 from certbot_integration_tests.utils.misc import GracefulTCPServer
 

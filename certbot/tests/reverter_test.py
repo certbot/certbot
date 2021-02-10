@@ -9,7 +9,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
-import six
 
 from certbot import errors
 from certbot.compat import os
@@ -156,7 +155,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
 
         act_coms = get_undo_commands(self.config.temp_checkpoint_dir)
 
-        for a_com, com in six.moves.zip(act_coms, coms):
+        for a_com, com in zip(act_coms, coms):
             self.assertEqual(a_com, com)
 
     def test_bad_register_undo_command(self):

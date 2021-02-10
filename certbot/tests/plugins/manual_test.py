@@ -6,7 +6,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
-import six
 
 from acme import challenges
 from certbot import errors
@@ -53,7 +52,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.assertRaises(errors.HookCommandNotFound, self.auth.prepare)
 
     def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
+        self.assertTrue(isinstance(self.auth.more_info(), str))
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref('example.org'),

@@ -9,7 +9,6 @@ import socket
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
 import requests
-import six
 from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 from OpenSSL import crypto
 
@@ -145,8 +144,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return jobj
 
 
-@six.add_metaclass(abc.ABCMeta)
-class KeyAuthorizationChallenge(_TokenChallenge):
+class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
     """Challenge based on Key Authorization.
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
