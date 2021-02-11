@@ -108,7 +108,7 @@ class Plugin(object):
 
         TODO: auth_hint belongs in IAuthenticator but can't be added until the next major
         version of Certbot. For now, it lives in .Plugin and auth_handler will only call it
-        on authenticators that subclass .Plugin.
+        on authenticators that subclass .Plugin. For now, inherit from `.Plugin` to implement and/or override the method.
 
         :param list failed_achalls: List of one or more failed challenges
                                     (:class:`achallenges.AnnotatedChallenge` subclasses).
