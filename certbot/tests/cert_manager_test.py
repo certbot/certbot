@@ -575,6 +575,10 @@ class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
                 self._archive_files(x, 'fullchain')]
         self.assertEqual('example.org', self._call(self.config))
 
+    def test_only_path(self):
+        self.config.cert_path = self.fullchain
+        self.assertEqual('example.org', self._call(self.config))
+
 
 class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
     """Tests for certbot._internal.cert_manager.match_and_check_overlaps w/o overlapping

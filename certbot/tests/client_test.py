@@ -553,6 +553,24 @@ class ClientTest(ClientTestCommon):
             'Try again by running:\n\n  certbot install --cert-name foo.bar\n'
         )
 
+    @mock.patch('certbot._internal.client.display_util.notify')
+    @test_util.patch_get_utility()
+    def test_deploy_certificae_failure_no_certname(self, mock_util, mock_notify):
+        installer = mock.MagicMock()
+        self.client.installer = installer
+        self.config.installer = "foobar"
+
+        installer.deploy_cert.side_effect = errors.PluginError
+        self.assertRaises(errors.PluginError, self.client.deploy_certificate,
+                          None, ["foo.bar"], "key", "cert", "chain", "fullchain")
+        installer.recovery_routine.assert_called_once_with()
+
+        mock_notify.assert_any_call('\nDeploying certificate')
+        mock_notify.assert_any_call(
+            'Failed to install the certificate (using the foobar plugin).'
+        )
+
+
     @test_util.patch_get_utility()
     def test_deploy_certificate_save_failure(self, mock_util):
         installer = mock.MagicMock()
