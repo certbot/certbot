@@ -485,6 +485,9 @@ its path directly::
 
   certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem
 
+If the certificate being revoked was obtained via the ``--staging``, ``--test-cert`` or a non-default ``--server`` flag,
+that flag must be passed to the ``revoke`` subcommand.
+
 .. note:: By default, Certbot will **delete** the certificate after revoking it. Use ``--no-delete-after-revoke`` to prevent the
           certificate from being deleted. Note that Certbot will try to renew revoked certificates if they are not deleted.
 
@@ -494,15 +497,11 @@ Reasons include ``unspecified`` which is the default, as well as ``keycompromise
 
   certbot revoke --cert-name example.com --reason keycompromise
 
-Additionally, if a certificate
-is a test certificate obtained via the ``--staging``, ``--test-cert`` or non-default ``--server`` flag, that flag must
-be passed to the ``revoke`` subcommand.
-
 Revoking by account key or certificate private key
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, Certbot will try revoke certificates using your ACME account key. The server may complain that you
-are not authorized to perform the revocation. In this case, you will need to become authorized by requesting
+are not authorized to perform the revocation. In this case, you will first need to become authorized by requesting
 a certificate for all of the domains on the certificate you wish to revoke (include an extra domain you do not control
 to avoid creating an actual certificate)::
 
