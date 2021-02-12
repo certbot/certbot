@@ -6,7 +6,6 @@ import socket
 from socket import errno as socket_errors  # type: ignore
 
 import OpenSSL  # pylint: disable=unused-import
-import six
 import zope.interface
 
 from acme import challenges
@@ -182,7 +181,7 @@ class Authenticator(common.Plugin):
             for achall in achalls:
                 if achall in server_achalls:
                     server_achalls.remove(achall)
-        for port, servers in six.iteritems(self.servers.running()):
+        for port, servers in self.servers.running().items():
             if not self.served[servers]:
                 self.servers.stop(port)
 

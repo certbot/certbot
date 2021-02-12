@@ -31,9 +31,9 @@ meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", read_file(init_fn)))
 readme = read_file(os.path.join(here, 'README.rst'))
 version = meta['version']
 
-# This package relies on PyOpenSSL, requests, and six, however, it isn't
-# specified here to avoid masking the more specific request requirements in
-# acme. See https://github.com/pypa/pip/issues/988 for more info.
+# This package relies on PyOpenSSL and requests, however, it isn't specified
+# here to avoid masking the more specific request requirements in acme. See
+# https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
     'acme>=1.8.0',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
@@ -71,14 +71,6 @@ elif os.name == 'nt':
     # it, if the sdist is installed on Windows with an old version of
     # setuptools, pywin32 will not be specified as a dependency.
     install_requires.append(pywin32_req)
-
-if setuptools_known_environment_markers:
-    install_requires.append('mock ; python_version < "3.3"')
-elif 'bdist_wheel' in sys.argv[1:]:
-    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
-                       'of setuptools. Version 36.2+ of setuptools is required.')
-elif sys.version_info < (3,3):
-    install_requires.append('mock')
 
 dev_extras = [
     'astroid',

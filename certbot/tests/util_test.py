@@ -1,20 +1,21 @@
 """Tests for certbot.util."""
 import argparse
 import errno
+from importlib import reload as reload_module
+import io
 import sys
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-import six
-from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 
 class EnvNoSnapForExternalCallsTest(unittest.TestCase):
@@ -265,11 +266,11 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
 
     def test_multiple(self):
         items = []
-        for _ in six.moves.range(10):
+        for _ in range(10):
             items.append(self._call("wow"))
         f, name = items[-1]
         self.assertTrue(isinstance(f, file_type))
-        self.assertTrue(isinstance(name, six.string_types))
+        self.assertTrue(isinstance(name, str))
         self.assertTrue("wow-0009.conf" in name)
         for f, _ in items:
             f.close()
@@ -361,7 +362,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
 
     def test_help(self):
         self._call("--old-option", 2)
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with mock.patch("sys.stdout", new=stdout):
             try:
                 self.parser.parse_args(["-h"])

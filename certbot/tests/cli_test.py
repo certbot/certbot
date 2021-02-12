@@ -1,15 +1,10 @@
 """Tests for certbot._internal.cli."""
 import argparse
 import copy
+from importlib import reload as reload_module
+import io
 import tempfile
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-import six
-from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import challenges
 from certbot import errors
@@ -20,6 +15,12 @@ from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 PLUGINS = disco.PluginsRegistry.find_all()
 
@@ -91,7 +92,7 @@ class ParseTest(unittest.TestCase):
     def _help_output(self, args):
         "Run a command, and return the output string for scrutiny"
 
-        output = six.StringIO()
+        output = io.StringIO()
 
         def write_msg(message, *args, **kwargs): # pylint: disable=missing-docstring,unused-argument
             output.write(message)

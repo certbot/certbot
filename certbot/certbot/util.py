@@ -15,7 +15,6 @@ import subprocess
 import sys
 
 import configargparse
-import six
 
 from acme.magic_typing import Dict
 from acme.magic_typing import Text
@@ -154,7 +153,7 @@ def lock_dir_until_exit(dir_path):
 
 
 def _release_locks():
-    for dir_lock in six.itervalues(_LOCKS):
+    for dir_lock in _LOCKS.values():
         try:
             dir_lock.release()
         except:  # pylint: disable=bare-except
@@ -518,7 +517,7 @@ def enforce_domain_sanity(domain):
     """
     # Unicode
     try:
-        if isinstance(domain, six.binary_type):
+        if isinstance(domain, bytes):
             domain = domain.decode('utf-8')
         domain.encode('ascii')
     except UnicodeError:
@@ -580,7 +579,7 @@ def is_wildcard_domain(domain):
 
     """
     wildcard_marker: Union[Text, bytes] = b"*."
-    if isinstance(domain, six.text_type):
+    if isinstance(domain, str):
         wildcard_marker = u"*."
     return domain.startswith(wildcard_marker)
 

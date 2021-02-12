@@ -1,16 +1,13 @@
 """Tests for acme.standalone."""
+import http.client as http_client
 import socket
+import socketserver
 import threading
 import unittest
+from unittest import mock
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import requests
-from six.moves import http_client  # pylint: disable=import-error
-from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
 from acme import challenges
 from acme import crypto_util

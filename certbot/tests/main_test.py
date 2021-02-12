@@ -4,6 +4,8 @@
 from __future__ import print_function
 
 import datetime
+from importlib import reload as reload_module
+import io
 import itertools
 import json
 import shutil
@@ -13,13 +15,7 @@ import traceback
 import unittest
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 import pytz
-import six
-from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import crypto_util
 from certbot import errors
@@ -38,6 +34,12 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import enhancements
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 
 CERT_PATH = test_util.vector_path('cert_512.pem')
@@ -598,7 +600,7 @@ class MainTest(test_util.ConfigTestCase):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
 
-        toy_stdout = stdout if stdout else six.StringIO()
+        toy_stdout = stdout if stdout else io.StringIO()
         with mock.patch('certbot._internal.main.sys.stdout', new=toy_stdout):
             with mock.patch('certbot._internal.main.sys.stderr') as stderr:
                 with mock.patch("certbot.util.atexit"):
@@ -611,8 +613,8 @@ class MainTest(test_util.ConfigTestCase):
             self.assertEqual(1, mock_run.call_count)
 
     def test_version_string_program_name(self):
-        toy_out = six.StringIO()
-        toy_err = six.StringIO()
+        toy_out = io.StringIO()
+        toy_err = io.StringIO()
         with mock.patch('certbot._internal.main.sys.stdout', new=toy_out):
             with mock.patch('certbot._internal.main.sys.stderr', new=toy_err):
                 try:
@@ -820,7 +822,7 @@ class MainTest(test_util.ConfigTestCase):
         flags = ['--init', '--prepare', '--authenticators', '--installers']
         for args in itertools.chain(
                 *(itertools.combinations(flags, r)
-                  for r in six.moves.range(len(flags)))):
+                  for r in range(len(flags)))):
             self._call(['plugins'] + list(args))
 
     @mock.patch('certbot._internal.main.plugins_disco')
@@ -829,7 +831,7 @@ class MainTest(test_util.ConfigTestCase):
         ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with test_util.patch_get_utility_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins'], stdout)
 
@@ -849,7 +851,7 @@ class MainTest(test_util.ConfigTestCase):
             _, _, _ = directory, mode, strict
             raise errors.Error()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with mock.patch('certbot.util.set_up_core_dir') as mock_set_up_core_dir:
             with test_util.patch_get_utility_with_stdout(stdout=stdout):
                 mock_set_up_core_dir.side_effect = throw_error
@@ -866,7 +868,7 @@ class MainTest(test_util.ConfigTestCase):
         ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with test_util.patch_get_utility_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins', '--init'], stdout)
 
@@ -884,7 +886,7 @@ class MainTest(test_util.ConfigTestCase):
         ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with test_util.patch_get_utility_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'], stdout)
 
@@ -1033,7 +1035,7 @@ class MainTest(test_util.ConfigTestCase):
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
 

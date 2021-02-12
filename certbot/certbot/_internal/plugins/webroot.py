@@ -4,7 +4,6 @@ import collections
 import json
 import logging
 
-import six
 import zope.component
 import zope.interface
 
@@ -91,7 +90,7 @@ to serve all files under specified web root ({0})."""
             for achall in achalls:
                 self.conf("map").setdefault(achall.domain, webroot_path)
         else:
-            known_webroots = list(set(six.itervalues(self.conf("map"))))
+            known_webroots = list(set(self.conf("map").values()))
             for achall in achalls:
                 if achall.domain not in self.conf("map"):
                     new_webroot = self._prompt_for_webroot(achall.domain,
@@ -241,7 +240,7 @@ class _WebrootMapAction(argparse.Action):
     """Action class for parsing webroot_map."""
 
     def __call__(self, parser, namespace, webroot_map, option_string=None):
-        for domains, webroot_path in six.iteritems(json.loads(webroot_map)):
+        for domains, webroot_path in json.loads(webroot_map).items():
             webroot_path = _validate_webroot(webroot_path)
             namespace.webroot_map.update(
                 (d, webroot_path) for d in cli.add_domains(namespace, domains))

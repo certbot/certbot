@@ -1,13 +1,12 @@
 """Support for standalone client challenge solvers. """
 import collections
 import functools
+import http.client as http_client
+import http.server as BaseHTTPServer
 import logging
 import socket
+import socketserver
 import threading
-
-from six.moves import BaseHTTPServer  # type: ignore
-from six.moves import http_client
-from six.moves import socketserver  # type: ignore
 
 from acme import challenges
 from acme import crypto_util
