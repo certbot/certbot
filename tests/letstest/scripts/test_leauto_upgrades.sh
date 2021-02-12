@@ -156,7 +156,7 @@ fi
 # Finally, we check if our local server received more requests. Over time,
 # we'll move more and more OSes into this case until it this is the expected
 # behavior on all systems.
-if [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue; then
+if [ -f /etc/redhat-release ]; then
     if ! diff "$LOG_FILE" "$PREVIOUS_LOG_FILE" ; then
         echo our local server received unexpected requests
         exit 1

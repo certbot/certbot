@@ -1,11 +1,8 @@
 """Tests for acme.messages."""
 import unittest
+from unittest import mock
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 
 from acme import challenges
 import test_util

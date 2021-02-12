@@ -2,7 +2,6 @@
 import json
 
 import josepy as jose
-import six
 
 from acme import challenges
 from acme import errors
@@ -68,7 +67,6 @@ def is_acme_error(err):
     return False
 
 
-@six.python_2_unicode_compatible
 class Error(jose.JSONObjectWithFields, errors.Error):
     """ACME error.
 
