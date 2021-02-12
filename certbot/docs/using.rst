@@ -474,29 +474,44 @@ like
 Revoking certificates
 ---------------------
 
-If your account key has been compromised or you otherwise need to revoke a certificate,
-use the ``revoke`` command to do so. Note that the ``revoke`` command takes the certificate path
-(ending in ``cert.pem``), not a certificate name or domain. Example::
+If you need to revoke a certificate, use the ``revoke`` subcommand to do so.
 
-  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem
+.. note:: Revoking a certificate will have no effect on the rate limit imposed by the Let's Encrypt server.
+
+A certificate may be revoked by providing its name (see ``certbot certificates``) or by providing
+its path directly::
+
+  certbot revoke --cert-name example.com
+
+  certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem
+
+.. note:: By default, Certbot will **delete** the certificate after revoking it. Use ``--no-delete-after-revoke`` to prevent the
+          certificate from being deleted. Note that Certbot will try to renew revoked certificates if they are not deleted.
 
 You can also specify the reason for revoking your certificate by using the ``reason`` flag.
 Reasons include ``unspecified`` which is the default, as well as ``keycompromise``,
 ``affiliationchanged``, ``superseded``, and ``cessationofoperation``::
 
-  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem --reason keycompromise
+  certbot revoke --cert-name example.com --reason keycompromise
 
 Additionally, if a certificate
-is a test certificate obtained via the ``--staging`` or ``--test-cert`` flag, that flag must be passed to the
-``revoke`` subcommand.
-Once a certificate is revoked (or for other certificate management tasks), all of a certificate's
-relevant files can be removed from the system with the ``delete`` subcommand::
+is a test certificate obtained via the ``--staging``, ``--test-cert`` or non-default ``--server`` flag, that flag must
+be passed to the ``revoke`` subcommand.
 
-  certbot delete --cert-name example.com
+Revoking by account key or certificate private key
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. note:: If you don't use ``delete`` to remove the certificate completely, it will be renewed automatically at the next renewal event.
+By default, Certbot will try revoke certificates using your ACME account key. The server may complain that you
+are not authorized to perform the revocation. In this case, you will need to become authorized by requesting
+a certificate for all of the domains on the certificate you wish to revoke (include an extra domain you do not control
+to avoid creating an actual certificate)::
 
-.. note:: Revoking a certificate will have no effect on the rate limit imposed by the Let's Encrypt server.
+  certbot certonly --manual --preferred-challenges dns -d example.com -d www.example.com -d nonexistent.example.org
+
+If you instead have the corresponding private key to the certificate you wish to revoke, you may use it to
+perform the revocation (recommended)::
+
+  certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem --key-path /etc/letsencrypt/live/example.com/privkey.pem
 
 .. _renewal:
 
