@@ -276,14 +276,14 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self.storage.save(self.acc, self.mock_client)
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError
-        with mock.patch("six.moves.builtins.open", mock_open):
+        with mock.patch("builtins.open", mock_open):
             self.assertRaises(
                 errors.AccountStorageError, self.storage.load, self.acc.id)
 
     def test_save_ioerrors(self):
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError  # TODO: [None, None, IOError]
-        with mock.patch("six.moves.builtins.open", mock_open):
+        with mock.patch("builtins.open", mock_open):
             self.assertRaises(
                 errors.AccountStorageError, self.storage.save,
                     self.acc, self.mock_client)

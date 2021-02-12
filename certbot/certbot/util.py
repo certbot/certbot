@@ -18,7 +18,6 @@ from typing import Tuple
 from typing import Union
 
 import configargparse
-import six
 
 from certbot import errors
 from certbot._internal import constants
@@ -153,7 +152,7 @@ def lock_dir_until_exit(dir_path):
 
 
 def _release_locks():
-    for dir_lock in six.itervalues(_LOCKS):
+    for dir_lock in _LOCKS.values():
         try:
             dir_lock.release()
         except:  # pylint: disable=bare-except
@@ -517,7 +516,7 @@ def enforce_domain_sanity(domain):
     """
     # Unicode
     try:
-        if isinstance(domain, six.binary_type):
+        if isinstance(domain, bytes):
             domain = domain.decode('utf-8')
         domain.encode('ascii')
     except UnicodeError:
@@ -579,7 +578,7 @@ def is_wildcard_domain(domain):
 
     """
     wildcard_marker = b"*."  # type: Union[Text, bytes]
-    if isinstance(domain, six.text_type):
+    if isinstance(domain, str):
         wildcard_marker = u"*."
     return domain.startswith(wildcard_marker)
 

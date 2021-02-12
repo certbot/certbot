@@ -4,10 +4,12 @@ or outside during setup/teardown of the integration tests environment.
 """
 import contextlib
 import errno
+import http.server as SimpleHTTPServer
 import multiprocessing
 import os
 import re
 import shutil
+import socketserver
 import stat
 import sys
 import tempfile
@@ -23,8 +25,6 @@ from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import crypto
 import pkg_resources
 import requests
-from six.moves import SimpleHTTPServer
-from six.moves import socketserver
 
 from certbot_integration_tests.utils.constants import PEBBLE_ALTERNATE_ROOTS
 from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL

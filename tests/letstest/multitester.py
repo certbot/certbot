@@ -39,11 +39,11 @@ import socket
 import sys
 import time
 import traceback
+import urllib.error as urllib_error
+import urllib.request as urllib_request
 
 import boto3
 from botocore.exceptions import ClientError
-from six.moves.urllib import error as urllib_error
-from six.moves.urllib import request as urllib_request
 import yaml
 
 from fabric import Config

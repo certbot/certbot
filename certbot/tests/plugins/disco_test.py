@@ -8,7 +8,6 @@ try:
 except ImportError:  # pragma: no cover
     from unittest import mock
 import pkg_resources
-import six
 import zope.interface
 
 from certbot import errors
@@ -56,7 +55,7 @@ class PluginEntryPointTest(unittest.TestCase):
             EP_SA: "sa",
         }
 
-        for entry_point, name in six.iteritems(names):
+        for entry_point, name in names.items():
             self.assertEqual(
                 name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, with_prefix=False))
 
@@ -70,7 +69,7 @@ class PluginEntryPointTest(unittest.TestCase):
             self.ep3: "p3:ep3",
         }
 
-        for entry_point, name in six.iteritems(names):
+        for entry_point, name in names.items():
             self.assertEqual(
                 name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, with_prefix=True))
 

@@ -17,7 +17,6 @@ from pyparsing import restOfLine
 from pyparsing import stringEnd
 from pyparsing import White
 from pyparsing import ZeroOrMore
-import six
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +79,7 @@ class RawNginxDumper(object):
         """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
         for b0 in blocks:
-            if isinstance(b0, six.string_types):
+            if isinstance(b0, str):
                 yield b0
                 continue
             item = copy.deepcopy(b0)
@@ -97,7 +96,7 @@ class RawNginxDumper(object):
                 yield '}'
             else: # not a block - list of strings
                 semicolon = ";"
-                if isinstance(item[0], six.string_types) and item[0].strip() == '#': # comment
+                if isinstance(item[0], str) and item[0].strip() == '#': # comment
                     semicolon = ""
                 yield "".join(item) + semicolon
 
@@ -132,14 +131,14 @@ def load(_file):
 
 
 def dumps(blocks):
-    # type: (UnspacedList) -> six.text_type
+    # type: (UnspacedList) -> str
     """Dump to a Unicode string.
 
     :param UnspacedList block: The parsed tree
-    :rtype: six.text_type
+    :rtype: str
 
     """
-    return six.text_type(RawNginxDumper(blocks.spaced))
+    return str(RawNginxDumper(blocks.spaced))
 
 
 def dump(blocks, _file):
@@ -155,7 +154,7 @@ def dump(blocks, _file):
     _file.write(dumps(blocks))
 
 
-spacey = lambda x: (isinstance(x, six.string_types) and x.isspace()) or x == ''
+spacey = lambda x: (isinstance(x, str) and x.isspace()) or x == ''
 
 class UnspacedList(list):
     """Wrap a list [of lists], making any whitespace entries magically invisible"""

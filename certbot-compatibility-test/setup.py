@@ -8,7 +8,6 @@ version = '1.13.0.dev0'
 install_requires = [
     'certbot',
     'certbot-apache',
-    'six',
     'requests',
     'zope.interface',
 ]

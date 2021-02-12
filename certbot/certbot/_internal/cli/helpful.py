@@ -9,7 +9,6 @@ from typing import Any
 from typing import Dict
 
 import configargparse
-import six
 import zope.component
 import zope.interface
 
@@ -99,7 +98,7 @@ class HelpfulArgumentParser(object):
         if isinstance(help1, bool) and isinstance(help2, bool):
             self.help_arg = help1 or help2
         else:
-            self.help_arg = help1 if isinstance(help1, six.string_types) else help2
+            self.help_arg = help1 if isinstance(help1, str) else help2
 
         short_usage = self._usage_string(plugins, self.help_arg)
 
@@ -470,7 +469,7 @@ class HelpfulArgumentParser(object):
         may or may not be displayed as help topics.
 
         """
-        for name, plugin_ep in six.iteritems(plugins):
+        for name, plugin_ep in plugins.items():
             parser_or_group = self.add_group(name,
                                              description=plugin_ep.long_description)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)

@@ -4,8 +4,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 
-import six
-
 from certbot._internal import constants
 
 ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]
@@ -91,8 +89,7 @@ def populate_cli(add):
             help=enh["cli_help"])
 
 
-@six.add_metaclass(abc.ABCMeta)
-class AutoHSTSEnhancement(object):
+class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
     """
     Enhancement interface that installer plugins can implement in order to
     provide functionality that configures the software to have a

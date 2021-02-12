@@ -3,10 +3,10 @@ from __future__ import print_function
 
 import collections
 import logging
+import queue
 import sys
 import textwrap
 
-from six.moves import queue  # type: ignore
 import zope.interface
 
 from certbot import interfaces

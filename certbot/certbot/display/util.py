@@ -71,7 +71,7 @@ def _wrap_lines(msg):
 def input_with_timeout(prompt=None, timeout=36000.0):
     """Get user input with a timeout.
 
-    Behaves the same as six.moves.input, however, an error is raised if
+    Behaves the same as the builtin input, however, an error is raised if
     a user doesn't answer after timeout seconds. The default timeout
     value was chosen to place it just under 12 hours for users following
     our advice and running Certbot twice a day.
@@ -85,7 +85,7 @@ def input_with_timeout(prompt=None, timeout=36000.0):
     :raises errors.Error if no answer is given before the timeout
 
     """
-    # use of sys.stdin and sys.stdout to mimic six.moves.input based on
+    # use of sys.stdin and sys.stdout to mimic the builtin input based on
     # https://github.com/python/cpython/blob/baf7bb30a02aabde260143136bdf5b3738a1d409/Lib/getpass.py#L129
     if prompt:
         sys.stdout.write(prompt)

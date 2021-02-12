@@ -16,7 +16,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import OpenSSL
-import six
 import zope.component
 
 from certbot import crypto_util
@@ -121,7 +120,7 @@ def _restore_webroot_config(config, renewalparams):
     # see https://github.com/certbot/certbot/pull/7095
     if "webroot_path" in renewalparams and not cli.set_by_cli("webroot_path"):
         wp = renewalparams["webroot_path"]
-        if isinstance(wp, six.string_types):  # prior to 0.1.0, webroot_path was a string
+        if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
             wp = [wp]
         config.webroot_path = wp
 
@@ -156,7 +155,7 @@ def _restore_plugin_configs(config, renewalparams):
 
     for plugin_prefix in set(plugin_prefixes):
         plugin_prefix = plugin_prefix.replace('-', '_')
-        for config_item, config_value in six.iteritems(renewalparams):
+        for config_item, config_value in renewalparams.items():
             if config_item.startswith(plugin_prefix + "_") and not cli.set_by_cli(config_item):
                 # Values None, True, and False need to be treated specially,
                 # As their types aren't handled correctly by configobj
@@ -181,9 +180,9 @@ def restore_required_config_elements(config, renewalparams):
 
     required_items = itertools.chain(
         (("pref_challs", _restore_pref_challs),),
-        six.moves.zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
-        six.moves.zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
-        six.moves.zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
+        zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
+        zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
+        zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])
@@ -221,7 +220,7 @@ def _restore_pref_challs(unused_name, value):
     # If pref_challs has only one element, configobj saves the value
     # with a trailing comma so it's parsed as a list. If this comma is
     # removed by the user, the value is parsed as a str.
-    value = [value] if isinstance(value, six.string_types) else value
+    value = [value] if isinstance(value, str) else value
     return cli.parse_preferred_challenges(value)
 
 

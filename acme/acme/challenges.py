@@ -11,7 +11,6 @@ import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 import requests
-import six
 
 from acme import crypto_util
 from acme import errors
@@ -146,8 +145,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return jobj
 
 
-@six.add_metaclass(abc.ABCMeta)
-class KeyAuthorizationChallenge(_TokenChallenge):
+class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
     """Challenge based on Key Authorization.
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`

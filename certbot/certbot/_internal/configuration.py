@@ -1,7 +1,7 @@
 """Certbot user-supplied configuration."""
 import copy
+from urllib import parse
 
-from six.moves.urllib import parse
 import zope.interface
 
 from certbot import errors

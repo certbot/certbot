@@ -104,8 +104,7 @@ import abc
 import six
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ParserNode(object):
+class ParserNode(object, metaclass=abc.ABCMeta):
     """
     ParserNode is the basic building block of the tree of such nodes,
     representing the structure of the configuration. It is largely meant to keep
@@ -204,9 +203,7 @@ class ParserNode(object):
         """
 
 
-# Linter rule exclusion done because of https://github.com/PyCQA/pylint/issues/179
-@six.add_metaclass(abc.ABCMeta)  # pylint: disable=abstract-method
-class CommentNode(ParserNode):
+class CommentNode(ParserNode, metaclass=abc.ABCMeta):
     """
     CommentNode class is used for representation of comments within the parsed
     configuration structure. Because of the nature of comments, it is not able
@@ -249,8 +246,7 @@ class CommentNode(ParserNode):
                                           metadata=kwargs.get('metadata', {}))  # pragma: no cover
 
 
-@six.add_metaclass(abc.ABCMeta)
-class DirectiveNode(ParserNode):
+class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
     """
     DirectiveNode class represents a configuration directive within the configuration.
     It can have zero or more parameters attached to it. Because of the nature of
@@ -325,8 +321,7 @@ class DirectiveNode(ParserNode):
         """
 
 
-@six.add_metaclass(abc.ABCMeta)
-class BlockNode(DirectiveNode):
+class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
     """
     BlockNode class represents a block of nested configuration directives, comments
     and other blocks as its children. A BlockNode can have zero or more parameters
