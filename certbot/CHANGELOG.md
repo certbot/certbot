@@ -10,6 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* CLI flags `--os-packages-only`, `--no-self-upgrade`, `--no-bootstrap` and `--no-permissions-check`,
+  which are related to certbot-auto, are deprecated and will be removed in a future release.
 * Certbot no longer conditionally depends on an external mock module. Certbot's
   test API will continue to use it if it is available for backwards
   compatibility, however, this behavior has been deprecated and will be removed
