@@ -544,7 +544,7 @@ class NginxConfigurator(common.Installer):
                                                             List[obj.VirtualHost]]:
         """Returns a list of HTTP and HTTPS vhosts with a server_name matching target_name.
 
-        If no HTTP vhost exits, one will be created from a default. If that fails, no HTTP
+        If no HTTP vhost exists, one will be cloned from the default vhost. If that fails, no HTTP
         vhost will be returned.
 
         :param str target_name: non-wildcard domain name
@@ -587,7 +587,7 @@ class NginxConfigurator(common.Installer):
         :rtype: bool
 
         """
-        # if the 'ssl on' directive is present on the vhost, all addresses have SSL enabled
+        # if the 'ssl on' directive is present on the vhost, all its addresses have SSL enabled
         all_addrs_are_ssl = self.parser.has_ssl_on_directive(vhost)
 
         # if we want ssl vhosts: either 'ssl on' or 'addr.ssl' should be enabled
