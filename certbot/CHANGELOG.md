@@ -21,6 +21,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   Python 2.
 * Certbot and all of its components no longer depend on the library `six`.
 * The update of certbot-auto itself is now disabled on all RHEL-like systems.
+* The nginx authenticator now configures all vhosts matching the requested domain name, including
+  HTTPS vhosts. This makes it possible to use the plugin with Cloudflare's Full/Strict SSL option.
 
 ### Fixed
 

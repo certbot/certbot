@@ -361,8 +361,9 @@ class NginxParser(object):
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
-    def duplicate_vhost(self, vhost_template, remove_singleton_listen_params=False,
-        only_directives=None):
+    def duplicate_vhost(self, vhost_template: obj.VirtualHost,
+                        remove_singleton_listen_params: bool = False,
+                        only_directives: list = None) -> obj.VirtualHost:
         """Duplicate the vhost in the configuration files.
 
         :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost_template: The vhost

@@ -39,7 +39,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(12, len(self.config.parser.parsed))
+        self.assertEqual(13, len(self.config.parser.parsed))
 
     @mock.patch("certbot_nginx._internal.configurator.util.exe_exists")
     @mock.patch("certbot_nginx._internal.configurator.subprocess.Popen")
@@ -89,7 +89,7 @@ class NginxConfiguratorTest(util.NginxTest):
             "155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
              "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com",
-             "headers.com", "example.net"})
+             "headers.com", "example.net", "ssl.both.com"})
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'ensure-http-header', 'staple-ocsp'],
@@ -935,7 +935,17 @@ class NginxConfiguratorTest(util.NginxTest):
                                                 prefer_ssl=False,
                                                 no_ssl_filter_port='80')
             # Check that the dialog was called with only port 80 vhosts
-            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 6)
+            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 8)
+
+    def test_choose_auth_vhosts(self):
+        """choose_auth_vhosts correctly selects duplicative and HTTP/HTTPS vhosts"""
+        http, https = self.config.choose_auth_vhosts('ssl.both.com')
+        self.assertEqual(len(http), 3)
+        self.assertEqual(len(https), 1)
+        self.assertEqual(http[0].names, {'ssl.both.com'})
+        self.assertEqual(http[1].names, {'ssl.both.com'})
+        self.assertEqual(http[2].names, {'*.both.com'})
+        self.assertEqual(https[0].names, {'*.both.com'})
 
 
 class InstallSslOptionsConfTest(util.NginxTest):

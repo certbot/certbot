@@ -5,7 +5,8 @@ import logging
 
 from acme import challenges
 from acme.magic_typing import List
-from certbot import errors
+from acme.magic_typing import Optional
+from certbot import achallenges, errors
 from certbot.compat import os
 from certbot.plugins import common
 from certbot_nginx._internal import nginxparser
@@ -138,13 +139,12 @@ class NginxHttp01(common.ChallengePerformer):
     def _get_validation_path(self, achall):
         return os.sep + os.path.join(challenges.HTTP01.URI_ROOT_PATH, achall.chall.encode("token"))
 
-    def _make_server_block(self, achall):
+    def _make_server_block(self, achall: achallenges.KeyAuthorizationAnnotatedChallenge) -> list:
         """Creates a server block for a challenge.
+
         :param achall: Annotated HTTP-01 challenge
-        :type achall:
-            :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
-        :param list addrs: addresses of challenged domain
-            :class:`list` of type :class:`~nginx.obj.Addr`
+        :type achall: :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
+
         :returns: server block for the challenge host
         :rtype: list
         """
@@ -172,34 +172,35 @@ class NginxHttp01(common.ChallengePerformer):
         return location_directive
 
 
-    def _make_or_mod_server_block(self, achall):
-        """Modifies a server block to respond to a challenge.
+    def _make_or_mod_server_block(self, achall: achallenges.KeyAuthorizationAnnotatedChallenge
+                                  ) -> Optional[list]:
+        """Modifies server blocks to respond to a challenge. Returns a new HTTP server block
+           to add to the configuration if an existing one can't be found.
 
         :param achall: Annotated HTTP-01 challenge
-        :type achall:
-            :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
+        :type achall: :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
+
+        :returns: new server block to be added, if any
+        :rtype: list
 
         """
-        try:
-            vhosts = self.configurator.choose_redirect_vhosts(achall.domain,
-                '%i' % self.configurator.config.http01_port, create_if_no_match=True)
-        except errors.MisconfigurationError:
+        http_vhosts, https_vhosts = self.configurator.choose_auth_vhosts(achall.domain)
+
+        new_vhost: Optional[list] = None
+        if not http_vhosts:
             # Couldn't find either a matching name+port server block
             # or a port+default_server block, so create a dummy block
-            return self._make_server_block(achall)
+            new_vhost = self._make_server_block(achall)
 
-        # len is max 1 because Nginx doesn't authenticate wildcards
-        # if len were or vhosts None, we would have errored
-        vhost = vhosts[0]
+        # Modify any existing server blocks
+        for vhost in http_vhosts + https_vhosts:
+            location_directive = [self._location_directive_for_achall(achall)]
 
-        # Modify existing server block
-        location_directive = [self._location_directive_for_achall(achall)]
+            self.configurator.parser.add_server_directives(vhost, location_directive)
 
-        self.configurator.parser.add_server_directives(vhost,
-            location_directive)
+            rewrite_directive = [['rewrite', ' ', '^(/.well-known/acme-challenge/.*)',
+                                    ' ', '$1', ' ', 'break']]
+            self.configurator.parser.add_server_directives(vhost,
+                rewrite_directive, insert_at_top=True)
 
-        rewrite_directive = [['rewrite', ' ', '^(/.well-known/acme-challenge/.*)',
-                                ' ', '$1', ' ', 'break']]
-        self.configurator.parser.add_server_directives(vhost,
-            rewrite_directive, insert_at_top=True)
-        return None
+        return new_vhost
