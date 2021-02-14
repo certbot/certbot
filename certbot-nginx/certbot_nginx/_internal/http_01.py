@@ -194,7 +194,7 @@ class NginxHttp01(common.ChallengePerformer):
             new_vhost = self._make_server_block(achall)
 
         # Modify any existing server blocks
-        for vhost in http_vhosts + https_vhosts:
+        for vhost in set(http_vhosts + https_vhosts):
             location_directive = [self._location_directive_for_achall(achall)]
 
             self.configurator.parser.add_server_directives(vhost, location_directive)

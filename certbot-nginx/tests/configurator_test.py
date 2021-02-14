@@ -940,12 +940,14 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_choose_auth_vhosts(self):
         """choose_auth_vhosts correctly selects duplicative and HTTP/HTTPS vhosts"""
         http, https = self.config.choose_auth_vhosts('ssl.both.com')
-        self.assertEqual(len(http), 3)
-        self.assertEqual(len(https), 1)
+        self.assertEqual(len(http), 4)
+        self.assertEqual(len(https), 2)
         self.assertEqual(http[0].names, {'ssl.both.com'})
         self.assertEqual(http[1].names, {'ssl.both.com'})
-        self.assertEqual(http[2].names, {'*.both.com'})
-        self.assertEqual(https[0].names, {'*.both.com'})
+        self.assertEqual(http[2].names, {'ssl.both.com'})
+        self.assertEqual(http[3].names, {'*.both.com'})
+        self.assertEqual(https[0].names, {'ssl.both.com'})
+        self.assertEqual(https[1].names, {'*.both.com'})
 
 
 class InstallSslOptionsConfTest(util.NginxTest):

@@ -172,7 +172,7 @@ class NginxParserTest(util.NginxTest):
                                                   '*.www.example.com'},
                                  [], [2, 1, 0])
 
-        self.assertEqual(18, len(vhosts))
+        self.assertEqual(19, len(vhosts))
         example_com = [x for x in vhosts if 'example.com' in x.filep][0]
         self.assertEqual(vhost3, example_com)
         default = [x for x in vhosts if 'default' in x.filep][0]

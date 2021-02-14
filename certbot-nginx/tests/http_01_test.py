@@ -133,6 +133,19 @@ class HttpPerformTest(util.NginxTest):
         # should have been created and written to the challenge conf file
         self.assertNotEqual(mock_dump.call_args[0][0], [])
 
+    @mock.patch('certbot_nginx._internal.parser.NginxParser.add_server_directives')
+    def test_mod_config_deduplicate(self, mock_add_server_directives):
+        """A vhost that appears in both HTTP and HTTPS vhosts only gets modded once"""
+        achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(
+                challenges.HTTP01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
+            domain="ssl.both.com", account_key=AUTH_KEY)
+        self.http01.add_chall(achall)
+        self.http01._mod_config() # pylint: disable=protected-access
+
+        # Should only get called 5 times, rather than 6, because two vhosts are the same
+        self.assertEqual(mock_add_server_directives.call_count, 5*2)
+
     @mock.patch("certbot_nginx._internal.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_no_memoization(self, ipv6_info):
         # pylint: disable=protected-access
