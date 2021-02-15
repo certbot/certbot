@@ -215,7 +215,7 @@ def check_error(command, dir_path):
     if ret == 0:
         report_failure("Certbot didn't exit with a nonzero status!", out, err)
 
-    match = re.search("Please see the logfile '(.*)' for more details", err)
+    match = re.search("See the logfile '(.*)' ", err)
     if match is not None:
         # Get error output from more verbose logfile
         with open(match.group(1)) as f:
