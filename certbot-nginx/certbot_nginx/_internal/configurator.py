@@ -1033,7 +1033,7 @@ class NginxConfigurator(common.Installer):
         return (
             "The Certificate Authority failed to verify the temporary nginx configuration changes "
             "made by the --nginx plugin. Ensure the above domains point to this nginx server and "
-            "that it is accessible from the internet, or try increase --nginx-sleep-seconds."
+            "that it is accessible from the internet, or try increasing --nginx-sleep-seconds."
         )
 
     ###################################################
