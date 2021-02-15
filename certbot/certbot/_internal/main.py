@@ -800,7 +800,7 @@ def _install_cert(config, le_client, domains, lineage=None):
     path_provider = lineage if lineage else config
     assert path_provider.cert_path is not None
 
-    cert_name: str = None
+    cert_name: Optional[str] = None
     if isinstance(path_provider, storage.RenewableCert):
         cert_name = path_provider.lineagename
     elif path_provider.certname:
