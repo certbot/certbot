@@ -39,7 +39,7 @@ PREFIX_FREE_DISTRIBUTIONS = [
 """Distributions for which prefix will be omitted."""
 
 
-class PluginEntryPoint(object):
+class PluginEntryPoint:
     """Plugin entry point."""
 
     # this object is mutable, don't allow it to be hashed!

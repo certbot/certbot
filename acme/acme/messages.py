@@ -277,7 +277,7 @@ class ResourceBody(jose.JSONObjectWithFields):
     """ACME Resource Body."""
 
 
-class ExternalAccountBinding(object):
+class ExternalAccountBinding:
     """ACME External Account Binding"""
 
     @classmethod

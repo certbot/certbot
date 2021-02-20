@@ -17,7 +17,7 @@ from certbot.compat import os
 logger = logging.getLogger(__name__)
 
 
-class Reverter(object):
+class Reverter:
     """Reverter Class - save and revert configuration checkpoints.
 
     This class can be used by the plugins, especially Installers, to

@@ -23,7 +23,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class LexiconClient(object):
+class LexiconClient:
     """
     Encapsulates all communication with a DNS provider via Lexicon.
     """

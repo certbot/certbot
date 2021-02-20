@@ -34,7 +34,7 @@ class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
         self.assertEqual(expected, self.mock_client.mock_calls)
 
 
-class BaseLexiconClientTest(object):
+class BaseLexiconClientTest:
     DOMAIN_NOT_FOUND = Exception('No domain found')
     GENERIC_ERROR = RequestException
     LOGIN_ERROR = HTTPError('400 Client Error: ...')
