@@ -531,6 +531,5 @@ class NginxParserTest(util.NginxTest):
             for output in log.output
         ))
 
-
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
