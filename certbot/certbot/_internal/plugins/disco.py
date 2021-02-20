@@ -3,6 +3,7 @@ import collections
 import itertools
 import logging
 import sys
+from collections.abc import Mapping
 
 import pkg_resources
 import zope.interface
@@ -13,12 +14,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os
-
-try:
-    # Python 3.3+
-    from collections.abc import Mapping
-except ImportError:  # pragma: no cover
-    from collections import Mapping
 
 logger = logging.getLogger(__name__)
 
