@@ -10,7 +10,6 @@ from cryptography.hazmat.primitives import serialization
 import josepy as jose
 import pyrfc3339
 import pytz
-import six
 
 from acme import fields as acme_fields
 from acme import messages
@@ -101,7 +100,7 @@ class AccountMemoryStorage(interfaces.AccountStorage):
         self.accounts = initial_accounts if initial_accounts is not None else {}
 
     def find_all(self):
-        return list(six.itervalues(self.accounts))
+        return list(self.accounts.values())
 
     def save(self, account, client):
         if account.id in self.accounts:

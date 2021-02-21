@@ -18,7 +18,6 @@ install_requires = [
     'python-dateutil',
     'pyyaml',
     'requests',
-    'six'
 ]
 
 # Add pywin32 on Windows platforms to handle low-level system calls.

@@ -4,6 +4,7 @@ This runnable module interfaces itself with the Pebble management interface in o
 to serve a mock OCSP responder during integration tests against Pebble.
 """
 import datetime
+import http.server as BaseHTTPServer
 import re
 
 from cryptography import x509
@@ -13,7 +14,6 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.x509 import ocsp
 from dateutil import parser
 import requests
-from six.moves import BaseHTTPServer
 
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL

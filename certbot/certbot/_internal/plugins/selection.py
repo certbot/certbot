@@ -4,7 +4,6 @@ from __future__ import print_function
 import logging
 
 from typing import Optional, Tuple
-import six
 import zope.component
 
 from certbot import errors
@@ -110,7 +109,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
 
     if len(prepared) > 1:
         logger.debug("Multiple candidate plugins: %s", prepared)
-        plugin_ep = choose_plugin(list(six.itervalues(prepared)), question)
+        plugin_ep = choose_plugin(list(prepared.values()), question)
         if plugin_ep is None:
             return None
         return plugin_ep.init()

@@ -3,9 +3,9 @@ import collections
 import itertools
 import logging
 import sys
+from collections.abc import Mapping
 
 import pkg_resources
-import six
 import zope.interface
 import zope.interface.verify
 
@@ -14,12 +14,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os
-
-try:
-    # Python 3.3+
-    from collections.abc import Mapping
-except ImportError:  # pragma: no cover
-    from collections import Mapping
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +209,7 @@ class PluginsRegistry(Mapping):
         # This prevents deadlock caused by plugins acquiring a lock
         # and ensures at least one concurrent Certbot instance will run
         # successfully.
-        self._plugins = collections.OrderedDict(sorted(six.iteritems(plugins)))
+        self._plugins = collections.OrderedDict(sorted(plugins.items()))
 
     @classmethod
     def find_all(cls):
@@ -276,12 +270,12 @@ class PluginsRegistry(Mapping):
     def init(self, config):
         """Initialize all plugins in the registry."""
         return [plugin_ep.init(config) for plugin_ep
-                in six.itervalues(self._plugins)]
+                in self._plugins.values()]
 
     def filter(self, pred):
         """Filter plugins based on predicate."""
         return type(self)({name: plugin_ep for name, plugin_ep
-                               in six.iteritems(self._plugins) if pred(plugin_ep)})
+                               in self._plugins.items() if pred(plugin_ep)})
 
     def visible(self):
         """Filter plugins based on visibility."""
@@ -297,7 +291,7 @@ class PluginsRegistry(Mapping):
 
     def prepare(self):
         """Prepare all plugins in the registry."""
-        return [plugin_ep.prepare() for plugin_ep in six.itervalues(self._plugins)]
+        return [plugin_ep.prepare() for plugin_ep in self._plugins.values()]
 
     def available(self):
         """Filter plugins based on availability."""
@@ -319,7 +313,7 @@ class PluginsRegistry(Mapping):
 
         """
         # use list instead of set because PluginEntryPoint is not hashable
-        candidates = [plugin_ep for plugin_ep in six.itervalues(self._plugins)
+        candidates = [plugin_ep for plugin_ep in self._plugins.values()
                       if plugin_ep.initialized and plugin_ep.init() is plugin]
         assert len(candidates) <= 1
         if candidates:
@@ -329,9 +323,9 @@ class PluginsRegistry(Mapping):
     def __repr__(self):
         return "{0}({1})".format(
             self.__class__.__name__, ','.join(
-                repr(p_ep) for p_ep in six.itervalues(self._plugins)))
+                repr(p_ep) for p_ep in self._plugins.values()))
 
     def __str__(self):
         if not self._plugins:
             return "No plugins"
-        return "\n\n".join(str(p_ep) for p_ep in six.itervalues(self._plugins))
+        return "\n\n".join(str(p_ep) for p_ep in self._plugins.values())
