@@ -4,7 +4,6 @@ import logging
 import time
 
 import zope.component
-from josepy.jwk import JWK # pylint: disable=unused-import
 
 from acme import challenges
 from acme import errors as acme_errors
@@ -268,10 +267,9 @@ class AuthHandler(object):
 
         return achalls
 
-    def _report_failed_authzrs(self, failed_authzrs):
-        # type: (List[messages.AuthorizationResource]) -> None
+    def _report_failed_authzrs(self, failed_authzrs: List[messages.AuthorizationResource]) -> None:
         """Notifies the user about failed authorizations."""
-        problems = {}  # type: Dict[str, List[achallenges.AnnotatedChallenge]]
+        problems: Dict[str, List[achallenges.AnnotatedChallenge]] = {}
         failed_achalls = [challb_to_achall(challb, self.account.key, authzr.body.identifier.value)
                         for authzr in failed_authzrs for challb in authzr.body.challenges
                         if challb.error]
