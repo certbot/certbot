@@ -555,7 +555,7 @@ class ClientTest(ClientTestCommon):
 
     @mock.patch('certbot._internal.client.display_util.notify')
     @test_util.patch_get_utility()
-    def test_deploy_certificae_failure_no_certname(self, mock_util, mock_notify):
+    def test_deploy_certificate_failure_no_certname(self, mock_util, mock_notify):
         installer = mock.MagicMock()
         self.client.installer = installer
         self.config.installer = "foobar"
