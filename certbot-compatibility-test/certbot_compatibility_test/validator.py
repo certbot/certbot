@@ -3,8 +3,6 @@ import logging
 import socket
 
 import requests
-import six
-from six.moves import xrange
 
 from acme import crypto_util
 from acme import errors as acme_errors
@@ -19,11 +17,11 @@ class Validator(object):
         """Verifies the certificate presented at name is cert"""
         if alt_host is None:
             host = socket.gethostbyname(name).encode()
-        elif isinstance(alt_host, six.binary_type):
+        elif isinstance(alt_host, bytes):
             host = alt_host
         else:
             host = alt_host.encode()
-        name = name if isinstance(name, six.binary_type) else name.encode()
+        name = name if isinstance(name, bytes) else name.encode()
 
         try:
             presented_cert = crypto_util.probe_sni(name, host, port)
@@ -62,7 +60,7 @@ class Validator(object):
         else:
             response = requests.get(url, allow_redirects=False)
 
-        return response.status_code in xrange(300, 309)
+        return response.status_code in range(300, 309)
 
     def hsts(self, name):
         """Test for HTTP Strict Transport Security header"""

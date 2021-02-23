@@ -6,7 +6,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
-import six
 
 from acme import challenges
 from certbot import achallenges
@@ -79,7 +78,7 @@ class HttpPerformTest(util.NginxTest):
         http_responses = self.http01.perform()
 
         self.assertEqual(len(http_responses), 4)
-        for i in six.moves.range(4):
+        for i in range(4):
             self.assertEqual(http_responses[i], acme_responses[i])
 
     def test_mod_config(self):

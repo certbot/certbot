@@ -1,8 +1,6 @@
 """New interface style Certbot enhancements"""
 import abc
 
-import six
-
 from acme.magic_typing import Any
 from acme.magic_typing import Dict
 from acme.magic_typing import List
@@ -91,8 +89,7 @@ def populate_cli(add):
             help=enh["cli_help"])
 
 
-@six.add_metaclass(abc.ABCMeta)
-class AutoHSTSEnhancement(object):
+class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
     """
     Enhancement interface that installer plugins can implement in order to
     provide functionality that configures the software to have a

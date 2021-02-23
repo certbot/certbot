@@ -1,11 +1,7 @@
-from distutils.version import LooseVersion
-import sys
-
-from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.12.0'
+version = '1.13.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
@@ -17,15 +13,6 @@ install_requires = [
     'zope.component',
     'zope.interface',
 ]
-
-setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
-if setuptools_known_environment_markers:
-    install_requires.append('mock ; python_version < "3.3"')
-elif 'bdist_wheel' in sys.argv[1:]:
-    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
-                       'of setuptools. Version 36.2+ of setuptools is required.')
-elif sys.version_info < (3,3):
-    install_requires.append('mock')
 
 dev_extras = [
     'apacheconfig>=0.3.2',
