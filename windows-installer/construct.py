@@ -9,7 +9,7 @@ import sys
 import tempfile
 import time
 
-PYTHON_VERSION = (3, 8, 6)
+PYTHON_VERSION = (3, 8, 8)
 PYTHON_BITNESS = 32
 PYWIN32_VERSION = 300  # do not forget to edit pywin32 dependency accordingly in setup.py
 NSIS_VERSION = '3.06.1'
