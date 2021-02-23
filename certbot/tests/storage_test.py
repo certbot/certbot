@@ -77,6 +77,17 @@ class RelevantValuesTest(unittest.TestCase):
 
         self.assertEqual(self._call(self.values), expected_relevant_values)
 
+    @mock.patch("certbot._internal.cli.set_by_cli")
+    def test_deprecated_item(self, unused_mock_set_by_cli):
+        # deprecated items should never be relevant to store
+        expected_relevant_values = self.values.copy()
+        self.values["manual_public_ip_logging_ok"] = None
+        self.assertEqual(self._call(self.values), expected_relevant_values)
+        self.values["manual_public_ip_logging_ok"] = True
+        self.assertEqual(self._call(self.values), expected_relevant_values)
+        self.values["manual_public_ip_logging_ok"] = False
+        self.assertEqual(self._call(self.values), expected_relevant_values)
+
 
 class BaseRenewableCertTest(test_util.ConfigTestCase):
     """Base class for setting up Renewable Cert tests.
@@ -330,7 +341,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc._update_link_to("chain", 3000)
         # However, current_version doesn't allow querying the resulting
         # version (because it's a broken link).
-        self.assertEqual(os.path.basename(os.readlink(self.test_rc.chain)),
+        self.assertEqual(os.path.basename(filesystem.readlink(self.test_rc.chain)),
                          "chain3000.pem")
 
     def test_version(self):
@@ -514,7 +525,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         # privkey.
         for i in (6, 7, 8):
             self.assertTrue(os.path.islink(self.test_rc.version("privkey", i)))
-            self.assertEqual("privkey3.pem", os.path.basename(os.readlink(
+            self.assertEqual("privkey3.pem", os.path.basename(filesystem.readlink(
                 self.test_rc.version("privkey", i))))
 
         for kind in ALL_FOUR:

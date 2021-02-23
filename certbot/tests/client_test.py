@@ -13,7 +13,6 @@ except ImportError: # pragma: no cover
 from certbot import errors
 from certbot import util
 from certbot._internal import account
-from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 
@@ -329,7 +328,11 @@ class ClientTest(ClientTestCommon):
         self._test_obtain_certificate_common(mock.sentinel.key, csr)
 
         mock_crypto_util.init_save_key.assert_called_once_with(
-            self.config.rsa_key_size, self.config.key_dir)
+            key_size=self.config.rsa_key_size,
+            key_dir=self.config.key_dir,
+            key_type=self.config.key_type,
+            elliptic_curve=None,  # elliptic curve is not set
+        )
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, self.eg_domains, self.config.csr_dir)
         mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
@@ -365,7 +368,11 @@ class ClientTest(ClientTestCommon):
         self.client.config.dry_run = True
         self._test_obtain_certificate_common(key, csr)
 
-        mock_crypto.make_key.assert_called_once_with(self.config.rsa_key_size)
+        mock_crypto.make_key.assert_called_once_with(
+            bits=self.config.rsa_key_size,
+            elliptic_curve=None,  # not making an elliptic private key
+            key_type=self.config.key_type,
+        )
         mock_acme_crypto.make_csr.assert_called_once_with(
             mock.sentinel.key_pem, self.eg_domains, self.config.must_staple)
         mock_crypto.init_save_key.assert_not_called()

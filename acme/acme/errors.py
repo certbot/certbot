@@ -49,7 +49,7 @@ class MissingNonce(NonceError):
     Replay-Nonce header field in each successful response to a POST it
     provides to a client (...)".
 
-    :ivar requests.Response response: HTTP Response
+    :ivar requests.Response ~.response: HTTP Response
 
     """
     def __init__(self, response, *args, **kwargs):

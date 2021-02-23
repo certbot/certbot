@@ -214,25 +214,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.assertTrue(domain == self.subdom['subzone'])
         self.assertTrue(prefix == self.prefix['foo.bar'])
 
-    def test_find_domain_dual_cnames(self):
-        # _query_soa | pylint: disable=protected-access
-        self.rfc2136_client._query_soa = self._mock_query_soa
-
-        # _find_domain | pylint: disable=protected-access
-        (prefix, domain) = self.rfc2136_client._find_domain('foo.bar.cname.'+DOMAIN)
-
-        self.assertTrue(domain == self.subdom['subzone'])
-        self.assertTrue(prefix == self.prefix['my.challenge'])
-
-    def test_find_domain_dname(self):
-        # _query_soa | pylint: disable=protected-access
-        self.rfc2136_client._query_soa = self._mock_query_soa
-
-        # _find_domain | pylint: disable=protected-access
-        (prefix, domain) = self.rfc2136_client._find_domain('foo.bar.dname.'+DOMAIN)
-
-        self.assertTrue(domain == self.subdom['subzone'])
-        self.assertTrue(prefix == self.prefix['foo.bar'])
+        self.assertEqual(domain, DOMAIN)
 
     def test_find_domain_wraps_errors(self):
         # _query_soa | pylint: disable=protected-access

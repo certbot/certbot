@@ -9,12 +9,15 @@ import shutil
 import subprocess
 import time
 
+from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1, SECP384R1, SECP521R1
 from cryptography.x509 import NameOID
 
 import pytest
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
+from certbot_integration_tests.certbot_tests.assertions import assert_elliptic_key
+from certbot_integration_tests.certbot_tests.assertions import assert_rsa_key
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_owner
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_world_read_permissions
@@ -26,8 +29,9 @@ from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
 from certbot_integration_tests.utils import misc
 
 
-@pytest.fixture()
-def context(request):
+@pytest.fixture(name='context')
+def test_context(request):
+    # pylint: disable=missing-function-docstring
     # Fixture request is a built-in pytest fixture describing current test request.
     integration_test_context = certbot_context.IntegrationTestsContext(request)
     try:
@@ -144,6 +148,17 @@ def test_certonly(context):
     """Test the certonly verb on certbot."""
     context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname')])
 
+    assert_cert_count_for_lineage(context.config_dir, 'newname', 1)
+
+
+def test_certonly_webroot(context):
+    """Test the certonly verb with webroot plugin"""
+    with misc.create_http_server(context.http_01_port) as webroot:
+        certname = context.get_domain('webroot')
+        context.certbot(['certonly', '-a', 'webroot', '--webroot-path', webroot, '-d', certname])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
 
 def test_auth_and_install_with_csr(context):
     """Test certificate issuance and install using an existing CSR."""
@@ -219,14 +234,16 @@ def test_renew_files_propagate_permissions(context):
     if os.name != 'nt':
         os.chmod(privkey1, 0o444)
     else:
-        import win32security
-        import ntsecuritycon
+        import win32security  # pylint: disable=import-error
+        import ntsecuritycon  # pylint: disable=import-error
         # Get the current DACL of the private key
         security = win32security.GetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION)
         dacl = security.GetSecurityDescriptorDacl()
         # Create a read permission for Everybody group
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
-        dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_GENERIC_READ, everybody)
+        dacl.AddAccessAllowedAce(
+            win32security.ACL_REVISION, ntsecuritycon.FILE_GENERIC_READ, everybody
+        )
         # Apply the updated DACL to the private key
         security.SetSecurityDescriptorDacl(1, dacl, 0)
         win32security.SetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION, security)
@@ -235,12 +252,14 @@ def test_renew_files_propagate_permissions(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     if os.name != 'nt':
-        # On Linux, read world permissions + all group permissions will be copied from the previous private key
+        # On Linux, read world permissions + all group permissions
+        # will be copied from the previous private key
         assert_world_read_permissions(privkey2)
         assert_equals_world_read_permissions(privkey1, privkey2)
         assert_equals_group_permissions(privkey1, privkey2)
     else:
-        # On Windows, world will never have any permissions, and group permission is irrelevant for this platform
+        # On Windows, world will never have any permissions, and
+        # group permission is irrelevant for this platform
         assert_world_no_permissions(privkey2)
 
 
@@ -289,7 +308,7 @@ def test_renew_with_changed_private_key_complexity(context):
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
     context.certbot(['renew'])
-    
+
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     key2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
     assert os.stat(key2).st_size > 3000
@@ -421,18 +440,113 @@ def test_reuse_key(context):
     assert len({cert1, cert2, cert3}) == 3
 
 
+def test_incorrect_key_type(context):
+    with pytest.raises(subprocess.CalledProcessError):
+        context.certbot(['--key-type="failwhale"'])
+
+
 def test_ecdsa(context):
-    """Test certificate issuance with ECDSA key."""
+    """Test issuance for ECDSA CSR based request (legacy supported mode)."""
     key_path = join(context.workspace, 'privkey-p384.pem')
     csr_path = join(context.workspace, 'csr-p384.der')
     cert_path = join(context.workspace, 'cert-p384.pem')
     chain_path = join(context.workspace, 'chain-p384.pem')
 
-    misc.generate_csr([context.get_domain('ecdsa')], key_path, csr_path, key_type=misc.ECDSA_KEY_TYPE)
-    context.certbot(['auth', '--csr', csr_path, '--cert-path', cert_path, '--chain-path', chain_path])
+    misc.generate_csr(
+        [context.get_domain('ecdsa')],
+        key_path, csr_path,
+        key_type=misc.ECDSA_KEY_TYPE
+    )
+    context.certbot([
+        'auth', '--csr', csr_path, '--cert-path', cert_path,
+        '--chain-path', chain_path,
+    ])
 
     certificate = misc.read_certificate(cert_path)
     assert 'ASN1 OID: secp384r1' in certificate
+
+
+def test_default_key_type(context):
+    """Test default key type is RSA"""
+    certname = context.get_domain('renew')
+    context.certbot([
+        'certonly',
+        '--cert-name', certname, '-d', certname
+    ])
+    filename = join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname)
+    assert_rsa_key(filename)
+
+
+def test_default_curve_type(context):
+    """test that the curve used when not specifying any is secp256r1"""
+    certname = context.get_domain('renew')
+    context.certbot([
+        '--key-type', 'ecdsa', '--cert-name', certname, '-d', certname
+    ])
+    key1 = join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname))
+    assert_elliptic_key(key1, SECP256R1)
+
+
+@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
+    # Curve name, Curve class, ACME servers to skip
+    ('secp256r1', SECP256R1, []),
+    ('secp384r1', SECP384R1, []),
+    ('secp521r1', SECP521R1, ['boulder-v1', 'boulder-v2'])]
+)
+def test_ecdsa_curves(context, curve, curve_cls, skip_servers):
+    """Test issuance for each supported ECDSA curve"""
+    if context.acme_server in skip_servers:
+        pytest.skip('ACME server {} does not support ECDSA curve {}'
+                    .format(context.acme_server, curve))
+
+    domain = context.get_domain('curve')
+    context.certbot([
+        'certonly',
+        '--key-type', 'ecdsa', '--elliptic-curve', curve,
+        '--force-renewal', '-d', domain,
+    ])
+    key = join(context.config_dir, "live", domain, 'privkey.pem')
+    assert_elliptic_key(key, curve_cls)
+
+
+def test_renew_with_ec_keys(context):
+    """Test proper renew with updated private key complexity."""
+    certname = context.get_domain('renew')
+    context.certbot([
+        'certonly',
+        '--cert-name', certname,
+        '--key-type', 'ecdsa', '--elliptic-curve', 'secp256r1',
+        '--force-renewal', '-d', certname,
+    ])
+
+    key1 = join(context.config_dir, "archive", certname, 'privkey1.pem')
+    assert 200 < os.stat(key1).st_size < 250  # ec keys of 256 bits are ~225 bytes
+    assert_elliptic_key(key1, SECP256R1)
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
+    context.certbot(['renew', '--elliptic-curve', 'secp384r1'])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+    key2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
+    assert_elliptic_key(key2, SECP384R1)
+    assert 280 < os.stat(key2).st_size < 320  # ec keys of 384 bits are ~310 bytes
+
+    # We expect here that the command will fail because without --key-type specified,
+    # Certbot must error out to prevent changing an existing certificate key type,
+    # without explicit user consent (by specifying both --cert-name and --key-type).
+    with pytest.raises(subprocess.CalledProcessError):
+        context.certbot([
+            'certonly',
+            '--force-renewal',
+            '-d', certname
+        ])
+
+    # We expect that the previous behavior of requiring both --cert-name and
+    # --key-type to be set to not apply to the renew subcommand.
+    context.certbot(['renew', '--force-renewal', '--key-type', 'rsa'])
+    assert_cert_count_for_lineage(context.config_dir, certname, 3)
+    key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
+    assert_rsa_key(key3)
 
 
 def test_ocsp_must_staple(context):
@@ -533,19 +647,22 @@ def test_revoke_multiple_lineages(context):
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'r') as file:
         data = file.read()
 
-    data = re.sub('archive_dir = .*\n',
-                  'archive_dir = {0}\n'.format(join(context.config_dir, 'archive', cert1).replace('\\', '\\\\')),
-                  data)
+    data = re.sub(
+        'archive_dir = .*\n',
+        'archive_dir = {0}\n'.format(
+            join(context.config_dir, 'archive', cert1).replace('\\', '\\\\')
+        ), data
+    )
 
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'w') as file:
         file.write(data)
 
-    output = context.certbot([
+    context.certbot([
         'revoke', '--cert-path', join(context.config_dir, 'live', cert1, 'cert.pem')
     ])
 
     with open(join(context.workspace, 'logs', 'letsencrypt.log'), 'r') as f:
-        assert 'Not deleting revoked certs due to overlapping archive dirs' in f.read()
+        assert 'Not deleting revoked certificates due to overlapping archive dirs' in f.read()
 
 
 def test_wildcard_certificates(context):

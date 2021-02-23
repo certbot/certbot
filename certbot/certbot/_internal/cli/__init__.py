@@ -28,7 +28,8 @@ from certbot._internal.cli.cli_constants import (
     ARGPARSE_PARAMS_TO_REMOVE,
     EXIT_ACTIONS,
     ZERO_ARG_ACTIONS,
-    VAR_MODIFIERS
+    VAR_MODIFIERS,
+    DEPRECATED_OPTIONS
 )
 
 from certbot._internal.cli.cli_utils import (
@@ -314,6 +315,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     helpful.add(
+        "security", "--key-type", choices=['rsa', 'ecdsa'], type=str,
+        default=flag_default("key_type"), help=config_help("key_type"))
+    helpful.add(
+        "security", "--elliptic-curve", type=str, choices=[
+            'secp256r1',
+            'secp384r1',
+            'secp521r1',
+        ], metavar="N",
+        default=flag_default("elliptic_curve"), help=config_help("elliptic_curve"))
+    helpful.add(
         "security", "--must-staple", action="store_true",
         dest="must_staple", default=flag_default("must_staple"),
         help=config_help("must_staple"))
@@ -461,6 +472,11 @@ def set_by_cli(var):
     (CLI or config file) including if the user explicitly set it to the
     default.  Returns False if the variable was assigned a default value.
     """
+    # We should probably never actually hit this code. But if we do,
+    # a deprecated option has logically never been set by the CLI.
+    if var in DEPRECATED_OPTIONS:
+        return False
+
     detector = set_by_cli.detector  # type: ignore
     if detector is None and helpful_parser is not None:
         # Setup on first run: `detector` is a weird version of config in which
@@ -521,6 +537,9 @@ def option_was_set(option, value):
     :rtype: bool
 
     """
+    # If an option is deprecated, it was effectively not set by the user.
+    if option in DEPRECATED_OPTIONS:
+        return False
     return set_by_cli(option) or not has_default_value(option, value)
 
 

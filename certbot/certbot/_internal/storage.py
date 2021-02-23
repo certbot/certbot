@@ -10,6 +10,9 @@ import configobj
 import parsedatetime
 import pytz
 import six
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 import certbot
 from certbot import crypto_util
@@ -45,6 +48,7 @@ def renewal_conf_files(config):
     result = glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
     result.sort()
     return result
+
 
 def renewal_file_for_certname(config, certname):
     """Return /path/to/certname.conf in the renewal conf directory"""
@@ -210,7 +214,7 @@ def get_link_target(link):
 
     """
     try:
-        target = os.readlink(link)
+        target = filesystem.readlink(link)
     except OSError:
         raise errors.CertStorageError(
             "Expected {0} to be a symlink".format(link))
@@ -218,6 +222,7 @@ def get_link_target(link):
     if not os.path.isabs(target):
         target = os.path.join(os.path.dirname(link), target)
     return os.path.abspath(target)
+
 
 def _write_live_readme_to(readme_path, is_base_dir=False):
     prefix = ""
@@ -661,7 +666,7 @@ class RenewableCert(interfaces.RenewableCert):
                 current_link = getattr(self, kind)
                 if os.path.lexists(current_link):
                     os.unlink(current_link)
-                os.symlink(os.readlink(previous_link), current_link)
+                os.symlink(filesystem.readlink(previous_link), current_link)
 
         for _, link in previous_symlinks:
             if os.path.exists(link):
@@ -805,8 +810,8 @@ class RenewableCert(interfaces.RenewableCert):
         May need to recover from rare interrupted / crashed states."""
 
         if self.has_pending_deployment():
-            logger.warning("Found a new cert /archive/ that was not linked to in /live/; "
-                        "fixing...")
+            logger.warning("Found a new certificate /archive/ that was not "
+                           "linked to in /live/; fixing...")
             self.update_all_links_to(self.latest_common_version())
             return False
         return True
@@ -842,7 +847,7 @@ class RenewableCert(interfaces.RenewableCert):
         link = getattr(self, kind)
         filename = "{0}{1}.pem".format(kind, version)
         # Relative rather than absolute target directory
-        target_directory = os.path.dirname(os.readlink(link))
+        target_directory = os.path.dirname(filesystem.readlink(link))
         # TODO: it could be safer to make the link first under a temporary
         #       filename, then unlink the old link, then rename the new link
         #       to the old link; this ensures that this process is able to
@@ -879,7 +884,7 @@ class RenewableCert(interfaces.RenewableCert):
         """
         target = self.current_target("cert")
         if target is None:
-            raise errors.CertStorageError("could not find cert file")
+            raise errors.CertStorageError("could not find the certificate file")
         with open(target) as f:
             return crypto_util.get_names_from_cert(f.read())
 
@@ -1055,6 +1060,23 @@ class RenewableCert(interfaces.RenewableCert):
             target, values)
         return cls(new_config.filename, cli_config)
 
+    @property
+    def private_key_type(self):
+        """
+        :returns: The type of algorithm for the private, RSA or ECDSA
+        :rtype: str
+        """
+        with open(self.configuration["privkey"], "rb") as priv_key_file:
+            key = load_pem_private_key(
+                data=priv_key_file.read(),
+                password=None,
+                backend=default_backend()
+            )
+        if isinstance(key, RSAPrivateKey):
+            return "RSA"
+        else:
+            return "ECDSA"
+
     def save_successor(self, prior_version, new_cert,
                        new_privkey, new_chain, cli_config):
         """Save new cert and chain as a successor of a prior version.
@@ -1100,7 +1122,7 @@ class RenewableCert(interfaces.RenewableCert):
             # The behavior below keeps the prior key by creating a new
             # symlink to the old key or the target of the old key symlink.
             if os.path.islink(old_privkey):
-                old_privkey = os.readlink(old_privkey)
+                old_privkey = filesystem.readlink(old_privkey)
             else:
                 old_privkey = "privkey{0}.pem".format(prior_version)
             logger.debug("Writing symlink to old private key, %s.", old_privkey)

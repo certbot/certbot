@@ -249,7 +249,7 @@ class NginxParser(object):
                     continue
                 out = nginxparser.dumps(tree)
                 logger.debug('Writing nginx conf tree to %s:\n%s', filename, out)
-                with open(filename, 'w') as _file:
+                with io.open(filename, 'w', encoding='utf-8') as _file:
                     _file.write(out)
 
             except IOError:
