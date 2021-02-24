@@ -1053,7 +1053,7 @@ class MainTest(test_util.ConfigTestCase):
                             mock_get_utility().notification.side_effect = write_msg
                         with mock.patch('certbot._internal.main.renewal.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
-                            mock_latest.get_issuer.return_value = "Fake fake"
+                            mock_latest.get_issuer.return_value = "Artificial pretend"
                             mock_ssl.crypto.load_certificate.return_value = mock_latest
                             with mock.patch('certbot._internal.main.renewal.crypto_util') \
                                 as mock_crypto_util:
