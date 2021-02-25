@@ -20,8 +20,6 @@ def _paths_parser(helpful):
     }
     if verb == "certonly":
         cpkwargs["default"] = flag_default("auth_cert_path")
-    elif verb == "revoke":
-        cpkwargs["required"] = False
     add(["paths", "install", "revoke", "certonly", "manage"], "--cert-path", **cpkwargs)
 
     section = "paths"
