@@ -526,7 +526,7 @@ class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
         self._write_out_ex_kinds()
         self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
                 'fullchain.pem')
-        self.config.cert_path = (self.fullchain, '')
+        self.config.cert_path = self.fullchain
 
     def _call(self, cli_config):
         from certbot._internal.cert_manager import cert_path_to_lineage
@@ -556,21 +556,21 @@ class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
         mock_acceptable_matches.return_value = [lambda x: x.cert_path]
         test_cert_path = os.path.join(self.config.config_dir, 'live', 'example.org',
                 'cert.pem')
-        self.config.cert_path = (test_cert_path, '')
+        self.config.cert_path = test_cert_path
         self.assertEqual('example.org', self._call(self.config))
 
     @mock.patch('certbot._internal.cert_manager._acceptable_matches')
     def test_options_archive_cert(self, mock_acceptable_matches):
         # Also this and the next test check that the regex of _archive_files is working.
-        self.config.cert_path = (os.path.join(self.config.config_dir, 'archive', 'example.org',
-            'cert11.pem'), '')
+        self.config.cert_path = os.path.join(self.config.config_dir, 'archive', 'example.org',
+            'cert11.pem')
         mock_acceptable_matches.return_value = [lambda x: self._archive_files(x, 'cert')]
         self.assertEqual('example.org', self._call(self.config))
 
     @mock.patch('certbot._internal.cert_manager._acceptable_matches')
     def test_options_archive_fullchain(self, mock_acceptable_matches):
-        self.config.cert_path = (os.path.join(self.config.config_dir, 'archive',
-            'example.org', 'fullchain11.pem'), '')
+        self.config.cert_path = os.path.join(self.config.config_dir, 'archive',
+            'example.org', 'fullchain11.pem')
         mock_acceptable_matches.return_value = [lambda x:
                 self._archive_files(x, 'fullchain')]
         self.assertEqual('example.org', self._call(self.config))
@@ -586,7 +586,7 @@ class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
         self._write_out_ex_kinds()
         self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
                 'fullchain.pem')
-        self.config.cert_path = (self.fullchain, '')
+        self.config.cert_path = self.fullchain
 
     def _call(self, cli_config, acceptable_matches, match_func, rv_func):
         from certbot._internal.cert_manager import match_and_check_overlaps
@@ -595,7 +595,7 @@ class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
     def test_basic_match(self):
         from certbot._internal.cert_manager import _acceptable_matches
         self.assertEqual(['example.org'], self._call(self.config, _acceptable_matches(),
-            lambda x: self.config.cert_path[0], lambda x: x.lineagename))
+            lambda x: self.config.cert_path, lambda x: x.lineagename))
 
     @mock.patch('certbot._internal.cert_manager._search_lineages')
     def test_no_matches(self, mock_search_lineages):

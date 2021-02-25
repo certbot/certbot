@@ -287,10 +287,7 @@ class RevokeTest(test_util.TempDirTestCase):
         super(RevokeTest, self).setUp()
 
         shutil.copy(CERT_PATH, self.tempdir)
-        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir,
-            'cert_512.pem'))
-        with open(self.tmp_cert_path, 'r') as f:
-            self.tmp_cert = (self.tmp_cert_path, f.read())
+        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir, 'cert_512.pem'))
 
         patches = [
             mock.patch('acme.client.BackwardsCompatibleClientV2'),
@@ -349,7 +346,7 @@ class RevokeTest(test_util.TempDirTestCase):
     def test_revoke_by_certname(self, mock_cert_path_for_cert_name,
             mock_delete_if_appropriate):
         args = 'revoke --cert-name=example.com'.split()
-        mock_cert_path_for_cert_name.return_value = self.tmp_cert
+        mock_cert_path_for_cert_name.return_value = self.tmp_cert_path
         mock_delete_if_appropriate.return_value = False
         self._call(args)
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)

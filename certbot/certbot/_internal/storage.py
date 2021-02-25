@@ -58,7 +58,7 @@ def renewal_file_for_certname(config, certname):
     return path
 
 
-def cert_path_for_cert_name(config, cert_name):
+def cert_path_for_cert_name(config: interfaces.IConfig, cert_name: str) -> str:
     """ If `--cert-name` was specified, but you need a value for `--cert-path`.
 
     :param `configuration.NamespaceConfig` config: parsed command line arguments
@@ -66,10 +66,7 @@ def cert_path_for_cert_name(config, cert_name):
 
     """
     cert_name_implied_conf = renewal_file_for_certname(config, cert_name)
-    fullchain_path = configobj.ConfigObj(cert_name_implied_conf)["fullchain"]
-    with open(fullchain_path) as f:
-        cert_path = (fullchain_path, f.read())
-    return cert_path
+    return configobj.ConfigObj(cert_name_implied_conf)["fullchain"]
 
 
 def config_with_defaults(config=None):
