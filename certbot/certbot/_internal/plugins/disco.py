@@ -1,5 +1,4 @@
 """Utilities for plugins discovery and selection."""
-import collections
 import itertools
 import logging
 import sys
@@ -209,7 +208,7 @@ class PluginsRegistry(Mapping):
         # This prevents deadlock caused by plugins acquiring a lock
         # and ensures at least one concurrent Certbot instance will run
         # successfully.
-        self._plugins = collections.OrderedDict(sorted(plugins.items()))
+        self._plugins = dict(sorted(plugins.items()))
 
     @classmethod
     def find_all(cls):
