@@ -486,8 +486,8 @@ its path directly::
 If the certificate being revoked was obtained via the ``--staging``, ``--test-cert`` or a non-default ``--server`` flag,
 that flag must be passed to the ``revoke`` subcommand.
 
-.. note:: By default, Certbot will **delete** the certificate after revoking it. Use ``--no-delete-after-revoke`` to prevent the
-          certificate from being deleted. Note that Certbot will try to renew revoked certificates if they are not deleted.
+.. note:: After revocation, Certbot will (by default) ask whether you want to **delete** the certificate.
+          Unless deleted, Certbot will try to renew revoked certificates the next time ``certbot renew`` runs.
 
 You can also specify the reason for revoking your certificate by using the ``reason`` flag.
 Reasons include ``unspecified`` which is the default, as well as ``keycompromise``,
