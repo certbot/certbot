@@ -54,7 +54,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         return _DigitalOceanClient(self.credentials.conf('token'))
 
 
-class _DigitalOceanClient(object):
+class _DigitalOceanClient:
     """
     Encapsulates all communication with the DigitalOcean API.
     """

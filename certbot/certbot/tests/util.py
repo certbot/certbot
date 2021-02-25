@@ -185,7 +185,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
     return mock.patch(target, new=freezable_mock)
 
 
-class FreezableMock(object):
+class FreezableMock:
     """Mock object with the ability to freeze attributes.
 
     This class works like a regular mock.MagicMock object, except

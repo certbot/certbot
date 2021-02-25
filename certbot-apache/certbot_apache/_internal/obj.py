@@ -95,7 +95,7 @@ class Addr(common.Addr):
         return self.get_addr_obj(port)
 
 
-class VirtualHost(object):
+class VirtualHost:
     """Represents an Apache Virtualhost.
 
     :ivar str filep: file path of VH

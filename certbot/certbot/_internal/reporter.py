@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @zope.interface.implementer(interfaces.IReporter)
-class Reporter(object):
+class Reporter:
     """Collects and displays information to the user.
 
     :ivar `queue.PriorityQueue` messages: Messages to be displayed to

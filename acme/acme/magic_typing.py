@@ -2,7 +2,7 @@
 import sys
 
 
-class TypingClass(object):
+class TypingClass:
     """Ignore import errors by getting anything"""
     def __getattr__(self, name):
         return None

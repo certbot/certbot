@@ -95,7 +95,7 @@ SECURITY_GROUP_NAME = 'certbot-security-group'
 SENTINEL = None #queue kill signal
 SUBNET_NAME = 'certbot-subnet'
 
-class Status(object):
+class Status:
     """Possible statuses of client tests."""
     PASS = 'pass'
     FAIL = 'fail'
