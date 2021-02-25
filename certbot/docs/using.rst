@@ -498,15 +498,11 @@ Reasons include ``unspecified`` which is the default, as well as ``keycompromise
 Revoking by account key or certificate private key
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default, Certbot will try revoke certificates using your ACME account key. The server may complain that you
-are not authorized to perform the revocation. In this case, you will first need to become authorized by requesting
-a certificate for all of the domains on the certificate you wish to revoke (include an extra domain you do not control
-to avoid creating an actual certificate)::
+By default, Certbot will try revoke the certificate using your ACME account key. If the certificate was created from
+the same ACME account, the revocation will be successful.
 
-  certbot certonly --manual --preferred-challenges dns -d example.com -d www.example.com -d nonexistent.example.org
-
-If you instead have the corresponding private key to the certificate you wish to revoke, you may use it to
-perform the revocation (recommended)::
+If you instead have the corresponding private key file to the certificate you wish to revoke, use ``--key-path`` to perform the
+revocation from any ACME account::
 
   certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem --key-path /etc/letsencrypt/live/example.com/privkey.pem
 
