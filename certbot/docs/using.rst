@@ -476,8 +476,6 @@ Revoking certificates
 
 If you need to revoke a certificate, use the ``revoke`` subcommand to do so.
 
-.. note:: Revoking a certificate will have no effect on the rate limit imposed by the Let's Encrypt server.
-
 A certificate may be revoked by providing its name (see ``certbot certificates``) or by providing
 its path directly::
 
