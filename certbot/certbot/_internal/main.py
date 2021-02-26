@@ -1072,8 +1072,7 @@ def certificates(config, unused_plugins):
     cert_manager.certificates(config)
 
 
-# TODO: coop with renewal config
-def revoke(config, unused_plugins):
+def revoke(config, unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
     """Revoke a previously obtained certificate.
 
     :param config: Configuration object
@@ -1090,7 +1089,12 @@ def revoke(config, unused_plugins):
     config.installer = config.authenticator = None
 
     if config.cert_path is None and config.certname:
-        config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
+        # When revoking via --cert-name, take the cert path and server from renewalparams
+        lineage = storage.RenewableCert(
+            storage.renewal_file_for_certname(config, config.certname), config)
+        config.cert_path = lineage.cert_path
+        if not cli.set_by_cli("server"): # --server should override the lineage server
+            config.server = lineage.server
     elif not config.cert_path or (config.cert_path and config.certname):
         # intentionally not supporting --cert-path & --cert-name together,
         # to avoid dealing with mismatched values

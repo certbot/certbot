@@ -21,6 +21,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   Python 2.
 * Certbot and all of its components no longer depend on the library `six`.
 * The update of certbot-auto itself is now disabled on all RHEL-like systems.
+* When revoking a certificate by `--cert-name`, it is no longer necessary to specify the `--server`
+  if the certificate was obtained from a non-default ACME server.
 
 ### Fixed
 
