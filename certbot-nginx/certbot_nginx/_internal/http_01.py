@@ -174,7 +174,7 @@ class NginxHttp01(common.ChallengePerformer):
 
 
     def _make_or_mod_server_block(self, achall: achallenges.KeyAuthorizationAnnotatedChallenge
-                                  ) -> Optional[list]:
+                                  ) -> Optional[List]:
         """Modifies server blocks to respond to a challenge. Returns a new HTTP server block
            to add to the configuration if an existing one can't be found.
 
