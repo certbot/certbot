@@ -11,4 +11,4 @@ from typing import Collection, IO  # type: ignore
 class TypingClass:
     """Ignore import errors by getting anything"""
     def __getattr__(self, name):
-        return None
+        return None  # pragma: no cover
