@@ -23,6 +23,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The update of certbot-auto itself is now disabled on all RHEL-like systems.
 * The nginx authenticator now configures all matching HTTP and HTTPS vhosts for the HTTP-01
   challenge. It is now compatible with external HTTPS redirection by a CDN or load balancer.
+* The DigitalOcean plugin now creates TXT records for the DNS-01 challenge with a lower 30s TTL.
 
 ### Fixed
 

@@ -51,6 +51,7 @@ jedi==0.17.1
 Jinja2==2.9.6
 jmespath==0.9.4
 josepy==1.1.0
+jsonpickle==2.0.0
 jsonschema==2.6.0
 lazy-object-proxy==1.4.3
 logger==1.4
@@ -93,7 +94,7 @@ pytest-xdist==1.22.5
 pytest-sugar==0.9.2
 pytest-rerunfailures==4.2
 python-dateutil==2.8.1
-python-digitalocean==1.11
+python-digitalocean==1.15.0
 python-dotenv==0.14.0
 pywin32==300
 PyYAML==5.3.1
