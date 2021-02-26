@@ -16,6 +16,7 @@ from acme import challenges
 from acme import crypto_util as acme_crypto_util
 from acme.magic_typing import Dict
 from acme.magic_typing import List
+from acme.magic_typing import Optional
 from acme.magic_typing import Set
 from acme.magic_typing import Text
 from acme.magic_typing import Tuple
@@ -107,7 +108,7 @@ class NginxConfigurator(common.Installer):
         self.save_notes = ""
 
         # For creating new vhosts if no names match
-        self.new_vhost: obj.VirtualHost = None
+        self.new_vhost: Optional[obj.VirtualHost] = None
 
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
@@ -118,7 +119,7 @@ class NginxConfigurator(common.Installer):
         self._chall_out = 0
 
         # These will be set in the prepare function
-        self.parser: parser.NginxParser = None
+        self.parser: Optional[parser.NginxParser] = None
         self.version = version
         self.openssl_version = openssl_version
         self._enhance_func = {"redirect": self._enable_redirect,
@@ -384,6 +385,8 @@ class NginxConfigurator(common.Installer):
         """if allow_port_mismatch is False, only server blocks with matching ports will be
            used as a default server block template.
         """
+        assert self.parser is not None # prepare should already have been called here
+
         if self.new_vhost is None:
             default_vhost = self._get_default_vhost(domain, allow_port_mismatch, port)
             self.new_vhost = self.parser.duplicate_vhost(default_vhost,
@@ -587,6 +590,8 @@ class NginxConfigurator(common.Installer):
         :rtype: bool
 
         """
+        assert self.parser is not None # prepare should already have been called here
+
         # if the 'ssl on' directive is present on the vhost, all its addresses have SSL enabled
         all_addrs_are_ssl = self.parser.has_ssl_on_directive(vhost)
 

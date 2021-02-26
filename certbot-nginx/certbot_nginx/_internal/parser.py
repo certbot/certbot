@@ -10,6 +10,7 @@ import pyparsing
 
 from acme.magic_typing import Dict
 from acme.magic_typing import List
+from acme.magic_typing import Optional
 from acme.magic_typing import Set
 from acme.magic_typing import Tuple
 from acme.magic_typing import Union
@@ -363,7 +364,7 @@ class NginxParser(object):
 
     def duplicate_vhost(self, vhost_template: obj.VirtualHost,
                         remove_singleton_listen_params: bool = False,
-                        only_directives: list = None) -> obj.VirtualHost:
+                        only_directives: Optional[List] = None) -> obj.VirtualHost:
         """Duplicate the vhost in the configuration files.
 
         :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost_template: The vhost

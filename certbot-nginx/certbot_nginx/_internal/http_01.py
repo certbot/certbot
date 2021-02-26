@@ -140,7 +140,7 @@ class NginxHttp01(common.ChallengePerformer):
     def _get_validation_path(self, achall):
         return os.sep + os.path.join(challenges.HTTP01.URI_ROOT_PATH, achall.chall.encode("token"))
 
-    def _make_server_block(self, achall: achallenges.KeyAuthorizationAnnotatedChallenge) -> list:
+    def _make_server_block(self, achall: achallenges.KeyAuthorizationAnnotatedChallenge) -> List:
         """Creates a server block for a challenge.
 
         :param achall: Annotated HTTP-01 challenge
