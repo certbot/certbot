@@ -16,7 +16,7 @@ from certbot_apache._internal import constants
 logger = logging.getLogger(__name__)
 
 
-class ApacheParser(object):
+class ApacheParser:
     """Class handles the fine details of parsing the Apache Configuration.
 
     .. todo:: Make parsing general... remove sites-available etc...

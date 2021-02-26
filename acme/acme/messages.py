@@ -1,5 +1,6 @@
 """ACME protocol messages."""
 import json
+from collections.abc import Hashable
 
 import josepy as jose
 
@@ -9,13 +10,6 @@ from acme import fields
 from acme import jws
 from acme import util
 from acme.mixins import ResourceMixin
-
-try:
-    from collections.abc import Hashable
-except ImportError:  # pragma: no cover
-    from collections import Hashable
-
-
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
@@ -156,9 +150,6 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
     def __hash__(self):
         return hash((self.__class__, self.name))
 
-    def __ne__(self, other):
-        return not self == other
-
 
 class Status(_Constant):
     """ACME "status" field."""
@@ -283,7 +274,7 @@ class ResourceBody(jose.JSONObjectWithFields):
     """ACME Resource Body."""
 
 
-class ExternalAccountBinding(object):
+class ExternalAccountBinding:
     """ACME External Account Binding"""
 
     @classmethod

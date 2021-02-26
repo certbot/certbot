@@ -22,7 +22,7 @@ from certbot_nginx._internal import obj
 logger = logging.getLogger(__name__)
 
 
-class NginxParser(object):
+class NginxParser:
     """Class handles the fine details of parsing the Nginx Configuration.
 
     :ivar str root: Normalized absolute path to the server root

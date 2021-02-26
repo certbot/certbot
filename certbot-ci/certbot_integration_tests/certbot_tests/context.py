@@ -7,7 +7,7 @@ import tempfile
 from certbot_integration_tests.utils import certbot_call
 
 
-class IntegrationTestsContext(object):
+class IntegrationTestsContext:
     """General fixture describing a certbot integration tests context"""
     def __init__(self, request):
         self.request = request

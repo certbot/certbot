@@ -1,8 +1,8 @@
 """Utilities for plugins discovery and selection."""
-import collections
 import itertools
 import logging
 import sys
+from collections.abc import Mapping
 
 import pkg_resources
 import zope.interface
@@ -13,12 +13,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os
-
-try:
-    # Python 3.3+
-    from collections.abc import Mapping
-except ImportError:  # pragma: no cover
-    from collections import Mapping
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +38,7 @@ PREFIX_FREE_DISTRIBUTIONS = [
 """Distributions for which prefix will be omitted."""
 
 
-class PluginEntryPoint(object):
+class PluginEntryPoint:
     """Plugin entry point."""
 
     # this object is mutable, don't allow it to be hashed!
@@ -214,7 +208,7 @@ class PluginsRegistry(Mapping):
         # This prevents deadlock caused by plugins acquiring a lock
         # and ensures at least one concurrent Certbot instance will run
         # successfully.
-        self._plugins = collections.OrderedDict(sorted(plugins.items()))
+        self._plugins = dict(sorted(plugins.items()))
 
     @classmethod
     def find_all(cls):

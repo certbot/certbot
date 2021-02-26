@@ -143,7 +143,7 @@ class Addr(common.Addr):
         return False
 
 
-class VirtualHost(object):
+class VirtualHost:
     """Represents an Nginx Virtualhost.
 
     :ivar str filep: file path of VH

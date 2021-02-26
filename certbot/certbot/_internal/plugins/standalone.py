@@ -28,7 +28,7 @@ if TYPE_CHECKING:
         Set[achallenges.KeyAuthorizationAnnotatedChallenge]
     ]
 
-class ServerManager(object):
+class ServerManager:
     """Standalone servers manager.
 
     Manager for `ACMEServer` and `ACMETLSServer` instances.
