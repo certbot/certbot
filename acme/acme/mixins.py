@@ -1,7 +1,7 @@
 """Useful mixins for Challenge and Resource objects"""
 
 
-class VersionedLEACMEMixin(object):
+class VersionedLEACMEMixin:
     """This mixin stores the version of Let's Encrypt's endpoint being used."""
     @property
     def le_acme_version(self):

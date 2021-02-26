@@ -4,9 +4,9 @@ import collections
 import datetime
 from email.utils import parsedate_tz
 import heapq
+import http.client as http_client
 import logging
 import re
-import sys
 import time
 
 import josepy as jose
@@ -15,8 +15,6 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
 from requests_toolbelt.adapters.source import SourceAddressAdapter
-import six
-from six.moves import http_client
 
 from acme import crypto_util
 from acme import errors
@@ -30,23 +28,12 @@ from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
 
-# Prior to Python 2.7.9 the stdlib SSL module did not allow a user to configure
-# many important security related options. On these platforms we use PyOpenSSL
-# for SSL, which does allow these options to be configured.
-# https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
-if sys.version_info < (2, 7, 9):  # pragma: no cover
-    try:
-        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
-    except AttributeError:
-        import urllib3.contrib.pyopenssl
-        urllib3.contrib.pyopenssl.inject_into_urllib3()
-
 DEFAULT_NETWORK_TIMEOUT = 45
 
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
 
-class ClientBase(object):
+class ClientBase:
     """ACME client base object.
 
     :ivar messages.Directory directory:
@@ -260,7 +247,7 @@ class Client(ClientBase):
         if net is None:
             net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl)
 
-        if isinstance(directory, six.string_types):
+        if isinstance(directory, str):
             directory = messages.Directory.from_json(
                 net.get(directory).json())
         super(Client, self).__init__(directory=directory,
@@ -475,7 +462,7 @@ class Client(ClientBase):
                     exhausted.add(authzr)
 
         if exhausted or any(authzr.body.status == messages.STATUS_INVALID
-                            for authzr in six.itervalues(updated)):
+                            for authzr in updated.values()):
             raise errors.PollError(exhausted, updated)
 
         updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
@@ -808,7 +795,7 @@ class ClientV2(ClientBase):
                 if 'rel' in l and 'url' in l and l['rel'] == relation_type]
 
 
-class BackwardsCompatibleClientV2(object):
+class BackwardsCompatibleClientV2:
     """ACME client wrapper that tends towards V2-style calls, but
     supports V1 servers.
 
@@ -951,7 +938,7 @@ class BackwardsCompatibleClientV2(object):
         return self.client.external_account_required()
 
 
-class ClientNetwork(object):
+class ClientNetwork:
     """Wrapper around requests that signs POSTs for authentication.
 
     Also adds user agent, and handles Content-Type.

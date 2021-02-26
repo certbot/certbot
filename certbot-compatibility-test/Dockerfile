@@ -8,11 +8,11 @@ RUN apt-get update && \
 WORKDIR /opt/certbot/src
 
 # We copy all contents of the build directory to allow us to easily use
-# things like tools/venv3.py which expects all of our packages to be available.
+# things like tools/venv.py which expects all of our packages to be available.
 COPY . .
 
-RUN tools/venv3.py
-ENV PATH /opt/certbot/src/venv3/bin:$PATH
+RUN tools/venv.py
+ENV PATH /opt/certbot/src/venv/bin:$PATH
 
 # install in editable mode (-e) to save space: it's not possible to
 # "rm -rf /opt/certbot/src" (it's stays in the underlaying image);

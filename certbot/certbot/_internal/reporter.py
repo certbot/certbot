@@ -3,10 +3,10 @@ from __future__ import print_function
 
 import collections
 import logging
+import queue
 import sys
 import textwrap
 
-from six.moves import queue  # type: ignore
 import zope.interface
 
 from certbot import interfaces
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @zope.interface.implementer(interfaces.IReporter)
-class Reporter(object):
+class Reporter:
     """Collects and displays information to the user.
 
     :ivar `queue.PriorityQueue` messages: Messages to be displayed to

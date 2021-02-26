@@ -9,9 +9,9 @@ LE_AUTO="$REPO_ROOT/letsencrypt-auto-source/letsencrypt-auto"
 LE_AUTO="$LE_AUTO --debug --no-self-upgrade --non-interactive"
 MODULES="acme certbot certbot-apache certbot-nginx"
 PIP_INSTALL="tools/pip_install.py"
-VENV_NAME=venv3
+VENV_NAME=venv
 BOOTSTRAP_SCRIPT="$REPO_ROOT/tests/letstest/scripts/bootstrap_os_packages.sh"
-VENV_SCRIPT="tools/venv3.py"
+VENV_SCRIPT="tools/venv.py"
 
 sudo $BOOTSTRAP_SCRIPT
 

@@ -9,7 +9,6 @@ import stat
 import configobj
 import parsedatetime
 import pytz
-import six
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
@@ -59,7 +58,7 @@ def renewal_file_for_certname(config, certname):
     return path
 
 
-def cert_path_for_cert_name(config, cert_name):
+def cert_path_for_cert_name(config: interfaces.IConfig, cert_name: str) -> str:
     """ If `--cert-name` was specified, but you need a value for `--cert-path`.
 
     :param `configuration.NamespaceConfig` config: parsed command line arguments
@@ -67,10 +66,7 @@ def cert_path_for_cert_name(config, cert_name):
 
     """
     cert_name_implied_conf = renewal_file_for_certname(config, cert_name)
-    fullchain_path = configobj.ConfigObj(cert_name_implied_conf)["fullchain"]
-    with open(fullchain_path) as f:
-        cert_path = (fullchain_path, f.read())
-    return cert_path
+    return configobj.ConfigObj(cert_name_implied_conf)["fullchain"]
 
 
 def config_with_defaults(config=None):
@@ -275,7 +271,7 @@ def relevant_values(all_values):
 
     rv = dict(
         (option, value)
-        for option, value in six.iteritems(all_values)
+        for option, value in all_values.items()
         if _relevant(namespaces, option) and cli.option_was_set(option, value))
     # We always save the server value to help with forward compatibility
     # and behavioral consistency when versions of Certbot with different

@@ -33,7 +33,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
         mock_open.side_effect = IOError
         self.plugin.storage.storagepath = os.path.join(self.config.config_dir,
                                                        ".pluginstorage.json")
-        with mock.patch("six.moves.builtins.open", mock_open):
+        with mock.patch("builtins.open", mock_open):
             with mock.patch('certbot.compat.os.path.isfile', return_value=True):
                 with mock.patch("certbot.reverter.util"):
                     self.assertRaises(errors.PluginStorageError,

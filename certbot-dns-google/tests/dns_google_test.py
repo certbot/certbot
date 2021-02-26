@@ -401,7 +401,7 @@ class GoogleClientTest(unittest.TestCase):
             self.assertRaises(ServerNotFoundError, _GoogleClient.get_project_id)
 
 
-class DummyResponse(object):
+class DummyResponse:
     """
     Dummy object to create a fake HTTPResponse (the actual one requires a socket and we only
      need the status attribute)

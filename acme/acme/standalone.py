@@ -1,13 +1,12 @@
 """Support for standalone client challenge solvers. """
 import collections
 import functools
+import http.client as http_client
+import http.server as BaseHTTPServer
 import logging
 import socket
+import socketserver
 import threading
-
-from six.moves import BaseHTTPServer  # type: ignore
-from six.moves import http_client
-from six.moves import socketserver  # type: ignore
 
 from acme import challenges
 from acme import crypto_util
@@ -54,7 +53,7 @@ class ACMEServerMixin:
     allow_reuse_address = True
 
 
-class BaseDualNetworkedServers(object):
+class BaseDualNetworkedServers:
     """Base class for a pair of IPv6 and IPv4 servers that tries to do everything
        it's asked for both servers, but where failures in one server don't
        affect the other.

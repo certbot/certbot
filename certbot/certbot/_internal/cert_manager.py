@@ -221,14 +221,9 @@ def cert_path_to_lineage(cli_config):
     :raises `errors.Error`: If the specified cert path can't be matched to a lineage name.
     :raises `errors.OverlappingMatchFound`: If the matched lineage's archive is shared.
     """
-    # cli_config.cert_path might be a (path, contents) tuple or just a path.
-    cert_path = cli_config.cert_path[0] \
-                if isinstance(cli_config.cert_path, tuple) \
-                else cli_config.cert_path
-
     acceptable_matches = _acceptable_matches()
     match = match_and_check_overlaps(cli_config, acceptable_matches,
-            lambda x: cert_path, lambda x: x.lineagename)
+            lambda x: cli_config.cert_path, lambda x: x.lineagename)
     return match[0]
 
 
@@ -259,7 +254,7 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
 
     matched = _search_lineages(cli_config, find_matches, [], acceptable_matches)
     if not matched:
-        raise errors.Error("No matching certificates found")
+        raise errors.Error("No match found for cert-path {0}!".format(cli_config.cert_path))
     elif len(matched) > 1:
         raise errors.OverlappingMatchFound()
     return matched

@@ -233,7 +233,7 @@ class DNSAuthenticator(common.Plugin):
         raise errors.PluginError('{0} required to proceed.'.format(label))
 
 
-class CredentialsConfiguration(object):
+class CredentialsConfiguration:
     """Represents a user-supplied filed which stores API credentials."""
 
     def __init__(self, filename, mapper=lambda x: x):

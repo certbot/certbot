@@ -92,7 +92,7 @@ def ua_flags(config):
         flags.append("hook")
     return " ".join(flags)
 
-class DummyConfig(object):
+class DummyConfig:
     "Shim for computing a sample user agent."
     def __init__(self):
         self.authenticator = "XXX"
@@ -226,7 +226,7 @@ def perform_registration(acme, config, tos_cb):
         raise
 
 
-class Client(object):
+class Client:
     """Certbot's client.
 
     :ivar .IConfig config: Client configuration.
