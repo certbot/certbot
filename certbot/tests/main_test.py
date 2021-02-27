@@ -370,6 +370,20 @@ class RevokeTest(test_util.TempDirTestCase):
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
+    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
+    def test_revoke_by_certname_empty_server(self, unused_mock_renewal_file_for_certname,
+                                             mock_cert, mock_delete_if_appropriate):
+        """Revoking with --cert-name where the lineage server is empty shouldn't crash """
+        mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path, server=None)
+        args = 'revoke --cert-name=example.com'.split()
+        mock_delete_if_appropriate.return_value = False
+        self._call(args)
+        self.mock_acme_client.assert_called_once_with(
+            mock.ANY, mock.ANY, constants.CLI_DEFAULTS['server'])
+        self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
+
+    @mock.patch('certbot._internal.main._delete_if_appropriate')
     def test_revocation_success(self, mock_delete_if_appropriate):
         self._call()
         mock_delete_if_appropriate.return_value = False

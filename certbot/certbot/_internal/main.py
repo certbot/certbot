@@ -1093,7 +1093,8 @@ def revoke(config, unused_plugins: plugins_disco.PluginsRegistry) -> Optional[st
         lineage = storage.RenewableCert(
             storage.renewal_file_for_certname(config, config.certname), config)
         config.cert_path = lineage.cert_path
-        if not cli.set_by_cli("server"): # --server should override the lineage server
+        # --server takes priority over lineage.server
+        if lineage.server and not cli.set_by_cli("server"):
             config.server = lineage.server
     elif not config.cert_path or (config.cert_path and config.certname):
         # intentionally not supporting --cert-path & --cert-name together,
