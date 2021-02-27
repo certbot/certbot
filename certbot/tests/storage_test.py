@@ -767,6 +767,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_server(self):
         self.test_rc.configuration["renewalparams"] = {}
+        self.assertEqual(self.test_rc.server, None)
         rp = self.test_rc.configuration["renewalparams"]
         rp["server"] = "https://acme.example/dir"
         self.assertEqual(self.test_rc.server, "https://acme.example/dir")

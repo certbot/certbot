@@ -6,6 +6,7 @@ import re
 import shutil
 import stat
 
+from typing import Optional
 import configobj
 import parsedatetime
 import pytz
@@ -518,7 +519,7 @@ class RenewableCert(interfaces.RenewableCert):
         return _relpath_from_file(self.archive_dir, from_file)
 
     @property
-    def server(self) -> str:
+    def server(self) -> Optional[str]:
         """Returns the ACME server associated with this certificate"""
         return self.configuration["renewalparams"].get("server", None)
 
