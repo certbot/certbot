@@ -317,6 +317,7 @@ class RevokeTest(test_util.TempDirTestCase):
         if not args:
             args = 'revoke --cert-path={0} '
             args = args.format(self.tmp_cert_path).split()
+        cli.set_by_cli.detector = None # required to reset set_by_cli state
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
@@ -342,13 +343,44 @@ class RevokeTest(test_util.TempDirTestCase):
         self.assertEqual(expected, mock_revoke.call_args_list)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
-    @mock.patch('certbot._internal.storage.cert_path_for_cert_name')
-    def test_revoke_by_certname(self, mock_cert_path_for_cert_name,
-            mock_delete_if_appropriate):
+    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
+    def test_revoke_by_certname(self, unused_mock_renewal_file_for_certname,
+                                mock_cert, mock_delete_if_appropriate):
+        mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
+                                                server="https://acme.example")
         args = 'revoke --cert-name=example.com'.split()
-        mock_cert_path_for_cert_name.return_value = self.tmp_cert_path
         mock_delete_if_appropriate.return_value = False
         self._call(args)
+        self.mock_acme_client.assert_called_once_with(mock.ANY, mock.ANY, 'https://acme.example')
+        self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
+
+    @mock.patch('certbot._internal.main._delete_if_appropriate')
+    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
+    def test_revoke_by_certname_and_server(self, unused_mock_renewal_file_for_certname,
+                                           mock_cert, mock_delete_if_appropriate):
+        """Revoking with --server should use the server from the CLI"""
+        mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
+                                                server="https://acme.example")
+        args = 'revoke --cert-name=example.com --server https://other.example'.split()
+        mock_delete_if_appropriate.return_value = False
+        self._call(args)
+        self.mock_acme_client.assert_called_once_with(mock.ANY, mock.ANY, 'https://other.example')
+        self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
+
+    @mock.patch('certbot._internal.main._delete_if_appropriate')
+    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
+    def test_revoke_by_certname_empty_server(self, unused_mock_renewal_file_for_certname,
+                                             mock_cert, mock_delete_if_appropriate):
+        """Revoking with --cert-name where the lineage server is empty shouldn't crash """
+        mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path, server=None)
+        args = 'revoke --cert-name=example.com'.split()
+        mock_delete_if_appropriate.return_value = False
+        self._call(args)
+        self.mock_acme_client.assert_called_once_with(
+            mock.ANY, mock.ANY, constants.CLI_DEFAULTS['server'])
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
