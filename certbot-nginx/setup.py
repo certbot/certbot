@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.13.0.dev0'
+version = '1.13.0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
