@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 """Module to call certbot in test mode"""
-from __future__ import absolute_import
 
 import os
 import subprocess

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
-from __future__ import print_function
 
 import argparse
 import errno

@@ -1,8 +1,6 @@
 # coding=utf-8
 """Tests for certbot._internal.main."""
 # pylint: disable=too-many-lines
-from __future__ import print_function
-
 import datetime
 from importlib import reload as reload_module
 import io
@@ -1353,7 +1351,7 @@ class MainTest(test_util.ConfigTestCase):
         _, _, stdout = self._test_renewal_common(
             due_for_renewal=False, extra_args=None, should_renew=False,
             args=['renew', '--post-hook',
-                  '{0} -c "from __future__ import print_function; print(\'hello world\');"'
+                  '{0} -c "print(\'hello world\');"'
                   .format(sys.executable)])
         self.assertTrue('No hooks were run.' in stdout.getvalue())
 
