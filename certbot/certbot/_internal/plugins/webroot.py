@@ -64,9 +64,9 @@ to serve all files under specified web root ({0})."""
 
     def auth_hint(self, failed_achalls): # pragma: no cover
         return ("The Certificate Authority failed to download the temporary challenge files "
-                "created by the --webroot plugin. Ensure that the above domains serve their "
-                "content from the provided --webroot-path/-w and that files created there "
-                "can be downloaded from the internet.")
+                "created by Certbot. Ensure that the listed domains serve their content from "
+                "the provided --webroot-path/-w and that files created there can be downloaded "
+                "from the internet.")
 
     def get_chall_pref(self, domain):  # pragma: no cover
         # pylint: disable=unused-argument,missing-function-docstring

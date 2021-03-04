@@ -2472,8 +2472,8 @@ class ApacheConfigurator(common.Installer):
 
     def auth_hint(self, failed_achalls): # pragma: no cover
         return ("The Certificate Authority failed to verify the temporary Apache configuration "
-                "changes made by the --apache plugin. Ensure that the above domains point to "
-                "this Apache server and that it is accessible from the internet.")
+                "changes made by Certbot. Ensure that the listed domains point to this Apache "
+                "server and that it is accessible from the internet.")
 
     ###########################################################################
     # Challenges Section

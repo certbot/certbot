@@ -129,13 +129,13 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             'The Certificate Authority failed to verify the DNS TXT records and challenge '
             'files created by the --manual-auth-hook. Ensure that this hook is functioning '
             'correctly and that it waits a sufficient duration of time for DNS propagation. '
-            'Refer to "certbot --help manual".'
+            'Refer to "certbot --help manual" and the Certbot User Guide.'
         )
         self.assertEqual(
             self.auth.auth_hint([acme_util.HTTP01_A]),
             'The Certificate Authority failed to verify the challenge files created by the '
             '--manual-auth-hook. Ensure that this hook is functioning correctly. Refer to '
-            '"certbot --help manual".'
+            '"certbot --help manual" and the Certbot User Guide.'
         )
 
     def test_auth_hint_no_hook(self):

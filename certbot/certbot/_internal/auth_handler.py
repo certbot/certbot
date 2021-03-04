@@ -277,8 +277,8 @@ class AuthHandler(object):
         for achall in failed_achalls:
             problems.setdefault(achall.error.typ, []).append(achall)
 
-        msg = ["\nCertbot failed to authenticate some domains (using the {} plugin)."
-            " The Certificate Authority reported these problems:".format(self.auth.name)]
+        msg = [f"\nCertbot failed to authenticate some domains (authenticator: {self.auth.name})."
+            " The Certificate Authority reported these problems:"]
 
         for _, achalls in sorted(problems.items(), key=lambda item: item[0]):
             msg.append(_generate_failed_chall_msg(achalls))
@@ -286,7 +286,7 @@ class AuthHandler(object):
         # auth_hint will only be called on authenticators that subclass
         # plugin_common.Plugin. Refer to comment on that function.
         if failed_achalls and isinstance(self.auth, plugin_common.Plugin):
-            msg.append('\nHint: {}\n'.format(self.auth.auth_hint(failed_achalls)))
+            msg.append(f"\nHint: {self.auth.auth_hint(failed_achalls)}\n")
 
         display_util.notify("".join(msg))
 

@@ -1032,8 +1032,8 @@ class NginxConfigurator(common.Installer):
     def auth_hint(self, failed_achalls): # pragma: no cover
         return (
             "The Certificate Authority failed to verify the temporary nginx configuration changes "
-            "made by the --nginx plugin. Ensure the above domains point to this nginx server and "
-            "that it is accessible from the internet, or try increasing --nginx-sleep-seconds."
+            "made by Certbot. Ensure the listed domains point to this nginx server and that it is "
+            "accessible from the internet."
         )
 
     ###################################################

@@ -519,7 +519,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         self.handler._report_failed_authzrs([self.authzr1])
         mock_notify.assert_called_with(
             '\n'
-            'Certbot failed to authenticate some domains (using the buzz plugin). '
+            'Certbot failed to authenticate some domains (authenticator: buzz). '
             'The Certificate Authority reported these problems:\n'
             '  Domain: example.com\n'
             '  Type:   tls\n'
@@ -538,7 +538,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         self.handler._report_failed_authzrs([self.authzr1, self.authzr2])
         mock_notify.assert_called_with(
             '\n'
-            'Certbot failed to authenticate some domains (using the quux plugin). '
+            'Certbot failed to authenticate some domains (authenticator: quux). '
             'The Certificate Authority reported these problems:\n'
             '  Domain: foo.bar\n'
             '  Type:   dnssec\n'

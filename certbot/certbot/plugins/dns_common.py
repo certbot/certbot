@@ -40,9 +40,9 @@ class DNSAuthenticator(common.Plugin):
     def auth_hint(self, failed_achalls):
         delay = self.conf('propagation-seconds')
         return (
-            'The Certificate Authority failed to verify the DNS TXT records created by the '
-            '{name} plugin. Ensure the above domains are hosted by this DNS provider, '
-            'or try increasing --{name}-propagation-seconds (currently {secs} second{suffix}).'
+            'The Certificate Authority failed to verify the DNS TXT records created by --{name}. '
+            'Ensure the above domains are hosted by this DNS provider, or try increasing '
+            '--{name}-propagation-seconds (currently {secs} second{suffix}).'
             .format(name=self.name, secs=delay, suffix='s' if delay != 1 else '')
         )
 

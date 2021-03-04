@@ -124,7 +124,7 @@ permitted by DNS standards.)
             return (
                 'The Certificate Authority failed to verify the {resources} created by the '
                 '--manual-auth-hook. Ensure that this hook is functioning correctly{dns_hint}. '
-                'Refer to "{certbot} --help manual".'
+                'Refer to "{certbot} --help manual" and the Certbot User Guide.'
                 .format(
                     certbot=cli_constants.cli_command,
                     resources=resources,
