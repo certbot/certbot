@@ -535,7 +535,7 @@ class Client:
 
         display_util.notify("\nDeploying certificate")
 
-        msg = f"Failed to install the certificate (using the {self.config.installer} plugin)."
+        msg = f"Failed to install the certificate (installer: {self.config.installer})."
         if cert_name:
             msg += (" Try again by running:\n\n"
                     f"  {cli.cli_constants.cli_command} install --cert-name {cert_name}\n")
