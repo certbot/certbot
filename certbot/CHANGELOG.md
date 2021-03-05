@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* certbot-auto no longer checks for updates on any operating system.
 
 ### Fixed
 
