@@ -322,6 +322,7 @@ DeterminePythonVersion() {
 # packages BOOTSTRAP_VERSION is not set.
 if [ -f /etc/debian_version ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/mageia-release ]; then
   # Mageia has both /etc/mageia-release and /etc/redhat-release
   DEPRECATED_OS=1
