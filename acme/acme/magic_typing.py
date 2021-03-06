@@ -2,7 +2,7 @@
 import sys
 import warnings
 
-warnings.warn("Module acme.magic_typing is deprecated and will be removed in a future release.",
+warnings.warn("acme.magic_typing is deprecated and will be removed in a future release.",
               DeprecationWarning)
 
 
