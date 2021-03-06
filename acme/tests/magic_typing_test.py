@@ -17,7 +17,7 @@ class MagicTypingTest(unittest.TestCase):
         sys.modules['typing'] = typing_class_mock
         if 'acme.magic_typing' in sys.modules:
             del sys.modules['acme.magic_typing'] # pragma: no cover
-        from typing import Text
+        from acme.magic_typing import Text
         self.assertEqual(Text, text_mock)
         del sys.modules['acme.magic_typing']
         sys.modules['typing'] = temp_typing
