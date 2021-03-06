@@ -10,7 +10,7 @@ import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
-from acme.magic_typing import Union, Iterable, Optional, List, Tuple  # pylint: disable=unused-import
+from typing import Union, Iterable, Optional, List, Tuple  # pylint: disable=unused-import
 import certbot
 from certbot import crypto_util
 from certbot import errors

@@ -4,11 +4,11 @@ import logging
 import signal
 import traceback
 
-from acme.magic_typing import Any
-from acme.magic_typing import Callable
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Union
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Union
 from certbot import errors
 from certbot.compat import os
 

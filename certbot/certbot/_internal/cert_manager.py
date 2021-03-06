@@ -7,7 +7,7 @@ import traceback
 import pytz
 import zope.component
 
-from acme.magic_typing import List
+from typing import List
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces

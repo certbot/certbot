@@ -5,7 +5,7 @@ import abc
 import logging
 
 
-from acme.magic_typing import List
+from typing import List
 from certbot import errors
 
 logger = logging.getLogger(__name__)

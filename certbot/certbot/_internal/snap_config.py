@@ -7,7 +7,7 @@ from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
-from acme.magic_typing import List
+from typing import List
 from certbot.compat import os
 from certbot.errors import Error
 

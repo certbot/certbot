@@ -12,7 +12,7 @@ import zope.interface
 
 from zope.interface import interfaces as zope_interfaces
 
-from acme.magic_typing import Any, Dict
+from typing import Any, Dict
 
 from certbot import crypto_util
 from certbot import errors

@@ -483,7 +483,7 @@ Note that instead of just importing ``typing``, due to packaging issues, in Cert
 
 .. code-block:: python
 
-  from acme.magic_typing import Dict
+  from typing import Dict
 
 Also note that OpenSSL, which we rely on, has type definitions for crypto but not SSL. We use both.
 Those imports should look like this:

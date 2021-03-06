@@ -16,8 +16,8 @@ from cryptography.hazmat.primitives import serialization
 import pytz
 import requests
 
-from acme.magic_typing import Optional
-from acme.magic_typing import Tuple
+from typing import Optional
+from typing import Tuple
 from certbot import crypto_util
 from certbot import errors
 from certbot import util

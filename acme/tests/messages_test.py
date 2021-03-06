@@ -5,7 +5,7 @@ from unittest import mock
 import josepy as jose
 
 from acme import challenges
-from acme.magic_typing import Dict
+from typing import Dict
 import test_util
 
 CERT = test_util.load_comparable_cert('cert.der')

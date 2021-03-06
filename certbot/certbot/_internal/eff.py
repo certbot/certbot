@@ -4,7 +4,7 @@ import logging
 import requests
 import zope.component
 
-from acme.magic_typing import Optional  # pylint: disable=unused-import
+from typing import Optional  # pylint: disable=unused-import
 
 from certbot import interfaces
 from certbot.display import util as display_util

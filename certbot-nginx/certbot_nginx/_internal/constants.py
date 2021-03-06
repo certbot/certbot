@@ -1,8 +1,8 @@
 """nginx plugin constants."""
 import platform
 
-from acme.magic_typing import Any
-from acme.magic_typing import Dict
+from typing import Any
+from typing import Dict
 
 FREEBSD_DARWIN_SERVER_ROOT = "/usr/local/etc/nginx"
 LINUX_SERVER_ROOT = "/etc/nginx"

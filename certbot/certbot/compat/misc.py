@@ -12,7 +12,7 @@ import sys
 from certbot import errors
 from certbot.compat import os
 
-from acme.magic_typing import Tuple, Optional
+from typing import Tuple, Optional
 
 try:
     from win32com.shell import shell as shellwin32
