@@ -3,11 +3,11 @@ import datetime
 import logging
 import re
 import traceback
+from typing import List
 
 import pytz
 import zope.component
 
-from typing import List
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces

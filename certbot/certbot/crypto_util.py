@@ -6,26 +6,29 @@
 """
 import hashlib
 import logging
+import re
+from typing import IO
 import warnings
 
-import re
 # See https://github.com/pyca/cryptography/issues/4275
 from cryptography import x509  # type: ignore
-from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
+from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.asymmetric.ec import ECDSA, EllipticCurvePublicKey
+from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat
+from cryptography.hazmat.primitives.serialization import Encoding
+from cryptography.hazmat.primitives.serialization import NoEncryption
+from cryptography.hazmat.primitives.serialization import PrivateFormat
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore
-
 import pyrfc3339
 import zope.component
 
 from acme import crypto_util as acme_crypto_util
-from typing import IO  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot import util

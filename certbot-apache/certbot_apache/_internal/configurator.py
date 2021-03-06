@@ -1,28 +1,23 @@
 """Apache Configurator."""
 # pylint: disable=too-many-lines
 from collections import defaultdict
-from distutils.version import LooseVersion
 import copy
+from distutils.version import LooseVersion
 import fnmatch
 import logging
 import re
 import socket
 import time
-
-import zope.component
-import zope.interface
-try:
-    import apacheconfig
-    HAS_APACHECONFIG = True
-except ImportError:  # pragma: no cover
-    HAS_APACHECONFIG = False
-
-from acme import challenges
 from typing import DefaultDict
 from typing import Dict
 from typing import List
 from typing import Set
 from typing import Union
+
+import zope.component
+import zope.interface
+
+from acme import challenges
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -40,6 +35,13 @@ from certbot_apache._internal import dualparser
 from certbot_apache._internal import http_01
 from certbot_apache._internal import obj
 from certbot_apache._internal import parser
+
+try:
+    import apacheconfig
+    HAS_APACHECONFIG = True
+except ImportError:  # pragma: no cover
+    HAS_APACHECONFIG = False
+
 
 logger = logging.getLogger(__name__)
 

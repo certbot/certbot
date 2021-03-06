@@ -1,9 +1,9 @@
 """Plugin storage class."""
 import json
 import logging
-
 from typing import Any
 from typing import Dict
+
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os

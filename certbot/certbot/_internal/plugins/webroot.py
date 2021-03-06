@@ -3,19 +3,19 @@ import argparse
 import collections
 import json
 import logging
+from typing import DefaultDict
+from typing import Dict
+from typing import List
+from typing import Set
 
 import zope.component
 import zope.interface
 
 from acme import challenges
-from typing import DefaultDict
-from typing import Dict
-from typing import List
-from typing import Set
-from certbot.achallenges import KeyAuthorizationAnnotatedChallenge as AnnotatedChallenge
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import cli
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge as AnnotatedChallenge
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import ops

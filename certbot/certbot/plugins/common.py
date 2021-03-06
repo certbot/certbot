@@ -3,13 +3,13 @@ import logging
 import re
 import shutil
 import tempfile
+from typing import List
 
 from josepy import util as jose_util
 import pkg_resources
 import zope.interface
 
-from typing import List
-from certbot import achallenges  # pylint: disable=unused-import
+from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces

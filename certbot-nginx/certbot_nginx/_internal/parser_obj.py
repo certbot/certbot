@@ -3,9 +3,8 @@ raw lists of tokens from pyparsing. """
 
 import abc
 import logging
-
-
 from typing import List
+
 from certbot import errors
 
 logger = logging.getLogger(__name__)

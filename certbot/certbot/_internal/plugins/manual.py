@@ -1,10 +1,11 @@
 """Manual authenticator plugin"""
+from typing import Dict
+
 import zope.component
 import zope.interface
 
 from acme import challenges
-from typing import Dict
-from certbot import achallenges  # pylint: disable=unused-import
+from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter

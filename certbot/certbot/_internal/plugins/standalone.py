@@ -4,17 +4,17 @@ import logging
 import socket
 # https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 from socket import errno as socket_errors  # type: ignore
-
-import OpenSSL  # pylint: disable=unused-import
-import zope.interface
-
-from acme import challenges
-from acme import standalone as acme_standalone
 from typing import DefaultDict
 from typing import Dict
 from typing import Set
 from typing import Tuple
 from typing import TYPE_CHECKING
+
+import OpenSSL
+import zope.interface
+
+from acme import challenges
+from acme import standalone as acme_standalone
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces

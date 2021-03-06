@@ -1,11 +1,11 @@
 """Tests for acme.messages."""
+from typing import Dict
 import unittest
 from unittest import mock
 
 import josepy as jose
 
 from acme import challenges
-from typing import Dict
 import test_util
 
 CERT = test_util.load_comparable_cert('cert.der')

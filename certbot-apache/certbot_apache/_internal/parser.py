@@ -3,9 +3,9 @@ import copy
 import fnmatch
 import logging
 import re
-
 from typing import Dict
 from typing import List
+
 from certbot import errors
 from certbot.compat import os
 from certbot_apache._internal import apache_util

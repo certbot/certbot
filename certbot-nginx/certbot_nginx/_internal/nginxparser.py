@@ -2,6 +2,8 @@
 # Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
 import copy
 import logging
+from typing import Any
+from typing import IO
 
 from pyparsing import Combine
 from pyparsing import Forward
@@ -15,9 +17,9 @@ from pyparsing import restOfLine
 from pyparsing import stringEnd
 from pyparsing import White
 from pyparsing import ZeroOrMore
-from typing import IO, Any # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
+
 
 class RawNginxParser:
     # pylint: disable=pointless-statement

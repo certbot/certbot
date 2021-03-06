@@ -7,10 +7,10 @@ import logging
 import socket
 import socketserver
 import threading
+from typing import List
 
 from acme import challenges
 from acme import crypto_util
-from typing import List
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,5 @@
 """nginx plugin constants."""
 import platform
-
 from typing import Any
 from typing import Dict
 
