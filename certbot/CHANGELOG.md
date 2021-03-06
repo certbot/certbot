@@ -11,6 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * certbot-auto no longer checks for updates on any operating system.
+* The DigitalOcean plugin now creates TXT records for the DNS-01 challenge with a lower 30s TTL.
 
 ### Fixed
 
@@ -41,7 +42,6 @@ More details about these changes can be found on our GitHub repo.
   if the certificate was obtained from a non-default ACME server.
 * The nginx authenticator now configures all matching HTTP and HTTPS vhosts for the HTTP-01
   challenge. It is now compatible with external HTTPS redirection by a CDN or load balancer.
-* The DigitalOcean plugin now creates TXT records for the DNS-01 challenge with a lower 30s TTL.
 
 ### Fixed
 
