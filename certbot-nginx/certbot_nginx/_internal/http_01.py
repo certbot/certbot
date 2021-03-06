@@ -6,6 +6,7 @@ from typing import List
 from typing import Optional
 
 from acme import challenges
+from certbot import achallenges
 from certbot import errors
 from certbot.compat import os
 from certbot.plugins import common
