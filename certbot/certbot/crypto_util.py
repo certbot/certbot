@@ -7,7 +7,6 @@
 import hashlib
 import logging
 import re
-from typing import IO
 import warnings
 
 # See https://github.com/pyca/cryptography/issues/4275
@@ -272,9 +271,9 @@ def verify_renewable_cert_sig(renewable_cert):
     :raises errors.Error: If signature verification fails.
     """
     try:
-        with open(renewable_cert.chain_path, 'rb') as chain_file:  # type: IO[bytes]
+        with open(renewable_cert.chain_path, 'rb') as chain_file:
             chain = x509.load_pem_x509_certificate(chain_file.read(), default_backend())
-        with open(renewable_cert.cert_path, 'rb') as cert_file:  # type: IO[bytes]
+        with open(renewable_cert.cert_path, 'rb') as cert_file:
             cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
         pk = chain.public_key()
         with warnings.catch_warnings():
@@ -349,11 +348,11 @@ def verify_fullchain(renewable_cert):
     :raises errors.Error: If cert and chain do not combine to fullchain.
     """
     try:
-        with open(renewable_cert.chain_path) as chain_file:  # type: IO[str]
+        with open(renewable_cert.chain_path) as chain_file:
             chain = chain_file.read()
-        with open(renewable_cert.cert_path) as cert_file:  # type: IO[str]
+        with open(renewable_cert.cert_path) as cert_file:
             cert = cert_file.read()
-        with open(renewable_cert.fullchain_path) as fullchain_file:  # type: IO[str]
+        with open(renewable_cert.fullchain_path) as fullchain_file:
             fullchain = fullchain_file.read()
         if (cert + chain) != fullchain:
             error_str = "fullchain does not match cert + chain for {0}!"
@@ -487,7 +486,7 @@ def _notAfterBefore(cert_path, method):
 
     """
     # pylint: disable=redefined-outer-name
-    with open(cert_path, "rb") as f:  # type: IO[bytes]
+    with open(cert_path, "rb") as f:
         x509 = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
     # pyopenssl always returns bytes
     timestamp = method(x509)
@@ -564,7 +563,7 @@ def get_serial_from_cert(cert_path):
     :rtype: int
     """
     # pylint: disable=redefined-outer-name
-    with open(cert_path, "rb") as f:  # type: IO[bytes]
+    with open(cert_path, "rb") as f:
         x509 = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
     return x509.get_serial_number()
 
