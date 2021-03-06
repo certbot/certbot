@@ -1,65 +1,51 @@
 """Certbot command line argument & config processing."""
 # pylint: disable=too-many-lines
+import argparse
 import logging
 import logging.handlers
-import argparse
 import sys
-import certbot._internal.plugins.selection as plugin_selection
-from certbot._internal.plugins import disco as plugins_disco
+from typing import Optional
 
-from acme.magic_typing import Optional
-
-# pylint: disable=ungrouped-imports
 import certbot
 from certbot._internal import constants
-
-import certbot.plugins.enhancements as enhancements
-
-
-from certbot._internal.cli.cli_constants import (
-    LEAUTO,
-    old_path_fragment,
-    new_path_prefix,
-    cli_command,
-    SHORT_USAGE,
-    COMMAND_OVERVIEW,
-    HELP_AND_VERSION_USAGE,
-    ARGPARSE_PARAMS_TO_REMOVE,
-    EXIT_ACTIONS,
-    ZERO_ARG_ACTIONS,
-    VAR_MODIFIERS,
-    DEPRECATED_OPTIONS
-)
-
-from certbot._internal.cli.cli_utils import (
-    _Default,
-    read_file,
-    flag_default,
-    config_help,
-    HelpfulArgumentGroup,
-    CustomHelpFormatter,
-    _DomainsAction,
-    add_domains,
-    CaseInsensitiveList,
-    _user_agent_comment_type,
-    _EncodeReasonAction,
-    parse_preferred_challenges,
-    _PrefChallAction,
-    _DeployHookAction,
-    _RenewHookAction,
-    nonnegative_int
-)
-
-# These imports depend on cli_constants and cli_utils.
-from certbot._internal.cli.verb_help import VERB_HELP, VERB_HELP_MAP
+from certbot._internal.cli.cli_constants import ARGPARSE_PARAMS_TO_REMOVE
+from certbot._internal.cli.cli_constants import cli_command
+from certbot._internal.cli.cli_constants import COMMAND_OVERVIEW
+from certbot._internal.cli.cli_constants import DEPRECATED_OPTIONS
+from certbot._internal.cli.cli_constants import EXIT_ACTIONS
+from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
+from certbot._internal.cli.cli_constants import LEAUTO
+from certbot._internal.cli.cli_constants import new_path_prefix
+from certbot._internal.cli.cli_constants import old_path_fragment
+from certbot._internal.cli.cli_constants import SHORT_USAGE
+from certbot._internal.cli.cli_constants import VAR_MODIFIERS
+from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
+from certbot._internal.cli.cli_utils import _Default
+from certbot._internal.cli.cli_utils import _DeployHookAction
+from certbot._internal.cli.cli_utils import _DomainsAction
+from certbot._internal.cli.cli_utils import _EncodeReasonAction
+from certbot._internal.cli.cli_utils import _PrefChallAction
+from certbot._internal.cli.cli_utils import _RenewHookAction
+from certbot._internal.cli.cli_utils import _user_agent_comment_type
+from certbot._internal.cli.cli_utils import add_domains
+from certbot._internal.cli.cli_utils import CaseInsensitiveList
+from certbot._internal.cli.cli_utils import config_help
+from certbot._internal.cli.cli_utils import CustomHelpFormatter
+from certbot._internal.cli.cli_utils import flag_default
+from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
+from certbot._internal.cli.cli_utils import nonnegative_int
+from certbot._internal.cli.cli_utils import parse_preferred_challenges
+from certbot._internal.cli.cli_utils import read_file
 from certbot._internal.cli.group_adder import _add_all_groups
-from certbot._internal.cli.subparsers import _create_subparsers
+from certbot._internal.cli.helpful import HelpfulArgumentParser
 from certbot._internal.cli.paths_parser import _paths_parser
 from certbot._internal.cli.plugins_parsing import _plugins_parsing
-
-# These imports depend on some or all of the submodules for cli.
-from certbot._internal.cli.helpful import HelpfulArgumentParser
-# pylint: enable=ungrouped-imports
+from certbot._internal.cli.subparsers import _create_subparsers
+from certbot._internal.cli.verb_help import VERB_HELP
+from certbot._internal.cli.verb_help import VERB_HELP_MAP
+from certbot._internal.plugins import disco as plugins_disco
+import certbot._internal.plugins.selection as plugin_selection
+import certbot.plugins.enhancements as enhancements
 
 
 logger = logging.getLogger(__name__)
