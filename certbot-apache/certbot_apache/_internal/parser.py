@@ -3,8 +3,6 @@ import copy
 import fnmatch
 import logging
 import re
-import sys
-
 
 from acme.magic_typing import Dict
 from acme.magic_typing import List
@@ -737,9 +735,6 @@ class ApacheParser:
         :rtype: str
 
         """
-        if sys.version_info < (3, 6):
-            # This strips off final /Z(?ms)
-            return fnmatch.translate(clean_fn_match)[:-7]  # pragma: no cover
         # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
         return fnmatch.translate(clean_fn_match)[4:-3]  # pragma: no cover
 

@@ -1,5 +1,4 @@
 """Functionality for autorenewal and associated juggling of configurations"""
-from __future__ import print_function
 
 import copy
 import itertools

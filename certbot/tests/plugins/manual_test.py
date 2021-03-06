@@ -60,7 +60,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
     def test_script_perform(self):
         self.config.manual_auth_hook = (
-            '{0} -c "from __future__ import print_function;'
+            '{0} -c "'
             'from certbot.compat import os;'
             'print(os.environ.get(\'CERTBOT_DOMAIN\'));'
             'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'
