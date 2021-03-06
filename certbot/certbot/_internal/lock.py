@@ -38,7 +38,7 @@ def lock_dir(dir_path):
     return LockFile(os.path.join(dir_path, '.certbot.lock'))
 
 
-class LockFile(object):
+class LockFile:
     """
     Platform independent file lock system.
     LockFile accepts a parameter, the path to a file acting as a lock. Once the LockFile,
@@ -97,7 +97,7 @@ class LockFile(object):
         return self._lock_mechanism.is_locked()
 
 
-class _BaseLockMechanism(object):
+class _BaseLockMechanism:
     def __init__(self, path):
         # type: (str) -> None
         """

@@ -20,9 +20,6 @@ class Addr(common.Addr):
                      self.is_wildcard() and other.is_wildcard()))
         return False
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
     def __repr__(self):
         return "certbot_apache._internal.obj.Addr(" + repr(self.tup) + ")"
 
@@ -98,7 +95,7 @@ class Addr(common.Addr):
         return self.get_addr_obj(port)
 
 
-class VirtualHost(object):
+class VirtualHost:
     """Represents an Apache Virtualhost.
 
     :ivar str filep: file path of VH
@@ -190,9 +187,6 @@ class VirtualHost(object):
                     self.modmacro == other.modmacro)
 
         return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
     def __hash__(self):
         return hash((self.filep, self.path,

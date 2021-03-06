@@ -45,7 +45,7 @@ else:
     _SIGNALS = []
 
 
-class ErrorHandler(object):
+class ErrorHandler:
     """Context manager for running code that must be cleaned up on failure.
 
     The context manager allows you to register functions that will be called

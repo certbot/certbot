@@ -76,7 +76,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         return _GoogleClient(self.conf('credentials'))
 
 
-class _GoogleClient(object):
+class _GoogleClient:
     """
     Encapsulates all communication with the Google Cloud DNS API.
     """

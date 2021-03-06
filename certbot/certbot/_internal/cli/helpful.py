@@ -1,5 +1,5 @@
 """Certbot command line argument parser"""
-from __future__ import print_function
+
 import argparse
 import copy
 import functools
@@ -41,7 +41,7 @@ from certbot._internal.cli import (
 )
 
 
-class HelpfulArgumentParser(object):
+class HelpfulArgumentParser:
     """Argparse Wrapper.
 
     This class wraps argparse, adding the ability to make --help less

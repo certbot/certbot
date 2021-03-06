@@ -20,7 +20,7 @@ from pyparsing import ZeroOrMore
 
 logger = logging.getLogger(__name__)
 
-class RawNginxParser(object):
+class RawNginxParser:
     # pylint: disable=pointless-statement
     """A class that parses nginx configuration with pyparsing."""
 
@@ -70,7 +70,7 @@ class RawNginxParser(object):
         """Returns the parsed tree as a list."""
         return self.parse().asList()
 
-class RawNginxDumper(object):
+class RawNginxDumper:
     """A class that dumps nginx configuration from the provided tree."""
     def __init__(self, blocks):
         self.blocks = blocks

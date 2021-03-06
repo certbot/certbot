@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
-from __future__ import print_function
 
 import argparse
 import errno
@@ -23,7 +22,7 @@ from certbot_integration_tests.utils import proxy
 from certbot_integration_tests.utils.constants import *
 
 
-class ACMEServer(object):
+class ACMEServer:
     """
     ACMEServer configures and handles the lifecycle of an ACME CA server and an HTTP reverse proxy
     instance, to allow parallel execution of integration tests against the unique http-01 port

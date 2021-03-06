@@ -311,7 +311,7 @@ def echo(keyword, path=None):
     if not re.match(r'^\w+$', keyword):
         raise ValueError('Error, keyword `{0}` is not a single keyword.'
                          .format(keyword))
-    return '{0} -c "from __future__ import print_function; print(\'{1}\')"{2}'.format(
+    return '{0} -c "print(\'{1}\')"{2}'.format(
         os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
 
 

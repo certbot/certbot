@@ -480,10 +480,6 @@ class ParseTest(unittest.TestCase):
             for topic in ['all', 'plugins', 'dns-route53']:
                 self.assertFalse('certbot-route53:auth' in self._help_output([help_flag, topic]))
 
-    def test_no_permissions_check_accepted(self):
-        namespace = self.parse(["--no-permissions-check"])
-        self.assertTrue(namespace.no_permissions_check)
-
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot._internal.cli._Default."""

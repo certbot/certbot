@@ -36,7 +36,7 @@ except (ImportError, AttributeError):  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 
-class RevocationChecker(object):
+class RevocationChecker:
     """This class figures out OCSP checking on this system, and performs it."""
 
     def __init__(self, enforce_openssl_binary_usage=False):

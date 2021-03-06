@@ -1,6 +1,4 @@
 """Collects and displays information to the user."""
-from __future__ import print_function
-
 import collections
 import logging
 import queue
@@ -16,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @zope.interface.implementer(interfaces.IReporter)
-class Reporter(object):
+class Reporter:
     """Collects and displays information to the user.
 
     :ivar `queue.PriorityQueue` messages: Messages to be displayed to

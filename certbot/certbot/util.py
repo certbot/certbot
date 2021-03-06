@@ -4,7 +4,6 @@
 import argparse
 import atexit
 import collections
-from collections import OrderedDict
 import distutils.version
 import errno
 import logging
@@ -13,6 +12,7 @@ import re
 import socket
 import subprocess
 import sys
+from typing import Dict
 from typing import Text
 from typing import Tuple
 from typing import Union
@@ -58,7 +58,7 @@ _INITIAL_PID = os.getpid()
 # the dict are attempted to be cleaned up at program exit. If the
 # program exits before the lock is cleaned up, it is automatically
 # released, but the file isn't deleted.
-_LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
+_LOCKS = {}  # type: Dict[str, lock.LockFile]
 
 
 def env_no_snap_for_external_calls():

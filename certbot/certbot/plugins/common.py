@@ -40,7 +40,7 @@ hostname_regex = re.compile(
 
 
 @zope.interface.implementer(interfaces.IPlugin)
-class Plugin(object):
+class Plugin:
     """Generic plugin."""
     # provider is not inherited, subclasses must define it on their own
     # @zope.interface.provider(interfaces.IPluginFactory)
@@ -201,7 +201,7 @@ class Installer(Plugin):
             constants.ALL_SSL_DHPARAMS_HASHES)
 
 
-class Addr(object):
+class Addr:
     r"""Represents an virtual host address.
 
     :param str addr: addr part of vhost address
@@ -299,7 +299,7 @@ class Addr(object):
         return result
 
 
-class ChallengePerformer(object):
+class ChallengePerformer:
     """Abstract base for challenge performers.
 
     :ivar configurator: Authenticator and installer plugin

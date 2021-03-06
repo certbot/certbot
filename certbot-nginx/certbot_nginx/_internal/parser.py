@@ -7,6 +7,7 @@ import logging
 import re
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Union
@@ -21,7 +22,7 @@ from certbot_nginx._internal import obj
 logger = logging.getLogger(__name__)
 
 
-class NginxParser(object):
+class NginxParser:
     """Class handles the fine details of parsing the Nginx Configuration.
 
     :ivar str root: Normalized absolute path to the server root
@@ -361,8 +362,9 @@ class NginxParser(object):
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
-    def duplicate_vhost(self, vhost_template, remove_singleton_listen_params=False,
-        only_directives=None):
+    def duplicate_vhost(self, vhost_template: obj.VirtualHost,
+                        remove_singleton_listen_params: bool = False,
+                        only_directives: Optional[List] = None) -> obj.VirtualHost:
         """Duplicate the vhost in the configuration files.
 
         :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost_template: The vhost

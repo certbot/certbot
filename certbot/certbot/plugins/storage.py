@@ -11,7 +11,7 @@ from certbot.compat import os
 logger = logging.getLogger(__name__)
 
 
-class PluginStorage(object):
+class PluginStorage:
     """Class implementing storage functionality for plugins"""
 
     def __init__(self, config, classkey):
