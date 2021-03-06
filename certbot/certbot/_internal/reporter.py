@@ -1,6 +1,4 @@
 """Collects and displays information to the user."""
-from __future__ import print_function
-
 import collections
 import logging
 import queue
