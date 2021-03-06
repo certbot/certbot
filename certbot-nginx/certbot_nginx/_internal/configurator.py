@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """Nginx Configuration"""
 from distutils.version import LooseVersion
 import logging
@@ -15,8 +16,10 @@ from acme import challenges
 from acme import crypto_util as acme_crypto_util
 from acme.magic_typing import Dict
 from acme.magic_typing import List
+from acme.magic_typing import Optional
 from acme.magic_typing import Set
 from acme.magic_typing import Text
+from acme.magic_typing import Tuple
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -105,7 +108,7 @@ class NginxConfigurator(common.Installer):
         self.save_notes = ""
 
         # For creating new vhosts if no names match
-        self.new_vhost = None
+        self.new_vhost: Optional[obj.VirtualHost] = None
 
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
@@ -116,7 +119,7 @@ class NginxConfigurator(common.Installer):
         self._chall_out = 0
 
         # These will be set in the prepare function
-        self.parser = None
+        self.parser: Optional[parser.NginxParser] = None
         self.version = version
         self.openssl_version = openssl_version
         self._enhance_func = {"redirect": self._enable_redirect,
@@ -377,10 +380,13 @@ class NginxConfigurator(common.Installer):
                     ipv6only_present = True
         return (ipv6_active, ipv6only_present)
 
-    def _vhost_from_duplicated_default(self, domain, allow_port_mismatch, port):
+    def _vhost_from_duplicated_default(self, domain: str, allow_port_mismatch: bool, port: str
+                                       ) -> obj.VirtualHost:
         """if allow_port_mismatch is False, only server blocks with matching ports will be
            used as a default server block template.
         """
+        assert self.parser is not None # prepare should already have been called here
+
         if self.new_vhost is None:
             default_vhost = self._get_default_vhost(domain, allow_port_mismatch, port)
             self.new_vhost = self.parser.duplicate_vhost(default_vhost,
@@ -509,7 +515,7 @@ class NginxConfigurator(common.Installer):
                 match['rank'] += NO_SSL_MODIFIER
         return sorted(matches, key=lambda x: x['rank'])
 
-    def choose_redirect_vhosts(self, target_name, port, create_if_no_match=False):
+    def choose_redirect_vhosts(self, target_name: str, port: str) -> List[obj.VirtualHost]:
         """Chooses a single virtual host for redirect enhancement.
 
         Chooses the vhost most closely matching target_name that is
@@ -523,9 +529,6 @@ class NginxConfigurator(common.Installer):
 
         :param str target_name: domain name
         :param str port: port number
-        :param bool create_if_no_match: If we should create a new vhost from default
-            when there is no match found. If we can't choose a default, raise a
-            MisconfigurationError.
 
         :returns: vhosts associated with name
         :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
@@ -538,32 +541,75 @@ class NginxConfigurator(common.Installer):
         else:
             matches = self._get_redirect_ranked_matches(target_name, port)
             vhosts = [x for x in [self._select_best_name_match(matches)]if x is not None]
-        if not vhosts and create_if_no_match:
-            vhosts = [self._vhost_from_duplicated_default(target_name, False, port)]
         return vhosts
 
-    def _port_matches(self, test_port, matching_port):
+    def choose_auth_vhosts(self, target_name: str) -> Tuple[List[obj.VirtualHost],
+                                                            List[obj.VirtualHost]]:
+        """Returns a list of HTTP and HTTPS vhosts with a server_name matching target_name.
+
+        If no HTTP vhost exists, one will be cloned from the default vhost. If that fails, no HTTP
+        vhost will be returned.
+
+        :param str target_name: non-wildcard domain name
+
+        :returns: tuple of HTTP and HTTPS virtualhosts
+        :rtype: tuple of :class:`~certbot_nginx._internal.obj.VirtualHost`
+
+        """
+        vhosts = [m['vhost'] for m in self._get_ranked_matches(target_name) if m and 'vhost' in m]
+        http_vhosts = [vh for vh in vhosts if
+                       self._vhost_listening(vh, str(self.config.http01_port), False)]
+        https_vhosts = [vh for vh in vhosts if
+                        self._vhost_listening(vh, str(self.config.https_port), True)]
+
+        # If no HTTP vhost matches, try create one from the default_server on http01_port.
+        if not http_vhosts:
+            try:
+                http_vhosts = [self._vhost_from_duplicated_default(target_name, False,
+                                                                   str(self.config.http01_port))]
+            except errors.MisconfigurationError:
+                http_vhosts = []
+
+        return http_vhosts, https_vhosts
+
+    def _port_matches(self, test_port: str, matching_port: str) -> bool:
         # test_port is a number, matching is a number or "" or None
         if matching_port == "" or matching_port is None:
             # if no port is specified, Nginx defaults to listening on port 80.
             return test_port == self.DEFAULT_LISTEN_PORT
         return test_port == matching_port
 
-    def _vhost_listening_on_port_no_ssl(self, vhost, port):
-        found_matching_port = False
-        if not vhost.addrs:
-            # if there are no listen directives at all, Nginx defaults to
-            # listening on port 80.
-            found_matching_port = (port == self.DEFAULT_LISTEN_PORT)
-        else:
-            for addr in vhost.addrs:
-                if self._port_matches(port, addr.get_port()) and not addr.ssl:
-                    found_matching_port = True
+    def _vhost_listening(self, vhost: obj.VirtualHost, port: str, ssl: bool) -> bool:
+        """Tests whether a vhost has an address listening on a port with SSL enabled or disabled.
 
-        if found_matching_port:
-            # make sure we don't have an 'ssl on' directive
-            return not self.parser.has_ssl_on_directive(vhost)
-        return False
+        :param `obj.VirtualHost` vhost: The vhost whose addresses will be tested
+        :param port str: The port number as a string that the address should be bound to
+        :param bool ssl: Whether SSL should be enabled or disabled on the address
+
+        :returns: Whether the vhost has an address listening on the port and protocol.
+        :rtype: bool
+
+        """
+        assert self.parser is not None # prepare should already have been called here
+
+        # if the 'ssl on' directive is present on the vhost, all its addresses have SSL enabled
+        all_addrs_are_ssl = self.parser.has_ssl_on_directive(vhost)
+
+        # if we want ssl vhosts: either 'ssl on' or 'addr.ssl' should be enabled
+        # if we want plaintext vhosts: neither 'ssl on' nor 'addr.ssl' should be enabled
+        _ssl_matches = lambda addr: addr.ssl or all_addrs_are_ssl if ssl else \
+                                    not addr.ssl and not all_addrs_are_ssl
+
+        # if there are no listen directives at all, Nginx defaults to
+        # listening on port 80.
+        if not vhost.addrs:
+            return port == self.DEFAULT_LISTEN_PORT and ssl == all_addrs_are_ssl
+
+        return any(self._port_matches(port, addr.get_port()) and _ssl_matches(addr)
+                   for addr in vhost.addrs)
+
+    def _vhost_listening_on_port_no_ssl(self, vhost: obj.VirtualHost, port: str) -> bool:
+        return self._vhost_listening(vhost, port, False)
 
     def _get_redirect_ranked_matches(self, target_name, port):
         """Gets a ranked list of plaintextish port-listening vhosts matching target_name

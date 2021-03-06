@@ -1,5 +1,4 @@
 """Functionality for autorenewal and associated juggling of configurations"""
-from __future__ import print_function
 
 import copy
 import itertools
@@ -312,12 +311,9 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
         contents = the_file.read()
     latest_cert = OpenSSL.crypto.load_certificate(
         OpenSSL.crypto.FILETYPE_PEM, contents)
-    # all our test certificates are from happy hacker fake CA, though maybe one day
-    # we should test more methodically
-    now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
 
     if util.is_staging(config.server):
-        if not util.is_staging(original_server) or now_valid:
+        if not util.is_staging(original_server):
             if not config.break_my_certs:
                 names = ", ".join(lineage.names())
                 raise errors.Error(

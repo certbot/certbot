@@ -1,5 +1,4 @@
 """Facilities for implementing hooks that call shell commands."""
-from __future__ import print_function
 
 import logging
 

@@ -19,7 +19,7 @@ from certbot._internal import error_handler
 logger = logging.getLogger(__name__)
 
 
-class AuthHandler(object):
+class AuthHandler:
     """ACME Authorization Handler for a client.
 
     :ivar auth: Authenticator capable of solving

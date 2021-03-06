@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 """Module to setup an RFC2136-capable DNS server"""
-from __future__ import print_function
-
 import os
 import os.path
 import shutil
@@ -21,7 +19,7 @@ BIND_BIND_ADDRESS = ("127.0.0.1", 45953)
 BIND_TEST_QUERY = bytearray.fromhex("0011cb37000000010000000000000000010003")
 
 
-class DNSServer(object):
+class DNSServer:
     """
     DNSServer configures and handles the lifetime of an RFC2136-capable server.
     DNServer provides access to the dns_xdist parameter, listing the address and port

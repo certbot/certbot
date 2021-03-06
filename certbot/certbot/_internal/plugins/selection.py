@@ -1,5 +1,4 @@
 """Decide which plugins to use for authentication & installation"""
-from __future__ import print_function
 
 import logging
 

@@ -8,7 +8,7 @@ except ImportError:
     import certbot._internal.display.dummy_readline as readline  # type: ignore
 
 
-class Completer(object):
+class Completer:
     """Provides Tab completion when prompting users for a path.
 
     This class is meant to be used with readline to provide Tab

@@ -1,6 +1,5 @@
 """Certbot command line argument & config processing."""
 # pylint: disable=too-many-lines
-from __future__ import print_function
 import logging
 import logging.handlers
 import argparse
@@ -250,27 +249,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         help="Allow making a certificate lineage that duplicates an existing one "
              "(both can be renewed in parallel)")
     helpful.add(
-        "automation", "--os-packages-only", action="store_true",
-        default=flag_default("os_packages_only"),
-        help="(certbot-auto only) install OS package dependencies and then stop")
-    helpful.add(
-        "automation", "--no-self-upgrade", action="store_true",
-        default=flag_default("no_self_upgrade"),
-        help="(certbot-auto only) prevent the certbot-auto script from"
-             " upgrading itself to newer released versions (default: Upgrade"
-             " automatically)")
-    helpful.add(
-        "automation", "--no-bootstrap", action="store_true",
-        default=flag_default("no_bootstrap"),
-        help="(certbot-auto only) prevent the certbot-auto script from"
-             " installing OS-level dependencies (default: Prompt to install "
-             " OS-wide dependencies, but exit if the user says 'No')")
-    helpful.add(
-        "automation", "--no-permissions-check", action="store_true",
-        default=flag_default("no_permissions_check"),
-        help="(certbot-auto only) skip the check on the file system"
-             " permissions of the certbot-auto script")
-    helpful.add(
         ["automation", "renew", "certonly", "run"],
         "-q", "--quiet", dest="quiet", action="store_true",
         default=flag_default("quiet"),
@@ -450,6 +428,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "renew", "--no-autorenew", action="store_false",
         default=flag_default("autorenew"), dest="autorenew",
         help="Disable auto renewal of certificates.")
+
+    # Deprecated arguments
+    helpful.add_deprecated_argument("--os-packages-only", 0)
+    helpful.add_deprecated_argument("--no-self-upgrade", 0)
+    helpful.add_deprecated_argument("--no-bootstrap", 0)
+    helpful.add_deprecated_argument("--no-permissions-check", 0)
 
     # Populate the command line parameters for new style enhancements
     enhancements.populate_cli(helpful.add)

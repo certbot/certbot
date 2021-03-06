@@ -13,7 +13,7 @@ COMMENT = " managed by Certbot"
 COMMENT_BLOCK = ["#", COMMENT]
 
 
-class Parsable(object):
+class Parsable:
     """ Abstract base class for "Parsable" objects whose underlying representation
     is a tree of lists.
 

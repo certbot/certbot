@@ -27,10 +27,6 @@ see:
   https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
   https://docs.aws.amazon.com/cli/latest/userguide/cli-ec2-keypairs.html
 """
-
-from __future__ import print_function
-from __future__ import with_statement
-
 import argparse
 import multiprocessing as mp
 from multiprocessing import Manager
@@ -95,7 +91,7 @@ SECURITY_GROUP_NAME = 'certbot-security-group'
 SENTINEL = None #queue kill signal
 SUBNET_NAME = 'certbot-subnet'
 
-class Status(object):
+class Status:
     """Possible statuses of client tests."""
     PASS = 'pass'
     FAIL = 'fail'

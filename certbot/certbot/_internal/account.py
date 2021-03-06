@@ -24,7 +24,7 @@ from certbot.compat import filesystem
 logger = logging.getLogger(__name__)
 
 
-class Account(object):
+class Account:
     """ACME protocol registration.
 
     :ivar .RegistrationResource regr: Registration Resource

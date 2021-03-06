@@ -33,7 +33,7 @@ DEFAULT_NETWORK_TIMEOUT = 45
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
 
-class ClientBase(object):
+class ClientBase:
     """ACME client base object.
 
     :ivar messages.Directory directory:
@@ -796,7 +796,7 @@ class ClientV2(ClientBase):
                 if 'rel' in l and 'url' in l and l['rel'] == relation_type]
 
 
-class BackwardsCompatibleClientV2(object):
+class BackwardsCompatibleClientV2:
     """ACME client wrapper that tends towards V2-style calls, but
     supports V1 servers.
 
@@ -939,7 +939,7 @@ class BackwardsCompatibleClientV2(object):
         return self.client.external_account_required()
 
 
-class ClientNetwork(object):
+class ClientNetwork:
     """Wrapper around requests that signs POSTs for authentication.
 
     Also adds user agent, and handles Content-Type.

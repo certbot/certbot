@@ -109,4 +109,10 @@ VAR_MODIFIERS = {"account": {"server",},
 # This is a list of all CLI options that we have ever deprecated. It lets us
 # opt out of the default detection, which can interact strangely with option
 # deprecation. See https://github.com/certbot/certbot/issues/8540 for more info.
-DEPRECATED_OPTIONS = {"manual_public_ip_logging_ok",}
+DEPRECATED_OPTIONS = {
+    "manual_public_ip_logging_ok",
+    "os_packages_only",
+    "no_self_upgrade",
+    "no_bootstrap",
+    "no_permissions_check",
+}

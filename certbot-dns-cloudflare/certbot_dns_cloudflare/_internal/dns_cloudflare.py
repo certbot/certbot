@@ -85,7 +85,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         return _CloudflareClient(self.credentials.conf('email'), self.credentials.conf('api-key'))
 
 
-class _CloudflareClient(object):
+class _CloudflareClient:
     """
     Encapsulates all communication with the Cloudflare API.
     """

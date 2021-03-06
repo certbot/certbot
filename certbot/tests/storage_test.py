@@ -765,6 +765,13 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(storage.add_time_interval(base_time, interval),
                              excepted)
 
+    def test_server(self):
+        self.test_rc.configuration["renewalparams"] = {}
+        self.assertEqual(self.test_rc.server, None)
+        rp = self.test_rc.configuration["renewalparams"]
+        rp["server"] = "https://acme.example/dir"
+        self.assertEqual(self.test_rc.server, "https://acme.example/dir")
+
     def test_is_test_cert(self):
         self.test_rc.configuration["renewalparams"] = {}
         rp = self.test_rc.configuration["renewalparams"]
@@ -934,14 +941,14 @@ class CertPathForCertNameTest(BaseRenewableCertTest):
         self._write_out_ex_kinds()
         self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
                 'fullchain.pem')
-        self.config.cert_path = (self.fullchain, '')
+        self.config.cert_path = self.fullchain
 
     def _call(self, cli_config, certname):
         from certbot._internal.storage import cert_path_for_cert_name
         return cert_path_for_cert_name(cli_config, certname)
 
     def test_simple_cert_name(self):
-        self.assertEqual(self._call(self.config, 'example.org'), (self.fullchain, 'fullchain'))
+        self.assertEqual(self._call(self.config, 'example.org'), self.fullchain)
 
     def test_no_such_cert_name(self):
         self.assertRaises(errors.CertStorageError, self._call, self.config, 'fake-example.org')

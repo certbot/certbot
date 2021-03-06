@@ -24,15 +24,13 @@ def main():
     i = 0
     while i < len(lines):
         if section_pattern.match(lines[i]):
-            i = i + 1
+            i = i + 2
             while i < len(lines):
                 if NEW_SECTION_PATTERN.match(lines[i]):
                     break
                 changelog.append(lines[i])
                 i = i + 1
         i = i + 1
-
-    changelog = [entry for entry in changelog if entry]
 
     print('\n'.join(changelog))
 

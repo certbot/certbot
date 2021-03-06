@@ -12,7 +12,7 @@ from certbot.compat import os
 from certbot._internal import constants
 
 
-class _Default(object):
+class _Default:
     """A class to use as a default to detect if a value is set by a user"""
 
     def __bool__(self):
@@ -66,7 +66,7 @@ def config_help(name, hidden=False):
     return field.__doc__
 
 
-class HelpfulArgumentGroup(object):
+class HelpfulArgumentGroup:
     """Emulates an argparse group for use with HelpfulArgumentParser.
 
     This class is used in the add_group method of HelpfulArgumentParser.

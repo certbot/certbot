@@ -51,6 +51,7 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual({nparser.abs_path(x) for x in
                           ['foo.conf', 'nginx.conf', 'server.conf',
                            'sites-enabled/default',
+                           'sites-enabled/both.com',
                            'sites-enabled/example.com',
                            'sites-enabled/headers.com',
                            'sites-enabled/migration.com',
@@ -88,7 +89,7 @@ class NginxParserTest(util.NginxTest):
         parsed = nparser._parse_files(nparser.abs_path(
             'sites-enabled/example.com.test'))
         self.assertEqual(3, len(glob.glob(nparser.abs_path('*.test'))))
-        self.assertEqual(9, len(
+        self.assertEqual(10, len(
             glob.glob(nparser.abs_path('sites-enabled/*.test'))))
         self.assertEqual([[['server'], [['listen', '69.50.225.155:9000'],
                                         ['listen', '127.0.0.1'],
@@ -171,7 +172,7 @@ class NginxParserTest(util.NginxTest):
                                                   '*.www.example.com'},
                                  [], [2, 1, 0])
 
-        self.assertEqual(14, len(vhosts))
+        self.assertEqual(19, len(vhosts))
         example_com = [x for x in vhosts if 'example.com' in x.filep][0]
         self.assertEqual(vhost3, example_com)
         default = [x for x in vhosts if 'default' in x.filep][0]

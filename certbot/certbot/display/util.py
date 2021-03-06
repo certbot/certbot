@@ -110,7 +110,7 @@ def notify(msg: str) -> None:
 
 
 @zope.interface.implementer(interfaces.IDisplay)
-class FileDisplay(object):
+class FileDisplay:
     """File-based display."""
     # see https://github.com/certbot/certbot/issues/3915
 
@@ -477,7 +477,7 @@ def assert_valid_call(prompt, default, cli_flag, force_interactive):
 
 
 @zope.interface.implementer(interfaces.IDisplay)
-class NoninteractiveDisplay(object):
+class NoninteractiveDisplay:
     """An iDisplay implementation that never asks for interactive user input"""
 
     def __init__(self, outfile, *unused_args, **unused_kwargs):

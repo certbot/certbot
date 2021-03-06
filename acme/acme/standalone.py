@@ -53,7 +53,7 @@ class ACMEServerMixin:
     allow_reuse_address = True
 
 
-class BaseDualNetworkedServers(object):
+class BaseDualNetworkedServers:
     """Base class for a pair of IPv6 and IPv4 servers that tries to do everything
        it's asked for both servers, but where failures in one server don't
        affect the other.

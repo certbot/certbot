@@ -17,7 +17,7 @@ DOMAIN = 'example.com'
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
-class BaseAuthenticatorTest(object):
+class BaseAuthenticatorTest:
     """
     A base test class to reduce duplication between test code for DNS Authenticator Plugins.
 
