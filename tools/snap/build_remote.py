@@ -8,7 +8,9 @@ import subprocess
 import sys
 import time
 import tempfile
-from multiprocessing import Pool, Process, Manager, Lock
+from multiprocessing.managers import SyncManager
+from threading import Lock
+from multiprocessing import Pool, Process, Manager
 from os.path import join, realpath, dirname, basename, exists
 from typing import List, Dict, Tuple, Set
 
@@ -22,7 +24,7 @@ def _execute_build(
 
     with tempfile.TemporaryDirectory() as tempdir:
         environ = os.environ.copy()
-        environ['TMPDIR'] = tempdir
+        environ['XDG_CACHE_HOME'] = tempdir
         process = subprocess.Popen([
             'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover',
             '--build-on', ','.join(archs)],
@@ -198,8 +200,10 @@ def main():
     print(f' - projects: {", ".join(sorted(targets))}')
     print()
 
-    with Manager() as manager, Pool(processes=len(targets)) as pool:
-        status = manager.dict()
+    manager: SyncManager = Manager()
+    pool = Pool(processes=len(targets))
+    with manager, pool:
+        status: Dict[str, Dict[str, str]] = manager.dict()
         running = manager.dict({target: True for target in targets})
         lock = manager.Lock()
 
