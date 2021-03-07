@@ -2,10 +2,12 @@
 import argparse
 import datetime
 import glob
+import os
 import re
 import subprocess
 import sys
 import time
+import tempfile
 from multiprocessing import Pool, Process, Manager, Lock
 from os.path import join, realpath, dirname, basename, exists
 from typing import List, Dict, Tuple, Set
@@ -17,10 +19,15 @@ PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*
 def _execute_build(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         workspace: str) -> Tuple[int, List[str]]:
-    process = subprocess.Popen([
-        'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover',
-        '--build-on', ','.join(archs)
-    ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, cwd=workspace)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        environ = os.environ.copy()
+        environ['TMPDIR'] = tempdir
+        process = subprocess.Popen([
+            'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover',
+            '--build-on', ','.join(archs)],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            universal_newlines=True, env=environ, cwd=workspace)
 
     process_output: List[str] = []
     for line in process.stdout:
