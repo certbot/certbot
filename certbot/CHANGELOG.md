@@ -11,6 +11,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * certbot-auto no longer checks for updates on any operating system.
+* The module `acme.magic_typing` is deprecated and will be removed in a future release:
+  please use the built-in module `typing` instead.
 
 ### Fixed
 
