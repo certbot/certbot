@@ -21,18 +21,12 @@ may change at any time. The second is that Certbot's behavior should only be
 considered stable with certain files but not all. Files with which users should
 expect Certbot to maintain its current behavior with are:
 
-* ``/etc/letsencrypt/live/<domain>/{cert,chain,fullchain,privkey}.pem`` where
-  ``<domain>`` is the certificate name (see the note below)
+* ``/etc/letsencrypt/live/$domain/{cert,chain,fullchain,privkey}.pem``, where
+  ``$domain`` is the certificate name (see
+  `Certbot user guide <https://certbot.eff.org/docs/using.html#where-are-my-certificates>`_
+  for more details)
 * :ref:`CLI configuration files <config-file>`
 * Hook directories in ``/etc/letsencrypt/renewal-hooks``
-
-.. note::
-  The certificate name ``<domain>`` used in the path `/etc/letsencrypt/live/<domain>/{cert,chain,fullchain,privkey}.pem``:
-
-  * is the name given to ``--cert-name``,
-  * or is the first domain given to ``--domains`` if ``--cert-name`` is not set by the user,
-  * if the first domain is a wildcard domain (eg. ``*.example.com``) the cert name will be ``example.com``,
-  * if a name collision may occur with a certificate already named ``example.com``, the new certificate name will be constructed using a numerical sequence as ``example.com-001``.
 
 Certbot's behavior with other files may change at any point.
 
