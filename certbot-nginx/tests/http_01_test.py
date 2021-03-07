@@ -6,7 +6,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
-import six
 
 from acme import challenges
 from certbot import achallenges
@@ -45,6 +44,10 @@ class HttpPerformTest(util.NginxTest):
             challb=acme_util.chall_to_challb(
                 challenges.HTTP01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
             domain="migration.com", account_key=account_key),
+        achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(
+                challenges.HTTP01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
+            domain="ipv6ssl.com", account_key=account_key),
     ]
 
     def setUp(self):
@@ -78,8 +81,8 @@ class HttpPerformTest(util.NginxTest):
 
         http_responses = self.http01.perform()
 
-        self.assertEqual(len(http_responses), 4)
-        for i in six.moves.range(4):
+        self.assertEqual(len(http_responses), 5)
+        for i in range(5):
             self.assertEqual(http_responses[i], acme_responses[i])
 
     def test_mod_config(self):
@@ -105,6 +108,43 @@ class HttpPerformTest(util.NginxTest):
             #     response = self.achalls[2].response(self.account_key)
             #     self.assertEqual(vhost.addrs, set(v_addr2_print))
             # self.assertEqual(vhost.names, set([response.z_domain.decode('ascii')]))
+
+    @mock.patch('certbot_nginx._internal.parser.NginxParser.add_server_directives')
+    def test_mod_config_http_and_https(self, mock_add_server_directives):
+        """A server_name with both HTTP and HTTPS vhosts should get modded in both vhosts"""
+        self.configuration.https_port = 443
+        self.http01.add_chall(self.achalls[3]) # migration.com
+        self.http01._mod_config()  # pylint: disable=protected-access
+
+        # Domain has an HTTP and HTTPS vhost
+        # 2 * 'rewrite' + 2 * 'return 200 keyauthz' = 4
+        self.assertEqual(mock_add_server_directives.call_count, 4)
+
+    @mock.patch('certbot_nginx._internal.parser.nginxparser.dump')
+    @mock.patch('certbot_nginx._internal.parser.NginxParser.add_server_directives')
+    def test_mod_config_only_https(self, mock_add_server_directives, mock_dump):
+        """A server_name with only an HTTPS vhost should get modded"""
+        self.http01.add_chall(self.achalls[4]) # ipv6ssl.com
+        self.http01._mod_config() # pylint: disable=protected-access
+
+        # It should modify the existing HTTPS vhost
+        self.assertEqual(mock_add_server_directives.call_count, 2)
+        # since there was no suitable HTTP vhost or default HTTP vhost, a non-empty one
+        # should have been created and written to the challenge conf file
+        self.assertNotEqual(mock_dump.call_args[0][0], [])
+
+    @mock.patch('certbot_nginx._internal.parser.NginxParser.add_server_directives')
+    def test_mod_config_deduplicate(self, mock_add_server_directives):
+        """A vhost that appears in both HTTP and HTTPS vhosts only gets modded once"""
+        achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(
+                challenges.HTTP01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
+            domain="ssl.both.com", account_key=AUTH_KEY)
+        self.http01.add_chall(achall)
+        self.http01._mod_config() # pylint: disable=protected-access
+
+        # Should only get called 5 times, rather than 6, because two vhosts are the same
+        self.assertEqual(mock_add_server_directives.call_count, 5*2)
 
     @mock.patch("certbot_nginx._internal.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_no_memoization(self, ipv6_info):

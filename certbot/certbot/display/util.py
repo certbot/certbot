@@ -16,6 +16,7 @@ import textwrap
 import zope.interface
 import zope.component
 
+from acme.magic_typing import List
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
@@ -70,7 +71,7 @@ def _wrap_lines(msg):
 def input_with_timeout(prompt=None, timeout=36000.0):
     """Get user input with a timeout.
 
-    Behaves the same as six.moves.input, however, an error is raised if
+    Behaves the same as the builtin input, however, an error is raised if
     a user doesn't answer after timeout seconds. The default timeout
     value was chosen to place it just under 12 hours for users following
     our advice and running Certbot twice a day.
@@ -84,7 +85,7 @@ def input_with_timeout(prompt=None, timeout=36000.0):
     :raises errors.Error if no answer is given before the timeout
 
     """
-    # use of sys.stdin and sys.stdout to mimic six.moves.input based on
+    # use of sys.stdin and sys.stdout to mimic the builtin input based on
     # https://github.com/python/cpython/blob/baf7bb30a02aabde260143136bdf5b3738a1d409/Lib/getpass.py#L129
     if prompt:
         sys.stdout.write(prompt)
@@ -105,12 +106,12 @@ def notify(msg):
 
     """
     zope.component.getUtility(interfaces.IDisplay).notification(
-        msg, pause=False, decorate=False
+        msg, pause=False, decorate=False, wrap=False
     )
 
 
 @zope.interface.implementer(interfaces.IDisplay)
-class FileDisplay(object):
+class FileDisplay:
     """File-based display."""
     # see https://github.com/certbot/certbot/issues/3915
 
@@ -477,7 +478,7 @@ def assert_valid_call(prompt, default, cli_flag, force_interactive):
 
 
 @zope.interface.implementer(interfaces.IDisplay)
-class NoninteractiveDisplay(object):
+class NoninteractiveDisplay:
     """An iDisplay implementation that never asks for interactive user input"""
 
     def __init__(self, outfile, *unused_args, **unused_kwargs):
@@ -633,3 +634,28 @@ def _parens_around_char(label):
 
     """
     return "({first}){rest}".format(first=label[0], rest=label[1:])
+
+
+def summarize_domain_list(domains):
+    # type: (List[str]) -> str
+    """Summarizes a list of domains in the format of:
+        example.com.com and N more domains
+    or if there is are only two domains:
+        example.com and www.example.com
+    or if there is only one domain:
+        example.com
+
+    :param list domains: `str` list of domains
+    :returns: the domain list summary
+    :rtype: str
+    """
+    if not domains:
+        return ""
+
+    l = len(domains)
+    if l == 1:
+        return domains[0]
+    elif l == 2:
+        return " and ".join(domains)
+    else:
+        return "{0} and {1} more domains".format(domains[0], l-1)

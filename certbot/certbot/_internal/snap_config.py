@@ -49,22 +49,22 @@ def prepare_env(cli_args):
     os.environ['CERTBOT_AUGEAS_PATH'] = '{0}/usr/lib/{1}/libaugeas.so.0'.format(
         os.environ.get('SNAP'), _ARCH_TRIPLET_MAP[snap_arch])
 
-    session = Session()
-    session.mount('http://snapd/', _SnapdAdapter())
+    with Session() as session:
+        session.mount('http://snapd/', _SnapdAdapter())
 
-    try:
-        response = session.get('http://snapd/v2/connections?snap=certbot&interface=content')
-        response.raise_for_status()
-    except RequestException as e:
-        if isinstance(e, HTTPError) and e.response.status_code == 404:
-            LOGGER.error('An error occurred while fetching Certbot snap plugins: '
-                         'your version of snapd is outdated.')
-            LOGGER.error('Please run "sudo snap install core; sudo snap refresh core" '
-                         'in your terminal and try again.')
-        else:
-            LOGGER.error('An error occurred while fetching Certbot snap plugins: '
-                         'make sure the snapd service is running.')
-        raise e
+        try:
+            response = session.get('http://snapd/v2/connections?snap=certbot&interface=content')
+            response.raise_for_status()
+        except RequestException as e:
+            if isinstance(e, HTTPError) and e.response.status_code == 404:
+                LOGGER.error('An error occurred while fetching Certbot snap plugins: '
+                             'your version of snapd is outdated.')
+                LOGGER.error('Please run "sudo snap install core; sudo snap refresh core" '
+                             'in your terminal and try again.')
+            else:
+                LOGGER.error('An error occurred while fetching Certbot snap plugins: '
+                             'make sure the snapd service is running.')
+            raise e
 
     data = response.json()
     connections = ['/snap/{0}/current/lib/python3.8/site-packages/'.format(item['slot']['snap'])

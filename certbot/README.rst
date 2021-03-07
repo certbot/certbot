@@ -18,10 +18,6 @@ systems.
 To see the changes made to Certbot between versions please refer to our
 `changelog <https://github.com/certbot/certbot/blob/master/certbot/CHANGELOG.md>`_.
 
-Until May 2016, Certbot was named simply ``letsencrypt`` or ``letsencrypt-auto``,
-depending on install method. Instructions on the Internet, and some pieces of the
-software, may still refer to this older name.
-
 Contributing
 ------------
 
@@ -96,7 +92,7 @@ Current Features
   - apache/2.x
   - nginx/0.8.48+
   - webroot (adds files to webroot directories in order to prove control of
-    domains and obtain certs)
+    domains and obtain certificates)
   - standalone (runs its own simple webserver to prove you control a domain)
   - other server software via `third party plugins <https://certbot.eff.org/docs/using.html#third-party-plugins>`_
 
@@ -106,6 +102,8 @@ Current Features
 * Can get domain-validated (DV) certificates.
 * Can revoke certificates.
 * Adjustable RSA key bit-length (2048 (default), 4096, ...).
+* Adjustable `EC <https://en.wikipedia.org/wiki/Elliptic-curve_cryptography>`_
+  key (`secp256r1` (default), `secp384r1`, `secp521r1`).
 * Can optionally install a http -> https redirect, so your site effectively
   runs https only (Apache only)
 * Fully automated.

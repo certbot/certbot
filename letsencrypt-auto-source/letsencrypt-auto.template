@@ -322,10 +322,14 @@ DeterminePythonVersion() {
 # packages BOOTSTRAP_VERSION is not set.
 if [ -f /etc/debian_version ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/mageia-release ]; then
   # Mageia has both /etc/mageia-release and /etc/redhat-release
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/redhat-release ]; then
+  DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
   # Run DeterminePythonVersion to decide on the basis of available Python versions
   # whether to use 2.x or 3.x on RedHat-like systems.
   # Then, revert LE_PYTHON to its previous state.
@@ -358,12 +362,7 @@ elif [ -f /etc/redhat-release ]; then
       INTERACTIVE_BOOTSTRAP=1
     fi
 
-    Bootstrap() {
-      BootstrapMessage "Legacy RedHat-based OSes that will use Python3"
-      BootstrapRpmPython3Legacy
-    }
     USE_PYTHON_3=1
-    BOOTSTRAP_VERSION="BootstrapRpmPython3Legacy $BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION"
 
     # Try now to enable SCL rh-python36 for systems already bootstrapped
     # NB: EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
@@ -382,43 +381,38 @@ elif [ -f /etc/redhat-release ]; then
     fi
 
     if [ "$RPM_USE_PYTHON_3" = 1 ]; then
-      Bootstrap() {
-        BootstrapMessage "RedHat-based OSes that will use Python3"
-        BootstrapRpmPython3
-      }
       USE_PYTHON_3=1
-      BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
-    else
-      Bootstrap() {
-        BootstrapMessage "RedHat-based OSes"
-        BootstrapRpmCommon
-      }
-      BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
     fi
   fi
 
   LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/arch-release ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/manjaro-release ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/gentoo-release ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif uname | grep -iq FreeBSD ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif uname | grep -iq Darwin ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
-  Bootstrap() {
-    ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 else
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 fi
 
 # We handle this case after determining the normal bootstrap version to allow
@@ -539,7 +533,9 @@ if [ "$1" = "--le-auto-phase2" ]; then
     fi
 
     if [ -f "$VENV_BIN/letsencrypt" -a "$INSTALL_ONLY" != 1 ]; then
-      error "Certbot will no longer receive updates."
+      error "certbot-auto and its Certbot installation will no longer receive updates."
+      error "You will not receive any bug fixes including those fixing server compatibility"
+      error "or security problems."
       error "Please visit https://certbot.eff.org/ to check for other alternatives."
       "$VENV_BIN/letsencrypt" "$@"
       exit 0

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD  # type: ignore
 
 
-class _DefaultCertSelection(object):
+class _DefaultCertSelection:
     def __init__(self, certs):
         self.certs = certs
 
@@ -36,7 +36,7 @@ class _DefaultCertSelection(object):
         return self.certs.get(server_name, None)
 
 
-class SSLSocket(object):  # pylint: disable=too-few-public-methods
+class SSLSocket:  # pylint: disable=too-few-public-methods
     """SSL wrapper for sockets.
 
     :ivar socket sock: Original wrapped socket.
@@ -93,7 +93,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
             new_context.set_alpn_select_callback(self.alpn_selection)
         connection.set_context(new_context)
 
-    class FakeConnection(object):
+    class FakeConnection:
         """Fake OpenSSL.SSL.Connection."""
 
         # pylint: disable=missing-function-docstring
@@ -166,7 +166,7 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
             " from {0}:{1}".format(
                 source_address[0],
                 source_address[1]
-            ) if socket_kwargs else ""
+            ) if any(source_address) else ""
         )
         socket_tuple = (host, port)  # type: Tuple[str, int]
         sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore
@@ -185,6 +185,7 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
         except SSL.Error as error:
             raise errors.Error(error)
     return client_ssl.get_peer_certificate()
+
 
 def make_csr(private_key_pem, domains, must_staple=False):
     """Generate a CSR containing a list of domains as subjectAltNames.
@@ -217,6 +218,7 @@ def make_csr(private_key_pem, domains, must_staple=False):
     return crypto.dump_certificate_request(
         crypto.FILETYPE_PEM, csr)
 
+
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
     common_name = loaded_cert_or_req.get_subject().CN
     sans = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
@@ -224,6 +226,7 @@ def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
     if common_name is None:
         return sans
     return [common_name] + [d for d in sans if d != common_name]
+
 
 def _pyopenssl_cert_or_req_san(cert_or_req):
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
@@ -316,6 +319,7 @@ def gen_ss_cert(key, domains, not_before=None,
     cert.set_pubkey(key)
     cert.sign(key, "sha256")
     return cert
+
 
 def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
     """Dump certificate chain into a bundle.

@@ -1,20 +1,21 @@
 """Tests for certbot.util."""
 import argparse
 import errno
+from importlib import reload as reload_module
+import io
 import sys
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-import six
-from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 
 class EnvNoSnapForExternalCallsTest(unittest.TestCase):
@@ -127,7 +128,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         from certbot import util
         # Despite lock_dir_until_exit has been called twice to subdir, its lock should have been
         # added only once. So we expect to have two lock references: for self.tempdir and subdir
-        self.assertTrue(len(util._LOCKS) == 2)  # pylint: disable=protected-access
+        self.assertEqual(len(util._LOCKS), 2)  # pylint: disable=protected-access
         registered_func()  # Exception should not be raised
         # Logically, logger.debug, that would be invoked in case of unlock failure,
         # should never been called.
@@ -265,11 +266,11 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
 
     def test_multiple(self):
         items = []
-        for _ in six.moves.range(10):
+        for _ in range(10):
             items.append(self._call("wow"))
         f, name = items[-1]
         self.assertTrue(isinstance(f, file_type))
-        self.assertTrue(isinstance(name, six.string_types))
+        self.assertTrue(isinstance(name, str))
         self.assertTrue("wow-0009.conf" in name)
         for f, _ in items:
             f.close()
@@ -361,7 +362,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
 
     def test_help(self):
         self._call("--old-option", 2)
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with mock.patch("sys.stdout", new=stdout):
             try:
                 self.parser.parse_args(["-h"])
@@ -547,8 +548,7 @@ class OsInfoTest(unittest.TestCase):
             m_distro.linux_distribution.return_value = ("something", "else")
             self.assertEqual(cbutil.get_os_info(), ("something", "else"))
 
-    @mock.patch("certbot.util.subprocess.Popen")
-    def test_non_systemd_os_info(self, popen_mock):
+    def test_non_systemd_os_info(self):
         import certbot.util as cbutil
         with mock.patch('certbot.util._USE_DISTRO', False):
             with mock.patch('platform.system_alias',
@@ -557,13 +557,14 @@ class OsInfoTest(unittest.TestCase):
 
             with mock.patch('platform.system_alias',
                             return_value=('darwin', '', '')):
-                comm_mock = mock.Mock()
-                comm_attrs = {'communicate.return_value':
-                            ('42.42.42', 'error')}
-                comm_mock.configure_mock(**comm_attrs)
-                popen_mock.return_value = comm_mock
-                self.assertEqual(cbutil.get_python_os_info()[0], 'darwin')
-                self.assertEqual(cbutil.get_python_os_info()[1], '42.42.42')
+                with mock.patch("subprocess.Popen") as popen_mock:
+                    comm_mock = mock.Mock()
+                    comm_attrs = {'communicate.return_value':
+                                ('42.42.42', 'error')}
+                    comm_mock.configure_mock(**comm_attrs)
+                    popen_mock.return_value = comm_mock
+                    self.assertEqual(cbutil.get_python_os_info()[0], 'darwin')
+                    self.assertEqual(cbutil.get_python_os_info()[1], '42.42.42')
 
             with mock.patch('platform.system_alias',
                             return_value=('freebsd', '9.3-RC3-p1', '')):

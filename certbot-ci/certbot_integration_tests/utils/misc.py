@@ -4,10 +4,12 @@ or outside during setup/teardown of the integration tests environment.
 """
 import contextlib
 import errno
+import http.server as SimpleHTTPServer
 import multiprocessing
 import os
 import re
 import shutil
+import socketserver
 import stat
 import sys
 import tempfile
@@ -23,8 +25,6 @@ from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import crypto
 import pkg_resources
 import requests
-from six.moves import SimpleHTTPServer
-from six.moves import socketserver
 
 from certbot_integration_tests.utils.constants import \
      PEBBLE_ALTERNATE_ROOTS, PEBBLE_MANAGEMENT_URL
@@ -39,6 +39,7 @@ def _suppress_x509_verification_warnings():
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     except ImportError:
         # Handle old versions of request with vendorized urllib3
+        # pylint: disable=no-member
         from requests.packages.urllib3.exceptions import InsecureRequestWarning
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -256,7 +257,8 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
 
 def read_certificate(cert_path):
     """
-    Load the certificate from the provided path, and return a human readable version of it (TEXT mode).
+    Load the certificate from the provided path, and return a human readable version
+    of it (TEXT mode).
     :param str cert_path: the path to the certificate
     :returns: the TEXT version of the certificate, as it would be displayed by openssl binary
     """
@@ -280,7 +282,11 @@ def load_sample_data_path(workspace):
 
     if os.name == 'nt':
         # Fix the symlinks on Windows if GIT is not configured to create them upon checkout
-        for lineage in ['a.encryption-example.com', 'b.encryption-example.com']:
+        for lineage in [
+            'a.encryption-example.com',
+            'b.encryption-example.com',
+            'c.encryption-example.com',
+        ]:
             current_live = os.path.join(copied, 'live', lineage)
             for name in os.listdir(current_live):
                 if name != 'README':
@@ -305,7 +311,7 @@ def echo(keyword, path=None):
     if not re.match(r'^\w+$', keyword):
         raise ValueError('Error, keyword `{0}` is not a single keyword.'
                          .format(keyword))
-    return '{0} -c "from __future__ import print_function; print(\'{1}\')"{2}'.format(
+    return '{0} -c "print(\'{1}\')"{2}'.format(
         os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
 
 

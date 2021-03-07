@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="1.9.0"
+LE_AUTO_VERSION="1.13.0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -799,15 +799,14 @@ BootstrapMageiaCommon() {
 # that function. If Bootstrap is set to a function that doesn't install any
 # packages BOOTSTRAP_VERSION is not set.
 if [ -f /etc/debian_version ]; then
-  Bootstrap() {
-    BootstrapMessage "Debian-based OSes"
-    BootstrapDebCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapDebCommon $BOOTSTRAP_DEB_COMMON_VERSION"
+  DEPRECATED_OS=1
 elif [ -f /etc/mageia-release ]; then
   # Mageia has both /etc/mageia-release and /etc/redhat-release
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/redhat-release ]; then
+  DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
   # Run DeterminePythonVersion to decide on the basis of available Python versions
   # whether to use 2.x or 3.x on RedHat-like systems.
   # Then, revert LE_PYTHON to its previous state.
@@ -840,12 +839,7 @@ elif [ -f /etc/redhat-release ]; then
       INTERACTIVE_BOOTSTRAP=1
     fi
 
-    Bootstrap() {
-      BootstrapMessage "Legacy RedHat-based OSes that will use Python3"
-      BootstrapRpmPython3Legacy
-    }
     USE_PYTHON_3=1
-    BOOTSTRAP_VERSION="BootstrapRpmPython3Legacy $BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION"
 
     # Try now to enable SCL rh-python36 for systems already bootstrapped
     # NB: EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
@@ -864,43 +858,38 @@ elif [ -f /etc/redhat-release ]; then
     fi
 
     if [ "$RPM_USE_PYTHON_3" = 1 ]; then
-      Bootstrap() {
-        BootstrapMessage "RedHat-based OSes that will use Python3"
-        BootstrapRpmPython3
-      }
       USE_PYTHON_3=1
-      BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
-    else
-      Bootstrap() {
-        BootstrapMessage "RedHat-based OSes"
-        BootstrapRpmCommon
-      }
-      BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
     fi
   fi
 
   LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/arch-release ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/manjaro-release ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/gentoo-release ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif uname | grep -iq FreeBSD ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif uname | grep -iq Darwin ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
-  Bootstrap() {
-    ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 else
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 fi
 
 # We handle this case after determining the normal bootstrap version to allow
@@ -1129,7 +1118,9 @@ if [ "$1" = "--le-auto-phase2" ]; then
     fi
 
     if [ -f "$VENV_BIN/letsencrypt" -a "$INSTALL_ONLY" != 1 ]; then
-      error "Certbot will no longer receive updates."
+      error "certbot-auto and its Certbot installation will no longer receive updates."
+      error "You will not receive any bug fixes including those fixing server compatibility"
+      error "or security problems."
       error "Please visit https://certbot.eff.org/ to check for other alternatives."
       "$VENV_BIN/letsencrypt" "$@"
       exit 0
@@ -1497,18 +1488,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==1.9.0 \
-    --hash=sha256:d5a804d32e471050921f7b39ed9859e2e9de02824176ed78f57266222036b53a \
-    --hash=sha256:2ff9bf7d9af381c7efee22dec2dd6938d9d8fddcc9e11682b86e734164a30b57
-acme==1.9.0 \
-    --hash=sha256:d8061b396a22b21782c9b23ff9a945b23e50fca2573909a42f845e11d5658ac5 \
-    --hash=sha256:38a1630c98e144136c62eec4d2c545a1bdb1a3cd4eca82214be6b83a1f5a161f
-certbot-apache==1.9.0 \
-    --hash=sha256:09528a820d57e54984d490100644cd8a6603db97bf5776f86e95795ecfacf23d \
-    --hash=sha256:f47fb3f4a9bd927f4812121a0beefe56b163475a28f4db34c64dc838688d9e9e
-certbot-nginx==1.9.0 \
-    --hash=sha256:bb2e3f7fe17f071f350a3efa48571b8ef40a8e4b6db9c6da72539206a20b70be \
-    --hash=sha256:ab26a4f49d53b0e8bf0f903e58e2a840cda233fe1cbbc54c36ff17f973e57d65
+certbot==1.13.0 \
+    --hash=sha256:082eb732e1318bb9605afa7aea8db2c2f4c5029d523c73f24c6aa98f03caff76 \
+    --hash=sha256:64cf41b57df7667d9d849fcaa9031a4f151788246733d1f4c3f37a5aa5e2f458
+acme==1.13.0 \
+    --hash=sha256:93b6365c9425de03497a6b8aee1107814501d2974499b42e9bcc9a7378771143 \
+    --hash=sha256:6b4257dfd6a6d5f01e8cd4f0b10422c17836bed7c67e9c5b0a0ad6c7d651c088
+certbot-apache==1.13.0 \
+    --hash=sha256:36ed02ac7d2d91febee8dd3181ae9095b3f06434c9ed8959fbc6db24ab4da2e8 \
+    --hash=sha256:4b5a16e80c1418e2edc05fc2578f522fb24974b2c13eb747cdfeef69e5bd5ae1
+certbot-nginx==1.13.0 \
+    --hash=sha256:3ff271f65321b25c77a868af21f76f58754a7d61529ad565a1d66e29c711120f \
+    --hash=sha256:9e972cc19c0fa9e5b7863da0423b156fbfb5623fd30b558fd2fd6d21c24c0b08
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------

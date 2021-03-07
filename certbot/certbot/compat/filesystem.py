@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
+import sys
 
 from acme.magic_typing import List
 
@@ -361,7 +362,8 @@ def realpath(file_path):
     """
     original_path = file_path
 
-    if POSIX_MODE:
+    # Since Python 3.8, os.path.realpath also resolves symlinks on Windows.
+    if POSIX_MODE or sys.version_info >= (3, 8):
         path = os.path.realpath(file_path)
         if os.path.islink(path):
             # If path returned by realpath is still a link, it means that it failed to
@@ -383,8 +385,36 @@ def realpath(file_path):
     return os.path.abspath(file_path)
 
 
+def readlink(link_path):
+    # type: (str) -> str
+    """
+    Return a string representing the path to which the symbolic link points.
+
+    :param str link_path: The symlink path to resolve
+    :return: The path the symlink points to
+    :returns: str
+    :raise: ValueError if a long path (260> characters) is encountered on Windows
+    """
+    path = os.readlink(link_path)
+
+    if POSIX_MODE or not path.startswith('\\\\?\\'):
+        return path
+
+    # At this point, we know we are on Windows and that the path returned uses
+    # the extended form which is done for all paths in Python 3.8+
+
+    # Max length of a normal path is 260 characters on Windows, including the non printable
+    # termination character "<NUL>". The termination character is not included in Python
+    # strings, giving a max length of 259 characters, + 4 characters for the extended form
+    # prefix, to an effective max length 263 characters on a string representing a normal path.
+    if len(path) < 264:
+        return path[4:]
+
+    raise ValueError("Long paths are not supported by Certbot on Windows.")
+
+
 # On Windows is_executable run from an unprivileged shell may claim that a path is
-# executable when it is excutable only if run from a privileged shell. This result
+# executable when it is executable only if run from a privileged shell. This result
 # is due to the fact that GetEffectiveRightsFromAcl calculate effective rights
 # without taking into consideration if the target user has currently required the
 # elevated privileges or not. However this is not a problem since certbot always

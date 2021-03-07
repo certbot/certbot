@@ -4,7 +4,6 @@
 import argparse
 import atexit
 import collections
-from collections import OrderedDict
 import distutils.version
 import errno
 import logging
@@ -15,8 +14,8 @@ import subprocess
 import sys
 
 import configargparse
-import six
 
+from acme.magic_typing import Dict
 from acme.magic_typing import Text
 from acme.magic_typing import Tuple
 from acme.magic_typing import Union
@@ -59,7 +58,7 @@ _INITIAL_PID = os.getpid()
 # the dict are attempted to be cleaned up at program exit. If the
 # program exits before the lock is cleaned up, it is automatically
 # released, but the file isn't deleted.
-_LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
+_LOCKS = {}  # type: Dict[str, lock.LockFile]
 
 
 def env_no_snap_for_external_calls():
@@ -153,7 +152,7 @@ def lock_dir_until_exit(dir_path):
 
 
 def _release_locks():
-    for dir_lock in six.itervalues(_LOCKS):
+    for dir_lock in _LOCKS.values():
         try:
             dir_lock.release()
         except:  # pylint: disable=bare-except
@@ -439,7 +438,7 @@ def safe_email(email):
     return False
 
 
-class _ShowWarning(argparse.Action):
+class DeprecatedArgumentAction(argparse.Action):
     """Action to log a warning when an argument is used."""
     def __call__(self, unused1, unused2, unused3, option_string=None):
         logger.warning("Use of %s is deprecated.", option_string)
@@ -458,16 +457,16 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
     :param nargs: Value for nargs when adding the argument to argparse.
 
     """
-    if _ShowWarning not in configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE:
+    if DeprecatedArgumentAction not in configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE:
         # In version 0.12.0 ACTION_TYPES_THAT_DONT_NEED_A_VALUE was
         # changed from a set to a tuple.
         if isinstance(configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE, set):
             configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE.add(
-                _ShowWarning)
+                DeprecatedArgumentAction)
         else:
             configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE += (
-                _ShowWarning,)
-    add_argument(argument_name, action=_ShowWarning,
+                DeprecatedArgumentAction,)
+    add_argument(argument_name, action=DeprecatedArgumentAction,
                  help=argparse.SUPPRESS, nargs=nargs)
 
 
@@ -517,7 +516,7 @@ def enforce_domain_sanity(domain):
     """
     # Unicode
     try:
-        if isinstance(domain, six.binary_type):
+        if isinstance(domain, bytes):
             domain = domain.decode('utf-8')
         domain.encode('ascii')
     except UnicodeError:
@@ -579,7 +578,7 @@ def is_wildcard_domain(domain):
 
     """
     wildcard_marker = b"*."  # type: Union[Text, bytes]
-    if isinstance(domain, six.text_type):
+    if isinstance(domain, str):
         wildcard_marker = u"*."
     return domain.startswith(wildcard_marker)
 

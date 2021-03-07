@@ -1,11 +1,7 @@
 """Tests for acme.magic_typing."""
 import sys
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
+from unittest import mock
 
 
 class MagicTypingTest(unittest.TestCase):
@@ -23,19 +19,6 @@ class MagicTypingTest(unittest.TestCase):
             del sys.modules['acme.magic_typing'] # pragma: no cover
         from acme.magic_typing import Text
         self.assertEqual(Text, text_mock)
-        del sys.modules['acme.magic_typing']
-        sys.modules['typing'] = temp_typing
-
-    def test_import_failure(self):
-        try:
-            import typing as temp_typing
-        except ImportError: # pragma: no cover
-            temp_typing = None # pragma: no cover
-        sys.modules['typing'] = None
-        if 'acme.magic_typing' in sys.modules:
-            del sys.modules['acme.magic_typing'] # pragma: no cover
-        from acme.magic_typing import Text
-        self.assertTrue(Text is None)
         del sys.modules['acme.magic_typing']
         sys.modules['typing'] = temp_typing
 

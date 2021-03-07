@@ -3,9 +3,6 @@ import copy
 import fnmatch
 import logging
 import re
-import sys
-
-import six
 
 from acme.magic_typing import Dict
 from acme.magic_typing import List
@@ -17,7 +14,7 @@ from certbot_apache._internal import constants
 logger = logging.getLogger(__name__)
 
 
-class ApacheParser(object):
+class ApacheParser:
     """Class handles the fine details of parsing the Apache Configuration.
 
     .. todo:: Make parsing general... remove sites-available etc...
@@ -275,7 +272,7 @@ class ApacheParser(object):
         while len(mods) != prev_size:
             prev_size = len(mods)
 
-            for match_name, match_filename in six.moves.zip(
+            for match_name, match_filename in zip(
                     iterator, iterator):
                 mod_name = self.get_arg(match_name)
                 mod_filename = self.get_arg(match_filename)
@@ -738,9 +735,6 @@ class ApacheParser(object):
         :rtype: str
 
         """
-        if sys.version_info < (3, 6):
-            # This strips off final /Z(?ms)
-            return fnmatch.translate(clean_fn_match)[:-7]  # pragma: no cover
         # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
         return fnmatch.translate(clean_fn_match)[4:-3]  # pragma: no cover
 

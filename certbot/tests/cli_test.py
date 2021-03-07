@@ -1,15 +1,10 @@
 """Tests for certbot._internal.cli."""
 import argparse
 import copy
+from importlib import reload as reload_module
+import io
 import tempfile
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-import six
-from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import challenges
 from certbot import errors
@@ -20,6 +15,12 @@ from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 PLUGINS = disco.PluginsRegistry.find_all()
 
@@ -91,7 +92,7 @@ class ParseTest(unittest.TestCase):
     def _help_output(self, args):
         "Run a command, and return the output string for scrutiny"
 
-        output = six.StringIO()
+        output = io.StringIO()
 
         def write_msg(message, *args, **kwargs): # pylint: disable=missing-docstring,unused-argument
             output.write(message)
@@ -359,6 +360,21 @@ class ParseTest(unittest.TestCase):
         self.assertFalse(cli.option_was_set(
             'authenticator', cli.flag_default('authenticator')))
 
+    def test_ecdsa_key_option(self):
+        elliptic_curve_option = 'elliptic_curve'
+        elliptic_curve_option_value = cli.flag_default(elliptic_curve_option)
+        self.parse('--elliptic-curve {0}'.format(elliptic_curve_option_value).split())
+        self.assertIs(cli.option_was_set(elliptic_curve_option, elliptic_curve_option_value), True)
+
+    def test_invalid_key_type(self):
+        key_type_option = 'key_type'
+        key_type_value = cli.flag_default(key_type_option)
+        self.parse('--key-type {0}'.format(key_type_value).split())
+        self.assertIs(cli.option_was_set(key_type_option, key_type_value), True)
+
+        with self.assertRaises(SystemExit):
+            self.parse("--key-type foo")
+
     def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
             namespace = self.parse(['--reason', reason])
@@ -463,10 +479,6 @@ class ParseTest(unittest.TestCase):
         for help_flag in ['-h', '--help']:
             for topic in ['all', 'plugins', 'dns-route53']:
                 self.assertFalse('certbot-route53:auth' in self._help_output([help_flag, topic]))
-
-    def test_no_permissions_check_accepted(self):
-        namespace = self.parse(["--no-permissions-check"])
-        self.assertTrue(namespace.no_permissions_check)
 
 
 class DefaultTest(unittest.TestCase):

@@ -1,7 +1,6 @@
 """Module contains classes used by the Nginx Configurator."""
 import re
 
-import six
 
 from certbot.plugins import common
 
@@ -144,7 +143,7 @@ class Addr(common.Addr):
         return False
 
 
-class VirtualHost(object):
+class VirtualHost:
     """Represents an Nginx Virtualhost.
 
     :ivar str filep: file path of VH
@@ -211,7 +210,7 @@ class VirtualHost(object):
     def contains_list(self, test):
         """Determine if raw server block contains test list at top level
         """
-        for i in six.moves.range(0, len(self.raw) - len(test) + 1):
+        for i in range(0, len(self.raw) - len(test) + 1):
             if self.raw[i:i + len(test)] == test:
                 return True
         return False
@@ -250,7 +249,7 @@ def _find_directive(directives, directive_name, match_content=None):
     """Find a directive of type directive_name in directives. If match_content is given,
        Searches for `match_content` in the directive arguments.
     """
-    if not directives or isinstance(directives, six.string_types):
+    if not directives or isinstance(directives, str):
         return None
 
     # If match_content is None, just match on directive type. Otherwise, match on

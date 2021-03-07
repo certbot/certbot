@@ -10,7 +10,6 @@ from cryptography.hazmat.primitives import serialization
 import josepy as jose
 import pyrfc3339
 import pytz
-import six
 
 from acme import fields as acme_fields
 from acme import messages
@@ -20,11 +19,12 @@ from certbot import interfaces
 from certbot import util
 from certbot._internal import constants
 from certbot.compat import os
+from certbot.compat import filesystem
 
 logger = logging.getLogger(__name__)
 
 
-class Account(object):
+class Account:
     """ACME protocol registration.
 
     :ivar .RegistrationResource regr: Registration Resource
@@ -100,7 +100,7 @@ class AccountMemoryStorage(interfaces.AccountStorage):
         self.accounts = initial_accounts if initial_accounts is not None else {}
 
     def find_all(self):
-        return list(six.itervalues(self.accounts))
+        return list(self.accounts.values())
 
     def save(self, account, client):
         if account.id in self.accounts:
@@ -324,7 +324,7 @@ class AccountFileStorage(interfaces.AccountStorage):
             if server_path in reused_servers:
                 next_server_path = reused_servers[server_path]
                 next_dir_path = link_func(next_server_path)
-                if os.path.islink(next_dir_path) and os.readlink(next_dir_path) == dir_path:
+                if os.path.islink(next_dir_path) and filesystem.readlink(next_dir_path) == dir_path:
                     possible_next_link = True
                     server_path = next_server_path
                     dir_path = next_dir_path
@@ -332,7 +332,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         # if there's not a next one up to delete, then delete me
         # and whatever I link to
         while os.path.islink(dir_path):
-            target = os.readlink(dir_path)
+            target = filesystem.readlink(dir_path)
             os.unlink(dir_path)
             dir_path = target
 

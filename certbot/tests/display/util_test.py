@@ -1,19 +1,21 @@
 """Test :mod:`certbot.display.util`."""
 import inspect
+import io
 import socket
 import tempfile
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-import six
 
 from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
@@ -34,7 +36,7 @@ class InputWithTimeoutTest(unittest.TestCase):
 
     def test_input(self, prompt=None):
         expected = "foo bar"
-        stdin = six.StringIO(expected + "\n")
+        stdin = io.StringIO(expected + "\n")
         with mock.patch("certbot.compat.misc.select.select") as mock_select:
             mock_select.return_value = ([stdin], [], [],)
             self.assertEqual(self._call(prompt), expected)
@@ -328,11 +330,7 @@ class FileOutputDisplayTest(unittest.TestCase):
         # Every IDisplay method implemented by FileDisplay must take
         # force_interactive to prevent workflow regressions.
         for name in interfaces.IDisplay.names():
-            if six.PY2:
-                getargspec = inspect.getargspec
-            else:
-                getargspec = inspect.getfullargspec
-            arg_spec = getargspec(getattr(self.displayer, name))  # pylint: disable=deprecated-method
+            arg_spec = inspect.getfullargspec(getattr(self.displayer, name))
             self.assertTrue("force_interactive" in arg_spec.args)
 
 
@@ -402,12 +400,8 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         for name in interfaces.IDisplay.names():  # pylint: disable=E1120
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
-            if six.PY2:
-                result = inspect.getargspec(method).keywords  # pylint:deprecated-method
-                self.assertFalse(result is None)
-            else:
-                result = inspect.getfullargspec(method).varkw
-                self.assertFalse(result is None)
+            result = inspect.getfullargspec(method).varkw
+            self.assertFalse(result is None)
 
 
 class SeparateListInputTest(unittest.TestCase):
@@ -454,6 +448,27 @@ class PlaceParensTest(unittest.TestCase):
         self.assertEqual("(y)es please", self._call("yes please"))
 
 
+class SummarizeDomainListTest(unittest.TestCase):
+    @classmethod
+    def _call(cls, domains):
+        from certbot.display.util import summarize_domain_list
+        return summarize_domain_list(domains)
+
+    def test_single_domain(self):
+        self.assertEqual("example.com", self._call(["example.com"]))
+
+    def test_two_domains(self):
+        self.assertEqual("example.com and example.org",
+                         self._call(["example.com", "example.org"]))
+
+    def test_many_domains(self):
+        self.assertEqual("example.com and 2 more domains",
+                         self._call(["example.com", "example.org", "a.example.com"]))
+
+    def test_empty_domains(self):
+        self.assertEqual("", self._call([]))
+
+
 class NotifyTest(unittest.TestCase):
     """Test the notify function """
 
@@ -462,7 +477,7 @@ class NotifyTest(unittest.TestCase):
         from certbot.display.util import notify
         notify("Hello World")
         mock_util().notification.assert_called_with(
-            "Hello World", pause=False, decorate=False
+            "Hello World", pause=False, decorate=False, wrap=False
         )
 
 

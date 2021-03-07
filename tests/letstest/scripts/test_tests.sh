@@ -9,17 +9,11 @@ LE_AUTO="$REPO_ROOT/letsencrypt-auto-source/letsencrypt-auto"
 LE_AUTO="$LE_AUTO --debug --no-self-upgrade --non-interactive"
 MODULES="acme certbot certbot-apache certbot-nginx"
 PIP_INSTALL="tools/pip_install.py"
-VENV_NAME=venv3
+VENV_NAME=venv
 BOOTSTRAP_SCRIPT="$REPO_ROOT/tests/letstest/scripts/bootstrap_os_packages.sh"
-VENV_SCRIPT="tools/venv3.py"
+VENV_SCRIPT="tools/venv.py"
 
 sudo $BOOTSTRAP_SCRIPT
-
-if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
-  # RHEL/CentOS 6 will need a special treatment, so we need to detect that environment
-  # Enable the SCL Python 3.6 installed by letsencrypt-auto bootstrap
-  PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
-fi
 
 cd $REPO_ROOT
 $VENV_SCRIPT

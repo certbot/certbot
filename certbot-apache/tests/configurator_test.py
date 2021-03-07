@@ -10,7 +10,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
-import six  # pylint: disable=unused-import  # six is used in mock.patch()
 
 from acme import challenges
 from certbot import achallenges
@@ -726,7 +725,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # This calls open
         self.config.reverter.register_file_creation = mock.Mock()
         mock_open.side_effect = IOError
-        with mock.patch("six.moves.builtins.open", mock_open):
+        with mock.patch("builtins.open", mock_open):
             self.assertRaises(
                 errors.PluginError,
                 self.config.make_vhost_ssl, self.vh_truth[0])
@@ -1350,10 +1349,10 @@ class MultipleVhostsTest(util.ApacheTest):
 
             # And the actual returned values
             self.assertEqual(len(vhs), 1)
-            self.assertTrue(vhs[0].name == "certbot.demo")
+            self.assertEqual(vhs[0].name, "certbot.demo")
             self.assertTrue(vhs[0].ssl)
 
-            self.assertFalse(vhs[0] == self.vh_truth[3])
+            self.assertNotEqual(vhs[0], self.vh_truth[3])
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.make_vhost_ssl")
     def test_choose_vhosts_wildcard_no_ssl(self, mock_makessl):
@@ -1464,10 +1463,10 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.aug.match = mock_match
         vhs = self.config.get_virtual_hosts()
         self.assertEqual(len(vhs), 2)
-        self.assertTrue(vhs[0] == self.vh_truth[1])
+        self.assertEqual(vhs[0], self.vh_truth[1])
         # mock_vhost should have replaced the vh_truth[0], because its filepath
         # isn't a symlink
-        self.assertTrue(vhs[1] == mock_vhost)
+        self.assertEqual(vhs[1], mock_vhost)
 
 
 class AugeasVhostsTest(util.ApacheTest):
@@ -1834,7 +1833,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
 
     def test_open_module_file(self):
         mock_open = mock.mock_open(read_data="testing 12 3")
-        with mock.patch("six.moves.builtins.open", mock_open):
+        with mock.patch("builtins.open", mock_open):
             self.assertEqual(self.config._open_module_file("/nonsense/"), "testing 12 3")
 
 if __name__ == "__main__":
