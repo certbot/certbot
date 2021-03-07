@@ -24,10 +24,6 @@ def _execute_build(target, archs, status, workspace):
         process_output.append(line)
         _extract_state(target, line, status)
 
-        if any(state for state in status[target].values() if state == 'Chroot problem'):
-            # On this error the snapcraft process stales. Let's finish it.
-            process.kill()
-
     return process.wait(), process_output
 
 
