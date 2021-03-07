@@ -50,6 +50,13 @@ def _build_snap(target, archs, status, running, lock):
         with lock:
             dump_output = exit_code != 0
             failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
+            if any(arch for arch in archs if status[target][arch] == 'Chroot problem'):
+                print('Some builds failed with the status "Chroot problem".')
+                print('This status is known to make any future build fail until either '
+                      'the source code changes or the build on Launchpad is deleted.')
+                print('Please fix the build appropriately before trying a new one.')
+                # It is useless to retry in this situation.
+                retry = 0
             if exit_code == 0 and not failed_archs:
                 # We expect to have all target snaps available, or something bad happened.
                 snaps_list = glob.glob(join(workspace, '*.snap'))
