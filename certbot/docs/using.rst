@@ -724,7 +724,7 @@ necessary files.
     set by the user,
   * if the first domain is a wildcard domain (eg. ``*.example.com``) the
     certificate name will be ``example.com``,
-  * if a name collision may occur with a certificate already named ``example.com``,
+  * if a name collision would occur with a certificate already named ``example.com``,
     the new certificate name will be constructed using a numerical sequence
     as ``example.com-001``.
 
