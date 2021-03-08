@@ -22,8 +22,7 @@ considered stable with certain files but not all. Files with which users should
 expect Certbot to maintain its current behavior with are:
 
 * ``/etc/letsencrypt/live/$domain/{cert,chain,fullchain,privkey}.pem``, where
-  ``$domain`` is the certificate name (see
-  `Certbot user guide <https://certbot.eff.org/docs/using.html#where-are-my-certificates>`_
+  ``$domain`` is the certificate name (see :ref:`where-certs`
   for more details)
 * :ref:`CLI configuration files <config-file>`
 * Hook directories in ``/etc/letsencrypt/renewal-hooks``
