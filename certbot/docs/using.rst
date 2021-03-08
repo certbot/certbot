@@ -722,8 +722,8 @@ necessary files.
   * is the name given to ``--cert-name``,
   * or is the first domain given to ``--domains`` if ``--cert-name`` is not
     set by the user,
-  * if the first domain is a wildcard domain (eg. ``*.example.com``) the cert
-    name will be ``example.com``,
+  * if the first domain is a wildcard domain (eg. ``*.example.com``) the
+    certificate name will be ``example.com``,
   * if a name collision may occur with a certificate already named ``example.com``,
     the new certificate name will be constructed using a numerical sequence
     as ``example.com-001``.
