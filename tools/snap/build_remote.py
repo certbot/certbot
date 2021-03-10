@@ -2,17 +2,26 @@
 import argparse
 import datetime
 import glob
+from multiprocessing import Manager
+from multiprocessing import Pool
+from multiprocessing import Process
+from multiprocessing.managers import SyncManager
 import os
+from os.path import basename
+from os.path import dirname
+from os.path import exists
+from os.path import join
+from os.path import realpath
 import re
 import subprocess
 import sys
-import time
 import tempfile
-from multiprocessing.managers import SyncManager
 from threading import Lock
-from multiprocessing import Pool, Process, Manager
-from os.path import join, realpath, dirname, basename, exists
-from typing import List, Dict, Tuple, Set
+import time
+from typing import Dict
+from typing import List
+from typing import Set
+from typing import Tuple
 
 CERTBOT_DIR = dirname(dirname(dirname(realpath(__file__))))
 PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*'))]
@@ -35,6 +44,10 @@ def _execute_build(
     for line in process.stdout:
         process_output.append(line)
         _extract_state(target, line, status)
+
+        if any(state for state in status[target].values() if state == 'Chroot problem'):
+            # On this error the snapcraft process stales. Let's finish it.
+            process.kill()
 
     return process.wait(), process_output
 
@@ -59,15 +72,14 @@ def _build_snap(
 
         with lock:
             dump_output = exit_code != 0
-            failed_archs = [arch for arch in archs if status[target][arch] == 'Failed to build']
-            # failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
-            # if any(arch for arch in archs if status[target][arch] == 'Chroot problem'):
-            #     print('Some builds failed with the status "Chroot problem".')
-            #     print('This status is known to make any future build fail until either '
-            #           'the source code changes or the build on Launchpad is deleted.')
-            #     print('Please fix the build appropriately before trying a new one.')
-            #     # It is useless to retry in this situation.
-            #     retry = 0
+            failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
+            if any(arch for arch in archs if status[target][arch] == 'Chroot problem'):
+                print('Some builds failed with the status "Chroot problem".')
+                print('This status is known to make any future build fail until either '
+                      'the source code changes or the build on Launchpad is deleted.')
+                print('Please fix the build appropriately before trying a new one.')
+                # It is useless to retry in this situation.
+                retry = 0
             if exit_code == 0 and not failed_archs:
                 # We expect to have all target snaps available, or something bad happened.
                 snaps_list = glob.glob(join(workspace, '*.snap'))
