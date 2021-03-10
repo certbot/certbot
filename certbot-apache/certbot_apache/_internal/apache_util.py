@@ -9,7 +9,6 @@ import pkg_resources
 
 from certbot import errors
 from certbot import util
-
 from certbot.compat import os
 
 logger = logging.getLogger(__name__)

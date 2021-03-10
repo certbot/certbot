@@ -11,6 +11,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * certbot-auto no longer checks for updates on any operating system.
+* The module `acme.magic_typing` is deprecated and will be removed in a future release.
+  Please use the built-in module `typing` instead.
+* The DigitalOcean plugin now creates TXT records for the DNS-01 challenge with a lower 30s TTL.
 
 ### Fixed
 

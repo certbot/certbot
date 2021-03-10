@@ -3,7 +3,6 @@ import fnmatch
 
 from certbot_apache._internal import interfaces
 
-
 PASS = "CERTBOT_PASS_ASSERT"
 
 

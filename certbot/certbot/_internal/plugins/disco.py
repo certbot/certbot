@@ -2,13 +2,13 @@
 import itertools
 import logging
 import sys
+from typing import Dict
 from collections.abc import Mapping
 
 import pkg_resources
 import zope.interface
 import zope.interface.verify
 
-from acme.magic_typing import Dict
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants

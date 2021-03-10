@@ -45,7 +45,6 @@ import yaml
 from fabric import Config
 from fabric import Connection
 
-
 # Command line parser
 #-------------------------------------------------------------------------------
 parser = argparse.ArgumentParser(description='Builds EC2 cluster for testing.')

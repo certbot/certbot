@@ -2,6 +2,8 @@
 # Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
 import copy
 import logging
+from typing import Any  # pylint: disable=unused-import
+from typing import IO  # pylint: disable=unused-import
 
 from pyparsing import Combine
 from pyparsing import Forward
@@ -15,7 +17,6 @@ from pyparsing import restOfLine
 from pyparsing import stringEnd
 from pyparsing import White
 from pyparsing import ZeroOrMore
-from acme.magic_typing import IO, Any # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 

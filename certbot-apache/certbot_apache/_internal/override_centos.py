@@ -1,9 +1,9 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
 import logging
+from typing import List
 
 import zope.interface
 
-from acme.magic_typing import List
 from certbot import errors
 from certbot import interfaces
 from certbot import util

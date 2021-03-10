@@ -12,11 +12,11 @@ Other messages can use the `logging` module. See `log.py`.
 import logging
 import sys
 import textwrap
+from typing import List
 
 import zope.interface
 import zope.component
 
-from acme.magic_typing import List
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
