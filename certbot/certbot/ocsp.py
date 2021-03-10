@@ -5,6 +5,8 @@ import logging
 import re
 from subprocess import PIPE
 from subprocess import Popen
+from typing import Optional
+from typing import Tuple
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -16,8 +18,6 @@ from cryptography.hazmat.primitives import serialization
 import pytz
 import requests
 
-from acme.magic_typing import Optional
-from acme.magic_typing import Tuple
 from certbot import crypto_util
 from certbot import errors
 from certbot import util

@@ -3,15 +3,15 @@ import argparse
 import collections
 import json
 import logging
+from typing import DefaultDict
+from typing import Dict
+from typing import List
+from typing import Set
 
 import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import DefaultDict
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Set
 from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces

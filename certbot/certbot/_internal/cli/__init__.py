@@ -4,10 +4,10 @@ import logging
 import logging.handlers
 import argparse
 import sys
+from typing import Optional
+
 import certbot._internal.plugins.selection as plugin_selection
 from certbot._internal.plugins import disco as plugins_disco
-
-from acme.magic_typing import Optional
 
 # pylint: disable=ungrouped-imports
 import certbot

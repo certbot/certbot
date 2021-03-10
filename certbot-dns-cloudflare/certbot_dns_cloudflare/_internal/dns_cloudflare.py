@@ -1,12 +1,11 @@
 """DNS Authenticator for Cloudflare."""
 import logging
+from typing import Any
+from typing import Dict
+from typing import List
 
 import CloudFlare
 import zope.interface
-
-from acme.magic_typing import Any
-from acme.magic_typing import Dict
-from acme.magic_typing import List
 
 from certbot import errors
 from certbot import interfaces

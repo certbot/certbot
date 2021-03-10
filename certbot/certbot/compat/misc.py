@@ -8,11 +8,11 @@ import logging
 import select
 import subprocess
 import sys
+from typing import Optional
+from typing import Tuple
 
 from certbot import errors
 from certbot.compat import os
-
-from acme.magic_typing import Tuple, Optional
 
 try:
     from win32com.shell import shell as shellwin32

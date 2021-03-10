@@ -2,15 +2,15 @@
 import collections
 import logging
 import time
+from typing import DefaultDict
+from typing import Dict
+from typing import List
 
 import boto3
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
 import zope.interface
 
-from acme.magic_typing import DefaultDict
-from acme.magic_typing import Dict
-from acme.magic_typing import List
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common

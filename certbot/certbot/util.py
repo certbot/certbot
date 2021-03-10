@@ -12,13 +12,13 @@ import re
 import socket
 import subprocess
 import sys
+from typing import Dict
+from typing import Text
+from typing import Tuple
+from typing import Union
 
 import configargparse
 
-from acme.magic_typing import Dict
-from acme.magic_typing import Text
-from acme.magic_typing import Tuple
-from acme.magic_typing import Union
 from certbot import errors
 from certbot._internal import constants
 from certbot._internal import lock
