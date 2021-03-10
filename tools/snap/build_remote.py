@@ -2,12 +2,18 @@
 import argparse
 import datetime
 import glob
+from multiprocessing import Manager
+from multiprocessing import Pool
+from multiprocessing import Process
+from os.path import basename
+from os.path import dirname
+from os.path import exists
+from os.path import join
+from os.path import realpath
 import re
 import subprocess
 import sys
 import time
-from multiprocessing import Pool, Process, Manager
-from os.path import join, realpath, dirname, basename, exists
 
 CERTBOT_DIR = dirname(dirname(dirname(realpath(__file__))))
 PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*'))]

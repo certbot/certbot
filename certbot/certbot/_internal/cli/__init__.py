@@ -9,7 +9,6 @@ from typing import Optional
 import certbot._internal.plugins.selection as plugin_selection
 from certbot._internal.plugins import disco as plugins_disco
 
-
 # pylint: disable=ungrouped-imports
 import certbot
 from certbot._internal import constants

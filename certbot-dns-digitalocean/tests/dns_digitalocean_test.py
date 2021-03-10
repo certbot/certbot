@@ -40,7 +40,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
     def test_perform(self):
         self.auth.perform([self.achall])
 
-        expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
+        expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, 30)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
     def test_cleanup(self):
@@ -58,6 +58,7 @@ class DigitalOceanClientTest(unittest.TestCase):
     record_prefix = "_acme-challenge"
     record_name = record_prefix + "." + DOMAIN
     record_content = "bar"
+    record_ttl = 60
 
     def setUp(self):
         from certbot_dns_digitalocean._internal.dns_digitalocean import _DigitalOceanClient
@@ -78,25 +79,27 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         self.manager.get_all_domains.return_value = [wrong_domain_mock, domain_mock]
 
-        self.digitalocean_client.add_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.digitalocean_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
+                                                self.record_ttl)
 
         domain_mock.create_new_domain_record.assert_called_with(type='TXT',
                                                                 name=self.record_prefix,
-                                                                data=self.record_content)
+                                                                data=self.record_content,
+                                                                ttl=self.record_ttl)
 
     def test_add_txt_record_fail_to_find_domain(self):
         self.manager.get_all_domains.return_value = []
 
         self.assertRaises(errors.PluginError,
                           self.digitalocean_client.add_txt_record,
-                          DOMAIN, self.record_name, self.record_content)
+                          DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     def test_add_txt_record_error_finding_domain(self):
         self.manager.get_all_domains.side_effect = API_ERROR
 
         self.assertRaises(errors.PluginError,
                           self.digitalocean_client.add_txt_record,
-                          DOMAIN, self.record_name, self.record_content)
+                          DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     def test_add_txt_record_error_creating_record(self):
         domain_mock = mock.MagicMock()
@@ -107,7 +110,7 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         self.assertRaises(errors.PluginError,
                           self.digitalocean_client.add_txt_record,
-                          DOMAIN, self.record_name, self.record_content)
+                          DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     def test_del_txt_record(self):
         first_record_mock = mock.MagicMock()

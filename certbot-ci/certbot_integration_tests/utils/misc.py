@@ -26,8 +26,8 @@ from OpenSSL import crypto
 import pkg_resources
 import requests
 
-from certbot_integration_tests.utils.constants import \
-     PEBBLE_ALTERNATE_ROOTS, PEBBLE_MANAGEMENT_URL
+from certbot_integration_tests.utils.constants import PEBBLE_ALTERNATE_ROOTS
+from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
 
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'

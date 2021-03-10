@@ -1,8 +1,8 @@
 """Module executing integration tests against certbot with nginx plugin."""
 import os
 import ssl
-
 from typing import List
+
 import pytest
 
 from certbot_integration_tests.nginx_tests import context as nginx_context
