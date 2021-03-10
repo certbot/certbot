@@ -8,6 +8,10 @@ import http.client as http_client
 import logging
 import re
 import time
+from typing import Dict
+from typing import List
+from typing import Set
+from typing import Text
 
 import josepy as jose
 import OpenSSL
@@ -20,10 +24,6 @@ from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Set
-from acme.magic_typing import Text
 from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)

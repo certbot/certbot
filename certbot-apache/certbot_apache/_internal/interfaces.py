@@ -102,7 +102,6 @@ For this reason the internal representation of data should not ignore the case.
 import abc
 
 
-
 class ParserNode(object, metaclass=abc.ABCMeta):
     """
     ParserNode is the basic building block of the tree of such nodes,

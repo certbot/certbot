@@ -5,11 +5,11 @@ import copy
 import zope.interface.interface  # pylint: disable=unused-import
 
 from acme import challenges
+from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot import errors
-from certbot.compat import os
 from certbot._internal import constants
+from certbot.compat import os
 
 
 class _Default:

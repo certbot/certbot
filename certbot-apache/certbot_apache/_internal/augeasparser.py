@@ -64,10 +64,10 @@ Translates over to:
     "/files/etc/apache2/apache2.conf/bLoCk[1]",
 ]
 """
-from acme.magic_typing import Set
+from typing import Set
+
 from certbot import errors
 from certbot.compat import os
-
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces

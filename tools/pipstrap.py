@@ -4,7 +4,6 @@ import os
 
 import pip_install
 
-
 _REQUIREMENTS_PATH = os.path.join(os.path.dirname(__file__), "pipstrap_constraints.txt")
 
 

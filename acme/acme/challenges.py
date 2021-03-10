@@ -8,14 +8,15 @@ import socket
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
-import requests
-from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 from OpenSSL import crypto
+from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
+import requests
 
 from acme import crypto_util
 from acme import errors
 from acme import fields
-from acme.mixins import ResourceMixin, TypeMixin
+from acme.mixins import ResourceMixin
+from acme.mixins import TypeMixin
 
 logger = logging.getLogger(__name__)
 

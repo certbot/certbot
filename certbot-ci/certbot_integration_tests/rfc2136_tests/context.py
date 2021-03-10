@@ -1,7 +1,7 @@
 """Module to handle the context of RFC2136 integration tests."""
 
-import tempfile
 from contextlib import contextmanager
+import tempfile
 
 from pkg_resources import resource_filename
 from pytest import skip

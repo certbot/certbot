@@ -1,13 +1,13 @@
 """Module configuring Certbot in a snap environment"""
 import logging
 import socket
+from typing import List
 
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
-from acme.magic_typing import List
 from certbot.compat import os
 from certbot.errors import Error
 

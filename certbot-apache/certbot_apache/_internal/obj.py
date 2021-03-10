@@ -1,7 +1,7 @@
 """Module contains classes used by the Apache Configurator."""
 import re
+from typing import Set
 
-from acme.magic_typing import Set
 from certbot.plugins import common
 
 

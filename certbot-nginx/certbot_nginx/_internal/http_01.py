@@ -2,10 +2,10 @@
 
 import io
 import logging
+from typing import List
+from typing import Optional
 
 from acme import challenges
-from acme.magic_typing import List
-from acme.magic_typing import Optional
 from certbot import achallenges
 from certbot import errors
 from certbot.compat import os

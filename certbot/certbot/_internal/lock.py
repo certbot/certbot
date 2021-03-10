@@ -1,8 +1,8 @@
 """Implements file locks compatible with Linux and Windows for locking files and directories."""
 import errno
 import logging
+from typing import Optional
 
-from acme.magic_typing import Optional
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
