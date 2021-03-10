@@ -172,7 +172,7 @@ class _CloudflareClient:
         """
 
         zone_name_guesses = dns_common.base_domain_name_guesses(domain)
-        zones = []  # type: List[Dict[str, Any]]
+        zones: List[Dict[str, Any]] = []
         code = msg = None
 
         for zone_name in zone_name_guesses:

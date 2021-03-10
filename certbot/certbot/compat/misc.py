@@ -27,8 +27,7 @@ logger = logging.getLogger(__name__)
 STANDARD_BINARY_DIRS = ["/usr/sbin", "/usr/local/bin", "/usr/local/sbin"] if POSIX_MODE else []
 
 
-def raise_for_non_administrative_windows_rights():
-    # type: () -> None
+def raise_for_non_administrative_windows_rights() -> None:
     """
     On Windows, raise if current shell does not have the administrative rights.
     Do nothing on Linux.
@@ -39,8 +38,7 @@ def raise_for_non_administrative_windows_rights():
         raise errors.Error('Error, certbot must be run on a shell with administrative rights.')
 
 
-def readline_with_timeout(timeout, prompt):
-    # type: (float, str) -> str
+def readline_with_timeout(timeout: float, prompt: str) -> str:
     """
     Read user input to return the first line entered, or raise after specified timeout.
 
@@ -81,8 +79,7 @@ LINUX_DEFAULT_FOLDERS = {
 }
 
 
-def get_default_folder(folder_type):
-    # type: (str) -> str
+def get_default_folder(folder_type: str) -> str:
     """
     Return the relevant default folder for the current OS
 
@@ -99,8 +96,7 @@ def get_default_folder(folder_type):
     return WINDOWS_DEFAULT_FOLDERS[folder_type]
 
 
-def underscores_for_unsupported_characters_in_path(path):
-    # type: (str) -> str
+def underscores_for_unsupported_characters_in_path(path: str) -> str:
     """
     Replace unsupported characters in path for current OS by underscores.
     :param str path: the path to normalize
@@ -116,8 +112,7 @@ def underscores_for_unsupported_characters_in_path(path):
     return drive + tail.replace(':', '_')
 
 
-def execute_command(cmd_name, shell_cmd, env=None):
-    # type: (str, str, Optional[dict]) -> Tuple[str, str]
+def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -> Tuple[str, str]:
     """
     Run a command:
         - on Linux command will be run by the standard shell selected with Popen(shell=True)

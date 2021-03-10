@@ -12,10 +12,10 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import cli
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge as AnnotatedChallenge
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import ops
@@ -67,11 +67,10 @@ to serve all files under specified web root ({0})."""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.full_roots = {}  # type: Dict[str, str]
-        self.performed = collections.defaultdict(set) \
-            # type: DefaultDict[str, Set[achallenges.KeyAuthorizationAnnotatedChallenge]]
+        self.full_roots: Dict[str, str] = {}
+        self.performed: DefaultDict[str, Set[AnnotatedChallenge]] = collections.defaultdict(set)
         # stack of dirs successfully created by this authenticator
-        self._created_dirs = []  # type: List[str]
+        self._created_dirs: List[str] = []
 
     def prepare(self):  # pylint: disable=missing-function-docstring
         pass
@@ -224,7 +223,7 @@ to serve all files under specified web root ({0})."""
                 os.remove(validation_path)
                 self.performed[root_path].remove(achall)
 
-        not_removed = []  # type: List[str]
+        not_removed: List[str] = []
         while self._created_dirs:
             path = self._created_dirs.pop()
             try:

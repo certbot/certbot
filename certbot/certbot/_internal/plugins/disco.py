@@ -1,9 +1,9 @@
 """Utilities for plugins discovery and selection."""
+from collections.abc import Mapping
 import itertools
 import logging
 import sys
 from typing import Dict
-from collections.abc import Mapping
 
 import pkg_resources
 import zope.interface
@@ -213,7 +213,7 @@ class PluginsRegistry(Mapping):
     @classmethod
     def find_all(cls):
         """Find plugins using setuptools entry points."""
-        plugins = {}  # type: Dict[str, PluginEntryPoint]
+        plugins: Dict[str, PluginEntryPoint] = {}
         plugin_paths_string = os.getenv('CERTBOT_PLUGIN_PATH')
         plugin_paths = plugin_paths_string.split(':') if plugin_paths_string else []
         # XXX should ensure this only happens once

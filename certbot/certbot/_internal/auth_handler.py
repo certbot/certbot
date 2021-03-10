@@ -98,8 +98,7 @@ class AuthHandler:
 
             return authzrs_validated
 
-    def deactivate_valid_authorizations(self, orderr):
-        # type: (messages.OrderResource) -> Tuple[List, List]
+    def deactivate_valid_authorizations(self, orderr: messages.OrderResource) -> Tuple[List, List]:
         """
         Deactivate all `valid` authorizations in the order, so that they cannot be re-used
         in subsequent orders.
@@ -191,7 +190,7 @@ class AuthHandler:
         """
         pending_authzrs = [authzr for authzr in authzrs
                            if authzr.body.status != messages.STATUS_VALID]
-        achalls = []  # type: List[achallenges.AnnotatedChallenge]
+        achalls: List[achallenges.AnnotatedChallenge] = []
         if pending_authzrs:
             logger.info("Performing the following challenges:")
         for authzr in pending_authzrs:
@@ -428,7 +427,7 @@ _ERROR_HELP = {
 
 def _report_failed_authzrs(failed_authzrs, account_key):
     """Notifies the user about failed authorizations."""
-    problems = {}  # type: Dict[str, List[achallenges.AnnotatedChallenge]]
+    problems: Dict[str, List[achallenges.AnnotatedChallenge]] = {}
     failed_achalls = [challb_to_achall(challb, account_key, authzr.body.identifier.value)
                       for authzr in failed_authzrs for challb in authzr.body.challenges
                       if challb.error]

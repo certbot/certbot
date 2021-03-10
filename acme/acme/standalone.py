@@ -63,8 +63,8 @@ class BaseDualNetworkedServers:
 
     def __init__(self, ServerClass, server_address, *remaining_args, **kwargs):
         port = server_address[1]
-        self.threads = [] # type: List[threading.Thread]
-        self.servers = [] # type: List[ACMEServerMixin]
+        self.threads: List[threading.Thread] = []
+        self.servers: List[ACMEServerMixin] = []
 
         # Must try True first.
         # Ubuntu, for example, will fail to bind to IPv4 if we've already bound

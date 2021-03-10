@@ -14,8 +14,8 @@ import sys
 import textwrap
 from typing import List
 
-import zope.interface
 import zope.component
+import zope.interface
 
 from certbot import errors
 from certbot import interfaces
@@ -98,8 +98,7 @@ def input_with_timeout(prompt=None, timeout=36000.0):
     return line.rstrip('\n')
 
 
-def notify(msg):
-    # type: (str) -> None
+def notify(msg: str) -> None:
     """Display a basic status message.
 
     :param str msg: message to display
@@ -636,8 +635,7 @@ def _parens_around_char(label):
     return "({first}){rest}".format(first=label[0], rest=label[1:])
 
 
-def summarize_domain_list(domains):
-    # type: (List[str]) -> str
+def summarize_domain_list(domains: List[str]) -> str:
     """Summarizes a list of domains in the format of:
         example.com.com and N more domains
     or if there is are only two domains:

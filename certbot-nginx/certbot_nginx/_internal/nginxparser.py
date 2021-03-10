@@ -2,8 +2,8 @@
 # Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
 import copy
 import logging
-from typing import Any  # pylint: disable=unused-import
-from typing import IO  # pylint: disable=unused-import
+from typing import Any
+from typing import IO
 
 from pyparsing import Combine
 from pyparsing import Forward
@@ -19,6 +19,7 @@ from pyparsing import White
 from pyparsing import ZeroOrMore
 
 logger = logging.getLogger(__name__)
+
 
 class RawNginxParser:
     # pylint: disable=pointless-statement
@@ -105,56 +106,8 @@ class RawNginxDumper:
         return ''.join(self)
 
 
-# Shortcut functions to respect Python's serialization interface
-# (like pyyaml, picker or json)
-
-def loads(source):
-    """Parses from a string.
-
-    :param str source: The string to parse
-    :returns: The parsed tree
-    :rtype: list
-
-    """
-    return UnspacedList(RawNginxParser(source).as_list())
-
-
-def load(_file):
-    """Parses from a file.
-
-    :param file _file: The file to parse
-    :returns: The parsed tree
-    :rtype: list
-
-    """
-    return loads(_file.read())
-
-
-def dumps(blocks):
-    # type: (UnspacedList) -> str
-    """Dump to a Unicode string.
-
-    :param UnspacedList block: The parsed tree
-    :rtype: str
-
-    """
-    return str(RawNginxDumper(blocks.spaced))
-
-
-def dump(blocks, _file):
-    # type: (UnspacedList, IO[Any]) -> None
-    """Dump to a file.
-
-    :param UnspacedList block: The parsed tree
-    :param IO[Any] _file: The file stream to dump to. It must be opened with
-                          Unicode encoding.
-    :rtype: None
-
-    """
-    _file.write(dumps(blocks))
-
-
 spacey = lambda x: (isinstance(x, str) and x.isspace()) or x == ''
+
 
 class UnspacedList(list):
     """Wrap a list [of lists], making any whitespace entries magically invisible"""
@@ -274,3 +227,50 @@ class UnspacedList(list):
                 idx -= 1
             pos += 1
         return idx0 + spaces
+
+
+# Shortcut functions to respect Python's serialization interface
+# (like pyyaml, picker or json)
+
+def loads(source):
+    """Parses from a string.
+
+    :param str source: The string to parse
+    :returns: The parsed tree
+    :rtype: list
+
+    """
+    return UnspacedList(RawNginxParser(source).as_list())
+
+
+def load(_file):
+    """Parses from a file.
+
+    :param file _file: The file to parse
+    :returns: The parsed tree
+    :rtype: list
+
+    """
+    return loads(_file.read())
+
+
+def dumps(blocks: UnspacedList) -> str:
+    """Dump to a Unicode string.
+
+    :param UnspacedList block: The parsed tree
+    :rtype: six.text_type
+
+    """
+    return str(RawNginxDumper(blocks.spaced))
+
+
+def dump(blocks: UnspacedList, _file: IO[Any]) -> None:
+    """Dump to a file.
+
+    :param UnspacedList block: The parsed tree
+    :param IO[Any] _file: The file stream to dump to. It must be opened with
+                          Unicode encoding.
+    :rtype: None
+
+    """
+    _file.write(dumps(blocks))

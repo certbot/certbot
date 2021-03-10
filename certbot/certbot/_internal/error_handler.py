@@ -77,9 +77,9 @@ class ErrorHandler:
     def __init__(self, func, *args, **kwargs):
         self.call_on_regular_exit = False
         self.body_executed = False
-        self.funcs = []  # type: List[Callable[[], Any]]
-        self.prev_handlers = {}  # type: Dict[int, Union[int, None, Callable]]
-        self.received_signals = []  # type: List[int]
+        self.funcs: List[Callable[[], Any]] = []
+        self.prev_handlers: Dict[int, Union[int, None, Callable]] = {}
+        self.received_signals: List[int] = []
         if func is not None:
             self.register(func, *args, **kwargs)
 
@@ -108,8 +108,7 @@ class ErrorHandler:
         self._call_signals()
         return retval
 
-    def register(self, func, *args, **kwargs):
-        # type: (Callable, *Any, **Any) -> None
+    def register(self, func: Callable, *args: Any, **kwargs: Any) -> None:
         """Sets func to be run with the given arguments during cleanup.
 
         :param function func: function to be called in case of an error

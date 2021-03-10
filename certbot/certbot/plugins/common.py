@@ -9,7 +9,7 @@ from josepy import util as jose_util
 import pkg_resources
 import zope.interface
 
-from certbot import achallenges  # pylint: disable=unused-import
+from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -313,8 +313,8 @@ class ChallengePerformer:
 
     def __init__(self, configurator):
         self.configurator = configurator
-        self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
-        self.indices = []  # type: List[int]
+        self.achalls: List[achallenges.KeyAuthorizationAnnotatedChallenge] = []
+        self.indices: List[int] = []
 
     def add_chall(self, achall, idx=None):
         """Store challenge to be performed when perform() is called.

@@ -43,7 +43,7 @@ class PreArgParseSetupTest(unittest.TestCase):
         mock_root_logger.setLevel.assert_called_once_with(logging.DEBUG)
         self.assertEqual(mock_root_logger.addHandler.call_count, 2)
 
-        memory_handler = None  # type: Optional[logging.handlers.MemoryHandler]
+        memory_handler: Optional[logging.handlers.MemoryHandler] = None
         for call in mock_root_logger.addHandler.call_args_list:
             handler = call[0][0]
             if memory_handler is None and isinstance(handler, logging.handlers.MemoryHandler):

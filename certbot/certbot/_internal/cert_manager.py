@@ -241,7 +241,7 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
     def find_matches(candidate_lineage, return_value, acceptable_matches):
         """Returns a list of matches using _search_lineages."""
         acceptable_matches = [func(candidate_lineage) for func in acceptable_matches]
-        acceptable_matches_rv = []  # type: List[str]
+        acceptable_matches_rv: List[str] = []
         for item in acceptable_matches:
             if isinstance(item, list):
                 acceptable_matches_rv += item
@@ -364,7 +364,7 @@ def _report_human_readable(config, parsed_certs):
 
 def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
-    out = []  # type: List[str]
+    out: List[str] = []
 
     notify = out.append
 

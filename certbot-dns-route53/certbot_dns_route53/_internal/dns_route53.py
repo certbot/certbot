@@ -39,7 +39,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
-        self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
+        self._resource_records: DefaultDict[str, List[Dict[str, str]]] = collections.defaultdict(list)
 
     def more_info(self):  # pylint: disable=missing-function-docstring
         return "Solve a DNS01 challenge using AWS Route53"

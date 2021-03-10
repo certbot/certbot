@@ -68,7 +68,7 @@ def _get_server_root(config):
 
 def _get_names(config):
     """Returns all and testable domain names in config"""
-    all_names = set()  # type: Set[str]
+    all_names: Set[str] = set()
     for root, _dirs, files in os.walk(config):
         for this_file in files:
             update_names = _get_server_names(root, this_file)

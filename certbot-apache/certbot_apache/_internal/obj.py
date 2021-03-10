@@ -137,7 +137,7 @@ class VirtualHost:
 
     def get_names(self):
         """Return a set of all names."""
-        all_names = set()  # type: Set[str]
+        all_names: Set[str] = set()
         all_names.update(self.aliases)
         # Strip out any scheme:// and <port> field from servername
         if self.name is not None:
@@ -245,7 +245,7 @@ class VirtualHost:
 
         # already_found acts to keep everything very conservative.
         # Don't allow multiple ip:ports in same set.
-        already_found = set()  # type: Set[str]
+        already_found: Set[str] = set()
 
         for addr in vhost.addrs:
             for local_addr in self.addrs:

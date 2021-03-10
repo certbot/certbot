@@ -77,7 +77,7 @@ def pre_hook(config):
         _run_pre_hook_if_necessary(cmd)
 
 
-executed_pre_hooks = set()  # type: Set[str]
+executed_pre_hooks: Set[str] = set()
 
 
 def _run_pre_hook_if_necessary(command):
@@ -127,7 +127,7 @@ def post_hook(config):
         _run_hook("post-hook", cmd)
 
 
-post_hooks = []  # type: List[str]
+post_hooks: List[str] = []
 
 
 def _run_eventually(command):

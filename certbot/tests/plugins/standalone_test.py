@@ -24,9 +24,8 @@ class ServerManagerTest(unittest.TestCase):
 
     def setUp(self):
         from certbot._internal.plugins.standalone import ServerManager
-        self.certs = {}  # type: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]]
-        self.http_01_resources = {} \
-        # type: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
+        self.certs: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]] = {}
+        self.http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = {}
         self.mgr = ServerManager(self.certs, self.http_01_resources)
 
     def test_init(self):

@@ -156,7 +156,7 @@ class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
 # This is used to configure internal new style enhancements in Certbot. These
 # enhancement interfaces need to be defined in this file. Please do not modify
 # this list from plugin code.
-_INDEX = [
+_INDEX: List[Dict[str, Any]] = [
     {
         "name": "AutoHSTS",
         "cli_help": "Gradually increasing max-age value for HTTP Strict Transport "+
@@ -171,4 +171,4 @@ _INDEX = [
         "deployer_function": "deploy_autohsts",
         "enable_function": "enable_autohsts"
     }
-]  # type: List[Dict[str, Any]]
+]

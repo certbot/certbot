@@ -102,9 +102,9 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
         loadmods = self.parser.find_dir("LoadModule", "ssl_module", exclude=False)
 
-        correct_ifmods = []  # type: List[str]
-        loadmod_args = []  # type: List[str]
-        loadmod_paths = []  # type: List[str]
+        correct_ifmods: List[str] = []
+        loadmod_args: List[str] = []
+        loadmod_paths: List[str] = []
         for m in loadmods:
             noarg_path = m.rpartition("/")[0]
             path_args = self.parser.get_all_args(noarg_path)

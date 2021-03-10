@@ -6,7 +6,6 @@ import re
 from typing import Dict
 from typing import List
 
-
 from certbot import errors
 from certbot.compat import os
 from certbot_apache._internal import apache_util
@@ -49,9 +48,9 @@ class ApacheParser:
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
-        self.modules = {}  # type: Dict[str, str]
-        self.parser_paths = {}  # type: Dict[str, List[str]]
-        self.variables = {}  # type: Dict[str, str]
+        self.modules: Dict[str, str] = {}
+        self.parser_paths: Dict[str, List[str]] = {}
+        self.variables: Dict[str, str] = {}
 
         # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
@@ -264,7 +263,7 @@ class ApacheParser:
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
-        mods = {}  # type: Dict[str, str]
+        mods: Dict[str, str] = {}
         matches = self.find_dir("LoadModule")
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
@@ -551,7 +550,7 @@ class ApacheParser:
         else:
             arg_suffix = "/*[self::arg=~regexp('%s')]" % case_i(arg)
 
-        ordered_matches = []  # type: List[str]
+        ordered_matches: List[str] = []
 
         # TODO: Wildcards should be included in alphabetical order
         # https://httpd.apache.org/docs/2.4/mod/core.html#include

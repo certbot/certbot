@@ -38,7 +38,7 @@ class DNSServer:
 
         self.bind_root = tempfile.mkdtemp()
 
-        self.process = None  # type: subprocess.Popen
+        self.process: subprocess.Popen = None
 
         self.dns_xdist = {"address": BIND_BIND_ADDRESS[0], "port": BIND_BIND_ADDRESS[1]}
 
@@ -111,8 +111,7 @@ class DNSServer:
             self.stop()
             raise
 
-    def _wait_until_ready(self, attempts=30):
-        # type: (int) -> None
+    def _wait_until_ready(self, attempts: int = 30) -> None:
         """
         Polls the DNS server over TCP until it gets a response, or until
         it runs out of attempts and raises a ValueError.

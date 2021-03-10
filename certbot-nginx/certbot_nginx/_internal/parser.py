@@ -32,7 +32,7 @@ class NginxParser:
     """
 
     def __init__(self, root):
-        self.parsed = {} # type: Dict[str, Union[List, nginxparser.UnspacedList]]
+        self.parsed: Dict[str, Union[List, nginxparser.UnspacedList]] = {}
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
 
@@ -94,7 +94,7 @@ class NginxParser:
         """
         servers = self._get_raw_servers()
 
-        addr_to_ssl = {} # type: Dict[Tuple[str, str], bool]
+        addr_to_ssl: Dict[Tuple[str, str], bool] = {}
         for filename in servers:
             for server, _ in servers[filename]:
                 # Parse the server block to save addr info
@@ -106,12 +106,11 @@ class NginxParser:
                     addr_to_ssl[addr_tuple] = addr.ssl or addr_to_ssl[addr_tuple]
         return addr_to_ssl
 
-    def _get_raw_servers(self):
+    def _get_raw_servers(self) -> Dict:
         # pylint: disable=cell-var-from-loop
-        # type: () -> Dict
         """Get a map of unparsed all server blocks
         """
-        servers = {} # type: Dict[str, Union[List, nginxparser.UnspacedList]]
+        servers: Dict[str, Union[List, nginxparser.UnspacedList]] = {}
         for filename in self.parsed:
             tree = self.parsed[filename]
             servers[filename] = []
@@ -741,9 +740,9 @@ def _parse_server_raw(server):
     :rtype: dict
 
     """
-    addrs = set() # type: Set[obj.Addr]
-    ssl = False # type: bool
-    names = set() # type: Set[str]
+    addrs: Set[obj.Addr] = set()
+    ssl: bool = False
+    names: Set[str] = set()
 
     apply_ssl_to_all_addrs = False
 

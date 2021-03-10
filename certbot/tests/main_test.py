@@ -855,7 +855,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()
@@ -870,7 +870,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args_unprivileged(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         def throw_error(directory, mode, strict):
@@ -892,7 +892,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_init(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()
@@ -910,7 +910,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_prepare(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()

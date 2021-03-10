@@ -180,7 +180,7 @@ class RandomSnTest(unittest.TestCase):
 
     def setUp(self):
         self.cert_count = 5
-        self.serial_num = [] # type: List[int]
+        self.serial_num: List[int] = []
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 
