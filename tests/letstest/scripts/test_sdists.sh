@@ -13,7 +13,7 @@ sudo $BOOTSTRAP_SCRIPT
 # constraints in the commands given to pip and the mix of hashed and unhashed
 # packages makes pip error out.
 python3 tools/strip_hashes.py tools/pipstrap_constraints.txt > constraints.txt
-python3 tools/strip_hashes.py tools/certbot_constraints.txt > requirements.txt
+python3 tools/strip_hashes.py tools/certbot_requirements.txt > requirements.txt
 
 # We pin cryptography to 3.1.1 and pyOpenSSL to 19.1.0 specifically for CentOS 7 / RHEL 7
 # because these systems ship only with OpenSSL 1.0.2, and this OpenSSL version support has been

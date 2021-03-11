@@ -4,12 +4,12 @@ Gather and consolidate the up-to-date dependencies available and required to ins
 on various Linux distributions. It generates a requirements file contained the pinned and hashed
 versions, ready to be used by pip to install the certbot dependencies.
 
-This script is typically used to update the certbot_constraints.txt file.
+This script is typically used to update the certbot_requirements.txt file.
 
 To achieve its purpose, this script will start a certbot installation with unpinned dependencies,
 then gather them, on various distributions started as Docker containers.
 
-Usage: tools/rebuild_certbot_constraints.py new_requirements.txt
+Usage: tools/rebuild_certbot_requirements.py new_requirements.txt
 
 NB1: Docker must be installed on the machine running this script.
 NB2: Python library 'hashin' must be installed on the machine running this script.
@@ -42,7 +42,7 @@ AUTHORITATIVE_CONSTRAINTS = {
     'cryptography': '3.3.2',
 }
 
-# ./certbot/tools/rebuild_certbot_constraints.py (2 levels from certbot root path)
+# ./certbot/tools/rebuild_certbot_requirements.py (2 levels from certbot root path)
 CERTBOT_REPO_PATH = dirname(dirname(abspath(__file__)))
 
 # The script will be used to gather dependencies for a given distribution.
@@ -209,7 +209,7 @@ def _write_requirements(dest_file, requirements, conflicts):
 # To generate this, do (with docker and package hashin installed):
 # ```
 # tools/rebuild_certbot_contraints.py \\
-#   tools/certbot_constraints.txt
+#   tools/certbot_requirements.txt
 # ```
 # If you want to update a single dependency, run commands similar to these:
 # ```

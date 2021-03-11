@@ -85,7 +85,7 @@ parts:
       snapcraftctl build
     override-pull: |
       snapcraftctl pull
-      python3 "${SNAPCRAFT_PART_SRC}/tools/strip_hashes.py" "${SNAPCRAFT_PART_SRC}/tools/certbot_constraints.txt" | grep -v python-augeas >> "${SNAPCRAFT_PART_SRC}/snap-constraints.txt"
+      python3 "${SNAPCRAFT_PART_SRC}/tools/strip_hashes.py" "${SNAPCRAFT_PART_SRC}/tools/certbot_requirements.txt" | grep -v python-augeas >> "${SNAPCRAFT_PART_SRC}/snap-constraints.txt"
       python3 "${SNAPCRAFT_PART_SRC}/tools/strip_hashes.py" "${SNAPCRAFT_PART_SRC}/tools/pipstrap_constraints.txt" >> "${SNAPCRAFT_PART_SRC}/snap-constraints.txt"
       echo "$(python3 "${SNAPCRAFT_PART_SRC}/tools/merge_requirements.py" "${SNAPCRAFT_PART_SRC}/snap-constraints.txt")" > "${SNAPCRAFT_PART_SRC}/snap-constraints.txt"
       snapcraftctl set-version `grep -oP "__version__ = '\K.*(?=')" "${SNAPCRAFT_PART_SRC}/certbot/certbot/__init__.py"`

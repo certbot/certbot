@@ -2,7 +2,7 @@
 # To generate this, do (with docker and package hashin installed):
 # ```
 # tools/rebuild_certbot_contraints.py \
-#   tools/certbot_constraints.txt
+#   tools/certbot_requirements.txt
 # ```
 # If you want to update a single dependency, run commands similar to these:
 # ```
