@@ -5,6 +5,8 @@ import glob
 from multiprocessing import Manager
 from multiprocessing import Pool
 from multiprocessing import Process
+from multiprocessing.managers import SyncManager
+import os
 from os.path import basename
 from os.path import dirname
 from os.path import exists
@@ -13,27 +15,46 @@ from os.path import realpath
 import re
 import subprocess
 import sys
+import tempfile
+from threading import Lock
 import time
+from typing import Dict
+from typing import List
+from typing import Set
+from typing import Tuple
 
 CERTBOT_DIR = dirname(dirname(dirname(realpath(__file__))))
 PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*'))]
 
 
-def _execute_build(target, archs, status, workspace):
-    process = subprocess.Popen([
-        'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover',
-        '--build-on', ','.join(archs)
-    ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, cwd=workspace)
+def _execute_build(
+        target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
+        workspace: str) -> Tuple[int, List[str]]:
 
-    process_output = []
+    with tempfile.TemporaryDirectory() as tempdir:
+        environ = os.environ.copy()
+        environ['XDG_CACHE_HOME'] = tempdir
+        process = subprocess.Popen([
+            'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover',
+            '--build-on', ','.join(archs)],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            universal_newlines=True, env=environ, cwd=workspace)
+
+    process_output: List[str] = []
     for line in process.stdout:
         process_output.append(line)
         _extract_state(target, line, status)
 
+        if any(state for state in status[target].values() if state == 'Chroot problem'):
+            # On this error the snapcraft process stales. Let's finish it.
+            process.kill()
+
     return process.wait(), process_output
 
 
-def _build_snap(target, archs, status, running, lock):
+def _build_snap(
+        target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
+        running: Dict[str, bool], lock: Lock) -> Dict[str, str]:
     status[target] = {arch: '...' for arch in archs}
 
     if target == 'certbot':
@@ -51,7 +72,14 @@ def _build_snap(target, archs, status, running, lock):
 
         with lock:
             dump_output = exit_code != 0
-            failed_archs = [arch for arch in archs if status[target][arch] == 'Failed to build']
+            failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
+            if any(arch for arch in archs if status[target][arch] == 'Chroot problem'):
+                print('Some builds failed with the status "Chroot problem".')
+                print('This status is known to make any future build fail until either '
+                      'the source code changes or the build on Launchpad is deleted.')
+                print('Please fix the build appropriately before trying a new one.')
+                # It is useless to retry in this situation.
+                retry = 0
             if exit_code == 0 and not failed_archs:
                 # We expect to have all target snaps available, or something bad happened.
                 snaps_list = glob.glob(join(workspace, '*.snap'))
@@ -80,7 +108,7 @@ def _build_snap(target, archs, status, running, lock):
     return {target: workspace}
 
 
-def _extract_state(project, output, status):
+def _extract_state(project: str, output: str, status: Dict[str, Dict[str, str]]) -> None:
     match = re.match(r'^.*arch=(\w+)\s+state=([\w ]+).*$', output)
     if match:
         arch = match.group(1)
@@ -95,7 +123,7 @@ def _extract_state(project, output, status):
         status[project] = state
 
 
-def _dump_status_helper(archs, status):
+def _dump_status_helper(archs: Set[str], status: Dict[str, Dict[str, str]]) -> None:
     headers = ['project', *archs]
     print(''.join(f'| {item:<25}' for item in headers))
     print(f'|{"-" * 26}' * len(headers))
@@ -107,14 +135,18 @@ def _dump_status_helper(archs, status):
     sys.stdout.flush()
 
 
-def _dump_status(archs, status, running):
+def _dump_status(
+        archs: Set[str], status: Dict[str, Dict[str, str]],
+        running: Dict[str, bool]) -> None:
     while any(running.values()):
         print(f'Remote build status at {datetime.datetime.now()}')
         _dump_status_helper(archs, status)
         time.sleep(10)
 
 
-def _dump_results(targets, archs, status, workspaces):
+def _dump_results(
+        targets: Set[str], archs: Set[str], status: Dict[str, Dict[str, str]],
+        workspaces: Dict[str, str]) -> bool:
     failures = False
     for target in targets:
         for arch in archs:
@@ -152,8 +184,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('targets', nargs='+', choices=['ALL', 'DNS_PLUGINS', 'certbot', *PLUGINS],
                         help='the list of snaps to build')
-    parser.add_argument('--archs', nargs='+', choices=['amd64', 'arm64', 'armhf'], default=['amd64'],
-                        help='the architectures for which snaps are built')
+    parser.add_argument('--archs', nargs='+', choices=['amd64', 'arm64', 'armhf'],
+                        default=['amd64'], help='the architectures for which snaps are built')
     parser.add_argument('--timeout', type=int, default=None,
                         help='build process will fail after the provided timeout (in seconds)')
     args = parser.parse_args()
@@ -180,8 +212,10 @@ def main():
     print(f' - projects: {", ".join(sorted(targets))}')
     print()
 
-    with Manager() as manager, Pool(processes=len(targets)) as pool:
-        status = manager.dict()
+    manager: SyncManager = Manager()
+    pool = Pool(processes=len(targets))
+    with manager, pool:
+        status: Dict[str, Dict[str, str]] = manager.dict()
         running = manager.dict({target: True for target in targets})
         lock = manager.Lock()
 
