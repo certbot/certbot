@@ -11,34 +11,29 @@ from typing import Dict
 import configargparse
 import zope.component
 import zope.interface
-
 from zope.interface import interfaces as zope_interfaces
 
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import os
 from certbot._internal import constants
 from certbot._internal import hooks
-
+from certbot._internal.cli.cli_constants import ARGPARSE_PARAMS_TO_REMOVE
+from certbot._internal.cli.cli_constants import COMMAND_OVERVIEW
+from certbot._internal.cli.cli_constants import EXIT_ACTIONS
+from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
+from certbot._internal.cli.cli_constants import SHORT_USAGE
+from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
+from certbot._internal.cli.cli_utils import _Default
+from certbot._internal.cli.cli_utils import add_domains
+from certbot._internal.cli.cli_utils import CustomHelpFormatter
+from certbot._internal.cli.cli_utils import flag_default
+from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
+from certbot._internal.cli.verb_help import VERB_HELP
+from certbot._internal.cli.verb_help import VERB_HELP_MAP
+from certbot.compat import os
 from certbot.display import util as display_util
-
-from certbot._internal.cli import (
-    SHORT_USAGE,
-    CustomHelpFormatter,
-    flag_default,
-    VERB_HELP,
-    VERB_HELP_MAP,
-    COMMAND_OVERVIEW,
-    HELP_AND_VERSION_USAGE,
-    _Default,
-    add_domains,
-    EXIT_ACTIONS,
-    ZERO_ARG_ACTIONS,
-    ARGPARSE_PARAMS_TO_REMOVE,
-    HelpfulArgumentGroup
-)
 
 
 class HelpfulArgumentParser:
