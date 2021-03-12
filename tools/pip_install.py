@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # pip installs packages using pinned package versions. If CERTBOT_OLDEST is set
 # to 1, a combination of tools/oldest_constraints.txt,
-# tools/dev_constraints.txt, and local-oldest-requirements.txt contained in the
+# tools/dev_requirements.txt, and local-oldest-requirements.txt contained in the
 # top level of the package's directory is used, otherwise, a combination of
-# certbot-auto's requirements file and tools/dev_constraints.txt is used. The
-# other file always takes precedence over tools/dev_constraints.txt. If
+# certbot-auto's requirements file and tools/dev_requirements.txt is used. The
+# other file always takes precedence over tools/dev_requirements.txt. If
 # CERTBOT_OLDEST is set, this script must be run with `-e <package-name>` and
 # no other arguments.
 
@@ -74,11 +74,11 @@ def merge_requirements(tools_path, requirements, test_constraints, all_constrain
     # Indeed version retained for a given package will be the last version
     # found when following all requirements in the given order.
     # Here is the order by increasing priority:
-    # 1) The general development constraints (tools/dev_constraints.txt)
+    # 1) The general development constraints (tools/dev_requirements.txt)
     # 2) The general tests constraints (oldest_requirements.txt or
     #    certbot_requirements.txt + pipstrap's constraints for the normal processing)
     # 3) The local requirement file, typically local-oldest-requirement in oldest tests
-    files = [os.path.join(tools_path, 'dev_constraints.txt'), test_constraints]
+    files = [os.path.join(tools_path, 'dev_requirements.txt'), test_constraints]
     if requirements:
         files.append(requirements)
     merged_requirements = merge_module.main(*files)

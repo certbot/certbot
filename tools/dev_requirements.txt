@@ -1,7 +1,7 @@
 # Specifies Python package versions for development and building Docker images.
 # It includes in particular packages not specified in letsencrypt-auto's requirements file.
-# Some dev package versions specified here may be overridden by higher level constraints
-# files during tests (eg. tools/certbot_requirements.txt).
+# Some dev package versions specified here may be overridden by higher level
+# requirements files during tests (eg. tools/certbot_requirements.txt).
 alabaster==0.7.10
 apacheconfig==0.3.2
 apipkg==1.4
