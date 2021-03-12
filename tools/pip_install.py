@@ -60,7 +60,7 @@ def certbot_normal_processing(tools_path, test_constraints):
         repo_path, 'tools/certbot_requirements.txt'))
     with open(certbot_requirements, 'r') as fd:
         certbot_reqs = fd.readlines()
-    with open(os.path.join(tools_path, 'pipstrap_constraints.txt'), 'r') as fd:
+    with open(os.path.join(tools_path, 'pipstrap_requirements.txt'), 'r') as fd:
         pipstrap_reqs = fd.readlines()
     with open(test_constraints, 'w') as fd:
         data_certbot = "\n".join(strip_hashes.process_entries(certbot_reqs))

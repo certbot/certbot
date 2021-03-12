@@ -1,4 +1,4 @@
-# Constraints for pipstrap.py
+# Requirements file for pipstrap.py
 #
 # We include the hashes of the packages here for extra verification of
 # the packages downloaded from PyPI. This is especially valuable in our

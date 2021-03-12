@@ -12,7 +12,7 @@ sudo $BOOTSTRAP_SCRIPT
 # We strip the hashes because the venv creation script includes unhashed
 # constraints in the commands given to pip and the mix of hashed and unhashed
 # packages makes pip error out.
-python3 tools/strip_hashes.py tools/pipstrap_constraints.txt > constraints.txt
+python3 tools/strip_hashes.py tools/pipstrap_requirements.txt > constraints.txt
 python3 tools/strip_hashes.py tools/certbot_requirements.txt > requirements.txt
 
 # We pin cryptography to 3.1.1 and pyOpenSSL to 19.1.0 specifically for CentOS 7 / RHEL 7

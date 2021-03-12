@@ -11,6 +11,6 @@ for PLUGIN_PATH in "${CERTBOT_DIR}"/certbot-dns-*; do
   # Create constraints file
   "${CERTBOT_DIR}"/tools/merge_requirements.py tools/dev_requirements.txt \
     <("${CERTBOT_DIR}"/tools/strip_hashes.py tools/certbot_requirements.txt) \
-    <("${CERTBOT_DIR}"/tools/strip_hashes.py tools/pipstrap_constraints.txt) \
+    <("${CERTBOT_DIR}"/tools/strip_hashes.py tools/pipstrap_requirements.txt) \
     > "${PLUGIN_PATH}"/snap-constraints.txt
 done
