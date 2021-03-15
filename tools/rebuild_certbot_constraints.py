@@ -205,7 +205,12 @@ def _write_requirements(dest_file, requirements, conflicts):
     print('===> Calculating hashes for the requirement file.')
 
     _write_to(dest_file, '''\
-# This is the flattened list of pinned packages to build certbot deployable artifacts.
+# This is the flattened list of pinned packages to use as constraints for pip
+# when building deployable Certbot artifacts. Despite the file being used as
+# constraints, you may want to include "requirements.txt" in the filename so
+# https://docs.github.com/en/github/visualizing-repository-data-with-graphs/about-the-dependency-graph#supported-package-ecosystems
+# for more info.
+#
 # To generate this, do (with docker and package hashin installed):
 # ```
 # tools/rebuild_certbot_contraints.py \\

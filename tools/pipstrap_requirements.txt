@@ -1,5 +1,10 @@
 # Requirements file for pipstrap.py
 #
+# It is important that this file's name includes "requirements.txt" so that it
+# is scanned by GitHub. See
+# https://docs.github.com/en/github/visualizing-repository-data-with-graphs/about-the-dependency-graph#supported-package-ecosystems
+# for more info.
+#
 # We include the hashes of the packages here for extra verification of
 # the packages downloaded from PyPI. This is especially valuable in our
 # builds of Certbot that we ship to our users such as our Docker images.
