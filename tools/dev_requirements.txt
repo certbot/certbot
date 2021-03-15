@@ -45,7 +45,7 @@ future==0.16.0
 futures==3.3.0
 filelock==3.0.12
 google-api-python-client==1.5.5
-httplib2==0.18.1
+httplib2==0.19.0
 imagesize==0.7.1
 importlib-metadata==0.23
 ipdb==0.12.3
@@ -54,7 +54,7 @@ ipython-genutils==0.2.0
 isodate==0.6.0
 isort==4.3.21
 jedi==0.17.1
-Jinja2==2.9.6
+Jinja2==2.11.3
 jmespath==0.9.4
 josepy==1.1.0
 jsonpickle==2.0.0
