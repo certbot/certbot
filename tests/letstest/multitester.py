@@ -190,18 +190,16 @@ def block_until_ssh_open(ipstring, wait_time=10, timeout=120):
             t_elapsed += wait_time
     sock.close()
 
-def block_until_instance_ready(booting_instance, wait_time=5, extra_wait_time=20):
+def block_until_instance_ready(booting_instance, extra_wait_time=20):
     "Blocks booting_instance until AWS EC2 instance is ready to accept SSH connections"
-    state = booting_instance.state['Name']
-    ip = booting_instance.public_ip_address
-    while state != 'running' or ip is None:
-        time.sleep(wait_time)
-        # The instance needs to be reloaded to update its local attributes. See
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Instance.reload.
-        booting_instance.reload()
-        state = booting_instance.state['Name']
-        ip = booting_instance.public_ip_address
-    block_until_ssh_open(ip)
+    booting_instance.wait_until_running()
+    # The instance needs to be reloaded to update its local attributes. See
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Instance.reload.
+    booting_instance.reload()
+    # After waiting for the instance to be running and reloading the instance
+    # state, we should have an IP address.
+    assert booting_instance.public_ip_address is not None
+    block_until_ssh_open(booting_instance.public_ip_address)
     time.sleep(extra_wait_time)
     return booting_instance
 
