@@ -716,12 +716,12 @@ During the renewal_, ``/etc/letsencrypt/live`` is updated with the latest
 necessary files.
 
 .. note::
-  The certificate name ``$domain`` used in the path
-  ``/etc/letsencrypt/live/$domain``:
+  The certificate name ``$domain`` used in the path ``/etc/letsencrypt/live/$domain``
+  follows this convention:
 
-  * is the name given to ``--cert-name``,
-  * or is the first domain given to ``--domains`` if ``--cert-name`` is not
-    set by the user,
+  * it is the name given to ``--cert-name``,
+  * if ``--cert-name`` is not set by the user it is the first domain given to
+    ``--domains``,
   * if the first domain is a wildcard domain (eg. ``*.example.com``) the
     certificate name will be ``example.com``,
   * if a name collision would occur with a certificate already named ``example.com``,
