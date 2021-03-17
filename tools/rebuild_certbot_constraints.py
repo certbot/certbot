@@ -37,9 +37,6 @@ AUTHORITATIVE_CONSTRAINTS = {
     # Too touchy to move to a new version. And will be removed soon
     # in favor of pure python parser for Apache.
     'python-augeas': '0.5.0',
-    # We avoid cryptography 3.4+ since it requires Rust to compile the wheels, and
-    # this needs some work on the snap builds.
-    'cryptography': '3.3.2',
 }
 
 # ./certbot/tools/rebuild_certbot_constraints.py (2 levels from certbot root path)
