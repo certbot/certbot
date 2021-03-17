@@ -7,16 +7,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from urllib.request import urlretrieve
 
-try:
-    from urllib.request import urlretrieve
-except ImportError:
-    from urllib import urlretrieve
 
 def find_repo_path():
     return os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
-# We do not use filecmp.cmp to take advantage of universal newlines 
+# We do not use filecmp.cmp to take advantage of universal newlines
 # handling in open() for Python 3.x and be insensitive to CRLF/LF when run on Windows.
 # As a consequence, this function will not work correctly if executed by Python 2.x on Windows.
 # But it will work correctly on Linux for any version, because every file tested will be LF.
@@ -50,10 +47,10 @@ def validate_scripts_content(repo_path, temp_cwd):
         errors = True
     else:
         shutil.copyfile(
-            os.path.join(repo_path, 'certbot-auto'), 
+            os.path.join(repo_path, 'certbot-auto'),
             os.path.join(temp_cwd, 'local-auto'))
         shutil.copy(os.path.normpath(os.path.join(
-            repo_path, 
+            repo_path,
             'letsencrypt-auto-source/pieces/fetch.py')), temp_cwd)
 
         # Compare file against current version in the target branch
@@ -72,7 +69,7 @@ def validate_scripts_content(repo_path, temp_cwd):
             latest_version = subprocess.check_output(
                 [sys.executable, 'fetch.py', '--latest-version'], cwd=temp_cwd)
             subprocess.check_call(
-                [sys.executable, 'fetch.py', '--le-auto-script', 
+                [sys.executable, 'fetch.py', '--le-auto-script',
                  'v{0}'.format(latest_version.decode().strip())], cwd=temp_cwd)
             if compare_files(
                     os.path.join(temp_cwd, 'letsencrypt-auto'),

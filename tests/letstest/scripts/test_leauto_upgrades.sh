@@ -153,17 +153,8 @@ if ! ./letsencrypt-auto -v --debug --version 2>&1 | grep "will no longer receive
     exit 1
 fi
 
-# Finally, we check if our local server received more requests. Over time,
-# we'll move more and more OSes into this case until it this is the expected
-# behavior on all systems.
-if [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue; then
-    if ! diff "$LOG_FILE" "$PREVIOUS_LOG_FILE" ; then
-        echo our local server received unexpected requests
-        exit 1
-    fi
-else
-    if diff "$LOG_FILE" "$PREVIOUS_LOG_FILE" ; then
-        echo our local server did not receive the requests we expected
-        exit 1
-    fi
+# Finally, we check if our local server received more requests.
+if ! diff "$LOG_FILE" "$PREVIOUS_LOG_FILE" ; then
+    echo our local server received unexpected requests
+    exit 1
 fi

@@ -1,9 +1,9 @@
 """A class that performs HTTP-01 challenges for Apache"""
-import logging
 import errno
+import logging
+from typing import List
+from typing import Set
 
-from acme.magic_typing import List
-from acme.magic_typing import Set
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -57,7 +57,7 @@ class ApacheHttp01(common.ChallengePerformer):
         self.challenge_dir = os.path.join(
             self.configurator.config.work_dir,
             "http_challenges")
-        self.moded_vhosts = set()  # type: Set[VirtualHost]
+        self.moded_vhosts: Set[VirtualHost] = set()
 
     def perform(self):
         """Perform all HTTP-01 challenges."""
@@ -93,7 +93,7 @@ class ApacheHttp01(common.ChallengePerformer):
                     self.configurator.enable_mod(mod, temp=True)
 
     def _mod_config(self):
-        selected_vhosts = []  # type: List[VirtualHost]
+        selected_vhosts: List[VirtualHost] = []
         http_port = str(self.configurator.config.http01_port)
         for chall in self.achalls:
             # Search for matching VirtualHosts

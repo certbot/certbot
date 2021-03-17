@@ -57,7 +57,7 @@ def certbot_oldest_processing(tools_path, args, test_constraints):
 def certbot_normal_processing(tools_path, test_constraints):
     repo_path = os.path.dirname(tools_path)
     certbot_requirements = os.path.normpath(os.path.join(
-        repo_path, 'letsencrypt-auto-source/pieces/dependency-requirements.txt'))
+        repo_path, 'tools/certbot_constraints.txt'))
     with open(certbot_requirements, 'r') as fd:
         certbot_reqs = fd.readlines()
     with open(os.path.join(tools_path, 'pipstrap_constraints.txt'), 'r') as fd:
@@ -76,8 +76,7 @@ def merge_requirements(tools_path, requirements, test_constraints, all_constrain
     # Here is the order by increasing priority:
     # 1) The general development constraints (tools/dev_constraints.txt)
     # 2) The general tests constraints (oldest_requirements.txt or
-    #    certbot-auto's dependency-requirements.txt + pipstrap's constraints
-    #    for the normal processing)
+    #    certbot_constraints.txt + pipstrap's constraints for the normal processing)
     # 3) The local requirement file, typically local-oldest-requirement in oldest tests
     files = [os.path.join(tools_path, 'dev_constraints.txt'), test_constraints]
     if requirements:
@@ -134,6 +133,7 @@ def main(args):
                 pip_install_with_print('--force-reinstall --no-deps --requirement "{0}"'
                                        .format(requirements))
 
+            print(' '.join(args))
             pip_install_with_print(' '.join(args), env=env)
 
 

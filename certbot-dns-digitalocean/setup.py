@@ -4,14 +4,13 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.13.0.dev0'
+version = '1.14.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'python-digitalocean>=1.11',
+    'python-digitalocean>=1.11', # 1.15.0 or newer is recommended for TTL support
     'setuptools>=39.0.1',
-    'six>=1.11.0',
     'zope.interface',
 ]
 

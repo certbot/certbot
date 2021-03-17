@@ -1,5 +1,4 @@
 """Module executing integration tests against certbot core."""
-from __future__ import print_function
 
 import os
 from os.path import exists

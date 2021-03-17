@@ -88,7 +88,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                                                   dns.tsig.HMAC_MD5))
 
 
-class _RFC2136Client(object):
+class _RFC2136Client:
     """
     Encapsulates all communication with the target DNS server.
     """

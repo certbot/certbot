@@ -1,8 +1,8 @@
 import os
+import re
+import subprocess
 import time
 import unittest
-import subprocess
-import re
 
 
 @unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')

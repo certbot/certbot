@@ -11,7 +11,7 @@ from certbot_compatibility_test import util
 logger = logging.getLogger(__name__)
 
 
-class Proxy(object):
+class Proxy:
     """A common base for compatibility test configurators"""
 
     @classmethod

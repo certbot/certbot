@@ -57,10 +57,3 @@ targets:
     type: centos
     virt: hvm
     user: centos
-  #-----------------------------------------------------------------------------
-  # Amazon Linux
-  - ami: ami-0ff8a91507f77f867
-    name: amazon
-    type: centos
-    virt: hvm
-    user: ec2-user

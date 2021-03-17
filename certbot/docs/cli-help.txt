@@ -118,7 +118,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.12.0
+                        "". (default: CertbotACMEClient/1.13.0
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -167,19 +167,6 @@ automation:
   --duplicate           Allow making a certificate lineage that duplicates an
                         existing one (both can be renewed in parallel)
                         (default: False)
-  --os-packages-only    (certbot-auto only) install OS package dependencies
-                        and then stop (default: False)
-  --no-self-upgrade     (certbot-auto only) prevent the certbot-auto script
-                        from upgrading itself to newer released versions
-                        (default: Upgrade automatically)
-  --no-bootstrap        (certbot-auto only) prevent the certbot-auto script
-                        from installing OS-level dependencies (default: Prompt
-                        to install OS-wide dependencies, but exit if the user
-                        says 'No')
-  --no-permissions-check
-                        (certbot-auto only) skip the check on the file system
-                        permissions of the certbot-auto script (default:
-                        False)
   -q, --quiet           Silence all output except errors. Useful for
                         automation via cron. Implies --non-interactive.
                         (default: False)
@@ -254,8 +241,8 @@ paths:
   Flags for changing execution paths & servers
 
   --cert-path CERT_PATH
-                        Path to where certificate is saved (with auth --csr),
-                        installed from, or revoked. (default: None)
+                        Path to where certificate is saved (with certonly
+                        --csr), installed from, or revoked (default: None)
   --key-path KEY_PATH   Path to private key for certificate installation or
                         revocation (if account key is missing) (default: None)
   --fullchain-path FULLCHAIN_PATH

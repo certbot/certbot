@@ -5,14 +5,14 @@ import copy
 import zope.interface.interface  # pylint: disable=unused-import
 
 from acme import challenges
+from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot import errors
-from certbot.compat import os
 from certbot._internal import constants
+from certbot.compat import os
 
 
-class _Default(object):
+class _Default:
     """A class to use as a default to detect if a value is set by a user"""
 
     def __bool__(self):
@@ -62,11 +62,11 @@ def config_help(name, hidden=False):
     """Extract the help message for an `.IConfig` attribute."""
     if hidden:
         return argparse.SUPPRESS
-    field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute
+    field: zope.interface.interface.Attribute = interfaces.IConfig.__getitem__(name)
     return field.__doc__
 
 
-class HelpfulArgumentGroup(object):
+class HelpfulArgumentGroup:
     """Emulates an argparse group for use with HelpfulArgumentParser.
 
     This class is used in the add_group method of HelpfulArgumentParser.

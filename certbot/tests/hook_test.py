@@ -267,7 +267,7 @@ class RunSavedPostHooksTest(HookTest):
 
     def setUp(self):
         super(RunSavedPostHooksTest, self).setUp()
-        self.eventually = []  # type: List[str]
+        self.eventually: List[str] = []
 
     def test_empty(self):
         self.assertFalse(self._call_with_mock_execute_and_eventually().called)

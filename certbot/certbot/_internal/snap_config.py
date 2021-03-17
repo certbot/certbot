@@ -1,13 +1,13 @@
 """Module configuring Certbot in a snap environment"""
 import logging
 import socket
+from typing import List
 
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
-from acme.magic_typing import List
 from certbot.compat import os
 from certbot.errors import Error
 
@@ -33,8 +33,7 @@ _ARCH_TRIPLET_MAP = {
 LOGGER = logging.getLogger(__name__)
 
 
-def prepare_env(cli_args):
-    # type: (List[str]) -> List[str]
+def prepare_env(cli_args: List[str]) -> List[str]:
     """
     Prepare runtime environment for a certbot execution in snap.
     :param list cli_args: List of command line arguments

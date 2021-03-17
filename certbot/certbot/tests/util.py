@@ -1,4 +1,6 @@
 """Test utilities."""
+from importlib import reload as reload_module
+import io
 import logging
 from multiprocessing import Event
 from multiprocessing import Process
@@ -11,20 +13,8 @@ import warnings
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
-try:
-    import mock
-    warnings.warn(
-        "The external mock module is being used for backwards compatibility "
-        "since it is available, however, future versions of Certbot's tests will "
-        "use unittest.mock. Be sure to update your code accordingly.",
-        PendingDeprecationWarning
-    )
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import OpenSSL
 import pkg_resources
-import six
-from six.moves import reload_module
 
 from certbot import interfaces
 from certbot import util
@@ -35,6 +25,18 @@ from certbot._internal import storage
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
+
+try:
+    import mock
+    warnings.warn(
+        "The external mock module is being used for backwards compatibility "
+        "since it is available, however, future versions of Certbot's tests will "
+        "use unittest.mock. Be sure to update your code accordingly.",
+        PendingDeprecationWarning
+    )
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
+
 
 
 def vector_path(*names):
@@ -177,13 +179,13 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
     :rtype: mock.MagicMock
 
     """
-    stdout = stdout if stdout else six.StringIO()
+    stdout = stdout if stdout else io.StringIO()
 
     freezable_mock = _create_get_utility_mock_with_stdout(stdout)
     return mock.patch(target, new=freezable_mock)
 
 
-class FreezableMock(object):
+class FreezableMock:
     """Mock object with the ability to freeze attributes.
 
     This class works like a regular mock.MagicMock object, except

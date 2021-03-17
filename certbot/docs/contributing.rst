@@ -478,13 +478,6 @@ to start contributing to Certbot.
 
 To run mypy on Certbot, use ``tox -e mypy`` on a machine that has Python 3 installed.
 
-Note that instead of just importing ``typing``, due to packaging issues, in Certbot we import from
-``acme.magic_typing`` and have to add some comments for pylint like this:
-
-.. code-block:: python
-
-  from acme.magic_typing import Dict
-
 Also note that OpenSSL, which we rely on, has type definitions for crypto but not SSL. We use both.
 Those imports should look like this:
 

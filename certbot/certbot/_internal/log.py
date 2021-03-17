@@ -19,7 +19,7 @@ The preferred method to display important information to the user is to
 use `certbot.display.util` and `certbot.display.ops`.
 
 """
-from __future__ import print_function
+
 
 import functools
 import logging

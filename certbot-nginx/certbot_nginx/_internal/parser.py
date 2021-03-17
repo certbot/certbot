@@ -5,15 +5,15 @@ import glob
 import io
 import logging
 import re
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Set
+from typing import Tuple
+from typing import Union
 
 import pyparsing
-import six
 
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Set
-from acme.magic_typing import Tuple
-from acme.magic_typing import Union
 from certbot import errors
 from certbot.compat import os
 from certbot_nginx._internal import nginxparser
@@ -22,7 +22,7 @@ from certbot_nginx._internal import obj
 logger = logging.getLogger(__name__)
 
 
-class NginxParser(object):
+class NginxParser:
     """Class handles the fine details of parsing the Nginx Configuration.
 
     :ivar str root: Normalized absolute path to the server root
@@ -32,7 +32,7 @@ class NginxParser(object):
     """
 
     def __init__(self, root):
-        self.parsed = {} # type: Dict[str, Union[List, nginxparser.UnspacedList]]
+        self.parsed: Dict[str, Union[List, nginxparser.UnspacedList]] = {}
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
 
@@ -94,7 +94,7 @@ class NginxParser(object):
         """
         servers = self._get_raw_servers()
 
-        addr_to_ssl = {} # type: Dict[Tuple[str, str], bool]
+        addr_to_ssl: Dict[Tuple[str, str], bool] = {}
         for filename in servers:
             for server, _ in servers[filename]:
                 # Parse the server block to save addr info
@@ -106,12 +106,11 @@ class NginxParser(object):
                     addr_to_ssl[addr_tuple] = addr.ssl or addr_to_ssl[addr_tuple]
         return addr_to_ssl
 
-    def _get_raw_servers(self):
+    def _get_raw_servers(self) -> Dict:
         # pylint: disable=cell-var-from-loop
-        # type: () -> Dict
         """Get a map of unparsed all server blocks
         """
-        servers = {} # type: Dict[str, Union[List, nginxparser.UnspacedList]]
+        servers: Dict[str, Union[List, nginxparser.UnspacedList]] = {}
         for filename in self.parsed:
             tree = self.parsed[filename]
             servers[filename] = []
@@ -362,8 +361,9 @@ class NginxParser(object):
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
-    def duplicate_vhost(self, vhost_template, remove_singleton_listen_params=False,
-        only_directives=None):
+    def duplicate_vhost(self, vhost_template: obj.VirtualHost,
+                        remove_singleton_listen_params: bool = False,
+                        only_directives: Optional[List] = None) -> obj.VirtualHost:
         """Duplicate the vhost in the configuration files.
 
         :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost_template: The vhost
@@ -549,7 +549,7 @@ def _is_include_directive(entry):
     """
     return (isinstance(entry, list) and
             len(entry) == 2 and entry[0] == 'include' and
-            isinstance(entry[1], six.string_types))
+            isinstance(entry[1], str))
 
 def _is_ssl_on_directive(entry):
     """Checks if an nginx parsed entry is an 'ssl on' directive.
@@ -654,7 +654,7 @@ def _add_directive(block, directive, insert_at_top):
     directive_name = directive[0]
     def can_append(loc, dir_name):
         """ Can we append this directive to the block? """
-        return loc is None or (isinstance(dir_name, six.string_types)
+        return loc is None or (isinstance(dir_name, str)
             and dir_name in REPEATABLE_DIRECTIVES)
 
     err_fmt = 'tried to insert directive "{0}" but found conflicting "{1}".'
@@ -740,9 +740,9 @@ def _parse_server_raw(server):
     :rtype: dict
 
     """
-    addrs = set() # type: Set[obj.Addr]
-    ssl = False # type: bool
-    names = set() # type: Set[str]
+    addrs: Set[obj.Addr] = set()
+    ssl: bool = False
+    names: Set[str] = set()
 
     apply_ssl_to_all_addrs = False
 

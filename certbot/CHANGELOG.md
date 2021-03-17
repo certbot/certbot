@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.13.0 - master
+## 1.14.0 - master
 
 ### Added
 
@@ -10,6 +10,27 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* certbot-auto no longer checks for updates on any operating system.
+* The module `acme.magic_typing` is deprecated and will be removed in a future release.
+  Please use the built-in module `typing` instead.
+* The DigitalOcean plugin now creates TXT records for the DNS-01 challenge with a lower 30s TTL.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.13.0 - 2021-03-02
+
+### Added
+
+*
+
+### Changed
+
+* CLI flags `--os-packages-only`, `--no-self-upgrade`, `--no-bootstrap` and `--no-permissions-check`,
+  which are related to certbot-auto, are deprecated and will be removed in a future release.
 * Certbot no longer conditionally depends on an external mock module. Certbot's
   test API will continue to use it if it is available for backwards
   compatibility, however, this behavior has been deprecated and will be removed
@@ -17,6 +38,12 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The acme library no longer depends on the `security` extras from `requests`
   which was needed to support SNI in TLS requests when using old versions of
   Python 2.
+* Certbot and all of its components no longer depend on the library `six`.
+* The update of certbot-auto itself is now disabled on all RHEL-like systems.
+* When revoking a certificate by `--cert-name`, it is no longer necessary to specify the `--server`
+  if the certificate was obtained from a non-default ACME server.
+* The nginx authenticator now configures all matching HTTP and HTTPS vhosts for the HTTP-01
+  challenge. It is now compatible with external HTTPS redirection by a CDN or load balancer.
 
 ### Fixed
 

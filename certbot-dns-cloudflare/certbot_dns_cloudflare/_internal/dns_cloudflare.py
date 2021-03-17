@@ -1,12 +1,11 @@
 """DNS Authenticator for Cloudflare."""
 import logging
+from typing import Any
+from typing import Dict
+from typing import List
 
 import CloudFlare
 import zope.interface
-
-from acme.magic_typing import Any
-from acme.magic_typing import Dict
-from acme.magic_typing import List
 
 from certbot import errors
 from certbot import interfaces
@@ -85,7 +84,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         return _CloudflareClient(self.credentials.conf('email'), self.credentials.conf('api-key'))
 
 
-class _CloudflareClient(object):
+class _CloudflareClient:
     """
     Encapsulates all communication with the Cloudflare API.
     """
@@ -173,7 +172,7 @@ class _CloudflareClient(object):
         """
 
         zone_name_guesses = dns_common.base_domain_name_guesses(domain)
-        zones = []  # type: List[Dict[str, Any]]
+        zones: List[Dict[str, Any]] = []
         code = msg = None
 
         for zone_name in zone_name_guesses:

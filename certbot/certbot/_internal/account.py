@@ -10,7 +10,6 @@ from cryptography.hazmat.primitives import serialization
 import josepy as jose
 import pyrfc3339
 import pytz
-import six
 
 from acme import fields as acme_fields
 from acme import messages
@@ -19,13 +18,13 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot._internal import constants
-from certbot.compat import os
 from certbot.compat import filesystem
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 
 
-class Account(object):
+class Account:
     """ACME protocol registration.
 
     :ivar .RegistrationResource regr: Registration Resource
@@ -101,7 +100,7 @@ class AccountMemoryStorage(interfaces.AccountStorage):
         self.accounts = initial_accounts if initial_accounts is not None else {}
 
     def find_all(self):
-        return list(six.itervalues(self.accounts))
+        return list(self.accounts.values())
 
     def save(self, account, client):
         if account.id in self.accounts:
@@ -230,8 +229,7 @@ class AccountFileStorage(interfaces.AccountStorage):
     def load(self, account_id):
         return self._load_for_server_path(account_id, self.config.server_path)
 
-    def save(self, account, client):
-        # type: (Account, ClientBase) -> None
+    def save(self, account: Account, client: ClientBase) -> None:
         """Create a new account.
 
         :param Account account: account to create
@@ -246,8 +244,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         except IOError as error:
             raise errors.AccountStorageError(error)
 
-    def update_regr(self, account, client):
-        # type: (Account, ClientBase) -> None
+    def update_regr(self, account: Account, client: ClientBase) -> None:
         """Update the registration resource.
 
         :param Account account: account to update
@@ -260,8 +257,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         except IOError as error:
             raise errors.AccountStorageError(error)
 
-    def update_meta(self, account):
-        # type: (Account) -> None
+    def update_meta(self, account: Account) -> None:
         """Update the meta resource.
 
         :param Account account: account to update
@@ -339,19 +335,16 @@ class AccountFileStorage(interfaces.AccountStorage):
 
         return dir_path
 
-    def _prepare(self, account):
-        # type: (Account) -> str
+    def _prepare(self, account: Account) -> str:
         account_dir_path = self._account_dir_path(account.id)
         util.make_or_verify_dir(account_dir_path, 0o700, self.config.strict_permissions)
         return account_dir_path
 
-    def _create(self, account, dir_path):
-        # type: (Account, str) -> None
+    def _create(self, account: Account, dir_path: str) -> None:
         with util.safe_open(self._key_path(dir_path), "w", chmod=0o400) as key_file:
             key_file.write(account.key.json_dumps())
 
-    def _update_regr(self, account, acme, dir_path):
-        # type: (Account, ClientBase, str) -> None
+    def _update_regr(self, account: Account, acme: ClientBase, dir_path: str) -> None:
         with open(self._regr_path(dir_path), "w") as regr_file:
             regr = account.regr
             # If we have a value for new-authz, save it for forwards

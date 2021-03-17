@@ -3,7 +3,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.13.0.dev0'
+version = '1.14.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -18,7 +18,6 @@ install_requires = [
     'requests>=2.6.0',
     'requests-toolbelt>=0.3.0',
     'setuptools>=39.0.1',
-    'six>=1.11.0',
 ]
 
 dev_extras = [
