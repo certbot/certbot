@@ -37,6 +37,8 @@ RUN apk add --no-cache --virtual .build-deps \
         openssl-dev \
         musl-dev \
         libffi-dev \
+        python3-dev \
+        cargo \
     && python tools/pipstrap.py \
     && python tools/pip_install.py --no-cache-dir \
             --editable src/acme \
