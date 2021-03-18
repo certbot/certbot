@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "certbot-pinner"
+version = "0.1.0"
+description = "A simple project for pinning Certbot's dependencies using Poetry."
+authors = ["Certbot Project"]
+license = "Apache License 2.0"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+# Any local packages that have dependencies on other local packages must be
+# listed below before the package it depends on. For instance, certbot depends
+# on acme so certbot must be listed before acme.
+certbot-ci = {path = "../../certbot-ci", extras = ["docs"]}
+certbot-compatibility-test = {path = "../../certbot-compatibility-test", extras = ["docs"]}
+certbot-dns-cloudflare = {path = "../../certbot-dns-cloudflare", extras = ["docs"]}
+certbot-dns-cloudxns = {path = "../../certbot-dns-cloudxns", extras = ["docs"]}
+certbot-dns-digitalocean = {path = "../../certbot-dns-digitalocean", extras = ["docs"]}
+certbot-dns-dnsimple = {path = "../../certbot-dns-dnsimple", extras = ["docs"]}
+certbot-dns-dnsmadeeasy = {path = "../../certbot-dns-dnsmadeeasy", extras = ["docs"]}
+certbot-dns-gehirn = {path = "../../certbot-dns-gehirn", extras = ["docs"]}
+certbot-dns-google = {path = "../../certbot-dns-google", extras = ["docs"]}
+certbot-dns-linode = {path = "../../certbot-dns-linode", extras = ["docs"]}
+certbot-dns-luadns = {path = "../../certbot-dns-luadns", extras = ["docs"]}
+certbot-dns-nsone = {path = "../../certbot-dns-nsone", extras = ["docs"]}
+certbot-dns-ovh = {path = "../../certbot-dns-ovh", extras = ["docs"]}
+certbot-dns-rfc2136 = {path = "../../certbot-dns-rfc2136", extras = ["docs"]}
+certbot-dns-route53 = {path = "../../certbot-dns-route53", extras = ["docs"]}
+certbot-dns-sakuracloud = {path = "../../certbot-dns-sakuracloud", extras = ["docs"]}
+certbot-nginx = {path = "../../certbot-nginx", extras = ["docs"]}
+certbot-apache = {path = "../../certbot-apache", extras = ["dev"]}
+certbot = {path = "../../certbot", extras = ["dev", "docs"]}
+acme = {path = "../../acme", extras = ["dev", "docs"]}
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
