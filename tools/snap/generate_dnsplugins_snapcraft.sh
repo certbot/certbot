@@ -35,7 +35,15 @@ parts:
       - PIP_CONSTRAINT: \$SNAPCRAFT_PART_SRC/snap-constraints.txt
       - SNAP_BUILD: "True"
     # To build cryptography and cffi if needed
-    build-packages: [gcc, libffi-dev, libssl-dev, python3-dev]
+    build-packages:
+      - gcc
+      - git
+      - libaugeas-dev
+      - build-essential
+      - libssl-dev
+      - libffi-dev
+      - python3-dev
+      - cargo
   certbot-metadata:
     plugin: dump
     source: .
