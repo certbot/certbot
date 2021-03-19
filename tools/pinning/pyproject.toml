@@ -7,6 +7,8 @@ license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
 python = "^3.6"
+
+# Local dependencies
 # Any local packages that have dependencies on other local packages must be
 # listed below before the package it depends on. For instance, certbot depends
 # on acme so certbot must be listed before acme.
@@ -30,6 +32,13 @@ certbot-nginx = {path = "../../certbot-nginx", extras = ["docs"]}
 certbot-apache = {path = "../../certbot-apache", extras = ["dev"]}
 certbot = {path = "../../certbot", extras = ["dev", "docs"]}
 acme = {path = "../../acme", extras = ["dev", "docs"]}
+
+# Extra dependencies
+# cryptography 3.4+ requires rust to build wheels and we have some work to do
+# before we switch
+cryptography = "<3.4"
+# See https://github.com/certbot/certbot/issues/8425.
+mypy = "0.710"
 
 [tool.poetry.dev-dependencies]
 
