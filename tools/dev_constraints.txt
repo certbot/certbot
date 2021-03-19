@@ -56,7 +56,7 @@ jsonschema==2.6.0
 lazy-object-proxy==1.4.3
 logger==1.4
 logilab-common==1.4.1
-MarkupSafe==1.0
+MarkupSafe==1.1.1
 mccabe==0.6.1
 more-itertools==5.0.0
 msrest==0.6.18
