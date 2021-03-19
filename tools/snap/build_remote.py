@@ -46,7 +46,8 @@ def _execute_build(
         ignore = None
         if target == 'certbot':
             ignore = shutil.ignore_patterns(".git", "venv*", ".tox")
-        shutil.copytree(workspace, temp_workspace, dirs_exist_ok=True, symlinks=True, ignore=ignore)
+        shutil.copytree(workspace, temp_workspace,
+                        dirs_exist_ok=True, symlinks=True, ignore=ignore)  # type:ignore
 
         with tempfile.TemporaryDirectory() as tempdir:
             environ = os.environ.copy()
@@ -66,12 +67,12 @@ def _execute_build(
                 # On this error the snapcraft process stales. Let's finish it.
                 process.kill()
 
-        status = process.wait()
+        process_state = process.wait()
 
         for path in glob.glob(join(temp_workspace, '*.snap')):
             shutil.copy(path, workspace)
 
-        return status, process_output
+        return process_state, process_output
     except BaseException as e:
         print(e)
         sys.stdout.flush()
@@ -138,18 +139,23 @@ def _build_snap(
 
 
 def _extract_state(project: str, output: str, status: Dict[str, Dict[str, str]]) -> None:
+    state = status[project]
+
+    if "Sending build data to Launchpad..." in output:
+        for arch in state.keys():
+            state[arch] = "Sending build data"
+
     match = re.match(r'^.*arch=(\w+)\s+state=([\w ]+).*$', output)
     if match:
         arch = match.group(1)
-        state = status[project]
         state[arch] = match.group(2)
 
-        # You need to reassign the value of status[project] here (rather than doing
-        # something like status[project][arch] = match.group(2)) for the state change
-        # to propagate to other processes. See
-        # https://docs.python.org/3.8/library/multiprocessing.html#proxy-objects for
-        # more info.
-        status[project] = state
+    # You need to reassign the value of status[project] here (rather than doing
+    # something like status[project][arch] = match.group(2)) for the state change
+    # to propagate to other processes. See
+    # https://docs.python.org/3.8/library/multiprocessing.html#proxy-objects for
+    # more info.
+    status[project] = state
 
 
 def _dump_status_helper(archs: Set[str], status: Dict[str, Dict[str, str]]) -> None:
