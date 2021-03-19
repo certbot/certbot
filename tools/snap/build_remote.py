@@ -61,8 +61,6 @@ def _execute_build(
         process_output: List[str] = []
         for line in process.stdout:
             process_output.append(line)
-            print(f"${target}:${line}")
-            sys.stdout.flush()
             _extract_state(target, line, status)
 
             if any(state for state in status[target].values() if state == 'Chroot problem'):
