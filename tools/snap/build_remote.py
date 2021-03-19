@@ -13,6 +13,7 @@ from os.path import exists
 from os.path import join
 from os.path import realpath
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -31,25 +32,53 @@ def _execute_build(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         workspace: str) -> Tuple[int, List[str]]:
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        environ = os.environ.copy()
-        environ['XDG_CACHE_HOME'] = tempdir
-        process = subprocess.Popen([
-            'snapcraft', 'remote-build', '--launchpad-accept-public-upload', '--recover',
-            '--build-on', ','.join(archs)],
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            universal_newlines=True, env=environ, cwd=workspace)
+    temp_workspace = None
+    try:
+        # Snapcraft remote-build has a recover feature, that will make it reconnect to an existing
+        # build on Launchpad if possible. However, the signature used to retrieve a potential
+        # build is not based on the content of the sources used to build a snap, but on a hash
+        # of the snapcraft current working directory (the path itself, not the content).
+        # It means that every build started from /my/path/to/certbot will always be considered
+        # as the same build, whatever the actual sources are.
+        # To circumvent this, we create a temporary folder and use it as a workspace to build
+        # the snap: this path is random, making the recover feature effectively noop.
+        temp_workspace = tempfile.mkdtemp()
+        ignore = None
+        if target == 'certbot':
+            ignore = shutil.ignore_patterns(".git", "venv*", ".tox")
+        shutil.copytree(workspace, temp_workspace, dirs_exist_ok=True, symlinks=True, ignore=ignore)
 
-    process_output: List[str] = []
-    for line in process.stdout:
-        process_output.append(line)
-        _extract_state(target, line, status)
+        with tempfile.TemporaryDirectory() as tempdir:
+            environ = os.environ.copy()
+            environ['XDG_CACHE_HOME'] = tempdir
+            process = subprocess.Popen([
+                'snapcraft', 'remote-build', '--launchpad-accept-public-upload',
+                '--build-on', ','.join(archs)],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                universal_newlines=True, env=environ, cwd=temp_workspace)
 
-        if any(state for state in status[target].values() if state == 'Chroot problem'):
-            # On this error the snapcraft process stales. Let's finish it.
-            process.kill()
+        process_output: List[str] = []
+        for line in process.stdout:
+            process_output.append(line)
+            _extract_state(target, line, status)
 
-    return process.wait(), process_output
+            if any(state for state in status[target].values() if state == 'Chroot problem'):
+                # On this error the snapcraft process stales. Let's finish it.
+                process.kill()
+
+        status = process.wait()
+
+        for path in glob.glob(join(temp_workspace, '*.snap')):
+            shutil.copy(path, workspace)
+
+        return status, process_output
+    except BaseException as e:
+        print(e)
+        sys.stdout.flush()
+        raise e
+    finally:
+        if temp_workspace:
+            shutil.rmtree(temp_workspace, ignore_errors=True)
 
 
 def _build_snap(
