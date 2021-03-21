@@ -266,9 +266,9 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
     checker = ocsp.RevocationChecker()
 
     if config.certname and cert.lineagename != config.certname and not skip_filter_checks:
-        return ""
+        return None
     if config.domains and not set(config.domains).issubset(cert.names()):
-        return ""
+        return None
     now = pytz.UTC.fromutc(datetime.datetime.utcnow())
 
     reasons = []
@@ -358,7 +358,9 @@ def _report_human_readable(config, parsed_certs):
     """Format a results report for a parsed cert"""
     certinfo = []
     for cert in parsed_certs:
-        certinfo.append(human_readable_cert_info(config, cert))
+        cert_info = human_readable_cert_info(config, cert)
+        if cert_info is not None:
+            certinfo.append(cert_info)
     return "\n".join(certinfo)
 
 

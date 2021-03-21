@@ -17,7 +17,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Don't output an empty line for a hidden certificate when `certbot certificates` is being used
+  in combination with `--cert-name` or `-d`.
 
 More details about these changes can be found on our GitHub repo.
 
