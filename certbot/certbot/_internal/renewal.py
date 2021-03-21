@@ -1,5 +1,4 @@
 """Functionality for autorenewal and associated juggling of configurations"""
-from __future__ import print_function
 
 import copy
 import itertools
@@ -8,29 +7,29 @@ import random
 import sys
 import time
 import traceback
+from typing import List
+from typing import Optional
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import OpenSSL
-import six
 import zope.component
 
-from acme.magic_typing import List
-from acme.magic_typing import Optional  # pylint: disable=unused-import
 from certbot import crypto_util
-from certbot.display import util as display_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot._internal import cli
-from certbot._internal import client  # pylint: disable=unused-import
+from certbot._internal import client
 from certbot._internal import constants
 from certbot._internal import hooks
 from certbot._internal import storage
 from certbot._internal import updater
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import os
+from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +119,7 @@ def _restore_webroot_config(config, renewalparams):
     # see https://github.com/certbot/certbot/pull/7095
     if "webroot_path" in renewalparams and not cli.set_by_cli("webroot_path"):
         wp = renewalparams["webroot_path"]
-        if isinstance(wp, six.string_types):  # prior to 0.1.0, webroot_path was a string
+        if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
             wp = [wp]
         config.webroot_path = wp
 
@@ -144,7 +143,7 @@ def _restore_plugin_configs(config, renewalparams):
     #      longer defined, stored copies of that parameter will be
     #      deserialized as strings by this logic even if they were
     #      originally meant to be some other type.
-    plugin_prefixes = []  # type: List[str]
+    plugin_prefixes: List[str] = []
     if renewalparams["authenticator"] == "webroot":
         _restore_webroot_config(config, renewalparams)
     else:
@@ -155,7 +154,7 @@ def _restore_plugin_configs(config, renewalparams):
 
     for plugin_prefix in set(plugin_prefixes):
         plugin_prefix = plugin_prefix.replace('-', '_')
-        for config_item, config_value in six.iteritems(renewalparams):
+        for config_item, config_value in renewalparams.items():
             if config_item.startswith(plugin_prefix + "_") and not cli.set_by_cli(config_item):
                 # Values None, True, and False need to be treated specially,
                 # As their types aren't handled correctly by configobj
@@ -180,9 +179,9 @@ def restore_required_config_elements(config, renewalparams):
 
     required_items = itertools.chain(
         (("pref_challs", _restore_pref_challs),),
-        six.moves.zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
-        six.moves.zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
-        six.moves.zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
+        zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
+        zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
+        zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])
@@ -220,7 +219,7 @@ def _restore_pref_challs(unused_name, value):
     # If pref_challs has only one element, configobj saves the value
     # with a trailing comma so it's parsed as a list. If this comma is
     # removed by the user, the value is parsed as a str.
-    value = [value] if isinstance(value, six.string_types) else value
+    value = [value] if isinstance(value, str) else value
     return cli.parse_preferred_challenges(value)
 
 
@@ -291,7 +290,7 @@ def _restore_str(name, value):
 
 
 def should_renew(config, lineage):
-    "Return true if any of the circumstances for automatic renewal apply."
+    """Return true if any of the circumstances for automatic renewal apply."""
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
         return True
@@ -306,19 +305,16 @@ def should_renew(config, lineage):
 
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
-    "Do not renew a valid cert with one from a staging server!"
+    """Do not renew a valid cert with one from a staging server!"""
     # Some lineages may have begun with --staging, but then had production
     # certificates added to them
     with open(lineage.cert) as the_file:
         contents = the_file.read()
     latest_cert = OpenSSL.crypto.load_certificate(
         OpenSSL.crypto.FILETYPE_PEM, contents)
-    # all our test certificates are from happy hacker fake CA, though maybe one day
-    # we should test more methodically
-    now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
 
     if util.is_staging(config.server):
-        if not util.is_staging(original_server) or now_valid:
+        if not util.is_staging(original_server):
             if not config.break_my_certs:
                 names = ", ".join(lineage.names())
                 raise errors.Error(
@@ -327,8 +323,8 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                     "unless you use the --break-my-certs flag!".format(names))
 
 
-def renew_cert(config, domains, le_client, lineage):
-    # type: (interfaces.IConfig, Optional[List[str]], client.Client, storage.RenewableCert) -> None
+def renew_cert(config: interfaces.IConfig, domains: Optional[List[str]], le_client: client.Client,
+               lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
@@ -355,14 +351,14 @@ def renew_cert(config, domains, le_client, lineage):
 
 
 def report(msgs, category):
-    "Format a results report for a category of renewal outcomes"
+    """Format a results report for a category of renewal outcomes"""
     lines = ("%s (%s)" % (m, category) for m in msgs)
     return "  " + "\n  ".join(lines)
 
 
-def _renew_describe_results(config, renew_successes, renew_failures,
-                            renew_skipped, parse_failures):
-    # type: (interfaces.IConfig, List[str], List[str], List[str], List[str]) -> None
+def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[str],
+                            renew_failures: List[str], renew_skipped: List[str],
+                            parse_failures: List[str]) -> None:
     """
     Print a report to the terminal about the results of the renewal process.
 
@@ -515,8 +511,7 @@ def handle_renewal_request(config):
     logger.debug("no renewal failures")
 
 
-def _update_renewal_params_from_key(key_path, config):
-    # type: (str, interfaces.IConfig) -> None
+def _update_renewal_params_from_key(key_path: str, config: interfaces.IConfig) -> None:
     with open(key_path, 'rb') as file_h:
         key = load_pem_private_key(file_h.read(), password=None, backend=default_backend())
     if isinstance(key, rsa.RSAPrivateKey):

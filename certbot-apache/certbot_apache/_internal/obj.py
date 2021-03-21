@@ -1,7 +1,7 @@
 """Module contains classes used by the Apache Configurator."""
 import re
+from typing import Set
 
-from acme.magic_typing import Set
 from certbot.plugins import common
 
 
@@ -19,9 +19,6 @@ class Addr(common.Addr):
                     (self.tup[0] == other.tup[0] and
                      self.is_wildcard() and other.is_wildcard()))
         return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
     def __repr__(self):
         return "certbot_apache._internal.obj.Addr(" + repr(self.tup) + ")"
@@ -98,7 +95,7 @@ class Addr(common.Addr):
         return self.get_addr_obj(port)
 
 
-class VirtualHost(object):
+class VirtualHost:
     """Represents an Apache Virtualhost.
 
     :ivar str filep: file path of VH
@@ -140,7 +137,7 @@ class VirtualHost(object):
 
     def get_names(self):
         """Return a set of all names."""
-        all_names = set()  # type: Set[str]
+        all_names: Set[str] = set()
         all_names.update(self.aliases)
         # Strip out any scheme:// and <port> field from servername
         if self.name is not None:
@@ -190,9 +187,6 @@ class VirtualHost(object):
                     self.modmacro == other.modmacro)
 
         return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
     def __hash__(self):
         return hash((self.filep, self.path,
@@ -251,7 +245,7 @@ class VirtualHost(object):
 
         # already_found acts to keep everything very conservative.
         # Don't allow multiple ip:ports in same set.
-        already_found = set()  # type: Set[str]
+        already_found: Set[str] = set()
 
         for addr in vhost.addrs:
             for local_addr in self.addrs:

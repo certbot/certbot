@@ -3,12 +3,9 @@ import copy
 import fnmatch
 import logging
 import re
-import sys
+from typing import Dict
+from typing import List
 
-import six
-
-from acme.magic_typing import Dict
-from acme.magic_typing import List
 from certbot import errors
 from certbot.compat import os
 from certbot_apache._internal import apache_util
@@ -17,7 +14,7 @@ from certbot_apache._internal import constants
 logger = logging.getLogger(__name__)
 
 
-class ApacheParser(object):
+class ApacheParser:
     """Class handles the fine details of parsing the Apache Configuration.
 
     .. todo:: Make parsing general... remove sites-available etc...
@@ -51,9 +48,9 @@ class ApacheParser(object):
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
-        self.modules = {}  # type: Dict[str, str]
-        self.parser_paths = {}  # type: Dict[str, List[str]]
-        self.variables = {}  # type: Dict[str, str]
+        self.modules: Dict[str, str] = {}
+        self.parser_paths: Dict[str, List[str]] = {}
+        self.variables: Dict[str, str] = {}
 
         # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
@@ -266,7 +263,7 @@ class ApacheParser(object):
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
-        mods = {}  # type: Dict[str, str]
+        mods: Dict[str, str] = {}
         matches = self.find_dir("LoadModule")
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
@@ -275,7 +272,7 @@ class ApacheParser(object):
         while len(mods) != prev_size:
             prev_size = len(mods)
 
-            for match_name, match_filename in six.moves.zip(
+            for match_name, match_filename in zip(
                     iterator, iterator):
                 mod_name = self.get_arg(match_name)
                 mod_filename = self.get_arg(match_filename)
@@ -553,7 +550,7 @@ class ApacheParser(object):
         else:
             arg_suffix = "/*[self::arg=~regexp('%s')]" % case_i(arg)
 
-        ordered_matches = []  # type: List[str]
+        ordered_matches: List[str] = []
 
         # TODO: Wildcards should be included in alphabetical order
         # https://httpd.apache.org/docs/2.4/mod/core.html#include
@@ -738,9 +735,6 @@ class ApacheParser(object):
         :rtype: str
 
         """
-        if sys.version_info < (3, 6):
-            # This strips off final /Z(?ms)
-            return fnmatch.translate(clean_fn_match)[:-7]  # pragma: no cover
         # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
         return fnmatch.translate(clean_fn_match)[4:-3]  # pragma: no cover
 

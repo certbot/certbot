@@ -3,20 +3,19 @@ import argparse
 import collections
 import json
 import logging
+from typing import DefaultDict
+from typing import Dict
+from typing import List
+from typing import Set
 
-import six
 import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import DefaultDict
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Set
-from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import cli
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge as AnnotatedChallenge
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import ops
@@ -68,11 +67,10 @@ to serve all files under specified web root ({0})."""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.full_roots = {}  # type: Dict[str, str]
-        self.performed = collections.defaultdict(set) \
-            # type: DefaultDict[str, Set[achallenges.KeyAuthorizationAnnotatedChallenge]]
+        self.full_roots: Dict[str, str] = {}
+        self.performed: DefaultDict[str, Set[AnnotatedChallenge]] = collections.defaultdict(set)
         # stack of dirs successfully created by this authenticator
-        self._created_dirs = []  # type: List[str]
+        self._created_dirs: List[str] = []
 
     def prepare(self):  # pylint: disable=missing-function-docstring
         pass
@@ -92,7 +90,7 @@ to serve all files under specified web root ({0})."""
             for achall in achalls:
                 self.conf("map").setdefault(achall.domain, webroot_path)
         else:
-            known_webroots = list(set(six.itervalues(self.conf("map"))))
+            known_webroots = list(set(self.conf("map").values()))
             for achall in achalls:
                 if achall.domain not in self.conf("map"):
                     new_webroot = self._prompt_for_webroot(achall.domain,
@@ -225,7 +223,7 @@ to serve all files under specified web root ({0})."""
                 os.remove(validation_path)
                 self.performed[root_path].remove(achall)
 
-        not_removed = []  # type: List[str]
+        not_removed: List[str] = []
         while self._created_dirs:
             path = self._created_dirs.pop()
             try:
@@ -242,7 +240,7 @@ class _WebrootMapAction(argparse.Action):
     """Action class for parsing webroot_map."""
 
     def __call__(self, parser, namespace, webroot_map, option_string=None):
-        for domains, webroot_path in six.iteritems(json.loads(webroot_map)):
+        for domains, webroot_path in json.loads(webroot_map).items():
             webroot_path = _validate_webroot(webroot_path)
             namespace.webroot_map.update(
                 (d, webroot_path) for d in cli.add_domains(namespace, domains))

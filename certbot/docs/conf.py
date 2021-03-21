@@ -97,7 +97,6 @@ language = None
 # directories to ignore when looking for source files.
 exclude_patterns = [
     '_build',
-    'man',
     'challenges.rst',
     'ciphers.rst'
 ]

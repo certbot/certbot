@@ -1,9 +1,9 @@
 # coding=utf-8
 """Tests for certbot._internal.main."""
 # pylint: disable=too-many-lines
-from __future__ import print_function
-
 import datetime
+from importlib import reload as reload_module
+import io
 import itertools
 import json
 from operator import is_
@@ -14,13 +14,7 @@ import traceback
 import unittest
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 import pytz
-import six
-from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import crypto_util
 from certbot import errors
@@ -39,6 +33,12 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import enhancements
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 
 CERT_PATH = test_util.vector_path('cert_512.pem')
@@ -286,10 +286,7 @@ class RevokeTest(test_util.TempDirTestCase):
         super(RevokeTest, self).setUp()
 
         shutil.copy(CERT_PATH, self.tempdir)
-        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir,
-            'cert_512.pem'))
-        with open(self.tmp_cert_path, 'r') as f:
-            self.tmp_cert = (self.tmp_cert_path, f.read())
+        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir, 'cert_512.pem'))
 
         patches = [
             mock.patch('acme.client.BackwardsCompatibleClientV2'),
@@ -319,6 +316,7 @@ class RevokeTest(test_util.TempDirTestCase):
         if not args:
             args = 'revoke --cert-path={0} '
             args = args.format(self.tmp_cert_path).split()
+        cli.set_by_cli.detector = None # required to reset set_by_cli state
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
@@ -344,13 +342,44 @@ class RevokeTest(test_util.TempDirTestCase):
         self.assertEqual(expected, mock_revoke.call_args_list)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
-    @mock.patch('certbot._internal.storage.cert_path_for_cert_name')
-    def test_revoke_by_certname(self, mock_cert_path_for_cert_name,
-            mock_delete_if_appropriate):
+    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
+    def test_revoke_by_certname(self, unused_mock_renewal_file_for_certname,
+                                mock_cert, mock_delete_if_appropriate):
+        mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
+                                                server="https://acme.example")
         args = 'revoke --cert-name=example.com'.split()
-        mock_cert_path_for_cert_name.return_value = self.tmp_cert
         mock_delete_if_appropriate.return_value = False
         self._call(args)
+        self.mock_acme_client.assert_called_once_with(mock.ANY, mock.ANY, 'https://acme.example')
+        self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
+
+    @mock.patch('certbot._internal.main._delete_if_appropriate')
+    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
+    def test_revoke_by_certname_and_server(self, unused_mock_renewal_file_for_certname,
+                                           mock_cert, mock_delete_if_appropriate):
+        """Revoking with --server should use the server from the CLI"""
+        mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
+                                                server="https://acme.example")
+        args = 'revoke --cert-name=example.com --server https://other.example'.split()
+        mock_delete_if_appropriate.return_value = False
+        self._call(args)
+        self.mock_acme_client.assert_called_once_with(mock.ANY, mock.ANY, 'https://other.example')
+        self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
+
+    @mock.patch('certbot._internal.main._delete_if_appropriate')
+    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
+    def test_revoke_by_certname_empty_server(self, unused_mock_renewal_file_for_certname,
+                                             mock_cert, mock_delete_if_appropriate):
+        """Revoking with --cert-name where the lineage server is empty shouldn't crash """
+        mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path, server=None)
+        args = 'revoke --cert-name=example.com'.split()
+        mock_delete_if_appropriate.return_value = False
+        self._call(args)
+        self.mock_acme_client.assert_called_once_with(
+            mock.ANY, mock.ANY, constants.CLI_DEFAULTS['server'])
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
@@ -599,7 +628,7 @@ class MainTest(test_util.ConfigTestCase):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
 
-        toy_stdout = stdout if stdout else six.StringIO()
+        toy_stdout = stdout if stdout else io.StringIO()
         with mock.patch('certbot._internal.main.sys.stdout', new=toy_stdout):
             with mock.patch('certbot._internal.main.sys.stderr') as stderr:
                 with mock.patch("certbot.util.atexit"):
@@ -612,8 +641,8 @@ class MainTest(test_util.ConfigTestCase):
             self.assertEqual(1, mock_run.call_count)
 
     def test_version_string_program_name(self):
-        toy_out = six.StringIO()
-        toy_err = six.StringIO()
+        toy_out = io.StringIO()
+        toy_err = io.StringIO()
         with mock.patch('certbot._internal.main.sys.stdout', new=toy_out):
             with mock.patch('certbot._internal.main.sys.stderr', new=toy_err):
                 try:
@@ -821,16 +850,16 @@ class MainTest(test_util.ConfigTestCase):
         flags = ['--init', '--prepare', '--authenticators', '--installers']
         for args in itertools.chain(
                 *(itertools.combinations(flags, r)
-                  for r in six.moves.range(len(flags)))):
+                  for r in range(len(flags)))):
             self._call(['plugins'] + list(args))
 
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with test_util.patch_get_utility_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins'], stdout)
 
@@ -842,7 +871,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args_unprivileged(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         def throw_error(directory, mode, strict):
@@ -850,7 +879,7 @@ class MainTest(test_util.ConfigTestCase):
             _, _, _ = directory, mode, strict
             raise errors.Error()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with mock.patch('certbot.util.set_up_core_dir') as mock_set_up_core_dir:
             with test_util.patch_get_utility_with_stdout(stdout=stdout):
                 mock_set_up_core_dir.side_effect = throw_error
@@ -864,10 +893,10 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_init(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with test_util.patch_get_utility_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins', '--init'], stdout)
 
@@ -882,10 +911,10 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_prepare(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with test_util.patch_get_utility_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'], stdout)
 
@@ -1037,7 +1066,7 @@ class MainTest(test_util.ConfigTestCase):
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
 
@@ -1055,7 +1084,7 @@ class MainTest(test_util.ConfigTestCase):
                             mock_get_utility().notification.side_effect = write_msg
                         with mock.patch('certbot._internal.main.renewal.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
-                            mock_latest.get_issuer.return_value = "Fake fake"
+                            mock_latest.get_issuer.return_value = "Artificial pretend"
                             mock_ssl.crypto.load_certificate.return_value = mock_latest
                             with mock.patch('certbot._internal.main.renewal.crypto_util') \
                                 as mock_crypto_util:
@@ -1326,7 +1355,7 @@ class MainTest(test_util.ConfigTestCase):
         _, _, stdout = self._test_renewal_common(
             due_for_renewal=False, extra_args=None, should_renew=False,
             args=['renew', '--post-hook',
-                  '{0} -c "from __future__ import print_function; print(\'hello world\');"'
+                  '{0} -c "print(\'hello world\');"'
                   .format(sys.executable)])
         self.assertTrue('No hooks were run.' in stdout.getvalue())
 

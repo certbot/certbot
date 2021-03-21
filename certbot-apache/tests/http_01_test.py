@@ -26,7 +26,7 @@ class ApacheHttp01Test(util.ApacheTest):
         super(ApacheHttp01Test, self).setUp(*args, **kwargs)
 
         self.account_key = self.rsa512jwk
-        self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
+        self.achalls: List[achallenges.KeyAuthorizationAnnotatedChallenge] = []
         vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
         # Takes the vhosts for encryption-example.demo, certbot.demo

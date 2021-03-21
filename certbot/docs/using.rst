@@ -474,29 +474,37 @@ like
 Revoking certificates
 ---------------------
 
-If your account key has been compromised or you otherwise need to revoke a certificate,
-use the ``revoke`` command to do so. Note that the ``revoke`` command takes the certificate path
-(ending in ``cert.pem``), not a certificate name or domain. Example::
+If you need to revoke a certificate, use the ``revoke`` subcommand to do so.
 
-  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem
+A certificate may be revoked by providing its name (see ``certbot certificates``) or by providing
+its path directly::
+
+  certbot revoke --cert-name example.com
+
+  certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem
+
+If the certificate being revoked was obtained via the ``--staging``, ``--test-cert`` or a non-default ``--server`` flag,
+that flag must be passed to the ``revoke`` subcommand.
+
+.. note:: After revocation, Certbot will (by default) ask whether you want to **delete** the certificate.
+          Unless deleted, Certbot will try to renew revoked certificates the next time ``certbot renew`` runs.
 
 You can also specify the reason for revoking your certificate by using the ``reason`` flag.
 Reasons include ``unspecified`` which is the default, as well as ``keycompromise``,
 ``affiliationchanged``, ``superseded``, and ``cessationofoperation``::
 
-  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem --reason keycompromise
+  certbot revoke --cert-name example.com --reason keycompromise
 
-Additionally, if a certificate
-is a test certificate obtained via the ``--staging`` or ``--test-cert`` flag, that flag must be passed to the
-``revoke`` subcommand.
-Once a certificate is revoked (or for other certificate management tasks), all of a certificate's
-relevant files can be removed from the system with the ``delete`` subcommand::
+Revoking by account key or certificate private key
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  certbot delete --cert-name example.com
+By default, Certbot will try revoke the certificate using your ACME account key. If the certificate was created from
+the same ACME account, the revocation will be successful.
 
-.. note:: If you don't use ``delete`` to remove the certificate completely, it will be renewed automatically at the next renewal event.
+If you instead have the corresponding private key file to the certificate you wish to revoke, use ``--key-path`` to perform the
+revocation from any ACME account::
 
-.. note:: Revoking a certificate will have no effect on the rate limit imposed by the Let's Encrypt server.
+  certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem --key-path /etc/letsencrypt/live/example.com/privkey.pem
 
 .. _renewal:
 
@@ -709,12 +717,24 @@ Where are my certificates?
 ==========================
 
 All generated keys and issued certificates can be found in
-``/etc/letsencrypt/live/$domain``. In the case of creating a SAN certificate
-with multiple alternative names, ``$domain`` is the first domain passed in
-via -d parameter. Rather than copying, please point
-your (web) server configuration directly to those files (or create
-symlinks). During the renewal_, ``/etc/letsencrypt/live`` is updated
-with the latest necessary files.
+``/etc/letsencrypt/live/$domain``, where ``$domain`` is the certificate
+name (see the note below). Rather than copying, please point your (web)
+server configuration directly to those files (or create symlinks).
+During the renewal_, ``/etc/letsencrypt/live`` is updated with the latest
+necessary files.
+
+.. note::
+  The certificate name ``$domain`` used in the path ``/etc/letsencrypt/live/$domain``
+  follows this convention:
+
+  * it is the name given to ``--cert-name``,
+  * if ``--cert-name`` is not set by the user it is the first domain given to
+    ``--domains``,
+  * if the first domain is a wildcard domain (eg. ``*.example.com``) the
+    certificate name will be ``example.com``,
+  * if a name collision would occur with a certificate already named ``example.com``,
+    the new certificate name will be constructed using a numerical sequence
+    as ``example.com-001``.
 
 For historical reasons, the containing directories are created with
 permissions of ``0700`` meaning that certificates are accessible only

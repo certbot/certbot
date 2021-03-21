@@ -1,10 +1,10 @@
 """ Dual ParserNode implementation """
+from certbot_apache._internal import apacheparser
 from certbot_apache._internal import assertions
 from certbot_apache._internal import augeasparser
-from certbot_apache._internal import apacheparser
 
 
-class DualNodeBase(object):
+class DualNodeBase:
     """ Dual parser interface for in development testing. This is used as the
     base class for dual parser interface classes. This class handles runtime
     attribute value assertions."""

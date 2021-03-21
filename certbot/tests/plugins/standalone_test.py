@@ -10,7 +10,6 @@ try:
 except ImportError: # pragma: no cover
     from unittest import mock
 import OpenSSL.crypto  # pylint: disable=unused-import
-import six
 
 from acme import challenges
 from acme import standalone as acme_standalone  # pylint: disable=unused-import
@@ -25,9 +24,8 @@ class ServerManagerTest(unittest.TestCase):
 
     def setUp(self):
         from certbot._internal.plugins.standalone import ServerManager
-        self.certs = {}  # type: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]]
-        self.http_01_resources = {} \
-        # type: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
+        self.certs: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]] = {}
+        self.http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = {}
         self.mgr = ServerManager(self.certs, self.http_01_resources)
 
     def test_init(self):
@@ -91,7 +89,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.servers = mock.MagicMock()
 
     def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
+        self.assertTrue(isinstance(self.auth.more_info(), str))
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref(domain=None),

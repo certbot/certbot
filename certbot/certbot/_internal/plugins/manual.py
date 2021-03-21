@@ -1,10 +1,11 @@
 """Manual authenticator plugin"""
+from typing import Dict
+
 import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import Dict
-from certbot import achallenges  # pylint: disable=unused-import
+from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter
@@ -73,8 +74,7 @@ permitted by DNS standards.)
         super(Authenticator, self).__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
-        self.env = {} \
-        # type: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]]
+        self.env: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]] = {}
         self.subsequent_dns_challenge = False
         self.subsequent_any_challenge = False
 

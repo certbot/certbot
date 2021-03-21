@@ -64,10 +64,10 @@ Translates over to:
     "/files/etc/apache2/apache2.conf/bLoCk[1]",
 ]
 """
-from acme.magic_typing import Set
+from typing import Set
+
 from certbot import errors
 from certbot.compat import os
-
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
@@ -355,7 +355,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         ownpath = self.metadata.get("augeaspath")
 
         directives = self.parser.find_dir(name, start=ownpath, exclude=exclude)
-        already_parsed = set()  # type: Set[str]
+        already_parsed: Set[str] = set()
         for directive in directives:
             # Remove the /arg part from the Augeas path
             directive = directive.partition("/arg")[0]

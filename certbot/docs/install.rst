@@ -191,7 +191,7 @@ Optionally to install the Certbot Apache plugin, you can use:
 
 .. code-block:: shell
 
-   sudo apt-get install python-certbot-apache
+   sudo apt-get install python3-certbot-apache
 
 **Fedora**
 
@@ -270,15 +270,10 @@ Disable and remove the swapfile once the virtual environment is constructed::
   user@webserver:~$ sudo swapoff /tmp/swapfile
   user@webserver:~$ sudo rm /tmp/swapfile
 
-Installing from source
-----------------------
+Pip
+---
 
-Installation from source is only supported for developers and the
-whole process is described in the :doc:`contributing`.
-
-.. warning:: Please do **not** use ``python certbot/setup.py install``, ``python pip
-   install certbot``, or ``easy_install certbot``. Please do **not** attempt the
-   installation commands as superuser/root and/or without virtual environment,
-   e.g. ``sudo python certbot/setup.py install``, ``sudo pip install``, ``sudo
-   ./venv/bin/...``. These modes of operation might corrupt your operating
-   system and are **not supported** by the Certbot team!
+Installing Certbot through pip is only supported on a best effort basis and
+when using a virtual environment. Instructions for installing Certbot through
+pip can be found at https://certbot.eff.org/instructions by selecting your
+server software and then choosing "pip" in the "System" dropdown menu.

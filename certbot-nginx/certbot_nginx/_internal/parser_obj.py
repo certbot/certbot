@@ -3,10 +3,8 @@ raw lists of tokens from pyparsing. """
 
 import abc
 import logging
+from typing import List
 
-import six
-
-from acme.magic_typing import List
 from certbot import errors
 
 logger = logging.getLogger(__name__)
@@ -14,7 +12,7 @@ COMMENT = " managed by Certbot"
 COMMENT_BLOCK = ["#", COMMENT]
 
 
-class Parsable(object):
+class Parsable:
     """ Abstract base class for "Parsable" objects whose underlying representation
     is a tree of lists.
 
@@ -24,7 +22,7 @@ class Parsable(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, parent=None):
-        self._data = [] # type: List[object]
+        self._data: List[object] = []
         self._tabs = None
         self.parent = parent
 
@@ -152,7 +150,7 @@ class Statements(Parsable):
         if not isinstance(raw_list, list):
             raise errors.MisconfigurationError("Statements parsing expects a list!")
         # If there's a trailing whitespace in the list of statements, keep track of it.
-        if raw_list and isinstance(raw_list[-1], six.string_types) and raw_list[-1].isspace():
+        if raw_list and isinstance(raw_list[-1], str) and raw_list[-1].isspace():
             self._trailing_whitespace = raw_list[-1]
             raw_list = raw_list[:-1]
         self._data = [parse_raw(elem, self, add_spaces) for elem in raw_list]
@@ -183,8 +181,8 @@ class Statements(Parsable):
 
 def _space_list(list_):
     """ Inserts whitespace between adjacent non-whitespace tokens. """
-    spaced_statement = [] # type: List[str]
-    for i in reversed(six.moves.xrange(len(list_))):
+    spaced_statement: List[str] = []
+    for i in reversed(range(len(list_))):
         spaced_statement.insert(0, list_[i])
         if i > 0 and not list_[i].isspace() and not list_[i-1].isspace():
             spaced_statement.insert(0, " ")
@@ -206,7 +204,7 @@ class Sentence(Parsable):
         :returns: whether this lists is parseable by `Sentence`.
         """
         return isinstance(lists, list) and len(lists) > 0 and \
-            all(isinstance(elem, six.string_types) for elem in lists)
+            all(isinstance(elem, str) for elem in lists)
 
     def parse(self, raw_list, add_spaces=False):
         """ Parses a list of string types into this object.
@@ -214,7 +212,7 @@ class Sentence(Parsable):
         if add_spaces:
             raw_list = _space_list(raw_list)
         if not isinstance(raw_list, list) or \
-                any(not isinstance(elem, six.string_types) for elem in raw_list):
+                any(not isinstance(elem, str) for elem in raw_list):
             raise errors.MisconfigurationError("Sentence parsing expects a list of string types.")
         self._data = raw_list
 
@@ -272,8 +270,8 @@ class Block(Parsable):
     """
     def __init__(self, parent=None):
         super(Block, self).__init__(parent)
-        self.names = None # type: Sentence
-        self.contents = None # type: Block
+        self.names: Sentence = None
+        self.contents: Block = None
 
     @staticmethod
     def should_parse(lists):

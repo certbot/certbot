@@ -4,18 +4,17 @@ import logging
 import socket
 # https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 from socket import errno as socket_errors  # type: ignore
+from typing import DefaultDict
+from typing import Dict
+from typing import Set
+from typing import Tuple
+from typing import TYPE_CHECKING
 
-import OpenSSL  # pylint: disable=unused-import
-import six
+import OpenSSL
 import zope.interface
 
 from acme import challenges
 from acme import standalone as acme_standalone
-from acme.magic_typing import DefaultDict
-from acme.magic_typing import Dict
-from acme.magic_typing import Set
-from acme.magic_typing import Tuple
-from acme.magic_typing import TYPE_CHECKING
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
@@ -29,7 +28,7 @@ if TYPE_CHECKING:
         Set[achallenges.KeyAuthorizationAnnotatedChallenge]
     ]
 
-class ServerManager(object):
+class ServerManager:
     """Standalone servers manager.
 
     Manager for `ACMEServer` and `ACMETLSServer` instances.
@@ -43,7 +42,7 @@ class ServerManager(object):
 
     """
     def __init__(self, certs, http_01_resources):
-        self._instances = {}  # type: Dict[int, acme_standalone.BaseDualNetworkedServers]
+        self._instances: Dict[int, acme_standalone.BaseDualNetworkedServers] = {}
         self.certs = certs
         self.http_01_resources = http_01_resources
 
@@ -123,15 +122,14 @@ class Authenticator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
 
-        self.served = collections.defaultdict(set)  # type: ServedType
+        self.served: ServedType = collections.defaultdict(set)
 
         # Stuff below is shared across threads (i.e. servers read
         # values, main thread writes). Due to the nature of CPython's
         # GIL, the operations are safe, c.f.
         # https://docs.python.org/2/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe
-        self.certs = {}  # type: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]]
-        self.http_01_resources = set() \
-        # type: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
+        self.certs: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]] = {}
+        self.http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = set()
 
         self.servers = ServerManager(self.certs, self.http_01_resources)
 
@@ -183,7 +181,7 @@ class Authenticator(common.Plugin):
             for achall in achalls:
                 if achall in server_achalls:
                     server_achalls.remove(achall)
-        for port, servers in six.iteritems(self.servers.running()):
+        for port, servers in self.servers.running().items():
             if not self.served[servers]:
                 self.servers.stop(port)
 
