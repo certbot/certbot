@@ -515,11 +515,8 @@ Renewing certificates
    days). Make sure you renew the certificates at least once in 3
    months.
 
-.. seealso:: Many of the certbot clients obtained through a
-   distribution come with automatic renewal out of the box,
-   such as Debian and Ubuntu versions installed through `apt`,
-   CentOS/RHEL 7 through EPEL, etc.  See `Automated Renewals`_
-   for more details.
+.. seealso:: Most Certbot installations come with automatic
+   renewal out of the box. See `Automated Renewals`_ for more details.
 
 As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
@@ -689,27 +686,15 @@ The following commands could be used to specify where these files are located::
 Automated Renewals
 ------------------
 
-Many Linux distributions provide automated renewal when you use the
-packages installed through their system package manager.  The
-following table is an *incomplete* list of distributions which do so,
-as well as their methods for doing so.
+Most Certbot installations come with automatic renewals preconfigured. This
+is done by means of a scheduled task which runs ``certbot renew`` periodically.
 
-If you are not sure whether or not your system has this already
-automated, refer to your distribution's documentation, or check your
-system's crontab (typically in `/etc/crontab/` and `/etc/cron.*/*` and
-systemd timers (`systemctl list-timers`).
+If you are unsure whether you need to configure automated renewal:
 
-.. csv-table:: Distributions with Automated Renewal
-   :header: "Distribution Name", "Distribution Version", "Automation Method"
-
-   "CentOS", "EPEL 7", "systemd"
-   "Debian", "stretch", "cron, systemd"
-   "Debian", "testing/sid", "cron, systemd"
-   "Fedora", "26", "systemd"
-   "Fedora", "27", "systemd"
-   "RHEL", "EPEL 7", "systemd"
-   "Ubuntu", "17.10", "cron, systemd"
-   "Ubuntu", "certbot PPA", "cron, systemd"
+1. Review the instructions for your system at https://certbot.eff.org/instructions.
+   They will describe how to set up a scheduled task, if necessary.
+2. (Linux/BSD): Check your system's crontab (typically `/etc/crontab` and
+   `/etc/cron.*/*`) and systemd timers (``systemctl list-timers``).
 
 .. _where-certs:
 
