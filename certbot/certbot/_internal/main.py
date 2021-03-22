@@ -493,15 +493,17 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
         ("\nSuccessfully received certificate.\n"
         "Certificate is saved at: {cert_path}\n{key_msg}"
         "This certificate expires on {expiry}.\n"
-        "{renew_msg}\n").format(
+        "These files will be updated when the certificate renews.\n{renew_msg}\n").format(
             cert_path=fullchain_path,
             expiry=crypto_util.notAfter(cert_path).date(),
             key_msg="Key is saved at:         {}\n".format(key_path) if key_path else "",
             renew_msg="Certbot will automatically renew this certificate in the background."
                       if config.preconfigured_renewal else
-                      ("These files will be updated when the certificate renews. "
-                       f'Run "{cli.cli_constants.cli_command} renew" to renew '
-                       "all expiring certificates.")
+                      (f'Run "{cli.cli_constants.cli_command} renew" to renew '
+                       "expiring certificates. "
+                       "We recommend setting up a scheduled task for renewal, see "
+                       "https://certbot.eff.org/docs/using.html#automated-renewals "
+                       "for instructions.")
         )
     )
 
