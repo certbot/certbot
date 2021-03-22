@@ -1,6 +1,7 @@
 """Tests for letsencrypt.plugins.selection"""
 import sys
 import unittest
+from typing import List
 
 try:
     import mock

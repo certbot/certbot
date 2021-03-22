@@ -5,7 +5,7 @@ import logging.handlers
 import sys
 import time
 import unittest
-
+from typing import Optional
 
 from acme import messages
 from certbot import errors

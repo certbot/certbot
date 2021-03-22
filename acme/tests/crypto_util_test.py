@@ -5,6 +5,7 @@ import socketserver
 import threading
 import time
 import unittest
+from typing import List
 
 import josepy as jose
 import OpenSSL
