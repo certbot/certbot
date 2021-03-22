@@ -34,6 +34,9 @@ certbot = {path = "../../certbot", extras = ["dev", "docs"]}
 acme = {path = "../../acme", extras = ["dev", "docs"]}
 
 # Extra dependencies
+# pip, setuptools, and wheel cannot be included here. See tools/pinning/pin.sh
+# for more info.
+#
 # cryptography 3.4+ requires rust to build wheels and we have some work to do
 # before we switch
 cryptography = "<3.4"
