@@ -79,20 +79,12 @@ def _prepare_build_tools(venv_path, venv_python, repo_path):
 
 @contextlib.contextmanager
 def _prepare_constraints(repo_path):
-    reqs_certbot = os.path.join(repo_path, 'tools', 'certbot_constraints.txt')
-    reqs_pipstrap = os.path.join(repo_path, 'tools', 'pipstrap_constraints.txt')
-    constraints_certbot = subprocess.check_output(
-        [sys.executable, os.path.join(repo_path, 'tools', 'strip_hashes.py'), reqs_certbot],
-        universal_newlines=True)
-    constraints_pipstrap = subprocess.check_output(
-        [sys.executable, os.path.join(repo_path, 'tools', 'strip_hashes.py'), reqs_pipstrap],
-        universal_newlines=True)
+    reqs = os.path.join(repo_path, 'tools', 'requirements.txt')
     workdir = tempfile.mkdtemp()
     try:
         constraints_file_path = os.path.join(workdir, 'constraints.txt')
+        shutil.copy(reqs, constraints_file_path)
         with open(constraints_file_path, 'a') as file_h:
-            file_h.write(constraints_pipstrap)
-            file_h.write(constraints_certbot)
             file_h.write('pywin32=={0}'.format(PYWIN32_VERSION))
         yield constraints_file_path
     finally:

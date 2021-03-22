@@ -39,51 +39,34 @@ def find_tools_path():
     return os.path.dirname(readlink.main(__file__))
 
 
-def certbot_oldest_processing(tools_path, args, test_constraints):
+def certbot_oldest_processing(tools_path, args, constraints_path):
     if args[0] != '-e' or len(args) != 2:
         raise ValueError('When CERTBOT_OLDEST is set, this script must be run '
                          'with a single -e <path> argument.')
     # remove any extras such as [dev]
     pkg_dir = re.sub(r'\[\w+\]', '', args[1])
+    # The order of the files in this list matters as files specified later can
+    # override the pinnings found in earlier files.
+    pinning_files = [os.path.join(tools_path, 'dev_constraints.txt'),
+                     os.path.join(tools_path, 'oldest_constraints.txt')]
     requirements = os.path.join(pkg_dir, 'local-oldest-requirements.txt')
-    shutil.copy(os.path.join(tools_path, 'oldest_constraints.txt'), test_constraints)
     # packages like acme don't have any local oldest requirements
-    if not os.path.isfile(requirements):
-        return None
-
+    if os.path.isfile(requirements):
+        # We add requirements to the end of the list so it can override
+        # anything that it needs to.
+        pinning_files.append(requirements)
+    else:
+        requirements = None
+    with open(constraints_path, 'w') as fd:
+        fd.write(merge_module.main(*pinning_files))
     return requirements
 
 
-def certbot_normal_processing(tools_path, test_constraints):
+def certbot_normal_processing(tools_path, constraints_path):
     repo_path = os.path.dirname(tools_path)
-    certbot_requirements = os.path.normpath(os.path.join(
-        repo_path, 'tools/certbot_constraints.txt'))
-    with open(certbot_requirements, 'r') as fd:
-        certbot_reqs = fd.readlines()
-    with open(os.path.join(tools_path, 'pipstrap_constraints.txt'), 'r') as fd:
-        pipstrap_reqs = fd.readlines()
-    with open(test_constraints, 'w') as fd:
-        data_certbot = "\n".join(strip_hashes.process_entries(certbot_reqs))
-        data_pipstrap = "\n".join(strip_hashes.process_entries(pipstrap_reqs))
-        data = "\n".join([data_certbot, data_pipstrap])
-        fd.write(data)
-
-
-def merge_requirements(tools_path, requirements, test_constraints, all_constraints):
-    # Order of the files in the merge function matters.
-    # Indeed version retained for a given package will be the last version
-    # found when following all requirements in the given order.
-    # Here is the order by increasing priority:
-    # 1) The general development constraints (tools/dev_constraints.txt)
-    # 2) The general tests constraints (oldest_requirements.txt or
-    #    certbot_constraints.txt + pipstrap's constraints for the normal processing)
-    # 3) The local requirement file, typically local-oldest-requirement in oldest tests
-    files = [os.path.join(tools_path, 'dev_constraints.txt'), test_constraints]
-    if requirements:
-        files.append(requirements)
-    merged_requirements = merge_module.main(*files)
-    with open(all_constraints, 'w') as fd:
-        fd.write(merged_requirements)
+    requirements = os.path.normpath(os.path.join(
+        repo_path, 'tools/requirements.txt'))
+    shutil.copy(requirements, constraints_path)
 
 
 def call_with_print(command, env=None):
@@ -104,24 +87,21 @@ def main(args):
     tools_path = find_tools_path()
 
     with temporary_directory() as working_dir:
-        test_constraints = os.path.join(working_dir, 'test_constraints.txt')
-        all_constraints = os.path.join(working_dir, 'all_constraints.txt')
-
         if os.environ.get('CERTBOT_NO_PIN') == '1':
             # With unpinned dependencies, there is no constraint
             pip_install_with_print(' '.join(args))
         else:
             # Otherwise, we merge requirements to build the constraints and pin dependencies
+            constraints_path = os.path.join(working_dir, 'constraints.txt')
             requirements = None
             if os.environ.get('CERTBOT_OLDEST') == '1':
-                requirements = certbot_oldest_processing(tools_path, args, test_constraints)
+                requirements = certbot_oldest_processing(tools_path, args, constraints_path)
             else:
-                certbot_normal_processing(tools_path, test_constraints)
+                certbot_normal_processing(tools_path, constraints_path)
 
             env = os.environ.copy()
-            env["PIP_CONSTRAINT"] = all_constraints
+            env["PIP_CONSTRAINT"] = constraints_path
 
-            merge_requirements(tools_path, requirements, test_constraints, all_constraints)
             if requirements:  # This branch is executed during the oldest tests
                 # First step, install the transitive dependencies of oldest requirements
                 # in respect with oldest constraints.

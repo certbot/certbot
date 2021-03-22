@@ -18,10 +18,7 @@ tools/pip_install.py pytest
 # setup constraints
 TEMP_DIR=$(mktemp -d)
 CONSTRAINTS="$TEMP_DIR/constraints.txt"
-# We strip the hashes because we don't have hashes of our local packages and
-# the mix of hashed and unhashed packages makes pip error out.
-python3 tools/strip_hashes.py tools/certbot_constraints.txt > "$CONSTRAINTS"
-python3 tools/strip_hashes.py tools/pipstrap_constraints.txt >> "$CONSTRAINTS"
+cp tools/requirements.txt "$CONSTRAINTS"
 
 # We pin cryptography to 3.1.1 and pyOpenSSL to 19.1.0 specifically for CentOS 7 / RHEL 7
 # because these systems ship only with OpenSSL 1.0.2, and this OpenSSL version support has been
