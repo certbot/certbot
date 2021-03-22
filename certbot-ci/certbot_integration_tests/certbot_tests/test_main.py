@@ -643,6 +643,25 @@ def test_revoke_and_unregister(context: IntegrationTestsContext) -> None:
     assert cert3 in stdout
 
 
+def test_revoke_ecdsa_cert_key(context: IntegrationTestsContext) -> None:
+    """Test revoking a certificate """
+    cert = context.get_domain('curve')
+    context.certbot([
+        'certonly',
+        '--key-type', 'ecdsa', '--elliptic-curve', 'secp256r1',
+        '-d', cert,
+    ])
+    key = join(context.config_dir, "live", cert, 'privkey.pem')
+    assert_elliptic_key(key, 'secp256r1')
+    context.certbot([
+        'revoke', cert, '--cert-key', key,
+    ])
+    time.sleep(5)
+    output = context.certbot(['certificates'])
+
+    assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
+
+
 def test_revoke_mutual_exclusive_flags(context: IntegrationTestsContext) -> None:
     """Test --cert-path and --cert-name cannot be used during revoke."""
     cert = context.get_domain('le1')

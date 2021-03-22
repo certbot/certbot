@@ -1074,8 +1074,9 @@ class ClientNetwork:
             obj.le_acme_version = acme_version
         jobj = obj.json_dumps(indent=2).encode() if obj else b''
         logger.debug('JWS payload:\n%s', jobj)
+        alg = {'RSA': jose.RS256, 'EC': jose.ES256}.get(self.key.typ)
         kwargs = {
-            "alg": self.alg,
+            "alg": alg,
             "nonce": nonce
         }
         if acme_version == 2:

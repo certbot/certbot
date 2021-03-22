@@ -249,6 +249,7 @@ More details about these changes can be found on our GitHub repo.
 * The module `acme.magic_typing` is deprecated and will be removed in a future release.
   Please use the built-in module `typing` instead.
 * The DigitalOcean plugin now creates TXT records for the DNS-01 challenge with a lower 30s TTL.
+* Certbot and its acme module now depend on josepy>=1.7.0 to support ECDSA keys better.
 
 ### Fixed
 
@@ -987,7 +988,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Changed
 
-* Certbot and its acme module now depend on josepy>=1.1.0 to avoid printing the
+* Certbot and its acme module now depend on Ejosepy>=1.1.0 to avoid printing the
   warnings described at https://github.com/certbot/josepy/issues/13.
 * Apache plugin now respects CERTBOT_DOCS environment variable when adding
   command line defaults.
