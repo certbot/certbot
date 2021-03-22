@@ -8,8 +8,8 @@ RELATIVE_SCRIPT_PATH="$(realpath --relative-to "$REPO_ROOT" "$WORK_DIR")/$(basen
 REQUIREMENTS_FILE="$REPO_ROOT/tools/requirements.txt"
 STRIP_HASHES="${REPO_ROOT}/tools/strip_hashes.py"
 
-if ! command -v poetry >/dev/null || ! command -v hashin >/dev/null; then
-    echo "Please install poetry and hashin."
+if ! command -v poetry >/dev/null; then
+    echo "Please install poetry."
     echo "You may need to recreate Certbot's virtual environment and activate it."
     exit 1
 fi
