@@ -76,7 +76,6 @@ dev_extras = [
     'astroid',
     'azure-devops',
     'coverage',
-    'hashin',
     'ipdb',
     'mypy',
     'PyGithub',
