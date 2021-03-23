@@ -56,7 +56,7 @@ jobs:
     steps:
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: 3.7
+          versionSpec: 3.8
           architecture: x86
           addToPath: true
       - script: python windows-installer/construct.py
@@ -144,7 +144,7 @@ jobs:
           git config --global user.name "$(Build.RequestedFor)"
           mkdir -p ~/.local/share/snapcraft/provider/launchpad
           cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
-          python3 tools/snap/build_remote.py ALL --archs ${ARCHS}
+          python3 tools/snap/build_remote.py ALL --archs ${ARCHS} --timeout 19800
         displayName: Build snaps
       - script: |
           set -e

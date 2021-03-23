@@ -6,8 +6,6 @@ Only the simple formats SomeProject==1.2.3 or SomeProject<=1.2.3 are
 currently supported.
 
 """
-from __future__ import print_function
-
 import sys
 
 

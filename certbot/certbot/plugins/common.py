@@ -3,13 +3,13 @@ import logging
 import re
 import shutil
 import tempfile
+from typing import List
 
 from josepy import util as jose_util
 import pkg_resources
 import zope.interface
 
-from acme.magic_typing import List
-from certbot import achallenges  # pylint: disable=unused-import
+from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -40,7 +40,7 @@ hostname_regex = re.compile(
 
 
 @zope.interface.implementer(interfaces.IPlugin)
-class Plugin(object):
+class Plugin:
     """Generic plugin."""
     # provider is not inherited, subclasses must define it on their own
     # @zope.interface.provider(interfaces.IPluginFactory)
@@ -201,7 +201,7 @@ class Installer(Plugin):
             constants.ALL_SSL_DHPARAMS_HASHES)
 
 
-class Addr(object):
+class Addr:
     r"""Represents an virtual host address.
 
     :param str addr: addr part of vhost address
@@ -299,7 +299,7 @@ class Addr(object):
         return result
 
 
-class ChallengePerformer(object):
+class ChallengePerformer:
     """Abstract base for challenge performers.
 
     :ivar configurator: Authenticator and installer plugin
@@ -313,8 +313,8 @@ class ChallengePerformer(object):
 
     def __init__(self, configurator):
         self.configurator = configurator
-        self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
-        self.indices = []  # type: List[int]
+        self.achalls: List[achallenges.KeyAuthorizationAnnotatedChallenge] = []
+        self.indices: List[int] = []
 
     def add_chall(self, achall, idx=None):
         """Store challenge to be performed when perform() is called.

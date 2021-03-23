@@ -4,10 +4,14 @@ import collections
 import datetime
 from email.utils import parsedate_tz
 import heapq
+import http.client as http_client
 import logging
 import re
-import sys
 import time
+from typing import Dict
+from typing import List
+from typing import Set
+from typing import Text
 
 import josepy as jose
 import OpenSSL
@@ -15,38 +19,21 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
 from requests_toolbelt.adapters.source import SourceAddressAdapter
-import six
-from six.moves import http_client
 
 from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Set
-from acme.magic_typing import Text
 from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
-
-# Prior to Python 2.7.9 the stdlib SSL module did not allow a user to configure
-# many important security related options. On these platforms we use PyOpenSSL
-# for SSL, which does allow these options to be configured.
-# https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
-if sys.version_info < (2, 7, 9):  # pragma: no cover
-    try:
-        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
-    except AttributeError:
-        import urllib3.contrib.pyopenssl
-        urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 DEFAULT_NETWORK_TIMEOUT = 45
 
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
 
-class ClientBase(object):
+class ClientBase:
     """ACME client base object.
 
     :ivar messages.Directory directory:
@@ -125,8 +112,9 @@ class ClientBase(object):
         """
         return self.update_registration(regr, update={'status': 'deactivated'})
 
-    def deactivate_authorization(self, authzr):
-        # type: (messages.AuthorizationResource) -> messages.AuthorizationResource
+    def deactivate_authorization(self,
+                                 authzr: messages.AuthorizationResource
+                                 ) -> messages.AuthorizationResource:
         """Deactivate authorization.
 
         :param messages.AuthorizationResource authzr: The Authorization resource
@@ -260,7 +248,7 @@ class Client(ClientBase):
         if net is None:
             net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl)
 
-        if isinstance(directory, six.string_types):
+        if isinstance(directory, str):
             directory = messages.Directory.from_json(
                 net.get(directory).json())
         super(Client, self).__init__(directory=directory,
@@ -436,7 +424,7 @@ class Client(ClientBase):
 
         """
         assert max_attempts > 0
-        attempts = collections.defaultdict(int) # type: Dict[messages.AuthorizationResource, int]
+        attempts: Dict[messages.AuthorizationResource, int] = collections.defaultdict(int)
         exhausted = set()
 
         # priority queue with datetime.datetime (based on Retry-After) as key,
@@ -475,7 +463,7 @@ class Client(ClientBase):
                     exhausted.add(authzr)
 
         if exhausted or any(authzr.body.status == messages.STATUS_INVALID
-                            for authzr in six.itervalues(updated)):
+                            for authzr in updated.values()):
             raise errors.PollError(exhausted, updated)
 
         updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
@@ -549,7 +537,7 @@ class Client(ClientBase):
         :rtype: `list` of `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
 
         """
-        chain = [] # type: List[jose.ComparableX509]
+        chain: List[jose.ComparableX509] = []
         uri = certr.cert_chain_uri
         while uri is not None and len(chain) < max_length:
             response, cert = self._get_cert(uri)
@@ -808,7 +796,7 @@ class ClientV2(ClientBase):
                 if 'rel' in l and 'url' in l and l['rel'] == relation_type]
 
 
-class BackwardsCompatibleClientV2(object):
+class BackwardsCompatibleClientV2:
     """ACME client wrapper that tends towards V2-style calls, but
     supports V1 servers.
 
@@ -951,7 +939,7 @@ class BackwardsCompatibleClientV2(object):
         return self.client.external_account_required()
 
 
-class ClientNetwork(object):
+class ClientNetwork:
     """Wrapper around requests that signs POSTs for authentication.
 
     Also adds user agent, and handles Content-Type.
@@ -981,7 +969,7 @@ class ClientNetwork(object):
         self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
-        self._nonces = set() # type: Set[Text]
+        self._nonces: Set[Text] = set()
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout

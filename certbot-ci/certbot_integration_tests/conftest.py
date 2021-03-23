@@ -6,14 +6,12 @@ for a directory a specific configuration using built-in pytest hooks.
 
 See https://docs.pytest.org/en/latest/reference.html#hook-reference
 """
-from __future__ import print_function
 import contextlib
 import subprocess
 import sys
 
 from certbot_integration_tests.utils import acme_server as acme_lib
 from certbot_integration_tests.utils import dns_server as dns_lib
-from certbot_integration_tests.utils.dns_server import DNSServer
 
 
 def pytest_addoption(parser):
@@ -36,7 +34,7 @@ def pytest_configure(config):
     Standard pytest hook used to add a configuration logic for each node of a pytest run.
     :param config: the current pytest configuration
     """
-    if not hasattr(config, 'slaveinput'):  # If true, this is the primary node
+    if not hasattr(config, 'workerinput'):  # If true, this is the primary node
         with _print_on_err():
             _setup_primary_node(config)
 
@@ -46,8 +44,8 @@ def pytest_configure_node(node):
     Standard pytest-xdist hook used to configure a worker node.
     :param node: current worker node
     """
-    node.slaveinput['acme_xdist'] = node.config.acme_xdist
-    node.slaveinput['dns_xdist'] = node.config.dns_xdist
+    node.workerinput['acme_xdist'] = node.config.acme_xdist
+    node.workerinput['dns_xdist'] = node.config.dns_xdist
 
 
 @contextlib.contextmanager
@@ -92,8 +90,10 @@ def _setup_primary_node(config):
         try:
             subprocess.check_output(['docker-compose', '-v'], stderr=subprocess.STDOUT)
         except (subprocess.CalledProcessError, OSError):
-            raise ValueError('Error: docker-compose is required in PATH to launch the integration tests, '
-                             'but is not installed or not available for current user.')
+            raise ValueError(
+                'Error: docker-compose is required in PATH to launch the integration tests, '
+                'but is not installed or not available for current user.'
+            )
 
     # Parameter numprocesses is added to option by pytest-xdist
     workers = ['primary'] if not config.option.numprocesses\

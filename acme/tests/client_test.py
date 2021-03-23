@@ -2,17 +2,14 @@
 # pylint: disable=too-many-lines
 import copy
 import datetime
+import http.client as http_client
 import json
 import unittest
+from unittest import mock
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import OpenSSL
 import requests
-from six.moves import http_client  # pylint: disable=import-error
 
 from acme import challenges
 from acme import errors
@@ -64,7 +61,7 @@ class ClientTestBase(unittest.TestCase):
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key())
-        the_arg = dict(reg)  # type: Dict
+        the_arg: Dict = dict(reg)
         self.new_reg = messages.NewRegistration(**the_arg)
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')

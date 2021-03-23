@@ -1,4 +1,6 @@
 """Tests for certbot._internal.renewal"""
+import copy
+
 import unittest
 
 try:
@@ -97,6 +99,23 @@ class RenewalTest(test_util.ConfigTestCase):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
         assert self.config.elliptic_curve == 'secp256r1'
+
+    @test_util.patch_get_utility()
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
+    def test_remove_deprecated_config_elements(self, mock_set_by_cli, unused_mock_get_utility):
+        mock_set_by_cli.return_value = False
+        config = configuration.NamespaceConfig(self.config)
+        config.certname = "sample-renewal-deprecated-option"
+
+        rc_path = test_util.make_lineage(
+            self.config.config_dir, 'sample-renewal-deprecated-option.conf')
+
+        from certbot._internal import renewal
+        lineage_config = copy.deepcopy(self.config)
+        renewal_candidate = renewal._reconstitute(lineage_config, rc_path)
+        # This means that manual_public_ip_logging_ok was not modified in the config based on its
+        # value in the renewal conf file
+        self.assertTrue(isinstance(lineage_config.manual_public_ip_logging_ok, mock.MagicMock))
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
@@ -204,7 +223,7 @@ class DescribeResultsTest(unittest.TestCase):
             '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
         ])
         self.mock_error.assert_has_calls([
-            mock.call('All %ss failed. The following certs could not be renewed:', 'renewal'),
+            mock.call('All %ss failed. The following certificates could not be renewed:', 'renewal'),
             mock.call('  bad.pem (failure)'),
         ])
 
@@ -214,7 +233,7 @@ class DescribeResultsTest(unittest.TestCase):
                    ['foo.pem expires on 123'], ['errored.conf'])
         self._assert_success_output([
             '\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
-            'The following certs are not due for renewal yet:',
+            'The following certificates are not due for renewal yet:',
             '  foo.pem expires on 123 (skipped)',
             'The following simulated renewals succeeded:',
             '  good.pem (success)\n  good2.pem (success)\n',

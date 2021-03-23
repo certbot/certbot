@@ -11,7 +11,6 @@ try:
 except ImportError: # pragma: no cover
     from unittest import mock
 import pytz
-import six
 
 import certbot
 from certbot import errors
@@ -75,6 +74,17 @@ class RelevantValuesTest(unittest.TestCase):
         expected_relevant_values = self.values.copy()
         self.values["rsa_key_size"] = 2048
 
+        self.assertEqual(self._call(self.values), expected_relevant_values)
+
+    @mock.patch("certbot._internal.cli.set_by_cli")
+    def test_deprecated_item(self, unused_mock_set_by_cli):
+        # deprecated items should never be relevant to store
+        expected_relevant_values = self.values.copy()
+        self.values["manual_public_ip_logging_ok"] = None
+        self.assertEqual(self._call(self.values), expected_relevant_values)
+        self.values["manual_public_ip_logging_ok"] = True
+        self.assertEqual(self._call(self.values), expected_relevant_values)
+        self.values["manual_public_ip_logging_ok"] = False
         self.assertEqual(self._call(self.values), expected_relevant_values)
 
 
@@ -275,7 +285,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(self.test_rc.current_version("cert"), None)
 
     def test_latest_and_next_versions(self):
-        for ver in six.moves.range(1, 6):
+        for ver in range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
         self.assertEqual(self.test_rc.latest_common_version(), 5)
@@ -315,7 +325,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
 
     def test_update_link_to(self):
-        for ver in six.moves.range(1, 6):
+        for ver in range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -330,7 +340,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc._update_link_to("chain", 3000)
         # However, current_version doesn't allow querying the resulting
         # version (because it's a broken link).
-        self.assertEqual(os.path.basename(os.readlink(self.test_rc.chain)),
+        self.assertEqual(os.path.basename(filesystem.readlink(self.test_rc.chain)),
                          "chain3000.pem")
 
     def test_version(self):
@@ -342,12 +352,12 @@ class RenewableCertTests(BaseRenewableCertTest):
                          os.path.basename(self.test_rc.version("cert", 8)))
 
     def test_update_all_links_to_success(self):
-        for ver in six.moves.range(1, 6):
+        for ver in range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
         self.assertEqual(self.test_rc.latest_common_version(), 5)
-        for ver in six.moves.range(1, 6):
+        for ver in range(1, 6):
             self.test_rc.update_all_links_to(ver)
             for kind in ALL_FOUR:
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -385,11 +395,11 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(self.test_rc.current_version(kind), 11)
 
     def test_has_pending_deployment(self):
-        for ver in six.moves.range(1, 6):
+        for ver in range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
-        for ver in six.moves.range(1, 6):
+        for ver in range(1, 6):
             self.test_rc.update_all_links_to(ver)
             for kind in ALL_FOUR:
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -487,7 +497,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         # (to avoid instantiating parser)
         mock_rv.side_effect = lambda x: x
 
-        for ver in six.moves.range(1, 6):
+        for ver in range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
         self.test_rc.update_all_links_to(3)
@@ -514,11 +524,11 @@ class RenewableCertTests(BaseRenewableCertTest):
         # privkey.
         for i in (6, 7, 8):
             self.assertTrue(os.path.islink(self.test_rc.version("privkey", i)))
-            self.assertEqual("privkey3.pem", os.path.basename(os.readlink(
+            self.assertEqual("privkey3.pem", os.path.basename(filesystem.readlink(
                 self.test_rc.version("privkey", i))))
 
         for kind in ALL_FOUR:
-            self.assertEqual(self.test_rc.available_versions(kind), list(six.moves.range(1, 9)))
+            self.assertEqual(self.test_rc.available_versions(kind), list(range(1, 9)))
             self.assertEqual(self.test_rc.current_version(kind), 3)
         # Test updating from latest version rather than old version
         self.test_rc.update_all_links_to(8)
@@ -527,7 +537,7 @@ class RenewableCertTests(BaseRenewableCertTest):
                                            b'attempt', self.config))
         for kind in ALL_FOUR:
             self.assertEqual(self.test_rc.available_versions(kind),
-                             list(six.moves.range(1, 10)))
+                             list(range(1, 10)))
             self.assertEqual(self.test_rc.current_version(kind), 8)
         with open(self.test_rc.version("fullchain", 9)) as f:
             self.assertEqual(f.read(), "last" + "attempt")
@@ -755,6 +765,13 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(storage.add_time_interval(base_time, interval),
                              excepted)
 
+    def test_server(self):
+        self.test_rc.configuration["renewalparams"] = {}
+        self.assertEqual(self.test_rc.server, None)
+        rp = self.test_rc.configuration["renewalparams"]
+        rp["server"] = "https://acme.example/dir"
+        self.assertEqual(self.test_rc.server, "https://acme.example/dir")
+
     def test_is_test_cert(self):
         self.test_rc.configuration["renewalparams"] = {}
         rp = self.test_rc.configuration["renewalparams"]
@@ -924,14 +941,14 @@ class CertPathForCertNameTest(BaseRenewableCertTest):
         self._write_out_ex_kinds()
         self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
                 'fullchain.pem')
-        self.config.cert_path = (self.fullchain, '')
+        self.config.cert_path = self.fullchain
 
     def _call(self, cli_config, certname):
         from certbot._internal.storage import cert_path_for_cert_name
         return cert_path_for_cert_name(cli_config, certname)
 
     def test_simple_cert_name(self):
-        self.assertEqual(self._call(self.config, 'example.org'), (self.fullchain, 'fullchain'))
+        self.assertEqual(self._call(self.config, 'example.org'), self.fullchain)
 
     def test_no_such_cert_name(self):
         self.assertRaises(errors.CertStorageError, self._call, self.config, 'fake-example.org')

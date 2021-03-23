@@ -4,12 +4,12 @@ Gather and consolidate the up-to-date dependencies available and required to ins
 on various Linux distributions. It generates a requirements file contained the pinned and hashed
 versions, ready to be used by pip to install the certbot dependencies.
 
-This script is typically used to update the certbot-requirements.txt file of certbot-auto.
+This script is typically used to update the certbot_constraints.txt file.
 
 To achieve its purpose, this script will start a certbot installation with unpinned dependencies,
 then gather them, on various distributions started as Docker containers.
 
-Usage: letsencrypt-auto-source/rebuild_dependencies new_requirements.txt
+Usage: tools/rebuild_certbot_constraints.py new_requirements.txt
 
 NB1: Docker must be installed on the machine running this script.
 NB2: Python library 'hashin' must be installed on the machine running this script.
@@ -26,52 +26,41 @@ import argparse
 
 # The list of docker distributions to test dependencies against with.
 DISTRIBUTION_LIST = [
-    'ubuntu:18.04', 'ubuntu:16.04',
-    'debian:stretch',
-    'centos:7', 'centos:6',
-    'opensuse/leap:15',
-    'fedora:29',
+    'ubuntu:20.04', 'ubuntu:18.04', 'debian:buster',
+    'centos:8', 'centos:7', 'fedora:29',
 ]
 
 # These constraints will be added while gathering dependencies on each distribution.
 # It can be used because a particular version for a package is required for any reason,
 # or to solve a version conflict between two distributions requirements.
 AUTHORITATIVE_CONSTRAINTS = {
-    # Using an older version of mock here prevents regressions of #5276.
-    'mock': '1.3.0',
     # Too touchy to move to a new version. And will be removed soon
     # in favor of pure python parser for Apache.
     'python-augeas': '0.5.0',
-    # Package enum34 needs to be explicitly limited to Python2.x, in order to avoid
-    # certbot-auto failures on Python 3.6+ which enum34 doesn't support. See #5456.
-    'enum34': '1.1.10; python_version < \'3.4\'',
-    # Cryptography 2.9+ drops support for OpenSSL 1.0.1, but we still want to support it
-    # for officially supported non-x86_64 ancient distributions like RHEL 6.
-    'cryptography': '2.8',
-    # Parsedatetime 2.6 is broken on Python 2.7, see https://github.com/bear/parsedatetime/issues/246
-    'parsedatetime': '2.5',
+    # We avoid cryptography 3.4+ since it requires Rust to compile the wheels, and
+    # this needs some work on the snap builds.
+    'cryptography': '3.3.2',
 }
 
-# ./certbot/letsencrypt-auto-source/rebuild_dependencies.py (2 levels from certbot root path)
+# ./certbot/tools/rebuild_certbot_constraints.py (2 levels from certbot root path)
 CERTBOT_REPO_PATH = dirname(dirname(abspath(__file__)))
 
 # The script will be used to gather dependencies for a given distribution.
-#   - certbot-auto is used to install relevant OS packages, and set up an initial venv
+#   - bootstrap_os_packages.sh is used to install relevant OS packages, and set up an initial venv
 #   - then this venv is used to consistently construct an empty new venv
-#   - once pipstraped, this new venv pip-installs certbot runtime (including apache/nginx),
+#   - once pipstrap.py, this new venv pip-installs certbot runtime (including apache/nginx),
 #     without pinned dependencies, and respecting input authoritative requirements
 #   - `certbot plugins` is called to check we have a healthy environment
 #   - finally current set of dependencies is extracted out of the docker using pip freeze
 SCRIPT = r"""#!/bin/sh
-set -e
+set -ex
 
 cd /tmp/certbot
-letsencrypt-auto-source/letsencrypt-auto --install-only -n
-PYVER=`/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+tests/letstest/scripts/bootstrap_os_packages.sh
 
-/opt/eff.org/certbot/venv/bin/python letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "$PYVER" 1
+python3 -m venv /tmp/venv
 
-/tmp/venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
+/tmp/venv/bin/python tools/pipstrap.py
 /tmp/venv/bin/pip install -e acme -e certbot -e certbot-apache -e certbot-nginx -c /tmp/constraints.txt
 /tmp/venv/bin/certbot plugins
 /tmp/venv/bin/pip freeze >> /tmp/workspace/requirements.txt
@@ -109,6 +98,7 @@ def _requirements_from_one_distribution(distribution, verbose):
             '{0}=={1}'.format(package, version) for package, version in AUTHORITATIVE_CONSTRAINTS.items()))
 
         command = ['docker', 'run', '--rm', '--cidfile', cid_file,
+                   '--network=host',
                    '-v', '{0}:/tmp/certbot'.format(CERTBOT_REPO_PATH),
                    '-v', '{0}:/tmp/workspace'.format(workspace),
                    '-v', '{0}:/tmp/constraints.txt'.format(authoritative_constraints),
@@ -158,7 +148,7 @@ def _parse_and_merge_requirements(dependencies_map, requirements_file_lines, dis
     """
     for line in requirements_file_lines:
         match = re.match(r'([^=]+)==([^=]+)', line.strip())
-        if not line.startswith('-e') and match:
+        if not line.startswith('-e') and not line.startswith('#') and match:
             package, version = match.groups()
             if package not in ['acme', 'certbot', 'certbot-apache', 'certbot-nginx', 'pkg-resources']:
                 dependencies_map.setdefault(package, []).append((version, distribution))
@@ -215,11 +205,11 @@ def _write_requirements(dest_file, requirements, conflicts):
     print('===> Calculating hashes for the requirement file.')
 
     _write_to(dest_file, '''\
-# This is the flattened list of packages certbot-auto installs.
+# This is the flattened list of pinned packages to build certbot deployable artifacts.
 # To generate this, do (with docker and package hashin installed):
 # ```
-# letsencrypt-auto-source/rebuild_dependencies.py \\
-#   letsencrypt-auto-source/pieces/dependency-requirements.txt
+# tools/rebuild_certbot_contraints.py \\
+#   tools/certbot_constraints.txt
 # ```
 # If you want to update a single dependency, run commands similar to these:
 # ```
@@ -264,8 +254,8 @@ def _gather_dependencies(dest_file, verbose):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description=('Build a sanitized, pinned and hashed requirements file for certbot-auto, '
-                     'validated against several OS distributions using Docker.'))
+        description=('Build a sanitized, pinned and hashed requirements file for certbot deployable'
+                     ' artifacts, validated against several OS distributions using Docker.'))
     parser.add_argument('requirements_path',
                         help='path for the generated requirements file')
     parser.add_argument('--verbose', '-v', action='store_true',

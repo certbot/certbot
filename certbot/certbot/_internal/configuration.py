@@ -1,7 +1,7 @@
 """Certbot user-supplied configuration."""
 import copy
+from urllib import parse
 
-from six.moves.urllib import parse
 import zope.interface
 
 from certbot import errors
@@ -13,7 +13,7 @@ from certbot.compat import os
 
 
 @zope.interface.implementer(interfaces.IConfig)
-class NamespaceConfig(object):
+class NamespaceConfig:
     """Configuration wrapper around :class:`argparse.Namespace`.
 
     For more documentation, including available attributes, please see

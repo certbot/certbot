@@ -1,9 +1,9 @@
 # coding=utf-8
 """Tests for certbot._internal.main."""
 # pylint: disable=too-many-lines
-from __future__ import print_function
-
 import datetime
+from importlib import reload as reload_module
+import io
 import itertools
 import json
 import shutil
@@ -13,13 +13,7 @@ import traceback
 import unittest
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 import pytz
-import six
-from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import crypto_util
 from certbot import errors
@@ -38,6 +32,12 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import enhancements
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 
 CERT_PATH = test_util.vector_path('cert_512.pem')
@@ -285,10 +285,7 @@ class RevokeTest(test_util.TempDirTestCase):
         super(RevokeTest, self).setUp()
 
         shutil.copy(CERT_PATH, self.tempdir)
-        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir,
-            'cert_512.pem'))
-        with open(self.tmp_cert_path, 'r') as f:
-            self.tmp_cert = (self.tmp_cert_path, f.read())
+        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir, 'cert_512.pem'))
 
         patches = [
             mock.patch('acme.client.BackwardsCompatibleClientV2'),
@@ -318,6 +315,7 @@ class RevokeTest(test_util.TempDirTestCase):
         if not args:
             args = 'revoke --cert-path={0} '
             args = args.format(self.tmp_cert_path).split()
+        cli.set_by_cli.detector = None # required to reset set_by_cli state
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
@@ -343,13 +341,44 @@ class RevokeTest(test_util.TempDirTestCase):
         self.assertEqual(expected, mock_revoke.call_args_list)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
-    @mock.patch('certbot._internal.storage.cert_path_for_cert_name')
-    def test_revoke_by_certname(self, mock_cert_path_for_cert_name,
-            mock_delete_if_appropriate):
+    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
+    def test_revoke_by_certname(self, unused_mock_renewal_file_for_certname,
+                                mock_cert, mock_delete_if_appropriate):
+        mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
+                                                server="https://acme.example")
         args = 'revoke --cert-name=example.com'.split()
-        mock_cert_path_for_cert_name.return_value = self.tmp_cert
         mock_delete_if_appropriate.return_value = False
         self._call(args)
+        self.mock_acme_client.assert_called_once_with(mock.ANY, mock.ANY, 'https://acme.example')
+        self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
+
+    @mock.patch('certbot._internal.main._delete_if_appropriate')
+    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
+    def test_revoke_by_certname_and_server(self, unused_mock_renewal_file_for_certname,
+                                           mock_cert, mock_delete_if_appropriate):
+        """Revoking with --server should use the server from the CLI"""
+        mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
+                                                server="https://acme.example")
+        args = 'revoke --cert-name=example.com --server https://other.example'.split()
+        mock_delete_if_appropriate.return_value = False
+        self._call(args)
+        self.mock_acme_client.assert_called_once_with(mock.ANY, mock.ANY, 'https://other.example')
+        self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
+
+    @mock.patch('certbot._internal.main._delete_if_appropriate')
+    @mock.patch('certbot._internal.storage.RenewableCert')
+    @mock.patch('certbot._internal.storage.renewal_file_for_certname')
+    def test_revoke_by_certname_empty_server(self, unused_mock_renewal_file_for_certname,
+                                             mock_cert, mock_delete_if_appropriate):
+        """Revoking with --cert-name where the lineage server is empty shouldn't crash """
+        mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path, server=None)
+        args = 'revoke --cert-name=example.com'.split()
+        mock_delete_if_appropriate.return_value = False
+        self._call(args)
+        self.mock_acme_client.assert_called_once_with(
+            mock.ANY, mock.ANY, constants.CLI_DEFAULTS['server'])
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
@@ -598,7 +627,7 @@ class MainTest(test_util.ConfigTestCase):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
 
-        toy_stdout = stdout if stdout else six.StringIO()
+        toy_stdout = stdout if stdout else io.StringIO()
         with mock.patch('certbot._internal.main.sys.stdout', new=toy_stdout):
             with mock.patch('certbot._internal.main.sys.stderr') as stderr:
                 with mock.patch("certbot.util.atexit"):
@@ -611,8 +640,8 @@ class MainTest(test_util.ConfigTestCase):
             self.assertEqual(1, mock_run.call_count)
 
     def test_version_string_program_name(self):
-        toy_out = six.StringIO()
-        toy_err = six.StringIO()
+        toy_out = io.StringIO()
+        toy_err = io.StringIO()
         with mock.patch('certbot._internal.main.sys.stdout', new=toy_out):
             with mock.patch('certbot._internal.main.sys.stderr', new=toy_err):
                 try:
@@ -813,21 +842,23 @@ class MainTest(test_util.ConfigTestCase):
         self._call_no_clientmock(['delete'])
         self.assertEqual(1, mock_cert_manager.call_count)
 
+    @mock.patch('certbot._internal.main.plugins_disco')
+    @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
-    def test_plugins(self, _):
+    def test_plugins(self, _, _det, mock_disco):
         flags = ['--init', '--prepare', '--authenticators', '--installers']
         for args in itertools.chain(
                 *(itertools.combinations(flags, r)
-                  for r in six.moves.range(len(flags)))):
+                  for r in range(len(flags)))):
             self._call(['plugins'] + list(args))
 
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with test_util.patch_get_utility_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins'], stdout)
 
@@ -839,7 +870,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args_unprivileged(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         def throw_error(directory, mode, strict):
@@ -847,7 +878,7 @@ class MainTest(test_util.ConfigTestCase):
             _, _, _ = directory, mode, strict
             raise errors.Error()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with mock.patch('certbot.util.set_up_core_dir') as mock_set_up_core_dir:
             with test_util.patch_get_utility_with_stdout(stdout=stdout):
                 mock_set_up_core_dir.side_effect = throw_error
@@ -861,10 +892,10 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_init(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with test_util.patch_get_utility_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins', '--init'], stdout)
 
@@ -879,10 +910,10 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_prepare(self, _det, mock_disco):
-        ifaces = []  # type: List[interfaces.IPlugin]
+        ifaces: List[interfaces.IPlugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         with test_util.patch_get_utility_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'], stdout)
 
@@ -1031,7 +1062,7 @@ class MainTest(test_util.ConfigTestCase):
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
-        stdout = six.StringIO()
+        stdout = io.StringIO()
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
 
@@ -1049,7 +1080,7 @@ class MainTest(test_util.ConfigTestCase):
                             mock_get_utility().notification.side_effect = write_msg
                         with mock.patch('certbot._internal.main.renewal.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
-                            mock_latest.get_issuer.return_value = "Fake fake"
+                            mock_latest.get_issuer.return_value = "Artificial pretend"
                             mock_ssl.crypto.load_certificate.return_value = mock_latest
                             with mock.patch('certbot._internal.main.renewal.crypto_util') \
                                 as mock_crypto_util:
@@ -1169,7 +1200,7 @@ class MainTest(test_util.ConfigTestCase):
         _, _, stdout = self._test_renewal_common(False, extra_args=None, should_renew=False,
                                                  args=['renew'], expiry_date=expiry)
         self.assertTrue('No renewals were attempted.' in stdout.getvalue())
-        self.assertTrue('The following certs are not due for renewal yet:' in stdout.getvalue())
+        self.assertTrue('The following certificates are not due for renewal yet:' in stdout.getvalue())
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_quiet_renew(self, _):
@@ -1320,7 +1351,7 @@ class MainTest(test_util.ConfigTestCase):
         _, _, stdout = self._test_renewal_common(
             due_for_renewal=False, extra_args=None, should_renew=False,
             args=['renew', '--post-hook',
-                  '{0} -c "from __future__ import print_function; print(\'hello world\');"'
+                  '{0} -c "print(\'hello world\');"'
                   .format(sys.executable)])
         self.assertTrue('No hooks were run.' in stdout.getvalue())
 
@@ -1443,85 +1474,6 @@ class MainTest(test_util.ConfigTestCase):
                 mocked_storage.find_all.return_value = ["an account"]
                 x = self._call_no_clientmock(["register", "--email", "user@example.org"])
                 self.assertTrue("There is an existing account" in x[0])
-
-    def test_update_account_no_existing_accounts(self):
-        # with mock.patch('certbot._internal.main.client') as mocked_client:
-        with mock.patch('certbot._internal.main.account') as mocked_account:
-            mocked_storage = mock.MagicMock()
-            mocked_account.AccountFileStorage.return_value = mocked_storage
-            mocked_storage.find_all.return_value = []
-            x = self._call_no_clientmock(
-                ["update_account", "--email",
-                 "user@example.org"])
-            self.assertTrue("Could not find an existing account" in x[0])
-
-    @mock.patch('certbot._internal.main._determine_account')
-    @mock.patch('certbot._internal.eff.prepare_subscription')
-    @mock.patch('certbot._internal.main.account')
-    def test_update_account_remove_email(self, mocked_account_module, mock_prepare, mock_det_acc):
-        # Mock account storage and the account object returned
-        mocked_storage = mock.MagicMock()
-        mocked_account = mock.MagicMock()
-
-        mocked_account_module.AccountFileStorage.return_value = mocked_storage
-        mocked_storage.find_all.return_value = [mocked_account]
-        mock_det_acc.return_value = (mocked_account, "foo")
-
-        # Mock registration body to verify calls are made
-        mock_regr_body = mock.MagicMock()
-
-        # mocked_account.regr is overwritten in update, requiring an odd mock setup
-        mocked_account.regr.body = mock_regr_body
-
-        x = self._call(
-            ["update_account", "--register-unsafely-without-email"])
-
-
-        # When update succeeds, the return value of update_account() is None
-        self.assertTrue(x[0] is None)
-        # and we got supposedly did update the registration from
-        # the server
-        client_mock = x[3]
-        self.assertTrue(client_mock.Client().acme.update_registration.called)
-
-        self.assertTrue(mock_regr_body.update.called)
-        self.assertTrue('contact' in mock_regr_body.update.call_args[1])
-        self.assertEqual(mock_regr_body.update.call_args[1]['contact'], ())
-        # and we saved the updated registration on disk
-        self.assertTrue(mocked_storage.update_regr.called)
-        # ensure we didn't try to subscribe (no email to subscribe with)
-        self.assertFalse(mock_prepare.called)
-
-    @mock.patch("certbot._internal.main.display_util.notify")
-    @mock.patch('certbot._internal.main.display_ops.get_email')
-    @test_util.patch_get_utility()
-    def test_update_account_with_email(self, mock_utility, mock_email, mock_notify):
-        email = "user@example.com"
-        mock_email.return_value = email
-        with mock.patch('certbot._internal.eff.prepare_subscription') as mock_prepare:
-            with mock.patch('certbot._internal.main._determine_account') as mocked_det:
-                with mock.patch('certbot._internal.main.account') as mocked_account:
-                    with mock.patch('certbot._internal.main.client') as mocked_client:
-                        mocked_storage = mock.MagicMock()
-                        mocked_account.AccountFileStorage.return_value = mocked_storage
-                        mocked_storage.find_all.return_value = ["an account"]
-                        mocked_det.return_value = (mock.MagicMock(), "foo")
-                        cb_client = mock.MagicMock()
-                        mocked_client.Client.return_value = cb_client
-                        x = self._call_no_clientmock(
-                            ["update_account"])
-                        # When registration change succeeds, the return value
-                        # of register() is None
-                        self.assertTrue(x[0] is None)
-                        # and we got supposedly did update the registration from
-                        # the server
-                        self.assertTrue(
-                            cb_client.acme.update_registration.called)
-                        # and we saved the updated registration on disk
-                        self.assertTrue(mocked_storage.update_regr.called)
-                        self.assertTrue(
-                            email in mock_notify.call_args[0][0])
-                        self.assertTrue(mock_prepare.called)
 
     @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
     @mock.patch('certbot._internal.updater._run_updaters')
@@ -1793,6 +1745,112 @@ class InstallTest(test_util.ConfigTestCase):
         self.assertRaises(errors.ConfigurationError,
                           main.install,
                           self.config, plugins)
+
+
+class UpdateAccountTest(test_util.ConfigTestCase):
+    """Tests for certbot._internal.main.update_account"""
+
+    def setUp(self):
+        patches = {
+            'account': mock.patch('certbot._internal.main.account'),
+            'atexit': mock.patch('certbot.util.atexit'),
+            'client': mock.patch('certbot._internal.main.client'),
+            'determine_account': mock.patch('certbot._internal.main._determine_account'),
+            'notify': mock.patch('certbot._internal.main.display_util.notify'),
+            'prepare_sub': mock.patch('certbot._internal.eff.prepare_subscription'),
+            'util': test_util.patch_get_utility()
+        }
+        self.mocks = { k: patches[k].start() for k in patches }
+        for patch in patches.values():
+            self.addCleanup(patch.stop)
+
+        return super(UpdateAccountTest, self).setUp()
+
+    def _call(self, args):
+        with mock.patch('certbot._internal.main.sys.stdout'), \
+             mock.patch('certbot._internal.main.sys.stderr'):
+            args = ['--config-dir', self.config.config_dir,
+                    '--work-dir', self.config.work_dir,
+                    '--logs-dir', self.config.logs_dir, '--text'] + args
+            return main.main(args[:]) # NOTE: parser can alter its args!
+
+    def _prepare_mock_account(self):
+        mock_storage = mock.MagicMock()
+        mock_account = mock.MagicMock()
+        mock_regr = mock.MagicMock()
+        mock_storage.find_all.return_value = [mock_account]
+        self.mocks['account'].AccountFileStorage.return_value = mock_storage
+        mock_account.regr.body = mock_regr.body
+        self.mocks['determine_account'].return_value = (mock_account, mock.MagicMock())
+        return (mock_account, mock_storage, mock_regr)
+
+    def _test_update_no_contact(self, args):
+        """Utility to assert that email removal is handled correctly"""
+        (_, mock_storage, mock_regr) = self._prepare_mock_account()
+        result = self._call(args)
+        # When update succeeds, the return value of update_account() is None
+        self.assertIsNone(result)
+        # We submitted a registration to the server
+        self.assertEqual(self.mocks['client'].Client().acme.update_registration.call_count, 1)
+        mock_regr.body.update.assert_called_with(contact=())
+        # We got an update from the server and persisted it
+        self.assertEqual(mock_storage.update_regr.call_count, 1)
+        # We should have notified the user
+        self.mocks['notify'].assert_called_with(
+            'Any contact information associated with this account has been removed.'
+        )
+        # We should not have called subscription because there's no email
+        self.mocks['prepare_sub'].assert_not_called()
+
+    def test_no_existing_accounts(self):
+        """Test that no existing account is handled correctly"""
+        mock_storage = mock.MagicMock()
+        mock_storage.find_all.return_value = []
+        self.mocks['account'].AccountFileStorage.return_value = mock_storage
+        self.assertEqual(self._call(['update_account', '--email', 'user@example.org']),
+                         'Could not find an existing account to update.')
+
+    def test_update_account_remove_email(self):
+        """Test that --register-unsafely-without-email is handled as no email"""
+        self._test_update_no_contact(['update_account', '--register-unsafely-without-email'])
+
+    def test_update_account_empty_email(self):
+        """Test that providing an empty email is handled as no email"""
+        self._test_update_no_contact(['update_account', '-m', ''])
+
+    @mock.patch('certbot._internal.main.display_ops.get_email')
+    def test_update_account_with_email(self, mock_email):
+        """Test that updating with a singular email is handled correctly"""
+        mock_email.return_value = 'user@example.com'
+        (_, mock_storage, _) = self._prepare_mock_account()
+        mock_client = mock.MagicMock()
+        self.mocks['client'].Client.return_value = mock_client
+
+        result = self._call(['update_account'])
+        # None if registration succeeds
+        self.assertIsNone(result)
+        # We should have updated the server
+        self.assertEqual(mock_client.acme.update_registration.call_count, 1)
+        # We should have updated the account on disk
+        self.assertEqual(mock_storage.update_regr.call_count, 1)
+        # Subscription should have been prompted
+        self.assertEqual(self.mocks['prepare_sub'].call_count, 1)
+        # Should have printed the email
+        self.mocks['notify'].assert_called_with(
+            'Your e-mail address was updated to user@example.com.')
+
+    def test_update_account_with_multiple_emails(self):
+        """Test that multiple email addresses are handled correctly"""
+        (_, mock_storage, mock_regr) = self._prepare_mock_account()
+        self.assertIsNone(
+            self._call(['update_account', '-m', 'user@example.com,user@example.org'])
+        )
+        mock_regr.body.update.assert_called_with(
+            contact=['mailto:user@example.com', 'mailto:user@example.org']
+        )
+        self.assertEqual(mock_storage.update_regr.call_count, 1)
+        self.mocks['notify'].assert_called_with(
+            'Your e-mail address was updated to user@example.com,user@example.org.')
 
 
 if __name__ == '__main__':

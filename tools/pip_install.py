@@ -57,11 +57,15 @@ def certbot_oldest_processing(tools_path, args, test_constraints):
 def certbot_normal_processing(tools_path, test_constraints):
     repo_path = os.path.dirname(tools_path)
     certbot_requirements = os.path.normpath(os.path.join(
-        repo_path, 'letsencrypt-auto-source/pieces/dependency-requirements.txt'))
+        repo_path, 'tools/certbot_constraints.txt'))
     with open(certbot_requirements, 'r') as fd:
-        data = fd.readlines()
+        certbot_reqs = fd.readlines()
+    with open(os.path.join(tools_path, 'pipstrap_constraints.txt'), 'r') as fd:
+        pipstrap_reqs = fd.readlines()
     with open(test_constraints, 'w') as fd:
-        data = "\n".join(strip_hashes.process_entries(data))
+        data_certbot = "\n".join(strip_hashes.process_entries(certbot_reqs))
+        data_pipstrap = "\n".join(strip_hashes.process_entries(pipstrap_reqs))
+        data = "\n".join([data_certbot, data_pipstrap])
         fd.write(data)
 
 
@@ -72,7 +76,7 @@ def merge_requirements(tools_path, requirements, test_constraints, all_constrain
     # Here is the order by increasing priority:
     # 1) The general development constraints (tools/dev_constraints.txt)
     # 2) The general tests constraints (oldest_requirements.txt or
-    #    certbot-auto's dependency-requirements.txt for the normal processing)
+    #    certbot_constraints.txt + pipstrap's constraints for the normal processing)
     # 3) The local requirement file, typically local-oldest-requirement in oldest tests
     files = [os.path.join(tools_path, 'dev_constraints.txt'), test_constraints]
     if requirements:
@@ -82,17 +86,18 @@ def merge_requirements(tools_path, requirements, test_constraints, all_constrain
         fd.write(merged_requirements)
 
 
-def call_with_print(command):
+def call_with_print(command, env=None):
+    if not env:
+        env = os.environ
     print(command)
-    subprocess.check_call(command, shell=True)
+    subprocess.check_call(command, shell=True, env=env)
 
 
-def pip_install_with_print(args_str, disable_build_isolation=True):
-    command = ['"', sys.executable, '" -m pip install --disable-pip-version-check ']
-    if disable_build_isolation:
-        command.append('--no-build-isolation ')
-    command.append(args_str)
-    call_with_print(''.join(command))
+def pip_install_with_print(args_str, env=None):
+    if not env:
+        env = os.environ
+    command = ['"', sys.executable, '" -m pip install --disable-pip-version-check ', args_str]
+    call_with_print(''.join(command), env=env)
 
 
 def main(args):
@@ -113,20 +118,23 @@ def main(args):
             else:
                 certbot_normal_processing(tools_path, test_constraints)
 
+            env = os.environ.copy()
+            env["PIP_CONSTRAINT"] = all_constraints
+
             merge_requirements(tools_path, requirements, test_constraints, all_constraints)
             if requirements:  # This branch is executed during the oldest tests
                 # First step, install the transitive dependencies of oldest requirements
                 # in respect with oldest constraints.
-                pip_install_with_print('--constraint "{0}" --requirement "{1}"'
-                                       .format(all_constraints, requirements))
+                pip_install_with_print('--requirement "{0}"'.format(requirements),
+                                       env=env)
                 # Second step, ensure that oldest requirements themselves are effectively
                 # installed using --force-reinstall, and avoid corner cases like the one described
                 # in https://github.com/certbot/certbot/issues/7014.
                 pip_install_with_print('--force-reinstall --no-deps --requirement "{0}"'
                                        .format(requirements))
 
-            pip_install_with_print('--constraint "{0}" {1}'.format(
-                all_constraints, ' '.join(args)))
+            print(' '.join(args))
+            pip_install_with_print(' '.join(args), env=env)
 
 
 if __name__ == '__main__':

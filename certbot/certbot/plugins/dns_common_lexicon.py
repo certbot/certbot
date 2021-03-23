@@ -1,12 +1,12 @@
 """Common code for DNS Authenticator Plugins built on Lexicon."""
 import logging
+from typing import Any
+from typing import Dict
+from typing import Union
 
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
-from acme.magic_typing import Any
-from acme.magic_typing import Dict
-from acme.magic_typing import Union
 from certbot import errors
 from certbot.plugins import dns_common
 
@@ -23,7 +23,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class LexiconClient(object):
+class LexiconClient:
     """
     Encapsulates all communication with a DNS provider via Lexicon.
     """
@@ -116,8 +116,9 @@ class LexiconClient(object):
         return None
 
 
-def build_lexicon_config(lexicon_provider_name, lexicon_options, provider_options):
-    # type: (str, Dict, Dict) -> Union[ConfigResolver, Dict]
+def build_lexicon_config(lexicon_provider_name: str,
+                         lexicon_options: Dict, provider_options: Dict
+                         ) -> Union[ConfigResolver, Dict]:
     """
     Convenient function to build a Lexicon 2.x/3.x config object.
     :param str lexicon_provider_name: the name of the lexicon provider to use
@@ -126,7 +127,7 @@ def build_lexicon_config(lexicon_provider_name, lexicon_options, provider_option
     :return: configuration to apply to the provider
     :rtype: ConfigurationResolver or dict
     """
-    config = {'provider_name': lexicon_provider_name}  # type: Dict[str, Any]
+    config: Dict[str, Any] = {'provider_name': lexicon_provider_name}
     config.update(lexicon_options)
     if not ConfigResolver:
         # Lexicon 2.x

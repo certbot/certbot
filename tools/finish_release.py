@@ -21,6 +21,7 @@ Run:
 python tools/finish_release.py ~/.ssh/githubpat.txt
 """
 
+import argparse
 import glob
 import os.path
 import re
@@ -43,6 +44,34 @@ SNAPS = ['certbot'] + DNS_PLUGINS
 # This is the count of the architectures currently supported by our snaps used
 # for sanity checking.
 SNAP_ARCH_COUNT = 3
+
+
+def parse_args(args):
+    """Parse command line arguments.
+
+    :param args: command line arguments with the program name removed. This is
+        usually taken from sys.argv[1:].
+    :type args: `list` of `str`
+
+    :returns: parsed arguments
+    :rtype: argparse.Namespace
+
+    """
+    # Use the file's docstring for the help text and don't let argparse reformat it.
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('githubpat', help='path to your GitHub personal access token')
+    group = parser.add_mutually_exclusive_group()
+    # We use 'store_false' and a destination related to the other type of
+    # artifact to cause the flag being set to disable publishing of the other
+    # artifact. This makes using the parsed arguments later on a little simpler
+    # and cleaner.
+    group.add_argument('--snaps-only', action='store_false', dest='publish_windows',
+                        help='Skip publishing other artifacts and only publish the snaps')
+    group.add_argument('--windows-only', action='store_false', dest='publish_snaps',
+                        help='Skip publishing other artifacts and only publish the Windows installer')
+    return parser.parse_args(args)
+
 
 def download_azure_artifacts(tempdir):
     """Download and unzip build artifacts from Azure pipelines.
@@ -181,8 +210,9 @@ def promote_snaps(version):
 
 
 def main(args):
-    github_access_token_file = args[0]
+    parsed_args = parse_args(args)
 
+    github_access_token_file = parsed_args.githubpat
     github_access_token = open(github_access_token_file, 'r').read().rstrip()
 
     with tempfile.TemporaryDirectory() as tempdir:
@@ -191,8 +221,10 @@ def main(args):
         # again fails. Publishing the snaps can be done multiple times though
         # so we do that first to make it easier to run the script again later
         # if something goes wrong.
-        promote_snaps(version)
-        create_github_release(github_access_token, tempdir, version)
+        if parsed_args.publish_snaps:
+            promote_snaps(version)
+        if parsed_args.publish_windows:
+            create_github_release(github_access_token, tempdir, version)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

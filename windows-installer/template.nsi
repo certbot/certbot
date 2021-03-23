@@ -1,6 +1,7 @@
-; This NSIS template is based on the built-in one in pynsist 2.4.
-; If pynsist is upgraded, this template may be updated if necessary using the new built-in one.
-; Original file can be found here: https://github.com/takluyver/pynsist/blob/2.4/nsist/pyapp.nsi
+; This NSIS template is based on the built-in one in pynsist 2.6.
+; Added lines are enclosed within "CERTBOT CUSTOM BEGIN/END" comments.
+; If pynsist is upgraded, this template must be updated if necessary using the new built-in one.
+; Original file can be found here: https://github.com/takluyver/pynsist/blob/2.6/nsist/pyapp.nsi
 
 ; Require the installer do be installed with admin privileges
 RequestExecutionLevel admin
@@ -29,8 +30,10 @@ Function .onInit
   powershellok:
 FunctionEnd
 
+!include FileFunc.nsh
+
 [% block modernui %]
-; Modern UI installer stuff 
+; Modern UI installer stuff
 !include "MUI2.nsh"
 !define MUI_ABORTWARNING
 !define MUI_ICON "[[icon]]"
@@ -52,6 +55,8 @@ FunctionEnd
 Name "${PRODUCT_NAME} (beta) ${PRODUCT_VERSION}"
 OutFile "${INSTALLER_NAME}"
 ShowInstDetails show
+
+Var cmdLineInstallDir
 
 Section -SETTINGS
   SetOutPath "$INSTDIR"
@@ -77,14 +82,14 @@ Section "!${PRODUCT_NAME}" sec_app
       File "[[ file ]]"
     [% endfor %]
   [% endfor %]
-  
+
   ; Install directories
   [% for dir, destination in ib.install_dirs %]
     SetOutPath "[[ pjoin(destination, dir) ]]"
     File /r "[[dir]]\*.*"
   [% endfor %]
   [% endblock install_files %]
-  
+
   [% block install_shortcuts %]
   ; Install shortcuts
   ; The output path becomes the working directory for shortcuts
@@ -108,13 +113,12 @@ Section "!${PRODUCT_NAME}" sec_app
   [% block install_commands %]
   [% if has_commands %]
     DetailPrint "Setting up command-line launchers..."
-    nsExec::ExecToLog '[[ python ]] -Es "$INSTDIR\_assemble_launchers.py" [[ python ]] "$INSTDIR\bin"'
 
     ; Add to PATH for all users
     nsExec::ExecToLog '[[ python ]] -Es "$INSTDIR\_system_path.py" add "$INSTDIR\bin"'
   [% endif %]
   [% endblock install_commands %]
-  
+
   ; Byte-compile Python files.
   DetailPrint "Byte-compiling Python modules..."
   nsExec::ExecToLog '[[ python ]] -m compileall -q "$INSTDIR\pkgs"'
@@ -209,6 +213,6 @@ Function .onMouseOverSection
     [% block mouseover_messages %]
     StrCmp $0 ${sec_app} "" +2
       SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
-    
+
     [% endblock mouseover_messages %]
 FunctionEnd

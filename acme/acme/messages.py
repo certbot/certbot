@@ -1,8 +1,8 @@
 """ACME protocol messages."""
 import json
+from collections.abc import Hashable
 
 import josepy as jose
-import six
 
 from acme import challenges
 from acme import errors
@@ -10,13 +10,6 @@ from acme import fields
 from acme import jws
 from acme import util
 from acme.mixins import ResourceMixin
-
-try:
-    from collections.abc import Hashable
-except ImportError:  # pragma: no cover
-    from collections import Hashable
-
-
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
@@ -68,7 +61,6 @@ def is_acme_error(err):
     return False
 
 
-@six.python_2_unicode_compatible
 class Error(jose.JSONObjectWithFields, errors.Error):
     """ACME error.
 
@@ -158,13 +150,10 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
     def __hash__(self):
         return hash((self.__class__, self.name))
 
-    def __ne__(self, other):
-        return not self == other
-
 
 class Status(_Constant):
     """ACME "status" field."""
-    POSSIBLE_NAMES = {}  # type: dict
+    POSSIBLE_NAMES: dict = {}
 STATUS_UNKNOWN = Status('unknown')
 STATUS_PENDING = Status('pending')
 STATUS_PROCESSING = Status('processing')
@@ -177,7 +166,7 @@ STATUS_DEACTIVATED = Status('deactivated')
 
 class IdentifierType(_Constant):
     """ACME identifier type."""
-    POSSIBLE_NAMES = {}  # type: dict
+    POSSIBLE_NAMES: dict = {}
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 
 
@@ -195,7 +184,7 @@ class Identifier(jose.JSONObjectWithFields):
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES = {}  # type: dict
+    _REGISTERED_TYPES: dict = {}
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
@@ -275,7 +264,7 @@ class Resource(jose.JSONObjectWithFields):
 class ResourceWithURI(Resource):
     """ACME Resource with URI.
 
-    :ivar unicode uri: Location of the resource.
+    :ivar unicode ~.uri: Location of the resource.
 
     """
     uri = jose.Field('uri')  # no ChallengeResource.uri
@@ -285,7 +274,7 @@ class ResourceBody(jose.JSONObjectWithFields):
     """ACME Resource Body."""
 
 
-class ExternalAccountBinding(object):
+class ExternalAccountBinding:
     """ACME External Account Binding"""
 
     @classmethod
@@ -627,7 +616,7 @@ class Order(ResourceBody):
     :ivar str finalize: URL to POST to to request issuance once all
         authorizations have "valid" status.
     :ivar datetime.datetime expires: When the order expires.
-    :ivar .Error error: Any error that occurred during finalization, if applicable.
+    :ivar ~.Error error: Any error that occurred during finalization, if applicable.
     """
     identifiers = jose.Field('identifiers', omitempty=True)
     status = jose.Field('status', decoder=Status.from_json,

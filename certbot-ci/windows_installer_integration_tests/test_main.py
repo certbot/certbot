@@ -1,18 +1,18 @@
+from http.server import BaseHTTPRequestHandler
+import json
 import os
+import re
+import shutil
+import socketserver
+import subprocess
+import tempfile
+import threading
 import time
 import unittest
-import subprocess
-import re
-from http.server import BaseHTTPRequestHandler
-import threading
-import socketserver
-import json
-import tempfile
-import shutil
 import warnings
 
-import pytest
 import pkg_resources
+import pytest
 
 SCHEDULED_TASK_NAME = 'Certbot Renew and Auto-Update Task'
 GITHUB_FAKE_API_PORT = 8009

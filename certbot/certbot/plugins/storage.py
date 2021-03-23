@@ -1,9 +1,9 @@
 """Plugin storage class."""
 import json
 import logging
+from typing import Any
+from typing import Dict
 
-from acme.magic_typing import Any
-from acme.magic_typing import Dict
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -11,7 +11,7 @@ from certbot.compat import os
 logger = logging.getLogger(__name__)
 
 
-class PluginStorage(object):
+class PluginStorage:
     """Class implementing storage functionality for plugins"""
 
     def __init__(self, config, classkey):
@@ -42,7 +42,7 @@ class PluginStorage(object):
 
         :raises .errors.PluginStorageError: when unable to open or read the file
         """
-        data = {}  # type: Dict[str, Any]
+        data: Dict[str, Any] = {}
         filedata = ""
         try:
             with open(self._storagepath, 'r') as fh:

@@ -1,12 +1,13 @@
 """Tests for certbot._internal.reporter."""
+import io
 import sys
 import unittest
+
 
 try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
-import six
 
 
 class ReporterTest(unittest.TestCase):
@@ -16,7 +17,7 @@ class ReporterTest(unittest.TestCase):
         self.reporter = reporter.Reporter(mock.MagicMock(quiet=False))
 
         self.old_stdout = sys.stdout  # type: ignore
-        sys.stdout = six.StringIO()
+        sys.stdout = io.StringIO()
 
     def tearDown(self):
         sys.stdout = self.old_stdout

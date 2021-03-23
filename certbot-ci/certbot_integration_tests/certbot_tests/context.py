@@ -7,14 +7,14 @@ import tempfile
 from certbot_integration_tests.utils import certbot_call
 
 
-class IntegrationTestsContext(object):
+class IntegrationTestsContext:
     """General fixture describing a certbot integration tests context"""
     def __init__(self, request):
         self.request = request
 
-        if hasattr(request.config, 'slaveinput'):  # Worker node
-            self.worker_id = request.config.slaveinput['slaveid']
-            acme_xdist = request.config.slaveinput['acme_xdist']
+        if hasattr(request.config, 'workerinput'):  # Worker node
+            self.worker_id = request.config.workerinput['workerid']
+            acme_xdist = request.config.workerinput['acme_xdist']
         else:  # Primary node
             self.worker_id = 'primary'
             acme_xdist = request.config.acme_xdist
@@ -77,6 +77,6 @@ class IntegrationTestsContext(object):
         appending the pytest worker id to the subdomain, using this pattern:
         {subdomain}.{worker_id}.wtf
         :param subdomain: the subdomain to use in the generated domain (default 'le')
-        :return: the well-formed domain suitable for redirection on 
+        :return: the well-formed domain suitable for redirection on
         """
         return '{0}.{1}.wtf'.format(subdomain, self.worker_id)

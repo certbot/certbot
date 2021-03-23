@@ -6,7 +6,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
-import six
 
 from acme import challenges
 from certbot import achallenges
@@ -18,7 +17,7 @@ DOMAIN = 'example.com'
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
-class BaseAuthenticatorTest(object):
+class BaseAuthenticatorTest:
     """
     A base test class to reduce duplication between test code for DNS Authenticator Plugins.
 
@@ -31,7 +30,7 @@ class BaseAuthenticatorTest(object):
         challb=acme_util.DNS01, domain=DOMAIN, account_key=KEY)
 
     def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), six.string_types))  # pylint: disable=no-member
+        self.assertTrue(isinstance(self.auth.more_info(), str))  # pylint: disable=no-member
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref(None), [challenges.DNS01])  # pylint: disable=no-member
