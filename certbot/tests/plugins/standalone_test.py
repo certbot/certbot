@@ -3,6 +3,7 @@
 import socket
 from socket import errno as socket_errors  # type: ignore
 import unittest
+from typing import Dict, Set, Tuple
 
 import josepy as jose
 try:

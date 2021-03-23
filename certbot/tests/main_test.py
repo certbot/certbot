@@ -11,6 +11,7 @@ import sys
 import tempfile
 import traceback
 import unittest
+from typing import List
 
 import josepy as jose
 import pytz

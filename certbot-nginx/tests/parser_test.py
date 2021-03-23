@@ -3,6 +3,7 @@ import glob
 import re
 import shutil
 import unittest
+from typing import List
 
 from certbot import errors
 from certbot.compat import os

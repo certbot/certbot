@@ -2,6 +2,7 @@
 import functools
 import string
 import unittest
+from typing import List
 
 try:
     import mock

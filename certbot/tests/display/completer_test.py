@@ -1,4 +1,6 @@
 """Test certbot._internal.display.completer."""
+from typing import List
+
 try:
     import readline  # pylint: disable=import-error
 except ImportError:

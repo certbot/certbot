@@ -1,4 +1,6 @@
 """Tests for AugeasParserNode classes"""
+from typing import List
+
 try:
     import mock
 except ImportError: # pragma: no cover

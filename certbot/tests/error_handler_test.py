@@ -3,6 +3,7 @@ import contextlib
 import signal
 import sys
 import unittest
+from typing import Callable, Dict, Union
 
 try:
     import mock

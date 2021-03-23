@@ -5,6 +5,7 @@ import datetime
 import http.client as http_client
 import json
 import unittest
+from typing import Dict
 from unittest import mock
 
 import josepy as jose
