@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* CLI flag `--dns-azure` added to specify the Azure DNS plugin
 
 ### Changed
 

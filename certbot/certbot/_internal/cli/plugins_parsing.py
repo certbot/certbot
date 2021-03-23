@@ -34,6 +34,10 @@ def _plugins_parsing(helpful, plugins):
     helpful.add(["plugins", "certonly"], "--webroot", action="store_true",
                 default=flag_default("webroot"),
                 help="Obtain certificates by placing files in a webroot directory.")
+    helpful.add(["plugins", "certonly"], "--dns-azure", action="store_true",
+                default=flag_default("dns_azure"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using Azure for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-cloudflare", action="store_true",
                 default=flag_default("dns_cloudflare"),
                 help=("Obtain certificates using a DNS TXT record (if you are "

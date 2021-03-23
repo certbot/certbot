@@ -14,7 +14,7 @@
 # Some of these constraints may be stricter than necessary because they
 # initially referred to the Python 2 packages in CentOS/RHEL 7 with EPEL.
 cffi==1.9.1
-chardet==2.2.1
+chardet==3.0.4
 ipaddress==1.0.16
 mock==1.0.1
 ndg-httpsclient==0.3.2
@@ -25,7 +25,7 @@ pycparser==2.14
 pyRFC3339==1.0
 python-augeas==0.5.0
 oauth2client==4.0.0
-urllib3==1.10.2
+urllib3==1.25.6
 zope.component==4.1.0
 zope.event==4.0.3
 zope.interface==4.0.5
@@ -47,7 +47,7 @@ pyparsing==2.2.0
 apacheconfig==0.3.2
 cloudflare==1.5.1
 python-digitalocean==1.11
-requests==2.6.0
+requests==2.23.0
 
 # Ubuntu Xenial constraints
 # Ubuntu Xenial only has versions of Python which we do not support available
