@@ -36,6 +36,16 @@ DeterminePythonVersion() {
 BootstrapDebCommon() {
   apt-get update || error apt-get update hit problems but continuing anyway...
 
+  # make sure rust isn't installed by the package manager
+  if ! apt-get remove -y rustc; then
+    error "Could not remove existing rust. Aborting bootstrap!"
+    exit 1
+  fi
+
+  # Install rust for cryptography (needed on Debian)
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  . $HOME/.cargo/env
+
   apt-get install -y --no-install-recommends \
     python3 \
     python3-dev \
@@ -47,9 +57,7 @@ BootstrapDebCommon() {
     libffi-dev \
     ca-certificates \
     build-essential \
-    cargo \
     make # needed on debian 9 arm64 which doesn't have a python3 pynacl wheel
-
 }
 
 # Sets TOOL to the name of the package manager
@@ -129,5 +137,3 @@ elif [ -f /etc/redhat-release ]; then
 fi
 
 Bootstrap
-# Install rust for cryptography
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
