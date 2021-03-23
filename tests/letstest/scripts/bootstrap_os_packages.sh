@@ -46,6 +46,8 @@ BootstrapDebCommon() {
     openssl \
     libffi-dev \
     ca-certificates \
+    build-essential \
+    cargo \
     make # needed on debian 9 arm64 which doesn't have a python3 pynacl wheel
 
 }
@@ -79,6 +81,7 @@ BootstrapRpmCommonBase() {
     libffi-devel
     redhat-rpm-config
     ca-certificates
+    cargo
   "
 
   # Add the python packages
@@ -126,3 +129,5 @@ elif [ -f /etc/redhat-release ]; then
 fi
 
 Bootstrap
+# Install rust for cryptography
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
