@@ -34,7 +34,7 @@ def pytest_configure(config):
     Standard pytest hook used to add a configuration logic for each node of a pytest run.
     :param config: the current pytest configuration
     """
-    if not hasattr(config, 'slaveinput'):  # If true, this is the primary node
+    if not hasattr(config, 'workerinput'):  # If true, this is the primary node
         with _print_on_err():
             _setup_primary_node(config)
 
@@ -44,8 +44,8 @@ def pytest_configure_node(node):
     Standard pytest-xdist hook used to configure a worker node.
     :param node: current worker node
     """
-    node.slaveinput['acme_xdist'] = node.config.acme_xdist
-    node.slaveinput['dns_xdist'] = node.config.dns_xdist
+    node.workerinput['acme_xdist'] = node.config.acme_xdist
+    node.workerinput['dns_xdist'] = node.config.dns_xdist
 
 
 @contextlib.contextmanager

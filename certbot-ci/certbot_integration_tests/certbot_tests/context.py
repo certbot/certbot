@@ -12,9 +12,9 @@ class IntegrationTestsContext:
     def __init__(self, request):
         self.request = request
 
-        if hasattr(request.config, 'slaveinput'):  # Worker node
-            self.worker_id = request.config.slaveinput['slaveid']
-            acme_xdist = request.config.slaveinput['acme_xdist']
+        if hasattr(request.config, 'workerinput'):  # Worker node
+            self.worker_id = request.config.workerinput['workerid']
+            acme_xdist = request.config.workerinput['acme_xdist']
         else:  # Primary node
             self.worker_id = 'primary'
             acme_xdist = request.config.acme_xdist

@@ -14,7 +14,9 @@ install_requires = [
     'pyopenssl',
     'pytest',
     'pytest-cov',
-    'pytest-xdist',
+    # This version is needed for "worker" attributes we currently use like
+    # "workerinput".  See https://github.com/pytest-dev/pytest-xdist/pull/268.
+    'pytest-xdist>=1.22.1',
     'python-dateutil',
     'pyyaml',
     'requests',
