@@ -6,7 +6,7 @@ BOOTSTRAP_SCRIPT="tests/letstest/scripts/bootstrap_os_packages.sh"
 VENV_PATH=venv
 
 # install OS packages
-sudo $BOOTSTRAP_SCRIPT
+. $BOOTSTRAP_SCRIPT
 
 # setup venv
 # We strip the hashes because the venv creation script includes unhashed
