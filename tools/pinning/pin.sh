@@ -23,7 +23,7 @@ fi
 poetry lock
 
 TEMP_REQUIREMENTS=$(mktemp)
-trap 'rm $TEMP_REQUIREMENTS' EXIT
+trap 'rm poetry.lock; rm $TEMP_REQUIREMENTS' EXIT
 
 poetry export -o "${TEMP_REQUIREMENTS}" --without-hashes
 # We need to remove local packages from the requirements file.

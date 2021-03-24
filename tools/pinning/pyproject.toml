@@ -36,6 +36,10 @@ acme = {path = "../../acme", extras = ["dev", "docs"]}
 # Extra dependencies
 # See https://github.com/certbot/certbot/issues/8425.
 mypy = "0.710"
+# Upgrading pylint and pytest causes many test failures so let's pin these
+# packages back for now.
+pylint = "2.4.3"
+pytest = "3.2.5"
 # We were originally pinning back python-augeas for certbot-auto because we
 # found the way older versions of the library linked to Augeas were more
 # reliable. That's no longer a concern, however, we continue to pin back the
