@@ -38,7 +38,6 @@ parts:
     build-packages:
       - gcc
       - git
-      - libaugeas-dev
       - build-essential
       - libssl-dev
       - libffi-dev
