@@ -29,11 +29,11 @@ poetry export -o "${TEMP_REQUIREMENTS}" --without-hashes
 # We need to remove local packages from the requirements file.
 sed -i '/^acme @/d; /certbot/d;' "${TEMP_REQUIREMENTS}"
 # Poetry currently will not include pip, setuptools, or wheel in lockfiles or
-# requirements files. See https://github.com/python-poetry/poetry/issues/1584
-# which should hopefully be resolved soon by
-# https://github.com/python-poetry/poetry/pull/2826. For now, we continue to
-# keep pipstrap's pinning separate which has the added benefit of having it
-# continue to check hashes when pipstrap is run directly.
+# requirements files. This was resolved by
+# https://github.com/python-poetry/poetry/pull/2826, but as of writing this it
+# hasn't been included in a release yet. For now, we continue to keep
+# pipstrap's pinning separate which has the added benefit of having it continue
+# to check hashes when pipstrap is run directly.
 "${STRIP_HASHES}" "${PIPSTRAP_CONSTRAINTS}" >>  "${TEMP_REQUIREMENTS}"
 
 cat << EOF > "$REQUIREMENTS_FILE"
