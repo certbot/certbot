@@ -14,7 +14,7 @@ obtaining, renewing, or revoking certificates. The most important
 and commonly-used commands will be discussed throughout this
 document; an exhaustive list also appears near the end of the document.
 
-The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used an alternate installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
+The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used a now-deprecated installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
 
 .. _plugins:
 
@@ -420,7 +420,7 @@ option to control the curve used in ECDSA certificates.
 .. warning:: If you obtain certificates using ECDSA keys, you should be careful
    not to downgrade your Certbot installation since ECDSA keys are not
    supported by older versions of Certbot. Downgrades like this are possible if
-   you switch from something like the snaps or certbot-auto to packages
+   you switch from something like the snaps or pip to packages
    provided by your operating system which often lag behind.
 
 Changing existing certificates from RSA to ECDSA

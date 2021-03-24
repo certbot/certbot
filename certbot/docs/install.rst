@@ -251,25 +251,6 @@ Certbot on UNIX operating systems, however, this script is no longer supported.
 If you want to uninstall ``certbot-auto``, you can follow our instructions
 :doc:`here <uninstall>`.
 
-Problems with Python virtual environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When using ``certbot-auto`` on a low memory system such as VPS with less than
-512MB of RAM, the required dependencies of Certbot may fail to build.  This can
-be identified if the pip outputs contains something like ``internal compiler
-error: Killed (program cc1)``.  You can workaround this restriction by creating
-a temporary swapfile::
-
-  user@webserver:~$ sudo fallocate -l 1G /tmp/swapfile
-  user@webserver:~$ sudo chmod 600 /tmp/swapfile
-  user@webserver:~$ sudo mkswap /tmp/swapfile
-  user@webserver:~$ sudo swapon /tmp/swapfile
-
-Disable and remove the swapfile once the virtual environment is constructed::
-
-  user@webserver:~$ sudo swapoff /tmp/swapfile
-  user@webserver:~$ sudo rm /tmp/swapfile
-
 Pip
 ---
 
