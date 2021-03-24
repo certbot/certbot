@@ -34,9 +34,6 @@ certbot = {path = "../../certbot", extras = ["dev", "docs"]}
 acme = {path = "../../acme", extras = ["dev", "docs"]}
 
 # Extra dependencies
-# cryptography 3.4+ requires rust to build wheels and we have some work to do
-# before we switch
-cryptography = "<3.4"
 # See https://github.com/certbot/certbot/issues/8425.
 mypy = "0.710"
 # We were originally pinning back python-augeas for certbot-auto because we

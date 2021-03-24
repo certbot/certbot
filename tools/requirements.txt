@@ -25,7 +25,7 @@ cached-property==1.5.2; python_version >= "3.6" and python_full_version < "3.0.0
 cachetools==4.2.1; python_version >= "3.5" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6")
 cachy==0.3.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
 certifi==2020.12.5; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
-cffi==1.14.5; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
+cffi==1.14.5; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 chardet==4.0.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 cleo==0.8.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
 clikit==0.6.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
@@ -35,7 +35,7 @@ configargparse==1.4; python_version >= "3.6" and python_full_version < "3.0.0" o
 configobj==5.0.6; python_version >= "3.6"
 coverage==5.5; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.6"
 crashtest==0.3.1; python_version >= "3.6" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0")
-cryptography==3.3.2; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.6.0")
+cryptography==3.4.6; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0") and sys_platform == "linux" or python_full_version >= "3.5.0" and python_version >= "3.6" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0") and sys_platform == "linux"
 decorator==4.4.2; python_version == "3.6" and python_full_version < "3.0.0" or python_version == "3.6" and python_full_version >= "3.2.0"
 deprecated==1.2.12; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.4.0"
 distlib==0.3.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
@@ -105,7 +105,7 @@ ptyprocess==0.7.0; python_version >= "3.6" and python_full_version < "3.0.0" or 
 py==1.10.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 pyasn1-modules==0.2.8; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
 pyasn1==0.4.8; python_version >= "3.6" and python_version < "4"
-pycparser==2.20; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
+pycparser==2.20; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 pygithub==1.54.1; python_version >= "3.6"
 pygments==2.8.1
 pyjwt==1.7.1; python_version >= "3.6"
