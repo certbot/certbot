@@ -34,9 +34,9 @@ DeterminePythonVersion() {
 }
 
 BootstrapDebCommon() {
-  apt-get update || error apt-get update hit problems but continuing anyway...
+  sudo apt-get update || error apt-get update hit problems but continuing anyway...
 
-  apt-get install -y --no-install-recommends \
+  sudo apt-get install -y --no-install-recommends \
     python3 \
     python3-dev \
     python3-venv \
@@ -46,8 +46,19 @@ BootstrapDebCommon() {
     openssl \
     libffi-dev \
     ca-certificates \
+    build-essential \
+    curl \
     make # needed on debian 9 arm64 which doesn't have a python3 pynacl wheel
 
+  # make sure rust isn't installed by the package manager
+  if ! sudo apt-get remove -y rustc; then
+    error "Could not remove existing rust. Aborting bootstrap!"
+    exit 1
+  fi
+
+  # Install rust for cryptography (needed on Debian)
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  . $HOME/.cargo/env
 }
 
 # Sets TOOL to the name of the package manager
@@ -79,6 +90,7 @@ BootstrapRpmCommonBase() {
     libffi-devel
     redhat-rpm-config
     ca-certificates
+    cargo
   "
 
   # Add the python packages
@@ -92,7 +104,7 @@ BootstrapRpmCommonBase() {
     "
   fi
 
-  if ! $TOOL install -y $pkgs; then
+  if ! sudo $TOOL install -y $pkgs; then
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
@@ -105,8 +117,8 @@ BootstrapRpmPython3() {
     python3-devel
   "
 
-  if ! $TOOL list 'python3*-devel' >/dev/null 2>&1; then
-    yum-config-manager --enable rhui-REGION-rhel-server-extras rhui-REGION-rhel-server-optional
+  if ! sudo $TOOL list 'python3*-devel' >/dev/null 2>&1; then
+    sudo yum-config-manager --enable rhui-REGION-rhel-server-extras rhui-REGION-rhel-server-optional
   fi
 
   BootstrapRpmCommonBase "$python_pkgs"
