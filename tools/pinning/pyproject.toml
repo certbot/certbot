@@ -36,8 +36,9 @@ acme = {path = "../../acme", extras = ["dev", "docs"]}
 # Extra dependencies
 # See https://github.com/certbot/certbot/issues/8425.
 mypy = "0.710"
-# Upgrading pylint, pytest, and some of pytest's plugins causes many test
-# failures so let's pin these packages back for now.
+# Upgrading coverage, pylint, pytest, and some of pytest's plugins causes many
+# test failures so let's pin these packages back for now.
+coverage = "4.5.4"
 pylint = "2.4.3"
 pytest = "3.2.5"
 pytest-forked = "0.2"

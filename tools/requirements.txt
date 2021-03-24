@@ -32,7 +32,7 @@ cloudflare==2.8.15; python_version >= "3.6"
 colorama==0.4.4; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 configargparse==1.4; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 configobj==5.0.6; python_version >= "3.6"
-coverage==5.5; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.6"
+coverage==4.5.4; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0" and python_version < "4")
 crashtest==0.3.1; python_version >= "3.6" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0")
 cryptography==3.4.6; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0") and sys_platform == "linux" or python_full_version >= "3.5.0" and python_version >= "3.6" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0") and sys_platform == "linux"
 decorator==4.4.2; python_version == "3.6" and python_full_version < "3.0.0" or python_version == "3.6" and python_full_version >= "3.2.0"
