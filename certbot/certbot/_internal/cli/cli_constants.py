@@ -1,8 +1,4 @@
 """Certbot command line constants"""
-import sys
-
-from certbot.compat import os
-
 cli_command = "certbot"
 
 

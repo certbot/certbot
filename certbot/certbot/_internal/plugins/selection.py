@@ -134,7 +134,6 @@ def choose_plugin(prepared, question):
     opts = [plugin_ep.description_with_name +
             (" [Misconfigured]" if plugin_ep.misconfigured else "")
             for plugin_ep in prepared]
-    names = set(plugin_ep.name for plugin_ep in prepared)
 
     while True:
         disp = z_util(interfaces.IDisplay)
