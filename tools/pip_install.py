@@ -3,7 +3,7 @@
 # to 1, a combination of tools/oldest_constraints.txt,
 # tools/dev_constraints.txt, and local-oldest-requirements.txt contained in the
 # top level of the package's directory is used, otherwise, a combination of
-# certbot-auto's requirements file and tools/dev_constraints.txt is used. The
+# tools/certbot_constraints.txt and tools/dev_constraints.txt is used. The
 # other file always takes precedence over tools/dev_constraints.txt. If
 # CERTBOT_OLDEST is set, this script must be run with `-e <package-name>` and
 # no other arguments.
