@@ -496,12 +496,17 @@ def main():
         outputs = [outq for outq in iter(outqueue.get, SENTINEL)]
         outputs.sort(key=lambda x: x[0])
         failed = False
+        results_msg = ""
         for outq in outputs:
             ii, target, status = outq
             if status == Status.FAIL:
                 failed = True
-            print('%d %s %s'%(ii, target['name'], status))
+                with open(log_dir+'/'+'%d_%s.log'%(ii,target['name']), 'r') as f:
+                    print(target['name'] + " test failed. Test log:")
+                    print(f.read())
+            results_msg = results_msg + '%d %s %s\n'%(ii, target['name'], status)
             results_file.write('%d %s %s\n'%(ii, target['name'], status))
+        print(results_msg)
         if len(outputs) != num_processes:
             failed = True
             failure_message = 'FAILURE: Some target machines failed to run and were not tested. ' +\
