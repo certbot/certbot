@@ -59,7 +59,7 @@ install_requires = [
 # However environment markers are supported only with setuptools >= 36.2.
 # So this dependency is not added for old Linux distributions with old setuptools,
 # in order to allow these systems to build certbot from sources.
-pywin32_req = 'pywin32>=300'  # do not forget to edit pywin32 dependency accordingly in windows-installer/construct.py
+pywin32_req = 'pywin32>=300'
 setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
 if setuptools_known_environment_markers:
     install_requires.append(pywin32_req + " ; sys_platform == 'win32'")
