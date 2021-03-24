@@ -32,6 +32,7 @@ if [ -f /etc/redhat-release ] && [ "$(. /etc/os-release 2> /dev/null && echo "$V
   sed -i 's|pyOpenSSL==.*|pyOpenSSL==19.1.0|g' "$CONSTRAINTS"
 fi
 
+exit 1
 
 PLUGINS="certbot-apache certbot-nginx"
 # build sdists
