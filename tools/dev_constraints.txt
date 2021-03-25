@@ -60,7 +60,7 @@ MarkupSafe==1.1.1
 mccabe==0.6.1
 more-itertools==5.0.0
 msrest==0.6.18
-mypy==0.710
+mypy==0.812
 mypy-extensions==0.4.3
 ndg-httpsclient==0.3.2
 oauth2client==4.0.0
@@ -120,6 +120,7 @@ traitlets==4.3.3
 twine==1.11.0
 typed-ast==1.4.1
 typing==3.6.4
+typing-extensions==3.7.4.3
 uritemplate==3.0.0
 virtualenv==16.6.2
 wcwidth==0.1.8
