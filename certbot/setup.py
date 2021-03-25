@@ -79,7 +79,9 @@ dev_extras = [
     'ipdb',
     'mypy',
     'PyGithub',
-    'poetry',
+    # 1.1.0+ is required for poetry to use the poetry-core library for the
+    # build system declared in tools/pinning/pyproject.toml.
+    'poetry>=1.1.0',
     'pylint',
     'pytest',
     'pytest-cov',
