@@ -18,8 +18,8 @@ backcall==0.2.0
 bcrypt==3.2.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 beautifulsoup4==4.9.3; python_version >= "3.6" and python_version < "4.0"
 bleach==3.3.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
-boto3==1.17.36; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
-botocore==1.20.36; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
+boto3==1.17.37; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
+botocore==1.20.37; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
 cachecontrol==0.12.6; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
 cached-property==1.5.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 cachetools==4.2.1; python_version >= "3.5" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6")
@@ -35,7 +35,7 @@ configargparse==1.4; python_version >= "3.6" and python_full_version < "3.0.0" o
 configobj==5.0.6; python_version >= "3.6"
 coverage==4.5.4; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0" and python_version < "4")
 crashtest==0.3.1; python_version >= "3.6" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0")
-cryptography==3.4.6; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0") and sys_platform == "linux" or python_full_version >= "3.5.0" and python_version >= "3.6" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0") and sys_platform == "linux"
+cryptography==3.4.7; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0") and sys_platform == "linux" or python_full_version >= "3.5.0" and python_version >= "3.6" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0") and sys_platform == "linux"
 decorator==4.4.2; python_version == "3.6" and python_full_version < "3.0.0" or python_version == "3.6" and python_full_version >= "3.2.0"
 deprecated==1.2.12; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.4.0"
 distlib==0.3.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
