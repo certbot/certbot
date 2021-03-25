@@ -14,9 +14,6 @@ from certbot._internal.cli.cli_constants import COMMAND_OVERVIEW
 from certbot._internal.cli.cli_constants import DEPRECATED_OPTIONS
 from certbot._internal.cli.cli_constants import EXIT_ACTIONS
 from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
-from certbot._internal.cli.cli_constants import LEAUTO
-from certbot._internal.cli.cli_constants import new_path_prefix
-from certbot._internal.cli.cli_constants import old_path_fragment
 from certbot._internal.cli.cli_constants import SHORT_USAGE
 from certbot._internal.cli.cli_constants import VAR_MODIFIERS
 from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS

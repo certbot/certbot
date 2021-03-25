@@ -166,7 +166,6 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("--checkpoints" not in out)
 
         out = self._help_output(['-h'])
-        self.assertTrue("letsencrypt-auto" not in out)  # test cli.cli_command
         if "nginx" in PLUGINS:
             self.assertTrue("Use the Nginx plugin" in out)
         else:
