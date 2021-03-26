@@ -12,7 +12,6 @@ import time
 
 PYTHON_VERSION = (3, 8, 8)
 PYTHON_BITNESS = 32
-PYWIN32_VERSION = 300  # do not forget to edit pywin32 dependency accordingly in setup.py
 NSIS_VERSION = '3.06.1'
 
 
@@ -46,12 +45,12 @@ def _compile_wheels(repo_path, build_path, venv_python):
     # certbot_packages.extend([name for name in os.listdir(repo_path) if name.startswith('certbot-dns-')])
     wheels_project = [os.path.join(repo_path, package) for package in certbot_packages]
 
-    with _prepare_constraints(repo_path) as constraints_file_path:
-        env = os.environ.copy()
-        env['PIP_CONSTRAINT'] = constraints_file_path
-        command = [venv_python, '-m', 'pip', 'wheel', '-w', wheels_path]
-        command.extend(wheels_project)
-        subprocess.check_call(command, env=env)
+    constraints_file_path = os.path.join(repo_path, 'tools', 'requirements.txt')
+    env = os.environ.copy()
+    env['PIP_CONSTRAINT'] = constraints_file_path
+    command = [venv_python, '-m', 'pip', 'wheel', '-w', wheels_path]
+    command.extend(wheels_project)
+    subprocess.check_call(command, env=env)
 
     # Cryptography uses now a unique wheel name "cryptography-VERSION-cpXX-abi3-win32.whl where
     # cpXX is the lowest supported version of Python (eg. cp36 says that the wheel is compatible
@@ -75,28 +74,6 @@ def _prepare_build_tools(venv_path, venv_python, repo_path):
     subprocess.check_call([venv_python, os.path.join(repo_path, 'tools', 'pipstrap.py')])
     subprocess.check_call([venv_python, os.path.join(repo_path, 'tools', 'pip_install.py'), 'pynsist'])
     subprocess.check_call(['choco', 'upgrade', '--allow-downgrade', '-y', 'nsis', '--version', NSIS_VERSION])
-
-
-@contextlib.contextmanager
-def _prepare_constraints(repo_path):
-    reqs_certbot = os.path.join(repo_path, 'tools', 'certbot_constraints.txt')
-    reqs_pipstrap = os.path.join(repo_path, 'tools', 'pipstrap_constraints.txt')
-    constraints_certbot = subprocess.check_output(
-        [sys.executable, os.path.join(repo_path, 'tools', 'strip_hashes.py'), reqs_certbot],
-        universal_newlines=True)
-    constraints_pipstrap = subprocess.check_output(
-        [sys.executable, os.path.join(repo_path, 'tools', 'strip_hashes.py'), reqs_pipstrap],
-        universal_newlines=True)
-    workdir = tempfile.mkdtemp()
-    try:
-        constraints_file_path = os.path.join(workdir, 'constraints.txt')
-        with open(constraints_file_path, 'a') as file_h:
-            file_h.write(constraints_pipstrap)
-            file_h.write(constraints_certbot)
-            file_h.write('pywin32=={0}'.format(PYWIN32_VERSION))
-        yield constraints_file_path
-    finally:
-        shutil.rmtree(workdir)
 
 
 def _copy_assets(build_path, repo_path):
