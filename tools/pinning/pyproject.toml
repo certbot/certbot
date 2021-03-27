@@ -34,6 +34,7 @@ certbot = {path = "../../certbot", extras = ["dev", "docs"]}
 acme = {path = "../../acme", extras = ["dev", "docs"]}
 
 # Extra dependencies
+pynsist = "^2"
 # See https://github.com/certbot/certbot/issues/8425.
 mypy = "0.710"
 # Upgrading coverage, pylint, pytest, and some of pytest's plugins causes many
