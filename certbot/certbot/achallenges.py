@@ -18,7 +18,8 @@ Note, that all annotated challenges act as a proxy objects::
 
 """
 import logging
-from typing import Type, Optional
+from typing import Optional
+from typing import Type
 
 import josepy as jose
 

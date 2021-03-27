@@ -7,7 +7,9 @@ import logging
 import socket
 import socketserver
 import threading
-from typing import List, Protocol, cast
+from typing import cast
+from typing import List
+from typing import Protocol
 
 from acme import challenges
 from acme import crypto_util

@@ -8,11 +8,12 @@ import http.client as http_client
 import logging
 import re
 import time
-from typing import Dict, cast
-from typing import Union
+from typing import cast
+from typing import Dict
 from typing import List
 from typing import Set
 from typing import Text
+from typing import Union
 
 import josepy as jose
 import OpenSSL

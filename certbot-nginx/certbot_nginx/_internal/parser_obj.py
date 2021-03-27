@@ -3,7 +3,9 @@ raw lists of tokens from pyparsing. """
 
 import abc
 import logging
-from typing import List, Protocol, Union
+from typing import List
+from typing import Protocol
+from typing import Union
 
 from certbot import errors
 

@@ -1,5 +1,5 @@
 """ apacheconfig implementation of the ParserNode interfaces """
-from typing import Tuple, List
+from typing import List
 
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces

@@ -5,7 +5,8 @@ import functools
 import hashlib
 import logging
 import socket
-from typing import Optional, Type
+from typing import Optional
+from typing import Type
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose

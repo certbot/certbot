@@ -2,21 +2,22 @@
 from unittest.mock import MagicMock
 
 import josepy as jose
+from requests.exceptions import HTTPError
+from requests.exceptions import RequestException
+from typing_extensions import Protocol
+
 from acme.challenges import Challenge
+from certbot import errors
+from certbot.plugins import dns_test_common
 from certbot.plugins.dns_common_lexicon import LexiconClient
 from certbot.plugins.dns_test_common import AuthenticatorCallableTestCase
-from typing_extensions import Protocol
+from certbot.tests import util as test_util
 
 try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
-from requests.exceptions import HTTPError
-from requests.exceptions import RequestException
 
-from certbot import errors
-from certbot.plugins import dns_test_common
-from certbot.tests import util as test_util
 
 DOMAIN = 'example.com'
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))

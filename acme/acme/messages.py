@@ -1,7 +1,8 @@
 """ACME protocol messages."""
-import json
 from collections.abc import Hashable
-from typing import Optional, Dict
+import json
+from typing import Dict
+from typing import Optional
 
 import josepy as jose
 

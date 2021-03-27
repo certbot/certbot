@@ -6,7 +6,6 @@ import shutil
 import time
 import traceback
 
-
 from certbot import errors
 from certbot import util
 from certbot._internal import constants

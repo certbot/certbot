@@ -1,7 +1,6 @@
 """Module contains classes used by the Nginx Configurator."""
 import re
 
-
 from certbot.plugins import common
 
 ADD_HEADER_DIRECTIVE = 'add_header'

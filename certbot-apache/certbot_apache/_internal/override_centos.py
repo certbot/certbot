@@ -1,6 +1,7 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
 import logging
-from typing import List, cast
+from typing import cast
+from typing import List
 
 import zope.interface
 

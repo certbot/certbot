@@ -1,5 +1,6 @@
 """ Distribution specific override class for Fedora 29+ """
-from typing import cast, List
+from typing import cast
+from typing import List
 
 import zope.interface
 
