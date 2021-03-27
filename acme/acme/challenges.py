@@ -5,7 +5,6 @@ import functools
 import hashlib
 import logging
 import socket
-from typing import Optional
 from typing import Type
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
@@ -154,8 +153,8 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
         that will be used to generate ``response``.
     :param str typ: type of the challenge
     """
-    typ: Optional[str] = None
-    response_cls: Optional[Type[KeyAuthorizationChallengeResponse]] = None
+    typ: str = NotImplemented
+    response_cls: Type[KeyAuthorizationChallengeResponse] = NotImplemented
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
 
@@ -179,8 +178,6 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
         :rtype: KeyAuthorizationChallengeResponse
 
         """
-        if not self.response_cls:
-            raise NotImplementedError()  # pragma: no cover
         return self.response_cls(  # pylint: disable=not-callable
             key_authorization=self.key_authorization(account_key))
 

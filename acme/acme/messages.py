@@ -2,7 +2,6 @@
 from collections.abc import Hashable
 import json
 from typing import Dict
-from typing import Optional
 
 import josepy as jose
 
@@ -126,7 +125,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
     """ACME constant."""
     __slots__ = ('name',)
-    POSSIBLE_NAMES: Optional[Dict] = None
+    POSSIBLE_NAMES: Dict = NotImplemented
 
     def __init__(self, name):
         super(_Constant, self).__init__()
@@ -138,8 +137,6 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
 
     @classmethod
     def from_json(cls, jobj):
-        if cls.POSSIBLE_NAMES is None:
-            raise NotImplementedError()  # pragma: no cover
         if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
             raise jose.DeserializationError(
                 '{0} not recognized'.format(cls.__name__))
@@ -170,7 +167,7 @@ STATUS_DEACTIVATED = Status('deactivated')
 
 class IdentifierType(_Constant):
     """ACME identifier type."""
-    POSSIBLE_NAMES: dict = {}
+    POSSIBLE_NAMES: Dict = {}
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 
 
@@ -188,7 +185,7 @@ class Identifier(jose.JSONObjectWithFields):
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES: dict = {}
+    _REGISTERED_TYPES: Dict = {}
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""

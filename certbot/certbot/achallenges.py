@@ -18,7 +18,6 @@ Note, that all annotated challenges act as a proxy objects::
 
 """
 import logging
-from typing import Optional
 from typing import Type
 
 import josepy as jose
@@ -39,21 +38,10 @@ class AnnotatedChallenge(jose.ImmutableMap):
 
     """
     __slots__ = ('challb',)
-    _acme_type: Optional[Type[Challenge]] = None
+    _acme_type: Type[Challenge] = NotImplemented
 
     def __getattr__(self, name):
         return getattr(self.challb, name)
-
-    @property
-    def acme_type(self) -> Type[Challenge]:
-        """
-        The class of the underlying ACME challenge.
-        :return: the ACME challenge class
-        """
-        if self._acme_type is None:
-            raise NotImplementedError()
-
-        return self._acme_type
 
 
 class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
@@ -69,4 +57,4 @@ class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
 class DNS(AnnotatedChallenge):
     """Client annotated "dns" ACME challenge."""
     __slots__ = ('challb', 'domain')
-    _acme_type = challenges.DNS
+    acme_type = challenges.DNS
