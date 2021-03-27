@@ -11,7 +11,7 @@ from typing import cast
 from typing import List
 try:
     from typing import Protocol
-except ImportError:
+except ImportError:  # pragma: no cover
     Protocol = object  # type: ignore
 
 from acme import challenges
@@ -69,21 +69,21 @@ class _ACMEAwareBaseServer(Protocol):
         See
         https://docs.python.org/3/library/socketserver.html#socketserver.BaseServer.serve_forever
         """
-        ...
+        ...  # pragma: no cover
 
     def shutdown(self) -> None:
         """
         See
         https://docs.python.org/3/library/socketserver.html#socketserver.BaseServer.shutdown
         """
-        ...
+        ...  # pragma: no cover
 
     def server_close(self) -> None:
         """
         See
         https://docs.python.org/3/library/socketserver.html#socketserver.BaseServer.server_close
         """
-        ...
+        ...  # pragma: no cover
 
 
 class BaseDualNetworkedServers:

@@ -139,7 +139,7 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
     @classmethod
     def from_json(cls, jobj):
         if cls.POSSIBLE_NAMES is None:
-            raise NotImplementedError()
+            raise NotImplementedError()  # pragma: no cover
         if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
             raise jose.DeserializationError(
                 '{0} not recognized'.format(cls.__name__))

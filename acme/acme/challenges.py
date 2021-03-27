@@ -180,7 +180,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
 
         """
         if not self.response_cls:
-            raise NotImplementedError()
+            raise NotImplementedError()  # pragma: no cover
         return self.response_cls(  # pylint: disable=not-callable
             key_authorization=self.key_authorization(account_key))
 
