@@ -1,13 +1,17 @@
 """Base test class for DNS authenticators built on Lexicon."""
 from unittest.mock import MagicMock
+try:
+    import mock
+except ImportError:  # pragma: no cover
+    from unittest import mock  # type: ignore
+try:
+    from typing import Protocol
+except ImportError:
+    Protocol = object  # type: ignore
 
 import josepy as jose
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
-try:
-    from typing import Protocol
-except ImportError:
-    Protocol = object
 
 from acme.challenges import Challenge
 from certbot import errors
@@ -15,11 +19,6 @@ from certbot.plugins import dns_test_common
 from certbot.plugins.dns_common_lexicon import LexiconClient
 from certbot.plugins.dns_test_common import _AuthenticatorCallableTestCase
 from certbot.tests import util as test_util
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 
 
 DOMAIN = 'example.com'
@@ -51,7 +50,7 @@ class _LexiconAwareTestCase(Protocol):
     LOGIN_ERROR: Exception
     UNKNOWN_LOGIN_ERROR: Exception
 
-    def assertRaises(self, *args) -> None:
+    def assertRaises(self, *unused_args) -> None:
         """
         See
         https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertRaises

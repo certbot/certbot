@@ -1,11 +1,11 @@
 """Base test class for DNS authenticators."""
-
-import configobj
-import josepy as jose
 try:
     from typing import Protocol
 except ImportError:
-    Protocol = object
+    Protocol = object  # type: ignore
+
+import configobj
+import josepy as jose
 
 from acme import challenges
 from certbot import achallenges
@@ -28,14 +28,14 @@ class _AuthenticatorCallableTestCase(Protocol):
     """Protocol describing a TestCase able to call a real DNSAuthenticator instance."""
     auth: DNSAuthenticator
 
-    def assertTrue(self, *args) -> None:
+    def assertTrue(self, *unused_args) -> None:
         """
         See
         https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertTrue
         """
         ...
 
-    def assertEqual(self, *args) -> None:
+    def assertEqual(self, *unused_args) -> None:
         """
         See
         https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertEqual

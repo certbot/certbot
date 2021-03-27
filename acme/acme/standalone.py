@@ -12,7 +12,7 @@ from typing import List
 try:
     from typing import Protocol
 except ImportError:
-    Protocol = object
+    Protocol = object  # type: ignore
 
 from acme import challenges
 from acme import crypto_util
