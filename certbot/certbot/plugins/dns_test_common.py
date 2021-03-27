@@ -2,7 +2,10 @@
 
 import configobj
 import josepy as jose
-from typing_extensions import Protocol
+try:
+    from typing import Protocol
+except ImportError:
+    Protocol = object
 
 from acme import challenges
 from certbot import achallenges
@@ -13,15 +16,15 @@ from certbot.tests import util as test_util
 
 try:
     import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
+except ImportError:  # pragma: no cover
+    from unittest import mock  # type: ignore
 
 
 DOMAIN = 'example.com'
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
-class AuthenticatorCallableTestCase(Protocol):
+class _AuthenticatorCallableTestCase(Protocol):
     """Protocol describing a TestCase able to call a real DNSAuthenticator instance."""
     auth: DNSAuthenticator
 
@@ -52,13 +55,13 @@ class BaseAuthenticatorTest:
     achall = achallenges.KeyAuthorizationAnnotatedChallenge(
         challb=acme_util.DNS01, domain=DOMAIN, account_key=KEY)
 
-    def test_more_info(self: AuthenticatorCallableTestCase):
+    def test_more_info(self: _AuthenticatorCallableTestCase):
         self.assertTrue(isinstance(self.auth.more_info(), str))  # pylint: disable=no-member
 
-    def test_get_chall_pref(self: AuthenticatorCallableTestCase):
+    def test_get_chall_pref(self: _AuthenticatorCallableTestCase):
         self.assertEqual(self.auth.get_chall_pref(None), [challenges.DNS01])  # pylint: disable=no-member
 
-    def test_parser_arguments(self: AuthenticatorCallableTestCase):
+    def test_parser_arguments(self: _AuthenticatorCallableTestCase):
         m = mock.MagicMock()
         self.auth.add_parser_arguments(m)  # pylint: disable=no-member
 

@@ -4,13 +4,16 @@ from unittest.mock import MagicMock
 import josepy as jose
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
-from typing_extensions import Protocol
+try:
+    from typing import Protocol
+except ImportError:
+    Protocol = object
 
 from acme.challenges import Challenge
 from certbot import errors
 from certbot.plugins import dns_test_common
 from certbot.plugins.dns_common_lexicon import LexiconClient
-from certbot.plugins.dns_test_common import AuthenticatorCallableTestCase
+from certbot.plugins.dns_test_common import _AuthenticatorCallableTestCase
 from certbot.tests import util as test_util
 
 try:
@@ -23,7 +26,7 @@ DOMAIN = 'example.com'
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
-class AuthenticatorCallableLexiconTestCase(AuthenticatorCallableTestCase, Protocol):
+class _AuthenticatorCallableLexiconTestCase(_AuthenticatorCallableTestCase, Protocol):
     """
     Protocol describing a TestCase suitable to test challenges against
     a mocked LexiconClient instance.
@@ -32,7 +35,7 @@ class AuthenticatorCallableLexiconTestCase(AuthenticatorCallableTestCase, Protoc
     achall: Challenge
 
 
-class LexiconAwareTestCase(Protocol):
+class _LexiconAwareTestCase(Protocol):
     """
     Protocol describing a TestCase suitable to test a real LexiconClient instance.
     """
@@ -61,13 +64,13 @@ class LexiconAwareTestCase(Protocol):
 
 class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
 
-    def test_perform(self: AuthenticatorCallableLexiconTestCase):
+    def test_perform(self: _AuthenticatorCallableLexiconTestCase):
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
-    def test_cleanup(self: AuthenticatorCallableLexiconTestCase):
+    def test_cleanup(self: _AuthenticatorCallableLexiconTestCase):
         self.auth._attempt_cleanup = True  # _attempt_cleanup | pylint: disable=protected-access
         self.auth.cleanup([self.achall])
 
@@ -85,14 +88,14 @@ class BaseLexiconClientTest:
     record_name = record_prefix + "." + DOMAIN
     record_content = "bar"
 
-    def test_add_txt_record(self: LexiconAwareTestCase):
+    def test_add_txt_record(self: _LexiconAwareTestCase):
         self.client.add_txt_record(DOMAIN, self.record_name, self.record_content)
 
         self.provider_mock.create_record.assert_called_with(type='TXT',
                                                             name=self.record_name,
                                                             content=self.record_content)
 
-    def test_add_txt_record_try_twice_to_find_domain(self: LexiconAwareTestCase):
+    def test_add_txt_record_try_twice_to_find_domain(self: _LexiconAwareTestCase):
         self.provider_mock.authenticate.side_effect = [self.DOMAIN_NOT_FOUND, '']
 
         self.client.add_txt_record(DOMAIN, self.record_name, self.record_content)
@@ -101,7 +104,7 @@ class BaseLexiconClientTest:
                                                             name=self.record_name,
                                                             content=self.record_content)
 
-    def test_add_txt_record_fail_to_find_domain(self: LexiconAwareTestCase):
+    def test_add_txt_record_fail_to_find_domain(self: _LexiconAwareTestCase):
         self.provider_mock.authenticate.side_effect = [self.DOMAIN_NOT_FOUND,
                                                        self.DOMAIN_NOT_FOUND,
                                                        self.DOMAIN_NOT_FOUND,]
@@ -110,64 +113,64 @@ class BaseLexiconClientTest:
                           self.client.add_txt_record,
                           DOMAIN, self.record_name, self.record_content)
 
-    def test_add_txt_record_fail_to_authenticate(self: LexiconAwareTestCase):
+    def test_add_txt_record_fail_to_authenticate(self: _LexiconAwareTestCase):
         self.provider_mock.authenticate.side_effect = self.LOGIN_ERROR
 
         self.assertRaises(errors.PluginError,
                           self.client.add_txt_record,
                           DOMAIN, self.record_name, self.record_content)
 
-    def test_add_txt_record_fail_to_authenticate_with_unknown_error(self: LexiconAwareTestCase):
+    def test_add_txt_record_fail_to_authenticate_with_unknown_error(self: _LexiconAwareTestCase):
         self.provider_mock.authenticate.side_effect = self.UNKNOWN_LOGIN_ERROR
 
         self.assertRaises(errors.PluginError,
                           self.client.add_txt_record,
                           DOMAIN, self.record_name, self.record_content)
 
-    def test_add_txt_record_error_finding_domain(self: LexiconAwareTestCase):
+    def test_add_txt_record_error_finding_domain(self: _LexiconAwareTestCase):
         self.provider_mock.authenticate.side_effect = self.GENERIC_ERROR
 
         self.assertRaises(errors.PluginError,
                           self.client.add_txt_record,
                           DOMAIN, self.record_name, self.record_content)
 
-    def test_add_txt_record_error_adding_record(self: LexiconAwareTestCase):
+    def test_add_txt_record_error_adding_record(self: _LexiconAwareTestCase):
         self.provider_mock.create_record.side_effect = self.GENERIC_ERROR
 
         self.assertRaises(errors.PluginError,
                           self.client.add_txt_record,
                           DOMAIN, self.record_name, self.record_content)
 
-    def test_del_txt_record(self: LexiconAwareTestCase):
+    def test_del_txt_record(self: _LexiconAwareTestCase):
         self.client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
         self.provider_mock.delete_record.assert_called_with(type='TXT',
                                                             name=self.record_name,
                                                             content=self.record_content)
 
-    def test_del_txt_record_fail_to_find_domain(self: LexiconAwareTestCase):
+    def test_del_txt_record_fail_to_find_domain(self: _LexiconAwareTestCase):
         self.provider_mock.authenticate.side_effect = [self.DOMAIN_NOT_FOUND,
                                                        self.DOMAIN_NOT_FOUND,
                                                        self.DOMAIN_NOT_FOUND, ]
 
         self.client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
-    def test_del_txt_record_fail_to_authenticate(self: LexiconAwareTestCase):
+    def test_del_txt_record_fail_to_authenticate(self: _LexiconAwareTestCase):
         self.provider_mock.authenticate.side_effect = self.LOGIN_ERROR
 
         self.client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
-    def test_del_txt_record_fail_to_authenticate_with_unknown_error(self: LexiconAwareTestCase):
+    def test_del_txt_record_fail_to_authenticate_with_unknown_error(self: _LexiconAwareTestCase):
         self.provider_mock.authenticate.side_effect = self.UNKNOWN_LOGIN_ERROR
 
         self.client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
-    def test_del_txt_record_error_finding_domain(self: LexiconAwareTestCase):
+    def test_del_txt_record_error_finding_domain(self: _LexiconAwareTestCase):
         self.provider_mock.authenticate.side_effect = self.GENERIC_ERROR
 
         self.client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
-    def test_del_txt_record_error_deleting_record(self: LexiconAwareTestCase):
+    def test_del_txt_record_error_deleting_record(self: _LexiconAwareTestCase):
         self.provider_mock.delete_record.side_effect = self.GENERIC_ERROR
 
         self.client.del_txt_record(DOMAIN, self.record_name, self.record_content)

@@ -9,7 +9,10 @@ import socketserver
 import threading
 from typing import cast
 from typing import List
-from typing_extensions import Protocol
+try:
+    from typing import Protocol
+except ImportError:
+    Protocol = object
 
 from acme import challenges
 from acme import crypto_util
@@ -55,7 +58,7 @@ class ACMEServerMixin:
     allow_reuse_address = True
 
 
-class ACMEAwareBaseServer(Protocol):
+class _ACMEAwareBaseServer(Protocol):
     """Protocol describing a BaseServer with ACME specific features."""
     server_version: str
     allow_reuse_address: bool
@@ -94,7 +97,7 @@ class BaseDualNetworkedServers:
     def __init__(self, ServerClass, server_address, *remaining_args, **kwargs):
         port = server_address[1]
         self.threads: List[threading.Thread] = []
-        self.servers: List[ACMEAwareBaseServer] = []
+        self.servers: List[_ACMEAwareBaseServer] = []
 
         # Must try True first.
         # Ubuntu, for example, will fail to bind to IPv4 if we've already bound
@@ -266,7 +269,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
         self.end_headers()
-        self.wfile.write(cast(ACMEAwareBaseServer, self.server).server_version.encode())
+        self.wfile.write(cast(_ACMEAwareBaseServer, self.server).server_version.encode())
 
     def handle_404(self):
         """Handler 404 Not Found errors."""
