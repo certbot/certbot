@@ -7,7 +7,7 @@ import logging
 import socket
 import socketserver
 import threading
-from typing import List
+from typing import List, Protocol, cast
 
 from acme import challenges
 from acme import crypto_util
@@ -53,6 +53,21 @@ class ACMEServerMixin:
     allow_reuse_address = True
 
 
+class ACMEAwareBaseServer(Protocol):
+    server_version: str
+    allow_reuse_address: bool
+    socket: socket.socket
+
+    def serve_forever(self) -> None:
+        ...
+
+    def shutdown(self) -> None:
+        ...
+
+    def server_close(self) -> None:
+        ...
+
+
 class BaseDualNetworkedServers:
     """Base class for a pair of IPv6 and IPv4 servers that tries to do everything
        it's asked for both servers, but where failures in one server don't
@@ -64,7 +79,7 @@ class BaseDualNetworkedServers:
     def __init__(self, ServerClass, server_address, *remaining_args, **kwargs):
         port = server_address[1]
         self.threads: List[threading.Thread] = []
-        self.servers: List[ACMEServerMixin] = []
+        self.servers: List[ACMEAwareBaseServer] = []
 
         # Must try True first.
         # Ubuntu, for example, will fail to bind to IPv4 if we've already bound
@@ -203,8 +218,12 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
-        self.timeout = kwargs.pop('timeout', 30)
+        self._timeout = kwargs.pop('timeout', 30)
         BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
+
+    @property
+    def timeout(self):
+        return self._timeout
 
     def log_message(self, format, *args):  # pylint: disable=redefined-builtin
         """Log arbitrary message."""
@@ -228,7 +247,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
         self.end_headers()
-        self.wfile.write(self.server.server_version.encode())
+        self.wfile.write(cast(ACMEAwareBaseServer, self.server).server_version.encode())
 
     def handle_404(self):
         """Handler 404 Not Found errors."""

@@ -14,7 +14,7 @@ class Header(jose.Header):
     kid = jose.Field('kid', omitempty=True)
     url = jose.Field('url', omitempty=True)
 
-    @nonce.decoder
+    @nonce.decoder  # type: ignore
     def nonce(value):  # pylint: disable=no-self-argument,missing-function-docstring
         try:
             return jose.decode_b64jose(value)

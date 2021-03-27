@@ -5,6 +5,7 @@ import functools
 import hashlib
 import logging
 import socket
+from typing import Optional, Type
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
@@ -152,8 +153,8 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
         that will be used to generate ``response``.
     :param str typ: type of the challenge
     """
-    typ = NotImplemented
-    response_cls = NotImplemented
+    typ: Optional[str] = None
+    response_cls: Optional[Type[KeyAuthorizationChallengeResponse]] = None
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
 
@@ -177,6 +178,8 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
         :rtype: KeyAuthorizationChallengeResponse
 
         """
+        if not self.response_cls:
+            raise NotImplementedError()
         return self.response_cls(  # pylint: disable=not-callable
             key_authorization=self.key_authorization(account_key))
 

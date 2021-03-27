@@ -1,6 +1,7 @@
 """ACME protocol messages."""
 import json
 from collections.abc import Hashable
+from typing import Optional, Dict
 
 import josepy as jose
 
@@ -87,7 +88,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             raise ValueError("The supplied code: %s is not a known ACME error"
                              " code" % code)
         typ = ERROR_PREFIX + code
-        return cls(typ=typ, **kwargs)
+        return cls(typ=typ, **kwargs)  # type: ignore
 
     @property
     def description(self):
@@ -124,7 +125,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
     """ACME constant."""
     __slots__ = ('name',)
-    POSSIBLE_NAMES = NotImplemented
+    POSSIBLE_NAMES: Optional[Dict] = None
 
     def __init__(self, name):
         super(_Constant, self).__init__()
@@ -136,6 +137,8 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
 
     @classmethod
     def from_json(cls, jobj):
+        if cls.POSSIBLE_NAMES is None:
+            raise NotImplementedError()
         if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
             raise jose.DeserializationError(
                 '{0} not recognized'.format(cls.__name__))
@@ -528,7 +531,7 @@ class Authorization(ResourceBody):
     expires = fields.RFC3339Field('expires', omitempty=True)
     wildcard = jose.Field('wildcard', omitempty=True)
 
-    @challenges.decoder
+    @challenges.decoder  # type: ignore
     def challenges(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
@@ -627,7 +630,7 @@ class Order(ResourceBody):
     expires = fields.RFC3339Field('expires', omitempty=True)
     error = jose.Field('error', omitempty=True, decoder=Error.from_json)
 
-    @identifiers.decoder
+    @identifiers.decoder  # type: ignore
     def identifiers(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(Identifier.from_json(identifier) for identifier in value)
 
