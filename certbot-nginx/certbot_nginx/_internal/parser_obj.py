@@ -3,7 +3,7 @@ raw lists of tokens from pyparsing. """
 
 import abc
 import logging
-from typing import List
+from typing import List, Protocol, Union
 
 from certbot import errors
 
@@ -22,7 +22,7 @@ class Parsable:
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, parent=None):
-        self._data: List[object] = []
+        self._data: List[Union[str, Parsable]] = []
         self._tabs = None
         self.parent = parent
 
@@ -109,7 +109,7 @@ class Parsable:
         :returns: Pyparsing-like list tree.
         :rtype list:
         """
-        return [elem.dump(include_spaces) for elem in self._data]
+        return [as_parsable(elem).dump(include_spaces) for elem in self._data]
 
 
 class Statements(Parsable):
@@ -138,7 +138,7 @@ class Statements(Parsable):
         with parent tabbing.
         """
         for statement in self._data:
-            statement.set_tabs(tabs)
+            as_parsable(statement).set_tabs(tabs)
         if self.parent is not None:
             self._trailing_whitespace = "\n" + self.parent.get_tabs()
 
@@ -159,7 +159,7 @@ class Statements(Parsable):
         """ Takes a guess at the tabbing of all contained Statements by retrieving the
         tabbing of the first Statement."""
         if self._data:
-            return self._data[0].get_tabs()
+            return as_parsable(self._data[0]).get_tabs()
         return ""
 
     def dump(self, include_spaces=False):
@@ -173,13 +173,13 @@ class Statements(Parsable):
     def iterate(self, expanded=False, match=None):
         """ Combines each statement's iterator.  """
         for elem in self._data:
-            for sub_elem in elem.iterate(expanded, match):
+            for sub_elem in as_parsable(elem).iterate(expanded, match):
                 yield sub_elem
 
     # ======== End overridden functions
 
 
-def _space_list(list_):
+def _space_list(list_: List[str]):
     """ Inserts whitespace between adjacent non-whitespace tokens. """
     spaced_statement: List[str] = []
     for i in reversed(range(len(list_))):
@@ -224,7 +224,7 @@ class Sentence(Parsable):
     def set_tabs(self, tabs="    "):
         """ Sets the tabbing on this sentence. Inserts a newline and `tabs` at the
         beginning of `self._data`. """
-        if self._data[0].isspace():
+        if as_str(self._data[0]).isspace():
             return
         self._data.insert(0, "\n" + tabs)
 
@@ -238,17 +238,24 @@ class Sentence(Parsable):
         """ Guesses at the tabbing of this sentence. If the first element is whitespace,
         returns the whitespace after the rightmost newline in the string. """
         first = self._data[0]
-        if not first.isspace():
+        first_str = as_str(first)
+        if not first_str.isspace():
             return ""
-        rindex = first.rfind("\n")
-        return first[rindex+1:]
+        rindex = first_str.rfind("\n")
+        return first_str[rindex+1:]
 
     # ======== End overridden functions
 
     @property
-    def words(self):
+    def words(self) -> List[str]:
         """ Iterates over words, but without spaces. Like Unspaced List. """
-        return [word.strip("\"\'") for word in self._data if not word.isspace()]
+        words: List[str] = []
+        for word in self._data:
+            word_str = as_str(word)
+            if not word_str.isspace():
+                words.append(word_str.strip("\"\'"))
+
+        return words
 
     def __getitem__(self, index):
         return self.words[index]
@@ -271,7 +278,7 @@ class Block(Parsable):
     def __init__(self, parent=None):
         super(Block, self).__init__(parent)
         self.names: Sentence = None
-        self.contents: Block = None
+        self.contents: Statements = None
 
     @staticmethod
     def should_parse(lists):
@@ -325,6 +332,7 @@ class Block(Parsable):
         """ Guesses tabbing by retrieving tabbing guess of self.names. """
         return self.names.get_tabs()
 
+
 def _is_comment(parsed_obj):
     """ Checks whether parsed_obj is a comment.
 
@@ -336,6 +344,7 @@ def _is_comment(parsed_obj):
     if not isinstance(parsed_obj, Sentence):
         return False
     return parsed_obj.words[0] == "#"
+
 
 def _is_certbot_comment(parsed_obj):
     """ Checks whether parsed_obj is a "managed by Certbot" comment.
@@ -354,6 +363,7 @@ def _is_certbot_comment(parsed_obj):
             return False
     return True
 
+
 def _certbot_comment(parent, preceding_spaces=4):
     """ A "Managed by Certbot" comment.
     :param int preceding_spaces: Number of spaces between the end of the previous
@@ -364,6 +374,7 @@ def _certbot_comment(parent, preceding_spaces=4):
     result = Sentence(parent)
     result.parse([" " * preceding_spaces] + COMMENT_BLOCK)
     return result
+
 
 def _choose_parser(parent, list_):
     """ Choose a parser from type(parent).parsing_hooks, depending on whichever hook
@@ -376,6 +387,7 @@ def _choose_parser(parent, list_):
             return type_(parent)
     raise errors.MisconfigurationError(
         "None of the parsing hooks succeeded, so we don't know how to parse this set of lists.")
+
 
 def parse_raw(lists_, parent=None, add_spaces=False):
     """ Primary parsing factory function.
@@ -392,3 +404,17 @@ def parse_raw(lists_, parent=None, add_spaces=False):
     parser = _choose_parser(parent, lists_)
     parser.parse(lists_, add_spaces)
     return parser
+
+
+def as_str(obj: Union[str, Parsable]) -> str:
+    if isinstance(obj, str):
+        return obj
+
+    raise ValueError(f"obj {obj} is not a string")
+
+
+def as_parsable(obj: Union[str, Parsable]) -> Parsable:
+    if isinstance(obj, Parsable):
+        return obj
+
+    raise ValueError(f"obj {obj} is not a Parsable")
