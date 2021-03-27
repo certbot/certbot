@@ -1,6 +1,6 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
 import logging
-from typing import List
+from typing import List, cast
 
 import zope.interface
 
@@ -76,7 +76,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         alternative restart cmd used in CentOS.
         """
         super(CentOSConfigurator, self)._prepare_options()
-        self.options["restart_cmd_alt"][0] = self.option("ctl")
+        cast(List[str], self.options["restart_cmd_alt"])[0] = self.option("ctl")
 
     def get_parser(self):
         """Initializes the ApacheParser"""

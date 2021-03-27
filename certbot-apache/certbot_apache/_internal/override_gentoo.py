@@ -1,4 +1,6 @@
 """ Distribution specific override class for Gentoo Linux """
+from typing import cast, List
+
 import zope.interface
 
 from certbot import interfaces
@@ -36,7 +38,7 @@ class GentooConfigurator(configurator.ApacheConfigurator):
         alternative restart cmd used in Gentoo.
         """
         super(GentooConfigurator, self)._prepare_options()
-        self.options["restart_cmd_alt"][0] = self.option("ctl")
+        cast(List[str], self.options["restart_cmd_alt"])[0] = self.option("ctl")
 
     def get_parser(self):
         """Initializes the ApacheParser"""

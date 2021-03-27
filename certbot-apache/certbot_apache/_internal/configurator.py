@@ -8,7 +8,7 @@ import logging
 import re
 import socket
 import time
-from typing import DefaultDict
+from typing import DefaultDict, cast
 from typing import Dict
 from typing import List
 from typing import Set
@@ -156,9 +156,9 @@ class ApacheConfigurator(common.Installer):
                 self.options[o] = self.OS_DEFAULTS[o]
 
         # Special cases
-        self.options["version_cmd"][0] = self.option("ctl")
-        self.options["restart_cmd"][0] = self.option("ctl")
-        self.options["conftest_cmd"][0] = self.option("ctl")
+        cast(List[str], self.options["version_cmd"])[0] = self.option("ctl")
+        cast(List[str], self.options["restart_cmd"])[0] = self.option("ctl")
+        cast(List[str], self.options["conftest_cmd"])[0] = self.option("ctl")
 
     @classmethod
     def add_parser_arguments(cls, add):

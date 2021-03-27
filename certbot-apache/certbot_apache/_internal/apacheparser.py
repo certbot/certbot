@@ -1,4 +1,5 @@
 """ apacheconfig implementation of the ParserNode interfaces """
+from typing import Tuple, List
 
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
@@ -83,7 +84,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
 
     def __init__(self, **kwargs):
         super(ApacheBlockNode, self).__init__(**kwargs)
-        self.children = ()
+        self.children: List[ApacheParserNode] = []
 
     def __eq__(self, other):  # pragma: no cover
         if isinstance(other, self.__class__):
@@ -105,7 +106,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
                                     ancestor=self,
                                     filepath=assertions.PASS,
                                     metadata=self.metadata)
-        self.children += (new_block,)
+        self.children.append(new_block)
         return new_block
 
     # pylint: disable=unused-argument
@@ -116,7 +117,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
                                       ancestor=self,
                                       filepath=assertions.PASS,
                                       metadata=self.metadata)
-        self.children += (new_dir,)
+        self.children.append(new_dir)
         return new_dir
 
     # pylint: disable=unused-argument
@@ -127,7 +128,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
                                         ancestor=self,
                                         filepath=assertions.PASS,
                                         metadata=self.metadata)
-        self.children += (new_comment,)
+        self.children.append(new_comment)
         return new_comment
 
     def find_blocks(self, name, exclude=True): # pylint: disable=unused-argument

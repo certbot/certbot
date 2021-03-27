@@ -29,10 +29,7 @@ class _ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/0', verify=False)
         issuer_cert = x509.load_pem_x509_certificate(request.content, default_backend())
 
-        try:
-            content_len = int(self.headers.getheader('content-length', 0))
-        except AttributeError:
-            content_len = int(self.headers.get('Content-Length'))
+        content_len = int(self.headers.get('Content-Length'))
 
         ocsp_request = ocsp.load_der_ocsp_request(self.rfile.read(content_len))
         response = requests.get('{0}/cert-status-by-serial/{1}'.format(
