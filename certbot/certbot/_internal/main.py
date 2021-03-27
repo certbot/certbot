@@ -1,6 +1,7 @@
 """Certbot main entry point."""
 # pylint: disable=too-many-lines
 
+import atexit
 import functools
 import logging.handlers
 import sys
@@ -1359,8 +1360,12 @@ def set_displayer(config):
     """
     if config.quiet:
         config.noninteractive_mode = True
+
+        devnull = open(os.devnull, "w")
+        atexit.register(devnull.close)
+
         displayer: Union[None, display_util.NoninteractiveDisplay, display_util.FileDisplay] =\
-            display_util.NoninteractiveDisplay(open(os.devnull, "w"))
+            display_util.NoninteractiveDisplay(devnull)
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
