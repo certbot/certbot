@@ -19,6 +19,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Don't output an empty line for a hidden certificate when `certbot certificates` is being used
   in combination with `--cert-name` or `-d`.
+* Fixed bug where `--allow-subset-of-names` would remove wildcard hostnames from a certificate 
+  even if the wildcard had a valid authorization.
 
 More details about these changes can be found on our GitHub repo.
 
