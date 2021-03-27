@@ -60,7 +60,7 @@ del ourselves, std_os, std_sys
 # Basically, it states that appropriate permissions will be set for the owner, nothing for the
 # group, appropriate permissions for the "Everyone" group, and all permissions to the
 # "Administrators" group + "System" user, as they can do everything anyway.
-def chmod(*unused_args, **unused_kwargs):
+def chmod(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.chmod() is forbidden"""
     raise RuntimeError('Usage of os.chmod() is forbidden. '
                        'Use certbot.compat.filesystem.chmod() instead.')
@@ -70,7 +70,7 @@ def chmod(*unused_args, **unused_kwargs):
 # this platform. In order to have a consistent behavior between Linux and Windows on Certbot files
 # and directories, the filesystem umask method must be used instead, since it implements umask for
 # Windows.
-def umask(*unused_args, **unused_kwargs):
+def umask(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.chmod() is forbidden"""
     raise RuntimeError('Usage of os.umask() is forbidden. '
                        'Use certbot.compat.filesystem.umask() instead.')
@@ -79,7 +79,7 @@ def umask(*unused_args, **unused_kwargs):
 # Because uid is not a concept on Windows, chown is useless. In fact, it is not even available
 # on Python for Windows. So to be consistent on both platforms for Certbot, this method is
 # always forbidden.
-def chown(*unused_args, **unused_kwargs):
+def chown(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.chown() is forbidden"""
     raise RuntimeError('Usage of os.chown() is forbidden.'
                        'Use certbot.compat.filesystem.copy_ownership_and_apply_mode() instead.')
@@ -90,7 +90,7 @@ def chown(*unused_args, **unused_kwargs):
 # filesystem.open invokes the Windows native API `CreateFile` to ensure that permissions are
 # atomically set in case of file creation, or invokes filesystem.chmod to properly set the
 # permissions for the other cases.
-def open(*unused_args, **unused_kwargs):
+def open(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.open() is forbidden"""
     raise RuntimeError('Usage of os.open() is forbidden. '
                        'Use certbot.compat.filesystem.open() instead.')
@@ -98,7 +98,7 @@ def open(*unused_args, **unused_kwargs):
 
 # Very similarly to os.open, os.mkdir has the same effects on Windows and creates an unsecured
 # folder. So a similar mitigation to security.chmod is provided on this platform.
-def mkdir(*unused_args, **unused_kwargs):
+def mkdir(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.mkdir() is forbidden"""
     raise RuntimeError('Usage of os.mkdir() is forbidden. '
                        'Use certbot.compat.filesystem.mkdir() instead.')
@@ -109,7 +109,7 @@ def mkdir(*unused_args, **unused_kwargs):
 # that our modified os.mkdir is called on Windows, by monkey patching temporarily the mkdir method
 # on the original os module, executing the modified logic to correctly protect newly created
 # folders, then restoring original mkdir method in the os module.
-def makedirs(*unused_args, **unused_kwargs):
+def makedirs(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.makedirs() is forbidden"""
     raise RuntimeError('Usage of os.makedirs() is forbidden. '
                        'Use certbot.compat.filesystem.makedirs() instead.')
@@ -117,7 +117,7 @@ def makedirs(*unused_args, **unused_kwargs):
 
 # Because of the blocking strategy on file handlers on Windows, rename does not behave as expected
 # with POSIX systems: an exception will be raised if dst already exists.
-def rename(*unused_args, **unused_kwargs):
+def rename(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.rename() is forbidden"""
     raise RuntimeError('Usage of os.rename() is forbidden. '
                        'Use certbot.compat.filesystem.replace() instead.')
@@ -125,7 +125,7 @@ def rename(*unused_args, **unused_kwargs):
 
 # Behavior of os.replace is consistent between Windows and Linux. However, it is not supported on
 # Python 2.x. So, as for os.rename, we forbid it in favor of filesystem.replace.
-def replace(*unused_args, **unused_kwargs):
+def replace(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.replace() is forbidden"""
     raise RuntimeError('Usage of os.replace() is forbidden. '
                        'Use certbot.compat.filesystem.replace() instead.')
@@ -133,7 +133,7 @@ def replace(*unused_args, **unused_kwargs):
 
 # Results given by os.access are inconsistent or partial on Windows, because this platform is not
 # following the POSIX approach.
-def access(*unused_args, **unused_kwargs):
+def access(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.access() is forbidden"""
     raise RuntimeError('Usage of os.access() is forbidden. '
                        'Use certbot.compat.filesystem.check_mode() or '
@@ -142,7 +142,7 @@ def access(*unused_args, **unused_kwargs):
 
 # On Windows os.stat call result is inconsistent, with a lot of flags that are not set or
 # meaningless. We need to use specialized functions from the certbot.compat.filesystem module.
-def stat(*unused_args, **unused_kwargs):
+def stat(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.stat() is forbidden"""
     raise RuntimeError('Usage of os.stat() is forbidden. '
                        'Use certbot.compat.filesystem functions instead '
@@ -151,7 +151,7 @@ def stat(*unused_args, **unused_kwargs):
 
 # Method os.fstat has the same problem than os.stat, since it is the same function,
 # but accepting a file descriptor instead of a path.
-def fstat(*unused_args, **unused_kwargs):
+def fstat(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.stat() is forbidden"""
     raise RuntimeError('Usage of os.fstat() is forbidden. '
                        'Use certbot.compat.filesystem functions instead '
@@ -163,7 +163,7 @@ def fstat(*unused_args, **unused_kwargs):
 # unconditionally, which allows to use more than 259 characters, and its string
 # representation is prepended with "\\?\". Problem is that it does it for any path,
 # and will make equality comparison fail with paths that will use the simple form.
-def readlink(*unused_args, **unused_kwargs):
+def readlink(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.readlink() is forbidden"""
     raise RuntimeError('Usage of os.readlink() is forbidden. '
                        'Use certbot.compat.filesystem.realpath() instead.')

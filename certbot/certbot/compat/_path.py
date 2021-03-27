@@ -29,7 +29,7 @@ del ourselves, std_os_path, std_sys
 
 
 # Function os.path.realpath is broken on some versions of Python for Windows.
-def realpath(*unused_args, **unused_kwargs):
+def realpath(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.path.realpath() is forbidden"""
     raise RuntimeError('Usage of os.path.realpath() is forbidden. '
                        'Use certbot.compat.filesystem.realpath() instead.')

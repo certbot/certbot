@@ -2,6 +2,9 @@
 
 import configobj
 import josepy as jose
+from certbot.plugins.dns_common import DNSAuthenticator
+from typing_extensions import Protocol
+
 try:
     import mock
 except ImportError: # pragma: no cover
@@ -17,6 +20,16 @@ DOMAIN = 'example.com'
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
+class AuthenticatorCallableTestCase(Protocol):
+    auth: DNSAuthenticator
+
+    def assertTrue(self, *args) -> None:
+        ...
+
+    def assertEqual(self, *args) -> None:
+        ...
+
+
 class BaseAuthenticatorTest:
     """
     A base test class to reduce duplication between test code for DNS Authenticator Plugins.
@@ -29,13 +42,13 @@ class BaseAuthenticatorTest:
     achall = achallenges.KeyAuthorizationAnnotatedChallenge(
         challb=acme_util.DNS01, domain=DOMAIN, account_key=KEY)
 
-    def test_more_info(self):
+    def test_more_info(self: AuthenticatorCallableTestCase):
         self.assertTrue(isinstance(self.auth.more_info(), str))  # pylint: disable=no-member
 
-    def test_get_chall_pref(self):
+    def test_get_chall_pref(self: AuthenticatorCallableTestCase):
         self.assertEqual(self.auth.get_chall_pref(None), [challenges.DNS01])  # pylint: disable=no-member
 
-    def test_parser_arguments(self):
+    def test_parser_arguments(self: AuthenticatorCallableTestCase):
         m = mock.MagicMock()
         self.auth.add_parser_arguments(m)  # pylint: disable=no-member
 
