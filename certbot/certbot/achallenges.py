@@ -46,6 +46,10 @@ class AnnotatedChallenge(jose.ImmutableMap):
 
     @property
     def acme_type(self) -> Type[Challenge]:
+        """
+        The class of the underlying ACME challenge.
+        :return: the ACME challenge class
+        """
         if self._acme_type is None:
             raise NotImplementedError()
 

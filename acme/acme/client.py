@@ -917,7 +917,8 @@ class BackwardsCompatibleClientV2:
             chain = crypto_util.dump_pyopenssl_chain(chain).decode()
 
             return orderr.update(fullchain_pem=(cert + chain))
-        return cast(ClientV2, self.client).finalize_order(orderr, deadline, fetch_alternative_chains)
+        return cast(ClientV2, self.client).finalize_order(
+            orderr, deadline, fetch_alternative_chains)
 
     def revoke(self, cert, rsn):
         """Revoke certificate.

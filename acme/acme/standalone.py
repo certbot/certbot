@@ -56,17 +56,30 @@ class ACMEServerMixin:
 
 
 class ACMEAwareBaseServer(Protocol):
+    """Protocol describing a BaseServer with ACME specific features."""
     server_version: str
     allow_reuse_address: bool
     socket: socket.socket
 
     def serve_forever(self) -> None:
+        """
+        See
+        https://docs.python.org/3/library/socketserver.html#socketserver.BaseServer.serve_forever
+        """
         ...
 
     def shutdown(self) -> None:
+        """
+        See
+        https://docs.python.org/3/library/socketserver.html#socketserver.BaseServer.shutdown
+        """
         ...
 
     def server_close(self) -> None:
+        """
+        See
+        https://docs.python.org/3/library/socketserver.html#socketserver.BaseServer.server_close
+        """
         ...
 
 
@@ -225,6 +238,10 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     @property
     def timeout(self):
+        """
+        The default timeout this server should apply to requests.
+        :return: timeout to apply
+        """
         return self._timeout
 
     def log_message(self, format, *args):  # pylint: disable=redefined-builtin

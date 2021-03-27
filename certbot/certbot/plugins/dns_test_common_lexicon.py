@@ -24,11 +24,18 @@ KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
 class AuthenticatorCallableLexiconTestCase(AuthenticatorCallableTestCase, Protocol):
+    """
+    Protocol describing a TestCase suitable to test challenges against
+    a mocked LexiconClient instance.
+    """
     mock_client: MagicMock
     achall: Challenge
 
 
 class LexiconAwareTestCase(Protocol):
+    """
+    Protocol describing a TestCase suitable to test a real LexiconClient instance.
+    """
     client: LexiconClient
     provider_mock: MagicMock
 
@@ -42,6 +49,10 @@ class LexiconAwareTestCase(Protocol):
     UNKNOWN_LOGIN_ERROR: Exception
 
     def assertRaises(self, *args) -> None:
+        """
+        See
+        https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertRaises
+        """
         ...
 
 

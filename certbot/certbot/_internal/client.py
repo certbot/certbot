@@ -2,7 +2,6 @@
 import datetime
 import logging
 import platform
-from typing import List
 from typing import Optional
 
 from cryptography.hazmat.backends import default_backend

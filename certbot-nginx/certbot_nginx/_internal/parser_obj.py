@@ -4,7 +4,6 @@ raw lists of tokens from pyparsing. """
 import abc
 import logging
 from typing import List
-from typing import Protocol
 from typing import Union
 
 from certbot import errors
@@ -111,7 +110,7 @@ class Parsable:
         :returns: Pyparsing-like list tree.
         :rtype list:
         """
-        return [as_parsable(elem).dump(include_spaces) for elem in self._data]
+        return [_as_parsable(elem).dump(include_spaces) for elem in self._data]
 
 
 class Statements(Parsable):
@@ -140,7 +139,7 @@ class Statements(Parsable):
         with parent tabbing.
         """
         for statement in self._data:
-            as_parsable(statement).set_tabs(tabs)
+            _as_parsable(statement).set_tabs(tabs)
         if self.parent is not None:
             self._trailing_whitespace = "\n" + self.parent.get_tabs()
 
@@ -161,7 +160,7 @@ class Statements(Parsable):
         """ Takes a guess at the tabbing of all contained Statements by retrieving the
         tabbing of the first Statement."""
         if self._data:
-            return as_parsable(self._data[0]).get_tabs()
+            return _as_parsable(self._data[0]).get_tabs()
         return ""
 
     def dump(self, include_spaces=False):
@@ -175,7 +174,7 @@ class Statements(Parsable):
     def iterate(self, expanded=False, match=None):
         """ Combines each statement's iterator.  """
         for elem in self._data:
-            for sub_elem in as_parsable(elem).iterate(expanded, match):
+            for sub_elem in _as_parsable(elem).iterate(expanded, match):
                 yield sub_elem
 
     # ======== End overridden functions
@@ -226,7 +225,7 @@ class Sentence(Parsable):
     def set_tabs(self, tabs="    "):
         """ Sets the tabbing on this sentence. Inserts a newline and `tabs` at the
         beginning of `self._data`. """
-        if as_str(self._data[0]).isspace():
+        if _as_str(self._data[0]).isspace():
             return
         self._data.insert(0, "\n" + tabs)
 
@@ -240,7 +239,7 @@ class Sentence(Parsable):
         """ Guesses at the tabbing of this sentence. If the first element is whitespace,
         returns the whitespace after the rightmost newline in the string. """
         first = self._data[0]
-        first_str = as_str(first)
+        first_str = _as_str(first)
         if not first_str.isspace():
             return ""
         rindex = first_str.rfind("\n")
@@ -253,7 +252,7 @@ class Sentence(Parsable):
         """ Iterates over words, but without spaces. Like Unspaced List. """
         words: List[str] = []
         for word in self._data:
-            word_str = as_str(word)
+            word_str = _as_str(word)
             if not word_str.isspace():
                 words.append(word_str.strip("\"\'"))
 
@@ -391,6 +390,22 @@ def _choose_parser(parent, list_):
         "None of the parsing hooks succeeded, so we don't know how to parse this set of lists.")
 
 
+def _as_str(obj: Union[str, Parsable]) -> str:
+    """Returns the provided object as string or raises if type is incompatible."""
+    if isinstance(obj, str):
+        return obj
+
+    raise ValueError(f"obj {obj} is not a string")
+
+
+def _as_parsable(obj: Union[str, Parsable]) -> Parsable:
+    """Returns the provided object as Parsable or raises if type is incompatible."""
+    if isinstance(obj, Parsable):
+        return obj
+
+    raise ValueError(f"obj {obj} is not a Parsable")
+
+
 def parse_raw(lists_, parent=None, add_spaces=False):
     """ Primary parsing factory function.
 
@@ -406,17 +421,3 @@ def parse_raw(lists_, parent=None, add_spaces=False):
     parser = _choose_parser(parent, lists_)
     parser.parse(lists_, add_spaces)
     return parser
-
-
-def as_str(obj: Union[str, Parsable]) -> str:
-    if isinstance(obj, str):
-        return obj
-
-    raise ValueError(f"obj {obj} is not a string")
-
-
-def as_parsable(obj: Union[str, Parsable]) -> Parsable:
-    if isinstance(obj, Parsable):
-        return obj
-
-    raise ValueError(f"obj {obj} is not a Parsable")

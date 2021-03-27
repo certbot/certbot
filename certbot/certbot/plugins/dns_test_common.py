@@ -22,12 +22,21 @@ KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
 class AuthenticatorCallableTestCase(Protocol):
+    """Protocol describing a TestCase able to call a real DNSAuthenticator instance."""
     auth: DNSAuthenticator
 
     def assertTrue(self, *args) -> None:
+        """
+        See
+        https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertTrue
+        """
         ...
 
     def assertEqual(self, *args) -> None:
+        """
+        See
+        https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertEqual
+        """
         ...
 
 
