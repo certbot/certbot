@@ -766,7 +766,7 @@ class NginxConfigurator(common.Installer):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
         except errors.PluginError:
-            logger.warning("Failed %s for %s", enhancement, domain)
+            logger.error("Failed %s for %s", enhancement, domain)
             raise
 
     def _has_certbot_redirect(self, vhost, domain):
