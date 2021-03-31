@@ -37,14 +37,14 @@ def main():
 
     _prepare_build_tools(venv_path, venv_python, repo_path)
     _compile_wheels(repo_path, build_path, venv_python)
-    _build_installer(installer_cfg_path, venv_path)
+    _build_installer(installer_cfg_path)
 
     print('Done')
 
 
-def _build_installer(installer_cfg_path, venv_path):
+def _build_installer(installer_cfg_path):
     print('Build the installer')
-    subprocess.check_call([os.path.join(venv_path, 'Scripts', 'pynsist.exe'), installer_cfg_path])
+    subprocess.check_call(['pynsist', installer_cfg_path])
 
 
 def _compile_wheels(repo_path, build_path, venv_python):
@@ -85,7 +85,6 @@ def _prepare_build_tools(venv_path, venv_python, repo_path):
     print('Prepare build tools')
     subprocess.check_call([sys.executable, '-m', 'venv', venv_path])
     subprocess.check_call([venv_python, os.path.join(repo_path, 'tools', 'pipstrap.py')])
-    subprocess.check_call([venv_python, os.path.join(repo_path, 'tools', 'pip_install.py'), 'pynsist'])
     subprocess.check_call(['choco', 'upgrade', '--allow-downgrade', '-y', 'nsis', '--version', NSIS_VERSION])
 
 
@@ -154,7 +153,7 @@ def _prepare_environment():
         raise RuntimeError('Error: Chocolatey (https://chocolatey.org/) needs '
                            'to be installed to run this script.')
     script_path = os.path.realpath(__file__)
-    repo_path = os.path.dirname(os.path.dirname(script_path))
+    repo_path = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
     build_path = os.path.join(repo_path, 'windows-installer', 'build')
     venv_path = os.path.join(build_path, 'venv-config')
     venv_python = os.path.join(venv_path, 'Scripts', 'python.exe')
