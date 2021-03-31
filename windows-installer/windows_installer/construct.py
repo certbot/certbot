@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import contextlib
 import ctypes
 import os
 import re
@@ -7,7 +6,6 @@ import shutil
 import struct
 import subprocess
 import sys
-import tempfile
 import time
 
 PYTHON_VERSION = (3, 8, 8)
@@ -16,6 +14,21 @@ NSIS_VERSION = '3.06.1'
 
 
 def main():
+    if os.name != 'nt':
+        raise RuntimeError('This script must be run under Windows.')
+
+    if ctypes.windll.shell32.IsUserAnAdmin() == 0:
+        # Administrator privileges are required to properly install NSIS through Chocolatey
+        raise RuntimeError('This script must be run with administrator privileges.')
+
+    if sys.version_info[:2] != PYTHON_VERSION[:2]:
+        raise RuntimeError('This script must be run with Python {0}'
+                           .format('.'.join(str(item) for item in PYTHON_VERSION[0:2])))
+
+    if struct.calcsize('P') * 8 != PYTHON_BITNESS:
+        raise RuntimeError('This script must be run with a {0} bit version of Python.'
+                           .format(PYTHON_BITNESS))
+
     build_path, repo_path, venv_path, venv_python = _prepare_environment()
 
     _copy_assets(build_path, repo_path)
@@ -81,11 +94,11 @@ def _copy_assets(build_path, repo_path):
     if os.path.exists(build_path):
         os.rename(build_path, '{0}.{1}.bak'.format(build_path, int(time.time())))
     os.makedirs(build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'certbot.ico'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'run.bat'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'template.nsi'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'renew-up.ps1'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'renew-down.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'certbot.ico'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'run.bat'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'template.nsi'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'renew-up.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'renew-down.ps1'), build_path)
 
 
 def _generate_pynsist_config(repo_path, build_path):
@@ -150,18 +163,4 @@ def _prepare_environment():
 
 
 if __name__ == '__main__':
-    if os.name != 'nt':
-        raise RuntimeError('This script must be run under Windows.')
-
-    if ctypes.windll.shell32.IsUserAnAdmin() == 0:
-        # Administrator privileges are required to properly install NSIS through Chocolatey
-        raise RuntimeError('This script must be run with administrator privileges.')
-
-    if sys.version_info[:2] != PYTHON_VERSION[:2]:
-        raise RuntimeError('This script must be run with Python {0}'
-                           .format('.'.join(str(item) for item in PYTHON_VERSION[0:2])))
-
-    if struct.calcsize('P') * 8 != PYTHON_BITNESS:
-        raise RuntimeError('This script must be run with a {0} bit version of Python.'
-                           .format(PYTHON_BITNESS))
     main()

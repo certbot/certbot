@@ -32,9 +32,9 @@ certbot-nginx = {path = "../../certbot-nginx", extras = ["docs"]}
 certbot-apache = {path = "../../certbot-apache", extras = ["dev"]}
 certbot = {path = "../../certbot", extras = ["dev", "docs"]}
 acme = {path = "../../acme", extras = ["dev", "docs"]}
+windows-installer = {path = "../../windows-installer"}
 
 # Extra dependencies
-pynsist = "^2"
 # See https://github.com/certbot/certbot/issues/8425.
 mypy = "0.710"
 # Upgrading coverage, pylint, pytest, and some of pytest's plugins causes many

@@ -59,7 +59,13 @@ jobs:
           versionSpec: 3.8
           architecture: x86
           addToPath: true
-      - script: python windows-installer/construct.py
+      - script: |
+          python -m venv venv
+          venv\Scripts\python tools\pipstrap.py
+          venv\Scripts\python tools\pip_install.py -e windows-installer
+        displayName: Prepare Windows installer build environment
+      - script: |
+          venv\Scripts\construct-windows-installer
         displayName: Build Certbot installer
       - task: CopyFiles@2
         inputs:
