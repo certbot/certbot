@@ -44,7 +44,7 @@ def main():
 
 def _build_installer(installer_cfg_path):
     print('Build the installer')
-    subprocess.check_call(['pynsist', installer_cfg_path])
+    subprocess.check_call([sys.executable, '-m', 'nsist', installer_cfg_path])
 
 
 def _compile_wheels(repo_path, build_path, venv_python):
