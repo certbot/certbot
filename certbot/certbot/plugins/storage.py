@@ -1,7 +1,7 @@
 """Plugin storage class."""
 import json
 import logging
-from typing import Any
+from typing import Any, Optional
 from typing import Dict
 
 from certbot import errors
@@ -26,8 +26,8 @@ class PluginStorage:
         self._config = config
         self._classkey = classkey
         self._initialized = False
-        self._data = None
-        self._storagepath = None
+        self._data: Dict
+        self._storagepath: str
 
     def _initialize_storage(self):
         """Initializes PluginStorage data and reads current state from the disk

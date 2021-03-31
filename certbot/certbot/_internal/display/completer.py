@@ -2,6 +2,8 @@
 import glob
 
 # readline module is not available on all systems
+from typing import Callable, Generator, Optional, Iterator
+
 try:
     import readline
 except ImportError:
@@ -26,7 +28,9 @@ class Completer:
     """
 
     def __init__(self):
-        self._iter = self._original_completer = self._original_delims = None
+        self._iter: Iterator
+        self._original_completer: Optional[Callable]
+        self._original_delims: str
 
     def complete(self, text, state):
         """Provides path completion for use with readline.

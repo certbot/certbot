@@ -31,7 +31,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
         # When unable to read file that exists
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError
-        self.plugin.storage.storagepath = os.path.join(self.config.config_dir,
+        self.plugin.storage._storagepath = os.path.join(self.config.config_dir,
                                                        ".pluginstorage.json")
         with mock.patch("builtins.open", mock_open):
             with mock.patch('certbot.compat.os.path.isfile', return_value=True):
@@ -67,7 +67,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
         with mock.patch("certbot.plugins.storage.logger.error") as mock_log:
             # Set data as something that can't be serialized
             self.plugin.storage._initialized = True  # pylint: disable=protected-access
-            self.plugin.storage.storagepath = "/tmp/whatever"
+            self.plugin.storage._storagepath = "/tmp/whatever"
             self.plugin.storage._data = self.plugin_cls  # pylint: disable=protected-access
             self.assertRaises(errors.PluginStorageError,
                               self.plugin.storage.save)
@@ -80,6 +80,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
             with mock.patch("certbot.plugins.storage.logger.error") as mock_log:
                 self.plugin.storage._data = {"valid": "data"}  # pylint: disable=protected-access
                 self.plugin.storage._initialized = True  # pylint: disable=protected-access
+                self.plugin.storage._storagepath = "/tmp/whatever"
                 self.assertRaises(errors.PluginStorageError,
                                   self.plugin.storage.save)
                 self.assertTrue("Could not write" in mock_log.call_args[0][0])

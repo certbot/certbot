@@ -8,7 +8,7 @@ import logging
 import re
 import socket
 import time
-from typing import cast
+from typing import cast, Optional
 from typing import DefaultDict
 from typing import Dict
 from typing import List
@@ -36,6 +36,7 @@ from certbot_apache._internal import dualparser
 from certbot_apache._internal import http_01
 from certbot_apache._internal import obj
 from certbot_apache._internal import parser
+from certbot_apache._internal.parser import ApacheParser
 
 try:
     import apacheconfig
@@ -232,7 +233,7 @@ class ApacheConfigurator(common.Installer):
         self.parsed_paths: List[str] = []
         # These will be set in the prepare function
         self._prepared = False
-        self.parser = None
+        self.parser: ApacheParser
         self.parser_root = None
         self.version = version
         self._openssl_version = openssl_version
@@ -408,7 +409,7 @@ class ApacheConfigurator(common.Installer):
         super(ApacheConfigurator, self).recovery_routine()
         # Reload configuration after these changes take effect if needed
         # ie. ApacheParser has been initialized.
-        if self.parser:
+        if hasattr(self, "parser"):
             # TODO: wrap into non-implementation specific  parser interface
             self.parser.aug.load()
 

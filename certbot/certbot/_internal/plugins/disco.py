@@ -3,7 +3,8 @@ from collections.abc import Mapping
 import itertools
 import logging
 import sys
-from typing import Dict
+from types import ModuleType
+from typing import Dict, Optional, Type, Any
 
 import pkg_resources
 import zope.interface
@@ -13,6 +14,8 @@ from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os
+from certbot.interfaces import IPlugin
+from certbot.plugins.common import Plugin
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +47,15 @@ class PluginEntryPoint:
     # this object is mutable, don't allow it to be hashed!
     __hash__ = None  # type: ignore
 
-    def __init__(self, entry_point, with_prefix=False):
+    def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix=False):
         self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
-        self.plugin_cls = entry_point.load()
+        self.plugin_cls: Any = entry_point.load()
         self.entry_point = entry_point
-        self.warning_message = None
-        self._initialized = None
-        self._prepared = None
+        self.warning_message: Optional[str] = None
+        self._initialized: Optional[IPlugin] = None
+        self._prepared: Optional[bool] = None
         self._hidden = False
-        self._long_description = None
+        self._long_description: Optional[str] = None
 
     def check_name(self, name):
         """Check if the name refers to this plugin."""
