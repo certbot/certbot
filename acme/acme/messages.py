@@ -531,6 +531,8 @@ class Authorization(ResourceBody):
     expires = fields.RFC3339Field('expires', omitempty=True)
     wildcard = jose.Field('wildcard', omitempty=True)
 
+    # Mypy does not understand the josepy magic happening here, and falsely claims
+    # that challenge is redefined. Let's ignore the type check here.
     @challenges.decoder  # type: ignore
     def challenges(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
@@ -630,6 +632,8 @@ class Order(ResourceBody):
     expires = fields.RFC3339Field('expires', omitempty=True)
     error = jose.Field('error', omitempty=True, decoder=Error.from_json)
 
+    # Mypy does not understand the josepy magic happening here, and falsely claims
+    # that identifiers is redefined. Let's ignore the type check here.
     @identifiers.decoder  # type: ignore
     def identifiers(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(Identifier.from_json(identifier) for identifier in value)

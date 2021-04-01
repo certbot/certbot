@@ -14,6 +14,8 @@ class Header(jose.Header):
     kid = jose.Field('kid', omitempty=True)
     url = jose.Field('url', omitempty=True)
 
+    # Mypy does not understand the josepy magic happening here, and falsely claims
+    # that nonce is redefined. Let's ignore the type check here.
     @nonce.decoder  # type: ignore
     def nonce(value):  # pylint: disable=no-self-argument,missing-function-docstring
         try:
