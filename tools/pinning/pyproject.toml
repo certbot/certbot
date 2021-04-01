@@ -32,7 +32,7 @@ certbot-nginx = {path = "../../certbot-nginx", extras = ["docs"]}
 certbot-apache = {path = "../../certbot-apache", extras = ["dev"]}
 certbot = {path = "../../certbot", extras = ["dev", "docs"]}
 acme = {path = "../../acme", extras = ["dev", "docs"]}
-windows-installer = {path = "../../windows-installer", markers = "sys_platform == 'win32'"}
+windows-installer = {path = "../../windows-installer"}
 
 # Extra dependencies
 # See https://github.com/certbot/certbot/issues/8425.
