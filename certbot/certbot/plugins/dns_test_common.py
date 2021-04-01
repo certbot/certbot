@@ -1,9 +1,5 @@
 """Base test class for DNS authenticators."""
 import typing
-if typing.TYPE_CHECKING:
-    from typing import Protocol
-else:
-    Protocol = object  # type: ignore
 
 import configobj
 import josepy as jose
@@ -14,6 +10,13 @@ from certbot.compat import filesystem
 from certbot.plugins.dns_common import DNSAuthenticator
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
+
+if typing.TYPE_CHECKING:
+    from typing import Protocol
+else:
+    Protocol = object  # type: ignore
+
+
 
 try:
     import mock

@@ -1,14 +1,6 @@
 """Base test class for DNS authenticators built on Lexicon."""
-from unittest.mock import MagicMock
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock  # type: ignore
 import typing
-if typing.TYPE_CHECKING:
-    from typing import Protocol
-else:
-    Protocol = object  # type: ignore
+from unittest.mock import MagicMock
 
 import josepy as jose
 from requests.exceptions import HTTPError
@@ -20,6 +12,17 @@ from certbot.plugins import dns_test_common
 from certbot.plugins.dns_common_lexicon import LexiconClient
 from certbot.plugins.dns_test_common import _AuthenticatorCallableTestCase
 from certbot.tests import util as test_util
+
+try:
+    import mock
+except ImportError:  # pragma: no cover
+    from unittest import mock  # type: ignore
+if typing.TYPE_CHECKING:
+    from typing import Protocol
+else:
+    Protocol = object  # type: ignore
+
+
 
 
 DOMAIN = 'example.com'
