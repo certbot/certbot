@@ -239,11 +239,18 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self._timeout = kwargs.pop('timeout', 30)
         BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
+    # In parent class BaseHTTPRequestHandler, 'timeout' is a class-level property but we
+    # need to define its value during the initialization phase in HTTP01RequestHandler.
+    # However MyPy does not appreciate that we dynamically shadow a class-level property
+    # with an instance-level property (eg. self.timeout = ... in __init__()). So to make
+    # everyone happy, we statically redefine 'timeout' as a method property, and set the
+    # timeout value in a new internal instance-level property _timeout.
     @property
     def timeout(self):
         """
         The default timeout this server should apply to requests.
         :return: timeout to apply
+        :rtype: int
         """
         return self._timeout
 
