@@ -1,7 +1,7 @@
 """ACME protocol messages."""
 from collections.abc import Hashable
 import json
-from typing import Dict
+from typing import Dict, Type, Any
 
 import josepy as jose
 
@@ -185,7 +185,7 @@ class Identifier(jose.JSONObjectWithFields):
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES: Dict = {}
+    _REGISTERED_TYPES: Dict[str, Type[Any]] = {}
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
@@ -219,7 +219,7 @@ class Directory(jose.JSONDeSerializable):
         return getattr(key, 'resource_type', key)
 
     @classmethod
-    def register(cls, resource_body_cls):
+    def register(cls, resource_body_cls: Type[Any]) -> Type[Any]:
         """Register resource."""
         resource_type = resource_body_cls.resource_type
         assert resource_type not in cls._REGISTERED_TYPES
