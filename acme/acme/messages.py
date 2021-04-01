@@ -125,7 +125,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
     """ACME constant."""
     __slots__ = ('name',)
-    POSSIBLE_NAMES: Dict = NotImplemented
+    POSSIBLE_NAMES: Dict[str, '_Constant'] = NotImplemented
 
     def __init__(self, name):
         super(_Constant, self).__init__()
@@ -167,7 +167,7 @@ STATUS_DEACTIVATED = Status('deactivated')
 
 class IdentifierType(_Constant):
     """ACME identifier type."""
-    POSSIBLE_NAMES: Dict = {}
+    POSSIBLE_NAMES: Dict[str, 'IdentifierType'] = {}
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 
 
