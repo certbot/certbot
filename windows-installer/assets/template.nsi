@@ -1,7 +1,7 @@
-; This NSIS template is based on the built-in one in pynsist 2.6.
+; This NSIS template is based on the built-in one in pynsist 2.7.
 ; Added lines are enclosed within "CERTBOT CUSTOM BEGIN/END" comments.
 ; If pynsist is upgraded, this template must be updated if necessary using the new built-in one.
-; Original file can be found here: https://github.com/takluyver/pynsist/blob/2.6/nsist/pyapp.nsi
+; Original file can be found here: https://github.com/takluyver/pynsist/blob/2.7/nsist/pyapp.nsi
 
 !define PRODUCT_NAME "[[ib.appname]]"
 !define PRODUCT_VERSION "[[ib.version]]"
