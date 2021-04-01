@@ -34,7 +34,6 @@ certbot = {path = "../../certbot", extras = ["dev", "docs"]}
 acme = {path = "../../acme", extras = ["dev", "docs"]}
 
 # Extra dependencies
-mypy = "0.812"
 # Upgrading coverage, pylint, pytest, and some of pytest's plugins causes many
 # test failures so let's pin these packages back for now.
 coverage = "4.5.4"
