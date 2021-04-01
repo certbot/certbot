@@ -7,12 +7,7 @@ import logging
 import socket
 import socketserver
 import threading
-from typing import cast
 from typing import List
-try:
-    from typing import Protocol
-except ImportError:  # pragma: no cover
-    Protocol = object  # type: ignore
 
 from acme import challenges
 from acme import crypto_util
@@ -58,34 +53,6 @@ class ACMEServerMixin:
     allow_reuse_address = True
 
 
-class _ACMEAwareBaseServer(Protocol):
-    """Protocol describing a BaseServer with ACME specific features."""
-    server_version: str
-    allow_reuse_address: bool
-    socket: socket.socket
-
-    def serve_forever(self) -> None:
-        """
-        See
-        https://docs.python.org/3/library/socketserver.html#socketserver.BaseServer.serve_forever
-        """
-        ...  # pragma: no cover
-
-    def shutdown(self) -> None:
-        """
-        See
-        https://docs.python.org/3/library/socketserver.html#socketserver.BaseServer.shutdown
-        """
-        ...  # pragma: no cover
-
-    def server_close(self) -> None:
-        """
-        See
-        https://docs.python.org/3/library/socketserver.html#socketserver.BaseServer.server_close
-        """
-        ...  # pragma: no cover
-
-
 class BaseDualNetworkedServers:
     """Base class for a pair of IPv6 and IPv4 servers that tries to do everything
        it's asked for both servers, but where failures in one server don't
@@ -97,7 +64,7 @@ class BaseDualNetworkedServers:
     def __init__(self, ServerClass, server_address, *remaining_args, **kwargs):
         port = server_address[1]
         self.threads: List[threading.Thread] = []
-        self.servers: List[_ACMEAwareBaseServer] = []
+        self.servers: List[socketserver.BaseServer] = []
 
         # Must try True first.
         # Ubuntu, for example, will fail to bind to IPv4 if we've already bound
@@ -238,6 +205,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
         self._timeout = kwargs.pop('timeout', 30)
         BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
+        self.server: HTTP01Server
 
     # In parent class BaseHTTPRequestHandler, 'timeout' is a class-level property but we
     # need to define its value during the initialization phase in HTTP01RequestHandler.
@@ -276,7 +244,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
         self.end_headers()
-        self.wfile.write(cast(_ACMEAwareBaseServer, self.server).server_version.encode())
+        self.wfile.write(self.server.server_version.encode())
 
     def handle_404(self):
         """Handler 404 Not Found errors."""
