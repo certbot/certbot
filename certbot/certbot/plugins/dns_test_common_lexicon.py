@@ -4,9 +4,10 @@ try:
     import mock
 except ImportError:  # pragma: no cover
     from unittest import mock  # type: ignore
-try:
+import typing
+if typing.TYPE_CHECKING:
     from typing import Protocol
-except ImportError:
+else:
     Protocol = object  # type: ignore
 
 import josepy as jose

@@ -1,7 +1,8 @@
 """Base test class for DNS authenticators."""
-try:
+import typing
+if typing.TYPE_CHECKING:
     from typing import Protocol
-except ImportError:
+else:
     Protocol = object  # type: ignore
 
 import configobj
