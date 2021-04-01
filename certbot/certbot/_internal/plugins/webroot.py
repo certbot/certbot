@@ -183,7 +183,7 @@ to serve all files under specified web root ({0})."""
                             filesystem.copy_ownership_and_apply_mode(
                                 path, prefix, 0o755, copy_user=True, copy_group=True)
                         except (OSError, AttributeError) as exception:
-                            logger.info("Unable to change owner and uid of webroot directory")
+                            logger.warning("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)
                     except OSError as exception:
                         raise errors.PluginError(

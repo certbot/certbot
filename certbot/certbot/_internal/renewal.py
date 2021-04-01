@@ -68,18 +68,18 @@ def _reconstitute(config, full_path):
     """
     try:
         renewal_candidate = storage.RenewableCert(full_path, config)
-    except (errors.CertStorageError, IOError):
-        logger.warning("", exc_info=True)
-        logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
+    except (errors.CertStorageError, IOError) as error:
+        logger.error("Renewal configuration file %s is broken.", full_path)
+        logger.error("The error was: %s\nSkipping.", str(error))
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
     if "renewalparams" not in renewal_candidate.configuration:
-        logger.warning("Renewal configuration file %s lacks "
+        logger.error("Renewal configuration file %s lacks "
                        "renewalparams. Skipping.", full_path)
         return None
     renewalparams = renewal_candidate.configuration["renewalparams"]
     if "authenticator" not in renewalparams:
-        logger.warning("Renewal configuration file %s does not specify "
+        logger.error("Renewal configuration file %s does not specify "
                        "an authenticator. Skipping.", full_path)
         return None
     # Now restore specific values along with their data types, if
@@ -89,7 +89,7 @@ def _reconstitute(config, full_path):
         restore_required_config_elements(config, renewalparams)
         _restore_plugin_configs(config, renewalparams)
     except (ValueError, errors.Error) as error:
-        logger.warning(
+        logger.error(
             "An error occurred while parsing %s. The error was %s. "
             "Skipping the file.", full_path, str(error))
         logger.debug("Traceback was:\n%s", traceback.format_exc())
@@ -99,7 +99,7 @@ def _reconstitute(config, full_path):
         config.domains = [util.enforce_domain_sanity(d)
                           for d in renewal_candidate.names()]
     except errors.ConfigurationError as error:
-        logger.warning("Renewal configuration file %s references a certificate "
+        logger.error("Renewal configuration file %s references a certificate "
                        "that contains an invalid domain name. The problem "
                        "was: %s. Skipping.", full_path, error)
         return None
@@ -447,7 +447,7 @@ def handle_renewal_request(config):
         try:
             renewal_candidate = _reconstitute(lineage_config, renewal_file)
         except Exception as e:  # pylint: disable=broad-except
-            logger.warning("Renewal configuration file %s (cert: %s) "
+            logger.error("Renewal configuration file %s (cert: %s) "
                            "produced an unexpected error: %s. Skipping.",
                            renewal_file, lineagename, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())

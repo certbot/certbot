@@ -946,7 +946,7 @@ def enhance(config, plugins):
     if not enhancements.are_requested(config) and not oldstyle_enh:
         msg = ("Please specify one or more enhancement types to configure. To list "
                "the available enhancement types, run:\n\n%s --help enhance\n")
-        logger.warning(msg, sys.argv[0])
+        logger.error(msg, sys.argv[0])
         raise errors.MisconfigurationError("No enhancements requested, exiting.")
 
     try:
@@ -1235,7 +1235,7 @@ def renew_cert(config, plugins, lineage):
         # installers are used in auth mode to determine domain names
         installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     except errors.PluginSelectionError as e:
-        logger.info("Could not choose appropriate plugin: %s", e)
+        logger.error("Could not choose appropriate plugin: %s", e)
         raise
     le_client = _init_le_client(config, auth, installer)
 
@@ -1278,7 +1278,7 @@ def certonly(config, plugins):
         # installers are used in auth mode to determine domain names
         installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     except errors.PluginSelectionError as e:
-        logger.info("Could not choose appropriate plugin: %s", e)
+        logger.error("Could not choose appropriate plugin: %s", e)
         raise
 
     le_client = _init_le_client(config, auth, installer)

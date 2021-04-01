@@ -210,7 +210,7 @@ def _run_deploy_hook(command, domains, lineage_path, dry_run):
 
     """
     if dry_run:
-        logger.warning("Dry run: skipping deploy hook command: %s",
+        logger.info("Dry run: skipping deploy hook command: %s",
                        command)
         return
 
