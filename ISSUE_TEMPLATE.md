@@ -7,7 +7,7 @@ questions.
 ## My operating system is (include version):
 
 
-## I installed Certbot with (certbot-auto, OS package manager, pip, etc):
+## I installed Certbot with (snap, OS package manager, pip, certbot-auto, etc):
 
 
 ## I ran this command and it produced this output:
