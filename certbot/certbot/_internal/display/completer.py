@@ -1,9 +1,8 @@
 """Provides Tab completion when prompting users for a path."""
 import glob
 
+from typing import Callable, Optional, Iterator
 # readline module is not available on all systems
-from typing import Callable, Generator, Optional, Iterator
-
 try:
     import readline
 except ImportError:

@@ -1,6 +1,8 @@
 """DNS Authenticator for NS1 DNS."""
 import logging
+from typing import Optional
 
+from certbot.plugins.dns_common import CredentialsConfiguration
 from lexicon.providers import nsone
 import zope.interface
 
@@ -27,7 +29,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.credentials = None
+        self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
@@ -54,6 +56,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_nsone_client().del_txt_record(domain, validation_name, validation)
 
     def _get_nsone_client(self):
+        if not self.credentials:
+            raise errors.Error("Plugin has not been prepared.")
         return _NS1LexiconClient(self.credentials.conf('api-key'), self.ttl)
 
 

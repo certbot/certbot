@@ -1,6 +1,6 @@
 """DNS Authenticator for Cloudflare."""
 import logging
-from typing import Any
+from typing import Any, Optional
 from typing import Dict
 from typing import List
 
@@ -10,6 +10,7 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
+from certbot.plugins.dns_common import CredentialsConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.credentials = None
+        self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
@@ -79,6 +80,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_cloudflare_client().del_txt_record(domain, validation_name, validation)
 
     def _get_cloudflare_client(self):
+        if not self.credentials:
+            raise errors.Error("Plugin has not been prepared.")
         if self.credentials.conf('api-token'):
             return _CloudflareClient(None, self.credentials.conf('api-token'))
         return _CloudflareClient(self.credentials.conf('email'), self.credentials.conf('api-key'))

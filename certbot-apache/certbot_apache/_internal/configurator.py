@@ -36,6 +36,8 @@ from certbot_apache._internal import dualparser
 from certbot_apache._internal import http_01
 from certbot_apache._internal import obj
 from certbot_apache._internal import parser
+from certbot_apache._internal.dualparser import DualBlockNode
+from certbot_apache._internal.obj import VirtualHost
 from certbot_apache._internal.parser import ApacheParser
 
 try:
@@ -234,10 +236,10 @@ class ApacheConfigurator(common.Installer):
         # These will be set in the prepare function
         self._prepared = False
         self.parser: ApacheParser
-        self.parser_root = None
+        self.parser_root: Optional[DualBlockNode] = None
         self.version = version
         self._openssl_version = openssl_version
-        self.vhosts = None
+        self.vhosts: List[VirtualHost]
         self.options = copy.deepcopy(self.OS_DEFAULTS)
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
@@ -346,8 +348,9 @@ class ApacheConfigurator(common.Installer):
                    "augeaspath": self.parser.get_root_augpath(),
                    "ac_ast": None}
         if self.USE_PARSERNODE:
-            self.parser_root = self.get_parsernode_root(pn_meta)
-            self.parsed_paths = self.parser_root.parsed_paths()
+            parser_root = self.get_parsernode_root(pn_meta)
+            self.parser_root = parser_root
+            self.parsed_paths = parser_root.parsed_paths()
 
         # Check for errors in parsing files with Augeas
         self.parser.check_parsing_errors("httpd.aug")
@@ -1052,6 +1055,9 @@ class ApacheConfigurator(common.Installer):
         :rtype: list
         """
 
+        if not self.parser_root:
+            raise errors.Error("This ApacheConfigurator instance is not"
+                               "configured to use a node parser.")
         vhs = []
         vhosts = self.parser_root.find_blocks("VirtualHost", exclude=False)
         for vhblock in vhosts:

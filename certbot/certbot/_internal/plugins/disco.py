@@ -4,7 +4,7 @@ import itertools
 import logging
 import sys
 from types import ModuleType
-from typing import Dict, Optional, Type, Any
+from typing import Dict, Optional, Type, Any, Union
 
 import pkg_resources
 import zope.interface
@@ -14,6 +14,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os
+from certbot.errors import Error
 from certbot.interfaces import IPlugin
 from certbot.plugins.common import Plugin
 
@@ -52,8 +53,8 @@ class PluginEntryPoint:
         self.plugin_cls: Any = entry_point.load()
         self.entry_point = entry_point
         self.warning_message: Optional[str] = None
-        self._initialized: Optional[IPlugin] = None
-        self._prepared: Optional[bool] = None
+        self._initialized: Optional[Any] = None
+        self._prepared: Optional[Union[bool, Error]] = None
         self._hidden = False
         self._long_description: Optional[str] = None
 
@@ -126,7 +127,8 @@ class PluginEntryPoint:
 
     def verify(self, ifaces):
         """Verify that the plugin conforms to the specified interfaces."""
-        assert self.initialized
+        if not self.initialized:
+            raise ValueError("Plugin is not initialized.")
         for iface in ifaces:  # zope.interface.providedBy(plugin)
             try:
                 zope.interface.verify.verifyObject(iface, self.init())
@@ -147,7 +149,8 @@ class PluginEntryPoint:
 
     def prepare(self):
         """Memoized plugin preparation."""
-        assert self.initialized
+        if self._initialized is None:
+            raise ValueError("Plugin is not initialized.")
         if self._prepared is None:
             try:
                 self._initialized.prepare()
@@ -250,8 +253,10 @@ class PluginsRegistry(Mapping):
         plugin_ep = PluginEntryPoint(entry_point, with_prefix)
         if plugin_ep.name in plugins:
             other_ep = plugins[plugin_ep.name]
+            plugin1 = plugin_ep.entry_point.dist.key if plugin_ep.entry_point.dist else "unknown"
+            plugin2 = other_ep.entry_point.dist.key if other_ep.entry_point.dist else "unknown"
             raise Exception("Duplicate plugin name {0} from {1} and {2}.".format(
-                plugin_ep.name, plugin_ep.entry_point.dist.key, other_ep.entry_point.dist.key))
+                plugin_ep.name, plugin1, plugin2))
         if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
             plugins[plugin_ep.name] = plugin_ep
         else:  # pragma: no cover

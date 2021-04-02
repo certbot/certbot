@@ -3,7 +3,7 @@ import copy
 import fnmatch
 import logging
 import re
-from typing import Dict
+from typing import Dict, Optional
 from typing import List
 
 from certbot import errors
@@ -52,7 +52,7 @@ class ApacheParser:
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
-        self.modules: Dict[str, str] = {}
+        self.modules: Dict[str, Optional[str]] = {}
         self.parser_paths: Dict[str, List[str]] = {}
         self.variables: Dict[str, str] = {}
 

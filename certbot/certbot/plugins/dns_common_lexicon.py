@@ -1,9 +1,10 @@
 """Common code for DNS Authenticator Plugins built on Lexicon."""
 import logging
-from typing import Any
+from typing import Any, Optional
 from typing import Dict
 from typing import Union
 
+from lexicon.providers.base import Provider
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
@@ -29,7 +30,7 @@ class LexiconClient:
     """
 
     def __init__(self):
-        self.provider = None
+        self.provider: Provider
 
     def add_txt_record(self, domain, record_name, record_content):
         """

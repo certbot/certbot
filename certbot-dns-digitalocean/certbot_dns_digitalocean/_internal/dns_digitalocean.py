@@ -1,5 +1,6 @@
 """DNS Authenticator for DigitalOcean."""
 import logging
+from typing import Optional
 
 import digitalocean
 import zope.interface
@@ -7,6 +8,7 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
+from certbot.plugins.dns_common import CredentialsConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.credentials = None
+        self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
@@ -53,6 +55,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_digitalocean_client().del_txt_record(domain, validation_name, validation)
 
     def _get_digitalocean_client(self):
+        if not self.credentials:
+            raise errors.Error("Plugin has not been prepared.")
         return _DigitalOceanClient(self.credentials.conf('token'))
 
 

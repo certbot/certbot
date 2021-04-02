@@ -1,7 +1,9 @@
 """DNS Authenticator for Google Cloud DNS."""
 import json
 import logging
+from typing import Optional
 
+from certbot.plugins.dns_common import CredentialsConfiguration
 from googleapiclient import discovery
 from googleapiclient import errors as googleapiclient_errors
 import httplib2
@@ -34,7 +36,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.credentials = None
+        self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
