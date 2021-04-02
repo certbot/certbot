@@ -2,7 +2,6 @@
 import logging
 from typing import Optional
 
-from certbot.plugins.dns_common import CredentialsConfiguration
 from lexicon.providers import dnsmadeeasy
 import zope.interface
 
@@ -10,6 +9,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
 from certbot.plugins import dns_common_lexicon
+from certbot.plugins.dns_common import CredentialsConfiguration
 
 logger = logging.getLogger(__name__)
 
