@@ -6,12 +6,12 @@ This module is intended to replace standard os module throughout certbot project
 This module has the same API as the os module in the Python standard library
 except for the functions defined below.
 
+isort:skip_file
 """
 
 # NOTE: If adding a new documented function to compat.os, ensure that it is added to the
 #       ':members:' list in certbot/docs/api/certbot.compat.os.rst.
 
-# isort:skip_file
 # pylint: disable=function-redefined
 from __future__ import absolute_import
 
