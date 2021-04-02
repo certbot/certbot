@@ -33,7 +33,7 @@ def _create_subparsers(helpful):
     helpful.add("revoke",
                 "--reason", dest="reason",
                 choices=CaseInsensitiveList(
-                    dict(sorted(constants.REVOCATION_REASONS.items(), key=lambda item: item[1]))),
+                    sorted(constants.REVOCATION_REASONS.items(), key=lambda item: item[1])),
                 action=_EncodeReasonAction, default=flag_default("reason"),
                 help="Specify reason for revoking certificate. (default: unspecified)")
     helpful.add("revoke",

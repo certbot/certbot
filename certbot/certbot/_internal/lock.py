@@ -228,9 +228,11 @@ class _WindowsLockMechanism(_BaseLockMechanism):
             # https://github.com/python/typeshed/pull/3607 and included in
             # newer versions of mypy so it can be removed when mypy is
             # upgraded.
-            if self._fd:
-                msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)  # type: ignore
-                os.close(self._fd)
+            if not self._fd:
+                raise errors.Error("The lock has not been acquired first.")
+
+            msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)  # type: ignore
+            os.close(self._fd)
 
             try:
                 os.remove(self._path)
