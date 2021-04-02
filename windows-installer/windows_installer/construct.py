@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import ctypes
 import os
-import re
 import shutil
 import struct
 import subprocess
@@ -64,21 +63,6 @@ def _compile_wheels(repo_path, build_path, venv_python):
     command = [venv_python, '-m', 'pip', 'wheel', '-w', wheels_path]
     command.extend(wheels_project)
     subprocess.check_call(command, env=env)
-
-    # Cryptography uses now a unique wheel name "cryptography-VERSION-cpXX-abi3-win32.whl where
-    # cpXX is the lowest supported version of Python (eg. cp36 says that the wheel is compatible
-    # with Python 3.6+). While technically valid to describe a wheel compliant with the Stable
-    # Application Binary Interface, this naming convention makes pynsist falsely think that the
-    # wheel is compatible with Python 3.6 only.
-    # Let's trick pynsist by renaming the wheel until this is fixed upstream.
-    for file in os.listdir(wheels_path):
-        # Given that our Python version is 3.8, this rename files like
-        # cryptography-VERSION-cpXX-abi3-win32.whl into cryptography-VERSION-cp38-abi3-win32.whl
-        renamed = re.sub(r'^(.*)-cp\d+-abi3-(\w+)\.whl$', r'\1-cp{0}{1}-abi3-\2.whl'
-                         .format(PYTHON_VERSION[0], PYTHON_VERSION[1]), file)
-        print(renamed)
-        if renamed != file:
-            os.replace(os.path.join(wheels_path, file), os.path.join(wheels_path, renamed))
 
 
 def _prepare_build_tools(venv_path, venv_python, repo_path):
