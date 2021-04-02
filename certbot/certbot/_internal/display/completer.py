@@ -29,7 +29,7 @@ class Completer:
     """
 
     def __init__(self):
-        self._iter: Iterator
+        self._iter: Iterator[str]
         self._original_completer: Optional[Callable]
         self._original_delims: str
 
