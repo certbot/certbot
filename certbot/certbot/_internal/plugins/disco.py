@@ -3,7 +3,6 @@ import itertools
 import logging
 import sys
 from collections.abc import Mapping
-from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Union
@@ -11,7 +10,6 @@ from typing import Union
 import pkg_resources
 import zope.interface
 import zope.interface.verify
-
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
@@ -50,10 +48,10 @@ class PluginEntryPoint:
 
     def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix=False):
         self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
-        self.plugin_cls: Any = entry_point.load()
+        self.plugin_cls: interfaces.IPluginFactory = entry_point.load()
         self.entry_point = entry_point
         self.warning_message: Optional[str] = None
-        self._initialized: Optional[Any] = None
+        self._initialized: Optional[interfaces.IPlugin] = None
         self._prepared: Optional[Union[bool, Error]] = None
         self._hidden = False
         self._long_description: Optional[str] = None
@@ -122,7 +120,9 @@ class PluginEntryPoint:
         """Memoized plugin initialization."""
         if not self.initialized:
             self.entry_point.require()  # fetch extras!
-            self._initialized = self.plugin_cls(config, self.name)
+            # TODO: remove type ignore once the interface becomes a proper
+            #  abstract class (using abc) that mypy understands.
+            self._initialized = self.plugin_cls(config, self.name)  # type: ignore
         return self._initialized
 
     def verify(self, ifaces):
@@ -153,7 +153,9 @@ class PluginEntryPoint:
             raise ValueError("Plugin is not initialized.")
         if self._prepared is None:
             try:
-                self._initialized.prepare()
+                # TODO: remove type ignore once the interface becomes a proper
+                #  abstract class (using abc) that mypy understands.
+                self._initialized.prepare()  # type: ignore
             except errors.MisconfigurationError as error:
                 logger.debug("Misconfigured %r: %s", self, error, exc_info=True)
                 self._prepared = error
