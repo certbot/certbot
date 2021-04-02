@@ -8,6 +8,12 @@ from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 
+min_setuptools_version='39.0.1'
+# This conditional isn't necessary, but it provides better error messages to
+# people who try to install this package with older versions of setuptools.
+if LooseVersion(setuptools_version) < LooseVersion(min_setuptools_version):
+    raise RuntimeError(f'setuptools {min_setuptools_version}+ is required')
+
 # Workaround for https://bugs.python.org/issue8876, see
 # https://bugs.python.org/issue8876#msg208792
 # This can be removed when using Python 2.7.9 or later:
@@ -49,28 +55,13 @@ install_requires = [
     'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz',
-    'setuptools>=39.0.1',
+    # This dependency needs to be added using environment markers to avoid its
+    # installation on Linux.
+    'pywin32>=300 ; sys_platform == "win32"',
+    f'setuptools>={min_setuptools_version}',
     'zope.component',
     'zope.interface',
 ]
-
-# Add pywin32 on Windows platforms to handle low-level system calls.
-# This dependency needs to be added using environment markers to avoid its installation on Linux.
-# However environment markers are supported only with setuptools >= 36.2.
-# So this dependency is not added for old Linux distributions with old setuptools,
-# in order to allow these systems to build certbot from sources.
-pywin32_req = 'pywin32>=300'
-setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
-if setuptools_known_environment_markers:
-    install_requires.append(pywin32_req + " ; sys_platform == 'win32'")
-elif 'bdist_wheel' in sys.argv[1:]:
-    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
-                       'of setuptools. Version 36.2+ of setuptools is required.')
-elif os.name == 'nt':
-    # This branch exists to improve this package's behavior on Windows. Without
-    # it, if the sdist is installed on Windows with an old version of
-    # setuptools, pywin32 will not be specified as a dependency.
-    install_requires.append(pywin32_req)
 
 dev_extras = [
     'astroid',

@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-import contextlib
 import ctypes
 import os
-import re
 import shutil
 import struct
 import subprocess
 import sys
-import tempfile
 import time
 
 PYTHON_VERSION = (3, 8, 8)
@@ -16,6 +13,21 @@ NSIS_VERSION = '3.06.1'
 
 
 def main():
+    if os.name != 'nt':
+        raise RuntimeError('This script must be run under Windows.')
+
+    if ctypes.windll.shell32.IsUserAnAdmin() == 0:
+        # Administrator privileges are required to properly install NSIS through Chocolatey
+        raise RuntimeError('This script must be run with administrator privileges.')
+
+    if sys.version_info[:2] != PYTHON_VERSION[:2]:
+        raise RuntimeError('This script must be run with Python {0}'
+                           .format('.'.join(str(item) for item in PYTHON_VERSION[0:2])))
+
+    if struct.calcsize('P') * 8 != PYTHON_BITNESS:
+        raise RuntimeError('This script must be run with a {0} bit version of Python.'
+                           .format(PYTHON_BITNESS))
+
     build_path, repo_path, venv_path, venv_python = _prepare_environment()
 
     _copy_assets(build_path, repo_path)
@@ -24,14 +36,14 @@ def main():
 
     _prepare_build_tools(venv_path, venv_python, repo_path)
     _compile_wheels(repo_path, build_path, venv_python)
-    _build_installer(installer_cfg_path, venv_path)
+    _build_installer(installer_cfg_path)
 
     print('Done')
 
 
-def _build_installer(installer_cfg_path, venv_path):
+def _build_installer(installer_cfg_path):
     print('Build the installer')
-    subprocess.check_call([os.path.join(venv_path, 'Scripts', 'pynsist.exe'), installer_cfg_path])
+    subprocess.check_call([sys.executable, '-m', 'nsist', installer_cfg_path])
 
 
 def _compile_wheels(repo_path, build_path, venv_python):
@@ -52,27 +64,11 @@ def _compile_wheels(repo_path, build_path, venv_python):
     command.extend(wheels_project)
     subprocess.check_call(command, env=env)
 
-    # Cryptography uses now a unique wheel name "cryptography-VERSION-cpXX-abi3-win32.whl where
-    # cpXX is the lowest supported version of Python (eg. cp36 says that the wheel is compatible
-    # with Python 3.6+). While technically valid to describe a wheel compliant with the Stable
-    # Application Binary Interface, this naming convention makes pynsist falsely think that the
-    # wheel is compatible with Python 3.6 only.
-    # Let's trick pynsist by renaming the wheel until this is fixed upstream.
-    for file in os.listdir(wheels_path):
-        # Given that our Python version is 3.8, this rename files like
-        # cryptography-VERSION-cpXX-abi3-win32.whl into cryptography-VERSION-cp38-abi3-win32.whl
-        renamed = re.sub(r'^(.*)-cp\d+-abi3-(\w+)\.whl$', r'\1-cp{0}{1}-abi3-\2.whl'
-                         .format(PYTHON_VERSION[0], PYTHON_VERSION[1]), file)
-        print(renamed)
-        if renamed != file:
-            os.replace(os.path.join(wheels_path, file), os.path.join(wheels_path, renamed))
-
 
 def _prepare_build_tools(venv_path, venv_python, repo_path):
     print('Prepare build tools')
     subprocess.check_call([sys.executable, '-m', 'venv', venv_path])
     subprocess.check_call([venv_python, os.path.join(repo_path, 'tools', 'pipstrap.py')])
-    subprocess.check_call([venv_python, os.path.join(repo_path, 'tools', 'pip_install.py'), 'pynsist'])
     subprocess.check_call(['choco', 'upgrade', '--allow-downgrade', '-y', 'nsis', '--version', NSIS_VERSION])
 
 
@@ -81,11 +77,11 @@ def _copy_assets(build_path, repo_path):
     if os.path.exists(build_path):
         os.rename(build_path, '{0}.{1}.bak'.format(build_path, int(time.time())))
     os.makedirs(build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'certbot.ico'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'run.bat'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'template.nsi'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'renew-up.ps1'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'renew-down.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'certbot.ico'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'run.bat'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'template.nsi'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'renew-up.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'renew-down.ps1'), build_path)
 
 
 def _generate_pynsist_config(repo_path, build_path):
@@ -141,7 +137,7 @@ def _prepare_environment():
         raise RuntimeError('Error: Chocolatey (https://chocolatey.org/) needs '
                            'to be installed to run this script.')
     script_path = os.path.realpath(__file__)
-    repo_path = os.path.dirname(os.path.dirname(script_path))
+    repo_path = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
     build_path = os.path.join(repo_path, 'windows-installer', 'build')
     venv_path = os.path.join(build_path, 'venv-config')
     venv_python = os.path.join(venv_path, 'Scripts', 'python.exe')
@@ -150,18 +146,4 @@ def _prepare_environment():
 
 
 if __name__ == '__main__':
-    if os.name != 'nt':
-        raise RuntimeError('This script must be run under Windows.')
-
-    if ctypes.windll.shell32.IsUserAnAdmin() == 0:
-        # Administrator privileges are required to properly install NSIS through Chocolatey
-        raise RuntimeError('This script must be run with administrator privileges.')
-
-    if sys.version_info[:2] != PYTHON_VERSION[:2]:
-        raise RuntimeError('This script must be run with Python {0}'
-                           .format('.'.join(str(item) for item in PYTHON_VERSION[0:2])))
-
-    if struct.calcsize('P') * 8 != PYTHON_BITNESS:
-        raise RuntimeError('This script must be run with a {0} bit version of Python.'
-                           .format(PYTHON_BITNESS))
     main()

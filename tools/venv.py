@@ -46,6 +46,9 @@ REQUIREMENTS = [
     '-e certbot-ci',
 ]
 
+if sys.platform == 'win32':
+    REQUIREMENTS.append('-e windows-installer')
+
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
 
 

@@ -8,7 +8,8 @@ import logging
 import re
 import socket
 import time
-from typing import cast, Optional
+from typing import cast
+from typing import Optional
 from typing import DefaultDict
 from typing import Dict
 from typing import List

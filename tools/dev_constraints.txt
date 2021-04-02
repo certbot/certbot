@@ -83,10 +83,10 @@ PyGithub==1.52
 Pygments==2.2.0
 pyjwt==1.7.1
 pylint==2.4.3
+pynacl==1.3.0
 # If pynsist version is upgraded, our NSIS template windows-installer/template.nsi
 # must be upgraded if necessary using the new built-in one from pynsist.
-pynacl==1.3.0
-pynsist==2.6
+pynsist==2.7
 pytest==3.2.5
 pytest-cov==2.5.1
 pytest-forked==0.2
