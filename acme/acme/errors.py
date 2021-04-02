@@ -28,8 +28,8 @@ class NonceError(ClientError):
 
 class BadNonce(NonceError):
     """Bad nonce error."""
-    def __init__(self, nonce, error, *args, **kwargs):
-        super(BadNonce, self).__init__(*args, **kwargs)  # type: ignore
+    def __init__(self, nonce, error, *args):
+        super(BadNonce, self).__init__(*args)
         self.nonce = nonce
         self.error = error
 
@@ -47,9 +47,8 @@ class MissingNonce(NonceError):
     :ivar requests.Response ~.response: HTTP Response
 
     """
-    def __init__(self, response, *args, **kwargs):
-        # See comment in BadNonce constructor above for an explanation of type: ignore here.
-        super(MissingNonce, self).__init__(*args, **kwargs)  # type: ignore
+    def __init__(self, response, *args):
+        super(MissingNonce, self).__init__(*args)
         self.response = response
 
     def __str__(self):
