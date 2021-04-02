@@ -58,7 +58,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_linode_client().del_txt_record(domain, validation_name, validation)
 
     def _get_linode_client(self):
-        if not self.credentials:
+        if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         api_key = self.credentials.conf('key')
         api_version = self.credentials.conf('version')

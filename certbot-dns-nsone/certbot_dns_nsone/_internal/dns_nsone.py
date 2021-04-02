@@ -56,7 +56,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_nsone_client().del_txt_record(domain, validation_name, validation)
 
     def _get_nsone_client(self):
-        if not self.credentials:
+        if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         return _NS1LexiconClient(self.credentials.conf('api-key'), self.ttl)
 

@@ -82,7 +82,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_rfc2136_client().del_txt_record(validation_name, validation)
 
     def _get_rfc2136_client(self):
-        if not self.credentials:
+        if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         return _RFC2136Client(self.credentials.conf('server'),
                               int(self.credentials.conf('port') or self.PORT),

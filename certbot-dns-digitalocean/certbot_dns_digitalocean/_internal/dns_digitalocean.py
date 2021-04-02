@@ -55,7 +55,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_digitalocean_client().del_txt_record(domain, validation_name, validation)
 
     def _get_digitalocean_client(self):
-        if not self.credentials:
+        if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         return _DigitalOceanClient(self.credentials.conf('token'))
 

@@ -57,7 +57,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_luadns_client().del_txt_record(domain, validation_name, validation)
 
     def _get_luadns_client(self):
-        if not self.credentials:
+        if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         return _LuaDNSLexiconClient(self.credentials.conf('email'),
                                     self.credentials.conf('token'),

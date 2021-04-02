@@ -56,7 +56,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_dnsimple_client().del_txt_record(domain, validation_name, validation)
 
     def _get_dnsimple_client(self):
-        if not self.credentials:
+        if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         return _DNSimpleLexiconClient(self.credentials.conf('token'), self.ttl)
 

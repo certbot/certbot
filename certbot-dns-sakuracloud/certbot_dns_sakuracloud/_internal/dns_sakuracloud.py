@@ -63,7 +63,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             domain, validation_name, validation)
 
     def _get_sakuracloud_client(self):
-        if not self.credentials:
+        if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         return _SakuraCloudLexiconClient(
             self.credentials.conf('api-token'),

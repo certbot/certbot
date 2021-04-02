@@ -81,7 +81,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_cloudflare_client().del_txt_record(domain, validation_name, validation)
 
     def _get_cloudflare_client(self):
-        if not self.credentials:
+        if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         if self.credentials.conf('api-token'):
             return _CloudflareClient(None, self.credentials.conf('api-token'))

@@ -60,7 +60,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_dnsmadeeasy_client().del_txt_record(domain, validation_name, validation)
 
     def _get_dnsmadeeasy_client(self):
-        if not self.credentials:
+        if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         return _DNSMadeEasyLexiconClient(self.credentials.conf('api-key'),
                                          self.credentials.conf('secret-key'),
