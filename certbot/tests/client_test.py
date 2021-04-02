@@ -100,7 +100,8 @@ class RegisterTest(test_util.ConfigTestCase):
                 self._call()
                 self.assertTrue(mock_prepare.called)
 
-    def test_it(self):
+    @test_util.patch_get_utility()
+    def test_it(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
@@ -160,7 +161,8 @@ class RegisterTest(test_util.ConfigTestCase):
                 # check Certbot created an account with no email. Contact should return empty
                 self.assertFalse(mock_client().new_account_and_tos.call_args[0][0].contact)
 
-    def test_with_eab_arguments(self):
+    @test_util.patch_get_utility()
+    def test_with_eab_arguments(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().client.directory.__getitem__ = mock.Mock(
                 side_effect=self._new_acct_dir_mock
@@ -175,7 +177,8 @@ class RegisterTest(test_util.ConfigTestCase):
 
                     self.assertTrue(mock_eab_from_data.called)
 
-    def test_without_eab_arguments(self):
+    @test_util.patch_get_utility()
+    def test_without_eab_arguments(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
@@ -316,7 +319,7 @@ class ClientTest(ClientTestCommon):
             errors.Error,
             self.client.obtain_certificate_from_csr,
             test_csr)
-        mock_logger.warning.assert_called_once_with(mock.ANY)
+        mock_logger.error.assert_called_once_with(mock.ANY)
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate(self, mock_crypto_util):
@@ -602,7 +605,7 @@ class EnhanceConfigTest(ClientTestCommon):
         self.config.hsts = True
         with mock.patch("certbot._internal.client.logger") as mock_logger:
             self.client.enhance_config([self.domain], None)
-        self.assertEqual(mock_logger.warning.call_count, 1)
+        self.assertEqual(mock_logger.error.call_count, 1)
         self.client.installer.enhance.assert_not_called()
 
     @mock.patch("certbot._internal.client.logger")

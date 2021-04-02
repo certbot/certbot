@@ -63,7 +63,7 @@ class DNSAuthenticator(common.Plugin):
         # DNS updates take time to propagate and checking to see if the update has occurred is not
         # reliable (the machine this code is running on might be able to see an update before
         # the ACME server). So: we sleep for a short amount of time we believe to be long enough.
-        display_util.notify("Waiting %d seconds for DNS changes to propagate",
+        display_util.notify("Waiting %d seconds for DNS changes to propagate" %
                     self.conf('propagation-seconds'))
         sleep(self.conf('propagation-seconds'))
 

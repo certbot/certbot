@@ -493,13 +493,13 @@ class FindChainWithIssuerTest(unittest.TestCase):
         self.assertEqual(matched, fullchains[0])
         mock_info.assert_not_called()
 
-    @mock.patch('certbot.crypto_util.logger.info')
-    def test_warning_on_no_match(self, mock_info):
+    @mock.patch('certbot.crypto_util.logger.warning')
+    def test_warning_on_no_match(self, mock_warning):
         fullchains = self._all_fullchains()
         matched = self._call(fullchains, "non-existent issuer",
                              warn_on_no_match=True)
         self.assertEqual(matched, fullchains[0])
-        mock_info.assert_called_once_with("Certbot has been configured to prefer "
+        mock_warning.assert_called_once_with("Certbot has been configured to prefer "
             "certificate chains with issuer '%s', but no chain from the CA matched "
             "this issuer. Using the default certificate chain instead.",
             "non-existent issuer")

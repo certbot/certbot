@@ -42,7 +42,8 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
 
         self.auth = DNSAuthenticatorTest._FakeDNSAuthenticator(self.config, "fake")
 
-    def test_perform(self):
+    @test_util.patch_get_utility()
+    def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
         self.auth._perform.assert_called_once_with(dns_test_common.DOMAIN, mock.ANY, mock.ANY)
