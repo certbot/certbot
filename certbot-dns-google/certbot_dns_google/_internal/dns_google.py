@@ -1,7 +1,6 @@
 """DNS Authenticator for Google Cloud DNS."""
 import json
 import logging
-from typing import Optional
 
 from googleapiclient import discovery
 from googleapiclient import errors as googleapiclient_errors
@@ -12,7 +11,6 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
-from certbot.plugins.dns_common import CredentialsConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +34,6 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
