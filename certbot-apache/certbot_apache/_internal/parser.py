@@ -3,8 +3,9 @@ import copy
 import fnmatch
 import logging
 import re
-from typing import Dict, Optional
+from typing import Dict
 from typing import List
+from typing import Optional
 
 from certbot import errors
 from certbot.compat import os

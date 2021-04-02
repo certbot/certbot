@@ -1,7 +1,8 @@
 """Common code for DNS Authenticator Plugins built on Lexicon."""
 import logging
-from typing import Any, Optional
+from typing import Any
 from typing import Dict
+from typing import Optional
 from typing import Union
 
 from lexicon.providers.base import Provider

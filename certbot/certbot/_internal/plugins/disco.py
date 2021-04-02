@@ -4,7 +4,11 @@ import itertools
 import logging
 import sys
 from types import ModuleType
-from typing import Dict, Optional, Type, Any, Union
+from typing import Any
+from typing import Dict
+from typing import Optional
+from typing import Type
+from typing import Union
 
 import pkg_resources
 import zope.interface
