@@ -1,3 +1,5 @@
+# type: ignore
+# This module is not used for now, so we just skip type check for the sake of simplicity.
 """ This file contains parsing routines and object classes to help derive meaning from
 raw lists of tokens from pyparsing. """
 
@@ -204,7 +206,7 @@ class Sentence(Parsable):
         :returns: whether this lists is parseable by `Sentence`.
         """
         return isinstance(lists, list) and len(lists) > 0 and \
-            all(isinstance(elem, str) for elem in lists)
+               all(isinstance(elem, str) for elem in lists)
 
     def parse(self, raw_list, add_spaces=False):
         """ Parses a list of string types into this object.
@@ -212,7 +214,7 @@ class Sentence(Parsable):
         if add_spaces:
             raw_list = _space_list(raw_list)
         if not isinstance(raw_list, list) or \
-                any(not isinstance(elem, str) for elem in raw_list):
+            any(not isinstance(elem, str) for elem in raw_list):
             raise errors.MisconfigurationError("Sentence parsing expects a list of string types.")
         self._data = raw_list
 
@@ -283,7 +285,7 @@ class Block(Parsable):
 
         :returns: whether this lists is parseable by `Block`. """
         return isinstance(lists, list) and len(lists) == 2 and \
-            Sentence.should_parse(lists[0]) and isinstance(lists[1], list)
+               Sentence.should_parse(lists[0]) and isinstance(lists[1], list)
 
     def set_tabs(self, tabs="    "):
         """ Sets tabs by setting equivalent tabbing on names, then adding tabbing

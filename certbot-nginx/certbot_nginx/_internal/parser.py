@@ -18,6 +18,7 @@ from certbot import errors
 from certbot.compat import os
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
+from certbot_nginx._internal.nginxparser import UnspacedList
 
 logger = logging.getLogger(__name__)
 
@@ -243,6 +244,8 @@ class NginxParser:
             tree = self.parsed[filename]
             if ext:
                 filename = filename + os.path.extsep + ext
+            if not isinstance(tree, UnspacedList):
+                raise ValueError(f"Error tree {tree} is not an UnspacedList")
             try:
                 if lazy and not tree.is_dirty():
                     continue

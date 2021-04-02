@@ -1,4 +1,7 @@
 """ Distribution specific override class for Fedora 29+ """
+from typing import cast
+from typing import List
+
 import zope.interface
 
 from certbot import errors
@@ -69,9 +72,9 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         of Fedora to restart httpd.
         """
         super(FedoraConfigurator, self)._prepare_options()
-        self.options["restart_cmd"][0] = 'apachectl'
-        self.options["restart_cmd_alt"][0] = 'apachectl'
-        self.options["conftest_cmd"][0] = 'apachectl'
+        cast(List[str], self.options["restart_cmd"])[0] = 'apachectl'
+        cast(List[str], self.options["restart_cmd_alt"])[0] = 'apachectl'
+        cast(List[str], self.options["conftest_cmd"])[0] = 'apachectl'
 
 
 class FedoraParser(parser.ApacheParser):

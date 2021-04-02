@@ -29,7 +29,7 @@ class Reporter:
     LOW_PRIORITY = 2
     """Low priority constant. See `add_message`."""
 
-    _msg_type = collections.namedtuple('ReporterMsg', 'priority text on_crash')
+    _msg_type = collections.namedtuple('_msg_type', 'priority text on_crash')
 
     def __init__(self, config):
         self.messages: queue.PriorityQueue[Reporter._msg_type] = queue.PriorityQueue()

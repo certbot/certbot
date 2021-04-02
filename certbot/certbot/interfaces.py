@@ -349,7 +349,7 @@ class IInstaller(IPlugin):
 
         """
 
-    def rollback_checkpoints(rollback=1):
+    def rollback_checkpoints(rollback: int = 1):
         """Revert `rollback` number of configuration checkpoints.
 
         :raises .PluginError: when configuration cannot be fully reverted

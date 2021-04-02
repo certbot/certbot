@@ -64,7 +64,7 @@ class BaseDualNetworkedServers:
     def __init__(self, ServerClass, server_address, *remaining_args, **kwargs):
         port = server_address[1]
         self.threads: List[threading.Thread] = []
-        self.servers: List[ACMEServerMixin] = []
+        self.servers: List[socketserver.BaseServer] = []
 
         # Must try True first.
         # Ubuntu, for example, will fail to bind to IPv4 if we've already bound
@@ -203,8 +203,24 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
-        self.timeout = kwargs.pop('timeout', 30)
+        self._timeout = kwargs.pop('timeout', 30)
         BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
+        self.server: HTTP01Server
+
+    # In parent class BaseHTTPRequestHandler, 'timeout' is a class-level property but we
+    # need to define its value during the initialization phase in HTTP01RequestHandler.
+    # However MyPy does not appreciate that we dynamically shadow a class-level property
+    # with an instance-level property (eg. self.timeout = ... in __init__()). So to make
+    # everyone happy, we statically redefine 'timeout' as a method property, and set the
+    # timeout value in a new internal instance-level property _timeout.
+    @property
+    def timeout(self):
+        """
+        The default timeout this server should apply to requests.
+        :return: timeout to apply
+        :rtype: int
+        """
+        return self._timeout
 
     def log_message(self, format, *args):  # pylint: disable=redefined-builtin
         """Log arbitrary message."""

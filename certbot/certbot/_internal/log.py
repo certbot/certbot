@@ -109,11 +109,12 @@ def post_arg_parse_setup(config):
 
     root_logger.addHandler(file_handler)
     root_logger.removeHandler(memory_handler)
-    temp_handler = memory_handler.target  # pylint: disable=no-member
+    temp_handler = getattr(memory_handler, 'target', None)
     memory_handler.setTarget(file_handler)  # pylint: disable=no-member
     memory_handler.flush(force=True)  # pylint: disable=unexpected-keyword-arg
     memory_handler.close()
-    temp_handler.close()
+    if temp_handler:
+        temp_handler.close()
 
     if config.quiet:
         level = constants.QUIET_LOGGING_LEVEL
@@ -205,7 +206,7 @@ class MemoryHandler(logging.handlers.MemoryHandler):
         """Close the memory handler, but don't set the target to None."""
         # This allows the logging module which may only have a weak
         # reference to the target handler to properly flush and close it.
-        target = self.target
+        target = getattr(self, 'target')
         super(MemoryHandler, self).close()
         self.target = target
 

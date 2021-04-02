@@ -44,7 +44,6 @@ from certbot._internal.plugins import disco as plugins_disco
 import certbot._internal.plugins.selection as plugin_selection
 import certbot.plugins.enhancements as enhancements
 
-
 logger = logging.getLogger(__name__)
 
 

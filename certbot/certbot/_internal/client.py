@@ -2,7 +2,6 @@
 import datetime
 import logging
 import platform
-from typing import List
 from typing import Optional
 
 from cryptography.hazmat.backends import default_backend
@@ -391,7 +390,7 @@ class Client:
             return cert, chain, key, csr
 
     def _get_order_and_authorizations(self, csr_pem: str,
-                                      best_effort: bool) -> List[messages.OrderResource]:
+                                      best_effort: bool) -> messages.OrderResource:
         """Request a new order and complete its authorizations.
 
         :param str csr_pem: A CSR in PEM format.

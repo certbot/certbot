@@ -43,6 +43,9 @@ class DNSAuthenticator(common.Plugin):
     def prepare(self): # pylint: disable=missing-function-docstring
         pass
 
+    def more_info(self) -> str:  # pylint: disable=missing-function-docstring
+        raise NotImplementedError()
+
     def perform(self, achalls): # pylint: disable=missing-function-docstring
         self._setup_credentials()
 

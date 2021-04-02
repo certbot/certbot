@@ -1,6 +1,9 @@
 """ACME protocol messages."""
-import json
 from collections.abc import Hashable
+import json
+from typing import Any
+from typing import Dict
+from typing import Type
 
 import josepy as jose
 
@@ -87,7 +90,9 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             raise ValueError("The supplied code: %s is not a known ACME error"
                              " code" % code)
         typ = ERROR_PREFIX + code
-        return cls(typ=typ, **kwargs)
+        # Mypy will not understand that the Error constructor accepts a named argument
+        # "typ" because of josepy magic. Let's ignore the type check here.
+        return cls(typ=typ, **kwargs)  # type: ignore
 
     @property
     def description(self):
@@ -124,7 +129,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
     """ACME constant."""
     __slots__ = ('name',)
-    POSSIBLE_NAMES = NotImplemented
+    POSSIBLE_NAMES: Dict[str, '_Constant'] = NotImplemented
 
     def __init__(self, name):
         super(_Constant, self).__init__()
@@ -166,7 +171,7 @@ STATUS_DEACTIVATED = Status('deactivated')
 
 class IdentifierType(_Constant):
     """ACME identifier type."""
-    POSSIBLE_NAMES: dict = {}
+    POSSIBLE_NAMES: Dict[str, 'IdentifierType'] = {}
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 
 
@@ -184,7 +189,7 @@ class Identifier(jose.JSONObjectWithFields):
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES: dict = {}
+    _REGISTERED_TYPES: Dict[str, Type[Any]] = {}
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
@@ -218,7 +223,7 @@ class Directory(jose.JSONDeSerializable):
         return getattr(key, 'resource_type', key)
 
     @classmethod
-    def register(cls, resource_body_cls):
+    def register(cls, resource_body_cls: Type[Any]) -> Type[Any]:
         """Register resource."""
         resource_type = resource_body_cls.resource_type
         assert resource_type not in cls._REGISTERED_TYPES
@@ -528,7 +533,9 @@ class Authorization(ResourceBody):
     expires = fields.RFC3339Field('expires', omitempty=True)
     wildcard = jose.Field('wildcard', omitempty=True)
 
-    @challenges.decoder
+    # Mypy does not understand the josepy magic happening here, and falsely claims
+    # that challenge is redefined. Let's ignore the type check here.
+    @challenges.decoder  # type: ignore
     def challenges(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
@@ -627,7 +634,9 @@ class Order(ResourceBody):
     expires = fields.RFC3339Field('expires', omitempty=True)
     error = jose.Field('error', omitempty=True, decoder=Error.from_json)
 
-    @identifiers.decoder
+    # Mypy does not understand the josepy magic happening here, and falsely claims
+    # that identifiers is redefined. Let's ignore the type check here.
+    @identifiers.decoder  # type: ignore
     def identifiers(value):  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(Identifier.from_json(identifier) for identifier in value)
 

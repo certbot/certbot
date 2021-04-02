@@ -1,4 +1,5 @@
 """ apacheconfig implementation of the ParserNode interfaces """
+from typing import Tuple
 
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
@@ -21,7 +22,7 @@ class ApacheParserNode(interfaces.ParserNode):
         self.metadata = metadata
         self._raw = self.metadata["ac_ast"]
 
-    def save(self, msg): # pragma: no cover
+    def save(self, msg):  # pragma: no cover
         pass
 
     def find_ancestors(self, name):  # pylint: disable=unused-variable
@@ -83,7 +84,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
 
     def __init__(self, **kwargs):
         super(ApacheBlockNode, self).__init__(**kwargs)
-        self.children = ()
+        self.children: Tuple[ApacheParserNode, ...] = ()
 
     def __eq__(self, other):  # pragma: no cover
         if isinstance(other, self.__class__):
