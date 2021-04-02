@@ -301,8 +301,7 @@ def verify_signed_payload(public_key, signature, payload, signature_hash_algorit
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if isinstance(public_key, RSAPublicKey):
-            # https://github.com/python/typeshed/blob/master/third_party/2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
-            verifier = public_key.verifier(  # type: ignore
+            verifier = public_key.verifier(
                 signature, PKCS1v15(), signature_hash_algorithm
             )
             verifier.update(payload)
