@@ -2,10 +2,8 @@
 import logging
 from typing import Any
 from typing import Dict
-from typing import Optional
 from typing import Union
 
-from lexicon.providers.base import Provider
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
@@ -19,8 +17,10 @@ from certbot.plugins import dns_common
 # if Lexicon is not available, obviously.
 try:
     from lexicon.config import ConfigResolver
+    from lexicon.providers.base import Provider
 except ImportError:
     ConfigResolver = None  # type: ignore
+    Provider = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 

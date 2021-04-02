@@ -3,7 +3,6 @@ import json
 import logging
 from typing import Any
 from typing import Dict
-from typing import Optional
 
 from certbot import errors
 from certbot.compat import filesystem

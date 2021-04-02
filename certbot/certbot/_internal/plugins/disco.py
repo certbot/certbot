@@ -1,13 +1,11 @@
 """Utilities for plugins discovery and selection."""
-from collections.abc import Mapping
 import itertools
 import logging
 import sys
-from types import ModuleType
+from collections.abc import Mapping
 from typing import Any
 from typing import Dict
 from typing import Optional
-from typing import Type
 from typing import Union
 
 import pkg_resources
@@ -19,8 +17,6 @@ from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os
 from certbot.errors import Error
-from certbot.interfaces import IPlugin
-from certbot.plugins.common import Plugin
 
 logger = logging.getLogger(__name__)
 
