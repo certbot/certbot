@@ -29,6 +29,12 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
+        # pynsist is pinned to an exact version so we can update
+        # assets/template.nsi as needed. The file is based on the default
+        # pynsist NSIS template and pynsist's documentation warns that custom
+        # templates may need to be updated for them to work with new versions
+        # of pynsist. See
+        # https://pynsist.readthedocs.io/en/latest/cfgfile.html#build-section.
         'pynsist==2.7'
     ],
     entry_points={
