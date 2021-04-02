@@ -90,6 +90,8 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             raise ValueError("The supplied code: %s is not a known ACME error"
                              " code" % code)
         typ = ERROR_PREFIX + code
+        # Mypy will not understand that the Error constructor accepts a named argument
+        # "typ" because of josepy magic. Let's ignore the type check here.
         return cls(typ=typ, **kwargs)  # type: ignore
 
     @property

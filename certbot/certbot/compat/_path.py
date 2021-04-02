@@ -3,6 +3,10 @@ This compat module wraps os.path to forbid some functions.
 
 isort:skip_file
 """
+
+# NB: Each function defined in compat._path is marked with "type: ignore" to avoid mypy
+#     to complain that a function is redefined (because we imported if first from os.path).
+
 # pylint: disable=function-redefined
 from __future__ import absolute_import
 

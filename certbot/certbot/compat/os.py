@@ -9,8 +9,11 @@ except for the functions defined below.
 isort:skip_file
 """
 
-# NOTE: If adding a new documented function to compat.os, ensure that it is added to the
+# NB1: If adding a new documented function to compat.os, ensure that it is added to the
 #       ':members:' list in certbot/docs/api/certbot.compat.os.rst.
+
+# NB2: Each function defined in compat.os is marked with "type: ignore" to avoid mypy
+#      to complain that a function is redefined (because we imported if first from os).
 
 # pylint: disable=function-redefined
 from __future__ import absolute_import
