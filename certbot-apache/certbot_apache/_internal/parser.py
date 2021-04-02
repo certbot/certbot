@@ -13,9 +13,9 @@ from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
 
 try:
-    import augeas
+    from augeas import Augeas
 except ImportError:  # pragma: no cover
-    augeas = None  # type: ignore
+    Augeas = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -939,17 +939,17 @@ def get_aug_path(file_path):
     return "/files%s" % file_path
 
 
-def init_augeas() -> augeas.Augeas:
+def init_augeas() -> Augeas:
     """ Initialize the actual Augeas instance """
 
-    if not augeas:  # pragma: no cover
+    if not Augeas:  # pragma: no cover
         raise errors.NoInstallationError("Problem in Augeas installation")
 
-    return augeas.Augeas(
+    return Augeas(
         # specify a directory to load our preferred lens from
         loadpath=constants.AUGEAS_LENS_DIR,
         # Do not save backup (we do it ourselves), do not load
         # anything by default
-        flags=(augeas.Augeas.NONE |
-               augeas.Augeas.NO_MODL_AUTOLOAD |
-               augeas.Augeas.ENABLE_SPAN))
+        flags=(Augeas.NONE |
+               Augeas.NO_MODL_AUTOLOAD |
+               Augeas.ENABLE_SPAN))

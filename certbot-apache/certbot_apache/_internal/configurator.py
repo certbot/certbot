@@ -1057,7 +1057,7 @@ class ApacheConfigurator(common.Installer):
         """
 
         if not self.parser_root:
-            raise errors.Error("This ApacheConfigurator instance is not"
+            raise errors.Error("This ApacheConfigurator instance is not"  # pragma: no cover
                                "configured to use a node parser.")
         vhs = []
         vhosts = self.parser_root.find_blocks("VirtualHost", exclude=False)
