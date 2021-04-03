@@ -115,6 +115,38 @@ would obtain a single certificate for all of those names, using the
 ``/var/www/example`` webroot directory for the first two, and
 ``/var/www/other`` for the second two.
 
+An alternative (or an addition to) the above mentioned ``--webroot-path`` (or 
+``-w``) and ``-d`` options, is the ``--webroot-map`` option, which combines both. 
+It accepts a JSON dictionary containing the domain name(s) as well as the 
+corresponding webroot path. You can have one or more domain names for a single 
+webroot path. For example, using the domain names and webroot paths of the command 
+above::
+
+  {
+      "www.example.com", "example.com": "/var/www/example",
+      "other.example.net, another.other.example.net": "/var/www/other"
+  }
+
+This JSON dictionary can be condensed into a single line without white spaces. 
+E.g., the above example is identical to the following single line:
+
+::
+
+    {"www.example.com","example.com":"/var/www/example","other.example.net,another.other.example.net":"/var/www/other"}
+
+This can be used with certbot on the command line as follows:
+
+::
+
+    certbot certonly --webroot --webroot-map '{"www.example.com","example.com":"/var/www/example","other.example.net,another.other.example.net":"/var/www/other"}'
+
+When combining ``--webroot-map`` with the ``-w`` and/or ``-d`` options, the 
+options are combined, but the ``--webroot-map`` command takes precedence over 
+the ``-w`` and/or ``-d`` command(s).
+
+If you require to put the webroot-map command in a configuration file, the 
+condensed, single line version of the JSON dictionary must be used.
+
 The webroot plugin works by creating a temporary file for each of your requested
 domains in ``${webroot-path}/.well-known/acme-challenge``. Then the Let's Encrypt
 validation server makes HTTP requests to validate that the DNS for each
