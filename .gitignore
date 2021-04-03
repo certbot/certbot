@@ -15,6 +15,7 @@ poetry.lock
 
 # coverage
 .coverage
+.coverage.*
 /htmlcov/
 
 /.vagrant

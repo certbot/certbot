@@ -49,7 +49,7 @@ def cover(package):
         return
 
     subprocess.check_call([sys.executable, '-m', 'pytest',
-                           '--cov', pkg_dir, '--cov-append', '--cov-report=', pkg_dir])
+                           '--cov', pkg_dir, '--cov-report=', pkg_dir])
     try:
         subprocess.check_call([
             sys.executable, '-m', 'coverage', 'report', '--fail-under',
@@ -73,12 +73,6 @@ those packages are moved to a separate repo."""
     args = parser.parse_args()
 
     packages = args.packages or DEFAULT_PACKAGES
-
-    # --cov-append is on, make sure stats are correct
-    try:
-        os.remove('.coverage')
-    except OSError:
-        pass
 
     for package in packages:
         cover(package)
