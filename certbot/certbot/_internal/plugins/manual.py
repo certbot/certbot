@@ -45,11 +45,14 @@ class Authenticator(common.Plugin):
         'list of all domains that are challenged for the current certificate.')
     _DNS_INSTRUCTIONS = """\
 Please deploy a DNS TXT record under the name
-{domain} with the following value:
+{domain}. with the following value:
 
 {validation}
 
-Before continuing, verify the record is deployed."""
+Before continuing, verify the TXT record has been deployed. Depending on the DNS 
+provider, this may take some time, from just a few seconds to sometimes multiple 
+minutes. You can check the propogation through online tools, such as the Google 
+Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}."""
     _HTTP_INSTRUCTIONS = """\
 Create a file containing just this data:
 
