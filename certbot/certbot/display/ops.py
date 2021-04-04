@@ -63,7 +63,7 @@ def get_email(invalid=False, optional=True):
         if suggest_unsafe:
             msg = unsafe_suggestion + msg
             suggest_unsafe = False  # add this message at most once
-        elif email:
+        elif email and not invalid:
             return email
 
         invalid = bool(email)

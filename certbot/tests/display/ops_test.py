@@ -38,53 +38,23 @@ class GetEmailTest(unittest.TestCase):
         self.assertRaises(errors.Error, self._call, optional=False)
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_ok_safe(self, mock_get_utility):
-        mock_input = mock_get_utility().input
-        mock_input.return_value = (display_util.OK, "foo@bar.baz")
-        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
-            mock_safe_email.return_value = True
-            self.assertEqual(self._call(), "foo@bar.baz")
-
-    @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_ok_not_safe(self, mock_get_utility):
-        mock_input = mock_get_utility().input
-        mock_input.return_value = (display_util.OK, "foo@bar.baz")
-        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
-            mock_safe_email.side_effect = [False, True]
-            self.assertEqual(self._call(), "foo@bar.baz")
-
-    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_invalid_flag(self, mock_get_utility):
         invalid_txt = "There seem to be problems"
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
-        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
-            mock_safe_email.return_value = True
-            self._call()
-            self.assertTrue(invalid_txt not in mock_input.call_args[0][0])
-            self._call(invalid=True)
-            self.assertTrue(invalid_txt in mock_input.call_args[0][0])
+        self._call()
+        self.assertTrue(invalid_txt not in mock_input.call_args[0][0])
+        self._call(invalid=True)
+        self.assertTrue(invalid_txt in mock_input.call_args[0][0])
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_optional_flag(self, mock_get_utility):
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
-        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
-            mock_safe_email.side_effect = [False, True]
-            self._call(optional=False)
-            for call in mock_input.call_args_list:
-                self.assertTrue(
-                    "--register-unsafely-without-email" not in call[0][0])
-
-    @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_optional_invalid_unsafe(self, mock_get_utility):
-        invalid_txt = "There seem to be problems"
-        mock_input = mock_get_utility().input
-        mock_input.return_value = (display_util.OK, "foo@bar.baz")
-        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
-            mock_safe_email.side_effect = [False, True]
-            self._call(invalid=True)
-            self.assertTrue(invalid_txt in mock_input.call_args[0][0])
+        self._call(optional=False)
+        for call in mock_input.call_args_list:
+            self.assertTrue(
+                "--register-unsafely-without-email" not in call[0][0])
 
 
 class ChooseAccountTest(test_util.TempDirTestCase):
