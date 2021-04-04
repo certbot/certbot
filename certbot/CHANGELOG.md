@@ -14,6 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The module `acme.magic_typing` is deprecated and will be removed in a future release.
   Please use the built-in module `typing` instead.
 * The DigitalOcean plugin now creates TXT records for the DNS-01 challenge with a lower 30s TTL.
+* Removed e-mail address sanity check when user is prompted for it and let the ACME server do the
+  sanity checking.
 
 ### Fixed
 

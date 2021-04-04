@@ -54,18 +54,17 @@ def get_email(invalid=False, optional=True):
             msg = ("You should register before running non-interactively, "
                    "or provide --agree-tos and --email <email_address> flags.")
             raise errors.MissingCommandlineFlag(msg)
-
         if code != display_util.OK:
             if optional:
                 raise errors.Error(
                     "An e-mail address or "
                     "--register-unsafely-without-email must be provided.")
             raise errors.Error("An e-mail address must be provided.")
-        if util.safe_email(email):
-            return email
         if suggest_unsafe:
             msg = unsafe_suggestion + msg
             suggest_unsafe = False  # add this message at most once
+        elif email:
+            return email
 
         invalid = bool(email)
 
