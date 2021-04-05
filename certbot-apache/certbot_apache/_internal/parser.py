@@ -5,11 +5,17 @@ import logging
 import re
 from typing import Dict
 from typing import List
+from typing import Optional
 
 from certbot import errors
 from certbot.compat import os
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
+
+try:
+    from augeas import Augeas
+except ImportError:  # pragma: no cover
+    Augeas = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +45,7 @@ class ApacheParser:
         self.configurator = configurator
 
         # Initialize augeas
-        self.aug = None
-        self.init_augeas()
+        self.aug = init_augeas()
 
         if not self.check_aug_version():
             raise errors.NotSupportedError(
@@ -48,7 +53,7 @@ class ApacheParser:
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
-        self.modules: Dict[str, str] = {}
+        self.modules: Dict[str, Optional[str]] = {}
         self.parser_paths: Dict[str, List[str]] = {}
         self.variables: Dict[str, str] = {}
 
@@ -82,23 +87,6 @@ class ApacheParser:
         if version < (2, 4):
             if self.find_dir("Define", exclude=False):
                 raise errors.PluginError("Error parsing runtime variables")
-
-    def init_augeas(self):
-        """ Initialize the actual Augeas instance """
-
-        try:
-            import augeas
-        except ImportError:  # pragma: no cover
-            raise errors.NoInstallationError("Problem in Augeas installation")
-
-        self.aug = augeas.Augeas(
-            # specify a directory to load our preferred lens from
-            loadpath=constants.AUGEAS_LENS_DIR,
-            # Do not save backup (we do it ourselves), do not load
-            # anything by default
-            flags=(augeas.Augeas.NONE |
-                   augeas.Augeas.NO_MODL_AUTOLOAD |
-                   augeas.Augeas.ENABLE_SPAN))
 
     def check_parsing_errors(self, lens):
         """Verify Augeas can parse all of the lens files.
@@ -949,3 +937,19 @@ def get_aug_path(file_path):
 
     """
     return "/files%s" % file_path
+
+
+def init_augeas() -> Augeas:
+    """ Initialize the actual Augeas instance """
+
+    if not Augeas:  # pragma: no cover
+        raise errors.NoInstallationError("Problem in Augeas installation")
+
+    return Augeas(
+        # specify a directory to load our preferred lens from
+        loadpath=constants.AUGEAS_LENS_DIR,
+        # Do not save backup (we do it ourselves), do not load
+        # anything by default
+        flags=(Augeas.NONE |
+               Augeas.NO_MODL_AUTOLOAD |
+               Augeas.ENABLE_SPAN))

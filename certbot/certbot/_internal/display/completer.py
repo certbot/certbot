@@ -1,5 +1,8 @@
 """Provides Tab completion when prompting users for a path."""
 import glob
+from typing import Callable
+from typing import Iterator
+from typing import Optional
 
 # readline module is not available on all systems
 try:
@@ -26,7 +29,9 @@ class Completer:
     """
 
     def __init__(self):
-        self._iter = self._original_completer = self._original_delims = None
+        self._iter: Iterator[str]
+        self._original_completer: Optional[Callable]
+        self._original_delims: str
 
     def complete(self, text, state):
         """Provides path completion for use with readline.

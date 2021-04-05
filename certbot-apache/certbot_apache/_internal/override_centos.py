@@ -119,8 +119,9 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             else:
                 loadmod_args = path_args
 
-            if self.parser.not_modssl_ifmodule(noarg_path):  # pylint: disable=no-member
-                if self.parser.loc["default"] in noarg_path:
+            centos_parser: CentOSParser = cast(CentOSParser, self.parser)
+            if centos_parser.not_modssl_ifmodule(noarg_path):
+                if centos_parser.loc["default"] in noarg_path:
                     # LoadModule already in the main configuration file
                     if ("ifmodule/" in noarg_path.lower() or
                         "ifmodule[1]" in noarg_path.lower()):

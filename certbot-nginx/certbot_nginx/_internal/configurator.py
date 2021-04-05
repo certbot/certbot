@@ -119,7 +119,6 @@ class NginxConfigurator(common.Installer):
         self._chall_out = 0
 
         # These will be set in the prepare function
-        self.parser: Optional[parser.NginxParser] = None
         self.version = version
         self.openssl_version = openssl_version
         self._enhance_func = {"redirect": self._enable_redirect,
@@ -127,6 +126,7 @@ class NginxConfigurator(common.Installer):
                               "staple-ocsp": self._enable_ocsp_stapling}
 
         self.reverter.recovery_routine()
+        self.parser: parser.NginxParser
 
     @property
     def mod_ssl_conf_src(self):

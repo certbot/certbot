@@ -339,7 +339,7 @@ class ParserInitTest(util.ApacheTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    @mock.patch("certbot_apache._internal.parser.ApacheParser.init_augeas")
+    @mock.patch("certbot_apache._internal.parser.init_augeas")
     def test_prepare_no_augeas(self, mock_init_augeas):
         from certbot_apache._internal.parser import ApacheParser
         mock_init_augeas.side_effect = errors.NoInstallationError

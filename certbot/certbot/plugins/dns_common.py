@@ -142,7 +142,8 @@ class DNSAuthenticator(common.Plugin):
 
             setattr(self.config, self.dest(key), os.path.abspath(os.path.expanduser(new_value)))
 
-    def _configure_credentials(self, key, label, required_variables=None, validator=None):
+    def _configure_credentials(self, key, label, required_variables=None,
+                               validator=None) -> 'CredentialsConfiguration':
         """
         As `_configure_file`, but for a credential configuration file.
 

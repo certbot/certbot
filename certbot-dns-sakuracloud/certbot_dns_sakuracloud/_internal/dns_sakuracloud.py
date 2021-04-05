@@ -1,12 +1,15 @@
 """DNS Authenticator for Sakura Cloud DNS."""
 import logging
+from typing import Optional
 
 from lexicon.providers import sakuracloud
 import zope.interface
 
+from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
 from certbot.plugins import dns_common_lexicon
+from certbot.plugins.dns_common import CredentialsConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +30,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.credentials = None
+        self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
@@ -60,6 +63,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             domain, validation_name, validation)
 
     def _get_sakuracloud_client(self):
+        if not self.credentials:  # pragma: no cover
+            raise errors.Error("Plugin has not been prepared.")
         return _SakuraCloudLexiconClient(
             self.credentials.conf('api-token'),
             self.credentials.conf('api-secret'),
