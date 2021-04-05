@@ -1,9 +1,8 @@
 """Standalone Authenticator."""
 import collections
+import errno
 import logging
 import socket
-# https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
-from socket import errno as socket_errors  # type: ignore
 from typing import DefaultDict
 from typing import Dict
 from typing import Set
@@ -187,13 +186,13 @@ class Authenticator(common.Plugin):
 
 
 def _handle_perform_error(error):
-    if error.socket_error.errno == socket_errors.EACCES:
+    if error.socket_error.errno == errno.EACCES:
         raise errors.PluginError(
             "Could not bind TCP port {0} because you don't have "
             "the appropriate permissions (for example, you "
             "aren't running this program as "
             "root).".format(error.port))
-    if error.socket_error.errno == socket_errors.EADDRINUSE:
+    if error.socket_error.errno == errno.EADDRINUSE:
         display = zope.component.getUtility(interfaces.IDisplay)
         msg = (
             "Could not bind TCP port {0} because it is already in "
