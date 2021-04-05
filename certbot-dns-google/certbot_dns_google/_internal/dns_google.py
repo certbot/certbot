@@ -32,9 +32,6 @@ class Authenticator(dns_common.DNSAuthenticator):
                    'for DNS).')
     ttl = 60
 
-    def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
-
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
         super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=60)
