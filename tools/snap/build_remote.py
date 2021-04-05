@@ -101,15 +101,11 @@ def _build_snap(
         sys.stdout.flush()
 
         with lock:
-            dump_output = exit_code != 0
             failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
-            if any(arch for arch in archs if status[target][arch] == 'Chroot problem'):
-                print('Some builds failed with the status "Chroot problem".')
-                print('This status is known to make any future build fail until either '
-                      'the source code changes or the build on Launchpad is deleted.')
-                print('Please fix the build appropriately before trying a new one.')
-                # It is useless to retry in this situation.
-                retry = 0
+            # If the command failed or any architecture wasn't built
+            # successfully, let's try to print all the output about the problem
+            # that we can.
+            dump_output = exit_code != 0 or failed_archs
             if exit_code == 0 and not failed_archs:
                 # We expect to have all target snaps available, or something bad happened.
                 snaps_list = glob.glob(join(workspace, '*.snap'))
@@ -119,15 +115,10 @@ def _build_snap(
                     dump_output = True
                 else:
                     break
-            if failed_archs:
-                # We expect each failed build to have a log file, or something bad happened.
-                for arch in failed_archs:
-                    if not exists(join(workspace, f'{target}_{arch}.txt')):
-                        dump_output = True
-                        print(f'Missing output on a failed build {target} for {arch}.')
             if dump_output:
                 print(f'Dumping snapcraft remote-build output build for {target}:')
                 print('\n'.join(process_output))
+                _dump_failed_build_logs(target, archs, status, workspace)
 
         # Retry the remote build if it has been interrupted (non zero status code)
         # or if some builds have failed.
@@ -179,29 +170,38 @@ def _dump_status(
         time.sleep(10)
 
 
+def _dump_failed_build_logs(
+        target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
+        workspace: str) -> bool:
+    failures = False
+    for arch in archs:
+        result = status[target][arch]
+
+        if result != 'Successfully built':
+            failures = True
+
+            build_output_path = join(workspace, f'{target}_{arch}.txt')
+            if not exists(build_output_path):
+                build_output = f'No output has been dumped by snapcraft remote-build.'
+            else:
+                with open(join(workspace, f'{target}_{arch}.txt')) as file_h:
+                    build_output = file_h.read()
+
+            print(f'Output for failed build target={target} arch={arch}')
+            print('-------------------------------------------')
+            print(build_output)
+            print('-------------------------------------------')
+            print()
+    return failures
+
+
 def _dump_results(
         targets: Set[str], archs: Set[str], status: Dict[str, Dict[str, str]],
         workspaces: Dict[str, str]) -> bool:
     failures = False
     for target in targets:
-        for arch in archs:
-            result = status[target][arch]
-
-            if result != 'Successfully built':
-                failures = True
-
-                build_output_path = join(workspaces[target], f'{target}_{arch}.txt')
-                if not exists(build_output_path):
-                    build_output = f'No output has been dumped by snapcraft remote-build.'
-                else:
-                    with open(join(workspaces[target], f'{target}_{arch}.txt')) as file_h:
-                        build_output = file_h.read()
-
-                print(f'Output for failed build target={target} arch={arch}')
-                print('-------------------------------------------')
-                print(build_output)
-                print('-------------------------------------------')
-                print()
+        workspace = workspaces[target]
+        failures = _dump_failed_build_logs(target, archs, status, workspace)
 
     if not failures:
         print('All builds succeeded.')
