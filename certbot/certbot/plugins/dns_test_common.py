@@ -12,7 +12,7 @@ from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
 if typing.TYPE_CHECKING:
-    from typing import Protocol
+    from typing_extensions import Protocol
 else:
     Protocol = object  # type: ignore
 

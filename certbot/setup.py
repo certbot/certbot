@@ -77,6 +77,9 @@ dev_extras = [
     'pytest',
     'pytest-cov',
     'pytest-xdist',
+    # typing-extensions is required to import typing.Protocol and make the mypy checks
+    # pass (along with pylint about non-existent objects) on Python 3.6 & 3.7
+    'typing-extensions',
     'tox',
     'twine',
     'wheel',
