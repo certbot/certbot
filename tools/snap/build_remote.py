@@ -100,10 +100,12 @@ def _build_snap(
                   f'exit code {exit_code}.', flush=True)
 
             failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
+            print('failed_archs is', failed_archs)
             # If the command failed or any architecture wasn't built
             # successfully, let's try to print all the output about the problem
             # that we can.
             dump_output = exit_code != 0 or failed_archs
+            print('dump_output is', dump_output)
             if exit_code == 0 and not failed_archs:
                 # We expect to have all target snaps available, or something bad happened.
                 snaps_list = glob.glob(join(workspace, '*.snap'))
