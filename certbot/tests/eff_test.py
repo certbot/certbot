@@ -22,7 +22,7 @@ _KEY = josepy.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 class SubscriptionTest(test_util.ConfigTestCase):
     """Abstract class for subscription tests."""
     def setUp(self):
-        super(SubscriptionTest, self).setUp()
+        super().setUp()
         self.account = account.Account(
             regr=messages.RegistrationResource(
                 uri=None, body=messages.Registration(),

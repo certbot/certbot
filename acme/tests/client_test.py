@@ -90,7 +90,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
     """Tests for  acme.client.BackwardsCompatibleClientV2."""
 
     def setUp(self):
-        super(BackwardsCompatibleClientV2Test, self).setUp()
+        super().setUp()
         # contains a loaded cert
         self.certr = messages.CertificateResource(
             body=messages_test.CERT)
@@ -319,7 +319,7 @@ class ClientTest(ClientTestBase):
     """Tests for acme.client.Client."""
 
     def setUp(self):
-        super(ClientTest, self).setUp()
+        super().setUp()
 
         self.directory = DIRECTORY_V1
 
@@ -716,7 +716,7 @@ class ClientV2Test(ClientTestBase):
     """Tests for acme.client.ClientV2."""
 
     def setUp(self):
-        super(ClientV2Test, self).setUp()
+        super().setUp()
 
         self.directory = DIRECTORY_V2
 

@@ -90,7 +90,7 @@ class GetEmailTest(unittest.TestCase):
 class ChooseAccountTest(test_util.TempDirTestCase):
     """Tests for certbot.display.ops.choose_account."""
     def setUp(self):
-        super(ChooseAccountTest, self).setUp()
+        super().setUp()
 
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
                                                                False))

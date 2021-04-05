@@ -29,12 +29,12 @@ class Authenticator(dns_common.DNSAuthenticator):
     description = 'Obtain certificates using a DNS TXT record (if you are using Linode for DNS).'
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=120)
+        super().add_parser_arguments(add, default_propagation_seconds=120)
         add('credentials', help='Linode credentials INI file.')
 
     def more_info(self):  # pylint: disable=missing-function-docstring
@@ -85,7 +85,7 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
     """
 
     def __init__(self, api_key, api_version):
-        super(_LinodeLexiconClient, self).__init__()
+        super().__init__()
 
         self.api_version = api_version
 

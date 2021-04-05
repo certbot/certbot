@@ -20,7 +20,7 @@ class VersionedLEACMEMixin:
             # Required for @property to operate properly. See comment above.
             object.__setattr__(self, key, value)
         else:
-            super(VersionedLEACMEMixin, self).__setattr__(key, value)  # pragma: no cover
+            super().__setattr__(key, value)  # pragma: no cover
 
 
 class ResourceMixin(VersionedLEACMEMixin):
@@ -30,12 +30,12 @@ class ResourceMixin(VersionedLEACMEMixin):
     """
     def to_partial_json(self):
         """See josepy.JSONDeserializable.to_partial_json()"""
-        return _safe_jobj_compliance(super(ResourceMixin, self),
+        return _safe_jobj_compliance(super(),
                                      'to_partial_json', 'resource')
 
     def fields_to_partial_json(self):
         """See josepy.JSONObjectWithFields.fields_to_partial_json()"""
-        return _safe_jobj_compliance(super(ResourceMixin, self),
+        return _safe_jobj_compliance(super(),
                                      'fields_to_partial_json', 'resource')
 
 
@@ -46,12 +46,12 @@ class TypeMixin(VersionedLEACMEMixin):
     """
     def to_partial_json(self):
         """See josepy.JSONDeserializable.to_partial_json()"""
-        return _safe_jobj_compliance(super(TypeMixin, self),
+        return _safe_jobj_compliance(super(),
                                      'to_partial_json', 'type')
 
     def fields_to_partial_json(self):
         """See josepy.JSONObjectWithFields.fields_to_partial_json()"""
-        return _safe_jobj_compliance(super(TypeMixin, self),
+        return _safe_jobj_compliance(super(),
                                      'fields_to_partial_json', 'type')
 
 

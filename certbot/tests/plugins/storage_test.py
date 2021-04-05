@@ -18,7 +18,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
     """Test for certbot.plugins.storage.PluginStorage"""
 
     def setUp(self):
-        super(PluginStorageTest, self).setUp()
+        super().setUp()
         self.plugin_cls = common.Installer
         filesystem.mkdir(self.config.config_dir)
         with mock.patch("certbot.reverter.util"):

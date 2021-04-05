@@ -58,7 +58,7 @@ class RegisterTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.client.register."""
 
     def setUp(self):
-        super(RegisterTest, self).setUp()
+        super().setUp()
         self.config.rsa_key_size = 1024
         self.config.register_unsafely_without_email = False
         self.config.email = "alias@example.com"
@@ -217,7 +217,7 @@ class ClientTestCommon(test_util.ConfigTestCase):
     """Common base class for certbot._internal.client.Client tests."""
 
     def setUp(self):
-        super(ClientTestCommon, self).setUp()
+        super().setUp()
         self.config.no_verify_ssl = False
         self.config.allow_subset_of_names = False
 
@@ -236,7 +236,7 @@ class ClientTest(ClientTestCommon):
     """Tests for certbot._internal.client.Client."""
 
     def setUp(self):
-        super(ClientTest, self).setUp()
+        super().setUp()
 
         self.config.allow_subset_of_names = False
         self.config.dry_run = False
@@ -582,7 +582,7 @@ class EnhanceConfigTest(ClientTestCommon):
     """Tests for certbot._internal.client.Client.enhance_config."""
 
     def setUp(self):
-        super(EnhanceConfigTest, self).setUp()
+        super().setUp()
 
         self.config.hsts = False
         self.config.redirect = False

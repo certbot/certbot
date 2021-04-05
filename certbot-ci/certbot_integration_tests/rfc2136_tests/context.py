@@ -13,7 +13,7 @@ from certbot_integration_tests.utils import certbot_call
 class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
     """Integration test context for certbot-dns-rfc2136"""
     def __init__(self, request):
-        super(IntegrationTestsContext, self).__init__(request)
+        super().__init__(request)
 
         self.request = request
 

@@ -58,7 +58,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         if not os.path.isdir(os.path.dirname(enabled_path)):
             # For some reason, sites-enabled / sites-available do not exist
             # Call the parent method
-            return super(DebianConfigurator, self).enable_site(vhost)
+            return super().enable_site(vhost)
         self.reverter.register_file_creation(False, enabled_path)
         try:
             os.symlink(vhost.filep, enabled_path)

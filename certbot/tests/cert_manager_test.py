@@ -26,7 +26,7 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
     """Base class for setting up Cert Manager tests.
     """
     def setUp(self):
-        super(BaseCertManagerTest, self).setUp()
+        super().setUp()
 
         self.config.quiet = False
         filesystem.makedirs(self.config.renewal_configs_dir)
@@ -396,7 +396,7 @@ class RenameLineageTest(BaseCertManagerTest):
     """Tests for certbot._internal.cert_manager.rename_lineage"""
 
     def setUp(self):
-        super(RenameLineageTest, self).setUp()
+        super().setUp()
         self.config.certname = "example.org"
         self.config.new_certname = "after"
 
@@ -483,7 +483,7 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
     """Test to avoid duplicate lineages."""
 
     def setUp(self):
-        super(DuplicativeCertsTest, self).setUp()
+        super().setUp()
         self.config_file.write()
         self._write_out_ex_kinds()
 
@@ -521,7 +521,7 @@ class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
     """Tests for certbot._internal.cert_manager.cert_path_to_lineage"""
 
     def setUp(self):
-        super(CertPathToLineageTest, self).setUp()
+        super().setUp()
         self.config_file.write()
         self._write_out_ex_kinds()
         self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
@@ -581,7 +581,7 @@ class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
        archive dirs."""
     # A test with real overlapping archive dirs can be found in tests/boulder_integration.sh
     def setUp(self):
-        super(MatchAndCheckOverlaps, self).setUp()
+        super().setUp()
         self.config_file.write()
         self._write_out_ex_kinds()
         self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',

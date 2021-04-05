@@ -22,7 +22,7 @@ from certbot_nginx._internal import nginxparser
 class NginxTest(test_util.ConfigTestCase):
 
     def setUp(self):
-        super(NginxTest, self).setUp()
+        super().setUp()
 
         self.configuration = self.config
         self.config = None

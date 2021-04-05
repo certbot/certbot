@@ -140,7 +140,7 @@ class CaseInsensitiveList(list):
     through the `helpful` wrapper. It is necessary due to special handling of
     command line arguments by `set_by_cli` in which the `type_func` is not applied."""
     def __contains__(self, element):
-        return super(CaseInsensitiveList, self).__contains__(element.lower())
+        return super().__contains__(element.lower())
 
 
 def _user_agent_comment_type(value):

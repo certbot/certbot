@@ -122,7 +122,7 @@ class Statements(Parsable):
     precede any more statements.
     """
     def __init__(self, parent=None):
-        super(Statements, self).__init__(parent)
+        super().__init__(parent)
         self._trailing_whitespace = None
 
     # ======== Begin overridden functions
@@ -167,7 +167,7 @@ class Statements(Parsable):
     def dump(self, include_spaces=False):
         """ Dumps this object by first dumping each statement, then appending its
         trailing whitespace (if `include_spaces` is set) """
-        data = super(Statements, self).dump(include_spaces)
+        data = super().dump(include_spaces)
         if include_spaces and self._trailing_whitespace is not None:
             return data + [self._trailing_whitespace]
         return data
@@ -271,7 +271,7 @@ class Block(Parsable):
         contents = [["\n    ", "content", " ", "1"], ["\n    ", "content", " ", "2"], "\n"]
     """
     def __init__(self, parent=None):
-        super(Block, self).__init__(parent)
+        super().__init__(parent)
         self.names: Sentence = None
         self.contents: Block = None
 

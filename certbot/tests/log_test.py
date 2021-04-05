@@ -70,7 +70,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         return post_arg_parse_setup(*args, **kwargs)
 
     def setUp(self):
-        super(PostArgParseSetupTest, self).setUp()
+        super().setUp()
         self.config.debug = False
         self.config.max_log_backups = 1000
         self.config.quiet = False
@@ -91,7 +91,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         self.stream_handler.close()
         self.temp_handler.close()
         self.devnull.close()
-        super(PostArgParseSetupTest, self).tearDown()
+        super().tearDown()
 
     def test_common(self):
         with mock.patch('certbot._internal.log.logging.getLogger') as mock_get_logger:
@@ -136,7 +136,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         return setup_log_file_handler(*args, **kwargs)
 
     def setUp(self):
-        super(SetupLogFileHandlerTest, self).setUp()
+        super().setUp()
         self.config.max_log_backups = 42
 
     @mock.patch('certbot._internal.main.logging.handlers.RotatingFileHandler')

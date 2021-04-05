@@ -105,7 +105,7 @@ class Installer(Plugin):
 
     """
     def __init__(self, *args, **kwargs):
-        super(Installer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.storage = PluginStorage(self.config, self.name)
         self.reverter = reverter.Reverter(self.config)
 

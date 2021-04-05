@@ -214,7 +214,7 @@ class ApacheConfigurator(common.Installer):
         version = kwargs.pop("version", None)
         use_parsernode = kwargs.pop("use_parsernode", False)
         openssl_version = kwargs.pop("openssl_version", None)
-        super(ApacheConfigurator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Add name_server association dict
         self.assoc: Dict[str, obj.VirtualHost] = {}
@@ -410,7 +410,7 @@ class ApacheConfigurator(common.Installer):
         :raises .errors.PluginError: If unable to recover the configuration
 
         """
-        super(ApacheConfigurator, self).recovery_routine()
+        super().recovery_routine()
         # Reload configuration after these changes take effect if needed
         # ie. ApacheParser has been initialized.
         if hasattr(self, "parser"):
@@ -435,7 +435,7 @@ class ApacheConfigurator(common.Installer):
             the function is unable to correctly revert the configuration
 
         """
-        super(ApacheConfigurator, self).rollback_checkpoints(rollback)
+        super().rollback_checkpoints(rollback)
         self.parser.aug.load()
 
     def _verify_exe_availability(self, exe):

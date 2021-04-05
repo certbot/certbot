@@ -34,7 +34,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=60)
+        super().add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials',
             help=('Path to Google Cloud DNS service account JSON file. (See {0} for' +
                   'information about creating a service account and {1} for information about the' +

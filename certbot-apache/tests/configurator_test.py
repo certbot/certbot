@@ -30,7 +30,7 @@ class MultipleVhostsTest(util.ApacheTest):
     """Test two standard well-configured HTTP vhosts."""
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(MultipleVhostsTest, self).setUp()
+        super().setUp()
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
@@ -1477,7 +1477,7 @@ class AugeasVhostsTest(util.ApacheTest):
         td = "debian_apache_2_4/augeas_vhosts"
         cr = "debian_apache_2_4/augeas_vhosts/apache2"
         vr = "debian_apache_2_4/augeas_vhosts/apache2/sites-available"
-        super(AugeasVhostsTest, self).setUp(test_dir=td,
+        super().setUp(test_dir=td,
                                             config_root=cr,
                                             vhost_root=vr)
 
@@ -1556,7 +1556,7 @@ class MultiVhostsTest(util.ApacheTest):
         td = "debian_apache_2_4/multi_vhosts"
         cr = "debian_apache_2_4/multi_vhosts/apache2"
         vr = "debian_apache_2_4/multi_vhosts/apache2/sites-available"
-        super(MultiVhostsTest, self).setUp(test_dir=td,
+        super().setUp(test_dir=td,
                                             config_root=cr,
                                             vhost_root=vr)
 
@@ -1661,7 +1661,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
     """Test that the options-ssl-nginx.conf file is installed and updated properly."""
 
     def setUp(self): # pylint: disable=arguments-differ
-        super(InstallSslOptionsConfTest, self).setUp()
+        super().setUp()
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
