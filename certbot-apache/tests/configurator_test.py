@@ -1478,8 +1478,8 @@ class AugeasVhostsTest(util.ApacheTest):
         cr = "debian_apache_2_4/augeas_vhosts/apache2"
         vr = "debian_apache_2_4/augeas_vhosts/apache2/sites-available"
         super().setUp(test_dir=td,
-                                            config_root=cr,
-                                            vhost_root=vr)
+                      config_root=cr,
+                      vhost_root=vr)
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir,
@@ -1557,8 +1557,8 @@ class MultiVhostsTest(util.ApacheTest):
         cr = "debian_apache_2_4/multi_vhosts/apache2"
         vr = "debian_apache_2_4/multi_vhosts/apache2/sites-available"
         super().setUp(test_dir=td,
-                                            config_root=cr,
-                                            vhost_root=vr)
+                      config_root=cr,
+                      vhost_root=vr)
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path,

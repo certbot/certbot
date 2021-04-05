@@ -37,8 +37,8 @@ class CentOS6Tests(util.ApacheTest):
         config_root = "centos6_apache/apache/httpd"
         vhost_root = "centos6_apache/apache/httpd/conf.d"
         super().setUp(test_dir=test_dir,
-                                        config_root=config_root,
-                                        vhost_root=vhost_root)
+                      config_root=config_root,
+                      vhost_root=vhost_root)
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
