@@ -28,6 +28,10 @@ CERTBOT_DIR = dirname(dirname(dirname(realpath(__file__))))
 PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*'))]
 
 
+def _snap_log_name(target: str, arch: str):
+    return f'{target}_{arch}.txt'
+
+
 def _execute_build(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         workspace: str) -> Tuple[int, List[str]]:
@@ -69,6 +73,11 @@ def _execute_build(
 
         for path in glob.glob(join(temp_workspace, '*.snap')):
             shutil.copy(path, workspace)
+        for arch in archs:
+            log_name = _snap_log_name(target, arch)
+            log_path = join(temp_workspace, log_name)
+            if exists(log_path)
+                shutil.copy(log_path, workspace)
 
         return process_state, process_output
 
@@ -171,11 +180,12 @@ def _dump_failed_build_logs(
         if result != 'Successfully built':
             failures = True
 
-            build_output_path = join(workspace, f'{target}_{arch}.txt')
+            build_output_name = _snap_log_name(target, arch)
+            build_output_path = join(workspace, build_output_name)
             if not exists(build_output_path):
                 build_output = f'No output has been dumped by snapcraft remote-build.'
             else:
-                with open(join(workspace, f'{target}_{arch}.txt')) as file_h:
+                with open(build_output_path) as file_h:
                     build_output = file_h.read()
 
             print(f'Output for failed build target={target} arch={arch}')
