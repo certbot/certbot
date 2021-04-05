@@ -76,7 +76,7 @@ def _execute_build(
         for arch in archs:
             log_name = _snap_log_name(target, arch)
             log_path = join(temp_workspace, log_name)
-            if exists(log_path)
+            if exists(log_path):
                 shutil.copy(log_path, workspace)
 
         return process_state, process_output
