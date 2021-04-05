@@ -32,17 +32,15 @@ def _execute_build(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         workspace: str) -> Tuple[int, List[str]]:
 
-    temp_workspace = None
-    try:
-        # Snapcraft remote-build has a recover feature, that will make it reconnect to an existing
-        # build on Launchpad if possible. However, the signature used to retrieve a potential
-        # build is not based on the content of the sources used to build a snap, but on a hash
-        # of the snapcraft current working directory (the path itself, not the content).
-        # It means that every build started from /my/path/to/certbot will always be considered
-        # as the same build, whatever the actual sources are.
-        # To circumvent this, we create a temporary folder and use it as a workspace to build
-        # the snap: this path is random, making the recover feature effectively noop.
-        temp_workspace = tempfile.mkdtemp()
+    # Snapcraft remote-build has a recover feature, that will make it reconnect to an existing
+    # build on Launchpad if possible. However, the signature used to retrieve a potential
+    # build is not based on the content of the sources used to build a snap, but on a hash
+    # of the snapcraft current working directory (the path itself, not the content).
+    # It means that every build started from /my/path/to/certbot will always be considered
+    # as the same build, whatever the actual sources are.
+    # To circumvent this, we create a temporary folder and use it as a workspace to build
+    # the snap: this path is random, making the recover feature effectively noop.
+    with tempfile.TemporaryDirectory() as temp_workspace:
         ignore = None
         if target == 'certbot':
             ignore = shutil.ignore_patterns(".git", "venv*", ".tox")
@@ -73,13 +71,6 @@ def _execute_build(
             shutil.copy(path, workspace)
 
         return process_state, process_output
-    except BaseException as e:
-        print(e)
-        sys.stdout.flush()
-        raise e
-    finally:
-        if temp_workspace:
-            shutil.rmtree(temp_workspace, ignore_errors=True)
 
 
 def _build_snap(
@@ -95,12 +86,11 @@ def _build_snap(
     retry = 3
     while retry:
         exit_code, process_output = _execute_build(target, archs, status, workspace)
-
-        print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
-              f'exit code {exit_code}.')
-        sys.stdout.flush()
-
         with lock:
+            print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
+                  f'exit code {exit_code}.')
+            sys.stdout.flush()
+
             failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
             # If the command failed or any architecture wasn't built
             # successfully, let's try to print all the output about the problem
@@ -163,10 +153,11 @@ def _dump_status_helper(archs: Set[str], status: Dict[str, Dict[str, str]]) -> N
 
 def _dump_status(
         archs: Set[str], status: Dict[str, Dict[str, str]],
-        running: Dict[str, bool]) -> None:
+        running: Dict[str, bool], lock: Lock) -> None:
     while any(running.values()):
-        print(f'Remote build status at {datetime.datetime.now()}')
-        _dump_status_helper(archs, status)
+        with lock:
+            print(f'Remote build status at {datetime.datetime.now()}')
+            _dump_status_helper(archs, status)
         time.sleep(10)
 
 
@@ -257,7 +248,7 @@ def main():
         async_results = [pool.apply_async(_build_snap, (target, archs, status, running, lock))
                          for target in targets]
 
-        process = Process(target=_dump_status, args=(archs, status, running))
+        process = Process(target=_dump_status, args=(archs, status, running, lock))
         process.start()
 
         try:
