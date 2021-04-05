@@ -97,8 +97,7 @@ def _build_snap(
         exit_code, process_output = _execute_build(target, archs, status, workspace)
         with output_lock:
             print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
-                  f'exit code {exit_code}.')
-            sys.stdout.flush()
+                  f'exit code {exit_code}.', flush=True)
 
             failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
             # If the command failed or any architecture wasn't built
@@ -155,9 +154,7 @@ def _dump_status_helper(archs: Set[str], status: Dict[str, Dict[str, str]]) -> N
     for project, states in sorted(status.items()):
         print(''.join(f'| {item:<25}' for item in [project, *[states[arch] for arch in archs]]))
     print(f'|{"-" * 26}' * len(headers))
-    print()
-
-    sys.stdout.flush()
+    print(flush=True)
 
 
 def _dump_status(
