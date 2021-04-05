@@ -75,7 +75,7 @@ def _execute_build(
 
 def _build_snap(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
-        running: Dict[str, bool], lock: Lock) -> Dict[str, str]:
+        running: Dict[str, bool], output_lock: Lock) -> Dict[str, str]:
     status[target] = {arch: '...' for arch in archs}
 
     if target == 'certbot':
@@ -86,7 +86,7 @@ def _build_snap(
     retry = 3
     while retry:
         exit_code, process_output = _execute_build(target, archs, status, workspace)
-        with lock:
+        with output_lock:
             print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
                   f'exit code {exit_code}.')
             sys.stdout.flush()
@@ -153,9 +153,9 @@ def _dump_status_helper(archs: Set[str], status: Dict[str, Dict[str, str]]) -> N
 
 def _dump_status(
         archs: Set[str], status: Dict[str, Dict[str, str]],
-        running: Dict[str, bool], lock: Lock) -> None:
+        running: Dict[str, bool], output_lock: Lock) -> None:
     while any(running.values()):
-        with lock:
+        with output_lock:
             print(f'Remote build status at {datetime.datetime.now()}')
             _dump_status_helper(archs, status)
         time.sleep(10)
@@ -243,12 +243,14 @@ def main():
     with manager, pool:
         status: Dict[str, Dict[str, str]] = manager.dict()
         running = manager.dict({target: True for target in targets})
-        lock = manager.Lock()
+        # While multiple processes are running, this lock should be acquired
+        # before printing output.
+        output_lock = manager.Lock()
 
-        async_results = [pool.apply_async(_build_snap, (target, archs, status, running, lock))
+        async_results = [pool.apply_async(_build_snap, (target, archs, status, running, output_lock))
                          for target in targets]
 
-        process = Process(target=_dump_status, args=(archs, status, running, lock))
+        process = Process(target=_dump_status, args=(archs, status, running, output_lock))
         process.start()
 
         try:
