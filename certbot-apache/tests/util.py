@@ -123,11 +123,11 @@ def get_apache_configurator(
                                           version=version, use_parsernode=use_parsernode,
                                           openssl_version=openssl_version)
                     if not conf_vhost_path:
-                        config_class.OS_DEFAULTS["vhost_root"] = vhost_path
+                        config_class.OS_DEFAULTS.vhost_root = vhost_path
                     else:
                         # Custom virtualhost path was requested
                         config.config.apache_vhost_root = conf_vhost_path
-                    config.config.apache_ctl = config_class.OS_DEFAULTS["ctl"]
+                    config.config.apache_ctl = config_class.OS_DEFAULTS.ctl
                     config.prepare()
     return config
 

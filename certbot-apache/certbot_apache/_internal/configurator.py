@@ -1,14 +1,13 @@
 """Apache Configurator."""
-# pylint: disable=too-many-lines
-from collections import defaultdict
 import copy
-from distutils.version import LooseVersion
 import fnmatch
 import logging
 import re
 import socket
 import time
-from typing import cast
+# pylint: disable=too-many-lines
+from collections import defaultdict
+from distutils.version import LooseVersion
 from typing import DefaultDict
 from typing import Dict
 from typing import List
@@ -18,7 +17,6 @@ from typing import Union
 
 import zope.component
 import zope.interface
-
 from acme import challenges
 from certbot import errors
 from certbot import interfaces
@@ -49,6 +47,43 @@ except ImportError:  # pragma: no cover
 
 
 logger = logging.getLogger(__name__)
+
+
+class _OsOptions:
+    def __init__(self,
+                 server_root="/etc/apache2",
+                 vhost_root="/etc/apache2/sites-available",
+                 vhost_files="*",
+                 logs_root="/var/log/apache2",
+                 ctl="apache2ctl",
+                 version_cmd: Optional[List[str]] = None,
+                 restart_cmd: Optional[List[str]] = None,
+                 restart_cmd_alt: Optional[List[str]] = None,
+                 conftest_cmd: Optional[List[str]] = None,
+                 enmod: Optional[str] = None,
+                 dismod: Optional[str] = None,
+                 le_vhost_ext="-le-ssl.conf",
+                 handle_modules=False,
+                 handle_sites=False,
+                 challenge_location="/etc/apache2",
+                 bin: Optional[str] = None,
+                 ):
+        self.server_root = server_root
+        self.vhost_root = vhost_root
+        self.vhost_files = vhost_files
+        self.logs_root = logs_root
+        self.ctl = ctl
+        self.version_cmd = ['apache2ctl', '-v'] if not version_cmd else version_cmd
+        self.restart_cmd = ['apache2ctl', 'graceful'] if not restart_cmd else restart_cmd
+        self.restart_cmd_alt = restart_cmd_alt
+        self.conftest_cmd = ['apache2ctl', 'configtest'] if not conftest_cmd else conftest_cmd
+        self.enmod = enmod
+        self.dismod = dismod
+        self.le_vhost_ext = le_vhost_ext
+        self.handle_modules = handle_modules
+        self.handle_sites = handle_sites
+        self.challenge_location = challenge_location
+        self.bin = bin
 
 
 # TODO: Augeas sections ie. <VirtualHost>, <IfModule> beginning and closing
@@ -106,27 +141,7 @@ class ApacheConfigurator(common.Installer):
             " change depending on the operating system Certbot is run on.)"
         )
 
-    OS_DEFAULTS = dict(
-        server_root="/etc/apache2",
-        vhost_root="/etc/apache2/sites-available",
-        vhost_files="*",
-        logs_root="/var/log/apache2",
-        ctl="apache2ctl",
-        version_cmd=['apache2ctl', '-v'],
-        restart_cmd=['apache2ctl', 'graceful'],
-        conftest_cmd=['apache2ctl', 'configtest'],
-        enmod=None,
-        dismod=None,
-        le_vhost_ext="-le-ssl.conf",
-        handle_modules=False,
-        handle_sites=False,
-        challenge_location="/etc/apache2",
-        bin=None
-    )
-
-    def option(self, key):
-        """Get a value from options"""
-        return self.options.get(key)
+    OS_DEFAULTS = _OsOptions()
 
     def pick_apache_config(self, warn_on_no_mod_ssl=True):
         """
@@ -156,14 +171,14 @@ class ApacheConfigurator(common.Installer):
         for o in opts:
             # Config options use dashes instead of underscores
             if self.conf(o.replace("_", "-")) is not None:
-                self.options[o] = self.conf(o.replace("_", "-"))
+                setattr(self.options, o, self.conf(o.replace("_", "-")))
             else:
-                self.options[o] = self.OS_DEFAULTS[o]
+                setattr(self.options, o, getattr(self.OS_DEFAULTS, o))
 
         # Special cases
-        cast(List[str], self.options["version_cmd"])[0] = self.option("ctl")
-        cast(List[str], self.options["restart_cmd"])[0] = self.option("ctl")
-        cast(List[str], self.options["conftest_cmd"])[0] = self.option("ctl")
+        self.options.version_cmd[0] = self.options.ctl
+        self.options.restart_cmd[0] = self.options.ctl
+        self.options.conftest_cmd[0] = self.options.ctl
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -178,30 +193,30 @@ class ApacheConfigurator(common.Installer):
         else:
             # cls.OS_DEFAULTS can be distribution specific, see override classes
             DEFAULTS = cls.OS_DEFAULTS
-        add("enmod", default=DEFAULTS["enmod"],
+        add("enmod", default=DEFAULTS.enmod,
             help="Path to the Apache 'a2enmod' binary")
-        add("dismod", default=DEFAULTS["dismod"],
+        add("dismod", default=DEFAULTS.dismod,
             help="Path to the Apache 'a2dismod' binary")
-        add("le-vhost-ext", default=DEFAULTS["le_vhost_ext"],
+        add("le-vhost-ext", default=DEFAULTS.le_vhost_ext,
             help="SSL vhost configuration extension")
-        add("server-root", default=DEFAULTS["server_root"],
+        add("server-root", default=DEFAULTS.server_root,
             help="Apache server root directory")
         add("vhost-root", default=None,
             help="Apache server VirtualHost configuration root")
-        add("logs-root", default=DEFAULTS["logs_root"],
+        add("logs-root", default=DEFAULTS.logs_root,
             help="Apache server logs directory")
         add("challenge-location",
-            default=DEFAULTS["challenge_location"],
+            default=DEFAULTS.challenge_location,
             help="Directory path for challenge configuration")
-        add("handle-modules", default=DEFAULTS["handle_modules"],
+        add("handle-modules", default=DEFAULTS.handle_modules,
             help="Let installer handle enabling required modules for you " +
                  "(Only Ubuntu/Debian currently)")
-        add("handle-sites", default=DEFAULTS["handle_sites"],
+        add("handle-sites", default=DEFAULTS.handle_sites,
             help="Let installer handle enabling sites for you " +
                  "(Only Ubuntu/Debian currently)")
-        add("ctl", default=DEFAULTS["ctl"],
+        add("ctl", default=DEFAULTS.ctl,
             help="Full path to Apache control script")
-        add("bin", default=DEFAULTS["bin"],
+        add("bin", default=DEFAULTS.bin,
             help="Full path to apache2/httpd binary")
 
     def __init__(self, *args, **kwargs):
@@ -290,8 +305,8 @@ class ApacheConfigurator(common.Installer):
             ssl_module_location = self.parser.standard_path_from_server_root(ssl_module_location)
         else:
             # Possibility B: ssl_module is statically linked into Apache
-            if self.option("bin"):
-                ssl_module_location = self.option("bin")
+            if self.options.bin:
+                ssl_module_location = self.options.bin
             else:
                 logger.warning("ssl_module is statically linked but --apache-bin is "
                                "missing; not disabling session tickets.")
@@ -321,7 +336,7 @@ class ApacheConfigurator(common.Installer):
         self._prepare_options()
 
         # Verify Apache is installed
-        self._verify_exe_availability(self.option("ctl"))
+        self._verify_exe_availability(self.options.ctl)
 
         # Make sure configuration is valid
         self.config_test()
@@ -361,20 +376,20 @@ class ApacheConfigurator(common.Installer):
 
         # We may try to enable mod_ssl later. If so, we shouldn't warn if we can't find it now.
         # This is currently only true for debian/ubuntu.
-        warn_on_no_mod_ssl = not self.option("handle_modules")
+        warn_on_no_mod_ssl = not self.options.handle_modules
         self.install_ssl_options_conf(self.mod_ssl_conf,
                                       self.updated_mod_ssl_conf_digest,
                                       warn_on_no_mod_ssl)
 
         # Prevent two Apache plugins from modifying a config at once
         try:
-            util.lock_dir_until_exit(self.option("server_root"))
+            util.lock_dir_until_exit(self.options.server_root)
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(
                 "Unable to create a lock file in {0}. Are you running"
                 " Certbot with sufficient privileges to modify your"
-                " Apache configuration?".format(self.option("server_root")))
+                " Apache configuration?".format(self.options.server_root))
         self._prepared = True
 
     def save(self, title=None, temporary=False):
@@ -449,7 +464,7 @@ class ApacheConfigurator(common.Installer):
         """Initializes the ApacheParser"""
         # If user provided vhost_root value in command line, use it
         return parser.ApacheParser(
-            self.option("server_root"), self.conf("vhost-root"),
+            self.options.server_root, self.conf("vhost-root"),
             self.version, configurator=self)
 
     def get_parsernode_root(self, metadata):
@@ -457,9 +472,9 @@ class ApacheConfigurator(common.Installer):
 
         if HAS_APACHECONFIG:
             apache_vars = {}
-            apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
-            apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
-            apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
+            apache_vars["defines"] = apache_util.parse_defines(self.options.ctl)
+            apache_vars["includes"] = apache_util.parse_includes(self.options.ctl)
+            apache_vars["modules"] = apache_util.parse_modules(self.options.ctl)
             metadata["apache_vars"] = apache_vars
 
             with open(self.parser.loc["root"]) as f:
@@ -1311,7 +1326,7 @@ class ApacheConfigurator(common.Installer):
         :param boolean temp: If the change is temporary
         """
 
-        if self.option("handle_modules"):
+        if self.options.handle_modules:
             if self.version >= (2, 4) and ("socache_shmcb_module" not in
                                            self.parser.modules):
                 self.enable_mod("socache_shmcb", temp=temp)
@@ -1331,7 +1346,7 @@ class ApacheConfigurator(common.Installer):
 
         Duplicates vhost and adds default ssl options
         New vhost will reside as (nonssl_vhost.path) +
-        ``self.option("le_vhost_ext")``
+        ``self.options.le_vhost_ext``
 
         .. note:: This function saves the configuration
 
@@ -1430,15 +1445,15 @@ class ApacheConfigurator(common.Installer):
         """
 
         if self.conf("vhost-root") and os.path.exists(self.conf("vhost-root")):
-            fp = os.path.join(filesystem.realpath(self.option("vhost_root")),
+            fp = os.path.join(filesystem.realpath(self.options.vhost_root),
                               os.path.basename(non_ssl_vh_fp))
         else:
             # Use non-ssl filepath
             fp = filesystem.realpath(non_ssl_vh_fp)
 
         if fp.endswith(".conf"):
-            return fp[:-(len(".conf"))] + self.option("le_vhost_ext")
-        return fp + self.option("le_vhost_ext")
+            return fp[:-(len(".conf"))] + self.options.le_vhost_ext
+        return fp + self.options.le_vhost_ext
 
     def _sift_rewrite_rule(self, line):
         """Decides whether a line should be copied to a SSL vhost.
@@ -2282,7 +2297,7 @@ class ApacheConfigurator(common.Installer):
                             addr in self._get_proposed_addrs(ssl_vhost)),
                    servername, serveralias,
                    " ".join(rewrite_rule_args),
-                   self.option("logs_root")))
+                   self.options.logs_root))
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
@@ -2294,7 +2309,7 @@ class ApacheConfigurator(common.Installer):
             if len(ssl_vhost.name) < (255 - (len(redirect_filename) + 1)):
                 redirect_filename = "le-redirect-%s.conf" % ssl_vhost.name
 
-        redirect_filepath = os.path.join(self.option("vhost_root"),
+        redirect_filepath = os.path.join(self.options.vhost_root,
                                          redirect_filename)
 
         # Register the new file that will be created
@@ -2414,19 +2429,18 @@ class ApacheConfigurator(common.Installer):
 
         """
         try:
-            util.run_script(self.option("restart_cmd"))
+            util.run_script(self.options.restart_cmd)
         except errors.SubprocessError as err:
             logger.info("Unable to restart apache using %s",
-                        self.option("restart_cmd"))
-            alt_restart = self.option("restart_cmd_alt")
+                        self.options.restart_cmd)
+            alt_restart = self.options.restart_cmd_alt
             if alt_restart:
                 logger.debug("Trying alternative restart command: %s",
                              alt_restart)
                 # There is an alternative restart command available
                 # This usually is "restart" verb while original is "graceful"
                 try:
-                    util.run_script(self.option(
-                        "restart_cmd_alt"))
+                    util.run_script(self.options.restart_cmd_alt)
                     return
                 except errors.SubprocessError as secerr:
                     error = str(secerr)
@@ -2441,7 +2455,7 @@ class ApacheConfigurator(common.Installer):
 
         """
         try:
-            util.run_script(self.option("conftest_cmd"))
+            util.run_script(self.options.conftest_cmd)
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -2457,11 +2471,11 @@ class ApacheConfigurator(common.Installer):
 
         """
         try:
-            stdout, _ = util.run_script(self.option("version_cmd"))
+            stdout, _ = util.run_script(self.options.version_cmd)
         except errors.SubprocessError:
             raise errors.PluginError(
                 "Unable to run %s -v" %
-                self.option("version_cmd"))
+                self.options.version_cmd)
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(stdout)

@@ -3,13 +3,14 @@ import zope.interface
 
 from certbot import interfaces
 from certbot_apache._internal import configurator
+from certbot_apache._internal.configurator import _OsOptions
 
 
 @zope.interface.provider(interfaces.IPluginFactory)
 class ArchConfigurator(configurator.ApacheConfigurator):
     """Arch Linux specific ApacheConfigurator override class"""
 
-    OS_DEFAULTS = dict(
+    OS_DEFAULTS = _OsOptions(
         server_root="/etc/httpd",
         vhost_root="/etc/httpd/conf",
         vhost_files="*.conf",
@@ -18,11 +19,5 @@ class ArchConfigurator(configurator.ApacheConfigurator):
         version_cmd=['apachectl', '-v'],
         restart_cmd=['apachectl', 'graceful'],
         conftest_cmd=['apachectl', 'configtest'],
-        enmod=None,
-        dismod=None,
-        le_vhost_ext="-le-ssl.conf",
-        handle_modules=False,
-        handle_sites=False,
         challenge_location="/etc/httpd/conf",
-        bin=None,
     )

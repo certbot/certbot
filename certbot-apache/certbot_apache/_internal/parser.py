@@ -81,7 +81,7 @@ class ApacheParser:
         # Must also attempt to parse additional virtual host root
         if vhostroot:
             self.parse_file(os.path.abspath(vhostroot) + "/" +
-                            self.configurator.option("vhost_files"))
+                            self.configurator.options.vhost_files)
 
         # check to see if there were unparsed define statements
         if version < (2, 4):
@@ -282,7 +282,7 @@ class ApacheParser:
     def update_defines(self):
         """Updates the dictionary of known variables in the configuration"""
 
-        self.variables = apache_util.parse_defines(self.configurator.option("ctl"))
+        self.variables = apache_util.parse_defines(self.configurator.options.ctl)
 
     def update_includes(self):
         """Get includes from httpd process, and add them to DOM if needed"""
@@ -292,7 +292,7 @@ class ApacheParser:
         # configuration files
         _ = self.find_dir("Include")
 
-        matches = apache_util.parse_includes(self.configurator.option("ctl"))
+        matches = apache_util.parse_includes(self.configurator.options.ctl)
         if matches:
             for i in matches:
                 if not self.parsed_in_current(i):
@@ -301,7 +301,7 @@ class ApacheParser:
     def update_modules(self):
         """Get loaded modules from httpd process, and add them to DOM"""
 
-        matches = apache_util.parse_modules(self.configurator.option("ctl"))
+        matches = apache_util.parse_modules(self.configurator.options.ctl)
         for mod in matches:
             self.add_mod(mod.strip())
 

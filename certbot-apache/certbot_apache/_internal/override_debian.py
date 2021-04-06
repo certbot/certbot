@@ -10,6 +10,7 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
+from certbot_apache._internal.configurator import _OsOptions
 
 logger = logging.getLogger(__name__)
 
@@ -18,22 +19,11 @@ logger = logging.getLogger(__name__)
 class DebianConfigurator(configurator.ApacheConfigurator):
     """Debian specific ApacheConfigurator override class"""
 
-    OS_DEFAULTS = dict(
-        server_root="/etc/apache2",
-        vhost_root="/etc/apache2/sites-available",
-        vhost_files="*",
-        logs_root="/var/log/apache2",
-        ctl="apache2ctl",
-        version_cmd=['apache2ctl', '-v'],
-        restart_cmd=['apache2ctl', 'graceful'],
-        conftest_cmd=['apache2ctl', 'configtest'],
+    OS_DEFAULTS = _OsOptions(
         enmod="a2enmod",
         dismod="a2dismod",
-        le_vhost_ext="-le-ssl.conf",
         handle_modules=True,
         handle_sites=True,
-        challenge_location="/etc/apache2",
-        bin=None,
     )
 
     def enable_site(self, vhost):
@@ -132,11 +122,11 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         # Generate reversal command.
         # Try to be safe here... check that we can probably reverse before
         # applying enmod command
-        if not util.exe_exists(self.option("dismod")):
+        if not util.exe_exists(self.options.dismod):
             raise errors.MisconfigurationError(
                 "Unable to find a2dismod, please make sure a2enmod and "
                 "a2dismod are configured correctly for certbot.")
 
         self.reverter.register_undo_command(
-            temp, [self.option("dismod"), "-f", mod_name])
-        util.run_script([self.option("enmod"), mod_name])
+            temp, [self.options.dismod, "-f", mod_name])
+        util.run_script([self.options.enmod, mod_name])

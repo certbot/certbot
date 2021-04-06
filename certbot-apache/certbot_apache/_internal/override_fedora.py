@@ -1,7 +1,4 @@
 """ Distribution specific override class for Fedora 29+ """
-from typing import cast
-from typing import List
-
 import zope.interface
 
 from certbot import errors
@@ -10,13 +7,14 @@ from certbot import util
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
+from certbot_apache._internal.configurator import _OsOptions
 
 
 @zope.interface.provider(interfaces.IPluginFactory)
 class FedoraConfigurator(configurator.ApacheConfigurator):
     """Fedora 29+ specific ApacheConfigurator override class"""
 
-    OS_DEFAULTS = dict(
+    OS_DEFAULTS = _OsOptions(
         server_root="/etc/httpd",
         vhost_root="/etc/httpd/conf.d",
         vhost_files="*.conf",
@@ -26,13 +24,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         restart_cmd=['apachectl', 'graceful'],
         restart_cmd_alt=['apachectl', 'restart'],
         conftest_cmd=['apachectl', 'configtest'],
-        enmod=None,
-        dismod=None,
-        le_vhost_ext="-le-ssl.conf",
-        handle_modules=False,
-        handle_sites=False,
         challenge_location="/etc/httpd/conf.d",
-        bin=None,
     )
 
     def config_test(self):
@@ -50,7 +42,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
     def get_parser(self):
         """Initializes the ApacheParser"""
         return FedoraParser(
-            self.option("server_root"), self.option("vhost_root"),
+            self.options.server_root, self.options.vhost_root,
             self.version, configurator=self)
 
     def _try_restart_fedora(self):
@@ -72,9 +64,10 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         of Fedora to restart httpd.
         """
         super(FedoraConfigurator, self)._prepare_options()
-        cast(List[str], self.options["restart_cmd"])[0] = 'apachectl'
-        cast(List[str], self.options["restart_cmd_alt"])[0] = 'apachectl'
-        cast(List[str], self.options["conftest_cmd"])[0] = 'apachectl'
+        self.options.restart_cmd[0] = 'apachectl'
+        if self.options.restart_cmd_alt:
+            self.options.restart_cmd_alt[0] = 'apachectl'
+        self.options.conftest_cmd[0] = 'apachectl'
 
 
 class FedoraParser(parser.ApacheParser):
