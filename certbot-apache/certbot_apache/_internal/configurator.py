@@ -84,7 +84,7 @@ class _OsOptions:
         self.handle_modules = handle_modules
         self.handle_sites = handle_sites
         self.challenge_location = challenge_location
-        self.apache_bin = apache_bin
+        self.bin = apache_bin
 
 
 # TODO: Augeas sections ie. <VirtualHost>, <IfModule> beginning and closing
@@ -217,7 +217,7 @@ class ApacheConfigurator(common.Installer):
                  "(Only Ubuntu/Debian currently)")
         add("ctl", default=DEFAULTS.ctl,
             help="Full path to Apache control script")
-        add("bin", default=DEFAULTS.apache_bin,
+        add("bin", default=DEFAULTS.bin,
             help="Full path to apache2/httpd binary")
 
     def __init__(self, *args, **kwargs):
@@ -306,8 +306,8 @@ class ApacheConfigurator(common.Installer):
             ssl_module_location = self.parser.standard_path_from_server_root(ssl_module_location)
         else:
             # Possibility B: ssl_module is statically linked into Apache
-            if self.options.apache_bin:
-                ssl_module_location = self.options.apache_bin
+            if self.options.bin:
+                ssl_module_location = self.options.bin
             else:
                 logger.warning("ssl_module is statically linked but --apache-bin is "
                                "missing; not disabling session tickets.")
