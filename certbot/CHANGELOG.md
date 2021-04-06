@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.14.0 - master
+## 1.14.0 - 2021-04-06
 
 ### Added
 
