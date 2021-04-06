@@ -1,13 +1,13 @@
 """Apache Configurator."""
+# pylint: disable=too-many-lines
+from collections import defaultdict
 import copy
+from distutils.version import LooseVersion
 import fnmatch
 import logging
 import re
 import socket
 import time
-# pylint: disable=too-many-lines
-from collections import defaultdict
-from distutils.version import LooseVersion
 from typing import DefaultDict
 from typing import Dict
 from typing import List
@@ -17,6 +17,7 @@ from typing import Union
 
 import zope.component
 import zope.interface
+
 from acme import challenges
 from certbot import errors
 from certbot import interfaces
