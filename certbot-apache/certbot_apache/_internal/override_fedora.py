@@ -65,7 +65,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         """
         super(FedoraConfigurator, self)._prepare_options()
         self.options.restart_cmd[0] = 'apachectl'
-        if not self.options.restart_cmd_alt:
+        if not self.options.restart_cmd_alt:  # pragma: no cover
             raise ValueError("OS option restart_cmd_alt must be set for Fedora.")
         self.options.restart_cmd_alt[0] = 'apachectl'
         self.options.conftest_cmd[0] = 'apachectl'

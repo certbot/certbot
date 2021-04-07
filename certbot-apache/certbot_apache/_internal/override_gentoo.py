@@ -26,7 +26,7 @@ class GentooConfigurator(configurator.ApacheConfigurator):
         alternative restart cmd used in Gentoo.
         """
         super(GentooConfigurator, self)._prepare_options()
-        if not self.options.restart_cmd_alt:
+        if not self.options.restart_cmd_alt:  # pragma: no cover
             raise ValueError("OS option restart_cmd_alt must be set for Gentoo.")
         self.options.restart_cmd_alt[0] = self.options.ctl
 
