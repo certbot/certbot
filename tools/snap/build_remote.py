@@ -96,7 +96,7 @@ def _execute_build(
 
 def _build_snap(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
-        running: Dict[str, bool], output_lock: Lock) -> Dict[str, str]:
+        running: Dict[str, bool], output_lock: Lock) -> bool:
     status[target] = {arch: '...' for arch in archs}
 
     if target == 'certbot':
@@ -104,6 +104,7 @@ def _build_snap(
     else:
         workspace = join(CERTBOT_DIR, target)
 
+    build_was_successful = False
     retry = 3
     while retry:
         exit_code, process_output = _execute_build(target, archs, status, workspace)
@@ -124,6 +125,7 @@ def _build_snap(
                           f'(current list: {snaps_list}).')
                     dump_output = True
                 else:
+                    build_was_successful = True
                     break
             if dump_output:
                 print(f'Dumping snapcraft remote-build output build for {target}:')
@@ -136,7 +138,7 @@ def _build_snap(
 
     running[target] = False
 
-    return {target: workspace}
+    return build_was_successful
 
 
 def _extract_state(project: str, output: str, status: Dict[str, Dict[str, str]]) -> None:
@@ -205,24 +207,9 @@ def _dump_failed_build_logs(
     return failures
 
 
-def _dump_results(
-        targets: Set[str], archs: Set[str], status: Dict[str, Dict[str, str]],
-        workspaces: Dict[str, str]) -> bool:
-    failures = False
-    for target in targets:
-        workspace = workspaces[target]
-        failures = _dump_failed_build_logs(target, archs, status, workspace)
-
-    if not failures:
-        print('All builds succeeded.')
-    else:
-        print('Some builds failed.')
-
-    print()
+def _dump_results(archs: Set[str], status: Dict[str, Dict[str, str]]) -> None:
     print(f'Results for remote build finished at {datetime.datetime.now()}')
     _dump_status_helper(archs, status)
-
-    return failures
 
 
 def main():
@@ -278,11 +265,12 @@ def main():
             if process.is_alive():
                 raise ValueError(f"Timeout out reached ({args.timeout} seconds) during the build!")
 
-            workspaces = {}
-            for async_result in async_results:
-                workspaces.update(async_result.get())
-
-            if _dump_results(targets, archs, status, workspaces):
+            build_success = all(async_result.get() for async_result in async_results)
+            _dump_results(archs, status)
+            if build_success:
+                print('All builds succeeded.')
+            else:
+                print('Some builds failed.')
                 raise ValueError("There were failures during the build!")
         finally:
             process.terminate()
