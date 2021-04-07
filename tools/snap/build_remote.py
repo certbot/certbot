@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import datetime
+import functools
 import glob
 from multiprocessing import Manager
 from multiprocessing import Pool
@@ -26,6 +27,17 @@ from typing import Tuple
 
 CERTBOT_DIR = dirname(dirname(dirname(realpath(__file__))))
 PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*'))]
+
+
+# In Python, stdout and stderr are buffered in each process by default. When
+# printing output from multiple processes, this can cause delays in printing
+# output with lines from different processes being interleaved depending
+# on when the output for that process is flushed. To prevent this, we override
+# print so that it always flushes its output. Disabling output buffering can
+# also be done through command line flags or environment variables set when the
+# Python process starts, but this approach was taken instead to ensure
+# consistent behavior regardless of how the script is invoked.
+print = functools.partial(print, flush=True)
 
 
 def _snap_log_name(target: str, arch: str):
@@ -98,7 +110,6 @@ def _build_snap(
         with output_lock:
             print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
                   f'exit code {exit_code}.')
-            sys.stdout.flush()
 
             failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
             # If the command failed or any architecture wasn't built
@@ -156,8 +167,6 @@ def _dump_status_helper(archs: Set[str], status: Dict[str, Dict[str, str]]) -> N
         print(''.join(f'| {item:<25}' for item in [project, *[states[arch] for arch in archs]]))
     print(f'|{"-" * 26}' * len(headers))
     print()
-
-    sys.stdout.flush()
 
 
 def _dump_status(
