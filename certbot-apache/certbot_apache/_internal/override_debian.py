@@ -10,7 +10,7 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
-from certbot_apache._internal.configurator import _OsOptions
+from certbot_apache._internal.configurator import OsOptions
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class DebianConfigurator(configurator.ApacheConfigurator):
     """Debian specific ApacheConfigurator override class"""
 
-    OS_DEFAULTS = _OsOptions(
+    OS_DEFAULTS = OsOptions(
         enmod="a2enmod",
         dismod="a2dismod",
         handle_modules=True,

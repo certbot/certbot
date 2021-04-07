@@ -5,14 +5,14 @@ from certbot import interfaces
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
-from certbot_apache._internal.configurator import _OsOptions
+from certbot_apache._internal.configurator import OsOptions
 
 
 @zope.interface.provider(interfaces.IPluginFactory)
 class GentooConfigurator(configurator.ApacheConfigurator):
     """Gentoo specific ApacheConfigurator override class"""
 
-    OS_DEFAULTS = _OsOptions(
+    OS_DEFAULTS = OsOptions(
         server_root="/etc/apache2",
         vhost_files="*.conf",
         restart_cmd_alt=['apache2ctl', 'restart'],

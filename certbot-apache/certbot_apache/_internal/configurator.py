@@ -50,7 +50,7 @@ except ImportError:  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 
-class _OsOptions:
+class OsOptions:
     def __init__(self,
                  server_root="/etc/apache2",
                  vhost_root="/etc/apache2/sites-available",
@@ -142,7 +142,7 @@ class ApacheConfigurator(common.Installer):
             " change depending on the operating system Certbot is run on.)"
         )
 
-    OS_DEFAULTS = _OsOptions()
+    OS_DEFAULTS = OsOptions()
 
     def pick_apache_config(self, warn_on_no_mod_ssl=True):
         """

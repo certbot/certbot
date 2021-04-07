@@ -12,7 +12,7 @@ from certbot.errors import MisconfigurationError
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
-from certbot_apache._internal.configurator import _OsOptions
+from certbot_apache._internal.configurator import OsOptions
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class CentOSConfigurator(configurator.ApacheConfigurator):
     """CentOS specific ApacheConfigurator override class"""
 
-    OS_DEFAULTS = _OsOptions(
+    OS_DEFAULTS = OsOptions(
         server_root="/etc/httpd",
         vhost_root="/etc/httpd/conf.d",
         vhost_files="*.conf",
