@@ -183,8 +183,7 @@ def _dump_status(
 
 def _dump_failed_build_logs(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
-        workspace: str) -> bool:
-    failures = False
+        workspace: str) -> None:
     for arch in archs:
         result = status[target][arch]
 
@@ -204,7 +203,6 @@ def _dump_failed_build_logs(
             print(build_output)
             print('-------------------------------------------')
             print()
-    return failures
 
 
 def _dump_results(archs: Set[str], status: Dict[str, Dict[str, str]]) -> None:
