@@ -52,7 +52,8 @@ Please deploy a DNS TXT record under the name
 Before continuing, verify the TXT record has been deployed. Depending on the DNS 
 provider, this may take some time, from a few seconds to multiple 
 minutes. You can check if it has finished deploying through online tools, such as the Google 
-Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}."""
+Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}. Look for a bolded line
+below the line ';ANSWER'. It should (also) show the value you've just added."""
     _HTTP_INSTRUCTIONS = """\
 Create a file containing just this data:
 
