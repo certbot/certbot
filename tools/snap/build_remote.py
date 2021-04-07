@@ -263,7 +263,11 @@ def main():
             if process.is_alive():
                 raise ValueError(f"Timeout out reached ({args.timeout} seconds) during the build!")
 
-            build_success = all(async_result.get() for async_result in async_results)
+            build_success = True
+            for async_result in async_results:
+                if not async_results.get():
+                    build_success = False
+
             _dump_results(archs, status)
             if build_success:
                 print('All builds succeeded.')
