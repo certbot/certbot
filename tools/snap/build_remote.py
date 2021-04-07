@@ -104,7 +104,7 @@ def _build_snap(
     else:
         workspace = join(CERTBOT_DIR, target)
 
-    build_was_successful = False
+    build_success = False
     retry = 3
     while retry:
         exit_code, process_output = _execute_build(target, archs, status, workspace)
@@ -125,7 +125,7 @@ def _build_snap(
                           f'(current list: {snaps_list}).')
                     dump_output = True
                 else:
-                    build_was_successful = True
+                    build_success = True
                     break
             if dump_output:
                 print(f'Dumping snapcraft remote-build output build for {target}:')
@@ -138,7 +138,7 @@ def _build_snap(
 
     running[target] = False
 
-    return build_was_successful
+    return build_success
 
 
 def _extract_state(project: str, output: str, status: Dict[str, Dict[str, str]]) -> None:
