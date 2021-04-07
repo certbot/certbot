@@ -39,8 +39,6 @@ windows-installer = {path = "../../windows-installer"}
 # test failures so let's pin these packages back for now.
 coverage = "4.5.4"
 pylint = "2.4.3"
-pytest = "3.2.5"
-pytest-forked = "0.2"
 # We were originally pinning back python-augeas for certbot-auto because we
 # found the way older versions of the library linked to Augeas were more
 # reliable. That's no longer a concern, however, we continue to pin back the
