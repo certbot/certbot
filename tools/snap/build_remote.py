@@ -265,7 +265,7 @@ def main():
 
             build_success = True
             for async_result in async_results:
-                if not async_results.get():
+                if not async_result.get():
                     build_success = False
 
             _dump_results(archs, status)
