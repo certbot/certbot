@@ -51,6 +51,10 @@ logger = logging.getLogger(__name__)
 
 
 class OsOptions:
+    """
+    Dedicated class to describe the OS specificities (eg. paths, binary names)
+    that the Apache configurator needs to be aware to operate properly.
+    """
     def __init__(self,
                  server_root="/etc/apache2",
                  vhost_root="/etc/apache2/sites-available",
