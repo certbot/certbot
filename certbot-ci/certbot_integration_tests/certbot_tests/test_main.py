@@ -630,7 +630,7 @@ def test_revoke_mutual_exclusive_flags(context):
             'revoke', '--cert-name', cert,
             '--cert-path', join(context.config_dir, 'live', cert, 'fullchain.pem')
         ])
-        assert 'Exactly one of --cert-path or --cert-name must be specified' in error.value.output
+    assert 'Exactly one of --cert-path or --cert-name must be specified' in error.value.output
 
 
 def test_revoke_multiple_lineages(context):
