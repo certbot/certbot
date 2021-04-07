@@ -14,6 +14,7 @@ class GentooConfigurator(configurator.ApacheConfigurator):
 
     OS_DEFAULTS = OsOptions(
         server_root="/etc/apache2",
+        vhost_root="/etc/apache2/vhosts.d",
         vhost_files="*.conf",
         restart_cmd_alt=['apache2ctl', 'restart'],
         challenge_location="/etc/apache2/vhosts.d",
