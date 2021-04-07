@@ -25,8 +25,9 @@ class GentooConfigurator(configurator.ApacheConfigurator):
         alternative restart cmd used in Gentoo.
         """
         super(GentooConfigurator, self)._prepare_options()
-        if self.options.restart_cmd_alt:
-            self.options.restart_cmd_alt[0] = self.options.ctl
+        if not self.options.restart_cmd_alt:
+            raise ValueError("OS option restart_cmd_alt must be set for Gentoo.")
+        self.options.restart_cmd_alt[0] = self.options.ctl
 
     def get_parser(self):
         """Initializes the ApacheParser"""
