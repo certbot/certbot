@@ -249,7 +249,7 @@ def main():
 
     manager: SyncManager = Manager()
     pool = Pool(processes=len(targets))
-    with manager, pool:
+    with manager:
         status: Dict[str, Dict[str, str]] = manager.dict()
         running = manager.dict({target: True for target in targets})
         # While multiple processes are running, this lock should be acquired
@@ -271,6 +271,8 @@ def main():
             workspaces = {}
             for async_result in async_results:
                 workspaces.update(async_result.get())
+            pool.close()
+            pool.join()
 
             if _dump_results(targets, archs, status, workspaces):
                 raise ValueError("There were failures during the build!")
