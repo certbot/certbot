@@ -50,7 +50,7 @@ Please deploy a DNS TXT record under the name
 {validation}
 
 Before continuing, verify the TXT record has been deployed. Depending on the DNS 
-provider, this may take some time, from just a few seconds to sometimes multiple 
+provider, this may take some time, from a few seconds to multiple 
 minutes. You can check if it has finished deploying through online tools, such as the Google 
 Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}."""
     _HTTP_INSTRUCTIONS = """\
