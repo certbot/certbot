@@ -47,7 +47,7 @@ class ApacheHttp01(common.ChallengePerformer):
     """
 
     def __init__(self, *args, **kwargs):
-        super(ApacheHttp01, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.challenge_conf_pre = os.path.join(
             self.configurator.conf("challenge-location"),
             "le_http_01_challenge_pre.conf")

@@ -108,7 +108,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         return lock_dir_until_exit(*args, **kwargs)
 
     def setUp(self):
-        super(LockDirUntilExit, self).setUp()
+        super().setUp()
         # reset global state from other tests
         import certbot.util
         reload_module(certbot.util)
@@ -164,7 +164,7 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
     """
 
     def setUp(self):
-        super(MakeOrVerifyDirTest, self).setUp()
+        super().setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
         filesystem.mkdir(self.path, 0o600)
@@ -196,7 +196,7 @@ class UniqueFileTest(test_util.TempDirTestCase):
     """Tests for certbot.util.unique_file."""
 
     def setUp(self):
-        super(UniqueFileTest, self).setUp()
+        super().setUp()
 
         self.default_name = os.path.join(self.tempdir, "foo.txt")
 
@@ -284,7 +284,7 @@ class SafelyRemoveTest(test_util.TempDirTestCase):
     """Tests for certbot.util.safely_remove."""
 
     def setUp(self):
-        super(SafelyRemoveTest, self).setUp()
+        super().setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
 

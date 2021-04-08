@@ -18,7 +18,7 @@ from certbot.tests import util as test_util
 class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
     """Test the Reverter Class."""
     def setUp(self):
-        super(ReverterCheckpointLocalTest, self).setUp()
+        super().setUp()
         from certbot.reverter import Reverter
 
         # Disable spurious errors... we are trying to test for them
@@ -280,7 +280,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
 class TestFullCheckpointsReverter(test_util.ConfigTestCase):
     """Tests functions having to deal with full checkpoints."""
     def setUp(self):
-        super(TestFullCheckpointsReverter, self).setUp()
+        super().setUp()
         from certbot.reverter import Reverter
         # Disable spurious errors...
         logging.disable(logging.CRITICAL)

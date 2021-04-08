@@ -15,7 +15,7 @@ class EnhancementTest(test_util.ConfigTestCase):
     """Tests for new style enhancements in certbot.plugins.enhancements"""
 
     def setUp(self):
-        super(EnhancementTest, self).setUp()
+        super().setUp()
         self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
 
 

@@ -30,7 +30,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
     @classmethod
     def from_json(cls, jobj):
         try:
-            return super(Challenge, cls).from_json(jobj)
+            return super().from_json(jobj)
         except jose.UnrecognizedTypeError as error:
             logger.debug(error)
             return UnrecognizedChallenge.from_json(jobj)
@@ -58,7 +58,7 @@ class UnrecognizedChallenge(Challenge):
     """
 
     def __init__(self, jobj):
-        super(UnrecognizedChallenge, self).__init__()
+        super().__init__()
         object.__setattr__(self, "jobj", jobj)
 
     def to_partial_json(self):
@@ -141,7 +141,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return True
 
     def to_partial_json(self):
-        jobj = super(KeyAuthorizationChallengeResponse, self).to_partial_json()
+        jobj = super().to_partial_json()
         jobj.pop('keyAuthorization', None)
         return jobj
 

@@ -36,7 +36,7 @@ CERT_ALT_ISSUER = test_util.load_vector('cert_intermediate_2.pem')
 class InitSaveKeyTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_key."""
     def setUp(self):
-        super(InitSaveKeyTest, self).setUp()
+        super().setUp()
 
         self.workdir = os.path.join(self.tempdir, 'workdir')
         filesystem.mkdir(self.workdir, mode=0o700)
@@ -46,7 +46,7 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
             mock.Mock(strict_permissions=True), interfaces.IConfig)
 
     def tearDown(self):
-        super(InitSaveKeyTest, self).tearDown()
+        super().tearDown()
 
         logging.disable(logging.NOTSET)
 
@@ -73,7 +73,7 @@ class InitSaveCSRTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_csr."""
 
     def setUp(self):
-        super(InitSaveCSRTest, self).setUp()
+        super().setUp()
 
         zope.component.provideUtility(
             mock.Mock(strict_permissions=True), interfaces.IConfig)

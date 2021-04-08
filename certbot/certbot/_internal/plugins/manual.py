@@ -71,7 +71,7 @@ permitted by DNS standards.)
 """
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
         self.env: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]] = {}

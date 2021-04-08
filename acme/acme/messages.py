@@ -132,7 +132,7 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
     POSSIBLE_NAMES: Dict[str, '_Constant'] = NotImplemented
 
     def __init__(self, name):
-        super(_Constant, self).__init__()
+        super().__init__()
         self.POSSIBLE_NAMES[name] = self  # pylint: disable=unsupported-assignment-operation
         self.name = name
 
@@ -201,7 +201,7 @@ class Directory(jose.JSONDeSerializable):
 
         def __init__(self, **kwargs):
             kwargs = {self._internal_name(k): v for k, v in kwargs.items()}
-            super(Directory.Meta, self).__init__(**kwargs)
+            super().__init__(**kwargs)
 
         @property
         def terms_of_service(self):
@@ -211,7 +211,7 @@ class Directory(jose.JSONDeSerializable):
         def __iter__(self):
             # When iterating over fields, use the external name 'terms_of_service' instead of
             # the internal '_terms_of_service'.
-            for name in super(Directory.Meta, self).__iter__():
+            for name in super().__iter__():
                 yield name[1:] if name == '_terms_of_service' else name
 
         def _internal_name(self, name):
@@ -357,7 +357,7 @@ class Registration(ResourceBody):
         if 'contact' in kwargs:
             # Avoid the __setattr__ used by jose.TypedJSONObjectWithFields
             object.__setattr__(self, '_add_contact', True)
-        super(Registration, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def _filter_contact(self, prefix):
         return tuple(
@@ -383,12 +383,12 @@ class Registration(ResourceBody):
 
     def to_partial_json(self):
         """Modify josepy.JSONDeserializable.to_partial_json()"""
-        jobj = super(Registration, self).to_partial_json()
+        jobj = super().to_partial_json()
         return self._add_contact_if_appropriate(jobj)
 
     def fields_to_partial_json(self):
         """Modify josepy.JSONObjectWithFields.fields_to_partial_json()"""
-        jobj = super(Registration, self).fields_to_partial_json()
+        jobj = super().fields_to_partial_json()
         return self._add_contact_if_appropriate(jobj)
 
     @property
@@ -460,19 +460,19 @@ class ChallengeBody(ResourceBody):
 
     def __init__(self, **kwargs):
         kwargs = {self._internal_name(k): v for k, v in kwargs.items()}
-        super(ChallengeBody, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def encode(self, name):
-        return super(ChallengeBody, self).encode(self._internal_name(name))
+        return super().encode(self._internal_name(name))
 
     def to_partial_json(self):
-        jobj = super(ChallengeBody, self).to_partial_json()
+        jobj = super().to_partial_json()
         jobj.update(self.chall.to_partial_json())
         return jobj
 
     @classmethod
     def fields_from_json(cls, jobj):
-        jobj_fields = super(ChallengeBody, cls).fields_from_json(jobj)
+        jobj_fields = super().fields_from_json(jobj)
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
         return jobj_fields
 
@@ -487,7 +487,7 @@ class ChallengeBody(ResourceBody):
     def __iter__(self):
         # When iterating over fields, use the external name 'uri' instead of
         # the internal '_uri'.
-        for name in super(ChallengeBody, self).__iter__():
+        for name in super().__iter__():
             yield name[1:] if name == '_uri' else name
 
     def _internal_name(self, name):

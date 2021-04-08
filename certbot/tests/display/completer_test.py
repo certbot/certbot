@@ -25,7 +25,7 @@ class CompleterTest(test_util.TempDirTestCase):
     """Test certbot._internal.display.completer.Completer."""
 
     def setUp(self):
-        super(CompleterTest, self).setUp()
+        super().setUp()
 
         # directories must end with os.sep for completer to
         # search inside the directory for possible completions

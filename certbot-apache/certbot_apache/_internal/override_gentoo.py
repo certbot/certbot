@@ -38,7 +38,7 @@ class GentooConfigurator(configurator.ApacheConfigurator):
         Override the options dictionary initialization in order to support
         alternative restart cmd used in Gentoo.
         """
-        super(GentooConfigurator, self)._prepare_options()
+        super()._prepare_options()
         cast(List[str], self.options["restart_cmd_alt"])[0] = self.option("ctl")
 
     def get_parser(self):
@@ -53,7 +53,7 @@ class GentooParser(parser.ApacheParser):
     def __init__(self, *args, **kwargs):
         # Gentoo specific configuration file for Apache2
         self.apacheconfig_filep = "/etc/conf.d/apache2"
-        super(GentooParser, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def update_runtime_variables(self):
         """ Override for update_runtime_variables for custom parsing """

@@ -17,7 +17,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
     """Tests for interfaces.RenewDeployer and interfaces.GenericUpdater"""
 
     def setUp(self):
-        super(RenewUpdaterTest, self).setUp()
+        super().setUp()
         self.generic_updater = mock.MagicMock(spec=interfaces.GenericUpdater)
         self.generic_updater.restart = mock.MagicMock()
         self.renew_deployer = mock.MagicMock(spec=interfaces.RenewDeployer)

@@ -88,7 +88,7 @@ class InstallerTest(test_util.ConfigTestCase):
     """Tests for certbot.plugins.common.Installer."""
 
     def setUp(self):
-        super(InstallerTest, self).setUp()
+        super().setUp()
         filesystem.mkdir(self.config.config_dir)
         from certbot.plugins.common import Installer
 
@@ -282,7 +282,7 @@ class InstallVersionControlledFileTest(test_util.TempDirTestCase):
     """Tests for certbot.plugins.common.install_version_controlled_file."""
 
     def setUp(self):
-        super(InstallVersionControlledFileTest, self).setUp()
+        super().setUp()
         self.hashes = ["someotherhash"]
         self.dest_path = os.path.join(self.tempdir, "options-ssl-dest.conf")
         self.hash_path = os.path.join(self.tempdir, ".options-ssl-conf.txt")

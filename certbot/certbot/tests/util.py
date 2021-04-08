@@ -331,7 +331,7 @@ class TempDirTestCase(unittest.TestCase):
 class ConfigTestCase(TempDirTestCase):
     """Test class which sets up a NamespaceConfig object."""
     def setUp(self):
-        super(ConfigTestCase, self).setUp()
+        super().setUp()
         self.config = configuration.NamespaceConfig(
             mock.MagicMock(**constants.CLI_DEFAULTS)
         )

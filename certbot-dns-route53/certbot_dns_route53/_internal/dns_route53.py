@@ -37,7 +37,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     ttl = 10
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
         self._resource_records: DefaultDict[str, List[Dict[str, str]]] = collections.defaultdict(list)
 

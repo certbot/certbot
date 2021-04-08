@@ -28,12 +28,12 @@ class Authenticator(dns_common.DNSAuthenticator):
     ttl = 60
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=30)
+        super().add_parser_arguments(add, default_propagation_seconds=30)
         add('credentials', help='OVH credentials INI file.')
 
     def more_info(self):  # pylint: disable=missing-function-docstring
@@ -79,7 +79,7 @@ class _OVHLexiconClient(dns_common_lexicon.LexiconClient):
     """
 
     def __init__(self, endpoint, application_key, application_secret, consumer_key, ttl):
-        super(_OVHLexiconClient, self).__init__()
+        super().__init__()
 
         config = dns_common_lexicon.build_lexicon_config('ovh', {
             'ttl': ttl,
@@ -106,4 +106,4 @@ class _OVHLexiconClient(dns_common_lexicon.LexiconClient):
         if domain_name in str(e) and str(e).endswith('not found'):
             return
 
-        super(_OVHLexiconClient, self)._handle_general_error(e, domain_name)
+        super()._handle_general_error(e, domain_name)

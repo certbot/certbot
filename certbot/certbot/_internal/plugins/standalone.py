@@ -119,7 +119,7 @@ class Authenticator(common.Plugin):
     description = "Spin up a temporary webserver"
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.served: ServedType = collections.defaultdict(set)
 
