@@ -27,6 +27,9 @@ from certbot.compat import os
 from certbot.display import util as display_util
 
 try:
+    # When we remove this deprecated import, we should also remove the
+    # "external-mock" test environment and the mock dependency listed in
+    # tools/pinning/pyproject.toml.
     import mock
     warnings.warn(
         "The external mock module is being used for backwards compatibility "
