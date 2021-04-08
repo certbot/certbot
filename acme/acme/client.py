@@ -1036,6 +1036,7 @@ class ClientNetwork:
                  source_address: Optional[Union[str, Tuple[str, int]]] = None) -> None:
         self.key = key
         self.account = account
+        # ACME: RS256 for RSA keys, ES256 for Elliptic Curve keys (also OKP)
         self.alg = alg
         self.verify_ssl = verify_ssl
         self._nonces: Set[Text] = set()
@@ -1074,10 +1075,9 @@ class ClientNetwork:
             obj.le_acme_version = acme_version
         jobj = obj.json_dumps(indent=2).encode() if obj else b''
         logger.debug('JWS payload:\n%s', jobj)
-        alg = {'RSA': jose.RS256, 'EC': jose.ES256}.get(self.key.typ)
         kwargs = {
-            "alg": alg,
-            "nonce": nonce
+            "alg": self.alg,
+            "nonce": nonce,
         }
         if acme_version == 2:
             kwargs["url"] = url

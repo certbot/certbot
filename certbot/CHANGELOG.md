@@ -68,7 +68,8 @@ More details about these changes can be found on our GitHub repo.
 
 ### Fixed
 
-*
+* Revoking a certificate based on an ECDSA key can now be done with `--cert-key`.
+  See [GH #8569](https://github.com/certbot/certbot/issues/8569).
 
 More details about these changes can be found on our GitHub repo.
 
@@ -216,8 +217,13 @@ More details about these changes can be found on our GitHub repo.
 ### Fixed
 
 * Fix TypeError due to incompatibility with lexicon >= v3.6.0
+<<<<<<< HEAD
 * Installers (e.g. nginx, Apache) were being restarted unnecessarily after dry-run renewals.
 * Colors and bold text should properly render in all supported versions of Windows.
+=======
+* Revoking a certificate based on an ECDSA key can now be done with `--key-path`.
+  See [GH #8569](https://github.com/certbot/certbot/issues/8569).
+>>>>>>> log
 
 More details about these changes can be found on our GitHub repo.
 
@@ -988,7 +994,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Changed
 
-* Certbot and its acme module now depend on Ejosepy>=1.1.0 to avoid printing the
+* Certbot and its acme module now depend on josepy>=1.1.0 to avoid printing the
   warnings described at https://github.com/certbot/josepy/issues/13.
 * Apache plugin now respects CERTBOT_DOCS environment variable when adding
   command line defaults.

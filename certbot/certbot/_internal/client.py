@@ -16,6 +16,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 import josepy as jose
 import OpenSSL
+from josepy import ES256
+from josepy import RS256
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -48,8 +50,14 @@ def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
                          regr: Optional[messages.RegistrationResource] = None
                          ) -> acme_client.ClientV2:
     """Wrangle ACME client construction"""
-    # TODO: Allow for other alg types besides RS256
-    net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
+    if key.typ in ('EC', 'OKP'):
+        alg = ES256
+    elif key.typ == 'RSA':
+        alg = RS256
+    else:
+        raise NotImplementedError(f'Key type {key.typ} not support')
+    net = acme_client.ClientNetwork(key, alg=alg, account=regr,
+                                    verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
 
     with warnings.catch_warnings():
