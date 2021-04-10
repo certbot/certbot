@@ -51,12 +51,15 @@ Please deploy a DNS TXT record with the following value:
 under the name:
 
 {domain}.
-
+"""
+    _DNS_VERIFY_INSTRUCTIONS = """
 Before continuing, verify the TXT record has been deployed. Depending on the DNS 
-provider, this may take some time, from a few seconds to multiple 
-minutes. You can check if it has finished deploying through online tools, such as the Google 
-Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}. Look for a bolded line
-below the line ';ANSWER'. It should (also) show the value you've just added."""
+provider, this may take some time, from a few seconds to multiple minutes. You can
+check if it has finished deploying with aid of online tools, such as the Google
+Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}.
+Look for one or more bolded line(s) below the line ';ANSWER'. It should (also)
+show the value(s) you've just added.
+"""
     _HTTP_INSTRUCTIONS = """\
 Create a file containing just this data:
 
@@ -121,11 +124,11 @@ permitted by DNS standards.)
 
     def perform(self, achalls):  # pylint: disable=missing-function-docstring
         responses = []
-        for achall in achalls:
+        for i, achall in enumerate(achalls, 1):
             if self.conf('auth-hook'):
                 self._perform_achall_with_script(achall, achalls)
             else:
-                self._perform_achall_manually(achall)
+                self._perform_achall_manually(achall, i == len(achalls))
             responses.append(achall.response(achall.account_key))
         return responses
 
@@ -143,7 +146,7 @@ permitted by DNS standards.)
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
-    def _perform_achall_manually(self, achall):
+    def _perform_achall_manually(self, achall, lastchall=False):
         validation = achall.validation(achall.account_key)
         if isinstance(achall.chall, challenges.HTTP01):
             msg = self._HTTP_INSTRUCTIONS.format(
@@ -160,6 +163,10 @@ permitted by DNS standards.)
                 # 2nd or later dns-01 challenge
                 msg += self._SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS
             self.subsequent_dns_challenge = True
+            if lastchall:
+                # last dns-01 challenge
+                msg += self._DNS_VERIFY_INSTRUCTIONS.format(
+                    domain=achall.validation_domain_name(achall.domain))
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
             msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
