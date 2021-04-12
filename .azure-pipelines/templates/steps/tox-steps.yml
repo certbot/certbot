@@ -1,6 +1,7 @@
 steps:
   # We run brew update because we've seen attempts to install an older version
-  # of a package fail.
+  # of a package fail. See
+  # https://github.com/actions/virtual-environments/issues/3165.
   - bash: |
       set -e
       brew update
