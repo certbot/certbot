@@ -53,7 +53,7 @@ class CompleterTest(test_util.TempDirTestCase):
             self.assertTrue(completion in self.paths)
             self.paths.remove(completion)
 
-        self.assertFalse(self.paths)
+        self.assertIs(self.paths, False)
         completion = my_completer.complete(self.tempdir, num_paths)
         self.assertEqual(completion, None)
 

@@ -94,7 +94,7 @@ class RegisterTest(test_util.ConfigTestCase):
             with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
                 mock_client().new_account_and_tos.side_effect = errors.Error
                 self.assertRaises(errors.Error, self._call)
-                self.assertFalse(mock_prepare.called)
+                self.assertIs(mock_prepare.called, False)
 
                 mock_client().new_account_and_tos.side_effect = None
                 self._call()
@@ -156,7 +156,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 self.config.dry_run = True
                 self._call()
                 # check Certbot did not ask the user to provide an email
-                self.assertFalse(mock_get_email.called)
+                self.assertIs(mock_get_email.called, False)
                 # check Certbot created an account with no email. Contact should return empty
                 self.assertFalse(mock_client().new_account_and_tos.call_args[0][0].contact)
 
@@ -185,7 +185,7 @@ class RegisterTest(test_util.ConfigTestCase):
                     self.config.eab_hmac_key = None
                     self._call()
 
-                    self.assertFalse(mock_eab_from_data.called)
+                    self.assertIs(mock_eab_from_data.called, False)
 
     def test_external_account_required_without_eab_arguments(self):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
@@ -210,7 +210,7 @@ class RegisterTest(test_util.ConfigTestCase):
             with mock.patch("certbot._internal.eff.handle_subscription") as mock_handle:
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self.assertRaises(messages.Error, self._call)
-        self.assertFalse(mock_handle.called)
+        self.assertIs(mock_handle.called, False)
 
 
 class ClientTestCommon(test_util.ConfigTestCase):
@@ -625,13 +625,13 @@ class EnhanceConfigTest(ClientTestCommon):
     def test_config_set_no_warning_redirect(self, mock_log):
         self.config.redirect = False
         self._test_with_already_existing()
-        self.assertFalse(mock_log.warning.called)
+        self.assertIs(mock_log.warning.called, False)
 
     @mock.patch("certbot._internal.client.logger")
     def test_no_warn_redirect(self, mock_log):
         self.config.redirect = None
         self._test_with_all_supported()
-        self.assertFalse(mock_log.warning.called)
+        self.assertIs(mock_log.warning.called, False)
 
     def test_no_ask_hsts(self):
         self.config.hsts = True

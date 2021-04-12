@@ -60,7 +60,7 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
         mock_make.return_value = b'key_pem'
         key = self._call(1024, self.workdir)
         self.assertEqual(key.pem, b'key_pem')
-        self.assertTrue('key-certbot.pem' in key.file)
+        self.assertIn('key-certbot.pem', key.file)
         self.assertTrue(os.path.exists(os.path.join(self.workdir, key.file)))
 
     @mock.patch('certbot.crypto_util.make_key')
@@ -89,7 +89,7 @@ class InitSaveCSRTest(test_util.TempDirTestCase):
             mock.Mock(pem='dummy_key'), 'example.com', self.tempdir)
 
         self.assertEqual(csr.data, b'csr_pem')
-        self.assertTrue('csr-certbot.pem' in csr.file)
+        self.assertIn('csr-certbot.pem', csr.file)
 
 
 class ValidCSRTest(unittest.TestCase):

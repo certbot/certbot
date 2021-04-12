@@ -511,7 +511,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         auth_handler._report_failed_authzrs([self.authzr1], 'key')
         call_list = mock_zope().add_message.call_args_list
         self.assertEqual(len(call_list), 1)
-        self.assertTrue("Domain: example.com\nType:   tls\nDetail: detail" in call_list[0][0][0])
+        self.assertIn("Domain: example.com\nType:   tls\nDetail: detail", call_list[0][0][0])
 
     @test_util.patch_get_utility()
     def test_different_errors_and_domains(self, mock_zope):

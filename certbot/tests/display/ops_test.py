@@ -61,7 +61,7 @@ class GetEmailTest(unittest.TestCase):
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
             self._call()
-            self.assertTrue(invalid_txt not in mock_input.call_args[0][0])
+            self.assertNotIn(invalid_txt, mock_input.call_args[0][0])
             self._call(invalid=True)
             self.assertTrue(invalid_txt in mock_input.call_args[0][0])
 

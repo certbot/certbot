@@ -211,7 +211,7 @@ class CertificatesTest(BaseCertManagerTest):
     def test_certificates_quiet(self, mock_utility, mock_logger):
         self.config.quiet = True
         self._certificates(self.config)
-        self.assertFalse(mock_utility.notification.called)
+        self.assertIs(mock_utility.notification.called, False)
         self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
 
     @mock.patch('certbot.crypto_util.verify_renewable_cert')
@@ -224,7 +224,7 @@ class CertificatesTest(BaseCertManagerTest):
         mock_verifier.return_value = None
         mock_report.return_value = ""
         self._certificates(self.config)
-        self.assertFalse(mock_logger.warning.called)
+        self.assertIs(mock_logger.warning.called, False)
         self.assertTrue(mock_report.called)
         self.assertTrue(mock_utility.called)
         self.assertTrue(mock_renewable_cert.called)
@@ -242,7 +242,7 @@ class CertificatesTest(BaseCertManagerTest):
 
         filesystem.makedirs(empty_config.renewal_configs_dir)
         self._certificates(empty_config)
-        self.assertFalse(mock_logger.warning.called)
+        self.assertIs(mock_logger.warning.called, False)
         self.assertTrue(mock_utility.called)
         shutil.rmtree(empty_tempdir)
 
@@ -269,31 +269,32 @@ class CertificatesTest(BaseCertManagerTest):
         get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs)
 
         out = get_report()
-        self.assertTrue("INVALID: EXPIRED" in out)
+        self.assertIn("INVALID: EXPIRED", out)
 
         cert.target_expiry += datetime.timedelta(hours=2)
         # pylint: disable=protected-access
         out = get_report()
-        self.assertTrue('1 hour(s)' in out or '2 hour(s)' in out)
-        self.assertTrue('VALID' in out and 'INVALID' not in out)
+        self.assertRegexpMatches(r'(1|2) hour\(s\)', out)
+        self.assertIn('VALID', out)
+        self.assertNotIn('INVALID', out)
 
         cert.target_expiry += datetime.timedelta(days=1)
         # pylint: disable=protected-access
         out = get_report()
-        self.assertTrue('1 day' in out)
-        self.assertFalse('under' in out)
-        self.assertTrue('VALID' in out and 'INVALID' not in out)
+        self.assertIn('1 day', out)
+        self.assertNotIn('under', out)
+        self.assertIn('VALID', out and 'INVALID' not in out)
 
         cert.target_expiry += datetime.timedelta(days=2)
         # pylint: disable=protected-access
         out = get_report()
-        self.assertTrue('3 days' in out)
-        self.assertTrue('VALID' in out and 'INVALID' not in out)
+        self.assertIn('3 days', out)
+        self.assertIn('VALID', out and 'INVALID' not in out)
 
         cert.is_test_cert = True
         mock_revoked.return_value = True
         out = get_report()
-        self.assertTrue('INVALID: TEST_CERT, REVOKED' in out)
+        self.assertIn('INVALID: TEST_CERT, REVOKED', out)
 
         cert = mock.MagicMock(lineagename="indescribable")
         cert.target_expiry = expiry

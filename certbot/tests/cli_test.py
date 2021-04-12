@@ -150,79 +150,79 @@ class ParseTest(unittest.TestCase):
     def test_help(self):
         self._help_output(['--help'])  # assert SystemExit is raised here
         out = self._help_output(['--help', 'all'])
-        self.assertTrue("--configurator" in out)
-        self.assertTrue("how a certificate is deployed" in out)
-        self.assertTrue("--webroot-path" in out)
-        self.assertTrue("--text" not in out)
-        self.assertTrue("%s" not in out)
-        self.assertTrue("{0}" not in out)
-        self.assertTrue("--renew-hook" not in out)
+        self.assertIn("--configurator", out)
+        self.assertIn("how a certificate is deployed", out)
+        self.assertIn("--webroot-path", out)
+        self.assertNotIn("--text", out)
+        self.assertNotIn("%s", out)
+        self.assertNotIn("{0}", out)
+        self.assertNotIn("--renew-hook", out)
 
         out = self._help_output(['-h', 'nginx'])
         if "nginx" in PLUGINS:
             # may be false while building distributions without plugins
-            self.assertTrue("--nginx-ctl" in out)
-        self.assertTrue("--webroot-path" not in out)
-        self.assertTrue("--checkpoints" not in out)
+            self.assertIn("--nginx-ctl", out)
+        self.assertNotIn("--webroot-path", out)
+        self.assertNotIn("--checkpoints", out)
 
         out = self._help_output(['-h'])
         if "nginx" in PLUGINS:
-            self.assertTrue("Use the Nginx plugin" in out)
+            self.assertIn("Use the Nginx plugin", out)
         else:
-            self.assertTrue("(the certbot nginx plugin is not" in out)
+            self.assertIn("(the certbot nginx plugin is not", out)
 
         out = self._help_output(['--help', 'plugins'])
-        self.assertTrue("--webroot-path" not in out)
-        self.assertTrue("--prepare" in out)
-        self.assertTrue('"plugins" subcommand' in out)
+        self.assertNotIn("--webroot-path", out)
+        self.assertIn("--prepare", out)
+        self.assertIn('"plugins" subcommand', out)
 
         # test multiple topics
         out = self._help_output(['-h', 'renew'])
-        self.assertTrue("--keep" in out)
+        self.assertIn("--keep", out)
         out = self._help_output(['-h', 'automation'])
-        self.assertTrue("--keep" in out)
+        self.assertIn("--keep", out)
         out = self._help_output(['-h', 'revoke'])
-        self.assertTrue("--keep" not in out)
+        self.assertNotIn("--keep", out)
 
         out = self._help_output(['--help', 'install'])
-        self.assertTrue("--cert-path" in out)
-        self.assertTrue("--key-path" in out)
+        self.assertIn("--cert-path", out)
+        self.assertIn("--key-path", out)
 
         out = self._help_output(['--help', 'revoke'])
-        self.assertTrue("--cert-path" in out)
-        self.assertTrue("--key-path" in out)
-        self.assertTrue("--reason" in out)
-        self.assertTrue("--delete-after-revoke" in out)
-        self.assertTrue("--no-delete-after-revoke" in out)
+        self.assertIn("--cert-path", out)
+        self.assertIn("--key-path", out)
+        self.assertIn("--reason", out)
+        self.assertIn("--delete-after-revoke", out)
+        self.assertIn("--no-delete-after-revoke", out)
 
         out = self._help_output(['-h', 'register'])
-        self.assertTrue("--cert-path" not in out)
-        self.assertTrue("--key-path" not in out)
+        self.assertNotIn("--cert-path", out)
+        self.assertNotIn("--key-path", out)
 
         out = self._help_output(['-h'])
         self.assertTrue(cli.SHORT_USAGE in out)
         self.assertTrue(cli.COMMAND_OVERVIEW[:100] in out)
-        self.assertTrue("%s" not in out)
-        self.assertTrue("{0}" not in out)
+        self.assertNotIn("%s", out)
+        self.assertNotIn("{0}", out)
 
     def test_help_no_dashes(self):
         self._help_output(['help'])  # assert SystemExit is raised here
 
         out = self._help_output(['help', 'all'])
-        self.assertTrue("--configurator" in out)
-        self.assertTrue("how a certificate is deployed" in out)
-        self.assertTrue("--webroot-path" in out)
-        self.assertTrue("--text" not in out)
-        self.assertTrue("%s" not in out)
-        self.assertTrue("{0}" not in out)
+        self.assertIn("--configurator", out)
+        self.assertIn("how a certificate is deployed", out)
+        self.assertIn("--webroot-path", out)
+        self.assertNotIn("--text", out)
+        self.assertNotIn("%s", out)
+        self.assertNotIn("{0}", out)
 
         out = self._help_output(['help', 'install'])
-        self.assertTrue("--cert-path" in out)
-        self.assertTrue("--key-path" in out)
+        self.assertIn("--cert-path", out)
+        self.assertIn("--key-path", out)
 
         out = self._help_output(['help', 'revoke'])
-        self.assertTrue("--cert-path" in out)
-        self.assertTrue("--key-path" in out)
+        self.assertIn("--cert-path", out)
+        self.assertIn("--key-path", out)
 
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
@@ -303,8 +303,8 @@ class ParseTest(unittest.TestCase):
             self.assertTrue(namespace.tos)
             self.assertTrue(namespace.register_unsafely_without_email)
         else:
-            self.assertFalse(namespace.tos)
-            self.assertFalse(namespace.register_unsafely_without_email)
+            self.assertIs(namespace.tos, False)
+            self.assertIs(namespace.register_unsafely_without_email, False)
 
     def test_dry_run_flag(self):
         config_dir = tempfile.mkdtemp()
@@ -468,7 +468,7 @@ class ParseTest(unittest.TestCase):
 
     def test_no_delete_after_revoke(self):
         namespace = self.parse(["--no-delete-after-revoke"])
-        self.assertFalse(namespace.delete_after_revoke)
+        self.assertIs(namespace.delete_after_revoke, False)
 
     def test_allow_subset_with_wildcard(self):
         self.assertRaises(errors.Error, self.parse,
@@ -490,8 +490,8 @@ class DefaultTest(unittest.TestCase):
         self.default2 = cli._Default()
 
     def test_boolean(self):
-        self.assertFalse(self.default1)
-        self.assertFalse(self.default2)
+        self.assertIs(self.default1, False)
+        self.assertIs(self.default2, False)
 
     def test_equality(self):
         self.assertEqual(self.default1, self.default2)

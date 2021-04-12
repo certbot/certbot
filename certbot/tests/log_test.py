@@ -51,7 +51,7 @@ class PreArgParseSetupTest(unittest.TestCase):
                 memory_handler = handler
                 target = memory_handler.target  # type: ignore
             else:
-                self.assertTrue(isinstance(handler, logging.StreamHandler))
+                self.assertIsInstance(handler, logging.StreamHandler)
         self.assertTrue(
             isinstance(target, logging.StreamHandler))
 
@@ -337,7 +337,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         mock_logger, output = self._test_common(get_acme_error, debug=False)
         self._assert_exception_logged(mock_logger.debug, messages.Error)
         self._assert_quiet_output(mock_logger, output)
-        self.assertFalse(messages.ERROR_PREFIX in output)
+        self.assertNotIn(messages.ERROR_PREFIX)
 
     def test_other_error(self):
         exc_type = ValueError
@@ -379,18 +379,18 @@ class PostArgParseExceptHookTest(unittest.TestCase):
     def _assert_exception_logged(self, log_func, exc_type):
         self.assertTrue(log_func.called)
         call_kwargs = log_func.call_args[1]
-        self.assertTrue('exc_info' in call_kwargs)
+        self.assertIn('exc_info', call_kwargs)
 
         actual_exc_info = call_kwargs['exc_info']
         expected_exc_info = (exc_type, mock.ANY, mock.ANY)
         self.assertEqual(actual_exc_info, expected_exc_info)
 
     def _assert_logfile_output(self, output):
-        self.assertTrue('Please see the logfile' in output)
+        self.assertIn('Please see the logfile', output)
         self.assertTrue(self.log_path in output)
 
     def _assert_quiet_output(self, mock_logger, output):
-        self.assertFalse(mock_logger.exception.called)
+        self.assertIs(mock_logger.exception.called, False)
         self.assertTrue(mock_logger.debug.called)
         self.assertTrue(self.error_msg in output)
 
@@ -407,12 +407,12 @@ class ExitWithLogPathTest(test_util.TempDirTestCase):
         open(log_file, 'w').close()
 
         err_str = self._test_common(log_file)
-        self.assertTrue('logfiles' not in err_str)
+        self.assertNotIn('logfiles', err_str)
         self.assertTrue(log_file in err_str)
 
     def test_log_dir(self):
         err_str = self._test_common(self.tempdir)
-        self.assertTrue('logfiles' in err_str)
+        self.assertIn('logfiles', err_str)
         self.assertTrue(self.tempdir in err_str)
 
     # pylint: disable=inconsistent-return-statements

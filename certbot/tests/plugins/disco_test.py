@@ -75,7 +75,7 @@ class PluginEntryPointTest(unittest.TestCase):
                 name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, with_prefix=True))
 
     def test_description(self):
-        self.assertTrue("temporary webserver" in self.plugin_ep.description)
+        self.assertIn("temporary webserver", self.plugin_ep.description)
 
     def test_description_with_name(self):
         self.plugin_ep.plugin_cls = mock.MagicMock(description="Desc")
@@ -101,10 +101,10 @@ class PluginEntryPointTest(unittest.TestCase):
             interfaces.IInstaller, interfaces.IAuthenticator)))
 
     def test__init__(self):
-        self.assertFalse(self.plugin_ep.initialized)
-        self.assertFalse(self.plugin_ep.prepared)
-        self.assertFalse(self.plugin_ep.misconfigured)
-        self.assertFalse(self.plugin_ep.available)
+        self.assertIs(self.plugin_ep.initialized, False)
+        self.assertIs(self.plugin_ep.prepared, False)
+        self.assertIs(self.plugin_ep.misconfigured, False)
+        self.assertIs(self.plugin_ep.available, False)
         self.assertTrue(self.plugin_ep.problem is None)
         self.assertTrue(self.plugin_ep.entry_point is EP_SA)
         self.assertEqual("sa", self.plugin_ep.name)
@@ -123,9 +123,9 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertTrue(self.plugin_ep.init(123) is plugin)
         self.assertTrue(plugin.config is config)
 
-        self.assertFalse(self.plugin_ep.prepared)
-        self.assertFalse(self.plugin_ep.misconfigured)
-        self.assertFalse(self.plugin_ep.available)
+        self.assertIs(self.plugin_ep.prepared, False)
+        self.assertIs(self.plugin_ep.misconfigured, False)
+        self.assertIs(self.plugin_ep.available, False)
 
     def test_verify(self):
         iface1 = mock.MagicMock(__name__="iface1")
@@ -155,7 +155,7 @@ class PluginEntryPointTest(unittest.TestCase):
         self.plugin_ep.init(config=config)
         self.plugin_ep.prepare()
         self.assertTrue(self.plugin_ep.prepared)
-        self.assertFalse(self.plugin_ep.misconfigured)
+        self.assertIs(self.plugin_ep.misconfigured, False)
 
         # output doesn't matter that much, just test if it runs
         str(self.plugin_ep)
@@ -181,8 +181,8 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertTrue(isinstance(self.plugin_ep.prepare(),
                                    errors.NoInstallationError))
         self.assertTrue(self.plugin_ep.prepared)
-        self.assertFalse(self.plugin_ep.misconfigured)
-        self.assertFalse(self.plugin_ep.available)
+        self.assertIs(self.plugin_ep.misconfigured, False)
+        self.assertIs(self.plugin_ep.available, False)
 
     def test_prepare_generic_plugin_error(self):
         plugin = mock.MagicMock()
@@ -191,8 +191,8 @@ class PluginEntryPointTest(unittest.TestCase):
         self.plugin_ep._initialized = plugin
         self.assertTrue(isinstance(self.plugin_ep.prepare(), errors.PluginError))
         self.assertTrue(self.plugin_ep.prepared)
-        self.assertFalse(self.plugin_ep.misconfigured)
-        self.assertFalse(self.plugin_ep.available)
+        self.assertIs(self.plugin_ep.misconfigured, False)
+        self.assertIs(self.plugin_ep.available, False)
 
     def test_repr(self):
         self.assertEqual("PluginEntryPoint#sa", repr(self.plugin_ep))

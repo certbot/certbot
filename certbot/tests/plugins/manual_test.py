@@ -98,7 +98,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             achall = self.achalls[i]
             self.assertTrue(
                 achall.validation(achall.account_key) in args[0])
-            self.assertFalse(kwargs['wrap'])
+            self.assertIs(kwargs['wrap'], False)
 
     def test_cleanup(self):
         self.config.manual_auth_hook = ('{0} -c "import sys; sys.stdout.write(\'foo\')"'
@@ -119,7 +119,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
                     os.environ['CERTBOT_TOKEN'],
                     achall.chall.encode('token'))
             else:
-                self.assertFalse('CERTBOT_TOKEN' in os.environ)
+                self.assertNotIn('CERTBOT_TOKEN', os.environ)
 
 
 if __name__ == '__main__':

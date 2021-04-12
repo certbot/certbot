@@ -105,7 +105,7 @@ class HandleSubscriptionTest(SubscriptionTest):
     @mock.patch('certbot._internal.eff.subscribe')
     def test_no_subscribe(self, mock_subscribe):
         self._call()
-        self.assertFalse(mock_subscribe.called)
+        self.assertIs(mock_subscribe.called, False)
 
     @mock.patch('certbot._internal.eff.subscribe')
     def test_subscribe(self, mock_subscribe):
@@ -140,7 +140,7 @@ class SubscribeTest(unittest.TestCase):
         self.assertEqual(call_args[0], constants.EFF_SUBSCRIBE_URI)
 
         data = call_kwargs.get('data')
-        self.assertFalse(data is None)
+        self.assertIsNotNone(data)
         self.assertEqual(data.get('email'), self.email)
 
     def test_bad_status(self):
@@ -156,7 +156,7 @@ class SubscribeTest(unittest.TestCase):
         self._call()
         actual = self._get_reported_message()
         unexpected_part = 'because'
-        self.assertFalse(unexpected_part in actual)
+        self.assertNotIn(unexpected_part)
 
     def test_response_not_json(self):
         self.response.json.side_effect = ValueError()
@@ -179,7 +179,7 @@ class SubscribeTest(unittest.TestCase):
     @test_util.patch_get_utility()
     def test_subscribe(self, mock_get_utility):
         self._call()
-        self.assertFalse(mock_get_utility.called)
+        self.assertIs(mock_get_utility.called, False)
 
 
 if __name__ == '__main__':

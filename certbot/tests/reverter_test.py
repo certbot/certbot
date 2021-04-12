@@ -48,7 +48,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         no_change = os.path.join(self.reverter.config.backup_dir, path, "CHANGES_SINCE")
         with open(no_change, "r") as f:
             x = f.read()
-        self.assertTrue("No changes" in x)
+        self.assertIn("No changes", x)
 
     def test_basic_add_to_temp_checkpoint(self):
         # These shouldn't conflict even though they are both named config.txt

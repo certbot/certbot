@@ -126,7 +126,7 @@ class AuthenticatorTest(unittest.TestCase):
 
     def _assert_correct_yesno_call(self, mock_yesno):
         yesno_args, yesno_kwargs = mock_yesno.call_args
-        self.assertTrue("in use" in yesno_args[0])
+        self.assertIn("in use", yesno_args[0])
         self.assertFalse(yesno_kwargs.get("default", True))
 
     def test_perform_eacces(self):

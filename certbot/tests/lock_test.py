@@ -69,7 +69,7 @@ class LockFileTest(test_util.TempDirTestCase):
         try:
             locked_repr = repr(lock_file)
             self._test_repr_common(lock_file, locked_repr)
-            self.assertTrue('acquired' in locked_repr)
+            self.assertIn('acquired', locked_repr)
         finally:
             lock_file.release()
 
@@ -78,7 +78,7 @@ class LockFileTest(test_util.TempDirTestCase):
         lock_file.release()
         released_repr = repr(lock_file)
         self._test_repr_common(lock_file, released_repr)
-        self.assertTrue('released' in released_repr)
+        self.assertIn('released', released_repr)
 
     def _test_repr_common(self, lock_file, lock_repr):
         self.assertTrue(lock_file.__class__.__name__ in lock_repr)
@@ -102,7 +102,7 @@ class LockFileTest(test_util.TempDirTestCase):
         with mock.patch('certbot._internal.lock.filesystem.os.stat') as mock_stat:
             mock_stat.side_effect = delete_and_stat
             self._call(self.lock_path)
-        self.assertFalse(should_delete)
+        self.assertIs(should_delete, False)
 
     def test_removed(self):
         lock_file = self._call(self.lock_path)
