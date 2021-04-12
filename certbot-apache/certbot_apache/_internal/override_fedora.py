@@ -35,7 +35,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         during the first (re)start of httpd.
         """
         try:
-            super(FedoraConfigurator, self).config_test()
+            super().config_test()
         except errors.MisconfigurationError:
             self._try_restart_fedora()
 
@@ -55,7 +55,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
             raise errors.MisconfigurationError(str(err))
 
         # Finish with actual config check to see if systemctl restart helped
-        super(FedoraConfigurator, self).config_test()
+        super().config_test()
 
     def _prepare_options(self):
         """
@@ -63,7 +63,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         instead of httpd and so take advantages of this new bash script in newer versions
         of Fedora to restart httpd.
         """
-        super(FedoraConfigurator, self)._prepare_options()
+        super()._prepare_options()
         self.options.restart_cmd[0] = 'apachectl'
         if not self.options.restart_cmd_alt:  # pragma: no cover
             raise ValueError("OS option restart_cmd_alt must be set for Fedora.")
@@ -76,12 +76,12 @@ class FedoraParser(parser.ApacheParser):
     def __init__(self, *args, **kwargs):
         # Fedora 29+ specific configuration file for Apache
         self.sysconfig_filep = "/etc/sysconfig/httpd"
-        super(FedoraParser, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def update_runtime_variables(self):
         """ Override for update_runtime_variables for custom parsing """
         # Opportunistic, works if SELinux not enforced
-        super(FedoraParser, self).update_runtime_variables()
+        super().update_runtime_variables()
         self._parse_sysconfig_var()
 
     def _parse_sysconfig_var(self):

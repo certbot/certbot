@@ -16,7 +16,7 @@ class BasicParserTest(util.ParserTest):
     """Apache Parser Test."""
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(BasicParserTest, self).setUp()
+        super().setUp()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -330,7 +330,7 @@ class BasicParserTest(util.ParserTest):
 
 class ParserInitTest(util.ApacheTest):
     def setUp(self):  # pylint: disable=arguments-differ
-        super(ParserInitTest, self).setUp()
+        super().setUp()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)

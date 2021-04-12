@@ -29,12 +29,12 @@ class Authenticator(dns_common.DNSAuthenticator):
     ttl = 60
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=60)
+        super().add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials', help='DNS Made Easy credentials INI file.')
 
     def more_info(self):  # pylint: disable=missing-function-docstring
@@ -73,7 +73,7 @@ class _DNSMadeEasyLexiconClient(dns_common_lexicon.LexiconClient):
     """
 
     def __init__(self, api_key, secret_key, ttl):
-        super(_DNSMadeEasyLexiconClient, self).__init__()
+        super().__init__()
 
         config = dns_common_lexicon.build_lexicon_config('dnsmadeeasy', {
             'ttl': ttl,

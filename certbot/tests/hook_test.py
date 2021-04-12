@@ -93,7 +93,7 @@ class PreHookTest(HookTest):
         return pre_hook(*args, **kwargs)
 
     def setUp(self):
-        super(PreHookTest, self).setUp()
+        super().setUp()
         self.config.pre_hook = "foo"
 
         filesystem.makedirs(self.config.renewal_pre_hooks_dir)
@@ -106,7 +106,7 @@ class PreHookTest(HookTest):
     def tearDown(self):
         # Reset this value so it's unmodified for future tests
         self._reset_pre_hook_already()
-        super(PreHookTest, self).tearDown()
+        super().tearDown()
 
     def _reset_pre_hook_already(self):
         from certbot._internal.hooks import executed_pre_hooks
@@ -171,7 +171,7 @@ class PostHookTest(HookTest):
         return post_hook(*args, **kwargs)
 
     def setUp(self):
-        super(PostHookTest, self).setUp()
+        super().setUp()
 
         self.config.post_hook = "bar"
         filesystem.makedirs(self.config.renewal_post_hooks_dir)
@@ -184,7 +184,7 @@ class PostHookTest(HookTest):
     def tearDown(self):
         # Reset this value so it's unmodified for future tests
         self._reset_post_hook_eventually()
-        super(PostHookTest, self).tearDown()
+        super().tearDown()
 
     def _reset_post_hook_eventually(self):
         from certbot._internal.hooks import post_hooks
@@ -266,7 +266,7 @@ class RunSavedPostHooksTest(HookTest):
             return self._call_with_mock_execute(*args, **kwargs)
 
     def setUp(self):
-        super(RunSavedPostHooksTest, self).setUp()
+        super().setUp()
         self.eventually: List[str] = []
 
     def test_empty(self):
@@ -319,7 +319,7 @@ class RenewalHookTest(HookTest):
         return mock_execute
 
     def setUp(self):
-        super(RenewalHookTest, self).setUp()
+        super().setUp()
         self.vars_to_clear = set(
             var for var in ("RENEWED_DOMAINS", "RENEWED_LINEAGE",)
             if var not in os.environ)
@@ -327,7 +327,7 @@ class RenewalHookTest(HookTest):
     def tearDown(self):
         for var in self.vars_to_clear:
             os.environ.pop(var, None)
-        super(RenewalHookTest, self).tearDown()
+        super().tearDown()
 
 
 class DeployHookTest(RenewalHookTest):
@@ -373,7 +373,7 @@ class RenewHookTest(RenewalHookTest):
         return renew_hook(*args, **kwargs)
 
     def setUp(self):
-        super(RenewHookTest, self).setUp()
+        super().setUp()
         self.config.renew_hook = "foo"
 
         filesystem.makedirs(self.config.renewal_deploy_hooks_dir)

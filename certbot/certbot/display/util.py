@@ -115,7 +115,7 @@ class FileDisplay:
     # see https://github.com/certbot/certbot/issues/3915
 
     def __init__(self, outfile, force_interactive):
-        super(FileDisplay, self).__init__()
+        super().__init__()
         self.outfile = outfile
         self.force_interactive = force_interactive
         self.skipped_interaction = False
@@ -481,7 +481,7 @@ class NoninteractiveDisplay:
     """An iDisplay implementation that never asks for interactive user input"""
 
     def __init__(self, outfile, *unused_args, **unused_kwargs):
-        super(NoninteractiveDisplay, self).__init__()
+        super().__init__()
         self.outfile = outfile
 
     def _interaction_fail(self, message, cli_flag, extra=""):

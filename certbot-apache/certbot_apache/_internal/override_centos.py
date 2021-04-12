@@ -46,7 +46,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         fedora = os_info[0].lower() == "fedora"
 
         try:
-            super(CentOSConfigurator, self).config_test()
+            super().config_test()
         except errors.MisconfigurationError:
             if fedora:
                 self._try_restart_fedora()
@@ -64,14 +64,14 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             raise errors.MisconfigurationError(str(err))
 
         # Finish with actual config check to see if systemctl restart helped
-        super(CentOSConfigurator, self).config_test()
+        super().config_test()
 
     def _prepare_options(self):
         """
         Override the options dictionary initialization in order to support
         alternative restart cmd used in CentOS.
         """
-        super(CentOSConfigurator, self)._prepare_options()
+        super()._prepare_options()
         if not self.options.restart_cmd_alt:  # pragma: no cover
             raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
         self.options.restart_cmd_alt[0] = self.options.ctl
@@ -88,7 +88,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         has "LoadModule ssl_module..." before parsing the VirtualHost configuration
         that was created by Certbot
         """
-        super(CentOSConfigurator, self)._deploy_cert(*args, **kwargs)
+        super()._deploy_cert(*args, **kwargs)
         if self.version < (2, 4, 0):
             self._deploy_loadmodule_ssl_if_needed()
 
@@ -166,12 +166,12 @@ class CentOSParser(parser.ApacheParser):
     def __init__(self, *args, **kwargs):
         # CentOS specific configuration file for Apache
         self.sysconfig_filep = "/etc/sysconfig/httpd"
-        super(CentOSParser, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def update_runtime_variables(self):
         """ Override for update_runtime_variables for custom parsing """
         # Opportunistic, works if SELinux not enforced
-        super(CentOSParser, self).update_runtime_variables()
+        super().update_runtime_variables()
         self.parse_sysconfig_var()
 
     def parse_sysconfig_var(self):

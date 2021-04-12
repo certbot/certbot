@@ -67,7 +67,7 @@ class ParserTest(ApacheTest):
     def setUp(self, test_dir="debian_apache_2_4/multiple_vhosts",
               config_root="debian_apache_2_4/multiple_vhosts/apache2",
               vhost_root="debian_apache_2_4/multiple_vhosts/apache2/sites-available"):
-        super(ParserTest, self).setUp(test_dir, config_root, vhost_root)
+        super().setUp(test_dir, config_root, vhost_root)
 
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
                                                                False))

@@ -29,12 +29,12 @@ class Authenticator(dns_common.DNSAuthenticator):
     ttl = 60
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(
+        super().add_parser_arguments(
             add, default_propagation_seconds=90)
         add('credentials', help='Sakura Cloud credentials file.')
 
@@ -78,7 +78,7 @@ class _SakuraCloudLexiconClient(dns_common_lexicon.LexiconClient):
     """
 
     def __init__(self, api_token, api_secret, ttl):
-        super(_SakuraCloudLexiconClient, self).__init__()
+        super().__init__()
 
         config = dns_common_lexicon.build_lexicon_config('sakuracloud', {
             'ttl': ttl,
@@ -92,4 +92,4 @@ class _SakuraCloudLexiconClient(dns_common_lexicon.LexiconClient):
     def _handle_http_error(self, e, domain_name):
         if domain_name in str(e) and (str(e).startswith('404 Client Error: Not Found for url:')):
             return None  # Expected errors when zone name guess is wrong
-        return super(_SakuraCloudLexiconClient, self)._handle_http_error(e, domain_name)
+        return super()._handle_http_error(e, domain_name)

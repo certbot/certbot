@@ -25,7 +25,7 @@ class DNSAuthenticator(common.Plugin):
     """Base class for DNS  Authenticators"""
 
     def __init__(self, config, name):
-        super(DNSAuthenticator, self).__init__(config, name)
+        super().__init__(config, name)
 
         self._attempt_cleanup = False
 

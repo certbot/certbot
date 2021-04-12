@@ -36,7 +36,7 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
         fake_file_path = None
 
     def setUp(self):
-        super(DNSAuthenticatorTest, self).setUp()
+        super().setUp()
 
         self.config = DNSAuthenticatorTest._FakeConfig()
 
@@ -164,7 +164,7 @@ class CredentialsConfigurationTest(test_util.TempDirTestCase):
 class CredentialsConfigurationRequireTest(test_util.TempDirTestCase):
 
     def setUp(self):
-        super(CredentialsConfigurationRequireTest, self).setUp()
+        super().setUp()
 
         self.path = os.path.join(self.tempdir, 'file.ini')
 

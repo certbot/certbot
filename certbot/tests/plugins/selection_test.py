@@ -160,7 +160,7 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.plugins.selection.get_unprepared_installer."""
 
     def setUp(self):
-        super(GetUnpreparedInstallerTest, self).setUp()
+        super().setUp()
         self.mock_apache_fail_ep = mock.Mock(
             description_with_name="afail")
         self.mock_apache_fail_ep.check_name = lambda name: name == "afail"

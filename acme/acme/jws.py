@@ -50,7 +50,7 @@ class JWS(jose.JWS):
         # Per ACME spec, jwk and kid are mutually exclusive, so only include a
         # jwk field if kid is not provided.
         include_jwk = kid is None
-        return super(JWS, cls).sign(payload, key=key, alg=alg,
+        return super().sign(payload, key=key, alg=alg,
                                     protect=frozenset(['nonce', 'url', 'kid', 'jwk', 'alg']),
                                     nonce=nonce, url=url, kid=kid,
                                     include_jwk=include_jwk)

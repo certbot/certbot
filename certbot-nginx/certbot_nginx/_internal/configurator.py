@@ -102,7 +102,7 @@ class NginxConfigurator(common.Installer):
         """
         version = kwargs.pop("version", None)
         openssl_version = kwargs.pop("openssl_version", None)
-        super(NginxConfigurator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Files to save
         self.save_notes = ""
@@ -1110,7 +1110,7 @@ class NginxConfigurator(common.Installer):
         :raises .errors.PluginError: If unable to recover the configuration
 
         """
-        super(NginxConfigurator, self).recovery_routine()
+        super().recovery_routine()
         self.new_vhost = None
         self.parser.load()
 
@@ -1133,7 +1133,7 @@ class NginxConfigurator(common.Installer):
             the function is unable to correctly revert the configuration
 
         """
-        super(NginxConfigurator, self).rollback_checkpoints(rollback)
+        super().rollback_checkpoints(rollback)
         self.new_vhost = None
         self.parser.load()
 

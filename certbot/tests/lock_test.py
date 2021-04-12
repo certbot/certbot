@@ -44,7 +44,7 @@ class LockFileTest(test_util.TempDirTestCase):
         return LockFile(*args, **kwargs)
 
     def setUp(self):
-        super(LockFileTest, self).setUp()
+        super().setUp()
         self.lock_path = os.path.join(self.tempdir, 'test.lock')
 
     def test_acquire_without_deletion(self):
