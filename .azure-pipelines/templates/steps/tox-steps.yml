@@ -1,6 +1,9 @@
 steps:
+  # We run brew update because we've seen attempts to install an older version
+  # of a package fail.
   - bash: |
       set -e
+      brew update
       brew install augeas
     condition: startswith(variables['IMAGE_NAME'], 'macOS')
     displayName: Install MacOS dependencies
