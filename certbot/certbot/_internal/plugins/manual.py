@@ -43,6 +43,13 @@ class Authenticator(common.Plugin):
         '$CERTBOT_REMAINING_CHALLENGES will be equal to the number of challenges that '
         'remain after the current one, and $CERTBOT_ALL_DOMAINS contains a comma-separated '
         'list of all domains that are challenged for the current certificate.')
+    # Include the full stop at the end of the FQDN in the instructions below for the null
+    # label of the DNS root, as stated in section 3.1 of RFC 1035. While not necessary
+    # for most day to day usa of hostnames, when adding FQDNs to a DNS zone editor, this
+    # full stop is often mandatory. Without a full stop, the entered name is often seen as
+    # relative to the DNS zone origin, which could lead to entries for, e.g.:
+    # _acme-challenge.example.com.example.com. For users unaware of this subtle detail,
+    # including the trailing full stop in the DNS instructions below might avert this issue.
     _DNS_INSTRUCTIONS = """\
 Please deploy a DNS TXT record under the name:
 
