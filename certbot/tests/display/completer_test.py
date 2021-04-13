@@ -50,10 +50,10 @@ class CompleterTest(test_util.TempDirTestCase):
 
         for i in range(num_paths):
             completion = my_completer.complete(self.tempdir, i)
-            self.assertTrue(completion in self.paths)
+            self.assertIn(completion, self.paths)
             self.paths.remove(completion)
 
-        self.assertIs(self.paths, False)
+        self.assertEqual(len(self.paths), 0)
         completion = my_completer.complete(self.tempdir, num_paths)
         self.assertEqual(completion, None)
 

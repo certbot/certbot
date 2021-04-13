@@ -114,7 +114,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
                                ".pluginstorage.json"), 'r') as fh:
             psdata = fh.read()
         psjson = json.loads(psdata)
-        self.assertTrue("mockplugin" in psjson.keys())
+        self.assertIn("mockplugin", psjson.keys())
         self.assertEqual(len(psjson), 1)
         self.assertEqual(psjson["mockplugin"]["testkey"], "testvalue")
 

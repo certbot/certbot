@@ -63,7 +63,7 @@ class GetEmailTest(unittest.TestCase):
             self._call()
             self.assertNotIn(invalid_txt, mock_input.call_args[0][0])
             self._call(invalid=True)
-            self.assertTrue(invalid_txt in mock_input.call_args[0][0])
+            self.assertIn(invalid_txt, mock_input.call_args[0][0])
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_optional_flag(self, mock_get_utility):
@@ -84,7 +84,7 @@ class GetEmailTest(unittest.TestCase):
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.side_effect = [False, True]
             self._call(invalid=True)
-            self.assertTrue(invalid_txt in mock_input.call_args[0][0])
+            self.assertIn(invalid_txt, mock_input.call_args[0][0])
 
 
 class ChooseAccountTest(test_util.TempDirTestCase):
@@ -353,7 +353,7 @@ class SuccessInstallationTest(unittest.TestCase):
         arg = mock_util().notification.call_args_list[0][0][0]
 
         for name in names:
-            self.assertTrue(name in arg)
+            self.assertIn(name, arg)
 
 
 class SuccessRenewalTest(unittest.TestCase):
@@ -374,7 +374,7 @@ class SuccessRenewalTest(unittest.TestCase):
         arg = mock_util().notification.call_args_list[0][0][0]
 
         for name in names:
-            self.assertTrue(name in arg)
+            self.assertIn(name, arg)
 
 class SuccessRevocationTest(unittest.TestCase):
     """Test the success revocation message."""

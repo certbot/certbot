@@ -59,7 +59,7 @@ class AuthenticatorTest(unittest.TestCase):
     def test_more_info(self):
         more_info = self.auth.more_info()
         self.assertIsInstance(more_info, str)
-        self.assertTrue(self.path in more_info)
+        self.assertIn(self.path, more_info)
 
     def test_add_parser_arguments(self):
         add = mock.MagicMock()
@@ -79,7 +79,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.perform([self.achall])
         self.assertTrue(mock_display.menu.called)
         for call in mock_display.menu.call_args_list:
-            self.assertTrue(self.achall.domain in call[0][0])
+            self.assertIn(self.achall.domain, call[0][0])
             self.assertTrue(all(
                 webroot in call[0][1]
                 for webroot in self.config.webroot_map.values()))
@@ -96,7 +96,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertRaises(errors.PluginError, self.auth.perform, [self.achall])
         self.assertTrue(mock_display.menu.called)
         for call in mock_display.menu.call_args_list:
-            self.assertTrue(self.achall.domain in call[0][0])
+            self.assertIn(self.achall.domain, call[0][0])
             self.assertTrue(all(
                 webroot in call[0][1]
                 for webroot in self.config.webroot_map.values()))

@@ -139,7 +139,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         # Test if list first element is http-01, use typ because it is an achall
         for achall in self.mock_auth.cleanup.call_args[0][0]:
-            self.assertTrue(achall.typ in ["http-01", "dns-01"])
+            self.assertIn(achall.typ, ["http-01", "dns-01"])
 
         # Length of authorizations list
         self.assertEqual(len(authzr), 1)

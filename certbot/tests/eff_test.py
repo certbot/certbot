@@ -50,7 +50,7 @@ class PrepareSubscriptionTest(SubscriptionTest):
         self._call()
         actual = mock_notify.call_args[0][0]
         expected_part = "because you didn't provide an e-mail address"
-        self.assertTrue(expected_part in actual)
+        self.assertIn(expected_part, actual)
         self.assertIsNone(self.account.meta.register_to_eff)
 
     @test_util.patch_get_utility()
@@ -92,7 +92,7 @@ class PrepareSubscriptionTest(SubscriptionTest):
         call_args, call_kwargs = mock_get_utility().yesno.call_args
         actual = call_args[0]
         expected_part = 'Electronic Frontier Foundation'
-        self.assertTrue(expected_part in actual)
+        self.assertIn(expected_part, actual)
         self.assertFalse(call_kwargs.get('default', True))
 
 
@@ -148,7 +148,7 @@ class SubscribeTest(unittest.TestCase):
         self._call()
         actual = self._get_reported_message()
         expected_part = 'because your e-mail address appears to be invalid.'
-        self.assertTrue(expected_part in actual)
+        self.assertIn(expected_part, actual)
 
     def test_not_ok(self):
         self.response.ok = False
@@ -156,21 +156,21 @@ class SubscribeTest(unittest.TestCase):
         self._call()
         actual = self._get_reported_message()
         unexpected_part = 'because'
-        self.assertNotIn(unexpected_part)
+        self.assertNotIn(unexpected_part, actual)
 
     def test_response_not_json(self):
         self.response.json.side_effect = ValueError()
         self._call()
         actual = self._get_reported_message()
         expected_part = 'problem'
-        self.assertTrue(expected_part in actual)
+        self.assertIn(expected_part, actual)
 
     def test_response_json_missing_status_element(self):
         self.json.clear()
         self._call()
         actual = self._get_reported_message()
         expected_part = 'problem'
-        self.assertTrue(expected_part in actual)
+        self.assertIn(expected_part, actual)
 
     def _get_reported_message(self):
         self.assertTrue(self.mock_notify.called)

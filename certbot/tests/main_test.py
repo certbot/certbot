@@ -651,7 +651,7 @@ class MainTest(test_util.ConfigTestCase):
                     pass
                 finally:
                     output = toy_out.getvalue() or toy_err.getvalue()
-                    self.assertTrue("certbot" in output, "Output is {0}".format(output))
+                    self.assertIn("certbot", output, "Output is {0}".format(output))
 
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"
@@ -661,8 +661,8 @@ class MainTest(test_util.ConfigTestCase):
                 main.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
         except errors.MissingCommandlineFlag as exc_:
             exc = exc_
-            self.assertTrue(message in str(exc))
-        self.assertTrue(exc is not None)
+            self.assertIn(message, str(exc))
+        self.assertIsNotNone(exc)
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_noninteractive(self, _):
@@ -690,11 +690,11 @@ class MainTest(test_util.ConfigTestCase):
             self._call_no_clientmock(args)
             os_ver = util.get_os_info_ua()
             ua = acme_net.call_args[1]["user_agent"]
-            self.assertTrue(os_ver in ua)
+            self.assertIn(os_ver, ua)
             import platform
             plat = platform.platform()
             if "linux" in plat.lower():
-                self.assertTrue(util.get_os_info_ua() in ua)
+                self.assertIn(util.get_os_info_ua(), ua)
 
         with mock.patch('certbot._internal.main.client.acme_client.ClientNetwork') as acme_net:
             ua = "bandersnatch"
@@ -1032,9 +1032,9 @@ class MainTest(test_util.ConfigTestCase):
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
-        self.assertTrue(cert_path in cert_msg)
-        self.assertTrue(date in cert_msg)
-        self.assertTrue(key_path in cert_msg)
+        self.assertIn(cert_path, cert_msg)
+        self.assertIn(date, cert_msg)
+        self.assertIn(key_path, cert_msg)
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
         self.assertTrue(mock_subscription.called)
@@ -1120,7 +1120,7 @@ class MainTest(test_util.ConfigTestCase):
         finally:
             if log_out:
                 with open(os.path.join(self.config.logs_dir, "letsencrypt.log")) as lf:
-                    self.assertTrue(log_out in lf.read())
+                    self.assertIn(log_out, lf.read())
 
         return mock_lineage, mock_get_utility, stdout
 
@@ -1132,7 +1132,7 @@ class MainTest(test_util.ConfigTestCase):
             lineage.latest_common_version())
         cert_msg = get_utility().add_message.call_args_list[0][0][0]
         self.assertIn('fullchain.pem', cert_msg)
-        self.assertTrue('donate' in get_utility().add_message.call_args[0][0])
+        self.assertIn('donate', get_utility().add_message.call_args[0][0])
 
     @mock.patch('certbot._internal.log.logging.handlers.RotatingFileHandler.doRollover')
     @mock.patch('certbot.crypto_util.notAfter')
@@ -1531,7 +1531,7 @@ class UnregisterTest(unittest.TestCase):
 
         res = main.unregister(config, unused_plugins)
 
-        self.assertTrue(res is None)
+        self.assertIsNone(res)
         mock_notify.assert_called_once_with("Account deactivated.")
 
     def test_unregister_no_account(self):

@@ -274,7 +274,7 @@ class CertificatesTest(BaseCertManagerTest):
         cert.target_expiry += datetime.timedelta(hours=2)
         # pylint: disable=protected-access
         out = get_report()
-        self.assertRegexpMatches(r'(1|2) hour\(s\)', out)
+        self.assertIs('1 hour' in out or '2 hour(s)' in out, True)
         self.assertIn('VALID', out)
         self.assertNotIn('INVALID', out)
 
@@ -283,13 +283,15 @@ class CertificatesTest(BaseCertManagerTest):
         out = get_report()
         self.assertIn('1 day', out)
         self.assertNotIn('under', out)
-        self.assertIn('VALID', out and 'INVALID' not in out)
+        self.assertIn('VALID', out)
+        self.assertNotIn('INVALID', out)
 
         cert.target_expiry += datetime.timedelta(days=2)
         # pylint: disable=protected-access
         out = get_report()
         self.assertIn('3 days', out)
-        self.assertIn('VALID', out and 'INVALID' not in out)
+        self.assertIn('VALID', out)
+        self.assertNotIn('INVALID', out)
 
         cert.is_test_cert = True
         mock_revoked.return_value = True

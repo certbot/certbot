@@ -200,8 +200,8 @@ class ParseTest(unittest.TestCase):
         self.assertNotIn("--key-path", out)
 
         out = self._help_output(['-h'])
-        self.assertTrue(cli.SHORT_USAGE in out)
-        self.assertTrue(cli.COMMAND_OVERVIEW[:100] in out)
+        self.assertIn(cli.SHORT_USAGE, out)
+        self.assertIn(cli.COMMAND_OVERVIEW[:100], out)
         self.assertNotIn("%s", out)
         self.assertNotIn("{0}", out)
 
@@ -280,9 +280,9 @@ class ParseTest(unittest.TestCase):
                 "The following flags didn't conflict with "
                 '--server: {0}'.format(', '.join(conflicting_args)))
         except errors.Error as error:
-            self.assertTrue('--server' in str(error))
+            self.assertIn('--server', str(error))
             for arg in conflicting_args:
-                self.assertTrue(arg in str(error))
+                self.assertIn(arg, str(error))
 
     def test_staging_flag(self):
         short_args = ['--staging']
@@ -490,8 +490,8 @@ class DefaultTest(unittest.TestCase):
         self.default2 = cli._Default()
 
     def test_boolean(self):
-        self.assertIs(self.default1, False)
-        self.assertIs(self.default2, False)
+        self.assertIs(bool(self.default1), False)
+        self.assertIs(bool(self.default2), False)
 
     def test_equality(self):
         self.assertEqual(self.default1, self.default2)
