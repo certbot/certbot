@@ -52,8 +52,7 @@ class PreArgParseSetupTest(unittest.TestCase):
                 target = memory_handler.target  # type: ignore
             else:
                 self.assertIsInstance(handler, logging.StreamHandler)
-        self.assertTrue(
-            isinstance(target, logging.StreamHandler))
+        self.assertIsInstance(target, logging.StreamHandler)
 
         mock_register.assert_called_once_with(logging.shutdown)
         mock_sys.excepthook(1, 2, 3)

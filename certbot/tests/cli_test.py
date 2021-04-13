@@ -270,8 +270,8 @@ class ParseTest(unittest.TestCase):
     def test_must_staple_flag(self):
         short_args = ['--must-staple']
         namespace = self.parse(short_args)
-        self.assertTrue(namespace.must_staple)
-        self.assertTrue(namespace.staple)
+        self.assertIs(namespace.must_staple, True)
+        self.assertIs(namespace.staple, True)
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:
@@ -287,21 +287,21 @@ class ParseTest(unittest.TestCase):
     def test_staging_flag(self):
         short_args = ['--staging']
         namespace = self.parse(short_args)
-        self.assertTrue(namespace.staging)
+        self.assertIs(namespace.staging, True)
         self.assertEqual(namespace.server, constants.STAGING_URI)
 
         short_args += '--server example.com'.split()
         self._check_server_conflict_message(short_args, '--staging')
 
     def _assert_dry_run_flag_worked(self, namespace, existing_account):
-        self.assertTrue(namespace.dry_run)
-        self.assertTrue(namespace.break_my_certs)
-        self.assertTrue(namespace.staging)
+        self.assertIs(namespace.dry_run, True)
+        self.assertIs(namespace.break_my_certs, True)
+        self.assertIs(namespace.staging, True)
         self.assertEqual(namespace.server, constants.STAGING_URI)
 
         if existing_account:
-            self.assertTrue(namespace.tos)
-            self.assertTrue(namespace.register_unsafely_without_email)
+            self.assertIs(namespace.tos, True)
+            self.assertIs(namespace.register_unsafely_without_email, True)
         else:
             self.assertIs(namespace.tos, False)
             self.assertIs(namespace.register_unsafely_without_email, False)
@@ -350,8 +350,8 @@ class ParseTest(unittest.TestCase):
         key_size_value = cli.flag_default(key_size_option)
         self.parse('--rsa-key-size {0}'.format(key_size_value).split())
 
-        self.assertTrue(cli.option_was_set(key_size_option, key_size_value))
-        self.assertTrue(cli.option_was_set('no_verify_ssl', True))
+        self.assertIs(cli.option_was_set(key_size_option, key_size_value), True)
+        self.assertIs(cli.option_was_set('no_verify_ssl', True), True)
 
         config_dir_option = 'config_dir'
         self.assertFalse(cli.option_was_set(
@@ -425,7 +425,7 @@ class ParseTest(unittest.TestCase):
         value = "foo"
         namespace = self.parse(
             ["--renew-hook", value, "--disable-hook-validation"])
-        self.assertEqual(namespace.deploy_hook, None)
+        self.assertIs(namespace.deploy_hook, None)
         self.assertEqual(namespace.renew_hook, value)
 
     def test_max_log_backups_error(self):
@@ -456,15 +456,15 @@ class ParseTest(unittest.TestCase):
         self.assertFalse(self.parse(["--no-directory-hooks"]).directory_hooks)
 
     def test_no_directory_hooks_unset(self):
-        self.assertTrue(self.parse([]).directory_hooks)
+        self.assertIs(self.parse([]).directory_hooks, True)
 
     def test_delete_after_revoke(self):
         namespace = self.parse(["--delete-after-revoke"])
-        self.assertTrue(namespace.delete_after_revoke)
+        self.assertIs(namespace.delete_after_revoke, True)
 
     def test_delete_after_revoke_default(self):
         namespace = self.parse([])
-        self.assertEqual(namespace.delete_after_revoke, None)
+        self.assertIs(namespace.delete_after_revoke, None)
 
     def test_no_delete_after_revoke(self):
         namespace = self.parse(["--no-delete-after-revoke"])
@@ -514,7 +514,7 @@ class SetByCliTest(unittest.TestCase):
     def test_webroot_map(self):
         args = '-w /var/www/html -d example.com'.split()
         verb = 'renew'
-        self.assertTrue(_call_set_by_cli('webroot_map', args, verb))
+        self.assertIs(_call_set_by_cli('webroot_map', args, verb), True)
 
 
 def _call_set_by_cli(var, args, verb):

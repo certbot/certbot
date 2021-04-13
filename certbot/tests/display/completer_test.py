@@ -55,7 +55,7 @@ class CompleterTest(test_util.TempDirTestCase):
 
         self.assertEqual(len(self.paths), 0)
         completion = my_completer.complete(self.tempdir, num_paths)
-        self.assertEqual(completion, None)
+        self.assertIsNone(completion)
 
     @unittest.skipIf('readline' not in sys.modules,
                      reason='Not relevant if readline is not available.')
@@ -98,7 +98,7 @@ class CompleterTest(test_util.TempDirTestCase):
         with completer.Completer():
             pass
 
-        self.assertTrue(mock_readline.parse_and_bind.called)
+        self.assertIs(mock_readline.parse_and_bind.called, True)
 
 
 def enable_tab_completion(unused_command):

@@ -30,7 +30,7 @@ class PathSurgeryTest(unittest.TestCase):
         with mock.patch.dict('os.environ', all_path):
             with mock.patch('certbot.util.exe_exists') as mock_exists:
                 mock_exists.return_value = True
-                self.assertEqual(path_surgery("eg"), True)
+                self.assertIs(path_surgery("eg"), True)
                 self.assertEqual(mock_debug.call_count, 0)
                 self.assertEqual(os.environ["PATH"], all_path["PATH"])
         if os.name != 'nt':

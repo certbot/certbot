@@ -282,7 +282,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(self.test_rc.current_version("cert"), 10)
 
     def test_no_current_version(self):
-        self.assertEqual(self.test_rc.current_version("cert"), None)
+        self.assertIs(self.test_rc.current_version("cert"), None)
 
     def test_latest_and_next_versions(self):
         for ver in range(1, 6):
@@ -314,12 +314,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.latest_common_version = mock.Mock()
 
         mock_has_pending.return_value = False
-        self.assertEqual(self.test_rc.ensure_deployed(), True)
+        self.assertIs(self.test_rc.ensure_deployed(), True)
         self.assertEqual(mock_update.call_count, 0)
         self.assertEqual(mock_logger.warning.call_count, 0)
 
         mock_has_pending.return_value = True
-        self.assertEqual(self.test_rc.ensure_deployed(), False)
+        self.assertIs(self.test_rc.ensure_deployed(), False)
         self.assertEqual(mock_update.call_count, 1)
         self.assertEqual(mock_logger.warning.call_count, 1)
 
@@ -767,7 +767,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_server(self):
         self.test_rc.configuration["renewalparams"] = {}
-        self.assertEqual(self.test_rc.server, None)
+        self.assertIs(self.test_rc.server, None)
         rp = self.test_rc.configuration["renewalparams"]
         rp["server"] = "https://acme.example/dir"
         self.assertEqual(self.test_rc.server, "https://acme.example/dir")
@@ -775,15 +775,15 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_is_test_cert(self):
         self.test_rc.configuration["renewalparams"] = {}
         rp = self.test_rc.configuration["renewalparams"]
-        self.assertEqual(self.test_rc.is_test_cert, False)
+        self.assertIs(self.test_rc.is_test_cert, False)
         rp["server"] = "https://acme-staging-v02.api.letsencrypt.org/directory"
-        self.assertEqual(self.test_rc.is_test_cert, True)
+        self.assertIs(self.test_rc.is_test_cert, True)
         rp["server"] = "https://staging.someotherca.com/directory"
-        self.assertEqual(self.test_rc.is_test_cert, True)
+        self.assertIs(self.test_rc.is_test_cert, True)
         rp["server"] = "https://acme-v01.api.letsencrypt.org/directory"
-        self.assertEqual(self.test_rc.is_test_cert, False)
+        self.assertIs(self.test_rc.is_test_cert, False)
         rp["server"] = "https://acme-v02.api.letsencrypt.org/directory"
-        self.assertEqual(self.test_rc.is_test_cert, False)
+        self.assertIs(self.test_rc.is_test_cert, False)
 
     def test_missing_cert(self):
         from certbot._internal import storage
@@ -823,7 +823,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         # useless value was deleted
         self.assertNotIn("useless", content)
         # check version was stored
-        self.assertTrue("version = {0}".format(certbot.__version__) in content)
+        self.assertIn("version = {0}".format(certbot.__version__), content)
         # ensure permissions are copied
         self.assertEqual(stat.S_IMODE(os.lstat(temp).st_mode),
                          stat.S_IMODE(os.lstat(temp2).st_mode))

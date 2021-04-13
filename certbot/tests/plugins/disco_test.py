@@ -105,8 +105,8 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertIs(self.plugin_ep.prepared, False)
         self.assertIs(self.plugin_ep.misconfigured, False)
         self.assertIs(self.plugin_ep.available, False)
-        self.assertTrue(self.plugin_ep.problem is None)
-        self.assertTrue(self.plugin_ep.entry_point is EP_SA)
+        self.assertIsNone(self.plugin_ep.problem)
+        self.assertIs(self.plugin_ep.entry_point, EP_SA)
         self.assertEqual("sa", self.plugin_ep.name)
 
         self.assertTrue(self.plugin_ep.plugin_cls is standalone.Authenticator)
@@ -165,12 +165,11 @@ class PluginEntryPointTest(unittest.TestCase):
         plugin.prepare.side_effect = errors.MisconfigurationError
         # pylint: disable=protected-access
         self.plugin_ep._initialized = plugin
-        self.assertTrue(isinstance(self.plugin_ep.prepare(),
-                                   errors.MisconfigurationError))
+        self.assertIsInstance(self.plugin_ep.prepare(),
+                                   errors.MisconfigurationError)
         self.assertTrue(self.plugin_ep.prepared)
         self.assertTrue(self.plugin_ep.misconfigured)
-        self.assertTrue(isinstance(self.plugin_ep.problem,
-                                   errors.MisconfigurationError))
+        self.assertIsInstance(self.plugin_ep.problem, errors.MisconfigurationError)
         self.assertTrue(self.plugin_ep.available)
 
     def test_prepare_no_installation(self):
@@ -178,9 +177,8 @@ class PluginEntryPointTest(unittest.TestCase):
         plugin.prepare.side_effect = errors.NoInstallationError
         # pylint: disable=protected-access
         self.plugin_ep._initialized = plugin
-        self.assertTrue(isinstance(self.plugin_ep.prepare(),
-                                   errors.NoInstallationError))
-        self.assertTrue(self.plugin_ep.prepared)
+        self.assertIsInstance(self.plugin_ep.prepare(), errors.NoInstallationError)
+        self.assertIs(self.plugin_ep.prepared, True)
         self.assertIs(self.plugin_ep.misconfigured, False)
         self.assertIs(self.plugin_ep.available, False)
 
@@ -189,7 +187,7 @@ class PluginEntryPointTest(unittest.TestCase):
         plugin.prepare.side_effect = errors.PluginError
         # pylint: disable=protected-access
         self.plugin_ep._initialized = plugin
-        self.assertTrue(isinstance(self.plugin_ep.prepare(), errors.PluginError))
+        self.assertIsInstance(self.plugin_ep.prepare(), errors.PluginError)
         self.assertTrue(self.plugin_ep.prepared)
         self.assertIs(self.plugin_ep.misconfigured, False)
         self.assertIs(self.plugin_ep.available, False)
@@ -226,14 +224,14 @@ class PluginsRegistryTest(unittest.TestCase):
                     standalone.Authenticator, webroot.Authenticator,
                     null.Installer, null.Installer]
                 plugins = PluginsRegistry.find_all()
-        self.assertTrue(plugins["sa"].plugin_cls is standalone.Authenticator)
-        self.assertTrue(plugins["sa"].entry_point is EP_SA)
-        self.assertTrue(plugins["wr"].plugin_cls is webroot.Authenticator)
-        self.assertTrue(plugins["wr"].entry_point is EP_WR)
-        self.assertTrue(plugins["ep1"].plugin_cls is null.Installer)
-        self.assertTrue(plugins["ep1"].entry_point is self.ep1)
-        self.assertTrue(plugins["p1:ep1"].plugin_cls is null.Installer)
-        self.assertTrue(plugins["p1:ep1"].entry_point is self.ep1)
+        self.assertIs(plugins["sa"].plugin_cls, standalone.Authenticator)
+        self.assertIs(plugins["sa"].entry_point, EP_SA)
+        self.assertIs(plugins["wr"].plugin_cls, webroot.Authenticator)
+        self.assertIs(plugins["wr"].entry_point, EP_WR)
+        self.assertIs(plugins["ep1"].plugin_cls, null.Installer)
+        self.assertIs(plugins["ep1"].entry_point, self.ep1)
+        self.assertIs(plugins["p1:ep1"].plugin_cls, null.Installer)
+        self.assertIs(plugins["p1:ep1"].entry_point, self.ep1)
 
     def test_getitem(self):
         self.assertEqual(self.plugin_ep, self.reg["mock"])
@@ -296,10 +294,10 @@ class PluginsRegistryTest(unittest.TestCase):
         self.assertEqual({}, self.reg.available()._plugins)
 
     def test_find_init(self):
-        self.assertTrue(self.reg.find_init(mock.Mock()) is None)
+        self.assertIsNone(self.reg.find_init(mock.Mock()))
         self.plugin_ep.initialized = True
-        self.assertTrue(
-            self.reg.find_init(self.plugin_ep.init()) is self.plugin_ep)
+        self.assertIs(
+            self.reg.find_init(self.plugin_ep.init()), self.plugin_ep)
 
     def test_repr(self):
         self.plugin_ep.__repr__ = lambda _: "PluginEntryPoint#mock"

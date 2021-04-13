@@ -29,9 +29,8 @@ class ServerManagerTest(unittest.TestCase):
         self.mgr = ServerManager(self.certs, self.http_01_resources)
 
     def test_init(self):
-        self.assertTrue(self.mgr.certs is self.certs)
-        self.assertTrue(
-            self.mgr.http_01_resources is self.http_01_resources)
+        self.assertIs(self.mgr.certs, self.certs)
+        self.assertIs(self.mgr.http_01_resources, self.http_01_resources)
 
     def _test_run_stop(self, challenge_type):
         server = self.mgr.run(port=0, challenge_type=challenge_type)
@@ -89,7 +88,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.servers = mock.MagicMock()
 
     def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), str))
+        self.assertIsInstance(self.auth.more_info(), str)
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref(domain=None),

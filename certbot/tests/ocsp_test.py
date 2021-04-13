@@ -68,14 +68,14 @@ class OCSPTestOpenSSL(unittest.TestCase):
         mock_communicate.communicate.return_value = (None, out.partition("\n")[2])
         checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
         self.assertEqual(checker.host_args("x"), ["Host", "x"])
-        self.assertEqual(checker.broken, False)
+        self.assertIs(checker.broken, False)
 
         mock_exists.return_value = False
         mock_popen.call_count = 0
         checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
         self.assertEqual(mock_popen.call_count, 0)
         self.assertEqual(mock_log.call_count, 1)
-        self.assertEqual(checker.broken, True)
+        self.assertIs(checker.broken, True)
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.ocsp.crypto_util.notAfter')
@@ -89,24 +89,24 @@ class OCSPTestOpenSSL(unittest.TestCase):
 
         self.checker.broken = True
         mock_determine.return_value = ("", "")
-        self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
+        self.assertIs(self.checker.ocsp_revoked(cert_obj), False)
 
         self.checker.broken = False
         mock_run.return_value = tuple(openssl_happy[1:])
-        self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
+        self.assertIs(self.checker.ocsp_revoked(cert_obj), False)
         self.assertEqual(mock_run.call_count, 0)
 
         mock_determine.return_value = ("http://x.co", "x.co")
-        self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
+        self.assertIs(self.checker.ocsp_revoked(cert_obj), False)
         mock_run.side_effect = errors.SubprocessError("Unable to load certificate launcher")
-        self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
+        self.assertIs(self.checker.ocsp_revoked(cert_obj), False)
         self.assertEqual(mock_run.call_count, 2)
 
         # cert expired
         mock_na.return_value = now
         mock_determine.return_value = ("", "")
         count_before = mock_determine.call_count
-        self.assertEqual(self.checker.ocsp_revoked(cert_obj), False)
+        self.assertIs(self.checker.ocsp_revoked(cert_obj), False)
         self.assertEqual(mock_determine.call_count, count_before)
 
     def test_determine_ocsp_server(self):
@@ -122,22 +122,22 @@ class OCSPTestOpenSSL(unittest.TestCase):
         # pylint: disable=protected-access
         mock_run.return_value = openssl_confused
         from certbot import ocsp
-        self.assertEqual(ocsp._translate_ocsp_query(*openssl_happy), False)
-        self.assertEqual(ocsp._translate_ocsp_query(*openssl_confused), False)
+        self.assertIs(ocsp._translate_ocsp_query(*openssl_happy), False)
+        self.assertIs(ocsp._translate_ocsp_query(*openssl_confused), False)
         self.assertEqual(mock_log.debug.call_count, 1)
         self.assertEqual(mock_log.warning.call_count, 0)
         mock_log.debug.call_count = 0
-        self.assertEqual(ocsp._translate_ocsp_query(*openssl_unknown), False)
+        self.assertIs(ocsp._translate_ocsp_query(*openssl_unknown), False)
         self.assertEqual(mock_log.debug.call_count, 1)
         self.assertEqual(mock_log.warning.call_count, 0)
-        self.assertEqual(ocsp._translate_ocsp_query(*openssl_expired_ocsp), False)
+        self.assertIs(ocsp._translate_ocsp_query(*openssl_expired_ocsp), False)
         self.assertEqual(mock_log.debug.call_count, 2)
-        self.assertEqual(ocsp._translate_ocsp_query(*openssl_broken), False)
+        self.assertIs(ocsp._translate_ocsp_query(*openssl_broken), False)
         self.assertEqual(mock_log.warning.call_count, 1)
         mock_log.info.call_count = 0
-        self.assertEqual(ocsp._translate_ocsp_query(*openssl_revoked), True)
+        self.assertIs(ocsp._translate_ocsp_query(*openssl_revoked), True)
         self.assertEqual(mock_log.info.call_count, 0)
-        self.assertEqual(ocsp._translate_ocsp_query(*openssl_expired_ocsp_revoked), True)
+        self.assertIs(ocsp._translate_ocsp_query(*openssl_expired_ocsp_revoked), True)
         self.assertEqual(mock_log.info.call_count, 1)
 
 

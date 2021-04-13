@@ -356,7 +356,7 @@ class LineageForCertnameTest(BaseCertManagerTest):
     def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "other.com.conf"
         from certbot._internal import cert_manager
-        self.assertEqual(cert_manager.lineage_for_certname(self.config, "example.com"), None)
+        self.assertIsNone(cert_manager.lineage_for_certname(self.config, "example.com"))
         self.assertTrue(mock_make_or_verify_dir.called)
 
     @mock.patch('certbot.util.make_or_verify_dir')
@@ -364,7 +364,7 @@ class LineageForCertnameTest(BaseCertManagerTest):
     def test_no_renewal_file(self, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.side_effect = errors.CertStorageError()
         from certbot._internal import cert_manager
-        self.assertEqual(cert_manager.lineage_for_certname(self.config, "example.com"), None)
+        self.assertIsNone(cert_manager.lineage_for_certname(self.config, "example.com"))
         self.assertTrue(mock_make_or_verify_dir.called)
 
 
@@ -391,7 +391,7 @@ class DomainsForCertnameTest(BaseCertManagerTest):
     def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"
         from certbot._internal import cert_manager
-        self.assertEqual(cert_manager.domains_for_certname(self.config, "other.com"), None)
+        self.assertIsNone(cert_manager.domains_for_certname(self.config, "other.com"))
         self.assertTrue(mock_make_or_verify_dir.called)
 
 
@@ -453,7 +453,7 @@ class RenameLineageTest(BaseCertManagerTest):
         self._call(self.config)
         from certbot._internal import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(self.config, self.config.new_certname)
-        self.assertTrue(updated_lineage is not None)
+        self.assertIsNotNone(updated_lineage)
         self.assertEqual(updated_lineage.lineagename, self.config.new_certname)
 
     @test_util.patch_get_utility()
@@ -466,7 +466,7 @@ class RenameLineageTest(BaseCertManagerTest):
         self._call(self.config)
         from certbot._internal import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(self.config, self.config.new_certname)
-        self.assertTrue(updated_lineage is not None)
+        self.assertIsNotNone(updated_lineage)
         self.assertEqual(updated_lineage.lineagename, self.config.new_certname)
 
     @test_util.patch_get_utility()
@@ -506,12 +506,12 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         result = find_duplicative_certs(
             self.config, ['example.com', 'www.example.com'])
         self.assertTrue(result[0].configfile.filename.endswith('example.org.conf'))
-        self.assertEqual(result[1], None)
+        self.assertIs(result[1], None)
 
         # Superset
         result = find_duplicative_certs(
             self.config, ['example.com', 'www.example.com', 'something.new'])
-        self.assertEqual(result[0], None)
+        self.assertIs(result[0], None)
         self.assertTrue(result[1].configfile.filename.endswith('example.org.conf'))
 
         # Partial overlap doesn't count
@@ -632,8 +632,7 @@ class GetCertnameTest(unittest.TestCase):
         self.assertEqual(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=False), ['example.com'])
-        self.assertTrue(
-            prompt in self.mock_get_utility().menu.call_args[0][0])
+        self.assertIn(prompt, self.mock_get_utility().menu.call_args[0][0])
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')
@@ -674,8 +673,7 @@ class GetCertnameTest(unittest.TestCase):
         self.assertEqual(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=True), ['example.com'])
-        self.assertTrue(
-            prompt in self.mock_get_utility().checklist.call_args[0][0])
+        self.assertIn(prompt, self.mock_get_utility().checklist.call_args[0][0])
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')

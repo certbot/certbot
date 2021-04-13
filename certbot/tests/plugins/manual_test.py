@@ -52,7 +52,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.assertRaises(errors.HookCommandNotFound, self.auth.prepare)
 
     def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), str))
+        self.assertIsInstance(self.auth.more_info(), str)
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref('example.org'),

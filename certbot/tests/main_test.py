@@ -84,12 +84,12 @@ class TestHandleCerts(unittest.TestCase):
         mock_set.return_value = False
         with self.assertRaises(errors.Error) as raised:
             main._handle_unexpected_key_type_migration(config, cert)
-        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
+        self.assertIn("Please provide both --cert-name and --key-type", str(raised.exception))
 
         mock_set.side_effect = lambda var: var != "certname"
         with self.assertRaises(errors.Error) as raised:
             main._handle_unexpected_key_type_migration(config, cert)
-        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
+        self.assertIn("Please provide both --cert-name and --key-type", str(raised.exception))
 
         mock_set.side_effect = lambda var: var != "key_type"
         with self.assertRaises(errors.Error) as raised:
@@ -260,8 +260,7 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
         mock_config = mock.Mock(domains=None, certname=None)
         mock_choose_names.return_value = "domainname"
         # pylint: disable=protected-access
-        self.assertEqual(main._find_domains_or_certname(mock_config, None),
-            ("domainname", None))
+        self.assertEqual(main._find_domains_or_certname(mock_config, None), ("domainname", None))
 
     @mock.patch('certbot.display.ops.choose_names')
     def test_no_results(self, mock_choose_names):
@@ -275,8 +274,10 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
         mock_config = mock.Mock(domains=None, certname="one.com")
         mock_domains.return_value = ["one.com", "two.com"]
         # pylint: disable=protected-access
-        self.assertEqual(main._find_domains_or_certname(mock_config, None),
-            (["one.com", "two.com"], "one.com"))
+        self.assertEqual(
+            main._find_domains_or_certname(mock_config, None),
+            (["one.com", "two.com"], "one.com")
+        )
 
 
 class RevokeTest(test_util.TempDirTestCase):
@@ -536,13 +537,13 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.config.account = self.accs[1].id
         self.assertEqual((self.accs[1], None), self._call())
         self.assertEqual(self.accs[1].id, self.config.account)
-        self.assertTrue(self.config.email is None)
+        self.assertIsNone(self.config.email)
 
     def test_single_account(self):
         self.account_storage.save(self.accs[0], self.mock_client)
         self.assertEqual((self.accs[0], None), self._call())
         self.assertEqual(self.accs[0].id, self.config.account)
-        self.assertTrue(self.config.email is None)
+        self.assertIsNone(self.config.email)
 
     @mock.patch('certbot._internal.client.display_ops.choose_account')
     def test_multiple_accounts(self, mock_choose_accounts):
@@ -553,7 +554,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.assertEqual(
             set(mock_choose_accounts.call_args[0][0]), set(self.accs))
         self.assertEqual(self.accs[1].id, self.config.account)
-        self.assertTrue(self.config.email is None)
+        self.assertIsNone(self.config.email)
 
     @mock.patch('certbot._internal.client.display_ops.get_email')
     @mock.patch('certbot._internal.main.display_util.notify')
@@ -951,7 +952,7 @@ class MainTest(test_util.ConfigTestCase):
             self._call(['-a', 'bad_auth', 'certonly'])
             assert False, "Exception should have been raised"
         except errors.PluginSelectionError as e:
-            self.assertTrue('The requested bad_auth plugin does not appear' in str(e))
+            self.assertIn('The requested bad_auth plugin does not appear', str(e))
 
     def test_check_config_sanity_domain(self):
         # FQDN
@@ -1411,9 +1412,8 @@ class MainTest(test_util.ConfigTestCase):
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
         self.assertIn('fullchain.pem', cert_msg)
         self.assertNotIn('Your key file has been saved at', cert_msg)
-        self.assertTrue(
-            'donate' in mock_get_utility().add_message.call_args[0][0])
-        self.assertTrue(mock_subscription.called)
+        self.assertIn('donate', mock_get_utility().add_message.call_args[0][0])
+        self.assertIs(mock_subscription.called, True)
 
     def test_certonly_csr_dry_run(self):
         mock_get_utility = self._test_certonly_csr_common(['--dry-run'])
@@ -1644,8 +1644,8 @@ class EnhanceTest(test_util.ConfigTestCase):
                 all(getattr(mock_client.config, e) for e in req_enh))
             self.assertFalse(
                 any(getattr(mock_client.config, e) for e in not_req_enh))
-            self.assertTrue(
-                "example.com" in mock_client.enhance_config.call_args[0][0])
+            self.assertIn(
+                "example.com", mock_client.enhance_config.call_args[0][0])
 
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.main.display_ops.choose_values')

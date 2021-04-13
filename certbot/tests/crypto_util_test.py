@@ -251,7 +251,7 @@ class VerifyRenewableCertTest(VerifyCertSetup):
         return verify_renewable_cert(renewable_cert)
 
     def test_verify_renewable_cert(self):
-        self.assertEqual(None, self._call(self.renewable_cert))
+        self.assertIsNone(self._call(self.renewable_cert))
 
     @mock.patch('certbot.crypto_util.verify_renewable_cert_sig', side_effect=errors.Error(""))
     def test_verify_renewable_cert_failure(self, unused_verify_renewable_cert_sign):
@@ -266,14 +266,14 @@ class VerifyRenewableCertSigTest(VerifyCertSetup):
         return verify_renewable_cert_sig(renewable_cert)
 
     def test_cert_sig_match(self):
-        self.assertEqual(None, self._call(self.renewable_cert))
+        self.assertIsNone(self._call(self.renewable_cert))
 
     def test_cert_sig_match_ec(self):
         renewable_cert = mock.MagicMock()
         renewable_cert.cert_path = P256_CERT_PATH
         renewable_cert.chain_path = P256_CERT_PATH
         renewable_cert.key_path = P256_KEY
-        self.assertEqual(None, self._call(renewable_cert))
+        self.assertIsNone(self._call(renewable_cert))
 
     def test_cert_sig_mismatch(self):
         self.bad_renewable_cert.cert_path = test_util.vector_path('cert_512_bad.pem')
@@ -288,7 +288,7 @@ class VerifyFullchainTest(VerifyCertSetup):
         return verify_fullchain(renewable_cert)
 
     def test_fullchain_matches(self):
-        self.assertEqual(None, self._call(self.renewable_cert))
+        self.assertIsNone(self._call(self.renewable_cert))
 
     def test_fullchain_mismatch(self):
         self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
@@ -308,7 +308,7 @@ class VerifyCertMatchesPrivKeyTest(VerifyCertSetup):
     def test_cert_priv_key_match(self):
         self.renewable_cert.cert = SS_CERT_PATH
         self.renewable_cert.privkey = RSA2048_KEY_PATH
-        self.assertEqual(None, self._call(self.renewable_cert))
+        self.assertIsNone(self._call(self.renewable_cert))
 
     def test_cert_priv_key_mismatch(self):
         self.bad_renewable_cert.privkey = RSA256_KEY_PATH
