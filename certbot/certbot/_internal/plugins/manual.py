@@ -45,7 +45,7 @@ class Authenticator(common.Plugin):
         'list of all domains that are challenged for the current certificate.')
     # Include the full stop at the end of the FQDN in the instructions below for the null
     # label of the DNS root, as stated in section 3.1 of RFC 1035. While not necessary
-    # for most day to day usa of hostnames, when adding FQDNs to a DNS zone editor, this
+    # for most day to day usage of hostnames, when adding FQDNs to a DNS zone editor, this
     # full stop is often mandatory. Without a full stop, the entered name is often seen as
     # relative to the DNS zone origin, which could lead to entries for, e.g.:
     # _acme-challenge.example.com.example.com. For users unaware of this subtle detail,
