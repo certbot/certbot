@@ -12,6 +12,7 @@ from certbot.errors import MisconfigurationError
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
+from certbot_apache._internal.configurator import OsOptions
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 class CentOSConfigurator(configurator.ApacheConfigurator):
     """CentOS specific ApacheConfigurator override class"""
 
-    OS_DEFAULTS = dict(
+    OS_DEFAULTS = OsOptions(
         server_root="/etc/httpd",
         vhost_root="/etc/httpd/conf.d",
         vhost_files="*.conf",
@@ -30,13 +31,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         restart_cmd=['apachectl', 'graceful'],
         restart_cmd_alt=['apachectl', 'restart'],
         conftest_cmd=['apachectl', 'configtest'],
-        enmod=None,
-        dismod=None,
-        le_vhost_ext="-le-ssl.conf",
-        handle_modules=False,
-        handle_sites=False,
         challenge_location="/etc/httpd/conf.d",
-        bin=None,
     )
 
     def config_test(self):
@@ -77,12 +72,14 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         alternative restart cmd used in CentOS.
         """
         super()._prepare_options()
-        cast(List[str], self.options["restart_cmd_alt"])[0] = self.option("ctl")
+        if not self.options.restart_cmd_alt:  # pragma: no cover
+            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
+        self.options.restart_cmd_alt[0] = self.options.ctl
 
     def get_parser(self):
         """Initializes the ApacheParser"""
         return CentOSParser(
-            self.option("server_root"), self.option("vhost_root"),
+            self.options.server_root, self.options.vhost_root,
             self.version, configurator=self)
 
     def _deploy_cert(self, *args, **kwargs):  # pylint: disable=arguments-differ

@@ -1,36 +1,23 @@
 """ Distribution specific override class for Gentoo Linux """
-from typing import cast
-from typing import List
-
 import zope.interface
 
 from certbot import interfaces
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
+from certbot_apache._internal.configurator import OsOptions
 
 
 @zope.interface.provider(interfaces.IPluginFactory)
 class GentooConfigurator(configurator.ApacheConfigurator):
     """Gentoo specific ApacheConfigurator override class"""
 
-    OS_DEFAULTS = dict(
+    OS_DEFAULTS = OsOptions(
         server_root="/etc/apache2",
         vhost_root="/etc/apache2/vhosts.d",
         vhost_files="*.conf",
-        logs_root="/var/log/apache2",
-        ctl="apache2ctl",
-        version_cmd=['apache2ctl', '-v'],
-        restart_cmd=['apache2ctl', 'graceful'],
         restart_cmd_alt=['apache2ctl', 'restart'],
-        conftest_cmd=['apache2ctl', 'configtest'],
-        enmod=None,
-        dismod=None,
-        le_vhost_ext="-le-ssl.conf",
-        handle_modules=False,
-        handle_sites=False,
         challenge_location="/etc/apache2/vhosts.d",
-        bin=None,
     )
 
     def _prepare_options(self):
@@ -39,12 +26,14 @@ class GentooConfigurator(configurator.ApacheConfigurator):
         alternative restart cmd used in Gentoo.
         """
         super()._prepare_options()
-        cast(List[str], self.options["restart_cmd_alt"])[0] = self.option("ctl")
+        if not self.options.restart_cmd_alt:  # pragma: no cover
+            raise ValueError("OS option restart_cmd_alt must be set for Gentoo.")
+        self.options.restart_cmd_alt[0] = self.options.ctl
 
     def get_parser(self):
         """Initializes the ApacheParser"""
         return GentooParser(
-            self.option("server_root"), self.option("vhost_root"),
+            self.options.server_root, self.options.vhost_root,
             self.version, configurator=self)
 
 
@@ -69,7 +58,7 @@ class GentooParser(parser.ApacheParser):
 
     def update_modules(self):
         """Get loaded modules from httpd process, and add them to DOM"""
-        mod_cmd = [self.configurator.option("ctl"), "modules"]
+        mod_cmd = [self.configurator.options.ctl, "modules"]
         matches = apache_util.parse_from_subprocess(mod_cmd, r"(.*)_module")
         for mod in matches:
             self.add_mod(mod.strip())
