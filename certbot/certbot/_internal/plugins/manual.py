@@ -44,13 +44,13 @@ class Authenticator(common.Plugin):
         'remain after the current one, and $CERTBOT_ALL_DOMAINS contains a comma-separated '
         'list of all domains that are challenged for the current certificate.')
     _DNS_INSTRUCTIONS = """\
-Please deploy a DNS TXT record with the following value:
-
-{validation}
-
-under the name:
+Please deploy a DNS TXT record under the name:
 
 {domain}.
+
+with the following value:
+
+{validation}
 """
     _DNS_VERIFY_INSTRUCTIONS = """
 Before continuing, verify the TXT record has been deployed. Depending on the DNS 
