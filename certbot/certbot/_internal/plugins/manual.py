@@ -124,11 +124,15 @@ permitted by DNS standards.)
 
     def perform(self, achalls):  # pylint: disable=missing-function-docstring
         responses = []
-        for i, achall in enumerate(achalls, 1):
+        last_dns_achall = 0
+        for i, achall in enumerate(achalls):
+            if isinstance(achall.chall, challenges.DNS01):
+                last_dns_achall = i
+        for i, achall in enumerate(achalls):
             if self.conf('auth-hook'):
                 self._perform_achall_with_script(achall, achalls)
             else:
-                self._perform_achall_manually(achall, i == len(achalls))
+                self._perform_achall_manually(achall, i == last_dns_achall)
             responses.append(achall.response(achall.account_key))
         return responses
 
@@ -146,7 +150,7 @@ permitted by DNS standards.)
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
-    def _perform_achall_manually(self, achall, lastchall=False):
+    def _perform_achall_manually(self, achall, last_dns_achall=False):
         validation = achall.validation(achall.account_key)
         if isinstance(achall.chall, challenges.HTTP01):
             msg = self._HTTP_INSTRUCTIONS.format(
@@ -162,8 +166,12 @@ permitted by DNS standards.)
             if self.subsequent_dns_challenge:
                 # 2nd or later dns-01 challenge
                 msg += self._SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS
+            elif self.subsequent_any_challenge:
+                # 1st dns-01 challenge, but 2nd or later *any* challenge, so
+                # instruct user not to remove any previous http-01 challenge
+                msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
             self.subsequent_dns_challenge = True
-            if lastchall:
+            if last_dns_achall:
                 # last dns-01 challenge
                 msg += self._DNS_VERIFY_INSTRUCTIONS.format(
                     domain=achall.validation_domain_name(achall.domain))
