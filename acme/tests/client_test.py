@@ -604,8 +604,8 @@ class ClientTest(ClientTestBase):
             # make sure that max_attempts is per-authorization, rather
             # than global
             max_attempts=max(len(authzrs[0].retries), len(authzrs[1].retries)))
-        self.assertTrue(cert[0] is csr)
-        self.assertTrue(cert[1] is updated_authzrs)
+        self.assertIs(cert[0], )
+        self.assertIs(cert[1], )
         self.assertEqual(updated_authzrs[0].uri, 'a...')
         self.assertEqual(updated_authzrs[1].uri, 'b.')
         self.assertEqual(updated_authzrs[0].times, [
@@ -641,7 +641,7 @@ class ClientTest(ClientTestBase):
         authzr = self.client.deactivate_authorization(self.authzr)
         self.assertEqual(authzb, authzr.body)
         self.assertEqual(self.client.net.post.call_count, 1)
-        self.assertTrue(self.authzr.uri in self.net.post.call_args_list[0][0])
+        self.assertIn(self.authzr.uri, self.net.post.call_args_list[0][0])
 
     def test_check_cert(self):
         self.response.headers['Location'] = self.certr.uri
@@ -700,7 +700,7 @@ class ClientTest(ClientTestBase):
 
     def test_revocation_payload(self):
         obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
-        self.assertTrue('reason' in obj.to_partial_json().keys())
+        self.assertIn('reason', obj.to_partial_json().keys())
         self.assertEqual(self.rsn, obj.to_partial_json()['reason'])
 
     def test_revoke_bad_status_raises_error(self):
@@ -877,9 +877,9 @@ class ClientV2Test(ClientTestBase):
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.update_registration(self.regr))
-        self.assertNotEqual(self.client.net.account, None)
+        self.assertIsNotNone(self.client.net.account)
         self.assertEqual(self.client.net.post.call_count, 2)
-        self.assertTrue(DIRECTORY_V2.newAccount in self.net.post.call_args_list[0][0])
+        self.assertIn(DIRECTORY_V2.newAccount, self.net.post.call_args_list[0][0])
 
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
@@ -943,7 +943,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.response.links = {}
 
     def test_init(self):
-        self.assertTrue(self.net.verify_ssl is self.verify_ssl)
+        self.assertIs(self.net.verify_ssl, )
 
     def test_wrap_in_jws(self):
         # pylint: disable=protected-access
@@ -1157,7 +1157,7 @@ class ClientNetworkTest(unittest.TestCase):
 
         # Requests Library Exceptions
         except requests.exceptions.ConnectionError as z: #pragma: no cover
-            self.assertTrue("'Connection aborted.'" in str(z) or "[WinError 10061]" in str(z))
+            self.assertIn("'Connection aborted.'" in str(z) or "[WinError 10061]", str(z))
 
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
@@ -1185,7 +1185,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
         def send_request(*args, **kwargs):
             # pylint: disable=unused-argument,missing-docstring
-            self.assertFalse("new_nonce_url" in kwargs)
+            self.assertNotIn("new_nonce_url", kwargs)
             method = args[0]
             uri = args[1]
             if method == 'HEAD' and uri != "new_nonce_uri":
@@ -1330,7 +1330,7 @@ class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
         from acme.client import ClientNetwork
         net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
         for adapter in net.session.adapters.values():
-            self.assertTrue(self.source_address in adapter.source_address)
+            self.assertIn(self.source_address, adapter.source_address)
 
     def test_behavior_assumption(self):
         """This is a test that guardrails the HTTPAdapter behavior so that if the default for
