@@ -328,8 +328,8 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         # One dir left... check title
         all_dirs = os.listdir(self.config.backup_dir)
         self.assertEqual(len(all_dirs), 1)
-        self.assertTrue(
-            "First Checkpoint" in get_save_notes(
+        self.assertIn(
+            "First Checkpoint", get_save_notes(
                 os.path.join(self.config.backup_dir, all_dirs[0])))
         # Final rollback
         self.reverter.rollback_checkpoints(1)

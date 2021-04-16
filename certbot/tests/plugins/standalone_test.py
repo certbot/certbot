@@ -47,7 +47,7 @@ class ServerManagerTest(unittest.TestCase):
         port = server.getsocknames()[0][1]
         server2 = self.mgr.run(port=port, challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {port: server})
-        self.assertTrue(server is server2)
+        self.assertIs(server, server2)
         self.mgr.stop(port)
         self.assertEqual(self.mgr.running(), {})
 

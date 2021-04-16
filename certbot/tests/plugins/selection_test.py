@@ -190,7 +190,7 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
     def test_get_plugin(self):
         self.config.configurator = "apache"
         installer = self._call()
-        self.assertTrue(installer is self.mock_apache_plugin)
+        self.assertIs(installer, self.mock_apache_plugin)
 
     def test_multiple_installers_returned(self):
         self.config.configurator = "apache"

@@ -109,19 +109,19 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertIs(self.plugin_ep.entry_point, EP_SA)
         self.assertEqual("sa", self.plugin_ep.name)
 
-        self.assertTrue(self.plugin_ep.plugin_cls is standalone.Authenticator)
+        self.assertIs(self.plugin_ep.plugin_cls, standalone.Authenticator)
 
     def test_init(self):
         config = mock.MagicMock()
         plugin = self.plugin_ep.init(config=config)
-        self.assertTrue(self.plugin_ep.initialized)
-        self.assertTrue(plugin.config is config)
+        self.assertIs(self.plugin_ep.initialized, True)
+        self.assertIs(plugin.config, config)
         # memoize!
-        self.assertTrue(self.plugin_ep.init() is plugin)
-        self.assertTrue(plugin.config is config)
+        self.assertIs(self.plugin_ep.init(), plugin)
+        self.assertIs(plugin.config, config)
         # try to give different config
-        self.assertTrue(self.plugin_ep.init(123) is plugin)
-        self.assertTrue(plugin.config is config)
+        self.assertIs(self.plugin_ep.init(123), plugin)
+        self.assertIs(plugin.config, config)
 
         self.assertIs(self.plugin_ep.prepared, False)
         self.assertIs(self.plugin_ep.misconfigured, False)

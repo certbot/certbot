@@ -94,7 +94,7 @@ class TestHandleCerts(unittest.TestCase):
         mock_set.side_effect = lambda var: var != "key_type"
         with self.assertRaises(errors.Error) as raised:
             main._handle_unexpected_key_type_migration(config, cert)
-        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
+        self.assertIn("Please provide both --cert-name and --key-type", str(raised.exception))
 
 
 class RunTest(test_util.ConfigTestCase):
