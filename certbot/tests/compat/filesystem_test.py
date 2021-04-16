@@ -376,7 +376,7 @@ class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
         security = second_call[0][2]
         dacl = security.GetSecurityDescriptorDacl()
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
-        self.assertIs(dacl.GetAceCount(), True)
+        self.assertTrue(dacl.GetAceCount())
         self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
                           if dacl.GetAce(index)[2] == everybody])
 
