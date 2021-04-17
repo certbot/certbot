@@ -604,8 +604,8 @@ class ClientTest(ClientTestBase):
             # make sure that max_attempts is per-authorization, rather
             # than global
             max_attempts=max(len(authzrs[0].retries), len(authzrs[1].retries)))
-        self.assertIs(cert[0], )
-        self.assertIs(cert[1], )
+        self.assertIs(cert[0], csr)
+        self.assertIs(cert[1], updated_authzrs)
         self.assertEqual(updated_authzrs[0].uri, 'a...')
         self.assertEqual(updated_authzrs[1].uri, 'b.')
         self.assertEqual(updated_authzrs[0].times, [
@@ -943,7 +943,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.response.links = {}
 
     def test_init(self):
-        self.assertIs(self.net.verify_ssl, )
+        self.assertIs(self.net.verify_ssl, self.verify_ssl)
 
     def test_wrap_in_jws(self):
         # pylint: disable=protected-access
