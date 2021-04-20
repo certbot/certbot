@@ -35,6 +35,13 @@ acme = {path = "../../acme", extras = ["dev", "docs"]}
 windows-installer = {path = "../../windows-installer"}
 
 # Extra dependencies
+# As of writing this, cython is a build dependency of pyyaml. Since there
+# doesn't appear to be a good way to automatically track down and pin build
+# dependencies in Python (see
+# https://discuss.python.org/t/how-to-pin-build-dependencies/8238), we list it
+# as a dependency here to ensure a version of cython is pinned for extra
+# stability.
+cython = "*"
 # We install mock in our "external-mock" tox environment to test that we didn't
 # break Certbot's test API which used to always use mock objects from the 3rd
 # party mock library. We list the mock dependency here so that is pinned, but
