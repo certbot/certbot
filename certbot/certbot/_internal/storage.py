@@ -911,7 +911,7 @@ class RenewableCert(interfaces.RenewableCert):
             return ocsp.RevocationChecker().ocsp_revoked_by_paths(cert_path,
                                                                   chain_path)
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(
+            logger.warning(
                 "An error occurred determining the OCSP status of %s.",
                 cert_path)
             logger.debug(str(e))
