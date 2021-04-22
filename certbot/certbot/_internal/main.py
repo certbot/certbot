@@ -501,7 +501,7 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
                       if config.preconfigured_renewal else
                       (f'Run "{cli.cli_constants.cli_command} renew" to renew '
                        "expiring certificates. "
-                       "We recommend setting up a scheduled task for renewal, see "
+                       "We recommend setting up a scheduled task for renewal; see "
                        "https://certbot.eff.org/docs/using.html#automated-renewals "
                        "for instructions.")
         )
