@@ -292,10 +292,21 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
 
     valid_string = "{0} ({1})".format(cert.target_expiry, status)
     serial = format(crypto_util.get_serial_from_cert(cert.cert_path), 'x')
+    tls_features = crypto_util.get_tls_features_from_cert(cert.cert_path)
+    must_staple = False
+    for tls_feature in tls_features:
+        # TLSFeatureType(5): status_request (RFC 6066)
+        # TLSFeatureType(17): status_request_v2 (RFC 6961)
+        if (
+            tls_feature == crypto_util.x509.TLSFeatureType(5)
+            or tls_feature == crypto_util.x509.TLSFeatureType(17)
+        ):
+            must_staple = True
     certinfo.append("  Certificate Name: {}\n"
                     "    Serial Number: {}\n"
                     "    Key Type: {}\n"
                     "    Domains: {}\n"
+                    "    Must Staple TLS Feature Enabled: {}\n"
                     "    Expiry Date: {}\n"
                     "    Certificate Path: {}\n"
                     "    Private Key Path: {}".format(
@@ -303,6 +314,7 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
                          serial,
                          cert.private_key_type,
                          " ".join(cert.names()),
+                         "Yes" if must_staple else "No",
                          valid_string,
                          cert.fullchain,
                          cert.privkey))

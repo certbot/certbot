@@ -14,6 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The module `acme.magic_typing` is deprecated and will be removed in a future release.
   Please use the built-in module `typing` instead.
 * The DigitalOcean plugin now creates TXT records for the DNS-01 challenge with a lower 30s TTL.
+* The `certificates` subcommand now also shows if the `must staple` TLS feature is enabled or not.
 
 ### Fixed
 
