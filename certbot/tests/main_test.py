@@ -1835,7 +1835,7 @@ class ReportNewCertTest(unittest.TestCase):
             'This certificate expires on 1970-01-01.\n'
             'These files will be updated when the certificate renews.\n'
             'Run "certbot renew" to renew expiring certificates. We recommend setting up a '
-            'scheduled task for renewal, see https://certbot.eff.org/docs/using.html#automated'
+            'scheduled task for renewal; see https://certbot.eff.org/docs/using.html#automated'
             '-renewals for instructions.\n'
         )
 
