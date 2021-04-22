@@ -3,6 +3,7 @@ import contextlib
 import signal
 import sys
 import unittest
+from typing import Callable, Dict, Union
 
 try:
     import mock
@@ -27,7 +28,7 @@ def set_signals(sig_handler_dict):
 def signal_receiver(signums):
     """Context manager to catch signals"""
     signals = []
-    prev_handlers = get_signals(signums)  # type: Dict[int, Union[int, None, Callable]]
+    prev_handlers: Dict[int, Union[int, None, Callable]] = get_signals(signums)
     set_signals({s: lambda s, _: signals.append(s) for s in signums})
     yield signals
     set_signals(prev_handlers)
@@ -135,7 +136,7 @@ class ExitHandlerTest(ErrorHandlerTest):
 
     def setUp(self):
         from certbot._internal import error_handler
-        super(ExitHandlerTest, self).setUp()
+        super().setUp()
         self.handler = error_handler.ExitHandler(self.init_func,
                                                  *self.init_args,
                                                  **self.init_kwargs)

@@ -18,7 +18,7 @@ def run_generic_updaters(config, lineage, plugins):
     :type lineage: storage.RenewableCert
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: certbot._internal.plugins.disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None

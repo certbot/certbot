@@ -1,15 +1,11 @@
 """Tests for certbot._internal.log."""
+import io
 import logging
 import logging.handlers
 import sys
 import time
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-import six
+from typing import Optional
 
 from acme import messages
 from certbot import errors
@@ -19,6 +15,12 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
 
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
+
 
 class PreArgParseSetupTest(unittest.TestCase):
     """Tests for certbot._internal.log.pre_arg_parse_setup."""
@@ -26,7 +28,8 @@ class PreArgParseSetupTest(unittest.TestCase):
     @classmethod
     def _call(cls, *args, **kwargs):  # pylint: disable=unused-argument
         from certbot._internal.log import pre_arg_parse_setup
-        return pre_arg_parse_setup()
+        with mock.patch('builtins.open', mock.mock_open()):
+            return pre_arg_parse_setup()
 
     @mock.patch('certbot._internal.log.sys')
     @mock.patch('certbot._internal.log.pre_arg_parse_except_hook')
@@ -41,7 +44,7 @@ class PreArgParseSetupTest(unittest.TestCase):
         mock_root_logger.setLevel.assert_called_once_with(logging.DEBUG)
         self.assertEqual(mock_root_logger.addHandler.call_count, 2)
 
-        memory_handler = None  # type: Optional[logging.handlers.MemoryHandler]
+        memory_handler: Optional[logging.handlers.MemoryHandler] = None
         for call in mock_root_logger.addHandler.call_args_list:
             handler = call[0][0]
             if memory_handler is None and isinstance(handler, logging.handlers.MemoryHandler):
@@ -67,7 +70,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         return post_arg_parse_setup(*args, **kwargs)
 
     def setUp(self):
-        super(PostArgParseSetupTest, self).setUp()
+        super().setUp()
         self.config.debug = False
         self.config.max_log_backups = 1000
         self.config.quiet = False
@@ -75,7 +78,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         self.devnull = open(os.devnull, 'w')
 
         from certbot._internal.log import ColoredStreamHandler
-        self.stream_handler = ColoredStreamHandler(six.StringIO())
+        self.stream_handler = ColoredStreamHandler(io.StringIO())
         from certbot._internal.log import MemoryHandler, TempHandler
         self.temp_handler = TempHandler()
         self.temp_path = self.temp_handler.path
@@ -88,7 +91,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         self.stream_handler.close()
         self.temp_handler.close()
         self.devnull.close()
-        super(PostArgParseSetupTest, self).tearDown()
+        super().tearDown()
 
     def test_common(self):
         with mock.patch('certbot._internal.log.logging.getLogger') as mock_get_logger:
@@ -133,7 +136,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         return setup_log_file_handler(*args, **kwargs)
 
     def setUp(self):
-        super(SetupLogFileHandlerTest, self).setUp()
+        super().setUp()
         self.config.max_log_backups = 42
 
     @mock.patch('certbot._internal.main.logging.handlers.RotatingFileHandler')
@@ -179,7 +182,7 @@ class ColoredStreamHandlerTest(unittest.TestCase):
     """Tests for certbot._internal.log.ColoredStreamHandler"""
 
     def setUp(self):
-        self.stream = six.StringIO()
+        self.stream = io.StringIO()
         self.stream.isatty = lambda: True
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)
@@ -213,7 +216,7 @@ class MemoryHandlerTest(unittest.TestCase):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
         self.msg = 'hi there'
-        self.stream = six.StringIO()
+        self.stream = io.StringIO()
 
         self.stream_handler = logging.StreamHandler(self.stream)
         from certbot._internal.log import MemoryHandler
@@ -238,7 +241,7 @@ class MemoryHandlerTest(unittest.TestCase):
     def test_target_reset(self):
         self._test_log_debug()
 
-        new_stream = six.StringIO()
+        new_stream = io.StringIO()
         new_stream_handler = logging.StreamHandler(new_stream)
         self.handler.setTarget(new_stream_handler)
         self.handler.flush(force=True)
@@ -325,7 +328,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
 
     def test_acme_error(self):
         # Get an arbitrary error code
-        acme_code = next(six.iterkeys(messages.ERROR_CODES))
+        acme_code = next(iter(messages.ERROR_CODES))
 
         def get_acme_error(msg):
             """Wraps ACME errors so the constructor takes only a msg."""
@@ -349,7 +352,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
 
     def _test_common(self, error_type, debug):
         """Returns the mocked logger and stderr output."""
-        mock_err = six.StringIO()
+        mock_err = io.StringIO()
 
         def write_err(*args, **unused_kwargs):
             """Write error to mock_err."""

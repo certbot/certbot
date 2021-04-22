@@ -7,6 +7,13 @@ from setuptools import setup
 
 version = '0.32.0.dev0'
 
+# setuptools 36.2+ is needed for support for environment markers
+min_setuptools_version='36.2'
+# This conditional isn't necessary, but it provides better error messages to
+# people who try to install this package with older versions of setuptools.
+if LooseVersion(setuptools_version) < LooseVersion(min_setuptools_version):
+    raise RuntimeError(f'setuptools {min_setuptools_version}+ is required')
+
 install_requires = [
     'coverage',
     'cryptography',
@@ -14,23 +21,16 @@ install_requires = [
     'pyopenssl',
     'pytest',
     'pytest-cov',
-    'pytest-xdist',
+    # This version is needed for "worker" attributes we currently use like
+    # "workerinput".  See https://github.com/pytest-dev/pytest-xdist/pull/268.
+    'pytest-xdist>=1.22.1',
     'python-dateutil',
+    # This dependency needs to be added using environment markers to avoid its
+    # installation on Linux.
+    'pywin32>=300 ; sys_platform == "win32"',
     'pyyaml',
     'requests',
-    'six',
 ]
-
-# Add pywin32 on Windows platforms to handle low-level system calls.
-# This dependency needs to be added using environment markers to avoid its installation on Linux.
-# However environment markers are supported only with setuptools >= 36.2.
-# So this dependency is not added for old Linux distributions with old setuptools,
-# in order to allow these systems to build certbot from sources.
-if LooseVersion(setuptools_version) >= LooseVersion('36.2'):
-    install_requires.append("pywin32>=224 ; sys_platform == 'win32'")
-elif 'bdist_wheel' in sys.argv[1:]:
-    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
-                       'of setuptools. Version 36.2+ of setuptools is required.')
 
 setup(
     name='certbot-ci',
@@ -40,14 +40,12 @@ setup(
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*',
+    python_requires='>=3.6',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',

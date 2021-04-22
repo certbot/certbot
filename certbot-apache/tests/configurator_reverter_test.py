@@ -16,7 +16,7 @@ class ConfiguratorReverterTest(util.ApacheTest):
 
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(ConfiguratorReverterTest, self).setUp()
+        super().setUp()
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)

@@ -7,7 +7,7 @@ if [ "$OS_TYPE" = "ubuntu" ]
 then
     CONFFILE=/etc/apache2/sites-available/000-default.conf
     sudo apt-get update
-    sudo apt-get -y --no-upgrade install apache2 #curl
+    sudo apt-get -y --no-upgrade install apache2 curl
     sudo apt-get -y install realpath # needed for test-apache-conf
     # For apache 2.4, set up ServerName
     sudo sed -i '/ServerName/ s/#ServerName/ServerName/' $CONFFILE
@@ -64,17 +64,41 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
-  # RHEL/CentOS 6 will need a special treatment, so we need to detect that environment
-  # Enable the SCL Python 3.6 installed by letsencrypt-auto bootstrap
-  PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
+tools/venv.py -e acme[dev] -e certbot[dev,docs] -e certbot-apache -e certbot-ci
+PEBBLE_LOGS="acme_server.log"
+PEBBLE_URL="https://localhost:14000/dir"
+# We configure Pebble to use port 80 for http-01 validation rather than an
+# alternate port because:
+#   1) It allows us to test with Apache configurations that are more realistic
+#   and closer to the default configuration on various OSes.
+#   2) As of writing this, Certbot's Apache plugin requires there to be an
+#   existing virtual host for the port used for http-01 validation.
+venv/bin/run_acme_server --http-01-port 80 > "${PEBBLE_LOGS}" 2>&1 &
+
+DumpPebbleLogs() {
+    if [ -f "${PEBBLE_LOGS}" ] ; then
+        echo "Pebble's logs were:"
+        cat "${PEBBLE_LOGS}"
+    fi
+}
+
+for n in $(seq 1 150) ; do
+    if curl --insecure "${PEBBLE_URL}" 2>/dev/null; then
+        break
+    else
+        echo "waiting for pebble"
+        sleep 1
+    fi
+done
+if ! curl --insecure "${PEBBLE_URL}" 2>/dev/null; then
+  echo "timed out waiting for pebble to start"
+  DumpPebbleLogs
+  exit 1
 fi
 
-tools/venv3.py -e acme[dev] -e certbot[dev,docs] -e certbot-apache
-
-sudo "venv3/bin/certbot" -v --debug --text --agree-tos \
+sudo "venv/bin/certbot" -v --debug --text --agree-tos --no-verify-ssl \
                    --renew-by-default --redirect --register-unsafely-without-email \
-                   --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
+                   --domain "${PUBLIC_HOSTNAME}" --server "${PEBBLE_URL}"
 if [ $? -ne 0 ] ; then
     FAIL=1
 fi
@@ -89,15 +113,15 @@ elif [ "$OS_TYPE" = "centos" ]; then
 fi
 OPENSSL_VERSION=$(strings "$MOD_SSL_LOCATION" | egrep -o -m1 '^OpenSSL ([0-9]\.[^ ]+) ' | tail -c +9)
 APACHE_VERSION=$(sudo $APACHE_NAME -v | egrep -o 'Apache/([0-9]\.[^ ]+)' | tail -c +8)
-"venv3/bin/python" tests/letstest/scripts/test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
+"venv/bin/python" tests/letstest/scripts/test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
 if [ $? -ne 0 ] ; then
     FAIL=1
 fi
 
 
 if [ "$OS_TYPE" = "ubuntu" ] ; then
-    export SERVER="$BOULDER_URL"
-    "venv3/bin/tox" -e apacheconftest
+    export SERVER="${PEBBLE_URL}"
+    "venv/bin/tox" -e apacheconftest
 else
     echo Not running hackish apache tests on $OS_TYPE
 fi
@@ -108,5 +132,6 @@ fi
 
 # return error if any of the subtests failed
 if [ "$FAIL" = 1 ] ; then
+    DumpPebbleLogs
     exit 1
 fi

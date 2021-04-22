@@ -25,7 +25,7 @@ class DNSAuthenticator(common.Plugin):
     """Base class for DNS  Authenticators"""
 
     def __init__(self, config, name):
-        super(DNSAuthenticator, self).__init__(config, name)
+        super().__init__(config, name)
 
         self._attempt_cleanup = False
 
@@ -42,6 +42,9 @@ class DNSAuthenticator(common.Plugin):
 
     def prepare(self): # pylint: disable=missing-function-docstring
         pass
+
+    def more_info(self) -> str:  # pylint: disable=missing-function-docstring
+        raise NotImplementedError()
 
     def perform(self, achalls): # pylint: disable=missing-function-docstring
         self._setup_credentials()
@@ -139,7 +142,8 @@ class DNSAuthenticator(common.Plugin):
 
             setattr(self.config, self.dest(key), os.path.abspath(os.path.expanduser(new_value)))
 
-    def _configure_credentials(self, key, label, required_variables=None, validator=None):
+    def _configure_credentials(self, key, label, required_variables=None,
+                               validator=None) -> 'CredentialsConfiguration':
         """
         As `_configure_file`, but for a credential configuration file.
 
@@ -233,7 +237,7 @@ class DNSAuthenticator(common.Plugin):
         raise errors.PluginError('{0} required to proceed.'.format(label))
 
 
-class CredentialsConfiguration(object):
+class CredentialsConfiguration:
     """Represents a user-supplied filed which stores API credentials."""
 
     def __init__(self, filename, mapper=lambda x: x):

@@ -1,48 +1,42 @@
 """Certbot command line argument parser"""
-from __future__ import print_function
+
 import argparse
 import copy
 import functools
 import glob
 import sys
+from typing import Any
+from typing import Dict
 
 import configargparse
-import six
 import zope.component
 import zope.interface
-
 from zope.interface import interfaces as zope_interfaces
-
-from acme.magic_typing import Any, Dict
 
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import os
 from certbot._internal import constants
 from certbot._internal import hooks
-
+from certbot._internal.cli.cli_constants import ARGPARSE_PARAMS_TO_REMOVE
+from certbot._internal.cli.cli_constants import COMMAND_OVERVIEW
+from certbot._internal.cli.cli_constants import EXIT_ACTIONS
+from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
+from certbot._internal.cli.cli_constants import SHORT_USAGE
+from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
+from certbot._internal.cli.cli_utils import _Default
+from certbot._internal.cli.cli_utils import add_domains
+from certbot._internal.cli.cli_utils import CustomHelpFormatter
+from certbot._internal.cli.cli_utils import flag_default
+from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
+from certbot._internal.cli.verb_help import VERB_HELP
+from certbot._internal.cli.verb_help import VERB_HELP_MAP
+from certbot.compat import os
 from certbot.display import util as display_util
 
-from certbot._internal.cli import (
-    SHORT_USAGE,
-    CustomHelpFormatter,
-    flag_default,
-    VERB_HELP,
-    VERB_HELP_MAP,
-    COMMAND_OVERVIEW,
-    HELP_AND_VERSION_USAGE,
-    _Default,
-    add_domains,
-    EXIT_ACTIONS,
-    ZERO_ARG_ACTIONS,
-    ARGPARSE_PARAMS_TO_REMOVE,
-    HelpfulArgumentGroup
-)
 
-
-class HelpfulArgumentParser(object):
+class HelpfulArgumentParser:
     """Argparse Wrapper.
 
     This class wraps argparse, adding the ability to make --help less
@@ -99,16 +93,16 @@ class HelpfulArgumentParser(object):
         if isinstance(help1, bool) and isinstance(help2, bool):
             self.help_arg = help1 or help2
         else:
-            self.help_arg = help1 if isinstance(help1, six.string_types) else help2
+            self.help_arg = help1 if isinstance(help1, str) else help2
 
         short_usage = self._usage_string(plugins, self.help_arg)
 
         self.visible_topics = self.determine_help_topics(self.help_arg)
 
         # elements are added by .add_group()
-        self.groups = {}  # type: Dict[str, argparse._ArgumentGroup]
+        self.groups: Dict[str, argparse._ArgumentGroup] = {}
         # elements are added by .parse_args()
-        self.defaults = {}  # type: Dict[str, Any]
+        self.defaults: Dict[str, Any] = {}
 
         self.parser = configargparse.ArgParser(
             prog="certbot",
@@ -121,6 +115,8 @@ class HelpfulArgumentParser(object):
 
         # This is the only way to turn off overly verbose config flag documentation
         self.parser._add_config_file_help = False
+
+        self.verb: str
 
     # Help that are synonyms for --help subcommands
     COMMANDS_TOPICS = ["command", "commands", "subcommand", "subcommands", "verbs"]
@@ -470,7 +466,7 @@ class HelpfulArgumentParser(object):
         may or may not be displayed as help topics.
 
         """
-        for name, plugin_ep in six.iteritems(plugins):
+        for name, plugin_ep in plugins.items():
             parser_or_group = self.add_group(name,
                                              description=plugin_ep.long_description)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)

@@ -1,4 +1,7 @@
 # These images are located in us-east-1.
+#
+# All machines must currently use x86_64 since Pebble does not currently
+# publish images for other architectures.
 
 targets:
   #-----------------------------------------------------------------------------
@@ -30,12 +33,6 @@ targets:
     type: ubuntu
     virt: hvm
     user: admin
-  - ami: ami-0dcd54b7d2fff584f
-    name: debian10_arm64
-    type: ubuntu
-    virt: hvm
-    user: admin
-    machine_type: a1.medium
   - ami: ami-003f19e0e687de1cd
     name: debian9
     type: ubuntu

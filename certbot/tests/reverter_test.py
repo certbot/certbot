@@ -9,7 +9,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
-import six
 
 from certbot import errors
 from certbot.compat import os
@@ -19,7 +18,7 @@ from certbot.tests import util as test_util
 class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
     """Test the Reverter Class."""
     def setUp(self):
-        super(ReverterCheckpointLocalTest, self).setUp()
+        super().setUp()
         from certbot.reverter import Reverter
 
         # Disable spurious errors... we are trying to test for them
@@ -156,7 +155,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
 
         act_coms = get_undo_commands(self.config.temp_checkpoint_dir)
 
-        for a_com, com in six.moves.zip(act_coms, coms):
+        for a_com, com in zip(act_coms, coms):
             self.assertEqual(a_com, com)
 
     def test_bad_register_undo_command(self):
@@ -281,7 +280,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
 class TestFullCheckpointsReverter(test_util.ConfigTestCase):
     """Tests functions having to deal with full checkpoints."""
     def setUp(self):
-        super(TestFullCheckpointsReverter, self).setUp()
+        super().setUp()
         from certbot.reverter import Reverter
         # Disable spurious errors...
         logging.disable(logging.CRITICAL)

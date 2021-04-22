@@ -56,18 +56,18 @@ Set up the Python virtual environment that will host your Certbot local instance
 .. code-block:: shell
 
    cd certbot
-   python tools/venv3.py
+   python tools/venv.py
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
 
 You can now run the copy of Certbot from git either by executing
-``venv3/bin/certbot``, or by activating the virtual environment. You can do the
+``venv/bin/certbot``, or by activating the virtual environment. You can do the
 latter by running:
 
 .. code-block:: shell
 
-   source venv3/bin/activate
+   source venv/bin/activate
 
 After running this command, ``certbot`` and development tools like ``ipdb``,
 ``ipython``, ``pytest``, and ``tox`` are available in the shell where you ran
@@ -169,7 +169,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv3.py` contains two CLI tools
+The virtual environment set up with `python tools/venv.py` contains two CLI tools
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -197,8 +197,8 @@ using an HTTP-01 challenge on a machine with Python 3:
 
 .. code-block:: shell
 
-    python tools/venv3.py
-    source venv3/bin/activate
+    python tools/venv.py
+    source venv/bin/activate
     run_acme_server &
     certbot_test certonly --standalone -d test.example.com
     # To stop Pebble, launch `fg` to get back the background job, then press CTRL+C
@@ -222,8 +222,6 @@ certbot-apache and certbot-nginx
   client code to configure specific web servers
 certbot-dns-*
   client code to configure DNS providers
-certbot-auto and letsencrypt-auto
-  shell scripts to install Certbot and its dependencies on UNIX systems
 windows installer
   Installs Certbot on Windows and is built using the files in windows-installer/
 
@@ -282,8 +280,8 @@ support for IIS, Icecast and Plesk.
 Installers and Authenticators will oftentimes be the same class/object
 (because for instance both tasks can be performed by a webserver like nginx)
 though this is not always the case (the standalone plugin is an authenticator
-that listens on port 80, but it cannot install certs; a postfix plugin would
-be an installer but not an authenticator).
+that listens on port 80, but it cannot install certificates; a postfix plugin
+would be an installer but not an authenticator).
 
 Installers and Authenticators are kept separate because
 it should be possible to use the `~.StandaloneAuthenticator` (it sets
@@ -470,23 +468,13 @@ Mypy type annotations
 =====================
 
 Certbot uses the `mypy`_ static type checker. Python 3 natively supports official type annotations,
-which can then be tested for consistency using mypy. Python 2 doesn’t, but type annotations can
-be `added in comments`_. Mypy does some type checks even without type annotations; we can find
-bugs in Certbot even without a fully annotated codebase.
-
-Certbot supports both Python 2 and 3, so we’re using Python 2-style annotations.
+which can then be tested for consistency using mypy. Mypy does some type checks even without type
+annotations; we can find bugs in Certbot even without a fully annotated codebase.
 
 Zulip wrote a `great guide`_ to using mypy. It’s useful, but you don’t have to read the whole thing
 to start contributing to Certbot.
 
 To run mypy on Certbot, use ``tox -e mypy`` on a machine that has Python 3 installed.
-
-Note that instead of just importing ``typing``, due to packaging issues, in Certbot we import from
-``acme.magic_typing`` and have to add some comments for pylint like this:
-
-.. code-block:: python
-
-  from acme.magic_typing import Dict
 
 Also note that OpenSSL, which we rely on, has type definitions for crypto but not SSL. We use both.
 Those imports should look like this:
@@ -516,11 +504,13 @@ Steps:
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
-5. Submit the PR. Once your PR is open, please do not force push to the branch
+5. If any documentation should be added or updated as part of the changes you
+   have made, please include the documentation changes in your PR.
+6. Submit the PR. Once your PR is open, please do not force push to the branch
    containing your pull request to squash or amend commits. We use `squash
    merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
    rewriting commits makes changes harder to track between reviews.
-6. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
+7. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
 
 .. _ask for help:
 
@@ -555,53 +545,6 @@ Building the Certbot and DNS plugin snaps
 Instructions for how to manually build and run the Certbot snap and the externally
 snapped DNS plugins that the Certbot project supplies are located in the README
 file at https://github.com/certbot/certbot/tree/master/tools/snap.
-
-Updating certbot-auto and letsencrypt-auto
-==========================================
-
-.. note:: We are currently only accepting changes to certbot-auto that fix
-  regressions on platforms where certbot-auto is the recommended installation
-  method at https://certbot.eff.org/instructions. If you are unsure if a change
-  you want to make qualifies, don't hesitate to `ask for help`_!
-
-Updating the scripts
---------------------
-Developers should *not* modify the ``certbot-auto`` and ``letsencrypt-auto`` files
-in the root directory of the repository.  Rather, modify the
-``letsencrypt-auto.template`` and associated platform-specific shell scripts in
-the ``letsencrypt-auto-source`` and
-``letsencrypt-auto-source/pieces/bootstrappers`` directory, respectively.
-
-Building letsencrypt-auto-source/letsencrypt-auto
--------------------------------------------------
-Once changes to any of the aforementioned files have been made, the
-``letsencrypt-auto-source/letsencrypt-auto`` script should be updated.  In lieu of
-manually updating this script, run the build script, which lives at
-``letsencrypt-auto-source/build.py``:
-
-.. code-block:: shell
-
-   python letsencrypt-auto-source/build.py
-
-Running ``build.py`` will update the ``letsencrypt-auto-source/letsencrypt-auto``
-script.  Note that the ``certbot-auto`` and ``letsencrypt-auto`` scripts in the root
-directory of the repository will remain **unchanged** after this script is run.
-Your changes will be propagated to these files during the next release of
-Certbot.
-
-Opening a PR
-------------
-When opening a PR, ensure that the following files are committed:
-
-1. ``letsencrypt-auto-source/letsencrypt-auto.template`` and
-   ``letsencrypt-auto-source/pieces/bootstrappers/*``
-2. ``letsencrypt-auto-source/letsencrypt-auto`` (generated by ``build.py``)
-
-It might also be a good idea to double check that **no** changes were
-inadvertently made to the ``certbot-auto`` or ``letsencrypt-auto`` scripts in the
-root of the repository.  These scripts will be updated by the core developers
-during the next release.
-
 
 Updating the documentation
 ==========================

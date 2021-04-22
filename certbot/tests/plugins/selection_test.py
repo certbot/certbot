@@ -1,6 +1,7 @@
 """Tests for letsencrypt.plugins.selection"""
 import sys
 import unittest
+from typing import List
 
 try:
     import mock
@@ -52,7 +53,7 @@ class PickPluginTest(unittest.TestCase):
         self.default = None
         self.reg = mock.MagicMock()
         self.question = "Question?"
-        self.ifaces = []  # type: List[interfaces.IPlugin]
+        self.ifaces: List[interfaces.IPlugin] = []
 
     def _call(self):
         from certbot._internal.plugins.selection import pick_plugin
@@ -154,32 +155,12 @@ class ChoosePluginTest(unittest.TestCase):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
         self.assertTrue(self._call() is None)
 
-    @test_util.patch_get_utility("certbot._internal.plugins.selection.z_util")
-    def test_new_interaction_avoidance(self, mock_util):
-        mock_nginx = mock.Mock(
-            description_with_name="n", misconfigured=False)
-        mock_nginx.init().more_info.return_value = "nginx plugin"
-        mock_nginx.name = "nginx"
-        self.plugins[1] = mock_nginx
-        mock_util().menu.return_value = (display_util.CANCEL, 0)
-
-        unset_cb_auto = os.environ.get("CERTBOT_AUTO") is None
-        if unset_cb_auto:
-            os.environ["CERTBOT_AUTO"] = "foo"
-        try:
-            self._call()
-        finally:
-            if unset_cb_auto:
-                del os.environ["CERTBOT_AUTO"]
-
-        self.assertTrue("default" in mock_util().menu.call_args[1])
-
 
 class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.plugins.selection.get_unprepared_installer."""
 
     def setUp(self):
-        super(GetUnpreparedInstallerTest, self).setUp()
+        super().setUp()
         self.mock_apache_fail_ep = mock.Mock(
             description_with_name="afail")
         self.mock_apache_fail_ep.check_name = lambda name: name == "afail"

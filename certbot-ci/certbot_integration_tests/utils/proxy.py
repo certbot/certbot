@@ -1,16 +1,20 @@
 #!/usr/bin/env python
+# pylint: disable=missing-module-docstring
+
+import http.server as BaseHTTPServer
 import json
 import re
 import sys
 
 import requests
-from six.moves import BaseHTTPServer
 
 from certbot_integration_tests.utils.misc import GracefulTCPServer
 
 
 def _create_proxy(mapping):
+    # pylint: disable=missing-function-docstring
     class ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+        # pylint: disable=missing-class-docstring
         def do_GET(self):
             headers = {key.lower(): value for key, value in self.headers.items()}
             backend = [backend for pattern, backend in mapping.items()

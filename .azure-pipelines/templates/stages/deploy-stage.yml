@@ -37,6 +37,14 @@ stages:
           vmImage: ubuntu-18.04
         variables:
           - group: certbot-common
+        strategy:
+          matrix:
+            amd64:
+              SNAP_ARCH: amd64
+            arm32v6:
+              SNAP_ARCH: armhf
+            arm64v8:
+              SNAP_ARCH: arm64
         steps:
           - bash: |
               set -e
@@ -46,7 +54,7 @@ stages:
             displayName: Install dependencies
           - task: DownloadPipelineArtifact@2
             inputs:
-              artifact: snaps
+              artifact: snaps_$(SNAP_ARCH)
               path: $(Build.SourcesDirectory)/snap
             displayName: Retrieve Certbot snaps
           - task: DownloadSecureFile@1
@@ -55,8 +63,7 @@ stages:
               secureFile: snapcraft.cfg
           - bash: |
               set -e
-              mkdir -p .snapcraft
-              ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
+              snapcraft login --with $(snapcraftCfg.secureFilePath)
               for SNAP_FILE in snap/*.snap; do
                 tools/retry.sh eval snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
               done

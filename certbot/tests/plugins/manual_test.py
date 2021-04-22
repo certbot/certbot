@@ -6,7 +6,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
-import six
 
 from acme import challenges
 from certbot import errors
@@ -20,7 +19,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
     """Tests for certbot._internal.plugins.manual.Authenticator."""
 
     def setUp(self):
-        super(AuthenticatorTest, self).setUp()
+        super().setUp()
         self.http_achall = acme_util.HTTP01_A
         self.dns_achall = acme_util.DNS01_A
         self.dns_achall_2 = acme_util.DNS01_A_2
@@ -53,7 +52,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.assertRaises(errors.HookCommandNotFound, self.auth.prepare)
 
     def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
+        self.assertTrue(isinstance(self.auth.more_info(), str))
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref('example.org'),
@@ -61,7 +60,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
     def test_script_perform(self):
         self.config.manual_auth_hook = (
-            '{0} -c "from __future__ import print_function;'
+            '{0} -c "'
             'from certbot.compat import os;'
             'print(os.environ.get(\'CERTBOT_DOMAIN\'));'
             'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'

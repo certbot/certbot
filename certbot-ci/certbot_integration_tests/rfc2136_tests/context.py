@@ -1,7 +1,10 @@
+"""Module to handle the context of RFC2136 integration tests."""
+
 from contextlib import contextmanager
-from pytest import skip
-from pkg_resources import resource_filename
 import tempfile
+
+from pkg_resources import resource_filename
+from pytest import skip
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import certbot_call
@@ -10,13 +13,12 @@ from certbot_integration_tests.utils import certbot_call
 class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
     """Integration test context for certbot-dns-rfc2136"""
     def __init__(self, request):
-        super(IntegrationTestsContext, self).__init__(request)
+        super().__init__(request)
 
         self.request = request
 
-        self._dns_xdist = None
-        if hasattr(request.config, 'slaveinput'):  # Worker node
-            self._dns_xdist = request.config.slaveinput['dns_xdist']
+        if hasattr(request.config, 'workerinput'):  # Worker node
+            self._dns_xdist = request.config.workerinput['dns_xdist']
         else:  # Primary node
             self._dns_xdist = request.config.dns_xdist
 
@@ -33,7 +35,6 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
 
     @contextmanager
     def rfc2136_credentials(self, label='default'):
-        # type: (str) -> str
         """
         Produces the contents of a certbot-dns-rfc2136 credentials file.
         :param str label: which RFC2136 credential to use
@@ -43,7 +44,6 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         src_file = resource_filename('certbot_integration_tests',
                                      'assets/bind-config/rfc2136-credentials-{}.ini.tpl'
                                      .format(label))
-        contents = None
 
         with open(src_file, 'r') as f:
             contents = f.read().format(
@@ -52,10 +52,10 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
             )
 
         with tempfile.NamedTemporaryFile('w+', prefix='rfc2136-creds-{}'.format(label),
-                                         suffix='.ini', dir=self.workspace) as f:
-            f.write(contents)
-            f.flush()
-            yield f.name
+                                         suffix='.ini', dir=self.workspace) as fp:
+            fp.write(contents)
+            fp.flush()
+            yield fp.name
 
     def skip_if_no_bind9_server(self):
         """Skips the test if there was no RFC2136-capable DNS server configured

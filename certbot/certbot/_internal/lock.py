@@ -1,8 +1,8 @@
 """Implements file locks compatible with Linux and Windows for locking files and directories."""
 import errno
 import logging
+from typing import Optional
 
-from acme.magic_typing import Optional
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -16,29 +16,10 @@ else:
     POSIX_MODE = True
 
 
-
 logger = logging.getLogger(__name__)
 
 
-def lock_dir(dir_path):
-    # type: (str) -> LockFile
-    """Place a lock file on the directory at dir_path.
-
-    The lock file is placed in the root of dir_path with the name
-    .certbot.lock.
-
-    :param str dir_path: path to directory
-
-    :returns: the locked LockFile object
-    :rtype: LockFile
-
-    :raises errors.LockError: if unable to acquire the lock
-
-    """
-    return LockFile(os.path.join(dir_path, '.certbot.lock'))
-
-
-class LockFile(object):
+class LockFile:
     """
     Platform independent file lock system.
     LockFile accepts a parameter, the path to a file acting as a lock. Once the LockFile,
@@ -52,8 +33,7 @@ class LockFile(object):
     LockFile is platform independent: it will proceed to the appropriate OS lock mechanism
     depending on Linux or Windows.
     """
-    def __init__(self, path):
-        # type: (str) -> None
+    def __init__(self, path: str) -> None:
         """
         Create a LockFile instance on the given file path, and acquire lock.
         :param str path: the path to the file that will hold a lock
@@ -64,8 +44,7 @@ class LockFile(object):
 
         self.acquire()
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         repr_str = '{0}({1}) <'.format(self.__class__.__name__, self._path)
         if self.is_locked():
             repr_str += 'acquired>'
@@ -73,23 +52,20 @@ class LockFile(object):
             repr_str += 'released>'
         return repr_str
 
-    def acquire(self):
-        # type: () -> None
+    def acquire(self) -> None:
         """
         Acquire the lock on the file, forbidding any other Certbot instance to acquire it.
         :raises errors.LockError: if unable to acquire the lock
         """
         self._lock_mechanism.acquire()
 
-    def release(self):
-        # type: () -> None
+    def release(self) -> None:
         """
         Release the lock on the file, allowing any other Certbot instance to acquire it.
         """
         self._lock_mechanism.release()
 
-    def is_locked(self):
-        # type: () -> bool
+    def is_locked(self) -> bool:
         """
         Check if the file is currently locked.
         :return: True if the file is locked, False otherwise
@@ -97,18 +73,16 @@ class LockFile(object):
         return self._lock_mechanism.is_locked()
 
 
-class _BaseLockMechanism(object):
-    def __init__(self, path):
-        # type: (str) -> None
+class _BaseLockMechanism:
+    def __init__(self, path: str) -> None:
         """
         Create a lock file mechanism for Unix.
         :param str path: the path to the lock file
         """
         self._path = path
-        self._fd = None  # type: Optional[int]
+        self._fd: Optional[int] = None
 
-    def is_locked(self):
-        # type: () -> bool
+    def is_locked(self) -> bool:
         """Check if lock file is currently locked.
         :return: True if the lock file is locked
         :rtype: bool
@@ -129,8 +103,7 @@ class _UnixLockMechanism(_BaseLockMechanism):
     process exits. It cannot be used to provide synchronization between
     threads. It is based on the lock_file package by Martin Horcicka.
     """
-    def acquire(self):
-        # type: () -> None
+    def acquire(self) -> None:
         """Acquire the lock."""
         while self._fd is None:
             # Open the file
@@ -144,8 +117,7 @@ class _UnixLockMechanism(_BaseLockMechanism):
                 if self._fd is None:
                     os.close(fd)
 
-    def _try_lock(self, fd):
-        # type: (int) -> None
+    def _try_lock(self, fd: int) -> None:
         """
         Try to acquire the lock file without blocking.
         :param int fd: file descriptor of the opened file to lock
@@ -158,8 +130,7 @@ class _UnixLockMechanism(_BaseLockMechanism):
                 raise errors.LockError('Another instance of Certbot is already running.')
             raise
 
-    def _lock_success(self, fd):
-        # type: (int) -> bool
+    def _lock_success(self, fd: int) -> bool:
         """
         Did we successfully grab the lock?
         Because this class deletes the locked file when the lock is
@@ -185,8 +156,7 @@ class _UnixLockMechanism(_BaseLockMechanism):
         # the same device and inode, they're the same file.
         return stat1.st_dev == stat2.st_dev and stat1.st_ino == stat2.st_ino
 
-    def release(self):
-        # type: () -> None
+    def release(self) -> None:
         """Remove, close, and release the lock file."""
         # It is important the lock file is removed before it's released,
         # otherwise:
@@ -235,10 +205,9 @@ class _WindowsLockMechanism(_BaseLockMechanism):
             # Under Windows, filesystem.open will raise directly an EACCES error
             # if the lock file is already locked.
             fd = filesystem.open(self._path, open_mode, 0o600)
-            # The need for this "type: ignore" was fixed in
-            # https://github.com/python/typeshed/pull/3607 and included in
-            # newer versions of mypy so it can be removed when mypy is
-            # upgraded.
+            # This "type: ignore" is currently needed because msvcrt methods
+            # are only defined on Windows. See
+            # https://github.com/python/typeshed/blob/16ae4c61201cd8b96b8b22cdfb2ab9e89ba5bcf2/stdlib/msvcrt.pyi.
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)  # type: ignore
         except (IOError, OSError) as err:
             if fd:
@@ -254,10 +223,11 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     def release(self):
         """Release the lock."""
         try:
-            # The need for this "type: ignore" was fixed in
-            # https://github.com/python/typeshed/pull/3607 and included in
-            # newer versions of mypy so it can be removed when mypy is
-            # upgraded.
+            if not self._fd:
+                raise errors.Error("The lock has not been acquired first.")
+            # This "type: ignore" is currently needed because msvcrt methods
+            # are only defined on Windows. See
+            # https://github.com/python/typeshed/blob/16ae4c61201cd8b96b8b22cdfb2ab9e89ba5bcf2/stdlib/msvcrt.pyi.
             msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)  # type: ignore
             os.close(self._fd)
 
@@ -269,3 +239,20 @@ class _WindowsLockMechanism(_BaseLockMechanism):
                 logger.debug(str(e))
         finally:
             self._fd = None
+
+
+def lock_dir(dir_path: str) -> LockFile:
+    """Place a lock file on the directory at dir_path.
+
+    The lock file is placed in the root of dir_path with the name
+    .certbot.lock.
+
+    :param str dir_path: path to directory
+
+    :returns: the locked LockFile object
+    :rtype: LockFile
+
+    :raises errors.LockError: if unable to acquire the lock
+
+    """
+    return LockFile(os.path.join(dir_path, '.certbot.lock'))

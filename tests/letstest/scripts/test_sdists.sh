@@ -3,35 +3,34 @@
 cd letsencrypt
 
 BOOTSTRAP_SCRIPT="tests/letstest/scripts/bootstrap_os_packages.sh"
-VENV_PATH=venv3
+VENV_PATH=venv
 
 # install OS packages
-sudo $BOOTSTRAP_SCRIPT
-
-if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
-  # RHEL/CentOS 6 will need a special treatment, so we need to detect that environment
-  # Enable the SCL Python 3.6 installed by letsencrypt-auto bootstrap
-  PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
-fi
+. $BOOTSTRAP_SCRIPT
 
 # setup venv
-# We strip the hashes because the venv creation script includes unhashed
-# constraints in the commands given to pip and the mix of hashed and unhashed
-# packages makes pip error out.
-python3 tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt > requirements.txt
-# We also strip out the requirement for enum34 because it cannot be installed
-# in newer versions of Python 3, tools/strip_hashes.py removes the environment
-# marker that'd normally prevent it from being installed, and this package is
-# not needed for any OS tested here.
-sed -i '/enum34/d' requirements.txt
-CERTBOT_PIP_NO_BINARY=:all: tools/venv3.py --requirement requirements.txt
+python3 -m venv $VENV_PATH
+$VENV_PATH/bin/python3 tools/pipstrap.py
 . "$VENV_PATH/bin/activate"
-# pytest is needed to run tests on some of our packages so we install a pinned version here.
+# pytest is needed to run tests on our packages so we install a pinned version here.
 tools/pip_install.py pytest
 
-PLUGINS="certbot-apache certbot-nginx"
+# setup constraints
 TEMP_DIR=$(mktemp -d)
+CONSTRAINTS="$TEMP_DIR/constraints.txt"
+cp tools/requirements.txt "$CONSTRAINTS"
 
+# We pin cryptography to 3.1.1 and pyopenssl to 19.1.0 specifically for CentOS 7 / RHEL 7
+# because these systems ship only with OpenSSL 1.0.2, and this OpenSSL version support has been
+# dropped on cryptography>=3.2 and pyopenssl>=20.0.0.
+# Using this old version of OpenSSL would break the cryptography and pyopenssl wheels builds.
+if [ -f /etc/redhat-release ] && [ "$(. /etc/os-release 2> /dev/null && echo "$VERSION_ID" | cut -d '.' -f1)" -eq 7 ]; then
+  sed -i 's|cryptography==.*|cryptography==3.1.1|g' "$CONSTRAINTS"
+  sed -i 's|pyopenssl==.*|pyopenssl==19.1.0|g' "$CONSTRAINTS"
+fi
+
+
+PLUGINS="certbot-apache certbot-nginx"
 # build sdists
 for pkg_dir in acme certbot $PLUGINS; do
     cd $pkg_dir
@@ -48,8 +47,7 @@ cd $TEMP_DIR
 for pkg in acme certbot $PLUGINS; do
     tar -xvf "$pkg-$VERSION.tar.gz"
     cd "$pkg-$VERSION"
-    python setup.py build
+    PIP_CONSTRAINT=../constraints.txt PIP_NO_BINARY=:all: pip install .
     python -m pytest
-    python setup.py install
     cd -
 done

@@ -34,9 +34,9 @@ DeterminePythonVersion() {
 }
 
 BootstrapDebCommon() {
-  apt-get update || error apt-get update hit problems but continuing anyway...
+  sudo apt-get update || error apt-get update hit problems but continuing anyway...
 
-  apt-get install -y --no-install-recommends \
+  sudo apt-get install -y --no-install-recommends \
     python3 \
     python3-dev \
     python3-venv \
@@ -46,8 +46,19 @@ BootstrapDebCommon() {
     openssl \
     libffi-dev \
     ca-certificates \
+    build-essential \
+    curl \
     make # needed on debian 9 arm64 which doesn't have a python3 pynacl wheel
 
+  # make sure rust isn't installed by the package manager
+  if ! sudo apt-get remove -y rustc; then
+    error "Could not remove existing rust. Aborting bootstrap!"
+    exit 1
+  fi
+
+  # Install rust for cryptography (needed on Debian)
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  . $HOME/.cargo/env
 }
 
 # Sets TOOL to the name of the package manager
@@ -79,6 +90,7 @@ BootstrapRpmCommonBase() {
     libffi-devel
     redhat-rpm-config
     ca-certificates
+    cargo
   "
 
   # Add the python packages
@@ -92,45 +104,10 @@ BootstrapRpmCommonBase() {
     "
   fi
 
-  if ! $TOOL install -y $pkgs; then
+  if ! sudo $TOOL install -y $pkgs; then
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
-}
-
-# This bootstrap concerns old RedHat-based distributions that do not ship by default
-# with Python 2.7, but only Python 2.6. We bootstrap them by enabling SCL and installing
-# Python 3.6. Some of these distributions are: CentOS/RHEL/OL/SL 6.
-BootstrapRpmPython3Legacy() {
-  # Tested with:
-  #   - CentOS 6
-
-  InitializeRPMCommonBase
-
-  if ! "${TOOL}" list rh-python36 >/dev/null 2>&1; then
-    echo "To use Certbot on this operating system, packages from the SCL repository need to be installed."
-    if ! "${TOOL}" list centos-release-scl >/dev/null 2>&1; then
-      error "Enable the SCL repository and try running Certbot again."
-      exit 1
-    fi
-    if ! "${TOOL}" install -y centos-release-scl; then
-      error "Could not enable SCL. Aborting bootstrap!"
-      exit 1
-    fi
-  fi
-
-  # CentOS 6 must use rh-python36 from SCL
-  if "${TOOL}" list rh-python36 >/dev/null 2>&1; then
-    python_pkgs="rh-python36-python
-      rh-python36-python-virtualenv
-      rh-python36-python-devel
-    "
-  else
-    error "No supported Python package available to install. Aborting bootstrap!"
-    exit 1
-  fi
-
-  BootstrapRpmCommonBase "${python_pkgs}"
 }
 
 BootstrapRpmPython3() {
@@ -140,8 +117,8 @@ BootstrapRpmPython3() {
     python3-devel
   "
 
-  if ! $TOOL list 'python3*-devel' >/dev/null 2>&1; then
-    yum-config-manager --enable rhui-REGION-rhel-server-extras rhui-REGION-rhel-server-optional
+  if ! sudo $TOOL list 'python3*-devel' >/dev/null 2>&1; then
+    sudo yum-config-manager --enable rhui-REGION-rhel-server-extras rhui-REGION-rhel-server-optional
   fi
 
   BootstrapRpmCommonBase "$python_pkgs"
@@ -154,16 +131,9 @@ if [ -f /etc/debian_version ]; then
   }
 elif [ -f /etc/redhat-release ]; then
   DeterminePythonVersion
-  # Handle legacy RPM distributions
-  if [ "$PYVER" -eq 26 ]; then
-    Bootstrap() {
-      BootstrapRpmPython3Legacy
-    }
-  else
-    Bootstrap() {
-      BootstrapRpmPython3
-    }
-  fi
+  Bootstrap() {
+    BootstrapRpmPython3
+  }
 
 fi
 

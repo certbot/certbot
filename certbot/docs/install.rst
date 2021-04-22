@@ -28,7 +28,7 @@ your system.
 System Requirements
 ===================
 
-Certbot currently requires Python 2.7 or 3.6+ running on a UNIX-like operating
+Certbot currently requires Python 3.6+ running on a UNIX-like operating
 system. By default, it requires root access in order to write to
 ``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
 bind to port 80 (if you use the ``standalone`` plugin) and to read and
@@ -43,17 +43,6 @@ The Apache plugin currently requires an OS with augeas version 1.0; currently `i
 supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/constants.py>`_
 modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin.
-
-
-Additional integrity verification of certbot-auto script can be done by verifying its digital signature.
-This requires a local installation of gpg2, which comes packaged in many Linux distributions under name gnupg or gnupg2.
-
-
-Installing with ``certbot-auto`` requires 512MB of RAM in order to build some
-of the dependencies. Installing from pre-built OS packages avoids this
-requirement. You can also temporarily set a swap file. See "Problems with
-Python virtual environment" below for details.
-
 
 Alternate installation methods
 ================================
@@ -78,74 +67,6 @@ choosing "snapd" in the "System" dropdown menu. (You should select "snapd"
 regardless of your operating system, as our instructions are the same across
 all systems.)
 
-.. _certbot-auto:
-
-Certbot-Auto
-------------
-
-The ``certbot-auto`` wrapper script installs Certbot, obtaining some dependencies
-from your web server OS and putting others in a python virtual environment. You can
-download and run it as follows::
-
-  wget https://dl.eff.org/certbot-auto
-  sudo mv certbot-auto /usr/local/bin/certbot-auto
-  sudo chown root /usr/local/bin/certbot-auto
-  sudo chmod 0755 /usr/local/bin/certbot-auto
-  /usr/local/bin/certbot-auto --help
-
-To remove certbot-auto, just delete it and the files it places under /opt/eff.org, along with any cronjob or systemd timer you may have created.
-
-To check the integrity of the ``certbot-auto`` script,
-you can use these steps::
-
-
-	    user@webserver:~$ wget -N https://dl.eff.org/certbot-auto.asc
-	    user@webserver:~$ gpg2 --keyserver pool.sks-keyservers.net --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-	    user@webserver:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc /usr/local/bin/certbot-auto
-
-
-
-The output of the last command should look something like::
-
-
-	    gpg: Signature made Wed 02 May 2018 05:29:12 AM IST
-	    gpg:                using RSA key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-	    gpg: key 4D17C995CD9775F2 marked as ultimately trusted
-	    gpg: checking the trustdb
-	    gpg: marginals needed: 3  completes needed: 1  trust model: pgp
-	    gpg: depth: 0  valid:   2  signed:   2  trust: 0-, 0q, 0n, 0m, 0f, 2u
-	    gpg: depth: 1  valid:   2  signed:   0  trust: 2-, 0q, 0n, 0m, 0f, 0u
-	    gpg: next trustdb check due at 2027-11-22
-	    gpg: Good signature from "Let's Encrypt Client Team <letsencrypt-client@eff.org>" [ultimate]
-
-
-
-The ``certbot-auto`` command updates to the latest client release automatically.
-Since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
-the same command line flags and arguments. For more information, see
-`Certbot command-line options <https://certbot.eff.org/docs/using.html#command-line-options>`_.
-
-For full command line help, you can type::
-
-  /usr/local/bin/certbot-auto --help all
-
-Problems with Python virtual environment
-----------------------------------------
-
-On a low memory system such as VPS with less than 512MB of RAM, the required dependencies of Certbot will fail to build.
-This can be identified if the pip outputs contains something like ``internal compiler error: Killed (program cc1)``.
-You can workaround this restriction by creating a temporary swapfile::
-
-  user@webserver:~$ sudo fallocate -l 1G /tmp/swapfile
-  user@webserver:~$ sudo chmod 600 /tmp/swapfile
-  user@webserver:~$ sudo mkswap /tmp/swapfile
-  user@webserver:~$ sudo swapon /tmp/swapfile
-
-Disable and remove the swapfile once the virtual environment is constructed::
-
-  user@webserver:~$ sudo swapoff /tmp/swapfile
-  user@webserver:~$ sudo rm /tmp/swapfile
-
 .. _docker-user:
 
 Running with Docker
@@ -161,7 +82,7 @@ Docker if you are sure you know what you are doing and have a good reason to do
 so.
 
 You should definitely read the :ref:`where-certs` section, in order to
-know how to manage the certs
+know how to manage the certificates
 manually. `Our ciphersuites page <ciphers.html>`__
 provides some information about recommended ciphersuites. If none of
 these make much sense to you, you should definitely use the installation method
@@ -206,6 +127,18 @@ of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
 
 Operating System Packages
 -------------------------
+
+.. warning:: While the Certbot team tries to keep the Certbot packages offered
+   by various operating systems working in the most basic sense, due to
+   distribution policies and/or the limited resources of distribution
+   maintainers, Certbot OS packages often have problems that other distribution
+   mechanisms do not. The packages are often old resulting in a lack of bug
+   fixes and features and a worse TLS configuration than is generated by newer
+   versions of Certbot. They also may not configure certificate renewal for you
+   or have all of Certbot's plugins available. For reasons like these, we
+   recommend most users follow the instructions at
+   https://certbot.eff.org/instructions and OS packages are only documented
+   here as an alternative.
 
 **Arch Linux**
 
@@ -258,23 +191,23 @@ Optionally to install the Certbot Apache plugin, you can use:
 
 .. code-block:: shell
 
-   sudo apt-get install python-certbot-apache
+   sudo apt-get install python3-certbot-apache
 
 **Fedora**
 
 .. code-block:: shell
 
-    sudo dnf install certbot python2-certbot-apache
+    sudo dnf install certbot python3-certbot-apache
 
 **FreeBSD**
 
   * Port: ``cd /usr/ports/security/py-certbot && make install clean``
-  * Package: ``pkg install py27-certbot``
+  * Package: ``pkg install py37-certbot``
 
 **Gentoo**
 
-The official Certbot client is available in Gentoo Portage. From the 
-official Certbot plugins, three of them are also available in Portage. 
+The official Certbot client is available in Gentoo Portage. From the
+official Certbot plugins, three of them are also available in Portage.
 They need to be installed separately if you require their functionality.
 
 .. code-block:: shell
@@ -284,13 +217,13 @@ They need to be installed separately if you require their functionality.
    emerge -av app-crypt/certbot-nginx
    emerge -av app-crypt/certbot-dns-nsone
 
-.. Note:: The ``app-crypt/certbot-dns-nsone`` package has a different 
+.. Note:: The ``app-crypt/certbot-dns-nsone`` package has a different
    maintainer than the other packages and can lag behind in version.
 
 **NetBSD**
 
   * Build from source: ``cd /usr/pkgsrc/security/py-certbot && make install clean``
-  * Install pre-compiled package: ``pkg_add py27-certbot``
+  * Install pre-compiled package: ``pkg_add py37-certbot``
 
 **OpenBSD**
 
@@ -303,15 +236,25 @@ OS packaging is an ongoing effort. If you'd like to package
 Certbot for your distribution of choice please have a
 look at the :doc:`packaging`.
 
-Installing from source
-----------------------
+.. _certbot-auto:
 
-Installation from source is only supported for developers and the
-whole process is described in the :doc:`contributing`.
+Certbot-Auto
+------------
+.. toctree::
+   :hidden:
 
-.. warning:: Please do **not** use ``python certbot/setup.py install``, ``python pip
-   install certbot``, or ``easy_install certbot``. Please do **not** attempt the
-   installation commands as superuser/root and/or without virtual environment,
-   e.g. ``sudo python certbot/setup.py install``, ``sudo pip install``, ``sudo
-   ./venv/bin/...``. These modes of operation might corrupt your operating
-   system and are **not supported** by the Certbot team!
+   uninstall
+
+
+We used to have a shell script named ``certbot-auto`` to help people install
+Certbot on UNIX operating systems, however, this script is no longer supported.
+If you want to uninstall ``certbot-auto``, you can follow our instructions
+:doc:`here <uninstall>`.
+
+Pip
+---
+
+Installing Certbot through pip is only supported on a best effort basis and
+when using a virtual environment. Instructions for installing Certbot through
+pip can be found at https://certbot.eff.org/instructions by selecting your
+server software and then choosing "pip" in the "System" dropdown menu.

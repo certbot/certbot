@@ -1,6 +1,4 @@
 """Tests to ensure the lock order is preserved."""
-from __future__ import print_function
-
 import atexit
 import datetime
 import functools

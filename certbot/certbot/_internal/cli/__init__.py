@@ -1,72 +1,54 @@
 """Certbot command line argument & config processing."""
 # pylint: disable=too-many-lines
-from __future__ import print_function
+import argparse
 import logging
 import logging.handlers
-import argparse
 import sys
-import certbot._internal.plugins.selection as plugin_selection
-from certbot._internal.plugins import disco as plugins_disco
+from typing import Optional
 
-from acme.magic_typing import Optional
-
-# pylint: disable=ungrouped-imports
 import certbot
 from certbot._internal import constants
-
-import certbot.plugins.enhancements as enhancements
-
-
-from certbot._internal.cli.cli_constants import (
-    LEAUTO,
-    old_path_fragment,
-    new_path_prefix,
-    cli_command,
-    SHORT_USAGE,
-    COMMAND_OVERVIEW,
-    HELP_AND_VERSION_USAGE,
-    ARGPARSE_PARAMS_TO_REMOVE,
-    EXIT_ACTIONS,
-    ZERO_ARG_ACTIONS,
-    VAR_MODIFIERS
-)
-
-from certbot._internal.cli.cli_utils import (
-    _Default,
-    read_file,
-    flag_default,
-    config_help,
-    HelpfulArgumentGroup,
-    CustomHelpFormatter,
-    _DomainsAction,
-    add_domains,
-    CaseInsensitiveList,
-    _user_agent_comment_type,
-    _EncodeReasonAction,
-    parse_preferred_challenges,
-    _PrefChallAction,
-    _DeployHookAction,
-    _RenewHookAction,
-    nonnegative_int
-)
-
-# These imports depend on cli_constants and cli_utils.
-from certbot._internal.cli.verb_help import VERB_HELP, VERB_HELP_MAP
+from certbot._internal.cli.cli_constants import ARGPARSE_PARAMS_TO_REMOVE
+from certbot._internal.cli.cli_constants import cli_command
+from certbot._internal.cli.cli_constants import COMMAND_OVERVIEW
+from certbot._internal.cli.cli_constants import DEPRECATED_OPTIONS
+from certbot._internal.cli.cli_constants import EXIT_ACTIONS
+from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
+from certbot._internal.cli.cli_constants import SHORT_USAGE
+from certbot._internal.cli.cli_constants import VAR_MODIFIERS
+from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
+from certbot._internal.cli.cli_utils import _Default
+from certbot._internal.cli.cli_utils import _DeployHookAction
+from certbot._internal.cli.cli_utils import _DomainsAction
+from certbot._internal.cli.cli_utils import _EncodeReasonAction
+from certbot._internal.cli.cli_utils import _PrefChallAction
+from certbot._internal.cli.cli_utils import _RenewHookAction
+from certbot._internal.cli.cli_utils import _user_agent_comment_type
+from certbot._internal.cli.cli_utils import add_domains
+from certbot._internal.cli.cli_utils import CaseInsensitiveList
+from certbot._internal.cli.cli_utils import config_help
+from certbot._internal.cli.cli_utils import CustomHelpFormatter
+from certbot._internal.cli.cli_utils import flag_default
+from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
+from certbot._internal.cli.cli_utils import nonnegative_int
+from certbot._internal.cli.cli_utils import parse_preferred_challenges
+from certbot._internal.cli.cli_utils import read_file
 from certbot._internal.cli.group_adder import _add_all_groups
-from certbot._internal.cli.subparsers import _create_subparsers
+from certbot._internal.cli.helpful import HelpfulArgumentParser
 from certbot._internal.cli.paths_parser import _paths_parser
 from certbot._internal.cli.plugins_parsing import _plugins_parsing
-
-# These imports depend on some or all of the submodules for cli.
-from certbot._internal.cli.helpful import HelpfulArgumentParser
-# pylint: enable=ungrouped-imports
-
+from certbot._internal.cli.subparsers import _create_subparsers
+from certbot._internal.cli.verb_help import VERB_HELP
+from certbot._internal.cli.verb_help import VERB_HELP_MAP
+from certbot._internal.plugins import disco as plugins_disco
+import certbot._internal.plugins.selection as plugin_selection
+import certbot.plugins.enhancements as enhancements
 
 logger = logging.getLogger(__name__)
 
 
 # Global, to save us from a lot of argument passing within the scope of this module
-helpful_parser = None  # type: Optional[HelpfulArgumentParser]
+helpful_parser: Optional[HelpfulArgumentParser] = None
 
 
 def prepare_and_parse_args(plugins, args, detect_defaults=False):
@@ -249,27 +231,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         help="Allow making a certificate lineage that duplicates an existing one "
              "(both can be renewed in parallel)")
     helpful.add(
-        "automation", "--os-packages-only", action="store_true",
-        default=flag_default("os_packages_only"),
-        help="(certbot-auto only) install OS package dependencies and then stop")
-    helpful.add(
-        "automation", "--no-self-upgrade", action="store_true",
-        default=flag_default("no_self_upgrade"),
-        help="(certbot-auto only) prevent the certbot-auto script from"
-             " upgrading itself to newer released versions (default: Upgrade"
-             " automatically)")
-    helpful.add(
-        "automation", "--no-bootstrap", action="store_true",
-        default=flag_default("no_bootstrap"),
-        help="(certbot-auto only) prevent the certbot-auto script from"
-             " installing OS-level dependencies (default: Prompt to install "
-             " OS-wide dependencies, but exit if the user says 'No')")
-    helpful.add(
-        "automation", "--no-permissions-check", action="store_true",
-        default=flag_default("no_permissions_check"),
-        help="(certbot-auto only) skip the check on the file system"
-             " permissions of the certbot-auto script")
-    helpful.add(
         ["automation", "renew", "certonly", "run"],
         "-q", "--quiet", dest="quiet", action="store_true",
         default=flag_default("quiet"),
@@ -450,6 +411,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         default=flag_default("autorenew"), dest="autorenew",
         help="Disable auto renewal of certificates.")
 
+    # Deprecated arguments
+    helpful.add_deprecated_argument("--os-packages-only", 0)
+    helpful.add_deprecated_argument("--no-self-upgrade", 0)
+    helpful.add_deprecated_argument("--no-bootstrap", 0)
+    helpful.add_deprecated_argument("--no-permissions-check", 0)
+
     # Populate the command line parameters for new style enhancements
     enhancements.populate_cli(helpful.add)
 
@@ -471,6 +438,11 @@ def set_by_cli(var):
     (CLI or config file) including if the user explicitly set it to the
     default.  Returns False if the variable was assigned a default value.
     """
+    # We should probably never actually hit this code. But if we do,
+    # a deprecated option has logically never been set by the CLI.
+    if var in DEPRECATED_OPTIONS:
+        return False
+
     detector = set_by_cli.detector  # type: ignore
     if detector is None and helpful_parser is not None:
         # Setup on first run: `detector` is a weird version of config in which
@@ -531,6 +503,9 @@ def option_was_set(option, value):
     :rtype: bool
 
     """
+    # If an option is deprecated, it was effectively not set by the user.
+    if option in DEPRECATED_OPTIONS:
+        return False
     return set_by_cli(option) or not has_default_value(option, value)
 
 

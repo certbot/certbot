@@ -2,17 +2,15 @@
 # pylint: disable=too-many-lines
 import copy
 import datetime
+import http.client as http_client
 import json
 import unittest
+from typing import Dict
+from unittest import mock
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import OpenSSL
 import requests
-from six.moves import http_client  # pylint: disable=import-error
 
 from acme import challenges
 from acme import errors
@@ -64,7 +62,7 @@ class ClientTestBase(unittest.TestCase):
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key())
-        the_arg = dict(reg)  # type: Dict
+        the_arg: Dict = dict(reg)
         self.new_reg = messages.NewRegistration(**the_arg)
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')
@@ -92,7 +90,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
     """Tests for  acme.client.BackwardsCompatibleClientV2."""
 
     def setUp(self):
-        super(BackwardsCompatibleClientV2Test, self).setUp()
+        super().setUp()
         # contains a loaded cert
         self.certr = messages.CertificateResource(
             body=messages_test.CERT)
@@ -321,7 +319,7 @@ class ClientTest(ClientTestBase):
     """Tests for acme.client.Client."""
 
     def setUp(self):
-        super(ClientTest, self).setUp()
+        super().setUp()
 
         self.directory = DIRECTORY_V1
 
@@ -718,7 +716,7 @@ class ClientV2Test(ClientTestBase):
     """Tests for acme.client.ClientV2."""
 
     def setUp(self):
-        super(ClientV2Test, self).setUp()
+        super().setUp()
 
         self.directory = DIRECTORY_V2
 

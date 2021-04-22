@@ -36,7 +36,7 @@ CERT_ALT_ISSUER = test_util.load_vector('cert_intermediate_2.pem')
 class InitSaveKeyTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_key."""
     def setUp(self):
-        super(InitSaveKeyTest, self).setUp()
+        super().setUp()
 
         self.workdir = os.path.join(self.tempdir, 'workdir')
         filesystem.mkdir(self.workdir, mode=0o700)
@@ -46,7 +46,7 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
             mock.Mock(strict_permissions=True), interfaces.IConfig)
 
     def tearDown(self):
-        super(InitSaveKeyTest, self).tearDown()
+        super().tearDown()
 
         logging.disable(logging.NOTSET)
 
@@ -73,7 +73,7 @@ class InitSaveCSRTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_csr."""
 
     def setUp(self):
-        super(InitSaveCSRTest, self).setUp()
+        super().setUp()
 
         zope.component.provideUtility(
             mock.Mock(strict_permissions=True), interfaces.IConfig)
@@ -184,11 +184,13 @@ class MakeKeyTest(unittest.TestCase):
     def test_ec(self):  # pylint: disable=no-self-use
         # ECDSA Key Type Tests
         from certbot.crypto_util import make_key
-        # Do not test larger keys as it takes too long.
 
-        # Try a good key size for ECDSA
-        OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, make_key(elliptic_curve="secp256r1", key_type='ecdsa'))
+        for (name, bits) in [('secp256r1', 256), ('secp384r1', 384), ('secp521r1', 521)]:
+            pkey = OpenSSL.crypto.load_privatekey(
+                OpenSSL.crypto.FILETYPE_PEM,
+                make_key(elliptic_curve=name, key_type='ecdsa')
+            )
+            self.assertEqual(pkey.bits(), bits)
 
     def test_bad_key_sizes(self):
         from certbot.crypto_util import make_key
@@ -470,6 +472,19 @@ class FindChainWithIssuerTest(unittest.TestCase):
         fullchains = self._all_fullchains()
         matched = self._call(fullchains, "Pebble Root CA 0cc6f0")
         self.assertEqual(matched, fullchains[1])
+
+    @mock.patch('certbot.crypto_util.logger.info')
+    def test_intermediate_match(self, mock_info):
+        """Don't pick a chain where only an intermediate matches"""
+        fullchains = self._all_fullchains()
+        # Make the second chain actually only contain "Pebble Root CA 0cc6f0"
+        # as an intermediate, not as the root. This wouldn't be a valid chain
+        # (the CERT_ISSUER cert didn't issue the CERT_ALT_ISSUER cert), but the
+        # function under test here doesn't care about that.
+        fullchains[1] = fullchains[1] + CERT_ISSUER.decode()
+        matched = self._call(fullchains, "Pebble Root CA 0cc6f0")
+        self.assertEqual(matched, fullchains[0])
+        mock_info.assert_not_called()
 
     @mock.patch('certbot.crypto_util.logger.info')
     def test_no_match(self, mock_info):

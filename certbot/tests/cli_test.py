@@ -1,15 +1,10 @@
 """Tests for certbot._internal.cli."""
 import argparse
 import copy
+from importlib import reload as reload_module
+import io
 import tempfile
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-import six
-from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import challenges
 from certbot import errors
@@ -20,6 +15,12 @@ from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 PLUGINS = disco.PluginsRegistry.find_all()
 
@@ -91,7 +92,7 @@ class ParseTest(unittest.TestCase):
     def _help_output(self, args):
         "Run a command, and return the output string for scrutiny"
 
-        output = six.StringIO()
+        output = io.StringIO()
 
         def write_msg(message, *args, **kwargs): # pylint: disable=missing-docstring,unused-argument
             output.write(message)
@@ -165,7 +166,6 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("--checkpoints" not in out)
 
         out = self._help_output(['-h'])
-        self.assertTrue("letsencrypt-auto" not in out)  # test cli.cli_command
         if "nginx" in PLUGINS:
             self.assertTrue("Use the Nginx plugin" in out)
         else:
@@ -478,10 +478,6 @@ class ParseTest(unittest.TestCase):
         for help_flag in ['-h', '--help']:
             for topic in ['all', 'plugins', 'dns-route53']:
                 self.assertFalse('certbot-route53:auth' in self._help_output([help_flag, topic]))
-
-    def test_no_permissions_check_accepted(self):
-        namespace = self.parse(["--no-permissions-check"])
-        self.assertTrue(namespace.no_permissions_check)
 
 
 class DefaultTest(unittest.TestCase):

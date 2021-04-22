@@ -1,11 +1,9 @@
 """Tests for acme.messages."""
+from typing import Dict
 import unittest
+from unittest import mock
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 
 from acme import challenges
 import test_util
@@ -84,7 +82,7 @@ class ConstantTest(unittest.TestCase):
         from acme.messages import _Constant
 
         class MockConstant(_Constant):  # pylint: disable=missing-docstring
-            POSSIBLE_NAMES = {} # type: Dict
+            POSSIBLE_NAMES: Dict = {}
 
         self.MockConstant = MockConstant  # pylint: disable=invalid-name
         self.const_a = MockConstant('a')
