@@ -284,6 +284,7 @@ dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
 dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
+dns-hetzner_       Y    N    DNS Authentication using Hetzner DNS Public API 
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -298,6 +299,7 @@ dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 .. _dns-lightsail: https://github.com/noi/certbot-dns-lightsail
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
+.. _dns-hetzner: https://snapcraft.io/certbot-dns-hetzner
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
