@@ -18,7 +18,7 @@ try:
 except ImportError:  # pragma: no cover
     from unittest import mock  # type: ignore
 if typing.TYPE_CHECKING:
-    from typing import Protocol
+    from typing_extensions import Protocol
 else:
     Protocol = object  # type: ignore
 

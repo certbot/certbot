@@ -1,7 +1,6 @@
 """Tests for certbot._internal.plugins.standalone."""
-# https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
+import errno
 import socket
-from socket import errno as socket_errors  # type: ignore
 import unittest
 from typing import Dict, Set, Tuple
 
@@ -106,8 +105,8 @@ class AuthenticatorTest(unittest.TestCase):
     @test_util.patch_get_utility()
     def test_perform_eaddrinuse_retry(self, mock_get_utility):
         mock_utility = mock_get_utility()
-        errno = socket_errors.EADDRINUSE
-        error = errors.StandaloneBindError(mock.MagicMock(errno=errno), -1)
+        encountered_errno = errno.EADDRINUSE
+        error = errors.StandaloneBindError(mock.MagicMock(errno=encountered_errno), -1)
         self.auth.servers.run.side_effect = [error] + 2 * [mock.MagicMock()]
         mock_yesno = mock_utility.yesno
         mock_yesno.return_value = True
@@ -121,8 +120,8 @@ class AuthenticatorTest(unittest.TestCase):
         mock_yesno = mock_utility.yesno
         mock_yesno.return_value = False
 
-        errno = socket_errors.EADDRINUSE
-        self.assertRaises(errors.PluginError, self._fail_perform, errno)
+        encountered_errno = errno.EADDRINUSE
+        self.assertRaises(errors.PluginError, self._fail_perform, encountered_errno)
         self._assert_correct_yesno_call(mock_yesno)
 
     def _assert_correct_yesno_call(self, mock_yesno):
@@ -131,16 +130,16 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertFalse(yesno_kwargs.get("default", True))
 
     def test_perform_eacces(self):
-        errno = socket_errors.EACCES
-        self.assertRaises(errors.PluginError, self._fail_perform, errno)
+        encountered_errno = errno.EACCES
+        self.assertRaises(errors.PluginError, self._fail_perform, encountered_errno)
 
     def test_perform_unexpected_socket_error(self):
-        errno = socket_errors.ENOTCONN
+        encountered_errno = errno.ENOTCONN
         self.assertRaises(
-            errors.StandaloneBindError, self._fail_perform, errno)
+            errors.StandaloneBindError, self._fail_perform, encountered_errno)
 
-    def _fail_perform(self, errno):
-        error = errors.StandaloneBindError(mock.MagicMock(errno=errno), -1)
+    def _fail_perform(self, encountered_errno):
+        error = errors.StandaloneBindError(mock.MagicMock(errno=encountered_errno), -1)
         self.auth.servers.run.side_effect = error
         self.auth.perform(self._get_achalls())
 

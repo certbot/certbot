@@ -66,7 +66,7 @@ to serve all files under specified web root ({0})."""
         return [challenges.HTTP01]
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.full_roots: Dict[str, str] = {}
         self.performed: DefaultDict[str, Set[AnnotatedChallenge]] = collections.defaultdict(set)
         # stack of dirs successfully created by this authenticator
@@ -250,7 +250,7 @@ class _WebrootPathAction(argparse.Action):
     """Action class for parsing webroot_path."""
 
     def __init__(self, *args, **kwargs):
-        super(_WebrootPathAction, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._domain_before_webroot = False
 
     def __call__(self, parser, namespace, webroot_path, option_string=None):

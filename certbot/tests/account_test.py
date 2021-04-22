@@ -106,7 +106,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.account.AccountFileStorage."""
 
     def setUp(self):
-        super(AccountFileStorageTest, self).setUp()
+        super().setUp()
 
         from certbot._internal.account import AccountFileStorage
         self.storage = AccountFileStorage(self.config)

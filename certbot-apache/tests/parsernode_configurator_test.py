@@ -20,7 +20,7 @@ class ConfiguratorParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-p
     """Test AugeasParserNode using available test configurations"""
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(ConfiguratorParserNodeTest, self).setUp()
+        super().setUp()
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir,

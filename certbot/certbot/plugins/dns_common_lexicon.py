@@ -17,8 +17,10 @@ from certbot.plugins import dns_common
 # if Lexicon is not available, obviously.
 try:
     from lexicon.config import ConfigResolver
+    from lexicon.providers.base import Provider
 except ImportError:
     ConfigResolver = None  # type: ignore
+    Provider = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class LexiconClient:
     """
 
     def __init__(self):
-        self.provider = None
+        self.provider: Provider
 
     def add_txt_record(self, domain, record_name, record_content):
         """

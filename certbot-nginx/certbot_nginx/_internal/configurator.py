@@ -102,7 +102,7 @@ class NginxConfigurator(common.Installer):
         """
         version = kwargs.pop("version", None)
         openssl_version = kwargs.pop("openssl_version", None)
-        super(NginxConfigurator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Files to save
         self.save_notes = ""
@@ -119,7 +119,6 @@ class NginxConfigurator(common.Installer):
         self._chall_out = 0
 
         # These will be set in the prepare function
-        self.parser: Optional[parser.NginxParser] = None
         self.version = version
         self.openssl_version = openssl_version
         self._enhance_func = {"redirect": self._enable_redirect,
@@ -127,6 +126,7 @@ class NginxConfigurator(common.Installer):
                               "staple-ocsp": self._enable_ocsp_stapling}
 
         self.reverter.recovery_routine()
+        self.parser: parser.NginxParser
 
     @property
     def mod_ssl_conf_src(self):
@@ -1110,7 +1110,7 @@ class NginxConfigurator(common.Installer):
         :raises .errors.PluginError: If unable to recover the configuration
 
         """
-        super(NginxConfigurator, self).recovery_routine()
+        super().recovery_routine()
         self.new_vhost = None
         self.parser.load()
 
@@ -1133,7 +1133,7 @@ class NginxConfigurator(common.Installer):
             the function is unable to correctly revert the configuration
 
         """
-        super(NginxConfigurator, self).rollback_checkpoints(rollback)
+        super().rollback_checkpoints(rollback)
         self.new_vhost = None
         self.parser.load()
 

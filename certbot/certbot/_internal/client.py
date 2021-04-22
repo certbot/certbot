@@ -254,6 +254,7 @@ class Client:
             acme = acme_from_config_key(config, self.account.key, self.account.regr)
         self.acme = acme
 
+        self.auth_handler: Optional[auth_handler.AuthHandler]
         if auth is not None:
             self.auth_handler = auth_handler.AuthHandler(
                 auth, self.acme, self.account, self.config.pref_challs)
@@ -406,6 +407,9 @@ class Client:
         except acme_errors.WildcardUnsupportedError:
             raise errors.Error("The currently selected ACME CA endpoint does"
                                " not support issuing wildcard certificates.")
+
+        if not self.auth_handler:
+            raise errors.Error("No authorization handler has been set.")
 
         # For a dry run, ensure we have an order with fresh authorizations
         if orderr and self.config.dry_run:

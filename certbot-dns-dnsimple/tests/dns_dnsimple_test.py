@@ -20,7 +20,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
                         dns_test_common_lexicon.BaseLexiconAuthenticatorTest):
 
     def setUp(self):
-        super(AuthenticatorTest, self).setUp()
+        super().setUp()
 
         from certbot_dns_dnsimple._internal.dns_dnsimple import Authenticator
 

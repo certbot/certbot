@@ -37,7 +37,7 @@ class NginxHttp01(common.ChallengePerformer):
     """
 
     def __init__(self, configurator):
-        super(NginxHttp01, self).__init__(configurator)
+        super().__init__(configurator)
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
 

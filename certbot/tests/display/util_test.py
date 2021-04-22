@@ -65,7 +65,7 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     """
     def setUp(self):
-        super(FileOutputDisplayTest, self).setUp()
+        super().setUp()
         self.mock_stdout = mock.MagicMock()
         self.displayer = display_util.FileDisplay(self.mock_stdout, False)
 

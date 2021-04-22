@@ -141,7 +141,8 @@ class AuthenticatorTest(unittest.TestCase):
             f.write("thingimy")
         filesystem.chmod(self.path, 0o000)
         try:
-            open(permission_canary, "r")
+            with open(permission_canary, "r"):
+                pass
             print("Warning, running tests as root skips permissions tests...")
         except IOError:
             # ok, permissions work, test away...

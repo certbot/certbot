@@ -99,7 +99,7 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
     def setUp(self):
         from certbot._internal import storage
 
-        super(BaseRenewableCertTest, self).setUp()
+        super().setUp()
 
         # TODO: maybe provide NamespaceConfig.make_dirs?
         # TODO: main() should create those dirs, c.f. #902
@@ -846,7 +846,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 class DeleteFilesTest(BaseRenewableCertTest):
     """Tests for certbot._internal.storage.delete_files"""
     def setUp(self):
-        super(DeleteFilesTest, self).setUp()
+        super().setUp()
 
         for kind in ALL_FOUR:
             kind_path = os.path.join(self.config.config_dir, "live", "example.org",
@@ -936,7 +936,7 @@ class DeleteFilesTest(BaseRenewableCertTest):
 class CertPathForCertNameTest(BaseRenewableCertTest):
     """Test for certbot._internal.storage.cert_path_for_cert_name"""
     def setUp(self):
-        super(CertPathForCertNameTest, self).setUp()
+        super().setUp()
         self.config_file.write()
         self._write_out_ex_kinds()
         self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',

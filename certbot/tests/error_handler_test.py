@@ -136,7 +136,7 @@ class ExitHandlerTest(ErrorHandlerTest):
 
     def setUp(self):
         from certbot._internal import error_handler
-        super(ExitHandlerTest, self).setUp()
+        super().setUp()
         self.handler = error_handler.ExitHandler(self.init_func,
                                                  *self.init_args,
                                                  **self.init_kwargs)

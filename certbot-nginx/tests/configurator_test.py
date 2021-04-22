@@ -26,7 +26,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
 
     def setUp(self):
-        super(NginxConfiguratorTest, self).setUp()
+        super().setUp()
 
         self.config = self.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
@@ -954,7 +954,7 @@ class InstallSslOptionsConfTest(util.NginxTest):
     """Test that the options-ssl-nginx.conf file is installed and updated properly."""
 
     def setUp(self):
-        super(InstallSslOptionsConfTest, self).setUp()
+        super().setUp()
 
         self.config = self.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)

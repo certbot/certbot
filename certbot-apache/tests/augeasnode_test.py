@@ -29,7 +29,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
     """Test AugeasParserNode using available test configurations"""
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(AugeasParserNodeTest, self).setUp()
+        super().setUp()
 
         with mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.get_parsernode_root") as mock_parsernode:
             mock_parsernode.side_effect = _get_augeasnode_mock(

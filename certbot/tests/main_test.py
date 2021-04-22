@@ -101,7 +101,7 @@ class RunTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.main.run."""
 
     def setUp(self):
-        super(RunTest, self).setUp()
+        super().setUp()
         self.domain = 'example.org'
         patches = [
             mock.patch('certbot._internal.main._get_and_save_cert'),
@@ -283,7 +283,7 @@ class RevokeTest(test_util.TempDirTestCase):
     """Tests for certbot._internal.main.revoke."""
 
     def setUp(self):
-        super(RevokeTest, self).setUp()
+        super().setUp()
 
         shutil.copy(CERT_PATH, self.tempdir)
         self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir, 'cert_512.pem'))
@@ -512,7 +512,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.main._determine_account."""
 
     def setUp(self):
-        super(DetermineAccountTest, self).setUp()
+        super().setUp()
         self.config.account = None
         self.config.email = None
         self.config.register_unsafely_without_email = False
@@ -584,7 +584,7 @@ class MainTest(test_util.ConfigTestCase):
     """Tests for different commands."""
 
     def setUp(self):
-        super(MainTest, self).setUp()
+        super().setUp()
 
         filesystem.mkdir(self.config.logs_dir)
         self.standard_args = ['--config-dir', self.config.config_dir,
@@ -597,7 +597,7 @@ class MainTest(test_util.ConfigTestCase):
         # Reset globals in cli
         reload_module(cli)
 
-        super(MainTest, self).tearDown()
+        super().tearDown()
 
     def _call(self, args, stdout=None, mockisfile=False):
         """Run the cli with output streams, actual client and optionally
@@ -1576,7 +1576,7 @@ class EnhanceTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.main.enhance."""
 
     def setUp(self):
-        super(EnhanceTest, self).setUp()
+        super().setUp()
         self.get_utility_patch = test_util.patch_get_utility()
         self.mock_get_utility = self.get_utility_patch.start()
         self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
@@ -1720,7 +1720,7 @@ class InstallTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.main.install."""
 
     def setUp(self):
-        super(InstallTest, self).setUp()
+        super().setUp()
         self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
 
     @mock.patch('certbot._internal.main.plug_sel.record_chosen_plugins')
@@ -1765,7 +1765,7 @@ class UpdateAccountTest(test_util.ConfigTestCase):
         for patch in patches.values():
             self.addCleanup(patch.stop)
 
-        return super(UpdateAccountTest, self).setUp()
+        return super().setUp()
 
     def _call(self, args):
         with mock.patch('certbot._internal.main.sys.stdout'), \
