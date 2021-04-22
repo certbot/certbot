@@ -716,7 +716,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         # Test with error
         mock_checker.side_effect = ValueError
-        with mock.patch("certbot._internal.storage.logger.error") as logger:
+        with mock.patch("certbot._internal.storage.logger.warning") as logger:
             self.assertFalse(self.test_rc.ocsp_revoked(version))
         self.assertEqual(mock_checker.call_args[0][0], expected_cert_path)
         self.assertEqual(mock_checker.call_args[0][1], expected_chain_path)
