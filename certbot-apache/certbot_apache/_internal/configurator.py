@@ -556,8 +556,7 @@ class ApacheConfigurator(common.Installer):
 
         return list(matched)
 
-    def _raise_no_suitable_vhost_error(self, target_name):
-        # type: (str) -> None
+    def _raise_no_suitable_vhost_error(self, target_name: str):
         """
         Notifies the user that Certbot could not find a vhost to secure
         and raises an error.
@@ -1540,10 +1539,9 @@ class ApacheConfigurator(common.Installer):
 
         if sift:
             display_util.notify(
-                "Some rewrite rules copied from {src_path} were disabled in the "
-                "vhost for your HTTPS site located at {dest_path} because they have "
+                f"Some rewrite rules copied from {vhost.filep} were disabled in the "
+                f"vhost for your HTTPS site located at {ssl_fp} because they have "
                 "the potential to create redirection loops."
-                .format(src_path=vhost.filep, dest_path=ssl_fp)
             )
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")

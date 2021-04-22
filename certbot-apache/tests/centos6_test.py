@@ -1,11 +1,6 @@
 """Test for certbot_apache._internal.configurator for CentOS 6 overrides"""
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
-import six  # pylint: disable=unused-import  # six is used in mock.patch()
+from unittest import mock
 
 from certbot.compat import os
 from certbot.errors import MisconfigurationError
@@ -13,7 +8,6 @@ from certbot_apache._internal import obj
 from certbot_apache._internal import override_centos
 from certbot_apache._internal import parser
 import util
-
 
 
 def get_vh_truth(temp_dir, config_name):
