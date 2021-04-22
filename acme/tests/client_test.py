@@ -1157,7 +1157,7 @@ class ClientNetworkTest(unittest.TestCase):
 
         # Requests Library Exceptions
         except requests.exceptions.ConnectionError as z: #pragma: no cover
-            self.assertIn("'Connection aborted.'" in str(z) or "[WinError 10061]", str(z))
+            self.assertTrue("'Connection aborted.'" in str(z) or "[WinError 10061]" in str(z))
 
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
