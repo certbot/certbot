@@ -477,7 +477,7 @@ class ParseTest(unittest.TestCase):
     def test_route53_no_revert(self):
         for help_flag in ['-h', '--help']:
             for topic in ['all', 'plugins', 'dns-route53']:
-                self.assertIn('certbot-route53:auth', self._help_output([help_flag, topic]))
+                self.assertNotIn('certbot-route53:auth', self._help_output([help_flag, topic]))
 
 
 class DefaultTest(unittest.TestCase):
