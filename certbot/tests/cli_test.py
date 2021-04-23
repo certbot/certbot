@@ -425,7 +425,7 @@ class ParseTest(unittest.TestCase):
         value = "foo"
         namespace = self.parse(
             ["--renew-hook", value, "--disable-hook-validation"])
-        self.assertIs(namespace.deploy_hook, None)
+        self.assertIsNone(namespace.deploy_hook)
         self.assertEqual(namespace.renew_hook, value)
 
     def test_max_log_backups_error(self):
@@ -464,7 +464,7 @@ class ParseTest(unittest.TestCase):
 
     def test_delete_after_revoke_default(self):
         namespace = self.parse([])
-        self.assertIs(namespace.delete_after_revoke, None)
+        self.assertIsNone(namespace.delete_after_revoke)
 
     def test_no_delete_after_revoke(self):
         namespace = self.parse(["--no-delete-after-revoke"])
@@ -477,7 +477,7 @@ class ParseTest(unittest.TestCase):
     def test_route53_no_revert(self):
         for help_flag in ['-h', '--help']:
             for topic in ['all', 'plugins', 'dns-route53']:
-                self.assertFalse('certbot-route53:auth' in self._help_output([help_flag, topic]))
+                self.assertIn('certbot-route53:auth', self._help_output([help_flag, topic]))
 
 
 class DefaultTest(unittest.TestCase):

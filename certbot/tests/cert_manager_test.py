@@ -506,12 +506,12 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         result = find_duplicative_certs(
             self.config, ['example.com', 'www.example.com'])
         self.assertTrue(result[0].configfile.filename.endswith('example.org.conf'))
-        self.assertIs(result[1], None)
+        self.assertIsNone(result[1])
 
         # Superset
         result = find_duplicative_certs(
             self.config, ['example.com', 'www.example.com', 'something.new'])
-        self.assertIs(result[0], None)
+        self.assertIsNone(result[0])
         self.assertTrue(result[1].configfile.filename.endswith('example.org.conf'))
 
         # Partial overlap doesn't count

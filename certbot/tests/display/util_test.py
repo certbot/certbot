@@ -110,7 +110,8 @@ class FileOutputDisplayTest(unittest.TestCase):
 
         self.displayer.notification("message2", pause=False)
         string = self.mock_stdout.write.call_args[0][0]
-        self.assertTrue("- - - " in string and ("message2" + os.linesep) in string)
+        self.assertIn("- - - ", string)
+        self.assertIn("message2" + os.linesep, string)
 
     @mock.patch("certbot.display.util."
                 "FileDisplay._get_valid_int_ans")

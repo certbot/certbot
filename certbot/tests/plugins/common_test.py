@@ -174,7 +174,7 @@ class InstallerTest(test_util.ConfigTestCase):
 
     def test_current_file_hash_in_all_hashes(self):
         from certbot._internal.constants import ALL_SSL_DHPARAMS_HASHES
-        self.assertTrue(self._current_ssl_dhparams_hash() in ALL_SSL_DHPARAMS_HASHES,
+        self.assertIn(self._current_ssl_dhparams_hash(), ALL_SSL_DHPARAMS_HASHES,
             "Constants.ALL_SSL_DHPARAMS_HASHES must be appended"
             " with the sha256 hash of self.config.ssl_dhparams when it is updated.")
 

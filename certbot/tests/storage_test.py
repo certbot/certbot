@@ -282,7 +282,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(self.test_rc.current_version("cert"), 10)
 
     def test_no_current_version(self):
-        self.assertIs(self.test_rc.current_version("cert"), None)
+        self.assertIsNone(self.test_rc.current_version("cert"))
 
     def test_latest_and_next_versions(self):
         for ver in range(1, 6):
@@ -767,7 +767,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_server(self):
         self.test_rc.configuration["renewalparams"] = {}
-        self.assertIs(self.test_rc.server, None)
+        self.assertIsNone(self.test_rc.server)
         rp = self.test_rc.configuration["renewalparams"]
         rp["server"] = "https://acme.example/dir"
         self.assertEqual(self.test_rc.server, "https://acme.example/dir")

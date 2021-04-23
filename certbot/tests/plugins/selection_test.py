@@ -180,7 +180,7 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
 
     def test_no_installer_defined(self):
         self.config.configurator = None
-        self.assertIs(self._call(), None)
+        self.assertIsNone(self._call())
 
     def test_no_available_installers(self):
         self.config.configurator = "apache"

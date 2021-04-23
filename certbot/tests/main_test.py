@@ -1011,8 +1011,7 @@ class MainTest(test_util.ConfigTestCase):
         self._certonly_new_request_common(mock_client, ['--dry-run'])
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
-        self.assertTrue(
-            'dry run' in mock_get_utility().add_message.call_args[0][0])
+        self.assertIn('dry run', mock_get_utility().add_message.call_args[0][0])
         # Asserts we don't suggest donating after a successful dry run
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
@@ -1036,9 +1035,8 @@ class MainTest(test_util.ConfigTestCase):
         self.assertIn(cert_path, cert_msg)
         self.assertIn(date, cert_msg)
         self.assertIn(key_path, cert_msg)
-        self.assertTrue(
-            'donate' in mock_get_utility().add_message.call_args[0][0])
-        self.assertTrue(mock_subscription.called)
+        self.assertIn('donate', mock_get_utility().add_message.call_args[0][0])
+        self.assertIs(mock_subscription.called, True)
 
     @mock.patch('certbot._internal.eff.handle_subscription')
     def test_certonly_new_request_failure(self, mock_subscription):
@@ -1142,7 +1140,7 @@ class MainTest(test_util.ConfigTestCase):
         _, get_utility, _ = self._test_renewal_common(False, ['--dry-run', '--keep'],
                                                       log_out="simulating renewal")
         self.assertEqual(get_utility().add_message.call_count, 1)
-        self.assertTrue('dry run' in get_utility().add_message.call_args[0][0])
+        self.assertIn('dry run', get_utility().add_message.call_args[0][0])
 
         self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
                                   log_out="Auto-renewal forced")
@@ -1201,8 +1199,8 @@ class MainTest(test_util.ConfigTestCase):
         expiry = datetime.datetime.now() + datetime.timedelta(days=90)
         _, _, stdout = self._test_renewal_common(False, extra_args=None, should_renew=False,
                                                  args=['renew'], expiry_date=expiry)
-        self.assertTrue('No renewals were attempted.' in stdout.getvalue())
-        self.assertTrue('The following certificates are not due for renewal yet:' in stdout.getvalue())
+        self.assertIn('No renewals were attempted.', stdout.getvalue())
+        self.assertIn('The following certificates are not due for renewal yet:', stdout.getvalue())
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_quiet_renew(self, _):
@@ -1355,7 +1353,7 @@ class MainTest(test_util.ConfigTestCase):
             args=['renew', '--post-hook',
                   '{0} -c "print(\'hello world\');"'
                   .format(sys.executable)])
-        self.assertTrue('No hooks were run.' in stdout.getvalue())
+        self.assertIn('No hooks were run.', stdout.getvalue())
 
     @test_util.patch_get_utility()
     @mock.patch('certbot._internal.main._find_lineage_for_domains_and_certname')
@@ -1418,8 +1416,7 @@ class MainTest(test_util.ConfigTestCase):
     def test_certonly_csr_dry_run(self):
         mock_get_utility = self._test_certonly_csr_common(['--dry-run'])
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
-        self.assertTrue(
-            'dry run' in mock_get_utility().add_message.call_args[0][0])
+        self.assertIn('dry run', mock_get_utility().add_message.call_args[0][0])
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.main.client.acme_client')

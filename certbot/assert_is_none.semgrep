@@ -1,0 +1,33 @@
+rules:
+  - id: python-asserttrue-isinstance
+    languages:
+      - python
+    message: |
+      Use self.assertIsInstance($X, $Y)
+    pattern: |
+      self.assertTrue(isinstance($X, $Y))
+    severity: INFO
+  - id: python-no-equal-none
+    languages:
+      - python
+    message: |
+      Use self.assertIsNone($X)
+    pattern: |
+      self.assertEqual($X, None)
+    severity: INFO
+  - id: python-no-assertfalse-in
+    languages:
+      - python
+    message: |
+      Use self.assertNotIn($X, $Y)
+    pattern: |
+      self.assertFalse($X in $Y)
+    severity: INFO
+  - id: python-no-asserttrue-in
+    languages:
+      - python
+    message: |
+      Use self.assertIn($X, $Y)
+    pattern: |
+      self.assertTrue($X in $Y)
+    severity: INFO

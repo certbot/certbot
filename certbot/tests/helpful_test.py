@@ -90,7 +90,7 @@ class TestAdd(unittest.TestCase):
                 metavar="EAB_KID",
                 help="Key Identifier for External Account Binding")
         parsed_args = arg_parser.parser.parse_args(["--eab-kid", None])
-        self.assertIs(parsed_args.eab_kid, None)
+        self.assertIsNone(parsed_args.eab_kid)
         self.assertTrue(hasattr(parsed_args, 'eab_kid'))
 
 
