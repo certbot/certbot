@@ -104,12 +104,17 @@ class HelpfulArgumentParser:
         # elements are added by .parse_args()
         self.defaults: Dict[str, Any] = {}
 
+        if "-c" in sys.argv or "--config" in sys.argv:
+            default_config_files = []
+        else:
+            default_config_files = flag_default("config_files")
+
         self.parser = configargparse.ArgParser(
             prog="certbot",
             usage=short_usage,
             formatter_class=CustomHelpFormatter,
             args_for_setting_config_path=["-c", "--config"],
-            default_config_files=flag_default("config_files"),
+            default_config_files=default_config_files,
             config_arg_help_message="path to config file (default: {0})".format(
                 " and ".join(flag_default("config_files"))))
 

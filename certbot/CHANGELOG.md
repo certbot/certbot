@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Certbot won't parse the configuration files located at the default configuration file locations
+  any longer if the `-c` or `--config` command line option has been specified.
 
 More details about these changes can be found on our GitHub repo.
 
