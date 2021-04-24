@@ -292,7 +292,7 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
 
     valid_string = "{0} ({1})".format(cert.target_expiry, status)
     serial = format(crypto_util.get_serial_from_cert(cert.cert_path), 'x')
-    tls_features = crypto_util.get_tls_features_from_cert(cert.cert_path)
+    tls_features = crypto_util.get_tls_features_from_cert(cert.cert_path) or []
     must_staple = False
     for tls_feature in tls_features:
         # TLSFeatureType(5): status_request (RFC 6066)

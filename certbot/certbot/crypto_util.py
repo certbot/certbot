@@ -580,7 +580,7 @@ def get_tls_features_from_cert(cert_path):
     try:
         tls_feature = cert.extensions.get_extension_for_oid(x509.ExtensionOID.TLS_FEATURE).value
     except x509.extensions.ExtensionNotFound:
-        tls_feature = []
+        tls_feature = None
     return tls_feature
 
 
