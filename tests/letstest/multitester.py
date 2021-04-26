@@ -55,7 +55,7 @@ parser.add_argument('key_file',
 parser.add_argument('aws_profile',
                     help='profile for AWS (i.e. as in ~/.aws/certificates)')
 parser.add_argument('test_script',
-                    default='test_letsencrypt_auto_certonly_standalone.sh',
+                    default='test_sdists.sh',
                     help='path of bash script in to deploy and run')
 parser.add_argument('--repo',
                     default='https://github.com/letsencrypt/letsencrypt.git',
