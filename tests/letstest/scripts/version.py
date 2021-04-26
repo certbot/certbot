@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 """Get the current Certbot version number.
 
-Provides simple utilities for determining the Certbot version number and
-building letsencrypt-auto.
+Provides a simple utility for determining the Certbot version number
 
 """
 from __future__ import print_function

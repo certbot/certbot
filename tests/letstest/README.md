@@ -59,8 +59,7 @@ The tests take quite a while to run.
 Example scripts are in the 'scripts' directory, these are just bash scripts that have a few parameters passed
 to them at runtime via environment variables.  test_apache2.sh is a useful reference.
 
-Note that the <pre>test_letsencrypt_auto_*</pre> scripts pull code from PyPI using the letsencrypt-auto script,
-__not__ the local python code.  test_apache2 runs the dev venv and does local tests.
+test_apache2 runs the dev venv and does local tests.
 
 See:
 - https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
