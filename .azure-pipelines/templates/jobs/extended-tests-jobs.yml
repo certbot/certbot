@@ -85,9 +85,6 @@ jobs:
           IMAGE_NAME: macOS-10.15
           PYTHON_VERSION: 3.8
           TOXENV: test-farm-apache2
-        farmtest-leauto-upgrades:
-          PYTHON_VERSION: 3.7
-          TOXENV: test-farm-leauto-upgrades
         farmtest-certonly-standalone:
           PYTHON_VERSION: 3.7
           TOXENV: test-farm-certonly-standalone

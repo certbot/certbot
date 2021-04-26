@@ -22,7 +22,7 @@ Usage:
 >aws ec2 create-key-pair --profile HappyHacker --key-name MyKeyPair \
  --query 'KeyMaterial' --output text > MyKeyPair.pem
 then:
->python multitester.py targets.yaml MyKeyPair.pem HappyHacker scripts/test_leauto_upgrades.sh
+>python multitester.py targets.yaml MyKeyPair.pem HappyHacker scripts/test_sdists.sh
 see:
   https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
   https://docs.aws.amazon.com/cli/latest/userguide/cli-ec2-keypairs.html
