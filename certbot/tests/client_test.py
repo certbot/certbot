@@ -47,7 +47,7 @@ class DetermineUserAgentTest(test_util.ConfigTestCase):
             doc_value_check = self.assertNotIn
             real_value_check = self.assertIn
 
-        doc_value_check("certbot(-auto)", ua)
+        doc_value_check("certbot", ua)
         doc_value_check("OS_NAME OS_VERSION", ua)
         doc_value_check("major.minor.patchlevel", ua)
         real_value_check(util.get_os_info_ua(), ua)
