@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 """Get the current Certbot version number.
 
-Provides simple utilities for determining the Certbot version number and
-building letsencrypt-auto.
+Provides a simple utility for determining the Certbot version number
 
 """
 from __future__ import print_function
@@ -10,10 +9,10 @@ from os.path import abspath, dirname, join
 import re
 
 
-def certbot_version(build_script_dir):
+def certbot_version(caller_dir):
     """Return the version number stamped in certbot/__init__.py."""
     return re.search('''^__version__ = ['"](.+)['"].*''',
-                     file_contents(join(dirname(build_script_dir),
+                     file_contents(join(dirname(dirname(dirname(caller_dir))),
                                         'certbot',
                                         'certbot',
                                         '__init__.py')),

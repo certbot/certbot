@@ -41,7 +41,7 @@ for pkg_dir in acme certbot $PLUGINS; do
     cd -
 done
 
-VERSION=$(python letsencrypt-auto-source/version.py)
+VERSION=$(python tests/letstest/scripts/version.py)
 # test sdists
 cd $TEMP_DIR
 for pkg in acme certbot $PLUGINS; do
