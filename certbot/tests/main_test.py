@@ -84,17 +84,17 @@ class TestHandleCerts(unittest.TestCase):
         mock_set.return_value = False
         with self.assertRaises(errors.Error) as raised:
             main._handle_unexpected_key_type_migration(config, cert)
-        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
+        self.assertIn("Please provide both --cert-name and --key-type", str(raised.exception))
 
         mock_set.side_effect = lambda var: var != "certname"
         with self.assertRaises(errors.Error) as raised:
             main._handle_unexpected_key_type_migration(config, cert)
-        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
+        self.assertIn("Please provide both --cert-name and --key-type", str(raised.exception))
 
         mock_set.side_effect = lambda var: var != "key_type"
         with self.assertRaises(errors.Error) as raised:
             main._handle_unexpected_key_type_migration(config, cert)
-        self.assertTrue("Please provide both --cert-name and --key-type" in str(raised.exception))
+        self.assertIn("Please provide both --cert-name and --key-type", str(raised.exception))
 
 
 class RunTest(test_util.ConfigTestCase):
@@ -196,7 +196,7 @@ class CertonlyTest(unittest.TestCase):
         self._call('certonly --webroot -d example.com'.split())
 
     def _assert_no_pause(self, message, pause=True):  # pylint: disable=unused-argument
-        self.assertFalse(pause)
+        self.assertIs(pause, False)
 
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.cert_manager.domains_for_certname')
@@ -260,8 +260,7 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
         mock_config = mock.Mock(domains=None, certname=None)
         mock_choose_names.return_value = "domainname"
         # pylint: disable=protected-access
-        self.assertEqual(main._find_domains_or_certname(mock_config, None),
-            ("domainname", None))
+        self.assertEqual(main._find_domains_or_certname(mock_config, None), ("domainname", None))
 
     @mock.patch('certbot.display.ops.choose_names')
     def test_no_results(self, mock_choose_names):
@@ -275,8 +274,10 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
         mock_config = mock.Mock(domains=None, certname="one.com")
         mock_domains.return_value = ["one.com", "two.com"]
         # pylint: disable=protected-access
-        self.assertEqual(main._find_domains_or_certname(mock_config, None),
-            (["one.com", "two.com"], "one.com"))
+        self.assertEqual(
+            main._find_domains_or_certname(mock_config, None),
+            (["one.com", "two.com"], "one.com")
+        )
 
 
 class RevokeTest(test_util.TempDirTestCase):
@@ -402,7 +403,7 @@ class RevokeTest(test_util.TempDirTestCase):
         mock_get_utility().yesno.return_value = False
         mock_delete_if_appropriate.return_value = False
         self._call()
-        self.assertFalse(mock_delete.called)
+        self.assertIs(mock_delete.called, False)
 
 class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.main._delete_if_appropriate """
@@ -536,13 +537,13 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.config.account = self.accs[1].id
         self.assertEqual((self.accs[1], None), self._call())
         self.assertEqual(self.accs[1].id, self.config.account)
-        self.assertTrue(self.config.email is None)
+        self.assertIsNone(self.config.email)
 
     def test_single_account(self):
         self.account_storage.save(self.accs[0], self.mock_client)
         self.assertEqual((self.accs[0], None), self._call())
         self.assertEqual(self.accs[0].id, self.config.account)
-        self.assertTrue(self.config.email is None)
+        self.assertIsNone(self.config.email)
 
     @mock.patch('certbot._internal.client.display_ops.choose_account')
     def test_multiple_accounts(self, mock_choose_accounts):
@@ -553,7 +554,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.assertEqual(
             set(mock_choose_accounts.call_args[0][0]), set(self.accs))
         self.assertEqual(self.accs[1].id, self.config.account)
-        self.assertTrue(self.config.email is None)
+        self.assertIsNone(self.config.email)
 
     @mock.patch('certbot._internal.client.display_ops.get_email')
     @mock.patch('certbot._internal.main.display_util.notify')
@@ -651,7 +652,7 @@ class MainTest(test_util.ConfigTestCase):
                     pass
                 finally:
                     output = toy_out.getvalue() or toy_err.getvalue()
-                    self.assertTrue("certbot" in output, "Output is {0}".format(output))
+                    self.assertIn("certbot", output, "Output is {0}".format(output))
 
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"
@@ -661,8 +662,8 @@ class MainTest(test_util.ConfigTestCase):
                 main.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
         except errors.MissingCommandlineFlag as exc_:
             exc = exc_
-            self.assertTrue(message in str(exc))
-        self.assertTrue(exc is not None)
+            self.assertIn(message, str(exc))
+        self.assertIsNotNone(exc)
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_noninteractive(self, _):
@@ -690,11 +691,11 @@ class MainTest(test_util.ConfigTestCase):
             self._call_no_clientmock(args)
             os_ver = util.get_os_info_ua()
             ua = acme_net.call_args[1]["user_agent"]
-            self.assertTrue(os_ver in ua)
+            self.assertIn(os_ver, ua)
             import platform
             plat = platform.platform()
             if "linux" in plat.lower():
-                self.assertTrue(util.get_os_info_ua() in ua)
+                self.assertIn(util.get_os_info_ua(), ua)
 
         with mock.patch('certbot._internal.main.client.acme_client.ClientNetwork') as acme_net:
             ua = "bandersnatch"
@@ -803,8 +804,8 @@ class MainTest(test_util.ConfigTestCase):
             # Sending nginx a non-existent conf dir will simulate misconfiguration
             # (we can only do that if certbot-nginx is actually present)
             ret, _, _, _ = self._call(args)
-            self.assertTrue("The nginx plugin is not working" in ret)
-            self.assertTrue("MisconfigurationError" in ret)
+            self.assertIn("The nginx plugin is not working", ret)
+            self.assertIn("MisconfigurationError", ret)
 
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
@@ -813,7 +814,7 @@ class MainTest(test_util.ConfigTestCase):
                 mock_gsc.return_value = mock.MagicMock()
                 self._call(["certonly", "--manual", "-d", "foo.bar"])
                 unused_config, auth, unused_installer = mock_init.call_args[0]
-                self.assertTrue(isinstance(auth, manual.Authenticator))
+                self.assertIsInstance(auth, manual.Authenticator)
 
         with mock.patch('certbot._internal.main.certonly') as mock_certonly:
             self._call(["auth", "--standalone"])
@@ -951,7 +952,7 @@ class MainTest(test_util.ConfigTestCase):
             self._call(['-a', 'bad_auth', 'certonly'])
             assert False, "Exception should have been raised"
         except errors.PluginSelectionError as e:
-            self.assertTrue('The requested bad_auth plugin does not appear' in str(e))
+            self.assertIn('The requested bad_auth plugin does not appear', str(e))
 
     def test_check_config_sanity_domain(self):
         # FQDN
@@ -1010,8 +1011,7 @@ class MainTest(test_util.ConfigTestCase):
         self._certonly_new_request_common(mock_client, ['--dry-run'])
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
-        self.assertTrue(
-            'dry run' in mock_get_utility().add_message.call_args[0][0])
+        self.assertIn('dry run', mock_get_utility().add_message.call_args[0][0])
         # Asserts we don't suggest donating after a successful dry run
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
@@ -1032,12 +1032,11 @@ class MainTest(test_util.ConfigTestCase):
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
-        self.assertTrue(cert_path in cert_msg)
-        self.assertTrue(date in cert_msg)
-        self.assertTrue(key_path in cert_msg)
-        self.assertTrue(
-            'donate' in mock_get_utility().add_message.call_args[0][0])
-        self.assertTrue(mock_subscription.called)
+        self.assertIn(cert_path, cert_msg)
+        self.assertIn(date, cert_msg)
+        self.assertIn(key_path, cert_msg)
+        self.assertIn('donate', mock_get_utility().add_message.call_args[0][0])
+        self.assertIs(mock_subscription.called, True)
 
     @mock.patch('certbot._internal.eff.handle_subscription')
     def test_certonly_new_request_failure(self, mock_subscription):
@@ -1045,7 +1044,7 @@ class MainTest(test_util.ConfigTestCase):
         mock_client.obtain_and_enroll_certificate.return_value = False
         self.assertRaises(errors.Error,
                           self._certonly_new_request_common, mock_client)
-        self.assertFalse(mock_subscription.called)
+        self.assertIs(mock_subscription.called, False)
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,
@@ -1120,7 +1119,7 @@ class MainTest(test_util.ConfigTestCase):
         finally:
             if log_out:
                 with open(os.path.join(self.config.logs_dir, "letsencrypt.log")) as lf:
-                    self.assertTrue(log_out in lf.read())
+                    self.assertIn(log_out, lf.read())
 
         return mock_lineage, mock_get_utility, stdout
 
@@ -1131,8 +1130,8 @@ class MainTest(test_util.ConfigTestCase):
         lineage.update_all_links_to.assert_called_once_with(
             lineage.latest_common_version())
         cert_msg = get_utility().add_message.call_args_list[0][0][0]
-        self.assertTrue('fullchain.pem' in cert_msg)
-        self.assertTrue('donate' in get_utility().add_message.call_args[0][0])
+        self.assertIn('fullchain.pem', cert_msg)
+        self.assertIn('donate', get_utility().add_message.call_args[0][0])
 
     @mock.patch('certbot._internal.log.logging.handlers.RotatingFileHandler.doRollover')
     @mock.patch('certbot.crypto_util.notAfter')
@@ -1141,7 +1140,7 @@ class MainTest(test_util.ConfigTestCase):
         _, get_utility, _ = self._test_renewal_common(False, ['--dry-run', '--keep'],
                                                       log_out="simulating renewal")
         self.assertEqual(get_utility().add_message.call_count, 1)
-        self.assertTrue('dry run' in get_utility().add_message.call_args[0][0])
+        self.assertIn('dry run', get_utility().add_message.call_args[0][0])
 
         self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
                                   log_out="Auto-renewal forced")
@@ -1200,8 +1199,8 @@ class MainTest(test_util.ConfigTestCase):
         expiry = datetime.datetime.now() + datetime.timedelta(days=90)
         _, _, stdout = self._test_renewal_common(False, extra_args=None, should_renew=False,
                                                  args=['renew'], expiry_date=expiry)
-        self.assertTrue('No renewals were attempted.' in stdout.getvalue())
-        self.assertTrue('The following certificates are not due for renewal yet:' in stdout.getvalue())
+        self.assertIn('No renewals were attempted.', stdout.getvalue())
+        self.assertIn('The following certificates are not due for renewal yet:', stdout.getvalue())
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_quiet_renew(self, _):
@@ -1209,7 +1208,7 @@ class MainTest(test_util.ConfigTestCase):
         args = ["renew", "--dry-run"]
         _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
         out = stdout.getvalue()
-        self.assertTrue("renew" in out)
+        self.assertIn("renew", out)
 
         args = ["renew", "--dry-run", "-q"]
         _, _, stdout = self._test_renewal_common(True, [], args=args,
@@ -1275,7 +1274,7 @@ class MainTest(test_util.ConfigTestCase):
                 if assert_oc_called:
                     self.assertTrue(mock_renew_cert.called)
                 else:
-                    self.assertFalse(mock_renew_cert.called)
+                    self.assertIs(mock_renew_cert.called, False)
 
     def test_renew_no_renewalparams(self):
         self._test_renew_common(assert_oc_called=False, error_expected=True)
@@ -1354,7 +1353,7 @@ class MainTest(test_util.ConfigTestCase):
             args=['renew', '--post-hook',
                   '{0} -c "print(\'hello world\');"'
                   .format(sys.executable)])
-        self.assertTrue('No hooks were run.' in stdout.getvalue())
+        self.assertIn('No hooks were run.', stdout.getvalue())
 
     @test_util.patch_get_utility()
     @mock.patch('certbot._internal.main._find_lineage_for_domains_and_certname')
@@ -1365,8 +1364,8 @@ class MainTest(test_util.ConfigTestCase):
         mock_renewal.return_value = ('reinstall', mock.MagicMock())
         mock_init.return_value = mock_client = mock.MagicMock()
         self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
-        self.assertFalse(mock_client.obtain_certificate.called)
-        self.assertFalse(mock_client.obtain_and_enroll_certificate.called)
+        self.assertIs(mock_client.obtain_certificate.called, False)
+        self.assertIs(mock_client.obtain_and_enroll_certificate.called, False)
         self.assertEqual(mock_get_utility().add_message.call_count, 0)
         mock_report_new_cert.assert_not_called()
         #self.assertTrue('donate' not in mock_get_utility().add_message.call_args[0][0])
@@ -1398,7 +1397,7 @@ class MainTest(test_util.ConfigTestCase):
                     self._call(args)
 
         if '--dry-run' in args:
-            self.assertFalse(mock_client.save_certificate.called)
+            self.assertIs(mock_client.save_certificate.called, False)
         else:
             mock_client.save_certificate.assert_called_once_with(
                 certr, chain, cert_path, chain_path, full_path)
@@ -1409,17 +1408,15 @@ class MainTest(test_util.ConfigTestCase):
     def test_certonly_csr(self, mock_subscription):
         mock_get_utility = self._test_certonly_csr_common()
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
-        self.assertTrue('fullchain.pem' in cert_msg)
-        self.assertFalse('Your key file has been saved at' in cert_msg)
-        self.assertTrue(
-            'donate' in mock_get_utility().add_message.call_args[0][0])
-        self.assertTrue(mock_subscription.called)
+        self.assertIn('fullchain.pem', cert_msg)
+        self.assertNotIn('Your key file has been saved at', cert_msg)
+        self.assertIn('donate', mock_get_utility().add_message.call_args[0][0])
+        self.assertIs(mock_subscription.called, True)
 
     def test_certonly_csr_dry_run(self):
         mock_get_utility = self._test_certonly_csr_common(['--dry-run'])
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
-        self.assertTrue(
-            'dry run' in mock_get_utility().add_message.call_args[0][0])
+        self.assertIn('dry run', mock_get_utility().add_message.call_args[0][0])
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.main.client.acme_client')
@@ -1474,7 +1471,7 @@ class MainTest(test_util.ConfigTestCase):
                 mocked_account.AccountFileStorage.return_value = mocked_storage
                 mocked_storage.find_all.return_value = ["an account"]
                 x = self._call_no_clientmock(["register", "--email", "user@example.org"])
-                self.assertTrue("There is an existing account" in x[0])
+                self.assertIn("There is an existing account", x[0])
 
     @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
     @mock.patch('certbot._internal.updater._run_updaters')
@@ -1487,7 +1484,7 @@ class MainTest(test_util.ConfigTestCase):
         updater.run_generic_updaters(self.config, None, None)
         # Make sure we're returning None, and hence not trying to run the
         # without installer
-        self.assertFalse(mock_run.called)
+        self.assertIs(mock_run.called, False)
 
 
 class UnregisterTest(unittest.TestCase):
@@ -1531,7 +1528,7 @@ class UnregisterTest(unittest.TestCase):
 
         res = main.unregister(config, unused_plugins)
 
-        self.assertTrue(res is None)
+        self.assertIsNone(res)
         mock_notify.assert_called_once_with("Account deactivated.")
 
     def test_unregister_no_account(self):
@@ -1548,7 +1545,7 @@ class UnregisterTest(unittest.TestCase):
         res = main.unregister(config, unused_plugins)
         m = "Could not find existing account to deactivate."
         self.assertEqual(res, m)
-        self.assertFalse(cb_client.acme.deactivate_registration.called)
+        self.assertIs(cb_client.acme.deactivate_registration.called, False)
 
 
 class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
@@ -1612,7 +1609,7 @@ class EnhanceTest(test_util.ConfigTestCase):
             self._call(['enhance', '--redirect'])
             self.assertTrue(mock_pick.called)
             # Check that the message includes "enhancements"
-            self.assertTrue("enhancements" in mock_pick.call_args[0][3])
+            self.assertIn("enhancements", mock_pick.call_args[0][3])
 
     @mock.patch('certbot._internal.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
@@ -1626,7 +1623,7 @@ class EnhanceTest(test_util.ConfigTestCase):
             with mock.patch('certbot._internal.main.plug_sel.logger.warning') as mock_log:
                 mock_client = self._call(['enhance', '-a', 'webroot', '--redirect'])
                 self.assertTrue(mock_log.called)
-                self.assertTrue("make sense" in mock_log.call_args[0][0])
+                self.assertIn("make sense", mock_log.call_args[0][0])
                 self.assertTrue(mock_client.enhance_config.called)
 
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
@@ -1644,8 +1641,8 @@ class EnhanceTest(test_util.ConfigTestCase):
                 all(getattr(mock_client.config, e) for e in req_enh))
             self.assertFalse(
                 any(getattr(mock_client.config, e) for e in not_req_enh))
-            self.assertTrue(
-                "example.com" in mock_client.enhance_config.call_args[0][0])
+            self.assertIn(
+                "example.com", mock_client.enhance_config.call_args[0][0])
 
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.main.display_ops.choose_values')
@@ -1658,7 +1655,7 @@ class EnhanceTest(test_util.ConfigTestCase):
             mock_client = self._call(['enhance', '--redirect',
                                       '--hsts', '--non-interactive'])
             self.assertTrue(mock_client.enhance_config.called)
-            self.assertFalse(mock_choose.called)
+            self.assertIs(mock_choose.called, False)
 
     @mock.patch('certbot._internal.main.display_ops.choose_values')
     @mock.patch('certbot._internal.main.plug_sel.record_chosen_plugins')
@@ -1681,7 +1678,7 @@ class EnhanceTest(test_util.ConfigTestCase):
         mock_pick.return_value = (None, None)
         mock_pick.side_effect = errors.PluginSelectionError()
         mock_client = self._call(['enhance', '--hsts'])
-        self.assertFalse(mock_client.enhance_config.called)
+        self.assertIs(mock_client.enhance_config.called, False)
 
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.main.display_ops.choose_values')

@@ -93,11 +93,11 @@ class RegisterTest(test_util.ConfigTestCase):
             with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
                 mock_client().new_account_and_tos.side_effect = errors.Error
                 self.assertRaises(errors.Error, self._call)
-                self.assertFalse(mock_prepare.called)
+                self.assertIs(mock_prepare.called, False)
 
                 mock_client().new_account_and_tos.side_effect = None
                 self._call()
-                self.assertTrue(mock_prepare.called)
+                self.assertIs(mock_prepare.called, True)
 
     def test_it(self):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
@@ -117,7 +117,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self._call()
                 self.assertEqual(mock_get_email.call_count, 1)
-                self.assertTrue(mock_prepare.called)
+                self.assertIs(mock_prepare.called, True)
 
     def test_email_invalid_noninteractive(self):
         from acme import messages
@@ -144,7 +144,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 self.config.dry_run = False
                 self._call()
                 mock_logger.debug.assert_called_once_with(mock.ANY)
-                self.assertTrue(mock_prepare.called)
+                self.assertIs(mock_prepare.called, True)
 
     @mock.patch("certbot._internal.client.display_ops.get_email")
     def test_dry_run_no_staging_account(self, mock_get_email):
@@ -155,7 +155,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 self.config.dry_run = True
                 self._call()
                 # check Certbot did not ask the user to provide an email
-                self.assertFalse(mock_get_email.called)
+                self.assertIs(mock_get_email.called, False)
                 # check Certbot created an account with no email. Contact should return empty
                 self.assertFalse(mock_client().new_account_and_tos.call_args[0][0].contact)
 
@@ -172,7 +172,7 @@ class RegisterTest(test_util.ConfigTestCase):
                     self.config.eab_hmac_key = "J2OAqW4MHXsrHVa_PVg0Y-L_R4SYw0_aL1le6mfblbE"
                     self._call()
 
-                    self.assertTrue(mock_eab_from_data.called)
+                    self.assertIs(mock_eab_from_data.called, True)
 
     def test_without_eab_arguments(self):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
@@ -184,7 +184,7 @@ class RegisterTest(test_util.ConfigTestCase):
                     self.config.eab_hmac_key = None
                     self._call()
 
-                    self.assertFalse(mock_eab_from_data.called)
+                    self.assertIs(mock_eab_from_data.called, False)
 
     def test_external_account_required_without_eab_arguments(self):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
@@ -209,7 +209,7 @@ class RegisterTest(test_util.ConfigTestCase):
             with mock.patch("certbot._internal.eff.handle_subscription") as mock_handle:
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self.assertRaises(messages.Error, self._call)
-        self.assertFalse(mock_handle.called)
+        self.assertIs(mock_handle.called, False)
 
 
 class ClientTestCommon(test_util.ConfigTestCase):
@@ -246,7 +246,7 @@ class ClientTest(ClientTestCommon):
 
     def test_init_acme_verify_ssl(self):
         net = self.acme_client.call_args[0][0]
-        self.assertTrue(net.verify_ssl)
+        self.assertIs(net.verify_ssl, True)
 
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
@@ -608,7 +608,7 @@ class EnhanceConfigTest(ClientTestCommon):
     def test_already_exists_header(self, mock_log):
         self.config.hsts = True
         self._test_with_already_existing()
-        self.assertTrue(mock_log.warning.called)
+        self.assertIs(mock_log.warning.called, True)
         self.assertEqual(mock_log.warning.call_args[0][1],
                           'Strict-Transport-Security')
 
@@ -616,7 +616,7 @@ class EnhanceConfigTest(ClientTestCommon):
     def test_already_exists_redirect(self, mock_log):
         self.config.redirect = True
         self._test_with_already_existing()
-        self.assertTrue(mock_log.warning.called)
+        self.assertIs(mock_log.warning.called, True)
         self.assertEqual(mock_log.warning.call_args[0][1],
                           'redirect')
 
@@ -624,13 +624,13 @@ class EnhanceConfigTest(ClientTestCommon):
     def test_config_set_no_warning_redirect(self, mock_log):
         self.config.redirect = False
         self._test_with_already_existing()
-        self.assertFalse(mock_log.warning.called)
+        self.assertIs(mock_log.warning.called, False)
 
     @mock.patch("certbot._internal.client.logger")
     def test_no_warn_redirect(self, mock_log):
         self.config.redirect = None
         self._test_with_all_supported()
-        self.assertFalse(mock_log.warning.called)
+        self.assertIs(mock_log.warning.called, False)
 
     def test_no_ask_hsts(self):
         self.config.hsts = True
@@ -683,7 +683,7 @@ class EnhanceConfigTest(ClientTestCommon):
 
     def _test_error_with_rollback(self):
         self._test_error()
-        self.assertTrue(self.client.installer.restart.called)
+        self.assertIs(self.client.installer.restart.called, True)
 
     def _test_error(self):
         self.config.redirect = True

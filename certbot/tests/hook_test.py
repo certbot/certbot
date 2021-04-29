@@ -59,7 +59,7 @@ class ValidateHookTest(test_util.TempDirTestCase):
     @mock.patch("certbot._internal.hooks._prog")
     def test_unset(self, mock_prog):
         self._call(None, "foo")
-        self.assertFalse(mock_prog.called)
+        self.assertIs(mock_prog.called, False)
 
 
 class HookTest(test_util.ConfigTestCase):
@@ -132,8 +132,8 @@ class PreHookTest(HookTest):
 
         with mock.patch("certbot._internal.hooks.logger") as mock_logger:
             mock_execute = self._call_with_mock_execute(self.config)
-        self.assertFalse(mock_execute.called)
-        self.assertFalse(mock_logger.info.called)
+        self.assertIs(mock_execute.called, False)
+        self.assertIs(mock_logger.info.called, False)
 
     def test_renew_disabled_dir_hooks(self):
         self.config.directory_hooks = False
@@ -158,7 +158,7 @@ class PreHookTest(HookTest):
     def _test_no_executions_common(self):
         with mock.patch("certbot._internal.hooks.logger") as mock_logger:
             mock_execute = self._call_with_mock_execute(self.config)
-        self.assertFalse(mock_execute.called)
+        self.assertIs(mock_execute.called, False)
         self.assertTrue(mock_logger.info.called)
 
 
@@ -344,7 +344,7 @@ class DeployHookTest(RenewalHookTest):
         self.config.dry_run = True
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
-        self.assertFalse(mock_execute.called)
+        self.assertIs(mock_execute.called, False)
         self.assertTrue(mock_logger.warning.called)
 
     @mock.patch("certbot._internal.hooks.logger")
@@ -352,8 +352,8 @@ class DeployHookTest(RenewalHookTest):
         self.config.deploy_hook = None
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
-        self.assertFalse(mock_execute.called)
-        self.assertFalse(mock_logger.info.called)
+        self.assertIs(mock_execute.called, False)
+        self.assertIs(mock_logger.info.called, False)
 
     def test_success(self):
         domains = ["example.org", "example.net"]
@@ -392,7 +392,7 @@ class RenewHookTest(RenewalHookTest):
         self.config.dry_run = True
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
-        self.assertFalse(mock_execute.called)
+        self.assertIs(mock_execute.called, False)
         self.assertEqual(mock_logger.warning.call_count, 2)
 
     def test_no_hooks(self):
@@ -402,8 +402,8 @@ class RenewHookTest(RenewalHookTest):
         with mock.patch("certbot._internal.hooks.logger") as mock_logger:
             mock_execute = self._call_with_mock_execute(
                 self.config, ["example.org"], "/foo/bar")
-        self.assertFalse(mock_execute.called)
-        self.assertFalse(mock_logger.info.called)
+        self.assertIs(mock_execute.called, False)
+        self.assertIs(mock_logger.info.called, False)
 
     def test_overlap(self):
         self.config.renew_hook = self.dir_hook
