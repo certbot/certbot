@@ -189,15 +189,6 @@ while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
 done
 git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
 
-cd ..
-echo Now in $PWD
-name=${root_without_le%.*}
-ext="${root_without_le##*.}"
-rev="$(git rev-parse --short HEAD)"
-echo tar cJvf $name.$rev.tar.xz $name.$rev
-echo gpg2 -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
-cd ~-
-
 # Add master section to CHANGELOG.md
 header=$(head -n 4 certbot/CHANGELOG.md)
 body=$(sed s/nextversion/$nextversion/ tools/_changelog_top.txt)
@@ -209,12 +200,6 @@ $body
 $footer" > certbot/CHANGELOG.md
 git add certbot/CHANGELOG.md
 git commit -m "Add contents to certbot/CHANGELOG.md for next version"
-
-echo "New root: $root"
-echo "Test commands (in the letstest repo):"
-echo 'python multitester.py --saveinstances targets.yaml $AWS_KEY $USERNAME scripts/test_apache2.sh'
-echo "In order to upload packages run the following command:"
-echo twine upload "$root/dist.$version/*/*"
 
 if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
