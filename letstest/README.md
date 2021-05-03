@@ -19,7 +19,8 @@ This package is installed in the Certbot development environment that is
 created by following the instructions at
 https://certbot.eff.org/docs/contributing.html#running-a-local-copy-of-the-client.
 
-You can then configure AWS credentials and create a key by running:
+After activating that virtual environment, you can then configure AWS
+credentials and create a key by running:
 ```
 >aws configure --profile <profile name>
 [interactive: enter secrets for IAM role]
