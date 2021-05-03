@@ -27,9 +27,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        # This isn't required by the tests themselves, but it is a useful tool
-        # to have when using these tests to generate keys and control running
-        # instances so the dependency is declared here for convenience.
+        # awscli isn't required by the tests themselves, but it is a useful
+        # tool to have when using these tests to generate keys and control
+        # running instances so the dependency is declared here for convenience.
         'awscli',
         'boto3',
         'botocore',
