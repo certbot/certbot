@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fix incompatibility (TypeError) with lexicon >= v3.6.0
 
 More details about these changes can be found on our GitHub repo.
 
