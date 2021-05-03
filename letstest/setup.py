@@ -39,7 +39,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'letstest=letstest.multitester',
+            'letstest=letstest.multitester:main',
         ],
     }
 )
