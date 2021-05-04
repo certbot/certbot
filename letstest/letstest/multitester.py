@@ -22,7 +22,7 @@ Usage:
 >aws ec2 create-key-pair --profile HappyHacker --key-name MyKeyPair \
  --query 'KeyMaterial' --output text > MyKeyPair.pem
 then:
->python multitester.py targets.yaml MyKeyPair.pem HappyHacker scripts/test_sdists.sh
+>letstest targets/targets.yaml MyKeyPair.pem HappyHacker scripts/test_sdists.sh
 see:
   https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
   https://docs.aws.amazon.com/cli/latest/userguide/cli-ec2-keypairs.html
@@ -33,6 +33,7 @@ from multiprocessing import Manager
 import os
 import socket
 import sys
+import tempfile
 import time
 import traceback
 import urllib.error as urllib_error
@@ -374,9 +375,8 @@ def main():
 
     # Set up local copy of git repo
     #-------------------------------------------------------------------------------
-    log_dir = "letest-%d"%int(time.time()) #points to logging / working directory
-    print("Making local dir for test repo and logs: %s"%log_dir)
-    local_cxn.local('mkdir %s'%log_dir)
+    log_dir = tempfile.mkdtemp()  # points to logging / working directory
+    print("Local dir for test repo and logs: %s"%log_dir)
 
     try:
         # figure out what git object to test and locally create it in log_dir

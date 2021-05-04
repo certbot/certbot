@@ -211,8 +211,8 @@ git add certbot/CHANGELOG.md
 git commit -m "Add contents to certbot/CHANGELOG.md for next version"
 
 echo "New root: $root"
-echo "Test commands (in the letstest repo):"
-echo 'python multitester.py --saveinstances targets.yaml $AWS_KEY $USERNAME scripts/test_apache2.sh'
+echo "Test commands (in the letstest directory):"
+echo 'letstest --saveinstances targets/targets.yaml $AWS_KEY $USERNAME scripts/test_apache2.sh'
 echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"
 

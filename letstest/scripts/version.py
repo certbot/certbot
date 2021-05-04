@@ -9,10 +9,10 @@ from os.path import abspath, dirname, join
 import re
 
 
-def certbot_version(caller_dir):
+def certbot_version(letstest_scripts_dir):
     """Return the version number stamped in certbot/__init__.py."""
     return re.search('''^__version__ = ['"](.+)['"].*''',
-                     file_contents(join(dirname(dirname(dirname(caller_dir))),
+                     file_contents(join(dirname(dirname(letstest_scripts_dir)),
                                         'certbot',
                                         'certbot',
                                         '__init__.py')),
