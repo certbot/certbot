@@ -9,7 +9,7 @@ version = '1.15.0.dev0'
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'dns-lexicon>=2.2.1',  # Support for >1 TXT record per name
+    'dns-lexicon>=3.1.0',  # Changed `rtype` parameter name
     'setuptools>=39.0.1',
     'zope.interface',
 ]

@@ -10,12 +10,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* DNS plugins based on lexicon now require dns-lexicon >= v3.1.0
 
 ### Fixed
 
-* Fix incompatibility (TypeError) with lexicon >= v3.6.0, but breaks
-  compatibility with lexicon < v3.1.0
+* Fix incompatibility with lexicon >= v3.6.0 resulting in a TypeError
 
 More details about these changes can be found on our GitHub repo.
 
