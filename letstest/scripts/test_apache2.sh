@@ -59,7 +59,7 @@ fi
 cd letsencrypt
 
 echo "Bootstrapping dependencies..."
-sudo tests/letstest/scripts/bootstrap_os_packages.sh
+sudo letstest/scripts/bootstrap_os_packages.sh
 if [ $? -ne 0 ] ; then
     exit 1
 fi
@@ -113,7 +113,7 @@ elif [ "$OS_TYPE" = "centos" ]; then
 fi
 OPENSSL_VERSION=$(strings "$MOD_SSL_LOCATION" | egrep -o -m1 '^OpenSSL ([0-9]\.[^ ]+) ' | tail -c +9)
 APACHE_VERSION=$(sudo $APACHE_NAME -v | egrep -o 'Apache/([0-9]\.[^ ]+)' | tail -c +8)
-"venv/bin/python" tests/letstest/scripts/test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
+"venv/bin/python" letstest/scripts/test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
 if [ $? -ne 0 ] ; then
     FAIL=1
 fi

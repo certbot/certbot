@@ -35,7 +35,7 @@ setup(
     description="Sakura Cloud DNS Authenticator plugin for Certbot",
     url='https://github.com/certbot/certbot',
     author="Certbot Project",
-    author_email='client-dev@letsencrypt.org',
+    author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
     python_requires='>=3.6',
     classifiers=[
