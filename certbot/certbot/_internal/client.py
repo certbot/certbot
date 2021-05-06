@@ -533,7 +533,7 @@ class Client:
 
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
-        display_util.notify("\nDeploying certificate")
+        display_util.notify("Deploying certificate")
 
         msg = f"Failed to install the certificate (installer: {self.config.installer})."
         if cert_name:

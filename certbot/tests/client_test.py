@@ -547,7 +547,7 @@ class ClientTest(ClientTestCommon):
                           "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
-        mock_notify.assert_any_call('\nDeploying certificate')
+        mock_notify.assert_any_call('Deploying certificate')
         mock_notify.assert_any_call(
             'Failed to install the certificate (installer: foobar). '
             'Try again by running:\n\n  certbot install --cert-name foo.bar\n'
@@ -565,7 +565,7 @@ class ClientTest(ClientTestCommon):
                           None, ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
-        mock_notify.assert_any_call('\nDeploying certificate')
+        mock_notify.assert_any_call('Deploying certificate')
         mock_notify.assert_any_call(
             'Failed to install the certificate (installer: foobar).'
         )
