@@ -342,15 +342,16 @@ class SuccessInstallationTest(unittest.TestCase):
         from certbot.display.ops import success_installation
         success_installation(names)
 
+    @test_util.patch_get_utility("certbot.display.util.notify")
     @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_success_installation(self, mock_util):
+    def test_success_installation(self, mock_util, mock_notify):
         mock_util().notification.return_value = None
         names = ["example.com", "abc.com"]
 
         self._call(names)
 
-        self.assertEqual(mock_util().notification.call_count, 1)
-        arg = mock_util().notification.call_args_list[0][0][0]
+        self.assertEqual(mock_notify.call_count, 1)
+        arg = mock_notify.call_args_list[0][0][0]
 
         for name in names:
             self.assertTrue(name in arg)
@@ -363,18 +364,15 @@ class SuccessRenewalTest(unittest.TestCase):
         from certbot.display.ops import success_renewal
         success_renewal(names)
 
+    @test_util.patch_get_utility("certbot.display.util.notify")
     @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_success_renewal(self, mock_util):
+    def test_success_renewal(self, mock_util, mock_notify):
         mock_util().notification.return_value = None
         names = ["example.com", "abc.com"]
 
         self._call(names)
 
-        self.assertEqual(mock_util().notification.call_count, 1)
-        arg = mock_util().notification.call_args_list[0][0][0]
-
-        for name in names:
-            self.assertTrue(name in arg)
+        self.assertEqual(mock_notify.call_count, 1)
 
 class SuccessRevocationTest(unittest.TestCase):
     """Test the success revocation message."""

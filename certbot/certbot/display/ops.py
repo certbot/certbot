@@ -240,25 +240,22 @@ def success_installation(domains):
     :param list domains: domain names which were enabled
 
     """
-    z_util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully enabled {0}".format(
-            _gen_https_names(domains)),
-        pause=False)
+    display_util.notify(
+        "Congratulations! You have successfully enabled HTTPS on {0}"
+        .format(_gen_https_names(domains))
+    )
 
 
-def success_renewal(domains):
+def success_renewal(unused_domains):
     """Display a box confirming the renewal of an existing certificate.
 
     :param list domains: domain names which were renewed
 
     """
-    z_util(interfaces.IDisplay).notification(
+    display_util.notify(
         "Your existing certificate has been successfully renewed, and the "
-        "new certificate has been installed.{1}{1}"
-        "The new certificate covers the following domains: {0}".format(
-            _gen_https_names(domains),
-            os.linesep),
-        pause=False)
+        "new certificate has been installed."
+    )
 
 
 def success_revocation(cert_path):
