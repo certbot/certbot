@@ -251,6 +251,7 @@ Authors
 * [Tan Jay Jun](https://github.com/jayjun)
 * [Tapple Gao](https://github.com/tapple)
 * [Telepenin Nikolay](https://github.com/telepenin)
+* [tengattack](https://github.com/tengattack)
 * [Thomas Cottier](https://github.com/tcottier-enalean)
 * [Thomas Mayer](https://github.com/thomaszbz)
 * [Thomas Waldmann](https://github.com/ThomasWaldmann)
