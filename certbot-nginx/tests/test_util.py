@@ -6,12 +6,12 @@ import tempfile
 import josepy as jose
 try:
     import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
+except ImportError:  # pragma: no cover
+    from unittest import mock  # type: ignore
 import pkg_resources
-import zope.component
 
-from certbot import util, services
+from certbot import util
+from certbot import services
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util

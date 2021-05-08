@@ -1,7 +1,6 @@
 """This module contains global singletons used throughout Certbot."""
 from typing import Optional, Any
 
-from certbot._internal.configuration import NamespaceConfig
 from certbot.interfaces import IConfig
 from certbot.interfaces import IDisplay
 from certbot.interfaces import IReporter

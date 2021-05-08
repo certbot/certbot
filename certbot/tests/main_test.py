@@ -1004,7 +1004,7 @@ class MainTest(test_util.ConfigTestCase):
                 args += '-d foo.bar -a standalone certonly'.split()
                 self._call(args)
 
-    @mock.patch('certbot.service.get_reporter')
+    @mock.patch('certbot.services.get_reporter')
     def test_certonly_dry_run_new_request_success(self, mock_reporter):
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = None
@@ -1017,7 +1017,7 @@ class MainTest(test_util.ConfigTestCase):
 
     @mock.patch('certbot._internal.eff.handle_subscription')
     @mock.patch('certbot.crypto_util.notAfter')
-    @mock.patch('certbot.service.get_reporter')
+    @mock.patch('certbot.services.get_reporter')
     def test_certonly_new_request_success(self, mock_reporter, mock_notAfter, mock_subscription):
         cert_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/foo.bar'))
         key_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/baz.qux'))
@@ -1075,7 +1075,7 @@ class MainTest(test_util.ConfigTestCase):
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot._internal.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
-                    with mock.patch('certbot.service.get_reporter') as mock_reporter:
+                    with mock.patch('certbot.services.get_reporter') as mock_reporter:
                         if not quiet_mode:
                             mock_reporter().notification.side_effect = write_msg
                         with mock.patch('certbot._internal.main.renewal.OpenSSL') as mock_ssl:
@@ -1384,7 +1384,7 @@ class MainTest(test_util.ConfigTestCase):
         mock_client.save_certificate.return_value = cert_path, None, full_path
         with mock.patch('certbot._internal.main._init_le_client') as mock_init:
             mock_init.return_value = mock_client
-            with mock.patch('certbot.service.get_reporter') as mock_reporter:
+            with mock.patch('certbot.services.get_reporter') as mock_reporter:
                 chain_path = os.path.normpath(os.path.join(
                     self.config.config_dir,
                     'live/example.com/chain.pem'))

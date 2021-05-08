@@ -19,8 +19,9 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from certbot import errors, services
+from certbot import errors
 from certbot import interfaces
+from certbot import services
 from certbot import util
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.compat import filesystem

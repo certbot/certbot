@@ -502,7 +502,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         self.authzr2.body.identifier.value = 'foo.bar'
         self.authzr2.body.challenges = [http_01_diff]
 
-    @mock.patch('certbot.service.get_reporter')
+    @mock.patch('certbot.services.get_reporter')
     def test_same_error_and_domain(self, mock_reporter):
         from certbot._internal import auth_handler
 
@@ -511,7 +511,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         self.assertEqual(len(call_list), 1)
         self.assertIn("Domain: example.com\nType:   tls\nDetail: detail", call_list[0][0][0])
 
-    @mock.patch('certbot.service.get_reporter')
+    @mock.patch('certbot.services.get_reporter')
     def test_different_errors_and_domains(self, mock_reporter):
         from certbot._internal import auth_handler
 

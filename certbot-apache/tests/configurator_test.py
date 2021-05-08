@@ -1606,8 +1606,8 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertEqual(self.config._get_new_vh_path(without_index, both),
                          with_index_2[0])
 
-    @certbot_util.patch_display_service()
-    def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
+    @mock.patch("certbot.services.get_reporter")
+    def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_reporter):
         self.config.parser.modules["rewrite_module"] = None
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[4])
@@ -1623,11 +1623,11 @@ class MultiVhostsTest(util.ApacheTest):
                                     "\"http://new.example.com/docs/$1\"  [R,L]")
         self.assertTrue(commented_rewrite_rule in conf_text)
         self.assertTrue(uncommented_rewrite_rule in conf_text)
-        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
+        mock_reporter().add_message.assert_called_once_with(mock.ANY,
                                                                mock.ANY)
 
-    @certbot_util.patch_display_service()
-    def test_make_vhost_ssl_with_existing_rewrite_conds(self, mock_get_utility):
+    @mock.patch("certbot.services.get_reporter")
+    def test_make_vhost_ssl_with_existing_rewrite_conds(self, mock_reporter):
         self.config.parser.modules["rewrite_module"] = None
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[3])
@@ -1652,7 +1652,7 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertTrue(commented_cond1 in conf_line_set)
         self.assertTrue(commented_cond2 in conf_line_set)
         self.assertTrue(commented_rewrite_rule in conf_line_set)
-        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
+        mock_reporter().add_message.assert_called_once_with(mock.ANY,
                                                                mock.ANY)
 
 
