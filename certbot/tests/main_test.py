@@ -166,7 +166,7 @@ class CertonlyTest(unittest.TestCase):
     """Tests for certbot._internal.main.certonly."""
 
     def setUp(self):
-        self.get_utility_patch = test_util.patch_get_utility()
+        self.get_utility_patch = test_util.patch_display_service()
         self.mock_get_utility = self.get_utility_patch.start()
 
     def tearDown(self):
@@ -397,7 +397,7 @@ class RevokeTest(test_util.TempDirTestCase):
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.cert_manager.delete')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_revocation_with_prompt(self, mock_get_utility,
             mock_delete, mock_delete_if_appropriate):
         mock_get_utility().yesno.return_value = False
@@ -417,12 +417,12 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
             self._call(self.config)
         mock_delete.assert_not_called()
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_delete_flag_opt_out(self, unused_mock_get_utility):
         self.config.delete_after_revoke = False
         self._test_delete_opt_out_common()
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_delete_prompt_opt_out(self, mock_get_utility):
         util_mock = mock_get_utility()
         util_mock.yesno.return_value = False
@@ -434,7 +434,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot._internal.storage.full_archive_path')
     @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_overlapping_archive_dirs(self, mock_get_utility,
             mock_cert_path_to_lineage, mock_archive,
             mock_match_and_check_overlaps, mock_delete,
@@ -454,7 +454,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.storage.full_archive_path')
     @mock.patch('certbot._internal.cert_manager.delete')
     @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_cert_path_only(self, mock_get_utility,
             mock_cert_path_to_lineage, mock_delete, mock_archive,
             mock_overlapping_archive_dirs, mock_renewal_file_for_certname):
@@ -472,7 +472,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.storage.full_archive_path')
     @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
     @mock.patch('certbot._internal.cert_manager.delete')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_noninteractive_deletion(self, mock_get_utility, mock_delete,
             mock_cert_path_to_lineage, mock_full_archive_dir,
             mock_match_and_check_overlaps, mock_renewal_file_for_certname):
@@ -492,7 +492,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.storage.full_archive_path')
     @mock.patch('certbot._internal.cert_manager.cert_path_to_lineage')
     @mock.patch('certbot._internal.cert_manager.delete')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_opt_in_deletion(self, mock_get_utility, mock_delete,
             mock_cert_path_to_lineage, mock_full_archive_dir,
             mock_match_and_check_overlaps, mock_renewal_file_for_certname):
@@ -528,7 +528,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         # pylint: disable=protected-access
         from certbot._internal.main import _determine_account
         with mock.patch('certbot._internal.main.account.AccountFileStorage') as mock_storage, \
-             test_util.patch_get_utility():
+             test_util.patch_display_service():
             mock_storage.return_value = self.account_storage
             return _determine_account(self.config)
 
@@ -626,7 +626,7 @@ class MainTest(test_util.ConfigTestCase):
                 return ret, stdout, stderr, client
 
     def _call_no_clientmock(self, args, stdout=None):
-        "Run the client with output streams mocked out"
+        """Run the client with output streams mocked out"""
         args = self.standard_args + args
 
         toy_stdout = stdout if stdout else io.StringIO()
@@ -861,7 +861,7 @@ class MainTest(test_util.ConfigTestCase):
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()
-        with test_util.patch_get_utility_with_stdout(stdout=stdout):
+        with test_util.patch_display_service_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins'], stdout)
 
         plugins.visible.assert_called_once_with()
@@ -882,7 +882,7 @@ class MainTest(test_util.ConfigTestCase):
 
         stdout = io.StringIO()
         with mock.patch('certbot.util.set_up_core_dir') as mock_set_up_core_dir:
-            with test_util.patch_get_utility_with_stdout(stdout=stdout):
+            with test_util.patch_display_service_with_stdout(stdout=stdout):
                 mock_set_up_core_dir.side_effect = throw_error
                 _, stdout, _, _ = self._call(['plugins'], stdout)
 
@@ -898,7 +898,7 @@ class MainTest(test_util.ConfigTestCase):
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()
-        with test_util.patch_get_utility_with_stdout(stdout=stdout):
+        with test_util.patch_display_service_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins', '--init'], stdout)
 
         plugins.visible.assert_called_once_with()
@@ -916,7 +916,7 @@ class MainTest(test_util.ConfigTestCase):
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()
-        with test_util.patch_get_utility_with_stdout(stdout=stdout):
+        with test_util.patch_display_service_with_stdout(stdout=stdout):
             _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'], stdout)
 
         plugins.visible.assert_called_once_with()
@@ -1004,21 +1004,21 @@ class MainTest(test_util.ConfigTestCase):
                 args += '-d foo.bar -a standalone certonly'.split()
                 self._call(args)
 
-    @test_util.patch_get_utility()
-    def test_certonly_dry_run_new_request_success(self, mock_get_utility):
+    @mock.patch('certbot.service.get_reporter')
+    def test_certonly_dry_run_new_request_success(self, mock_reporter):
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = None
         self._certonly_new_request_common(mock_client, ['--dry-run'])
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
-        self.assertIn('dry run', mock_get_utility().add_message.call_args[0][0])
+        self.assertIn('dry run', mock_reporter().add_message.call_args[0][0])
         # Asserts we don't suggest donating after a successful dry run
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
+        self.assertEqual(mock_reporter().add_message.call_count, 1)
 
     @mock.patch('certbot._internal.eff.handle_subscription')
     @mock.patch('certbot.crypto_util.notAfter')
-    @test_util.patch_get_utility()
-    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter, mock_subscription):
+    @mock.patch('certbot.service.get_reporter')
+    def test_certonly_new_request_success(self, mock_reporter, mock_notAfter, mock_subscription):
         cert_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/foo.bar'))
         key_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/baz.qux'))
         date = '1970-01-01'
@@ -1031,11 +1031,11 @@ class MainTest(test_util.ConfigTestCase):
         self._certonly_new_request_common(mock_client)
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
-        cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
+        cert_msg = mock_reporter().add_message.call_args_list[0][0][0]
         self.assertIn(cert_path, cert_msg)
         self.assertIn(date, cert_msg)
         self.assertIn(key_path, cert_msg)
-        self.assertIn('donate', mock_get_utility().add_message.call_args[0][0])
+        self.assertIn('donate', mock_reporter().add_message.call_args[0][0])
         self.assertIs(mock_subscription.called, True)
 
     @mock.patch('certbot._internal.eff.handle_subscription')
@@ -1075,9 +1075,9 @@ class MainTest(test_util.ConfigTestCase):
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot._internal.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
-                    with test_util.patch_get_utility() as mock_get_utility:
+                    with mock.patch('certbot.service.get_reporter') as mock_reporter:
                         if not quiet_mode:
-                            mock_get_utility().notification.side_effect = write_msg
+                            mock_reporter().notification.side_effect = write_msg
                         with mock.patch('certbot._internal.main.renewal.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
                             mock_latest.get_issuer.return_value = "Artificial pretend"
@@ -1121,7 +1121,7 @@ class MainTest(test_util.ConfigTestCase):
                 with open(os.path.join(self.config.logs_dir, "letsencrypt.log")) as lf:
                     self.assertIn(log_out, lf.read())
 
-        return mock_lineage, mock_get_utility, stdout
+        return mock_lineage, mock_reporter, stdout
 
     @mock.patch('certbot.crypto_util.notAfter')
     def test_certonly_renewal(self, _):
@@ -1355,7 +1355,7 @@ class MainTest(test_util.ConfigTestCase):
                   .format(sys.executable)])
         self.assertIn('No hooks were run.', stdout.getvalue())
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     @mock.patch('certbot._internal.main._find_lineage_for_domains_and_certname')
     @mock.patch('certbot._internal.main._init_le_client')
     @mock.patch('certbot._internal.main._report_new_cert')
@@ -1384,7 +1384,7 @@ class MainTest(test_util.ConfigTestCase):
         mock_client.save_certificate.return_value = cert_path, None, full_path
         with mock.patch('certbot._internal.main._init_le_client') as mock_init:
             mock_init.return_value = mock_client
-            with test_util.patch_get_utility() as mock_get_utility:
+            with mock.patch('certbot.service.get_reporter') as mock_reporter:
                 chain_path = os.path.normpath(os.path.join(
                     self.config.config_dir,
                     'live/example.com/chain.pem'))
@@ -1402,21 +1402,21 @@ class MainTest(test_util.ConfigTestCase):
             mock_client.save_certificate.assert_called_once_with(
                 certr, chain, cert_path, chain_path, full_path)
 
-        return mock_get_utility
+        return mock_reporter
 
     @mock.patch('certbot._internal.eff.handle_subscription')
     def test_certonly_csr(self, mock_subscription):
-        mock_get_utility = self._test_certonly_csr_common()
-        cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
+        mock_reporter = self._test_certonly_csr_common()
+        cert_msg = mock_reporter().add_message.call_args_list[0][0][0]
         self.assertIn('fullchain.pem', cert_msg)
         self.assertNotIn('Your key file has been saved at', cert_msg)
-        self.assertIn('donate', mock_get_utility().add_message.call_args[0][0])
+        self.assertIn('donate', mock_reporter().add_message.call_args[0][0])
         self.assertIs(mock_subscription.called, True)
 
     def test_certonly_csr_dry_run(self):
-        mock_get_utility = self._test_certonly_csr_common(['--dry-run'])
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
-        self.assertIn('dry run', mock_get_utility().add_message.call_args[0][0])
+        mock_reporter = self._test_certonly_csr_common(['--dry-run'])
+        self.assertEqual(mock_reporter().add_message.call_count, 1)
+        self.assertIn('dry run', mock_reporter().add_message.call_args[0][0])
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.main.client.acme_client')
@@ -1493,7 +1493,7 @@ class UnregisterTest(unittest.TestCase):
             '_determine_account': mock.patch('certbot._internal.main._determine_account'),
             'account': mock.patch('certbot._internal.main.account'),
             'client': mock.patch('certbot._internal.main.client'),
-            'get_utility': test_util.patch_get_utility()}
+            'get_utility': test_util.patch_display_service()}
         self.mocks = {k: v.start() for k, v in self.patchers.items()}
 
     def tearDown(self):
@@ -1574,7 +1574,7 @@ class EnhanceTest(test_util.ConfigTestCase):
 
     def setUp(self):
         super().setUp()
-        self.get_utility_patch = test_util.patch_get_utility()
+        self.get_utility_patch = test_util.patch_display_service()
         self.mock_get_utility = self.get_utility_patch.start()
         self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
 
@@ -1684,7 +1684,7 @@ class EnhanceTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.display_ops.choose_values')
     @mock.patch('certbot._internal.main.plug_sel.pick_installer')
     @mock.patch('certbot._internal.main.plug_sel.record_chosen_plugins')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_enhancement_enable(self, _, _rec, mock_inst, mock_choose, mock_lineage):
         mock_inst.return_value = self.mockinstaller
         mock_choose.return_value = ["example.com", "another.tld"]
@@ -1698,7 +1698,7 @@ class EnhanceTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.display_ops.choose_values')
     @mock.patch('certbot._internal.main.plug_sel.pick_installer')
     @mock.patch('certbot._internal.main.plug_sel.record_chosen_plugins')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_enhancement_enable_not_supported(self, _, _rec, mock_inst, mock_choose, mock_lineage):
         mock_inst.return_value = null.Installer(self.config, "null")
         mock_choose.return_value = ["example.com", "another.tld"]
@@ -1756,7 +1756,7 @@ class UpdateAccountTest(test_util.ConfigTestCase):
             'determine_account': mock.patch('certbot._internal.main._determine_account'),
             'notify': mock.patch('certbot._internal.main.display_util.notify'),
             'prepare_sub': mock.patch('certbot._internal.eff.prepare_subscription'),
-            'util': test_util.patch_get_utility()
+            'util': test_util.patch_display_service()
         }
         self.mocks = { k: patches[k].start() for k in patches }
         for patch in patches.values():

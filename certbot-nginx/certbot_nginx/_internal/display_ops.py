@@ -1,9 +1,7 @@
 """Contains UI methods for Nginx operations."""
 import logging
 
-import zope.component
-
-from certbot import interfaces
+from certbot import services
 import certbot.display.util as display_util
 
 logger = logging.getLogger(__name__)
@@ -22,7 +20,7 @@ def select_vhost_multiple(vhosts):
     # Remove the extra newline from the last entry
     if tags_list:
         tags_list[-1] = tags_list[-1][:-1]
-    code, names = zope.component.getUtility(interfaces.IDisplay).checklist(
+    code, names = services.get_display().checklist(
         "Which server blocks would you like to modify?",
         tags=tags_list, force_interactive=True)
     if code == display_util.OK:

@@ -9,13 +9,10 @@ from typing import Any
 from typing import Dict
 
 import configargparse
-import zope.component
-import zope.interface
-from zope.interface import interfaces as zope_interfaces
 
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
+from certbot import services
 from certbot import util
 from certbot._internal import constants
 from certbot._internal import hooks
@@ -66,13 +63,11 @@ class HelpfulArgumentParser:
         }
 
         # Get notification function for printing
-        try:
-            self.notify = zope.component.getUtility(
-                interfaces.IDisplay).notification
-        except zope_interfaces.ComponentLookupError:
-            self.notify = display_util.NoninteractiveDisplay(
-                sys.stdout).notification
-
+        displayer = services.get_display()
+        if displayer:
+            self.notify = displayer.notification
+        else:
+            self.notify = display_util.NoninteractiveDisplay(sys.stdout).notification
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]

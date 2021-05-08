@@ -89,7 +89,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.auth.env[self.http_achall]['CERTBOT_AUTH_OUTPUT'],
             http_expected)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_manual_perform(self, mock_get_utility):
         self.assertEqual(
             self.auth.perform(self.achalls),

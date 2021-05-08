@@ -25,11 +25,10 @@ from cryptography.hazmat.primitives.serialization import PrivateFormat
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore
 import pyrfc3339
-import zope.component
 
 from acme import crypto_util as acme_crypto_util
 from certbot import errors
-from certbot import interfaces
+from certbot import services
 from certbot import util
 from certbot.compat import os
 
@@ -67,7 +66,7 @@ def init_save_key(
         logger.error("", exc_info=True)
         raise err
 
-    config = zope.component.getUtility(interfaces.IConfig)
+    config = services.get_config()
     # Save file
     util.make_or_verify_dir(key_dir, 0o700, config.strict_permissions)
     key_f, key_path = util.unique_file(
@@ -96,7 +95,7 @@ def init_save_csr(privkey, names, path):
     :rtype: :class:`certbot.util.CSR`
 
     """
-    config = zope.component.getUtility(interfaces.IConfig)
+    config = services.get_config()
 
     csr_pem = acme_crypto_util.make_csr(
         privkey.pem, names, must_staple=config.must_staple)

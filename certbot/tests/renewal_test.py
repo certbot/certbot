@@ -100,7 +100,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         assert self.config.elliptic_curve == 'secp256r1'
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_remove_deprecated_config_elements(self, mock_set_by_cli, unused_mock_get_utility):
         mock_set_by_cli.return_value = False

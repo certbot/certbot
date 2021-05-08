@@ -16,6 +16,7 @@ from acme import messages
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
+from certbot import services
 from certbot import util
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -68,10 +69,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
         from certbot._internal.auth_handler import AuthHandler
 
         self.mock_display = mock.Mock()
-        zope.component.provideUtility(
-            self.mock_display, interfaces.IDisplay)
-        zope.component.provideUtility(
-            mock.Mock(debug_challenges=False), interfaces.IConfig)
+        services.set_display(self.mock_display)
+        services.set_config(mock.Mock(debug_challenges=False))
 
         self.mock_auth = mock.MagicMock(name="ApacheConfigurator")
 
@@ -194,8 +193,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self._test_name3_http_01_3_common(combos=False)
 
     def test_debug_challenges(self):
-        zope.component.provideUtility(
-            mock.Mock(debug_challenges=True), interfaces.IConfig)
+        services.set_config(mock.Mock(debug_challenges=True))
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
@@ -302,7 +300,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         mock_order = mock.MagicMock(authorizations=authzrs)
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
-        with test_util.patch_get_utility():
+        with test_util.patch_display_service():
             with self.assertRaises(errors.AuthorizationError) as error:
                 self.handler.handle_authorizations(mock_order, False)
         self.assertIn('Some challenges have failed.', str(error.exception))
@@ -336,7 +334,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
-        with test_util.patch_get_utility():
+        with test_util.patch_display_service():
             with self.assertRaises(errors.AuthorizationError) as error:
                 self.handler.handle_authorizations(mock_order, True)
 
@@ -504,21 +502,21 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         self.authzr2.body.identifier.value = 'foo.bar'
         self.authzr2.body.challenges = [http_01_diff]
 
-    @test_util.patch_get_utility()
-    def test_same_error_and_domain(self, mock_zope):
+    @mock.patch('certbot.service.get_reporter')
+    def test_same_error_and_domain(self, mock_reporter):
         from certbot._internal import auth_handler
 
         auth_handler._report_failed_authzrs([self.authzr1], 'key')
-        call_list = mock_zope().add_message.call_args_list
+        call_list = mock_reporter().add_message.call_args_list
         self.assertEqual(len(call_list), 1)
         self.assertIn("Domain: example.com\nType:   tls\nDetail: detail", call_list[0][0][0])
 
-    @test_util.patch_get_utility()
-    def test_different_errors_and_domains(self, mock_zope):
+    @mock.patch('certbot.service.get_reporter')
+    def test_different_errors_and_domains(self, mock_reporter):
         from certbot._internal import auth_handler
 
         auth_handler._report_failed_authzrs([self.authzr1, self.authzr2], 'key')
-        self.assertEqual(mock_zope().add_message.call_count, 2)
+        self.assertEqual(mock_reporter().add_message.call_count, 2)
 
 
 def gen_auth_resp(chall_list):

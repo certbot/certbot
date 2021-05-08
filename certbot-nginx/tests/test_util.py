@@ -11,7 +11,7 @@ except ImportError: # pragma: no cover
 import pkg_resources
 import zope.component
 
-from certbot import util
+from certbot import util, services
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
@@ -79,8 +79,8 @@ class NginxTest(test_util.ConfigTestCase):
                     openssl_version=openssl_version)
                 config.prepare()
 
-        # Provide general config utility.
-        zope.component.provideUtility(self.configuration)
+        # Provide general config service.
+        services.set_config(self.configuration)
 
         return config
 

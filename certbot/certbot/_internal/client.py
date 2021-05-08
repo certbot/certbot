@@ -9,7 +9,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
 import josepy as jose
 import OpenSSL
-import zope.component
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -18,7 +17,7 @@ from acme import messages
 import certbot
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
+from certbot import services
 from certbot import util
 from certbot._internal import account
 from certbot._internal import auth_handler
@@ -640,7 +639,7 @@ class Client:
 
         """
         self.installer.recovery_routine()
-        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter = services.get_reporter()
         reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
 
     def _rollback_and_restart(self, success_msg):
@@ -650,7 +649,7 @@ class Client:
 
         """
         logger.critical("Rolling back to previous server configuration...")
-        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter = services.get_reporter()
         try:
             self.installer.rollback_checkpoints()
             self.installer.restart()

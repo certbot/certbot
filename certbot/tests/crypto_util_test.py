@@ -2,19 +2,22 @@
 import logging
 import unittest
 
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 import OpenSSL
 import zope.component
 
 from certbot import errors
 from certbot import interfaces
+from certbot import services
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError:  # pragma: no cover
+    from unittest import mock
+
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
@@ -42,8 +45,7 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
         filesystem.mkdir(self.workdir, mode=0o700)
 
         logging.disable(logging.CRITICAL)
-        zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
+        services.set_config(mock.Mock(strict_permissions=True))
 
     def tearDown(self):
         super().tearDown()
@@ -75,8 +77,7 @@ class InitSaveCSRTest(test_util.TempDirTestCase):
     def setUp(self):
         super().setUp()
 
-        zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
+        services.set_config(mock.Mock(strict_permissions=True))
 
     @mock.patch('acme.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')

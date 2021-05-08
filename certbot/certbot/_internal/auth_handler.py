@@ -6,14 +6,12 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 
-import zope.component
-
 from acme import challenges
 from acme import errors as acme_errors
 from acme import messages
 from certbot import achallenges
 from certbot import errors
-from certbot import interfaces
+from certbot import services
 from certbot._internal import error_handler
 
 logger = logging.getLogger(__name__)
@@ -71,9 +69,9 @@ class AuthHandler:
 
                 # If debug is on, wait for user input before starting the verification process.
                 logger.info('Waiting for verification...')
-                config = zope.component.getUtility(interfaces.IConfig)
+                config = services.get_config()
                 if config.debug_challenges:
-                    notify = zope.component.getUtility(interfaces.IDisplay).notification
+                    notify = services.get_display().notification
                     notify('Challenges loaded. Press continue to submit to CA. '
                            'Pass "-v" for more info about challenges.', pause=True)
             except errors.AuthorizationError as error:
@@ -435,7 +433,8 @@ def _report_failed_authzrs(failed_authzrs, account_key):
     for achall in failed_achalls:
         problems.setdefault(achall.error.typ, []).append(achall)
 
-    reporter = zope.component.getUtility(interfaces.IReporter)
+    reporter = services.get_reporter()
+    print(reporter)
     for achalls in problems.values():
         reporter.add_message(_generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY)
 

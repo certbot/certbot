@@ -19,6 +19,7 @@ import zope.interface
 
 from certbot import errors
 from certbot import interfaces
+from certbot import services
 from certbot._internal import constants
 from certbot._internal.display import completer
 from certbot.compat import misc
@@ -104,7 +105,7 @@ def notify(msg: str) -> None:
     :param str msg: message to display
 
     """
-    zope.component.getUtility(interfaces.IDisplay).notification(
+    services.get_display().notification(
         msg, pause=False, decorate=False, wrap=False
     )
 

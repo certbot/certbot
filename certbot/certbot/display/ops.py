@@ -1,18 +1,13 @@
 """Contains UI methods for LE user operations."""
 import logging
 
-import zope.component
-
 from certbot import errors
-from certbot import interfaces
+from certbot import services
 from certbot import util
 from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
-
-# Define a helper function to avoid verbose code
-z_util = zope.component.getUtility
 
 
 def get_email(invalid=False, optional=True):
@@ -47,7 +42,7 @@ def get_email(invalid=False, optional=True):
 
     while True:
         try:
-            code, email = z_util(interfaces.IDisplay).input(
+            code, email = services.get_display().input(
                 invalid_prefix + msg if invalid else msg,
                 force_interactive=True)
         except errors.MissingCommandlineFlag:
@@ -80,7 +75,7 @@ def choose_account(accounts):
     # Note this will get more complicated once we start recording authorizations
     labels = [acc.slug for acc in accounts]
 
-    code, index = z_util(interfaces.IDisplay).menu(
+    code, index = services.get_display().menu(
         "Please choose an account", labels, force_interactive=True)
     if code == display_util.OK:
         return accounts[index]
@@ -95,7 +90,7 @@ def choose_values(values, question=None):
     :returns: List of selected values
     :rtype: list
     """
-    code, items = z_util(interfaces.IDisplay).checklist(
+    code, items = services.get_display().checklist(
         question, tags=values, force_interactive=True)
     if code == display_util.OK and items:
         return items
@@ -175,7 +170,7 @@ def _filter_names(names, override_question=None):
         question = override_question
     else:
         question = "Which names would you like to activate HTTPS for?"
-    code, names = z_util(interfaces.IDisplay).checklist(
+    code, names = services.get_display().checklist(
         question, tags=sorted_names, cli_flag="--domains", force_interactive=True)
     return code, [str(s) for s in names]
 
@@ -189,7 +184,7 @@ def _choose_names_manually(prompt_prefix=""):
     :rtype: `list` of `str`
 
     """
-    code, input_ = z_util(interfaces.IDisplay).input(
+    code, input_ = services.get_display().input(
         prompt_prefix +
         "Please enter in your domain name(s) (comma and/or space separated) ",
         cli_flag="--domains", force_interactive=True)
@@ -225,8 +220,8 @@ def _choose_names_manually(prompt_prefix=""):
 
         if retry_message:
             # We had error in input
-            retry = z_util(interfaces.IDisplay).yesno(retry_message,
-                                                      force_interactive=True)
+            retry = services.get_display().yesno(retry_message,
+                                                 force_interactive=True)
             if retry:
                 return _choose_names_manually()
         else:
@@ -240,7 +235,7 @@ def success_installation(domains):
     :param list domains: domain names which were enabled
 
     """
-    z_util(interfaces.IDisplay).notification(
+    services.get_display().notification(
         "Congratulations! You have successfully enabled {0}".format(
             _gen_https_names(domains)),
         pause=False)
@@ -252,7 +247,7 @@ def success_renewal(domains):
     :param list domains: domain names which were renewed
 
     """
-    z_util(interfaces.IDisplay).notification(
+    services.get_display().notification(
         "Your existing certificate has been successfully renewed, and the "
         "new certificate has been installed.{1}{1}"
         "The new certificate covers the following domains: {0}".format(
@@ -316,7 +311,7 @@ def _get_validated(method, validator, message, default=None, **kwargs):
                              raw,
                              message,
                              exc_info=True)
-                zope.component.getUtility(interfaces.IDisplay).notification(str(error), pause=False)
+                services.get_display().notification(str(error), pause=False)
         else:
             return code, raw
 
@@ -332,7 +327,7 @@ def validated_input(validator, *args, **kwargs):
     :return: as `~certbot.interfaces.IDisplay.input`
     :rtype: tuple
     """
-    return _get_validated(zope.component.getUtility(interfaces.IDisplay).input,
+    return _get_validated(services.get_display().input,
                           validator, *args, **kwargs)
 
 
@@ -348,5 +343,5 @@ def validated_directory(validator, *args, **kwargs):
     :return: as `~certbot.interfaces.IDisplay.directory_select`
     :rtype: tuple
     """
-    return _get_validated(zope.component.getUtility(interfaces.IDisplay).directory_select,
+    return _get_validated(services.get_display().directory_select,
                           validator, *args, **kwargs)

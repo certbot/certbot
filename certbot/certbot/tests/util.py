@@ -37,9 +37,8 @@ try:
         "use unittest.mock. Be sure to update your code accordingly.",
         PendingDeprecationWarning
     )
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
-
+except ImportError:  # pragma: no cover
+    from unittest import mock  # type: ignore
 
 
 def vector_path(*names):
@@ -149,24 +148,21 @@ def make_lineage(config_dir, testfile, ec=False):
     return conf_path
 
 
-def patch_get_utility(target='zope.component.getUtility'):
-    """Patch zope.component.getUtility to use a special mock IDisplay.
+def patch_display_service():
+    """Patch CertbotService display property to use a special mock IDisplay.
 
     The mock IDisplay works like a regular mock object, except it also
     also asserts that methods are called with valid arguments.
 
-    :param str target: path to patch
-
-    :returns: mock zope.component.getUtility
+    :returns: mock certbot.service.get_display
     :rtype: mock.MagicMock
 
     """
-    return mock.patch(target, new_callable=_create_get_utility_mock)
+    return mock.patch('certbot.service.get_display', new_callable=_create_display_service_mock)
 
 
-def patch_get_utility_with_stdout(target='zope.component.getUtility',
-                                  stdout=None):
-    """Patch zope.component.getUtility to use a special mock IDisplay.
+def patch_display_service_with_stdout(stdout=None):
+    """Patch CertbotService display property to use a special mock IDisplay.
 
     The mock IDisplay works like a regular mock object, except it also
     also asserts that methods are called with valid arguments.
@@ -174,18 +170,48 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
     The `message` argument passed to the IDisplay methods is passed to
     stdout's write method.
 
-    :param str target: path to patch
     :param object stdout: object to write standard output to; it is
         expected to have a `write` method
 
-    :returns: mock zope.component.getUtility
+    :returns: mock certbot.service.get_display
     :rtype: mock.MagicMock
 
     """
     stdout = stdout if stdout else io.StringIO()
 
-    freezable_mock = _create_get_utility_mock_with_stdout(stdout)
-    return mock.patch(target, new=freezable_mock)
+    return mock.patch('certbot.service.get_display',
+                      new=_create_display_service_mock_with_stdout(stdout))
+
+
+def patch_get_utility(target='zope.component.getUtility'):  # pylint: disable=unused-argument
+    """Deprecated, use patch_display_service instead.
+
+    :param str target: path to patch (warning, value is ignored due to deprecation)
+
+    :returns: mock certbot.service.get_display
+    :rtype: mock.MagicMock
+
+    """
+    warnings.warn('Decorator certbot.tests.util.patch_get_utility is deprecated, '
+                  'use certbot.tests.util.patch_display_service instead.')
+    return patch_display_service()
+
+
+def patch_get_utility_with_stdout(target='zope.component.getUtility',  # pylint: disable=unused-argument
+                                  stdout=None):
+    """Deprecated, use patch_display_service_with_stdout instead.
+
+    :param str target: path to patch (warning, value is ignored due to deprecation)
+    :param object stdout: object to write standard output to; it is
+        expected to have a `write` method
+
+    :returns: mock certbot.service.get_display
+    :rtype: mock.MagicMock
+
+    """
+    warnings.warn('Decorator certbot.tests.util.patch_get_utility_with_stdout is deprecated, '
+                  'use certbot.tests.util.patch_display_service_with_stdout instead.')
+    return patch_display_service_with_stdout(stdout)
 
 
 class FreezableMock:
@@ -256,7 +282,7 @@ class FreezableMock:
         return object.__setattr__(self, name, value)
 
 
-def _create_get_utility_mock():
+def _create_display_service_mock():
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
     for name in interfaces.IDisplay.names():  # pylint: E1120
@@ -267,7 +293,7 @@ def _create_get_utility_mock():
     return FreezableMock(frozen=True, return_value=display)
 
 
-def _create_get_utility_mock_with_stdout(stdout):
+def _create_display_service_mock_with_stdout(stdout):
     def _write_msg(message, *unused_args, **unused_kwargs):
         """Write to message to stdout.
         """
@@ -281,20 +307,17 @@ def _create_get_utility_mock_with_stdout(stdout):
         _assert_valid_call(args, kwargs)
         _write_msg(*args, **kwargs)
 
-
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
     for name in interfaces.IDisplay.names():  # pylint: E1120
         if name == 'notification':
             frozen_mock = FreezableMock(frozen=True,
                                         func=_write_msg)
-            setattr(display, name, frozen_mock)
         else:
             frozen_mock = FreezableMock(frozen=True,
                                         func=mock_method)
-            setattr(display, name, frozen_mock)
+        setattr(display, name, frozen_mock)
     display.freeze()
-
     return FreezableMock(frozen=True, return_value=display)
 
 

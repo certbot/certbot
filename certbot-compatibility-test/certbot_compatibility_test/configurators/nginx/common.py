@@ -5,6 +5,7 @@ import subprocess
 from typing import Set
 
 import zope.interface
+from certbot import services
 
 from certbot._internal import configuration
 from certbot_compatibility_test import errors
@@ -48,7 +49,7 @@ class Proxy(configurators_common.Proxy):
             setattr(self.le_config, "nginx_" + k, constants.os_constant(k))
 
         conf = configuration.NamespaceConfig(self.le_config)
-        zope.component.provideUtility(conf)
+        services.set_config(conf)
         self._configurator = configurator.NginxConfigurator(
             config=conf, name="nginx")
         self._configurator.prepare()

@@ -14,6 +14,7 @@ import zope.interface
 from acme import challenges
 from certbot import errors
 from certbot import interfaces
+from certbot import services
 from certbot._internal import cli
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge as AnnotatedChallenge
 from certbot.compat import filesystem
@@ -120,7 +121,7 @@ to serve all files under specified web root ({0})."""
         return webroot
 
     def _prompt_with_webroot_list(self, domain, known_webroots):
-        display = zope.component.getUtility(interfaces.IDisplay)
+        display = services.get_display()
         path_flag = "--" + self.option_name("path")
 
         while True:

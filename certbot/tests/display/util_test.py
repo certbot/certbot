@@ -473,7 +473,7 @@ class SummarizeDomainListTest(unittest.TestCase):
 class NotifyTest(unittest.TestCase):
     """Test the notify function """
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_notify(self, mock_util):
         from certbot.display.util import notify
         notify("Hello World")

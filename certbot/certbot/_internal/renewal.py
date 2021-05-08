@@ -15,11 +15,11 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import OpenSSL
-import zope.component
 
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
+from certbot import services
 from certbot import util
 from certbot._internal import cli
 from certbot._internal import client
@@ -437,7 +437,7 @@ def handle_renewal_request(config):
     apply_random_sleep = not sys.stdin.isatty() and config.random_sleep_on_renew
 
     for renewal_file in conf_files:
-        disp = zope.component.getUtility(interfaces.IDisplay)
+        disp = services.get_display()
         disp.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
         lineagename = storage.lineagename_for_filename(renewal_file)
@@ -459,7 +459,7 @@ def handle_renewal_request(config):
                 parse_failures.append(renewal_file)
             else:
                 # XXX: ensure that each call here replaces the previous one
-                zope.component.provideUtility(lineage_config)
+                services.set_config(lineage_config)
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main
                 plugins = plugins_disco.PluginsRegistry.find_all()

@@ -3,18 +3,22 @@ import platform
 import shutil
 import tempfile
 import unittest
+from unittest.mock import MagicMock
 
 from josepy import interfaces
+
+from certbot import errors
+from certbot import services
+from certbot import util
+from certbot._internal import account
+from certbot.compat import os
+import certbot.tests.util as test_util
+
 try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
 
-from certbot import errors
-from certbot import util
-from certbot._internal import account
-from certbot.compat import os
-import certbot.tests.util as test_util
 
 
 KEY = test_util.load_vector("rsa512_key.pem")
@@ -62,6 +66,7 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.register_unsafely_without_email = False
         self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
+        services.set_display(MagicMock())
 
     def _call(self):
         from certbot._internal.client import register
@@ -270,7 +275,7 @@ class ClientTest(ClientTestCommon):
 
     @mock.patch("certbot._internal.client.crypto_util")
     @mock.patch("certbot._internal.client.logger")
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_obtain_certificate_from_csr(self, unused_mock_get_utility,
                                          mock_logger, mock_crypto_util):
         self._mock_obtain_certificate()
@@ -405,7 +410,7 @@ class ClientTest(ClientTestCommon):
         # Certificate should get issued despite one failed deactivation
         self.eg_order.authorizations = authzrs
         self.client.auth_handler.handle_authorizations.return_value = authzrs
-        with test_util.patch_get_utility():
+        with test_util.patch_display_service():
             result = self.client.obtain_certificate(self.eg_domains)
         self.assertEqual(result, (mock.sentinel.cert, mock.sentinel.chain, key, csr))
         self._check_obtain_certificate(1)
@@ -449,7 +454,7 @@ class ClientTest(ClientTestCommon):
         self.eg_order.authorizations = authzr
         self.client.auth_handler.handle_authorizations.return_value = authzr
 
-        with test_util.patch_get_utility():
+        with test_util.patch_display_service():
             result = self.client.obtain_certificate(self.eg_domains)
 
         self.assertEqual(
@@ -551,20 +556,20 @@ class ClientTest(ClientTestCommon):
                           ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
-    @test_util.patch_get_utility()
-    def test_deploy_certificate_restart_failure(self, mock_get_utility):
+    @mock.patch('certbot.service.get_reporter')
+    def test_deploy_certificate_restart_failure(self, mock_reporter):
         installer = mock.MagicMock()
         installer.restart.side_effect = [errors.PluginError, None]
         self.client.installer = installer
 
         self.assertRaises(errors.PluginError, self.client.deploy_certificate,
                           ["foo.bar"], "key", "cert", "chain", "fullchain")
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
+        self.assertEqual(mock_reporter().add_message.call_count, 1)
         installer.rollback_checkpoints.assert_called_once_with()
         self.assertEqual(installer.restart.call_count, 2)
 
-    @test_util.patch_get_utility()
-    def test_deploy_certificate_restart_failure2(self, mock_get_utility):
+    @mock.patch('certbot.service.get_reporter')
+    def test_deploy_certificate_restart_failure2(self, mock_reporter):
         installer = mock.MagicMock()
         installer.restart.side_effect = errors.PluginError
         installer.rollback_checkpoints.side_effect = errors.ReverterError
@@ -572,7 +577,7 @@ class ClientTest(ClientTestCommon):
 
         self.assertRaises(errors.PluginError, self.client.deploy_certificate,
                           ["foo.bar"], "key", "cert", "chain", "fullchain")
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
+        self.assertEqual(mock_reporter().add_message.call_count, 1)
         installer.rollback_checkpoints.assert_called_once_with()
         self.assertEqual(installer.restart.call_count, 1)
 
@@ -687,10 +692,10 @@ class EnhanceConfigTest(ClientTestCommon):
 
     def _test_error(self):
         self.config.redirect = True
-        with test_util.patch_get_utility() as mock_gu:
+        with mock.patch('certbot.service.get_reporter') as mock_reporter:
             self.assertRaises(
                 errors.PluginError, self._test_with_all_supported)
-        self.assertEqual(mock_gu().add_message.call_count, 1)
+        self.assertEqual(mock_reporter().add_message.call_count, 1)
 
     def _test_with_all_supported(self):
         if self.client.installer is None:

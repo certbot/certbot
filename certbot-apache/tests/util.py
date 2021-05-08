@@ -5,6 +5,8 @@ import unittest
 
 import augeas
 import josepy as jose
+from certbot import services
+
 try:
     import mock
 except ImportError: # pragma: no cover
@@ -69,8 +71,7 @@ class ParserTest(ApacheTest):
               vhost_root="debian_apache_2_4/multiple_vhosts/apache2/sites-available"):
         super().setUp(test_dir, config_root, vhost_root)
 
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
-                                                               False))
+        services.set_display(display_util.FileDisplay(sys.stdout, False))
 
         from certbot_apache._internal.parser import ApacheParser
         self.aug = augeas.Augeas(

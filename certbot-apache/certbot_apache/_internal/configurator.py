@@ -19,7 +19,7 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from certbot import errors
+from certbot import errors, services
 from certbot import interfaces
 from certbot import util
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
@@ -878,7 +878,7 @@ class ApacheConfigurator(common.Installer):
                         all_names.add(name)
 
         if vhost_macro:
-            zope.component.getUtility(interfaces.IDisplay).notification(
+            services.get_display().notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
                     "\n  ".join(vhost_macro)), force_interactive=True)
@@ -1532,7 +1532,7 @@ class ApacheConfigurator(common.Installer):
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 
         if sift:
-            reporter = zope.component.getUtility(interfaces.IReporter)
+            reporter = services.get_reporter()
             reporter.add_message(
                 "Some rewrite rules copied from {0} were disabled in the "
                 "vhost for your HTTPS site located at {1} because they have "

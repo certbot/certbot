@@ -9,6 +9,7 @@ from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter
+from certbot import services
 from certbot import util
 from certbot._internal import hooks
 from certbot.compat import misc
@@ -60,7 +61,7 @@ with the following value:
 {validation}
 """
     _DNS_VERIFY_INSTRUCTIONS = """
-Before continuing, verify the TXT record has been deployed. Depending on the DNS 
+Before continuing, verify the TXT record has been deployed. Depending on the DNS
 provider, this may take some time, from a few seconds to multiple minutes. You can
 check if it has finished deploying with aid of online tools, such as the Google
 Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}.
@@ -185,7 +186,7 @@ permitted by DNS standards.)
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
             msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
-        display = zope.component.getUtility(interfaces.IDisplay)
+        display = services.get_display()
         display.notification(msg, wrap=False, force_interactive=True)
         self.subsequent_any_challenge = True
 
