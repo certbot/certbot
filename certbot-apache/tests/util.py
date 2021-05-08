@@ -11,7 +11,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
-import zope.component
 
 from certbot.compat import os
 from certbot.display import util as display_util

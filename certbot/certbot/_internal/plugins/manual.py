@@ -1,7 +1,6 @@
 """Manual authenticator plugin"""
 from typing import Dict
 
-import zope.component
 import zope.interface
 
 from acme import challenges

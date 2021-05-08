@@ -7,7 +7,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
-import zope.component
 
 from acme import challenges
 from acme import client as acme_client
@@ -15,7 +14,6 @@ from acme import errors as acme_errors
 from acme import messages
 from certbot import achallenges
 from certbot import errors
-from certbot import interfaces
 from certbot import services
 from certbot import util
 from certbot.tests import acme_util

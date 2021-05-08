@@ -15,7 +15,6 @@ from typing import Optional
 from typing import Set
 from typing import Union
 
-import zope.component
 import zope.interface
 
 from acme import challenges

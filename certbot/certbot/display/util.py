@@ -14,7 +14,6 @@ import sys
 import textwrap
 from typing import List
 
-import zope.component
 import zope.interface
 
 from certbot import errors

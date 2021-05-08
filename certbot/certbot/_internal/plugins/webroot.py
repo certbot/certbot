@@ -8,7 +8,6 @@ from typing import Dict
 from typing import List
 from typing import Set
 
-import zope.component
 import zope.interface
 
 from acme import challenges

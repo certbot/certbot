@@ -3,10 +3,8 @@ import logging
 import unittest
 
 import OpenSSL
-import zope.component
 
 from certbot import errors
-from certbot import interfaces
 from certbot import services
 from certbot import util
 from certbot.compat import filesystem
