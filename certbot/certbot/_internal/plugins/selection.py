@@ -21,14 +21,14 @@ def pick_configurator(
     """Pick configurator plugin."""
     return pick_plugin(
         config, default, plugins, question,
-        (interfaces.IAuthenticator, interfaces.IInstaller))
+        (interfaces.Authenticator, interfaces.Installer))
 
 
 def pick_installer(config, default, plugins,
                    question="How would you like to install certificates?"):
     """Pick installer plugin."""
     return pick_plugin(
-        config, default, plugins, question, (interfaces.IInstaller,))
+        config, default, plugins, question, (interfaces.Installer,))
 
 
 def pick_authenticator(
@@ -36,7 +36,7 @@ def pick_authenticator(
                                        "like to authenticate with the ACME CA?"):
     """Pick authentication plugin."""
     return pick_plugin(
-        config, default, plugins, question, (interfaces.IAuthenticator,))
+        config, default, plugins, question, (interfaces.Authenticator,))
 
 
 def get_unprepared_installer(config, plugins):
@@ -56,7 +56,7 @@ def get_unprepared_installer(config, plugins):
         return None
     installers = plugins.filter(lambda p_ep: p_ep.check_name(req_inst))
     installers.init(config)
-    installers = installers.verify((interfaces.IInstaller,))
+    installers = installers.verify((interfaces.Installer,))
     if len(installers) > 1:
         raise errors.PluginSelectionError(
             "Found multiple installers with the name %s, Certbot is unable to "

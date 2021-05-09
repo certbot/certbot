@@ -1,4 +1,5 @@
 """Utilities for plugins discovery and selection."""
+import warnings
 from collections.abc import Mapping
 import itertools
 import logging
@@ -16,6 +17,8 @@ from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os
 from certbot.errors import Error
+from certbot.interfaces import IPlugin, IAuthenticator, IInstaller, IPluginFactory
+from zope.interface import Interface
 
 logger = logging.getLogger(__name__)
 
@@ -131,18 +134,8 @@ class PluginEntryPoint:
         if not self.initialized:
             raise ValueError("Plugin is not initialized.")
         for iface in ifaces:  # zope.interface.providedBy(plugin)
-            # No need to trigger some verify logic for ABCs: when the object is instantiated,
-            # an error would be raised if implementation is not done properly.
-            # So effectively the checks have been done when the plugin has been initialized.
-            if issubclass(iface, zope.interface.Interface):
-                try:
-                    zope.interface.verify.verifyObject(iface, self.init())
-                except zope.interface.exceptions.BrokenImplementation as error:
-                    if iface.implementedBy(self.plugin_cls):
-                        logger.debug(
-                            "%s implements %s but object does not verify: %s",
-                            self.plugin_cls, iface.__name__, error, exc_info=True)
-                    return False
+            if not _verify(self.init(), self.plugin_cls, iface):
+                return False
 
         return True
 
@@ -266,12 +259,11 @@ class PluginsRegistry(Mapping):
             plugin2 = other_ep.entry_point.dist.key if other_ep.entry_point.dist else "unknown"
             raise Exception("Duplicate plugin name {0} from {1} and {2}.".format(
                 plugin_ep.name, plugin1, plugin2))
-        if (issubclass(plugin_ep.plugin_cls, interfaces.Plugin)
-                or interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls)):
+        if _provides(plugin_ep.plugin_cls, interfaces.Plugin):
             plugins[plugin_ep.name] = plugin_ep
         else:  # pragma: no cover
             logger.warning(
-                "%r does not provide IPluginFactory, skipping", plugin_ep)
+                "%r does not inherit from Plugin, skipping", plugin_ep)
 
         return plugin_ep
 
@@ -348,8 +340,64 @@ class PluginsRegistry(Mapping):
         return "\n\n".join(str(p_ep) for p_ep in self._plugins.values())
 
 
-def _implements(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
-    if issubclass(iface, zope.interface.Interface):
-        return cast(iface, zope.interface.Interface).implementedBy(target_class)
+def _provides(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
+    if issubclass(target_class, iface):
+        return True
 
-    return issubclass(target_class, iface)
+    if iface == interfaces.Plugin and interfaces.IPluginFactory.providedBy(target_class):
+        warnings.warn("Zope interface certbot.interfaces.IPluginFactory is deprecated, "
+                      "use ABC certbot.interface.Plugin instead.")
+        return True
+
+
+def _implements(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
+    if issubclass(target_class, iface):
+        return True
+
+    if iface == interfaces.Plugin and interfaces.IPlugin.implementedBy(target_class):
+        warnings.warn("Zope interface certbot.interfaces.IPlugin is deprecated, "
+                      "use ABC certbot.interface.Plugin instead.")
+        return True
+
+    if iface == interfaces.Authenticator and interfaces.IAuthenticator.implementedBy(target_class):
+        warnings.warn("Zope interface certbot.interfaces.IAuthenticator is deprecated, "
+                      "use ABC certbot.interface.Authenticator instead.")
+        return True
+
+    if iface == interfaces.Installer and interfaces.IInstaller.implementedBy(target_class):
+        warnings.warn("Zope interface certbot.interfaces.IInstaller is deprecated, "
+                      "use ABC certbot.interface.Installer instead.")
+        return True
+
+    return False
+
+
+def _verify(target_instance: interfaces.Plugin, target_class: Type[interfaces.Plugin],
+            iface: Type) -> bool:
+    if issubclass(target_class, iface):
+        # No need to trigger some verify logic for ABCs: when the object is instantiated,
+        # an error would be raised if implementation is not done properly.
+        # So effectively the checks have been done when the plugin has been initialized.
+        return True
+
+    zope_iface: Optional[Type[Interface]] = None
+
+    if iface == interfaces.Plugin:
+        zope_iface = interfaces.IPlugin
+    if iface == interfaces.Authenticator:
+        zope_iface = interfaces.IAuthenticator
+    if iface == interfaces.Installer:
+        zope_iface = interfaces.IInstaller
+
+    if not zope_iface:
+        raise ValueError(f"Unexpected type: {iface.__name__}")
+
+    try:
+        zope.interface.verify.verifyObject(iface, target_instance)
+        return True
+    except zope.interface.exceptions.BrokenImplementation as error:
+        if zope_iface.implementedBy(target_class):
+            logger.debug(
+                "%s implements %s but object does not verify: %s",
+                target_class, zope_iface.__name__, error, exc_info=True)
+        return False

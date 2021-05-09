@@ -47,7 +47,6 @@ class IConfig(zope.interface.Interface):
     pass
 
 
-@zope.interface.implementer(IConfig)
 class Config(metaclass=ABCMeta):
     """Certbot user-supplied configuration.
 
@@ -225,8 +224,6 @@ class IPlugin(zope.interface.Interface):
     pass
 
 
-@zope.interface.provider(IPluginFactory)
-@zope.interface.implementer(IPlugin)
 class Plugin(metaclass=ABCMeta):
     """Certbot plugin.
 
@@ -323,7 +320,6 @@ class IAuthenticator(IPlugin):
     pass
 
 
-@zope.interface.implementer(IAuthenticator)
 class Authenticator(Plugin):
     """Generic Certbot Authenticator.
 
@@ -387,7 +383,6 @@ class IInstaller(IPlugin):
     pass
 
 
-@zope.interface.implementer(IInstaller)
 class Installer(Plugin):
     """Generic Certbot Installer Interface.
 
@@ -518,7 +513,6 @@ class IDisplay(zope.interface.Interface):
     pass
 
 
-@zope.interface.implementer(IDisplay)
 class Display(metaclass=ABCMeta):
     """Generic display."""
     # see https://github.com/certbot/certbot/issues/3915
@@ -675,7 +669,6 @@ class IReporter(zope.interface.Interface):
     pass
 
 
-@zope.interface.implementer(IReporter)
 class Reporter(metaclass=ABCMeta):
     """Interface to collect and display information to the user."""
 
