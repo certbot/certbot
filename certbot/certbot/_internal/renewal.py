@@ -185,7 +185,7 @@ def restore_required_config_elements(config, renewalparams):
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])
-            setattr(config, item_name, value)
+            setattr(config.namespace, item_name, value)
 
 
 def _remove_deprecated_config_elements(renewalparams):

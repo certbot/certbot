@@ -3,7 +3,7 @@ import datetime
 import logging
 import re
 import traceback
-from typing import List
+from typing import List, Union
 
 import pytz
 
@@ -51,8 +51,7 @@ def rename_lineage(config):
     new_certname = config.new_certname
     if not new_certname:
         code, new_certname = disp.input(
-            "Enter the new name for certificate {0}".format(certname),
-            flag="--updated-cert-name", force_interactive=True)
+            "Enter the new name for certificate {0}".format(certname), force_interactive=True)
         if code != display_util.OK or not new_certname:
             raise errors.Error("User ended interaction.")
 
@@ -309,8 +308,7 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
 
 
 def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
-    """Get certname from flag, interactively, or error out.
-    """
+    """Get certname from flag, interactively, or error out."""
     certname = config.certname
     if certname:
         certnames = [certname]

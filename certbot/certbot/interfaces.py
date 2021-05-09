@@ -523,7 +523,7 @@ class Display(metaclass=ABCMeta):
     # see https://github.com/certbot/certbot/issues/3915
 
     @abstractmethod
-    def notification(self, message: str, pause: bool, wrap: bool = True,
+    def notification(self, message: str, pause: bool = False, wrap: bool = True,
                      force_interactive: bool = False, decorate: bool = True):
         """Displays a string message
 
@@ -596,7 +596,7 @@ class Display(metaclass=ABCMeta):
 
     @abstractmethod
     def yesno(self, message: str, yes_label: str = "Yes", no_label: str = "No",
-              default: Optional[str] = None, cli_flag: Optional[str] = None,
+              default: Optional[bool] = None, cli_flag: Optional[str] = None,
               force_interactive: bool = False) -> bool:
         """Query the user with a yes/no question.
 
@@ -608,7 +608,7 @@ class Display(metaclass=ABCMeta):
         :param str message: question for the user
         :param str yes_label: label for Yes button
         :param str no_label: label for No button
-        :param str default: default (non-interactive) choice from the menu
+        :param bool default: default (non-interactive) choice from the menu
         :param str cli_flag: to automate choice from the menu, eg "--agree-tos"
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
@@ -624,7 +624,7 @@ class Display(metaclass=ABCMeta):
     @abstractmethod
     def checklist(self, message: str, tags: List[str], default: Optional[str] = None,
                   cli_flag: Optional[str] = None,
-                  force_interactive: bool = False) -> Tuple[int, List[str]]:
+                  force_interactive: bool = False) -> Tuple[str, List[str]]:
         """Allow for multiple selections from a menu.
 
         When not setting force_interactive=True, you must provide a
@@ -638,7 +638,7 @@ class Display(metaclass=ABCMeta):
             because it won't cause any workflow regressions
 
         :returns: tuple of the form (code, list_tags) where
-            `code` - int display exit code
+            `code` - str display exit code
             `list_tags` - list of str tags selected by the user
         :rtype: tuple
 

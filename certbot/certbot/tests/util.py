@@ -405,14 +405,14 @@ class ConfigTestCase(TempDirTestCase):
         self.config = configuration.NamespaceConfig(
             mock.MagicMock(**constants.CLI_DEFAULTS)
         )
-        self.config.verb = "certonly"
-        self.config.config_dir = os.path.join(self.tempdir, 'config')
-        self.config.work_dir = os.path.join(self.tempdir, 'work')
-        self.config.logs_dir = os.path.join(self.tempdir, 'logs')
-        self.config.cert_path = constants.CLI_DEFAULTS['auth_cert_path']
-        self.config.fullchain_path = constants.CLI_DEFAULTS['auth_chain_path']
-        self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
-        self.config.server = "https://example.com"
+        self.config.namespace.verb = "certonly"
+        self.config.namespace.config_dir = os.path.join(self.tempdir, 'config')
+        self.config.namespace.work_dir = os.path.join(self.tempdir, 'work')
+        self.config.namespace.logs_dir = os.path.join(self.tempdir, 'logs')
+        self.config.namespace.cert_path = constants.CLI_DEFAULTS['auth_cert_path']
+        self.config.namespace.fullchain_path = constants.CLI_DEFAULTS['auth_chain_path']
+        self.config.namespace.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
+        self.config.namespace.server = "https://example.com"
 
 
 def _handle_lock(event_in, event_out, path):

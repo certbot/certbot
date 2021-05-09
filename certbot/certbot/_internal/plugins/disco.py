@@ -90,10 +90,7 @@ class PluginEntryPoint:
         """Long description of the plugin."""
         if self._long_description:
             return self._long_description
-        try:
-            return self.plugin_cls.long_description
-        except AttributeError:
-            return self.description
+        return getattr(self.plugin_cls, "long_description", self.description)
 
     @long_description.setter
     def long_description(self, description):

@@ -70,7 +70,7 @@ class AuthHandler:
                 # If debug is on, wait for user input before starting the verification process.
                 logger.info('Waiting for verification...')
                 config = services.get_config()
-                if config.debug_challenges:
+                if getattr(config, "debug_challenges", False):
                     notify = services.get_display().notification
                     notify('Challenges loaded. Press continue to submit to CA. '
                            'Pass "-v" for more info about challenges.', pause=True)
