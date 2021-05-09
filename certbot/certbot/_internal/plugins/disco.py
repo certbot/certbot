@@ -1,15 +1,17 @@
 """Utilities for plugins discovery and selection."""
-import warnings
 from collections.abc import Mapping
 import itertools
 import logging
 import sys
-from typing import Dict, Type
+from typing import Dict
 from typing import Optional
+from typing import Type
 from typing import Union
+import warnings
 
 import pkg_resources
 import zope.interface
+from zope.interface import Interface
 import zope.interface.verify
 
 from certbot import errors
@@ -17,7 +19,6 @@ from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os
 from certbot.errors import Error
-from zope.interface import Interface
 
 logger = logging.getLogger(__name__)
 
@@ -348,6 +349,8 @@ def _provides(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
                       "use ABC certbot.interface.Plugin instead.")
         return True
 
+    return False
+
 
 def _implements(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
     if issubclass(target_class, iface):
@@ -399,4 +402,5 @@ def _verify(target_instance: interfaces.Plugin, target_class: Type[interfaces.Pl
             logger.debug(
                 "%s implements %s but object does not verify: %s",
                 target_class, zope_iface.__name__, error, exc_info=True)
-        return False
+
+    return False

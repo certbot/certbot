@@ -1,5 +1,4 @@
 """Test utilities."""
-import inspect
 from importlib import reload as reload_module
 import io
 import logging

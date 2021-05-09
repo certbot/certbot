@@ -153,9 +153,8 @@ class FileDisplay(Display):
             else:
                 logger.debug("Not pausing for user confirmation")
 
-    def menu(self, message, choices, ok_label=None, cancel_label=None,  # pylint: disable=unused-argument
-             help_label=None, default=None,  # pylint: disable=unused-argument
-             cli_flag=None, force_interactive=False, **unused_kwargs):
+    def menu(self, message, choices, ok_label=None, cancel_label=None,
+             help_label=None, default=None, cli_flag=None, force_interactive=False):
         """Display a menu.
 
         .. todo:: This doesn't enable the help label/button (I wasn't sold on
@@ -165,6 +164,9 @@ class FileDisplay(Display):
         :param choices: Menu lines, len must be > 0
         :type choices: list of tuples (tag, item) or
             list of descriptions (tags will be enumerated)
+        :param str ok_label: (UNUSED)
+        :param str cancel_label: (UNUSED)
+        :param str help_label: (UNUSED)
         :param default: default value to return (if one exists)
         :param str cli_flag: option used to set this value with the CLI
         :param bool force_interactive: True if it's safe to prompt the user
@@ -187,7 +189,7 @@ class FileDisplay(Display):
         return code, selection - 1
 
     def input(self, message, default=None,
-              cli_flag=None, force_interactive=False, **unused_kwargs):
+              cli_flag=None, force_interactive=False):
         """Accept input from the user.
 
         :param str message: message to display to the user
@@ -214,7 +216,7 @@ class FileDisplay(Display):
         return OK, ans
 
     def yesno(self, message, yes_label="Yes", no_label="No", default=None,
-              cli_flag=None, force_interactive=False, **unused_kwargs):
+              cli_flag=None, force_interactive=False):
         """Query the user with a yes/no question.
 
         Yes and No label must begin with different letters, and must contain at
@@ -256,7 +258,7 @@ class FileDisplay(Display):
                 return False
 
     def checklist(self, message, tags, default=None,
-                  cli_flag=None, force_interactive=False, **unused_kwargs):
+                  cli_flag=None, force_interactive=False):
         """Display a checklist.
 
         :param str message: Message to display to user
@@ -348,7 +350,7 @@ class FileDisplay(Display):
         return False
 
     def directory_select(self, message, default=None, cli_flag=None,
-                         force_interactive=False, **unused_kwargs):
+                         force_interactive=False):
         """Display a directory selection screen.
 
         :param str message: prompt to give the user
@@ -483,7 +485,7 @@ class NoninteractiveDisplay(Display):
         self.outfile = outfile
 
     def _interaction_fail(self, message, cli_flag, extra=""):
-        "Error out in case of an attempt to interact in noninteractive mode"
+        """Error out in case of an attempt to interact in noninteractive mode"""
         msg = "Missing command line flag or config entry for this setting:\n"
         msg += message
         if extra:
@@ -492,12 +494,14 @@ class NoninteractiveDisplay(Display):
             msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
         raise errors.MissingCommandlineFlag(msg)
 
-    def notification(self, message, pause=False, wrap=True, decorate=True, **unused_kwargs):  # pylint: disable=unused-argument
+    def notification(self, message, pause=False, wrap=True,
+                     force_interactive=False, decorate=True):
         """Displays a notification without waiting for user acceptance.
 
         :param str message: Message to display to stdout
-        :param bool pause: The NoninteractiveDisplay waits for no keyboard
+        :param bool pause: (UNUSED)
         :param bool wrap: Whether or not the application should wrap text
+        :param bool force_interactive: (UNUSED)
         :param bool decorate: Whether to apply a decorated frame to the message
 
         """
@@ -515,7 +519,7 @@ class NoninteractiveDisplay(Display):
         self.outfile.flush()
 
     def menu(self, message, choices, ok_label=None, cancel_label=None,
-             help_label=None, default=None, cli_flag=None, **unused_kwargs):
+             help_label=None, default=None, cli_flag=None, force_interactive=False):
         # pylint: disable=unused-argument
         """Avoid displaying a menu.
 
@@ -523,8 +527,12 @@ class NoninteractiveDisplay(Display):
         :param choices: Menu lines, len must be > 0
         :type choices: list of tuples (tag, item) or
             list of descriptions (tags will be enumerated)
+        :param str ok_label: (UNUSED)
+        :param str cancel_label: (UNUSED)
+        :param str help_label: (UNUSED)
         :param int default: the default choice
-        :param dict kwargs: absorbs various irrelevant labelling arguments
+        :param str cli_flag: to automate choice from the menu, (UNUSED)
+        :param bool force_interactive: (UNUSED)
 
         :returns: tuple of (`code`, `index`) where
             `code` - str display exit code
@@ -538,10 +546,13 @@ class NoninteractiveDisplay(Display):
 
         return OK, default
 
-    def input(self, message, default=None, cli_flag=None, **unused_kwargs):
+    def input(self, message, default=None, cli_flag=None, force_interactive=False):
         """Accept input from the user.
 
         :param str message: message to display to the user
+        :param str default: default (non-interactive) response to prompt
+        :param str cli_flag: to automate choice from the menu, eg "--redirect / --no-redirect"
+        :param bool force_interactive: (UNUSED)
 
         :returns: tuple of (`code`, `input`) where
             `code` - str display exit code
@@ -554,12 +565,16 @@ class NoninteractiveDisplay(Display):
             self._interaction_fail(message, cli_flag)
         return OK, default
 
-    def yesno(self, message, yes_label=None, no_label=None,  # pylint: disable=unused-argument
-              default=None, cli_flag=None, **unused_kwargs):
+    def yesno(self, message, yes_label=None, no_label=None,
+              default=None, cli_flag=None, force_interactive=False):
         """Decide Yes or No, without asking anybody
 
         :param str message: question for the user
-        :param dict kwargs: absorbs yes_label, no_label
+        :param str yes_label: (UNUSED)
+        :param str no_label: (UNUSED)
+        :param str default: default (non-interactive) choice from the menu
+        :param str cli_flag: to automate choice from the menu, eg "--agree-tos"
+        :param bool force_interactive: (UNUSED)
 
         :raises errors.MissingCommandlineFlag: if there was no default
         :returns: True for "Yes", False for "No"
@@ -571,12 +586,14 @@ class NoninteractiveDisplay(Display):
         return default
 
     def checklist(self, message, tags, default=None,
-                  cli_flag=None, **unused_kwargs):
+                  cli_flag=None, force_interactive=False):
         """Display a checklist.
 
-        :param str message: Message to display to user
-        :param list tags: `str` tags to select, len(tags) > 0
-        :param dict kwargs: absorbs default_status arg
+        :param str message: message to display to the user
+        :param list tags: where each is of type :class:`str` len(tags) > 0
+        :param str default: default (non-interactive) state of the checklist
+        :param str cli_flag: to automate choice from the menu, eg "--domains"
+        :param bool force_interactive: (UNUSED)
 
         :returns: tuple of (`code`, `tags`) where
             `code` - str display exit code
@@ -589,7 +606,7 @@ class NoninteractiveDisplay(Display):
         return OK, default
 
     def directory_select(self, message, default=None,
-                         cli_flag=None, **unused_kwargs):
+                         cli_flag=None, force_interactive=False):
         """Simulate prompting the user for a directory.
 
         This function returns default if it is not ``None``, otherwise,
@@ -600,6 +617,7 @@ class NoninteractiveDisplay(Display):
         :param str message: prompt to give the user
         :param default: default value to return (if one exists)
         :param str cli_flag: option used to set this value with the CLI
+        :param bool force_interactive: (UNUSED)
 
         :returns: tuple of the form (`code`, `string`) where
             `code` - int display exit code

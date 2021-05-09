@@ -1,9 +1,9 @@
 """This module contains global singletons used throughout Certbot."""
-from typing import Optional, Any
+from typing import Optional
 
-from certbot.interfaces import IConfig, Config, Display, Reporter
-from certbot.interfaces import IDisplay
-from certbot.interfaces import IReporter
+from certbot.interfaces import Config
+from certbot.interfaces import Display
+from certbot.interfaces import Reporter
 
 
 class _Services:

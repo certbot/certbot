@@ -9,7 +9,7 @@ from typing import List
 from josepy import util as jose_util
 import pkg_resources
 
-from certbot import achallenges, interfaces
+from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
 from certbot import reverter
@@ -39,14 +39,11 @@ hostname_regex = re.compile(
     r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$", re.IGNORECASE)
 
 
-class Plugin(AbstractPlugin, metaclass=ABCMeta):
+class Plugin(AbstractPlugin, metaclass=ABCMeta):  # pylint: disable=abstract-method
     """Generic plugin."""
-    # provider is not inherited, subclasses must define it on their own
-    # @zope.interface.provider(interfaces.IPluginFactory)
 
-    def __init__(self, config, name):
-        self.config = config
-        self.name = name
+    def __init__(self, config, name):  # pylint: disable=useless-super-delegation
+        super().__init__(config, name)
 
     @jose_util.abstractclassmethod
     def add_parser_arguments(cls, add):
@@ -97,7 +94,7 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):
         return getattr(self.config, self.dest(var))
 
 
-class Installer(AbstractInstaller, Plugin, metaclass=ABCMeta):
+class Installer(AbstractInstaller, Plugin, metaclass=ABCMeta):  # pylint: disable=abstract-method
     """An installer base class with reverter and ssl_dhparam methods defined.
 
     Installer plugins do not have to inherit from this class.

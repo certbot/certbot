@@ -1,12 +1,17 @@
 """Certbot client interfaces."""
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta
+from abc import abstractmethod
 from argparse import ArgumentParser
-from typing import Optional, Iterable, List, Union, Tuple
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 import zope.interface
 
-# pylint: disable=no-self-argument,no-method-argument,inherit-non-class
-from acme.challenges import Challenge, ChallengeResponse
+from acme.challenges import Challenge
+from acme.challenges import ChallengeResponse
 from certbot.achallenges import AnnotatedChallenge
 
 
@@ -43,8 +48,8 @@ class AccountStorage(metaclass=ABCMeta):
         raise NotImplementedError()
 
 
-class IConfig(zope.interface.Interface):
-    pass
+class IConfig(zope.interface.Interface):  # pylint: disable=inherit-non-class
+    """Deprecated, use certbot.interfaces.Config as ABC instead."""
 
 
 class Config(metaclass=ABCMeta):
@@ -216,12 +221,12 @@ class Config(metaclass=ABCMeta):
         """
 
 
-class IPluginFactory(zope.interface.Interface):
-    pass
+class IPluginFactory(zope.interface.Interface):  # pylint: disable=inherit-non-class
+    """Deprecated, use certbot.interfaces.Plugin as ABC instead."""
 
 
-class IPlugin(zope.interface.Interface):
-    pass
+class IPlugin(zope.interface.Interface):  # pylint: disable=inherit-non-class
+    """Deprecated, use certbot.interfaces.Plugin as ABC instead."""
 
 
 class Plugin(metaclass=ABCMeta):
@@ -316,8 +321,8 @@ class Plugin(metaclass=ABCMeta):
         """
 
 
-class IAuthenticator(IPlugin):
-    pass
+class IAuthenticator(IPlugin):  # pylint: disable=inherit-non-class
+    """Deprecated, use certbot.interfaces.Authenticator as ABC instead."""
 
 
 class Authenticator(Plugin):
@@ -379,8 +384,8 @@ class Authenticator(Plugin):
         """
 
 
-class IInstaller(IPlugin):
-    pass
+class IInstaller(IPlugin):  # pylint: disable=inherit-non-class
+    """Deprecated, use certbot.interfaces.Installer as ABC instead."""
 
 
 class Installer(Plugin):
@@ -509,8 +514,8 @@ class Installer(Plugin):
         """
 
 
-class IDisplay(zope.interface.Interface):
-    pass
+class IDisplay(zope.interface.Interface):  # pylint: disable=inherit-non-class
+    """Deprecated, use certbot.interfaces.Display as ABC instead."""
 
 
 class Display(metaclass=ABCMeta):
@@ -519,7 +524,7 @@ class Display(metaclass=ABCMeta):
 
     @abstractmethod
     def notification(self, message: str, pause: bool, wrap: bool = True,
-                     force_interactive: bool = False):
+                     force_interactive: bool = False, decorate: bool = True):
         """Displays a string message
 
         :param str message: Message to display
@@ -528,6 +533,8 @@ class Display(metaclass=ABCMeta):
         :param bool wrap: Whether or not the application should wrap text
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
+        :param bool decorate: Whether to surround the message with a
+            decorated frame
 
         """
 
@@ -564,7 +571,7 @@ class Display(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def input(self, message: str, default: Optional[str] = None, cli_args: Optional[str] = None,
+    def input(self, message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
               force_interactive: bool = False) -> Tuple[str, int]:
         """Accept input from the user.
 
@@ -573,7 +580,7 @@ class Display(metaclass=ABCMeta):
 
         :param str message: message to display to the user
         :param str default: default (non-interactive) response to prompt
-        :param str cli_args: to automate choice from the menu, eg "--redirect / --no-redirect"
+        :param str cli_flag: to automate choice from the menu, eg "--redirect / --no-redirect"
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
 
@@ -589,7 +596,7 @@ class Display(metaclass=ABCMeta):
 
     @abstractmethod
     def yesno(self, message: str, yes_label: str = "Yes", no_label: str = "No",
-              default: Optional[str] = None, cli_args: Optional[str] = None,
+              default: Optional[str] = None, cli_flag: Optional[str] = None,
               force_interactive: bool = False) -> bool:
         """Query the user with a yes/no question.
 
@@ -602,7 +609,7 @@ class Display(metaclass=ABCMeta):
         :param str yes_label: label for Yes button
         :param str no_label: label for No button
         :param str default: default (non-interactive) choice from the menu
-        :param str cli_args: to automate choice from the menu, eg "--agree-tos"
+        :param str cli_flag: to automate choice from the menu, eg "--agree-tos"
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
 
@@ -616,7 +623,7 @@ class Display(metaclass=ABCMeta):
 
     @abstractmethod
     def checklist(self, message: str, tags: List[str], default: Optional[str] = None,
-                  cli_args: Optional[str] = None,
+                  cli_flag: Optional[str] = None,
                   force_interactive: bool = False) -> Tuple[int, List[str]]:
         """Allow for multiple selections from a menu.
 
@@ -626,7 +633,7 @@ class Display(metaclass=ABCMeta):
         :param str message: message to display to the user
         :param list tags: where each is of type :class:`str` len(tags) > 0
         :param str default: default (non-interactive) state of the checklist
-        :param str cli_args: to automate choice from the menu, eg "--domains"
+        :param str cli_flag: to automate choice from the menu, eg "--domains"
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
 
@@ -665,8 +672,8 @@ class Display(metaclass=ABCMeta):
         """
 
 
-class IReporter(zope.interface.Interface):
-    pass
+class IReporter(zope.interface.Interface):  # pylint: disable=inherit-non-class
+    """Deprecated, use certbot.interfaces.Reporter as ABC instead."""
 
 
 class Reporter(metaclass=ABCMeta):
@@ -698,7 +705,7 @@ class Reporter(metaclass=ABCMeta):
         """Prints messages to the user and clears the message queue."""
 
 
-class RenewableCert(object, metaclass=ABCMeta):
+class RenewableCert(metaclass=ABCMeta):
     """Interface to a certificate lineage."""
 
     @property
@@ -748,7 +755,6 @@ class RenewableCert(object, metaclass=ABCMeta):
 
         """
 
-    @property
     @abstractmethod
     def names(self):
         """What are the subject names of this certificate?
