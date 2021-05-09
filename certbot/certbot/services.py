@@ -27,8 +27,11 @@ def get_config() -> Any:
 
     :return: the Certbot configuration
     :rtype: IConfig
+    :raise: ValueError if the Certbot configuration is not set
 
     """
+    if not _services.config:
+        raise ValueError("Config is not set.")
     return _services.config
 
 
@@ -37,8 +40,11 @@ def get_display() -> Any:
 
     :return: the display utility
     :rtype: IDisplay
+    :raise: ValueError if the display utility is not set
 
     """
+    if not _services.display:
+        raise ValueError("Display is not set.")
     return _services.display
 
 
@@ -47,8 +53,11 @@ def get_reporter() -> Any:
 
     :return: the reporter utility
     :rtype: IReporter
+    :raise: ValueError if the reporter utility is not set
 
     """
+    if not _services.reporter:
+        raise ValueError("Reporter is not set.")
     return _services.reporter
 
 

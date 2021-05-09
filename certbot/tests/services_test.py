@@ -21,18 +21,18 @@ class RelevantValuesTest(unittest.TestCase):
         services._services = services._Services()
 
     def test_config_service(self):
-        self.assertIsNone(services.get_config())
+        self.assertRaises(ValueError, services.get_config)
 
         config = MagicMock()
 
         services.set_config(config)
 
         self.assertEqual(id(services.get_config()), id(config))
-        self.assertIsNone(services.get_display())
-        self.assertIsNone(services.get_reporter())
+        self.assertRaises(ValueError, services.get_display)
+        self.assertRaises(ValueError, services.get_reporter)
 
     def test_display_service(self):
-        self.assertIsNone(services.get_display())
+        self.assertRaises(ValueError, services.get_display)
 
         config = MagicMock()
 
@@ -40,10 +40,10 @@ class RelevantValuesTest(unittest.TestCase):
 
         self.assertEqual(id(services.get_display()), id(config))
         self.assertIsNotNone(services.get_config())  # Set since test_config_service has been run
-        self.assertIsNone(services.get_reporter())
+        self.assertRaises(ValueError, services.get_reporter)
 
     def test_reporter_service(self):
-        self.assertIsNone(services.get_reporter())
+        self.assertRaises(ValueError, services.get_reporter)
 
         config = MagicMock()
 
