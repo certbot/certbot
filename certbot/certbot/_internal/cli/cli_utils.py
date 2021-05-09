@@ -3,8 +3,6 @@ import argparse
 import copy
 import inspect
 
-import zope.interface.interface  # pylint: disable=unused-import
-
 from acme import challenges
 from certbot import errors
 from certbot import interfaces

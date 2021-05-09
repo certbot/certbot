@@ -4,7 +4,7 @@ from collections.abc import Mapping
 import itertools
 import logging
 import sys
-from typing import Dict, Type, cast
+from typing import Dict, Type
 from typing import Optional
 from typing import Union
 
@@ -17,7 +17,6 @@ from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os
 from certbot.errors import Error
-from certbot.interfaces import IPlugin, IAuthenticator, IInstaller, IPluginFactory
 from zope.interface import Interface
 
 logger = logging.getLogger(__name__)

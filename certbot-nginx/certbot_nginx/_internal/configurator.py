@@ -16,7 +16,6 @@ from typing import Tuple
 
 import OpenSSL
 import pkg_resources
-import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
