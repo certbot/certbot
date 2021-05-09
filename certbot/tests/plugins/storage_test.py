@@ -1,6 +1,7 @@
 """Tests for certbot.plugins.storage.PluginStorage"""
 import json
 import unittest
+from typing import Optional, List, Iterable
 
 try:
     import mock
@@ -10,7 +11,6 @@ except ImportError: # pragma: no cover
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
-from certbot.plugins import common
 from certbot.tests import util as test_util
 
 
@@ -19,7 +19,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
 
     def setUp(self):
         super().setUp()
-        self.plugin_cls = common.Installer
+        self.plugin_cls = test_util.DummyInstaller
         filesystem.mkdir(self.config.config_dir)
         with mock.patch("certbot.reverter.util"):
             self.plugin = self.plugin_cls(config=self.config, name="mockplugin")
@@ -100,7 +100,6 @@ class PluginStorageTest(test_util.ConfigTestCase):
         self.assertRaises(KeyError,
                           plugin2.storage.fetch, "first")
         self.assertEqual(plugin1.storage.fetch("first_key"), "first_value")
-
 
     def test_saved_state(self):
         self.plugin.storage.put("testkey", "testvalue")

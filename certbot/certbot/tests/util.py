@@ -7,6 +7,9 @@ from multiprocessing import Process
 import shutil
 import sys
 import tempfile
+from typing import Iterable
+from typing import List
+from typing import Optional
 import unittest
 import warnings
 
@@ -25,6 +28,7 @@ from certbot._internal import storage
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
+from certbot.plugins import common
 
 try:
     # When we remove this deprecated import, we should also remove the
@@ -39,6 +43,41 @@ try:
     )
 except ImportError:  # pragma: no cover
     from unittest import mock  # type: ignore
+
+
+class DummyInstaller(common.Installer):
+    """Dummy installer plugin for test purpose."""
+    def get_all_names(self) -> Iterable[str]:
+        pass
+
+    def deploy_cert(self, domain: str, cert_path: str, key_path: str, chain_path: str,
+                    fullchain_path: str) -> None:
+        pass
+
+    def enhance(self, domain: str, enhancement: str, options: Optional[List[str]] = None) -> None:
+        pass
+
+    def supported_enhancements(self) -> List[str]:
+        pass
+
+    def save(self, title: Optional[str] = None, temporary: bool = False) -> None:
+        pass
+
+    def config_test(self) -> None:
+        pass
+
+    def restart(self) -> None:
+        pass
+
+    @classmethod
+    def add_parser_arguments(cls, add):
+        pass
+
+    def prepare(self) -> None:
+        pass
+
+    def more_info(self) -> str:
+        pass
 
 
 def vector_path(*names):

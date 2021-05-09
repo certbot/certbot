@@ -95,10 +95,10 @@ class PluginEntryPointTest(unittest.TestCase):
             "Long desc not found", self.plugin_ep.long_description)
 
     def test_ifaces(self):
-        self.assertTrue(self.plugin_ep.ifaces((interfaces.IAuthenticator,)))
-        self.assertFalse(self.plugin_ep.ifaces((interfaces.IInstaller,)))
+        self.assertTrue(self.plugin_ep.ifaces((interfaces.Authenticator,)))
+        self.assertFalse(self.plugin_ep.ifaces((interfaces.Installer,)))
         self.assertFalse(self.plugin_ep.ifaces((
-            interfaces.IInstaller, interfaces.IAuthenticator)))
+            interfaces.Installer, interfaces.Authenticator)))
 
     def test__init__(self):
         self.assertIs(self.plugin_ep.initialized, False)
@@ -135,16 +135,16 @@ class PluginEntryPointTest(unittest.TestCase):
         self.plugin_ep._initialized = plugin = mock.MagicMock()
 
         exceptions = zope.interface.exceptions
-        with mock.patch("certbot._internal.plugins."
-                        "disco.zope.interface") as mock_zope:
-            mock_zope.exceptions = exceptions
+        with mock.patch("certbot._internal.plugins.disco._verify") as mock_verify:
+            mock_verify.exceptions = exceptions
 
-            def verify_object(iface, obj):  # pylint: disable=missing-docstring
+            def verify_object(obj, cls, iface):  # pylint: disable=missing-docstring
                 assert obj is plugin
                 assert iface is iface1 or iface is iface2 or iface is iface3
                 if iface is iface3:
-                    raise mock_zope.exceptions.BrokenImplementation(None, None)
-            mock_zope.verify.verifyObject.side_effect = verify_object
+                    return False
+                return True
+            mock_verify.side_effect = verify_object
             self.assertTrue(self.plugin_ep.verify((iface1,)))
             self.assertTrue(self.plugin_ep.verify((iface1, iface2)))
             self.assertFalse(self.plugin_ep.verify((iface3,)))
