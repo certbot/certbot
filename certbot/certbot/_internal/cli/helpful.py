@@ -63,10 +63,9 @@ class HelpfulArgumentParser:
         }
 
         # Get notification function for printing
-        displayer = services.get_display()
-        if displayer:
-            self.notify = displayer.notification
-        else:
+        try:
+            self.notify = services.get_display().notification
+        except ValueError:
             self.notify = display_util.NoninteractiveDisplay(sys.stdout).notification
 
         # List of topics for which additional help can be provided
