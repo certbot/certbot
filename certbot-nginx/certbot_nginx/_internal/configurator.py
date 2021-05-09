@@ -43,7 +43,7 @@ NO_SSL_MODIFIER = 4
 logger = logging.getLogger(__name__)
 
 
-class NginxConfigurator(interfaces.Authenticator, common.Installer):
+class NginxConfigurator(common.Installer, interfaces.Authenticator):
     """Nginx configurator.
 
     .. todo:: Add proper support for comments in the config. Currently,

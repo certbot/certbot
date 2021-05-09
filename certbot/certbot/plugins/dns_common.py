@@ -17,7 +17,7 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
-class DNSAuthenticator(interfaces.Authenticator, common.Plugin, metaclass=abc.ABCMeta):
+class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.ABCMeta):
     """Base class for DNS  Authenticators"""
 
     def __init__(self, config, name):

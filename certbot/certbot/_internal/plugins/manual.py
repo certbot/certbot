@@ -13,7 +13,7 @@ from certbot.compat import os
 from certbot.plugins import common
 
 
-class Authenticator(interfaces.Authenticator, common.Plugin):
+class Authenticator(common.Plugin, interfaces.Authenticator):
     """Manual authenticator
 
     This plugin allows the user to perform the domain validation

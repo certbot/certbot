@@ -105,7 +105,7 @@ class ServerManager:
         return self._instances.copy()
 
 
-class Authenticator(interfaces.Authenticator, common.Plugin):
+class Authenticator(common.Plugin, interfaces.Authenticator):
     """Standalone Authenticator.
 
     This authenticator creates its own ephemeral TCP listener on the

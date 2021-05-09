@@ -7,7 +7,7 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
-class Installer(interfaces.Installer, common.Plugin):
+class Installer(common.Plugin, interfaces.Installer):
     """Null installer."""
 
     description = "Null Installer"

@@ -25,7 +25,7 @@ from certbot.util import safe_open
 logger = logging.getLogger(__name__)
 
 
-class Authenticator(interfaces.Authenticator, common.Plugin):
+class Authenticator(common.Plugin, interfaces.Authenticator):
     """Webroot Authenticator."""
 
     description = "Place files in webroot directory"

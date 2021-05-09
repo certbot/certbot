@@ -117,7 +117,7 @@ class OsOptions:
 # TODO: Add directives to sites-enabled... not sites-available.
 #     sites-available doesn't allow immediate find_dir search even with save()
 #     and load()
-class ApacheConfigurator(interfaces.Authenticator, common.Installer):
+class ApacheConfigurator(common.Installer, interfaces.Authenticator):
     """Apache configurator.
 
     :ivar config: Configuration.
