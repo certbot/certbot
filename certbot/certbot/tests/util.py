@@ -1,4 +1,5 @@
 """Test utilities."""
+import inspect
 from importlib import reload as reload_module
 import io
 import logging
@@ -324,10 +325,12 @@ class FreezableMock:
 def _create_display_service_mock():
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():  # pylint: E1120
-        if name != 'notification':
+    method_list = [func for func in dir(interfaces.Display)
+                   if callable(getattr(interfaces.Display, func)) and not func.startswith("__")]
+    for method in method_list:
+        if method != 'notification':
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
-            setattr(display, name, frozen_mock)
+            setattr(display, method, frozen_mock)
     display.freeze()
     return FreezableMock(frozen=True, return_value=display)
 
@@ -348,14 +351,17 @@ def _create_display_service_mock_with_stdout(stdout):
 
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():  # pylint: E1120
-        if name == 'notification':
+    method_list = [func for func in dir(interfaces.Display)
+                   if callable(getattr(interfaces.Display, func)) and not func.startswith("__")]
+    for method in method_list:
+        print(method)
+        if method == 'notification':
             frozen_mock = FreezableMock(frozen=True,
                                         func=_write_msg)
         else:
             frozen_mock = FreezableMock(frozen=True,
                                         func=mock_method)
-        setattr(display, name, frozen_mock)
+        setattr(display, method, frozen_mock)
     display.freeze()
     return FreezableMock(frozen=True, return_value=display)
 
