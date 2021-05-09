@@ -9,7 +9,7 @@ from typing import List
 from josepy import util as jose_util
 import pkg_resources
 
-from certbot import achallenges
+from certbot import achallenges, interfaces
 from certbot import crypto_util
 from certbot import errors
 from certbot import reverter
@@ -17,7 +17,7 @@ from certbot._internal import constants
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins.storage import PluginStorage
-from certbot.interfaces import Plugin as AbstractPlugin
+from certbot.interfaces import Plugin as AbstractPlugin, Installer as AbstractInstaller
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):
         return getattr(self.config, self.dest(var))
 
 
-class Installer(Plugin, metaclass=ABCMeta):
+class Installer(AbstractInstaller, Plugin, metaclass=ABCMeta):
     """An installer base class with reverter and ssl_dhparam methods defined.
 
     Installer plugins do not have to inherit from this class.

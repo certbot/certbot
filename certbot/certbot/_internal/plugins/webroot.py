@@ -10,7 +10,7 @@ from typing import Set
 
 
 from acme import challenges
-from certbot import errors
+from certbot import errors, interfaces
 from certbot import services
 from certbot._internal import cli
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge as AnnotatedChallenge
@@ -25,7 +25,7 @@ from certbot.util import safe_open
 logger = logging.getLogger(__name__)
 
 
-class Authenticator(common.Plugin):
+class Authenticator(interfaces.Authenticator, common.Plugin):
     """Webroot Authenticator."""
 
     description = "Place files in webroot directory"

@@ -11,30 +11,32 @@ from certbot.display import util as display_util
 logger = logging.getLogger(__name__)
 
 
+# TODO: Replace the Zope interfaces (once removed) by ABCs in pick_* functions.
+
+
 def pick_configurator(
-        config, default, plugins,
-        question="How would you like to authenticate and install "
-                 "certificates?"):
+    config, default, plugins,
+    question="How would you like to authenticate and install "
+             "certificates?"):
     """Pick configurator plugin."""
     return pick_plugin(
         config, default, plugins, question,
-        [interfaces.IAuthenticator, interfaces.IInstaller,
-         interfaces.Authenticator, interfaces.Installer])
+        (interfaces.IAuthenticator, interfaces.IInstaller))
 
 
 def pick_installer(config, default, plugins,
                    question="How would you like to install certificates?"):
     """Pick installer plugin."""
     return pick_plugin(
-        config, default, plugins, question, [interfaces.IInstaller, interfaces.Installer])
+        config, default, plugins, question, (interfaces.IInstaller,))
 
 
 def pick_authenticator(
-        config, default, plugins, question="How would you "
-        "like to authenticate with the ACME CA?"):
+    config, default, plugins, question="How would you "
+                                       "like to authenticate with the ACME CA?"):
     """Pick authentication plugin."""
     return pick_plugin(
-        config, default, plugins, question, [interfaces.IAuthenticator, interfaces.Authenticator])
+        config, default, plugins, question, (interfaces.IAuthenticator,))
 
 
 def get_unprepared_installer(config, plugins):

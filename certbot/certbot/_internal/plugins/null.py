@@ -1,12 +1,13 @@
 """Null plugin."""
 import logging
 
+from certbot import interfaces
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
 
 
-class Installer(common.Plugin):
+class Installer(interfaces.Installer, common.Plugin):
     """Null installer."""
 
     description = "Null Installer"

@@ -133,7 +133,7 @@ class PluginEntryPoint:
         for iface in ifaces:  # zope.interface.providedBy(plugin)
             # No need to trigger some verify logic for ABCs: when the object is instantiated,
             # an error would be raised if implementation is not done properly.
-            # So effectively the checks have been done during init().
+            # So effectively the checks have been done when the plugin has been initialized.
             if issubclass(iface, zope.interface.Interface):
                 try:
                     zope.interface.verify.verifyObject(iface, self.init())
@@ -201,8 +201,9 @@ class PluginEntryPoint:
             "* {0}".format(self.name),
             "Description: {0}".format(self.plugin_cls.description),
             "Interfaces: {0}".format(", ".join(
-                iface.__name__ for iface in zope.interface.implementedBy(
-                    self.plugin_cls))),
+                cls.__name__ for cls in self.plugin_cls.mro()
+                if cls.__module__ == 'certbot.interfaces'
+            )),
             "Entry point: {0}".format(self.entry_point),
         ]
 

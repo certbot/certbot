@@ -13,7 +13,7 @@ import OpenSSL
 
 from acme import challenges
 from acme import standalone as acme_standalone
-from certbot import achallenges
+from certbot import achallenges, interfaces
 from certbot import errors
 from certbot import services
 from certbot.plugins import common
@@ -105,7 +105,7 @@ class ServerManager:
         return self._instances.copy()
 
 
-class Authenticator(common.Plugin):
+class Authenticator(interfaces.Authenticator, common.Plugin):
     """Standalone Authenticator.
 
     This authenticator creates its own ephemeral TCP listener on the

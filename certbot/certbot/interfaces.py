@@ -387,6 +387,7 @@ class IInstaller(IPlugin):
     pass
 
 
+@zope.interface.implementer(IInstaller)
 class Installer(Plugin):
     """Generic Certbot Installer Interface.
 

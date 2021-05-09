@@ -2,7 +2,7 @@
 from typing import Dict
 
 from acme import challenges
-from certbot import achallenges
+from certbot import achallenges, interfaces
 from certbot import errors
 from certbot import reverter
 from certbot import services
@@ -13,7 +13,7 @@ from certbot.compat import os
 from certbot.plugins import common
 
 
-class Authenticator(common.Plugin):
+class Authenticator(interfaces.Authenticator, common.Plugin):
     """Manual authenticator
 
     This plugin allows the user to perform the domain validation
