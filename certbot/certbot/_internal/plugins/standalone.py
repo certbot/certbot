@@ -10,13 +10,11 @@ from typing import Tuple
 from typing import TYPE_CHECKING
 
 import OpenSSL
-import zope.interface
 
 from acme import challenges
 from acme import standalone as acme_standalone
 from certbot import achallenges
 from certbot import errors
-from certbot import interfaces
 from certbot import services
 from certbot.plugins import common
 
@@ -27,6 +25,7 @@ if TYPE_CHECKING:
         acme_standalone.BaseDualNetworkedServers,
         Set[achallenges.KeyAuthorizationAnnotatedChallenge]
     ]
+
 
 class ServerManager:
     """Standalone servers manager.
@@ -106,8 +105,6 @@ class ServerManager:
         return self._instances.copy()
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
     """Standalone Authenticator.
 

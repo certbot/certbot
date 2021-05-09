@@ -6,10 +6,8 @@ from typing import List
 from typing import Optional
 
 import CloudFlare
-import zope.interface
 
 from certbot import errors
-from certbot import interfaces
 from certbot.plugins import dns_common
 from certbot.plugins.dns_common import CredentialsConfiguration
 
@@ -18,8 +16,6 @@ logger = logging.getLogger(__name__)
 ACCOUNT_URL = 'https://dash.cloudflare.com/?to=/:account/profile/api-tokens'
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator for Cloudflare
 

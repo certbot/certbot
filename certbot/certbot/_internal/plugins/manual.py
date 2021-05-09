@@ -1,12 +1,9 @@
 """Manual authenticator plugin"""
 from typing import Dict
 
-import zope.interface
-
 from acme import challenges
 from certbot import achallenges
 from certbot import errors
-from certbot import interfaces
 from certbot import reverter
 from certbot import services
 from certbot import util
@@ -16,8 +13,6 @@ from certbot.compat import os
 from certbot.plugins import common
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
     """Manual authenticator
 

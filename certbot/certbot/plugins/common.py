@@ -3,21 +3,21 @@ import logging
 import re
 import shutil
 import tempfile
+from abc import ABCMeta
 from typing import List
 
 from josepy import util as jose_util
 import pkg_resources
-import zope.interface
 
 from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
 from certbot import reverter
 from certbot._internal import constants
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins.storage import PluginStorage
+from certbot.interfaces import Plugin as AbstractPlugin
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +39,7 @@ hostname_regex = re.compile(
     r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$", re.IGNORECASE)
 
 
-@zope.interface.implementer(interfaces.IPlugin)
-class Plugin:
+class Plugin(AbstractPlugin, metaclass=ABCMeta):
     """Generic plugin."""
     # provider is not inherited, subclasses must define it on their own
     # @zope.interface.provider(interfaces.IPluginFactory)
@@ -98,7 +97,7 @@ class Plugin:
         return getattr(self.config, self.dest(var))
 
 
-class Installer(Plugin):
+class Installer(Plugin, metaclass=ABCMeta):
     """An installer base class with reverter and ssl_dhparam methods defined.
 
     Installer plugins do not have to inherit from this class.

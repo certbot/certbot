@@ -15,8 +15,6 @@ from typing import Optional
 from typing import Set
 from typing import Union
 
-import zope.interface
-
 from acme import challenges
 from certbot import errors
 from certbot import interfaces
@@ -119,10 +117,7 @@ class OsOptions:
 # TODO: Add directives to sites-enabled... not sites-available.
 #     sites-available doesn't allow immediate find_dir search even with save()
 #     and load()
-
-@zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
-@zope.interface.provider(interfaces.IPluginFactory)
-class ApacheConfigurator(common.Installer):
+class ApacheConfigurator(interfaces.Authenticator, common.Installer):
     """Apache configurator.
 
     :ivar config: Configuration.

@@ -43,9 +43,7 @@ NO_SSL_MODIFIER = 4
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
-@zope.interface.provider(interfaces.IPluginFactory)
-class NginxConfigurator(common.Installer):
+class NginxConfigurator(interfaces.Authenticator, common.Installer):
     """Nginx configurator.
 
     .. todo:: Add proper support for comments in the config. Currently,

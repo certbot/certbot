@@ -8,11 +8,9 @@ from typing import Dict
 from typing import List
 from typing import Set
 
-import zope.interface
 
 from acme import challenges
 from certbot import errors
-from certbot import interfaces
 from certbot import services
 from certbot._internal import cli
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge as AnnotatedChallenge
@@ -27,8 +25,6 @@ from certbot.util import safe_open
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
     """Webroot Authenticator."""
 
