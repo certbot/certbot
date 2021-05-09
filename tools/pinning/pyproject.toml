@@ -75,7 +75,12 @@ python-augeas = "0.5.0"
 # maintained anymore, and it is not compatible with Sphinx 4.x. So we need to
 # pin Sphinx to 3.5 to make it work. This situation will be unblocked by the
 # removal of zope.interface in Certbot.
-sphinx = "^3.5.4"
+sphinx = "<4"
+# Library traitlets is a transitive dependency of ipdb (traitlets -> ipython -> ipdb).
+# Version 5.x is incompatible with Python 3.6 but for some reasons, poetry fails to
+# add the appropriate marker and allows this version to be installed under Python 3.6.
+# We add a pinning to not create a set of requirements incompatible with Python 3.6.
+traitlets = "<5"
 
 [tool.poetry.dev-dependencies]
 

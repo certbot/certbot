@@ -65,7 +65,7 @@ importlib-metadata==1.7.0; python_version >= "3.6" and python_full_version < "3.
 importlib-resources==5.1.2; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "3.7" or python_version >= "3.6" and python_full_version >= "3.5.0" and python_version < "3.7"
 invoke==1.5.0; python_version >= "3.6"
 ipdb==0.13.7; python_version >= "3.6"
-ipython-genutils==0.2.0
+ipython-genutils==0.2.0; python_version == "3.6"
 ipython==7.16.1; python_version == "3.6"
 ipython==7.23.1; python_version >= "3.7"
 isodate==0.6.0; python_version >= "3.6"
@@ -147,7 +147,7 @@ rsa==4.7.2; python_version >= "3.6" and python_version < "4" and (python_version
 s3transfer==0.4.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
 secretstorage==3.3.1; python_version >= "3.6" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0") and sys_platform == "linux"
 shellingham==1.4.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
-six==1.16.0; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4.0" or python_full_version >= "3.6.0" and python_version >= "3.6" and python_version < "4.0"
+six==1.16.0; python_version == "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version == "3.6"
 snowballstemmer==2.1.0; python_version >= "3.6"
 soupsieve==2.2.1; python_version >= "3.6"
 sphinx-rtd-theme==0.5.2; python_version >= "3.6"
@@ -164,7 +164,7 @@ toml==0.10.2; python_version == "3.6" and python_full_version < "3.0.0" or pytho
 tomlkit==0.7.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
 tox==3.23.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
 tqdm==4.60.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.4.0"
-traitlets==5.0.5
+traitlets==4.3.3
 twine==3.3.0; python_version >= "3.6"
 typed-ast==1.4.3; implementation_name == "cpython" and python_version < "3.8" and python_version >= "3.6"
 typing-extensions==3.10.0.0; python_version >= "3.6"
