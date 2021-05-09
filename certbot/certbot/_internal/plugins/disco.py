@@ -11,7 +11,6 @@ import warnings
 
 import pkg_resources
 import zope.interface
-from zope.interface import Interface
 import zope.interface.verify
 
 from certbot import errors
@@ -379,7 +378,7 @@ def _verify(target_instance: interfaces.Plugin, target_class: Type[interfaces.Pl
         # So effectively the checks have been done when the plugin has been initialized.
         return True
 
-    zope_iface: Optional[Type[Interface]] = None
+    zope_iface: Optional[Type[zope.interface.Interface]] = None
 
     if iface == interfaces.Plugin:
         zope_iface = interfaces.IPlugin

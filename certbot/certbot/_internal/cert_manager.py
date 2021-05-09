@@ -3,7 +3,7 @@ import datetime
 import logging
 import re
 import traceback
-from typing import List, Union
+from typing import List
 
 import pytz
 
