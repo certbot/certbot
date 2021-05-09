@@ -62,7 +62,7 @@ class NamespaceConfig(Config):
 
     @property
     def server(self) -> str:
-        return self.namespace.service
+        return self.namespace.server
 
     @property
     def email(self) -> str:

@@ -178,6 +178,8 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         from certbot._internal import constants
         self.config.server = None
         mock_set_by_cli.return_value = False
+        print(self.config)
+        print(self.config.server)
         self._call(self.config, {'server': constants.V1_URI})
         self.assertEqual(self.config.server, constants.CLI_DEFAULTS['server'])
 
