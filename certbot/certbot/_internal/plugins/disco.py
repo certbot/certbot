@@ -3,7 +3,7 @@ from collections.abc import Mapping
 import itertools
 import logging
 import sys
-from typing import Dict
+from typing import Dict, Type, cast
 from typing import Optional
 from typing import Union
 
@@ -49,10 +49,10 @@ class PluginEntryPoint:
 
     def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix=False):
         self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
-        self.plugin_cls: interfaces.IPluginFactory = entry_point.load()
+        self.plugin_cls: Type[interfaces.Plugin] = entry_point.load()
         self.entry_point = entry_point
         self.warning_message: Optional[str] = None
-        self._initialized: Optional[interfaces.IPlugin] = None
+        self._initialized: Optional[interfaces.Plugin] = None
         self._prepared: Optional[Union[bool, Error]] = None
         self._hidden = False
         self._long_description: Optional[str] = None
@@ -108,7 +108,7 @@ class PluginEntryPoint:
     def ifaces(self, *ifaces_groups):
         """Does plugin implements specified interface groups?"""
         return not ifaces_groups or any(
-            all(iface.implementedBy(self.plugin_cls)
+            all(_implements(self.plugin_cls, iface)
                 for iface in ifaces)
             for ifaces in ifaces_groups)
 
@@ -121,9 +121,9 @@ class PluginEntryPoint:
         """Memoized plugin initialization."""
         if not self.initialized:
             self.entry_point.require()  # fetch extras!
-            # TODO: remove type ignore once the interface becomes a proper
-            #  abstract class (using abc) that mypy understands.
-            self._initialized = self.plugin_cls(config, self.name)  # type: ignore
+            # For plugins implementing ABCs Plugin, Authenticator or Installer, the following
+            # line will raise an exception if some implementations of abstract methods are missing.
+            self._initialized = self.plugin_cls(config, self.name)
         return self._initialized
 
     def verify(self, ifaces):
@@ -131,14 +131,19 @@ class PluginEntryPoint:
         if not self.initialized:
             raise ValueError("Plugin is not initialized.")
         for iface in ifaces:  # zope.interface.providedBy(plugin)
-            try:
-                zope.interface.verify.verifyObject(iface, self.init())
-            except zope.interface.exceptions.BrokenImplementation as error:
-                if iface.implementedBy(self.plugin_cls):
-                    logger.debug(
-                        "%s implements %s but object does not verify: %s",
-                        self.plugin_cls, iface.__name__, error, exc_info=True)
-                return False
+            # No need to trigger some verify logic for ABCs: when the object is instantiated,
+            # an error would be raised if implementation is not done properly.
+            # So effectively the checks have been done during init().
+            if issubclass(iface, zope.interface.Interface):
+                try:
+                    zope.interface.verify.verifyObject(iface, self.init())
+                except zope.interface.exceptions.BrokenImplementation as error:
+                    if iface.implementedBy(self.plugin_cls):
+                        logger.debug(
+                            "%s implements %s but object does not verify: %s",
+                            self.plugin_cls, iface.__name__, error, exc_info=True)
+                    return False
+
         return True
 
     @property
@@ -260,7 +265,8 @@ class PluginsRegistry(Mapping):
             plugin2 = other_ep.entry_point.dist.key if other_ep.entry_point.dist else "unknown"
             raise Exception("Duplicate plugin name {0} from {1} and {2}.".format(
                 plugin_ep.name, plugin1, plugin2))
-        if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
+        if (issubclass(plugin_ep.plugin_cls, interfaces.Plugin)
+                or interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls)):
             plugins[plugin_ep.name] = plugin_ep
         else:  # pragma: no cover
             logger.warning(
@@ -339,3 +345,10 @@ class PluginsRegistry(Mapping):
         if not self._plugins:
             return "No plugins"
         return "\n\n".join(str(p_ep) for p_ep in self._plugins.values())
+
+
+def _implements(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
+    if issubclass(iface, zope.interface.Interface):
+        return cast(iface, zope.interface.Interface).implementedBy(target_class)
+
+    return issubclass(target_class, iface)

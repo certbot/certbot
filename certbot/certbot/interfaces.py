@@ -43,171 +43,6 @@ class AccountStorage(metaclass=ABCMeta):
         raise NotImplementedError()
 
 
-class IPluginFactory(zope.interface.Interface):
-    pass
-
-
-class IPlugin(zope.interface.Interface):
-    pass
-
-
-@zope.interface.provider(IPluginFactory)
-@zope.interface.implementer(IPlugin)
-class Plugin(metaclass=ABCMeta):
-    """Certbot plugin.
-
-    Objects providing this interface will be called without satisfying
-    any entry point "extras" (extra dependencies) you might have defined
-    for your plugin, e.g (excerpt from ``setup.py`` script)::
-
-      setup(
-          ...
-          entry_points={
-              'certbot.plugins': [
-                  'name=example_project.plugin[plugin_deps]',
-              ],
-          },
-          extras_require={
-              'plugin_deps': ['dep1', 'dep2'],
-          }
-      )
-
-    Therefore, make sure such objects are importable and usable without
-    extras. This is necessary, because CLI does the following operations
-    (in order):
-
-      - loads an entry point,
-      - calls `inject_parser_options`,
-      - requires an entry point,
-      - creates plugin instance (`__call__`).
-
-    """
-
-    description: str = NotImplemented
-    """Short plugin description"""
-
-    @abstractmethod
-    def __init__(self, name: str):
-        """Create new `IPlugin`.
-
-        :param IConfig config: Configuration.
-        :param str name: Unique plugin name.
-
-        """
-        self.name = name
-
-    @abstractmethod
-    def prepare(self) -> None:
-        """Prepare the plugin.
-
-        Finish up any additional initialization.
-
-        :raises .PluginError:
-            when full initialization cannot be completed.
-        :raises .MisconfigurationError:
-            when full initialization cannot be completed. Plugin will
-            be displayed on a list of available plugins.
-        :raises .NoInstallationError:
-            when the necessary programs/files cannot be located. Plugin
-            will NOT be displayed on a list of available plugins.
-        :raises .NotSupportedError:
-            when the installation is recognized, but the version is not
-            currently supported.
-
-        """
-
-    @abstractmethod
-    def more_info(self) -> str:
-        """Human-readable string to help the user.
-
-        Should describe the steps taken and any relevant info to help the user
-        decide which plugin to use.
-
-        :rtype str:
-
-        """
-
-    @classmethod
-    @abstractmethod
-    def inject_parser_options(cls, parser: ArgumentParser, name: str) -> None:
-        """Inject argument parser options (flags).
-
-        1. Be nice and prepend all options and destinations with
-        `~.common.option_namespace` and `~common.dest_namespace`.
-
-        2. Inject options (flags) only. Positional arguments are not
-        allowed, as this would break the CLI.
-
-        :param ArgumentParser parser: (Almost) top-level CLI parser.
-        :param str name: Unique plugin name.
-
-        """
-
-
-class IAuthenticator(IPlugin):
-    pass
-
-
-@zope.interface.implementer(IAuthenticator)
-class Authenticator(Plugin):
-    """Generic Certbot Authenticator.
-
-    Class represents all possible tools processes that have the
-    ability to perform challenges and attain a certificate.
-
-    """
-
-    @abstractmethod
-    def get_chall_pref(self, domain: str) -> Iterable[Challenge]:
-        """Return `collections.Iterable` of challenge preferences.
-
-        :param str domain: Domain for which challenge preferences are sought.
-
-        :returns: `collections.Iterable` of challenge types (subclasses of
-            :class:`acme.challenges.Challenge`) with the most
-            preferred challenges first. If a type is not specified, it means the
-            Authenticator cannot perform the challenge.
-        :rtype: `collections.Iterable`
-
-        """
-
-    @abstractmethod
-    def perform(self, achalls: List[AnnotatedChallenge]) -> Iterable[ChallengeResponse]:
-        """Perform the given challenge.
-
-        :param list achalls: Non-empty (guaranteed) list of
-            :class:`~certbot.achallenges.AnnotatedChallenge`
-            instances, such that it contains types found within
-            :func:`get_chall_pref` only.
-
-        :returns: `collections.Iterable` of ACME
-            :class:`~acme.challenges.ChallengeResponse` instances corresponding to each provided
-            :class:`~acme.challenges.Challenge`.
-        :rtype: :class:`collections.Iterable` of
-            :class:`acme.challenges.ChallengeResponse`,
-            where responses are required to be returned in
-            the same order as corresponding input challenges
-
-        :raises .PluginError: If some or all challenges cannot be performed
-
-        """
-
-    @abstractmethod
-    def cleanup(self, achalls: List[AnnotatedChallenge]) -> None:
-        """Revert changes and shutdown after challenges complete.
-
-        This method should be able to revert all changes made by
-        perform, even if perform exited abnormally.
-
-        :param list achalls: Non-empty (guaranteed) list of
-            :class:`~certbot.achallenges.AnnotatedChallenge`
-            instances, a subset of those previously passed to :func:`perform`.
-
-        :raises PluginError: if original configuration cannot be restored
-
-        """
-
-
 class IConfig(zope.interface.Interface):
     pass
 
@@ -379,6 +214,172 @@ class Config(metaclass=ABCMeta):
         If the CA offers multiple certificate chains, prefer the chain whose
         topmost certificate was issued from this Subject Common Name.
         If no match, the default offered chain will be used.
+        """
+
+
+class IPluginFactory(zope.interface.Interface):
+    pass
+
+
+class IPlugin(zope.interface.Interface):
+    pass
+
+
+@zope.interface.provider(IPluginFactory)
+@zope.interface.implementer(IPlugin)
+class Plugin(metaclass=ABCMeta):
+    """Certbot plugin.
+
+    Objects providing this interface will be called without satisfying
+    any entry point "extras" (extra dependencies) you might have defined
+    for your plugin, e.g (excerpt from ``setup.py`` script)::
+
+      setup(
+          ...
+          entry_points={
+              'certbot.plugins': [
+                  'name=example_project.plugin[plugin_deps]',
+              ],
+          },
+          extras_require={
+              'plugin_deps': ['dep1', 'dep2'],
+          }
+      )
+
+    Therefore, make sure such objects are importable and usable without
+    extras. This is necessary, because CLI does the following operations
+    (in order):
+
+      - loads an entry point,
+      - calls `inject_parser_options`,
+      - requires an entry point,
+      - creates plugin instance (`__call__`).
+
+    """
+
+    description: str = NotImplemented
+    """Short plugin description"""
+
+    @abstractmethod
+    def __init__(self, config: Config, name: str):
+        """Create new `Plugin`.
+
+        :param Config config: Configuration.
+        :param str name: Unique plugin name.
+
+        """
+        self.config = config
+        self.name = name
+
+    @abstractmethod
+    def prepare(self) -> None:
+        """Prepare the plugin.
+
+        Finish up any additional initialization.
+
+        :raises .PluginError:
+            when full initialization cannot be completed.
+        :raises .MisconfigurationError:
+            when full initialization cannot be completed. Plugin will
+            be displayed on a list of available plugins.
+        :raises .NoInstallationError:
+            when the necessary programs/files cannot be located. Plugin
+            will NOT be displayed on a list of available plugins.
+        :raises .NotSupportedError:
+            when the installation is recognized, but the version is not
+            currently supported.
+
+        """
+
+    @abstractmethod
+    def more_info(self) -> str:
+        """Human-readable string to help the user.
+
+        Should describe the steps taken and any relevant info to help the user
+        decide which plugin to use.
+
+        :rtype str:
+
+        """
+
+    @classmethod
+    @abstractmethod
+    def inject_parser_options(cls, parser: ArgumentParser, name: str) -> None:
+        """Inject argument parser options (flags).
+
+        1. Be nice and prepend all options and destinations with
+        `~.common.option_namespace` and `~common.dest_namespace`.
+
+        2. Inject options (flags) only. Positional arguments are not
+        allowed, as this would break the CLI.
+
+        :param ArgumentParser parser: (Almost) top-level CLI parser.
+        :param str name: Unique plugin name.
+
+        """
+
+
+class IAuthenticator(IPlugin):
+    pass
+
+
+@zope.interface.implementer(IAuthenticator)
+class Authenticator(Plugin):
+    """Generic Certbot Authenticator.
+
+    Class represents all possible tools processes that have the
+    ability to perform challenges and attain a certificate.
+
+    """
+
+    @abstractmethod
+    def get_chall_pref(self, domain: str) -> Iterable[Challenge]:
+        """Return `collections.Iterable` of challenge preferences.
+
+        :param str domain: Domain for which challenge preferences are sought.
+
+        :returns: `collections.Iterable` of challenge types (subclasses of
+            :class:`acme.challenges.Challenge`) with the most
+            preferred challenges first. If a type is not specified, it means the
+            Authenticator cannot perform the challenge.
+        :rtype: `collections.Iterable`
+
+        """
+
+    @abstractmethod
+    def perform(self, achalls: List[AnnotatedChallenge]) -> Iterable[ChallengeResponse]:
+        """Perform the given challenge.
+
+        :param list achalls: Non-empty (guaranteed) list of
+            :class:`~certbot.achallenges.AnnotatedChallenge`
+            instances, such that it contains types found within
+            :func:`get_chall_pref` only.
+
+        :returns: `collections.Iterable` of ACME
+            :class:`~acme.challenges.ChallengeResponse` instances corresponding to each provided
+            :class:`~acme.challenges.Challenge`.
+        :rtype: :class:`collections.Iterable` of
+            :class:`acme.challenges.ChallengeResponse`,
+            where responses are required to be returned in
+            the same order as corresponding input challenges
+
+        :raises .PluginError: If some or all challenges cannot be performed
+
+        """
+
+    @abstractmethod
+    def cleanup(self, achalls: List[AnnotatedChallenge]) -> None:
+        """Revert changes and shutdown after challenges complete.
+
+        This method should be able to revert all changes made by
+        perform, even if perform exited abnormally.
+
+        :param list achalls: Non-empty (guaranteed) list of
+            :class:`~certbot.achallenges.AnnotatedChallenge`
+            instances, a subset of those previously passed to :func:`perform`.
+
+        :raises PluginError: if original configuration cannot be restored
+
         """
 
 
