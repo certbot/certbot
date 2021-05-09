@@ -1,12 +1,8 @@
 """ Distribution specific override class for macOS """
-import zope.interface
-
-from certbot import interfaces
 from certbot_apache._internal import configurator
 from certbot_apache._internal.configurator import OsOptions
 
 
-@zope.interface.provider(interfaces.IPluginFactory)
 class DarwinConfigurator(configurator.ApacheConfigurator):
     """macOS specific ApacheConfigurator override class"""
 

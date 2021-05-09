@@ -1,14 +1,10 @@
 """ Distribution specific override class for Gentoo Linux """
-import zope.interface
-
-from certbot import interfaces
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
 from certbot_apache._internal.configurator import OsOptions
 
 
-@zope.interface.provider(interfaces.IPluginFactory)
 class GentooConfigurator(configurator.ApacheConfigurator):
     """Gentoo specific ApacheConfigurator override class"""
 
