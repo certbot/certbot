@@ -5,13 +5,13 @@ import unittest
 
 import augeas
 import josepy as jose
-from certbot import services
 
 try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
 
+from certbot import services
 from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.plugins import common
