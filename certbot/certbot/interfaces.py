@@ -1,16 +1,19 @@
 """Certbot client interfaces."""
-import abc
-from typing import Optional
+from abc import ABCMeta, abstractmethod, abstractproperty
+from argparse import ArgumentParser
+from typing import Optional, Iterable, List, Union, Tuple
 
 import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument,inherit-non-class
+from acme.challenges import Challenge, ChallengeResponse
+from certbot.achallenges import AnnotatedChallenge
 
 
-class AccountStorage(object, metaclass=abc.ABCMeta):
+class AccountStorage(metaclass=ABCMeta):
     """Accounts storage interface."""
 
-    @abc.abstractmethod
+    @abstractmethod
     def find_all(self):  # pragma: no cover
         """Find all accounts.
 
@@ -20,7 +23,7 @@ class AccountStorage(object, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
-    @abc.abstractmethod
+    @abstractmethod
     def load(self, account_id):  # pragma: no cover
         """Load an account by its id.
 
@@ -30,7 +33,7 @@ class AccountStorage(object, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
-    @abc.abstractmethod
+    @abstractmethod
     def save(self, account, client):  # pragma: no cover
         """Save account.
 
@@ -41,7 +44,17 @@ class AccountStorage(object, metaclass=abc.ABCMeta):
 
 
 class IPluginFactory(zope.interface.Interface):
-    """IPlugin factory.
+    pass
+
+
+class IPlugin(zope.interface.Interface):
+    pass
+
+
+@zope.interface.provider(IPluginFactory)
+@zope.interface.implementer(IPlugin)
+class Plugin(metaclass=ABCMeta):
+    """Certbot plugin.
 
     Objects providing this interface will be called without satisfying
     any entry point "extras" (extra dependencies) you might have defined
@@ -70,35 +83,21 @@ class IPluginFactory(zope.interface.Interface):
 
     """
 
-    description = zope.interface.Attribute("Short plugin description")
+    description: str = NotImplemented
+    """Short plugin description"""
 
-    def __call__(config, name):  # pylint: disable=signature-differs
+    @abstractmethod
+    def __init__(self, name: str):
         """Create new `IPlugin`.
 
         :param IConfig config: Configuration.
         :param str name: Unique plugin name.
 
         """
+        self.name = name
 
-    def inject_parser_options(parser, name):
-        """Inject argument parser options (flags).
-
-        1. Be nice and prepend all options and destinations with
-        `~.common.option_namespace` and `~common.dest_namespace`.
-
-        2. Inject options (flags) only. Positional arguments are not
-        allowed, as this would break the CLI.
-
-        :param ArgumentParser parser: (Almost) top-level CLI parser.
-        :param str name: Unique plugin name.
-
-        """
-
-
-class IPlugin(zope.interface.Interface):
-    """Certbot plugin."""
-
-    def prepare():  # type: ignore
+    @abstractmethod
+    def prepare(self) -> None:
         """Prepare the plugin.
 
         Finish up any additional initialization.
@@ -117,7 +116,8 @@ class IPlugin(zope.interface.Interface):
 
         """
 
-    def more_info():  # type: ignore
+    @abstractmethod
+    def more_info(self) -> str:
         """Human-readable string to help the user.
 
         Should describe the steps taken and any relevant info to help the user
@@ -127,8 +127,29 @@ class IPlugin(zope.interface.Interface):
 
         """
 
+    @classmethod
+    @abstractmethod
+    def inject_parser_options(cls, parser: ArgumentParser, name: str) -> None:
+        """Inject argument parser options (flags).
+
+        1. Be nice and prepend all options and destinations with
+        `~.common.option_namespace` and `~common.dest_namespace`.
+
+        2. Inject options (flags) only. Positional arguments are not
+        allowed, as this would break the CLI.
+
+        :param ArgumentParser parser: (Almost) top-level CLI parser.
+        :param str name: Unique plugin name.
+
+        """
+
 
 class IAuthenticator(IPlugin):
+    pass
+
+
+@zope.interface.implementer(IAuthenticator)
+class Authenticator(Plugin):
     """Generic Certbot Authenticator.
 
     Class represents all possible tools processes that have the
@@ -136,7 +157,8 @@ class IAuthenticator(IPlugin):
 
     """
 
-    def get_chall_pref(domain):
+    @abstractmethod
+    def get_chall_pref(self, domain: str) -> Iterable[Challenge]:
         """Return `collections.Iterable` of challenge preferences.
 
         :param str domain: Domain for which challenge preferences are sought.
@@ -149,7 +171,8 @@ class IAuthenticator(IPlugin):
 
         """
 
-    def perform(achalls):
+    @abstractmethod
+    def perform(self, achalls: List[AnnotatedChallenge]) -> Iterable[ChallengeResponse]:
         """Perform the given challenge.
 
         :param list achalls: Non-empty (guaranteed) list of
@@ -169,7 +192,8 @@ class IAuthenticator(IPlugin):
 
         """
 
-    def cleanup(achalls):
+    @abstractmethod
+    def cleanup(self, achalls: List[AnnotatedChallenge]) -> None:
         """Revert changes and shutdown after challenges complete.
 
         This method should be able to revert all changes made by
@@ -185,89 +209,184 @@ class IAuthenticator(IPlugin):
 
 
 class IConfig(zope.interface.Interface):
+    pass
+
+
+@zope.interface.implementer(IConfig)
+class Config(metaclass=ABCMeta):
     """Certbot user-supplied configuration.
 
     .. warning:: The values stored in the configuration have not been
         filtered, stripped or sanitized.
 
     """
-    server = zope.interface.Attribute("ACME Directory Resource URI.")
-    email = zope.interface.Attribute(
-        "Email used for registration and recovery contact. Use comma to "
-        "register multiple emails, ex: u1@example.com,u2@example.com. "
-        "(default: Ask).")
-    rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
-    elliptic_curve = zope.interface.Attribute(
-        "The SECG elliptic curve name to use. Please see RFC 8446 "
-        "for supported values."
-    )
-    key_type = zope.interface.Attribute(
-        "Type of generated private key"
-        "(Only *ONE* per invocation can be provided at this time)")
-    must_staple = zope.interface.Attribute(
-        "Adds the OCSP Must Staple extension to the certificate. "
-        "Autoconfigures OCSP Stapling for supported setups "
-        "(Apache version >= 2.3.3 ).")
 
-    config_dir = zope.interface.Attribute("Configuration directory.")
-    work_dir = zope.interface.Attribute("Working directory.")
+    @property
+    @abstractmethod
+    def server(self) -> str:
+        """ACME Directory Resource URI."""
 
-    accounts_dir = zope.interface.Attribute(
-        "Directory where all account information is stored.")
-    backup_dir = zope.interface.Attribute("Configuration backups directory.")
-    csr_dir = zope.interface.Attribute(
-        "Directory where newly generated Certificate Signing Requests "
-        "(CSRs) are saved.")
-    in_progress_dir = zope.interface.Attribute(
-        "Directory used before a permanent checkpoint is finalized.")
-    key_dir = zope.interface.Attribute("Keys storage.")
-    temp_checkpoint_dir = zope.interface.Attribute(
-        "Temporary checkpoint directory.")
+    @property
+    @abstractmethod
+    def email(self) -> str:
+        """Email used for registration and recovery contact.
 
-    no_verify_ssl = zope.interface.Attribute(
-        "Disable verification of the ACME server's certificate.")
+        Use comma to register multiple emails,
+        ex: u1@example.com,u2@example.com. (default: Ask).
+        """
 
-    http01_port = zope.interface.Attribute(
-        "Port used in the http-01 challenge. "
-        "This only affects the port Certbot listens on. "
-        "A conforming ACME server will still attempt to connect on port 80.")
+    @property
+    @abstractmethod
+    def rsa_key_size(self) -> int:
+        """Size of the RSA key."""
 
-    http01_address = zope.interface.Attribute(
-        "The address the server listens to during http-01 challenge.")
+    @property
+    @abstractmethod
+    def elliptic_curve(self) -> str:
+        """The SECG elliptic curve name to use.
 
-    https_port = zope.interface.Attribute(
-        "Port used to serve HTTPS. "
-        "This affects which port Nginx will listen on after a LE certificate "
-        "is installed.")
+        Please see RFC 8446 for supported values.
+        """
 
-    pref_challs = zope.interface.Attribute(
-        "Sorted user specified preferred challenges"
-        "type strings with the most preferred challenge listed first")
+    @property
+    @abstractmethod
+    def key_type(self) -> str:
+        """Type of generated private key.
 
-    allow_subset_of_names = zope.interface.Attribute(
-        "When performing domain validation, do not consider it a failure "
-        "if authorizations can not be obtained for a strict subset of "
-        "the requested domains. This may be useful for allowing renewals for "
-        "multiple domains to succeed even if some domains no longer point "
-        "at this system. This is a boolean")
+        Only *ONE* per invocation can be provided at this time.
+        """
 
-    strict_permissions = zope.interface.Attribute(
-        "Require that all configuration files are owned by the current "
-        "user; only needed if your config is somewhere unsafe like /tmp/."
-        "This is a boolean")
+    @property
+    @abstractmethod
+    def must_staple(self) -> bool:
+        """Adds the OCSP Must Staple extension to the certificate.
 
-    disable_renew_updates = zope.interface.Attribute(
-        "If updates provided by installer enhancements when Certbot is being run"
-        " with \"renew\" verb should be disabled.")
+        Autoconfigures OCSP Stapling for supported setups
+        (Apache version >= 2.3.3 ).
+        """
 
-    preferred_chain = zope.interface.Attribute(
-        "If the CA offers multiple certificate chains, prefer the chain whose "
-        "topmost certificate was issued from this Subject Common Name. "
-        "If no match, the default offered chain will be used."
-    )
+    @property
+    @abstractmethod
+    def config_dir(self) -> str:
+        """Configuration directory."""
+
+    @property
+    @abstractmethod
+    def work_dir(self) -> str:
+        """Working directory."""
+
+    @property
+    @abstractmethod
+    def account_dir(self) -> str:
+        """Directory where all account information is stored."""
+
+    @property
+    @abstractmethod
+    def backup_dir(self) -> str:
+        """Configuration backups directory."""
+
+    @property
+    @abstractmethod
+    def csr_dir(self) -> str:
+        """Directory where new Certificate Signing Requests (CSRs) are saved."""
+
+    @property
+    @abstractmethod
+    def in_progress_dir(self) -> str:
+        """Directory used before a permanent checkpoint is finalized."""
+
+    @property
+    @abstractmethod
+    def key_dir(self) -> str:
+        """Keys storage."""
+
+    @property
+    @abstractmethod
+    def temp_checkpoint_dir(self) -> str:
+        """Temporary checkpoint directory."""
+
+    @property
+    @abstractmethod
+    def no_verify_ssl(self) -> bool:
+        """Disable verification of the ACME server's certificate."""
+
+    @property
+    @abstractmethod
+    def http01_port(self) -> int:
+        """Port used in the http-01 challenge.
+
+        This only affects the port Certbot listens on.
+        A conforming ACME server will still attempt to connect on port 80.
+        """
+
+    @property
+    @abstractmethod
+    def http01_address(self) -> str:
+        """The address the server listens to during http-01 challenge."""
+
+    @property
+    @abstractmethod
+    def https_port(self) -> int:
+        """Port used to serve HTTPS.
+
+        This affects which port Nginx will listen on after a LE certificate
+        is installed.
+        """
+
+    @property
+    @abstractmethod
+    def pref_challs(self) -> List[str]:
+        """List of user specified preferred challenges.
+
+        Sorted with the most preferred challenge listed first.
+        """
+
+    @property
+    @abstractmethod
+    def allow_subset_of_names(self) -> bool:
+        """Allow only a subset of names to be authorized to perform validations.
+
+        When performing domain validation, do not consider it a failure
+        if authorizations can not be obtained for a strict subset of
+        the requested domains. This may be useful for allowing renewals for
+        multiple domains to succeed even if some domains no longer point
+        at this system.
+        """
+
+    @property
+    @abstractmethod
+    def strict_permissions(self) -> bool:
+        """Enable strict permissions checks.
+
+        Require that all configuration files are owned by the current
+        user; only needed if your config is somewhere unsafe like /tmp/.
+        """
+
+    @property
+    @abstractmethod
+    def disable_renew_updates(self) -> bool:
+        """Disable renewal updates.
+
+        If updates provided by installer enhancements when Certbot is being run
+        with \"renew\" verb should be disabled.
+        """
+
+    @property
+    @abstractmethod
+    def preferred_chain(self) -> str:
+        """Set the preferred certificate chain to issue a certificate.
+
+        If the CA offers multiple certificate chains, prefer the chain whose
+        topmost certificate was issued from this Subject Common Name.
+        If no match, the default offered chain will be used.
+        """
 
 
 class IInstaller(IPlugin):
+    pass
+
+
+class Installer(Plugin):
     """Generic Certbot Installer Interface.
 
     Represents any server that an X509 certificate can be placed.
@@ -282,14 +401,17 @@ class IInstaller(IPlugin):
 
     """
 
-    def get_all_names():  # type: ignore
+    @abstractmethod
+    def get_all_names(self) -> Iterable[str]:
         """Returns all names that may be authenticated.
 
         :rtype: `collections.Iterable` of `str`
 
         """
 
-    def deploy_cert(domain, cert_path, key_path, chain_path, fullchain_path):
+    @abstractmethod
+    def deploy_cert(self, domain: str, cert_path: str, key_path: str,
+                    chain_path: str, fullchain_path: str) -> None:
         """Deploy certificate.
 
         :param str domain: domain to deploy certificate file
@@ -303,7 +425,8 @@ class IInstaller(IPlugin):
 
         """
 
-    def enhance(domain, enhancement, options=None):
+    @abstractmethod
+    def enhance(self, domain: str, enhancement: str, options: Optional[List[str]] = None) -> None:
         """Perform a configuration enhancement.
 
         :param str domain: domain for which to provide enhancement
@@ -319,7 +442,8 @@ class IInstaller(IPlugin):
 
         """
 
-    def supported_enhancements():  # type: ignore
+    @abstractmethod
+    def supported_enhancements(self) -> List[str]:
         """Returns a `collections.Iterable` of supported enhancements.
 
         :returns: supported enhancements which should be a subset of
@@ -328,7 +452,8 @@ class IInstaller(IPlugin):
 
         """
 
-    def save(title: Optional[str] = None, temporary: bool = False):
+    @abstractmethod
+    def save(self, title: Optional[str] = None, temporary: bool = False) -> None:
         """Saves all changes to the configuration files.
 
         Both title and temporary are needed because a save may be
@@ -350,14 +475,16 @@ class IInstaller(IPlugin):
 
         """
 
-    def rollback_checkpoints(rollback: int = 1):
+    @abstractmethod
+    def rollback_checkpoints(self, rollback: int = 1) -> None:
         """Revert `rollback` number of configuration checkpoints.
 
         :raises .PluginError: when configuration cannot be fully reverted
 
         """
 
-    def recovery_routine():  # type: ignore
+    @abstractmethod
+    def recovery_routine(self) -> None:
         """Revert configuration to most recent finalized checkpoint.
 
         Remove all changes (temporary and permanent) that have not been
@@ -368,14 +495,16 @@ class IInstaller(IPlugin):
 
         """
 
-    def config_test():  # type: ignore
+    @abstractmethod
+    def config_test(self) -> None:
         """Make sure the configuration is valid.
 
         :raises .MisconfigurationError: when the config is not in a usable state
 
         """
 
-    def restart():  # type: ignore
+    @abstractmethod
+    def restart(self) -> None:
         """Restart or refresh the server content.
 
         :raises .PluginError: when server cannot be restarted
@@ -384,10 +513,17 @@ class IInstaller(IPlugin):
 
 
 class IDisplay(zope.interface.Interface):
+    pass
+
+
+@zope.interface.implementer(IDisplay)
+class IDisplay(metaclass=ABCMeta):
     """Generic display."""
     # see https://github.com/certbot/certbot/issues/3915
 
-    def notification(message, pause, wrap=True, force_interactive=False):
+    @abstractmethod
+    def notification(self, message: str, pause: bool, wrap: bool = True,
+                     force_interactive: bool = False):
         """Displays a string message
 
         :param str message: Message to display
@@ -399,9 +535,11 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def menu(message, choices, ok_label=None,
-             cancel_label=None, help_label=None,
-             default=None, cli_flag=None, force_interactive=False):
+    @abstractmethod
+    def menu(self, message: str, choices: Union[List[str], Tuple[str], str],
+             ok_label: Optional[str] = None, cancel_label: Optional[str] = None,
+             help_label: Optional[str] = None, default: Optional[int] = None,
+             cli_flag: Optional[str] = None, force_interactive: bool = False) -> Tuple[str, int]:
         """Displays a generic menu.
 
         When not setting force_interactive=True, you must provide a
@@ -429,7 +567,9 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def input(message, default=None, cli_args=None, force_interactive=False):
+    @abstractmethod
+    def input(self, message: str, default: Optional[str] = None, cli_args: Optional[str] = None,
+              force_interactive: bool = False) -> Tuple[str, int]:
         """Accept input from the user.
 
         When not setting force_interactive=True, you must provide a
@@ -437,6 +577,7 @@ class IDisplay(zope.interface.Interface):
 
         :param str message: message to display to the user
         :param str default: default (non-interactive) response to prompt
+        :param str cli_args: to automate choice from the menu, eg "--redirect / --no-redirect"
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
 
@@ -450,8 +591,10 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def yesno(message, yes_label="Yes", no_label="No", default=None,
-              cli_args=None, force_interactive=False):
+    @abstractmethod
+    def yesno(self, message: str, yes_label: str = "Yes", no_label: str = "No",
+              default: Optional[str] = None, cli_args: Optional[str] = None,
+              force_interactive: bool = False) -> bool:
         """Query the user with a yes/no question.
 
         Yes and No label must begin with different letters.
@@ -460,8 +603,10 @@ class IDisplay(zope.interface.Interface):
         default value.
 
         :param str message: question for the user
+        :param str yes_label: label for Yes button
+        :param str no_label: label for No button
         :param str default: default (non-interactive) choice from the menu
-        :param str cli_flag: to automate choice from the menu, eg "--redirect / --no-redirect"
+        :param str cli_args: to automate choice from the menu, eg "--agree-tos"
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
 
@@ -473,7 +618,10 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def checklist(message, tags, default=None, cli_args=None, force_interactive=False):
+    @abstractmethod
+    def checklist(self, message: str, tags: List[str], default: Optional[str] = None,
+                  cli_args: Optional[str] = None,
+                  force_interactive: bool = False) -> Tuple[int, List[str]]:
         """Allow for multiple selections from a menu.
 
         When not setting force_interactive=True, you must provide a
@@ -482,7 +630,7 @@ class IDisplay(zope.interface.Interface):
         :param str message: message to display to the user
         :param list tags: where each is of type :class:`str` len(tags) > 0
         :param str default: default (non-interactive) state of the checklist
-        :param str cli_flag: to automate choice from the menu, eg "--domains"
+        :param str cli_args: to automate choice from the menu, eg "--domains"
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
 
@@ -496,8 +644,10 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def directory_select(self, message, default=None,
-                         cli_flag=None, force_interactive=False):
+    @abstractmethod
+    def directory_select(self, message: str, default: Optional[str] = None,
+                         cli_flag: Optional[str] = None,
+                         force_interactive: bool = False) -> Tuple[int, str]:
         """Display a directory selection screen.
 
         When not setting force_interactive=True, you must provide a
@@ -520,16 +670,22 @@ class IDisplay(zope.interface.Interface):
 
 
 class IReporter(zope.interface.Interface):
+    pass
+
+
+@zope.interface.implementer(IReporter)
+class Reporter(metaclass=ABCMeta):
     """Interface to collect and display information to the user."""
 
-    HIGH_PRIORITY = zope.interface.Attribute(
-        "Used to denote high priority messages")
-    MEDIUM_PRIORITY = zope.interface.Attribute(
-        "Used to denote medium priority messages")
-    LOW_PRIORITY = zope.interface.Attribute(
-        "Used to denote low priority messages")
+    HIGH_PRIORITY: int = 0
+    """High priority constant. See `add_message`."""
+    MEDIUM_PRIORITY: int = 1
+    """Medium priority constant. See `add_message`."""
+    LOW_PRIORITY: int = 2
+    """Low priority constant. See `add_message`."""
 
-    def add_message(self, msg, priority, on_crash=True):
+    @abstractmethod
+    def add_message(self, msg: str, priority: int, on_crash: bool = True) -> None:
         """Adds msg to the list of messages to be printed.
 
         :param str msg: Message to be displayed to the user.
@@ -542,14 +698,16 @@ class IReporter(zope.interface.Interface):
 
         """
 
-    def print_messages(self):
+    @abstractmethod
+    def print_messages(self) -> str:
         """Prints messages to the user and clears the message queue."""
 
 
-class RenewableCert(object, metaclass=abc.ABCMeta):
+class RenewableCert(object, metaclass=ABCMeta):
     """Interface to a certificate lineage."""
 
-    @abc.abstractproperty
+    @property
+    @abstractmethod
     def cert_path(self):
         """Path to the certificate file.
 
@@ -557,7 +715,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abstractmethod
     def key_path(self):
         """Path to the private key file.
 
@@ -565,7 +724,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abstractmethod
     def chain_path(self):
         """Path to the certificate chain file.
 
@@ -573,7 +733,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abstractmethod
     def fullchain_path(self):
         """Path to the full chain file.
 
@@ -583,7 +744,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abstractmethod
     def lineagename(self):
         """Name given to the certificate lineage.
 
@@ -591,7 +753,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractmethod
+    @property
+    @abstractmethod
     def names(self):
         """What are the subject names of this certificate?
 
@@ -611,7 +774,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 # an update during the run or install subcommand, it should do so when
 # :func:`IInstaller.deploy_cert` is called.
 
-class GenericUpdater(object, metaclass=abc.ABCMeta):
+
+class GenericUpdater(metaclass=ABCMeta):
     """Interface for update types not currently specified by Certbot.
 
     This class allows plugins to perform types of updates that Certbot hasn't
@@ -626,7 +790,7 @@ class GenericUpdater(object, metaclass=abc.ABCMeta):
     interface methods of `interfaces.IInstaller` such as prepare() and restart()
     """
 
-    @abc.abstractmethod
+    @abstractmethod
     def generic_updates(self, lineage, *args, **kwargs):
         """Perform any update types defined by the installer.
 
@@ -643,7 +807,7 @@ class GenericUpdater(object, metaclass=abc.ABCMeta):
         """
 
 
-class RenewDeployer(object, metaclass=abc.ABCMeta):
+class RenewDeployer(metaclass=ABCMeta):
     """Interface for update types run when a lineage is renewed
 
     This class allows plugins to perform types of updates that need to run at
@@ -654,7 +818,7 @@ class RenewDeployer(object, metaclass=abc.ABCMeta):
     be called from the installer code.
     """
 
-    @abc.abstractmethod
+    @abstractmethod
     def renew_deploy(self, lineage, *args, **kwargs):
         """Perform updates defined by installer when a certificate has been renewed
 
