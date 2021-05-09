@@ -6,18 +6,12 @@ from certbot import services
 
 
 class RelevantValuesTest(unittest.TestCase):
-    """Tests for certbot.services.
-
-    Please note that order of tests is important, because it will also test that
-    services are globally available from one test to another one.
-    """
-    @classmethod
-    def setUpClass(cls):
-        # Isolate global services for the time of this TestCase
+    """Tests for certbot.services."""
+    def setUp(self):
+        # Isolate global services for each test
         services._services = services._Services()
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
         services._services = services._Services()
 
     def test_config_service(self):
@@ -28,8 +22,6 @@ class RelevantValuesTest(unittest.TestCase):
         services.set_config(config)
 
         self.assertEqual(id(services.get_config()), id(config))
-        self.assertRaises(ValueError, services.get_display)
-        self.assertRaises(ValueError, services.get_reporter)
 
     def test_display_service(self):
         self.assertRaises(ValueError, services.get_display)
@@ -39,8 +31,6 @@ class RelevantValuesTest(unittest.TestCase):
         services.set_display(config)
 
         self.assertEqual(id(services.get_display()), id(config))
-        self.assertIsNotNone(services.get_config())  # Set since test_config_service has been run
-        self.assertRaises(ValueError, services.get_reporter)
 
     def test_reporter_service(self):
         self.assertRaises(ValueError, services.get_reporter)
@@ -50,5 +40,3 @@ class RelevantValuesTest(unittest.TestCase):
         services.set_reporter(config)
 
         self.assertEqual(id(services.get_reporter()), id(config))
-        self.assertIsNotNone(services.get_config())  # Set since test_config_service has been run
-        self.assertIsNotNone(services.get_display())  # Set since test_display_service has been run
