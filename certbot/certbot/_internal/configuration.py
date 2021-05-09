@@ -50,6 +50,14 @@ class NamespaceConfig(Config):
         # Check command line parameters sanity, and error out in case of problem.
         check_config_sanity(self)
 
+    # Delegate any attribute not explicitly defined to the underlying namespace object.
+
+    def __getattr__(self, name):
+        return getattr(self.namespace, name)
+
+    def __setattr__(self, name, value):
+        setattr(self.namespace, name, value)
+
     # Properties that are part of the abstract Config class contract
 
     @property
