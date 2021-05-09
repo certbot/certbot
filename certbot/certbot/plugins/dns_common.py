@@ -7,7 +7,8 @@ from time import sleep
 import configobj
 
 from acme import challenges
-from certbot import errors, interfaces
+from certbot import errors
+from certbot import interfaces
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import ops

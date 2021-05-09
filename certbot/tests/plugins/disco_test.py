@@ -1,13 +1,9 @@
 """Tests for certbot._internal.plugins.disco."""
 import functools
 import string
-import unittest
 from typing import List
+import unittest
 
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 import pkg_resources
 import zope.interface
 
@@ -16,6 +12,12 @@ from certbot import interfaces
 from certbot._internal.plugins import null
 from certbot._internal.plugins import standalone
 from certbot._internal.plugins import webroot
+
+try:
+    import mock
+except ImportError:  # pragma: no cover
+    from unittest import mock
+
 
 EP_SA = pkg_resources.EntryPoint(
     "sa", "certbot._internal.plugins.standalone",

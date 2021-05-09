@@ -13,8 +13,9 @@ import OpenSSL
 
 from acme import challenges
 from acme import standalone as acme_standalone
-from certbot import achallenges, interfaces
+from certbot import achallenges
 from certbot import errors
+from certbot import interfaces
 from certbot import services
 from certbot.plugins import common
 

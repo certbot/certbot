@@ -9,7 +9,8 @@ from typing import List
 from typing import Set
 
 from acme import challenges
-from certbot import errors, interfaces
+from certbot import errors
+from certbot import interfaces
 from certbot import services
 from certbot._internal import cli
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge as AnnotatedChallenge

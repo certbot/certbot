@@ -1,18 +1,18 @@
 """Tests for certbot._internal.renewal"""
 import copy
-
 import unittest
-
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 
 from acme import challenges
 from certbot import errors
 from certbot._internal import configuration
 from certbot._internal import storage
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError:  # pragma: no cover
+    from unittest import mock
+
 
 
 class RenewalTest(test_util.ConfigTestCase):
@@ -178,8 +178,6 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         from certbot._internal import constants
         self.config.server = None
         mock_set_by_cli.return_value = False
-        print(self.config)
-        print(self.config.server)
         self._call(self.config, {'server': constants.V1_URI})
         self.assertEqual(self.config.server, constants.CLI_DEFAULTS['server'])
 

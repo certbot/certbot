@@ -10,8 +10,8 @@ import shutil
 import sys
 import tempfile
 import traceback
-import unittest
 from typing import List
+import unittest
 
 import josepy as jose
 import pytz

@@ -4,8 +4,8 @@ import logging
 import logging.handlers
 import sys
 import time
-import unittest
 from typing import Optional
+import unittest
 
 from acme import messages
 from certbot import errors

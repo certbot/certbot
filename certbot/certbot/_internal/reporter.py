@@ -5,8 +5,8 @@ import queue
 import sys
 import textwrap
 
-from certbot.interfaces import Reporter as BaseReporter
 from certbot import util
+from certbot.interfaces import Reporter as BaseReporter
 
 logger = logging.getLogger(__name__)
 

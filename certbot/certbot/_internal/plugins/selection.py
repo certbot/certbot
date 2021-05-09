@@ -11,9 +11,6 @@ from certbot.display import util as display_util
 logger = logging.getLogger(__name__)
 
 
-# TODO: Replace the Zope interfaces (once removed) by ABCs in pick_* functions.
-
-
 def pick_configurator(
     config, default, plugins,
     question="How would you like to authenticate and install "
