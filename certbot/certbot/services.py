@@ -1,32 +1,26 @@
 """This module contains global singletons used throughout Certbot."""
 from typing import Optional, Any
 
-from certbot.interfaces import IConfig
+from certbot.interfaces import IConfig, Config, Display, Reporter
 from certbot.interfaces import IDisplay
 from certbot.interfaces import IReporter
 
 
 class _Services:
     def __init__(self):
-        self.display: Optional[IDisplay] = None
-        self.reporter: Optional[IReporter] = None
-        self.config: Optional[IConfig] = None
+        self.display: Optional[Display] = None
+        self.reporter: Optional[Reporter] = None
+        self.config: Optional[Config] = None
 
 
 _services = _Services()
 
 
-# The following functions use "Any" for their parameter/output types. Normally interfaces from
-# certbot.interfaces would be used, but MyPy will not understand their semantic. These interfaces
-# will be removed soon and replaced by ABC classes that will be used also here for type checking.
-# TODO: replace Any by actual ABC classes once available
-
-
-def get_config() -> Any:
+def get_config() -> Config:
     """Get the Certbot configuration.
 
     :return: the Certbot configuration
-    :rtype: IConfig
+    :rtype: Config
     :raise: ValueError if the Certbot configuration is not set
 
     """
@@ -35,11 +29,11 @@ def get_config() -> Any:
     return _services.config
 
 
-def get_display() -> Any:
+def get_display() -> Display:
     """Get the display utility.
 
     :return: the display utility
-    :rtype: IDisplay
+    :rtype: Display
     :raise: ValueError if the display utility is not set
 
     """
@@ -48,11 +42,11 @@ def get_display() -> Any:
     return _services.display
 
 
-def get_reporter() -> Any:
+def get_reporter() -> Reporter:
     """Get the reporter utility
 
     :return: the reporter utility
-    :rtype: IReporter
+    :rtype: Reporter
     :raise: ValueError if the reporter utility is not set
 
     """
@@ -61,28 +55,28 @@ def get_reporter() -> Any:
     return _services.reporter
 
 
-def set_config(config: Any) -> None:
+def set_config(config: Config) -> None:
     """Set the Certbot configuration.
 
-    :param IConfig config: the Certbot configuration
+    :param Config config: the Certbot configuration
 
     """
     _services.config = config
 
 
-def set_display(display: Any) -> None:
+def set_display(display: Display) -> None:
     """Set the display utility.
 
-    :param IDisplay display: the display utility
+    :param Display display: the display utility
 
     """
     _services.display = display
 
 
-def set_reporter(reporter: Any) -> None:
+def set_reporter(reporter: Reporter) -> None:
     """Set the reporter utility.
 
-    :param IReporter reporter: the reporter utility
+    :param Reporter reporter: the reporter utility
 
     """
     _services.reporter = reporter

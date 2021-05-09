@@ -14,15 +14,14 @@ import sys
 import textwrap
 from typing import List
 
-import zope.interface
 
 from certbot import errors
-from certbot import interfaces
 from certbot import services
 from certbot._internal import constants
 from certbot._internal.display import completer
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.interfaces import Display
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +44,7 @@ ESC = "esc"
 SIDE_FRAME = ("- " * 39) + "-"
 """Display boundary (alternates spaces, so when copy-pasted, markdown doesn't interpret
 it as a heading)"""
+
 
 def _wrap_lines(msg):
     """Format lines nicely to 80 chars.
@@ -109,8 +109,7 @@ def notify(msg: str) -> None:
     )
 
 
-@zope.interface.implementer(interfaces.IDisplay)
-class FileDisplay:
+class FileDisplay(Display):
     """File-based display."""
     # see https://github.com/certbot/certbot/issues/3915
 
@@ -476,8 +475,7 @@ def assert_valid_call(prompt, default, cli_flag, force_interactive):
     assert default is not None or force_interactive, msg
 
 
-@zope.interface.implementer(interfaces.IDisplay)
-class NoninteractiveDisplay:
+class NoninteractiveDisplay(Display):
     """An iDisplay implementation that never asks for interactive user input"""
 
     def __init__(self, outfile, *unused_args, **unused_kwargs):

@@ -1,19 +1,17 @@
 """Certbot user-supplied configuration."""
 import copy
+from typing import List
 from urllib import parse
 
-import zope.interface
-
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot._internal import constants
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.interfaces import Config
 
 
-@zope.interface.implementer(interfaces.IConfig)
-class NamespaceConfig:
+class NamespaceConfig(Config):
     """Configuration wrapper around :class:`argparse.Namespace`.
 
     For more documentation, including available attributes, please see
@@ -52,27 +50,43 @@ class NamespaceConfig:
         # Check command line parameters sanity, and error out in case of problem.
         check_config_sanity(self)
 
-    def __getattr__(self, name):
-        return getattr(self.namespace, name)
-
-    def __setattr__(self, name, value):
-        setattr(self.namespace, name, value)
+    # Properties that are part of the abstract Config class contract
 
     @property
-    def server_path(self):
-        """File path based on ``server``."""
-        parsed = parse.urlparse(self.namespace.server)
-        return (parsed.netloc + parsed.path).replace('/', os.path.sep)
+    def server(self) -> str:
+        return self.namespace.service
 
     @property
-    def accounts_dir(self):  # pylint: disable=missing-function-docstring
-        return self.accounts_dir_for_server_path(self.server_path)
+    def email(self) -> str:
+        return self.namespace.email
 
-    def accounts_dir_for_server_path(self, server_path):
-        """Path to accounts directory based on server_path"""
-        server_path = misc.underscores_for_unsupported_characters_in_path(server_path)
-        return os.path.join(
-            self.namespace.config_dir, constants.ACCOUNTS_DIR, server_path)
+    @property
+    def rsa_key_size(self) -> int:
+        return self.namespace.rsa_key_size
+
+    @property
+    def elliptic_curve(self) -> str:
+        return self.namespace.elliptic_curve
+
+    @property
+    def key_type(self) -> str:
+        return self.namespace.key_type
+
+    @property
+    def must_staple(self) -> bool:
+        return self.namespace.must_staple
+
+    @property
+    def config_dir(self) -> str:
+        return self.namespace.config_dir
+
+    @property
+    def work_dir(self) -> str:
+        return self.namespace.work_dir
+
+    @property
+    def account_dir(self) -> str:
+        return self.namespace.account_dir
 
     @property
     def backup_dir(self):  # pylint: disable=missing-function-docstring
@@ -95,11 +109,59 @@ class NamespaceConfig:
         return os.path.join(
             self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
 
-    def __deepcopy__(self, _memo):
-        # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
-        # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
-        new_ns = copy.deepcopy(self.namespace)
-        return type(self)(new_ns)
+    @property
+    def no_verify_ssl(self) -> bool:
+        return self.namespace.no_verify_ssl
+
+    @property
+    def http01_port(self) -> int:
+        return self.namespace.http01_port
+
+    @property
+    def http01_address(self) -> str:
+        return self.namespace.http01_address
+
+    @property
+    def https_port(self) -> int:
+        return self.namespace.https_port
+
+    @property
+    def pref_challs(self) -> List[str]:
+        return self.namespace.pref_challs
+
+    @property
+    def allow_subset_of_names(self) -> bool:
+        return self.namespace.allow_subset_of_names
+
+    @property
+    def strict_permissions(self) -> bool:
+        return self.namespace.strict_permissions
+
+    @property
+    def disable_renew_updates(self) -> bool:
+        return self.namespace.disable_renew_updates
+
+    @property
+    def preferred_chain(self) -> str:
+        return self.namespace.preferred_chain
+
+    # Other properties, not part of the abstract class contract
+
+    @property
+    def server_path(self):
+        """File path based on ``server``."""
+        parsed = parse.urlparse(self.namespace.server)
+        return (parsed.netloc + parsed.path).replace('/', os.path.sep)
+
+    @property
+    def accounts_dir(self):  # pylint: disable=missing-function-docstring
+        return self.accounts_dir_for_server_path(self.server_path)
+
+    def accounts_dir_for_server_path(self, server_path):
+        """Path to accounts directory based on server_path"""
+        server_path = misc.underscores_for_unsupported_characters_in_path(server_path)
+        return os.path.join(
+            self.namespace.config_dir, constants.ACCOUNTS_DIR, server_path)
 
     @property
     def default_archive_dir(self):  # pylint: disable=missing-function-docstring
@@ -137,6 +199,14 @@ class NamespaceConfig:
         """Path to the post-hook directory for the renew subcommand."""
         return os.path.join(self.renewal_hooks_dir,
                             constants.RENEWAL_POST_HOOKS_DIR)
+
+    # Magic methods
+
+    def __deepcopy__(self, _memo):
+        # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
+        # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
+        new_ns = copy.deepcopy(self.namespace)
+        return type(self)(new_ns)
 
 
 def check_config_sanity(config):

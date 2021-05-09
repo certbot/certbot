@@ -517,7 +517,7 @@ class IDisplay(zope.interface.Interface):
 
 
 @zope.interface.implementer(IDisplay)
-class IDisplay(metaclass=ABCMeta):
+class Display(metaclass=ABCMeta):
     """Generic display."""
     # see https://github.com/certbot/certbot/issues/3915
 

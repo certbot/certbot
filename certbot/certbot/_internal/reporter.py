@@ -5,16 +5,13 @@ import queue
 import sys
 import textwrap
 
-import zope.interface
-
-from certbot import interfaces
+from certbot.interfaces import Reporter as BaseReporter
 from certbot import util
 
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IReporter)
-class Reporter:
+class Reporter(BaseReporter):
     """Collects and displays information to the user.
 
     :ivar `queue.PriorityQueue` messages: Messages to be displayed to
