@@ -9,7 +9,7 @@ steps:
       do
         echo ""
         echo "##[group]Building $doc_path"
-        pip install -q -e $doc_path/..[docs]
+        pip install -q -e $doc_path/..[docs] -c tools/requirements.txt
         if ! sphinx-build -W --keep-going -b html $doc_path $doc_path/_build/html; then
           FINAL_STATUS=1
           FAILED_BUILDS[${#FAILED_BUILDS[@]}]="${doc_path%/docs}"
