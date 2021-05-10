@@ -71,10 +71,11 @@ pytest-forked = "0.2"
 # https://github.com/certbot/certbot/issues/8732.
 python-augeas = "0.5.0"
 # Because some parts of Certbot documentation are generated from zope.interfaces,
-# we need the Sphinx plugin repoze.sphinx.autointerface. But this plugin is not
-# maintained anymore, and it is not compatible with Sphinx 4.x. So we need to
-# pin Sphinx to 3.5 to make it work. This situation will be unblocked by the
-# removal of zope.interface in Certbot.
+# we need the Sphinx plugin repoze.sphinx.autointerface. This plugin is not
+# currently compatible with Sphinx>=4 though so we're pinning an older version
+# for now. See https://github.com/repoze/repoze.sphinx.autointerface/issues/16
+# for more info. This pinning could also be removed by the removal of
+# zope.interface in Certbot.
 sphinx = "<4"
 # Library traitlets is a transitive dependency of ipdb (traitlets -> ipython -> ipdb).
 # Version 5.x is incompatible with Python 3.6 but for some reasons, poetry fails to
