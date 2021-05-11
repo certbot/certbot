@@ -22,9 +22,11 @@ then
           libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
           xz-utils tk-dev libffi-dev liblzma-dev python-openssl git # pyenv deps
         curl https://pyenv.run | bash
-        export PATH="~/.pyenv/bin:$PATH"
-        pyenv init -
-        pyenv virtualenv-init -
+        export PYENV_ROOT="$HOME/.pyenv"
+        export PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init --path)"
+        eval "$(pyenv init -)"
+        eval "$(pyenv virtualenv-init -)"
         pyenv install 3.8.5
         pyenv global 3.8.5
         # you do, in fact need to run these again, exactly like this.
