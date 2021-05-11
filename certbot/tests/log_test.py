@@ -101,16 +101,17 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
                     mock_sys.version_info = sys.version_info
                     self._call(self.config)
 
+        log_path = os.path.join(self.config.logs_dir, 'letsencrypt.log')
+
         self.root_logger.removeHandler.assert_called_once_with(
             self.memory_handler)
         self.assertTrue(self.root_logger.addHandler.called)
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.logs_dir, 'letsencrypt.log')))
+        self.assertTrue(os.path.exists(log_path))
         self.assertFalse(os.path.exists(self.temp_path))
         mock_sys.excepthook(1, 2, 3)
         mock_except_hook.assert_called_once_with(
             1, 2, 3, debug=self.config.debug,
-            quiet=self.config.quiet, log_path=self.config.logs_dir)
+            quiet=self.config.quiet, log_path=log_path)
 
         level = self.stream_handler.level
         if self.config.quiet:

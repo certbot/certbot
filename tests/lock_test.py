@@ -214,7 +214,7 @@ def check_error(command, dir_path):
         report_failure("Certbot didn't exit with a nonzero status!", out, err)
 
     # this regex looks weird in order to deal with a text change between HEAD and -oldest
-    match = re.search("ee the logfile '(.*)' ", err)
+    match = re.search("ee the logfile '?(.*?)'? ", err)
     if match is not None:
         # Get error output from more verbose logfile
         with open(match.group(1)) as f:

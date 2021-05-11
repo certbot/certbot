@@ -98,7 +98,6 @@ def post_arg_parse_setup(config):
     """
     file_handler, file_path = setup_log_file_handler(
         config, 'letsencrypt.log', FILE_FMT)
-    logs_dir = os.path.dirname(file_path)
 
     root_logger = logging.getLogger()
     memory_handler = stderr_handler = None
@@ -131,7 +130,7 @@ def post_arg_parse_setup(config):
 
     sys.excepthook = functools.partial(
         post_arg_parse_except_hook,
-        debug=config.debug, quiet=config.quiet, log_path=logs_dir)
+        debug=config.debug, quiet=config.quiet, log_path=file_path)
 
 
 def setup_log_file_handler(config, logfile, fmt):
@@ -377,6 +376,6 @@ def exit_with_advice(log_path: str):
     if os.path.isdir(log_path):
         msg += f'logfiles in {log_path} '
     else:
-        msg += f"logfile '{log_path}' "
+        msg += f"logfile {log_path} "
     msg += 'or re-run Certbot with -v for more details.'
     sys.exit(msg)
