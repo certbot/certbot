@@ -301,6 +301,7 @@ def should_renew(config, lineage):
         logger.info("Certificate not due for renewal, but simulating renewal for dry run")
         return True
     display_util.notify("Certificate not yet due for renewal")
+    logger.debug("Certificate not yet due for renewal")
     return False
 
 
