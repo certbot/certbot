@@ -32,9 +32,18 @@ certbot-nginx = {path = "../../certbot-nginx", extras = ["docs"]}
 certbot-apache = {path = "../../certbot-apache", extras = ["dev"]}
 certbot = {path = "../../certbot", extras = ["dev", "docs"]}
 acme = {path = "../../acme", extras = ["dev", "docs"]}
+letstest = {path = "../../letstest"}
 windows-installer = {path = "../../windows-installer"}
 
 # Extra dependencies
+# awscli is just listed here as a performance optimization. As of writing this,
+# there are some conflicts in shared dependencies between it and other packages
+# we depend on. To try and resolve them, poetry searches through older versions
+# of awscli to see if that resolves the conflict, but there are over 1000
+# versions of awscli on PyPI so this process takes too long. Providing a high
+# minimum version here prevents poetry from searching this path and it fairly
+# quickly resolves the dependency conflict in another way.
+awscli = ">=1.19.62"
 # As of writing this, cython is a build dependency of pyyaml. Since there
 # doesn't appear to be a good way to automatically track down and pin build
 # dependencies in Python (see
@@ -61,6 +70,18 @@ pytest-forked = "0.2"
 # library for now because it causes Certbot tests on Windows to fail. See
 # https://github.com/certbot/certbot/issues/8732.
 python-augeas = "0.5.0"
+# Because some parts of Certbot documentation are generated from zope.interfaces,
+# we need the Sphinx plugin repoze.sphinx.autointerface. This plugin is not
+# currently compatible with Sphinx>=4 though so we're pinning an older version
+# for now. See https://github.com/repoze/repoze.sphinx.autointerface/issues/16
+# for more info. This pinning could also be removed by the removal of
+# zope.interface in Certbot.
+sphinx = "<4"
+# Library traitlets is a transitive dependency of ipdb (traitlets -> ipython -> ipdb).
+# Version 5.x is incompatible with Python 3.6 but for some reasons, poetry fails to
+# add the appropriate marker and allows this version to be installed under Python 3.6.
+# We add a pinning to not create a set of requirements incompatible with Python 3.6.
+traitlets = "<5"
 
 [tool.poetry.dev-dependencies]
 

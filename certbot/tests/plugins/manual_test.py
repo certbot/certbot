@@ -52,7 +52,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.assertRaises(errors.HookCommandNotFound, self.auth.prepare)
 
     def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), str))
+        self.assertIsInstance(self.auth.more_info(), str)
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref('example.org'),
@@ -96,9 +96,8 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             [achall.response(achall.account_key) for achall in self.achalls])
         for i, (args, kwargs) in enumerate(mock_get_utility().notification.call_args_list):
             achall = self.achalls[i]
-            self.assertTrue(
-                achall.validation(achall.account_key) in args[0])
-            self.assertFalse(kwargs['wrap'])
+            self.assertIn(achall.validation(achall.account_key), args[0])
+            self.assertIs(kwargs['wrap'], False)
 
     def test_cleanup(self):
         self.config.manual_auth_hook = ('{0} -c "import sys; sys.stdout.write(\'foo\')"'
@@ -119,7 +118,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
                     os.environ['CERTBOT_TOKEN'],
                     achall.chall.encode('token'))
             else:
-                self.assertFalse('CERTBOT_TOKEN' in os.environ)
+                self.assertNotIn('CERTBOT_TOKEN', os.environ)
 
 
 if __name__ == '__main__':

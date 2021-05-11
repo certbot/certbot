@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.15.0.dev0'
+version = '1.16.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -35,7 +35,7 @@ setup(
     description="Sakura Cloud DNS Authenticator plugin for Certbot",
     url='https://github.com/certbot/certbot',
     author="Certbot Project",
-    author_email='client-dev@letsencrypt.org',
+    author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
     python_requires='>=3.6',
     classifiers=[

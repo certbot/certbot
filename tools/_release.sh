@@ -177,23 +177,6 @@ cd ~-
 CERTBOT_DOCS=1 certbot --help all > certbot/docs/cli-help.txt
 jws --help > acme/docs/jws-help.txt
 
-cd ..
-# freeze before installing anything else, so that we know end-user KGS
-# make sure "twine upload" doesn't catch "kgs"
-if [ -d kgs ] ; then
-    echo Deleting old kgs...
-    rm -rf kgs
-fi
-mkdir kgs
-kgs="kgs/$version"
-pip freeze | tee $kgs
-python ../tools/pip_install.py pytest
-cd ~-
-for module in $SUBPKGS ; do
-    echo testing $module
-    # use an empty configuration file rather than the one in the repo root
-    pytest -c <(echo '') $module
-done
 deactivate
 
 
@@ -228,8 +211,8 @@ git add certbot/CHANGELOG.md
 git commit -m "Add contents to certbot/CHANGELOG.md for next version"
 
 echo "New root: $root"
-echo "Test commands (in the letstest repo):"
-echo 'python multitester.py --saveinstances targets.yaml $AWS_KEY $USERNAME scripts/test_apache2.sh'
+echo "Test commands (in the letstest directory):"
+echo 'letstest --saveinstances targets/targets.yaml $AWS_KEY $USERNAME scripts/test_apache2.sh'
 echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"
 

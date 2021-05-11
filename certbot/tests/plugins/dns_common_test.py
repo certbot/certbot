@@ -212,20 +212,20 @@ class CredentialsConfigurationRequireTest(test_util.TempDirTestCase):
 class DomainNameGuessTest(unittest.TestCase):
 
     def test_simple_case(self):
-        self.assertTrue(
-            'example.com' in
+        self.assertIn(
+            'example.com',
             dns_common.base_domain_name_guesses("example.com")
         )
 
     def test_sub_domain(self):
-        self.assertTrue(
-            'example.com' in
+        self.assertIn(
+            'example.com',
             dns_common.base_domain_name_guesses("foo.bar.baz.example.com")
         )
 
     def test_second_level_domain(self):
-        self.assertTrue(
-            'example.co.uk' in
+        self.assertIn(
+            'example.co.uk',
             dns_common.base_domain_name_guesses("foo.bar.baz.example.co.uk")
         )
 

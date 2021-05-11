@@ -211,7 +211,7 @@ class CertificatesTest(BaseCertManagerTest):
     def test_certificates_quiet(self, mock_utility, mock_logger):
         self.config.quiet = True
         self._certificates(self.config)
-        self.assertFalse(mock_utility.notification.called)
+        self.assertIs(mock_utility.notification.called, False)
         self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
 
     @mock.patch('certbot.crypto_util.verify_renewable_cert')
@@ -224,7 +224,7 @@ class CertificatesTest(BaseCertManagerTest):
         mock_verifier.return_value = None
         mock_report.return_value = ""
         self._certificates(self.config)
-        self.assertFalse(mock_logger.warning.called)
+        self.assertIs(mock_logger.warning.called, False)
         self.assertTrue(mock_report.called)
         self.assertTrue(mock_utility.called)
         self.assertTrue(mock_renewable_cert.called)
@@ -242,7 +242,7 @@ class CertificatesTest(BaseCertManagerTest):
 
         filesystem.makedirs(empty_config.renewal_configs_dir)
         self._certificates(empty_config)
-        self.assertFalse(mock_logger.warning.called)
+        self.assertIs(mock_logger.warning.called, False)
         self.assertTrue(mock_utility.called)
         shutil.rmtree(empty_tempdir)
 
@@ -269,31 +269,34 @@ class CertificatesTest(BaseCertManagerTest):
         get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs)
 
         out = get_report()
-        self.assertTrue("INVALID: EXPIRED" in out)
+        self.assertIn("INVALID: EXPIRED", out)
 
         cert.target_expiry += datetime.timedelta(hours=2)
         # pylint: disable=protected-access
         out = get_report()
-        self.assertTrue('1 hour(s)' in out or '2 hour(s)' in out)
-        self.assertTrue('VALID' in out and 'INVALID' not in out)
+        self.assertIs('1 hour' in out or '2 hour(s)' in out, True)
+        self.assertIn('VALID', out)
+        self.assertNotIn('INVALID', out)
 
         cert.target_expiry += datetime.timedelta(days=1)
         # pylint: disable=protected-access
         out = get_report()
-        self.assertTrue('1 day' in out)
-        self.assertFalse('under' in out)
-        self.assertTrue('VALID' in out and 'INVALID' not in out)
+        self.assertIn('1 day', out)
+        self.assertNotIn('under', out)
+        self.assertIn('VALID', out)
+        self.assertNotIn('INVALID', out)
 
         cert.target_expiry += datetime.timedelta(days=2)
         # pylint: disable=protected-access
         out = get_report()
-        self.assertTrue('3 days' in out)
-        self.assertTrue('VALID' in out and 'INVALID' not in out)
+        self.assertIn('3 days', out)
+        self.assertIn('VALID', out)
+        self.assertNotIn('INVALID', out)
 
         cert.is_test_cert = True
         mock_revoked.return_value = True
         out = get_report()
-        self.assertTrue('INVALID: TEST_CERT, REVOKED' in out)
+        self.assertIn('INVALID: TEST_CERT, REVOKED', out)
 
         cert = mock.MagicMock(lineagename="indescribable")
         cert.target_expiry = expiry
@@ -353,7 +356,7 @@ class LineageForCertnameTest(BaseCertManagerTest):
     def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "other.com.conf"
         from certbot._internal import cert_manager
-        self.assertEqual(cert_manager.lineage_for_certname(self.config, "example.com"), None)
+        self.assertIsNone(cert_manager.lineage_for_certname(self.config, "example.com"))
         self.assertTrue(mock_make_or_verify_dir.called)
 
     @mock.patch('certbot.util.make_or_verify_dir')
@@ -361,7 +364,7 @@ class LineageForCertnameTest(BaseCertManagerTest):
     def test_no_renewal_file(self, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.side_effect = errors.CertStorageError()
         from certbot._internal import cert_manager
-        self.assertEqual(cert_manager.lineage_for_certname(self.config, "example.com"), None)
+        self.assertIsNone(cert_manager.lineage_for_certname(self.config, "example.com"))
         self.assertTrue(mock_make_or_verify_dir.called)
 
 
@@ -388,7 +391,7 @@ class DomainsForCertnameTest(BaseCertManagerTest):
     def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"
         from certbot._internal import cert_manager
-        self.assertEqual(cert_manager.domains_for_certname(self.config, "other.com"), None)
+        self.assertIsNone(cert_manager.domains_for_certname(self.config, "other.com"))
         self.assertTrue(mock_make_or_verify_dir.called)
 
 
@@ -450,7 +453,7 @@ class RenameLineageTest(BaseCertManagerTest):
         self._call(self.config)
         from certbot._internal import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(self.config, self.config.new_certname)
-        self.assertTrue(updated_lineage is not None)
+        self.assertIsNotNone(updated_lineage)
         self.assertEqual(updated_lineage.lineagename, self.config.new_certname)
 
     @test_util.patch_get_utility()
@@ -463,7 +466,7 @@ class RenameLineageTest(BaseCertManagerTest):
         self._call(self.config)
         from certbot._internal import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(self.config, self.config.new_certname)
-        self.assertTrue(updated_lineage is not None)
+        self.assertIsNotNone(updated_lineage)
         self.assertEqual(updated_lineage.lineagename, self.config.new_certname)
 
     @test_util.patch_get_utility()
@@ -503,12 +506,12 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         result = find_duplicative_certs(
             self.config, ['example.com', 'www.example.com'])
         self.assertTrue(result[0].configfile.filename.endswith('example.org.conf'))
-        self.assertEqual(result[1], None)
+        self.assertIsNone(result[1])
 
         # Superset
         result = find_duplicative_certs(
             self.config, ['example.com', 'www.example.com', 'something.new'])
-        self.assertEqual(result[0], None)
+        self.assertIsNone(result[0])
         self.assertTrue(result[1].configfile.filename.endswith('example.org.conf'))
 
         # Partial overlap doesn't count
@@ -629,8 +632,7 @@ class GetCertnameTest(unittest.TestCase):
         self.assertEqual(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=False), ['example.com'])
-        self.assertTrue(
-            prompt in self.mock_get_utility().menu.call_args[0][0])
+        self.assertIn(prompt, self.mock_get_utility().menu.call_args[0][0])
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')
@@ -671,8 +673,7 @@ class GetCertnameTest(unittest.TestCase):
         self.assertEqual(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=True), ['example.com'])
-        self.assertTrue(
-            prompt in self.mock_get_utility().checklist.call_args[0][0])
+        self.assertIn(prompt, self.mock_get_utility().checklist.call_args[0][0])
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')

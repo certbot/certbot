@@ -44,4 +44,4 @@ def test_dns_plugin_install(dns_snap_path):
             'certbot:certbot-metadata'])
         subprocess.check_call(['snap', 'install', '--dangerous', dns_snap_path])
     finally:
-        subprocess.call(['snap', 'remove', 'plugin_name'])
+        subprocess.call(['snap', 'remove', plugin_name])

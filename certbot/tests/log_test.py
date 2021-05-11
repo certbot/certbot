@@ -51,9 +51,8 @@ class PreArgParseSetupTest(unittest.TestCase):
                 memory_handler = handler
                 target = memory_handler.target  # type: ignore
             else:
-                self.assertTrue(isinstance(handler, logging.StreamHandler))
-        self.assertTrue(
-            isinstance(target, logging.StreamHandler))
+                self.assertIsInstance(handler, logging.StreamHandler)
+        self.assertIsInstance(target, logging.StreamHandler)
 
         mock_register.assert_called_once_with(logging.shutdown)
         mock_sys.excepthook(1, 2, 3)
@@ -146,7 +145,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         try:
             self._call(self.config, 'test.log', '%(message)s')
         except errors.Error as err:
-            self.assertTrue('--logs-dir' in str(err))
+            self.assertIn('--logs-dir', str(err))
         else:  # pragma: no cover
             self.fail('Error not raised.')
 
@@ -337,7 +336,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         mock_logger, output = self._test_common(get_acme_error, debug=False)
         self._assert_exception_logged(mock_logger.debug, messages.Error)
         self._assert_quiet_output(mock_logger, output)
-        self.assertFalse(messages.ERROR_PREFIX in output)
+        self.assertNotIn(messages.ERROR_PREFIX, output)
 
     def test_other_error(self):
         exc_type = ValueError
@@ -379,20 +378,20 @@ class PostArgParseExceptHookTest(unittest.TestCase):
     def _assert_exception_logged(self, log_func, exc_type):
         self.assertTrue(log_func.called)
         call_kwargs = log_func.call_args[1]
-        self.assertTrue('exc_info' in call_kwargs)
+        self.assertIn('exc_info', call_kwargs)
 
         actual_exc_info = call_kwargs['exc_info']
         expected_exc_info = (exc_type, mock.ANY, mock.ANY)
         self.assertEqual(actual_exc_info, expected_exc_info)
 
     def _assert_logfile_output(self, output):
-        self.assertTrue('Please see the logfile' in output)
-        self.assertTrue(self.log_path in output)
+        self.assertIn('Please see the logfile', output)
+        self.assertIn(self.log_path, output)
 
     def _assert_quiet_output(self, mock_logger, output):
-        self.assertFalse(mock_logger.exception.called)
+        self.assertIs(mock_logger.exception.called, False)
         self.assertTrue(mock_logger.debug.called)
-        self.assertTrue(self.error_msg in output)
+        self.assertIn(self.error_msg, output)
 
 
 class ExitWithLogPathTest(test_util.TempDirTestCase):
@@ -407,13 +406,13 @@ class ExitWithLogPathTest(test_util.TempDirTestCase):
         open(log_file, 'w').close()
 
         err_str = self._test_common(log_file)
-        self.assertTrue('logfiles' not in err_str)
-        self.assertTrue(log_file in err_str)
+        self.assertNotIn('logfiles', err_str)
+        self.assertIn(log_file, err_str)
 
     def test_log_dir(self):
         err_str = self._test_common(self.tempdir)
-        self.assertTrue('logfiles' in err_str)
-        self.assertTrue(self.tempdir in err_str)
+        self.assertIn('logfiles', err_str)
+        self.assertIn(self.tempdir, err_str)
 
     # pylint: disable=inconsistent-return-statements
     def _test_common(self, *args, **kwargs):
