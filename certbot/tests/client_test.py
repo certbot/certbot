@@ -611,16 +611,16 @@ class EnhanceConfigTest(ClientTestCommon):
     def test_already_exists_header(self, mock_log):
         self.config.hsts = True
         self._test_with_already_existing()
-        self.assertIs(mock_log.warning.called, True)
-        self.assertEqual(mock_log.warning.call_args[0][1],
+        self.assertIs(mock_log.info.called, True)
+        self.assertEqual(mock_log.info.call_args[0][1],
                           'Strict-Transport-Security')
 
     @mock.patch("certbot._internal.client.logger")
     def test_already_exists_redirect(self, mock_log):
         self.config.redirect = True
         self._test_with_already_existing()
-        self.assertIs(mock_log.warning.called, True)
-        self.assertEqual(mock_log.warning.call_args[0][1],
+        self.assertIs(mock_log.info.called, True)
+        self.assertEqual(mock_log.info.call_args[0][1],
                           'redirect')
 
     @mock.patch("certbot._internal.client.logger")

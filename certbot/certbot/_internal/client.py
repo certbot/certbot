@@ -621,10 +621,10 @@ class Client:
                     self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
                     if enhancement == "ensure-http-header":
-                        logger.warning("Enhancement %s was already set.",
+                        logger.info("Enhancement %s was already set.",
                                 options)
                     else:
-                        logger.warning("Enhancement %s was already set.",
+                        logger.info("Enhancement %s was already set.",
                                 enhancement)
                 except errors.PluginError:
                     logger.warning("Unable to set enhancement %s for %s",
