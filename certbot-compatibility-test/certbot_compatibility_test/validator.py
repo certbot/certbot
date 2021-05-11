@@ -10,7 +10,7 @@ from acme import errors as acme_errors
 logger = logging.getLogger(__name__)
 
 
-class Validator(object):
+class Validator:
     """Collection of functions to test a live webserver's configuration"""
 
     def certificate(self, cert, name, alt_host=None, port=443):

@@ -24,8 +24,8 @@ class MissingNonceTest(unittest.TestCase):
         self.error = MissingNonce(self.response)
 
     def test_str(self):
-        self.assertTrue("FOO" in str(self.error))
-        self.assertTrue("{}" in str(self.error))
+        self.assertIn("FOO", str(self.error))
+        self.assertIn("{}", str(self.error))
 
 
 class PollErrorTest(unittest.TestCase):

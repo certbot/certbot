@@ -61,9 +61,9 @@ class GetEmailTest(unittest.TestCase):
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
             self._call()
-            self.assertTrue(invalid_txt not in mock_input.call_args[0][0])
+            self.assertNotIn(invalid_txt, mock_input.call_args[0][0])
             self._call(invalid=True)
-            self.assertTrue(invalid_txt in mock_input.call_args[0][0])
+            self.assertIn(invalid_txt, mock_input.call_args[0][0])
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_optional_flag(self, mock_get_utility):
@@ -73,8 +73,7 @@ class GetEmailTest(unittest.TestCase):
             mock_safe_email.side_effect = [False, True]
             self._call(optional=False)
             for call in mock_input.call_args_list:
-                self.assertTrue(
-                    "--register-unsafely-without-email" not in call[0][0])
+                self.assertNotIn("--register-unsafely-without-email", call[0][0])
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_optional_invalid_unsafe(self, mock_get_utility):
@@ -84,13 +83,13 @@ class GetEmailTest(unittest.TestCase):
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.side_effect = [False, True]
             self._call(invalid=True)
-            self.assertTrue(invalid_txt in mock_input.call_args[0][0])
+            self.assertIn(invalid_txt, mock_input.call_args[0][0])
 
 
 class ChooseAccountTest(test_util.TempDirTestCase):
     """Tests for certbot.display.ops.choose_account."""
     def setUp(self):
-        super(ChooseAccountTest, self).setUp()
+        super().setUp()
 
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
                                                                False))
@@ -128,7 +127,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_cancel(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 1)
-        self.assertTrue(self._call([self.acc1, self.acc2]) is None)
+        self.assertIsNone(self._call([self.acc1, self.acc2]))
 
 
 class GenHttpsNamesTest(unittest.TestCase):
@@ -210,8 +209,7 @@ class ChooseNamesTest(unittest.TestCase):
         actual_doms = self._call(self.mock_install)
         self.assertEqual(mock_util().input.call_count, 1)
         self.assertEqual(actual_doms, [domain])
-        self.assertTrue(
-            "configuration files" in mock_util().input.call_args[0][0])
+        self.assertIn("configuration files", mock_util().input.call_args[0][0])
 
     def test_sort_names_trivial(self):
         from certbot.display.ops import _sort_names
@@ -353,7 +351,7 @@ class SuccessInstallationTest(unittest.TestCase):
         arg = mock_util().notification.call_args_list[0][0][0]
 
         for name in names:
-            self.assertTrue(name in arg)
+            self.assertIn(name, arg)
 
 
 class SuccessRenewalTest(unittest.TestCase):
@@ -374,7 +372,7 @@ class SuccessRenewalTest(unittest.TestCase):
         arg = mock_util().notification.call_args_list[0][0][0]
 
         for name in names:
-            self.assertTrue(name in arg)
+            self.assertIn(name, arg)
 
 class SuccessRevocationTest(unittest.TestCase):
     """Test the success revocation message."""
@@ -478,8 +476,8 @@ class ChooseValuesTest(unittest.TestCase):
         mock_util().checklist.return_value = (display_util.OK, [items[2]])
         result = self._call(items, None)
         self.assertEqual(result, [items[2]])
-        self.assertTrue(mock_util().checklist.called)
-        self.assertEqual(mock_util().checklist.call_args[0][0], None)
+        self.assertIs(mock_util().checklist.called, True)
+        self.assertIsNone(mock_util().checklist.call_args[0][0])
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_choose_names_success_question(self, mock_util):
@@ -488,7 +486,7 @@ class ChooseValuesTest(unittest.TestCase):
         mock_util().checklist.return_value = (display_util.OK, [items[1]])
         result = self._call(items, question)
         self.assertEqual(result, [items[1]])
-        self.assertTrue(mock_util().checklist.called)
+        self.assertIs(mock_util().checklist.called, True)
         self.assertEqual(mock_util().checklist.call_args[0][0], question)
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
@@ -498,7 +496,7 @@ class ChooseValuesTest(unittest.TestCase):
         mock_util().checklist.return_value = (display_util.CANCEL, [])
         result = self._call(items, question)
         self.assertEqual(result, [])
-        self.assertTrue(mock_util().checklist.called)
+        self.assertIs(mock_util().checklist.called, True)
         self.assertEqual(mock_util().checklist.call_args[0][0], question)
 
 

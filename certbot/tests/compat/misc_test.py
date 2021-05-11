@@ -45,4 +45,4 @@ class ExecuteTest(unittest.TestCase):
             mock_logger.info.assert_any_call(mock.ANY, mock.ANY,
                                              mock.ANY, stdout)
         if stderr or returncode:
-            self.assertTrue(mock_logger.error.called)
+            self.assertIs(mock_logger.error.called, True)

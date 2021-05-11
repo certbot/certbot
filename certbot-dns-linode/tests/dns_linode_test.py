@@ -22,7 +22,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
                         dns_test_common_lexicon.BaseLexiconAuthenticatorTest):
 
     def setUp(self):
-        super(AuthenticatorTest, self).setUp()
+        super().setUp()
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"linode_key": TOKEN}, path)

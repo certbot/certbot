@@ -18,7 +18,7 @@ class DummyParserNode(interfaces.ParserNode):
         self.dirty = dirty
         self.filepath = filepath
         self.metadata = metadata
-        super(DummyParserNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def save(self, msg):  # pragma: no cover
         """Save"""
@@ -38,7 +38,7 @@ class DummyCommentNode(DummyParserNode):
         """
         comment, kwargs = util.commentnode_kwargs(kwargs)
         self.comment = comment
-        super(DummyCommentNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class DummyDirectiveNode(DummyParserNode):
@@ -54,7 +54,7 @@ class DummyDirectiveNode(DummyParserNode):
         self.parameters = parameters
         self.enabled = enabled
 
-        super(DummyDirectiveNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def set_parameters(self, parameters):  # pragma: no cover
         """Set parameters"""

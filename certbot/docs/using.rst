@@ -14,7 +14,7 @@ obtaining, renewing, or revoking certificates. The most important
 and commonly-used commands will be discussed throughout this
 document; an exhaustive list also appears near the end of the document.
 
-The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used an alternate installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
+The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used a now-deprecated installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
 
 .. _plugins:
 
@@ -284,6 +284,7 @@ dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
 dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
+dns-azure_         Y    N    DNS Authentication using Azure DNS
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -298,6 +299,7 @@ dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 .. _dns-lightsail: https://github.com/noi/certbot-dns-lightsail
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
+.. _dns-azure: https://github.com/binkhq/certbot-dns-azure
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -420,7 +422,7 @@ option to control the curve used in ECDSA certificates.
 .. warning:: If you obtain certificates using ECDSA keys, you should be careful
    not to downgrade your Certbot installation since ECDSA keys are not
    supported by older versions of Certbot. Downgrades like this are possible if
-   you switch from something like the snaps or certbot-auto to packages
+   you switch from something like the snaps or pip to packages
    provided by your operating system which often lag behind.
 
 Changing existing certificates from RSA to ECDSA
@@ -474,29 +476,37 @@ like
 Revoking certificates
 ---------------------
 
-If your account key has been compromised or you otherwise need to revoke a certificate,
-use the ``revoke`` command to do so. Note that the ``revoke`` command takes the certificate path
-(ending in ``cert.pem``), not a certificate name or domain. Example::
+If you need to revoke a certificate, use the ``revoke`` subcommand to do so.
 
-  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem
+A certificate may be revoked by providing its name (see ``certbot certificates``) or by providing
+its path directly::
+
+  certbot revoke --cert-name example.com
+
+  certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem
+
+If the certificate being revoked was obtained via the ``--staging``, ``--test-cert`` or a non-default ``--server`` flag,
+that flag must be passed to the ``revoke`` subcommand.
+
+.. note:: After revocation, Certbot will (by default) ask whether you want to **delete** the certificate.
+          Unless deleted, Certbot will try to renew revoked certificates the next time ``certbot renew`` runs.
 
 You can also specify the reason for revoking your certificate by using the ``reason`` flag.
 Reasons include ``unspecified`` which is the default, as well as ``keycompromise``,
 ``affiliationchanged``, ``superseded``, and ``cessationofoperation``::
 
-  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem --reason keycompromise
+  certbot revoke --cert-name example.com --reason keycompromise
 
-Additionally, if a certificate
-is a test certificate obtained via the ``--staging`` or ``--test-cert`` flag, that flag must be passed to the
-``revoke`` subcommand.
-Once a certificate is revoked (or for other certificate management tasks), all of a certificate's
-relevant files can be removed from the system with the ``delete`` subcommand::
+Revoking by account key or certificate private key
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  certbot delete --cert-name example.com
+By default, Certbot will try revoke the certificate using your ACME account key. If the certificate was created from
+the same ACME account, the revocation will be successful.
 
-.. note:: If you don't use ``delete`` to remove the certificate completely, it will be renewed automatically at the next renewal event.
+If you instead have the corresponding private key file to the certificate you wish to revoke, use ``--key-path`` to perform the
+revocation from any ACME account::
 
-.. note:: Revoking a certificate will have no effect on the rate limit imposed by the Let's Encrypt server.
+  certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem --key-path /etc/letsencrypt/live/example.com/privkey.pem
 
 .. _renewal:
 
@@ -507,11 +517,8 @@ Renewing certificates
    days). Make sure you renew the certificates at least once in 3
    months.
 
-.. seealso:: Many of the certbot clients obtained through a
-   distribution come with automatic renewal out of the box,
-   such as Debian and Ubuntu versions installed through `apt`,
-   CentOS/RHEL 7 through EPEL, etc.  See `Automated Renewals`_
-   for more details.
+.. seealso:: Most Certbot installations come with automatic
+   renewal out of the box. See `Automated Renewals`_ for more details.
 
 As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
@@ -681,27 +688,15 @@ The following commands could be used to specify where these files are located::
 Automated Renewals
 ------------------
 
-Many Linux distributions provide automated renewal when you use the
-packages installed through their system package manager.  The
-following table is an *incomplete* list of distributions which do so,
-as well as their methods for doing so.
+Most Certbot installations come with automatic renewals preconfigured. This
+is done by means of a scheduled task which runs ``certbot renew`` periodically.
 
-If you are not sure whether or not your system has this already
-automated, refer to your distribution's documentation, or check your
-system's crontab (typically in `/etc/crontab/` and `/etc/cron.*/*` and
-systemd timers (`systemctl list-timers`).
+If you are unsure whether you need to configure automated renewal:
 
-.. csv-table:: Distributions with Automated Renewal
-   :header: "Distribution Name", "Distribution Version", "Automation Method"
-
-   "CentOS", "EPEL 7", "systemd"
-   "Debian", "stretch", "cron, systemd"
-   "Debian", "testing/sid", "cron, systemd"
-   "Fedora", "26", "systemd"
-   "Fedora", "27", "systemd"
-   "RHEL", "EPEL 7", "systemd"
-   "Ubuntu", "17.10", "cron, systemd"
-   "Ubuntu", "certbot PPA", "cron, systemd"
+1. Review the instructions for your system at https://certbot.eff.org/instructions.
+   They will describe how to set up a scheduled task, if necessary.
+2. (Linux/BSD): Check your system's crontab (typically `/etc/crontab` and
+   `/etc/cron.*/*`) and systemd timers (``systemctl list-timers``).
 
 .. _where-certs:
 
@@ -709,12 +704,24 @@ Where are my certificates?
 ==========================
 
 All generated keys and issued certificates can be found in
-``/etc/letsencrypt/live/$domain``. In the case of creating a SAN certificate
-with multiple alternative names, ``$domain`` is the first domain passed in
-via -d parameter. Rather than copying, please point
-your (web) server configuration directly to those files (or create
-symlinks). During the renewal_, ``/etc/letsencrypt/live`` is updated
-with the latest necessary files.
+``/etc/letsencrypt/live/$domain``, where ``$domain`` is the certificate
+name (see the note below). Rather than copying, please point your (web)
+server configuration directly to those files (or create symlinks).
+During the renewal_, ``/etc/letsencrypt/live`` is updated with the latest
+necessary files.
+
+.. note::
+  The certificate name ``$domain`` used in the path ``/etc/letsencrypt/live/$domain``
+  follows this convention:
+
+  * it is the name given to ``--cert-name``,
+  * if ``--cert-name`` is not set by the user it is the first domain given to
+    ``--domains``,
+  * if the first domain is a wildcard domain (eg. ``*.example.com``) the
+    certificate name will be ``example.com``,
+  * if a name collision would occur with a certificate already named ``example.com``,
+    the new certificate name will be constructed using a numerical sequence
+    as ``example.com-001``.
 
 For historical reasons, the containing directories are created with
 permissions of ``0700`` meaning that certificates are accessible only

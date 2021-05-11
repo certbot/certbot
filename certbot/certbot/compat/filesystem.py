@@ -5,8 +5,7 @@ import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 import sys
-
-from acme.magic_typing import List
+from typing import List
 
 try:
     import ntsecuritycon
@@ -36,8 +35,7 @@ class _WindowsUmask:
 _WINDOWS_UMASK = _WindowsUmask()
 
 
-def chmod(file_path, mode):
-    # type: (str, int) -> None
+def chmod(file_path: str, mode: int) -> None:
     """
     Apply a POSIX mode on given file_path:
 
@@ -58,8 +56,7 @@ def chmod(file_path, mode):
         _apply_win_mode(file_path, mode)
 
 
-def umask(mask):
-    # type: (int) -> int
+def umask(mask: int) -> int:
     """
     Set the current numeric umask and return the previous umask. On Linux, the built-in umask
     method is used. On Windows, our Certbot-side implementation is used.
@@ -85,8 +82,8 @@ def umask(mask):
 # Since copying and editing arbitrary DACL is very difficult, and since we actually know
 # the mode to apply at the time the owner of a file should change, it is easier to just
 # change the owner, then reapply the known mode, as copy_ownership_and_apply_mode() does.
-def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
-    # type: (str, str, int, bool, bool) -> None
+def copy_ownership_and_apply_mode(src: str, dst: str, mode: int,
+                                  copy_user: bool, copy_group: bool) -> None:
     """
     Copy ownership (user and optionally group on Linux) from the source to the
     destination, then apply given mode in compatible way for Linux and Windows.
@@ -118,8 +115,8 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
 # equivalent POSIX mode, because ownership and mode are copied altogether on the destination
 # file, so no recomputing of the DACL against the new owner is needed, as it would be
 # for a copy_ownership alone method.
-def copy_ownership_and_mode(src, dst, copy_user=True, copy_group=True):
-    # type: (str, str, bool, bool) -> None
+def copy_ownership_and_mode(src: str, dst: str,
+                            copy_user: bool = True, copy_group: bool = True) -> None:
     """
     Copy ownership (user and optionally group on Linux) and mode/DACL
     from the source to the destination.
@@ -143,8 +140,7 @@ def copy_ownership_and_mode(src, dst, copy_user=True, copy_group=True):
         _copy_win_mode(src, dst)
 
 
-def check_mode(file_path, mode):
-    # type: (str, int) -> bool
+def check_mode(file_path: str, mode: int) -> bool:
     """
     Check if the given mode matches the permissions of the given file.
     On Linux, will make a direct comparison, on Windows, mode will be compared against
@@ -161,8 +157,7 @@ def check_mode(file_path, mode):
     return _check_win_mode(file_path, mode)
 
 
-def check_owner(file_path):
-    # type: (str) -> bool
+def check_owner(file_path: str) -> bool:
     """
     Check if given file is owned by current user.
 
@@ -184,8 +179,7 @@ def check_owner(file_path):
     return _get_current_user() == user
 
 
-def check_permissions(file_path, mode):
-    # type: (str, int) -> bool
+def check_permissions(file_path: str, mode: int) -> bool:
     """
     Check if given file has the given mode and is owned by current user.
 
@@ -197,8 +191,7 @@ def check_permissions(file_path, mode):
     return check_owner(file_path) and check_mode(file_path, mode)
 
 
-def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
-    # type: (str, int, int) -> int
+def open(file_path: str, flags: int, mode: int = 0o777) -> int:  # pylint: disable=redefined-builtin
     """
     Wrapper of original os.open function, that will ensure on Windows that given mode
     is correctly applied.
@@ -267,8 +260,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     return handle
 
 
-def makedirs(file_path, mode=0o777):
-    # type: (str, int) -> None
+def makedirs(file_path: str, mode: int = 0o777) -> None:
     """
     Rewrite of original os.makedirs function, that will ensure on Windows that given mode
     is correctly applied.
@@ -300,8 +292,7 @@ def makedirs(file_path, mode=0o777):
         umask(current_umask)
 
 
-def mkdir(file_path, mode=0o777):
-    # type: (str, int) -> None
+def mkdir(file_path: str, mode: int = 0o777) -> None:
     """
     Rewrite of original os.mkdir function, that will ensure on Windows that given mode
     is correctly applied.
@@ -332,8 +323,7 @@ def mkdir(file_path, mode=0o777):
     return None
 
 
-def replace(src, dst):
-    # type: (str, str) -> None
+def replace(src: str, dst: str) -> None:
     """
     Rename a file to a destination path and handles situations where the destination exists.
 
@@ -350,8 +340,7 @@ def replace(src, dst):
         os.rename(src, dst)
 
 
-def realpath(file_path):
-    # type: (str) -> str
+def realpath(file_path: str) -> str:
     """
     Find the real path for the given path. This method resolves symlinks, including
     recursive symlinks, and is protected against symlinks that creates an infinite loop.
@@ -372,7 +361,7 @@ def realpath(file_path):
             raise RuntimeError('Error, link {0} is a loop!'.format(original_path))
         return path
 
-    inspected_paths = []  # type: List[str]
+    inspected_paths: List[str] = []
     while os.path.islink(file_path):
         link_path = file_path
         file_path = os.readlink(file_path)
@@ -385,8 +374,7 @@ def realpath(file_path):
     return os.path.abspath(file_path)
 
 
-def readlink(link_path):
-    # type: (str) -> str
+def readlink(link_path: str) -> str:
     """
     Return a string representing the path to which the symbolic link points.
 
@@ -420,8 +408,7 @@ def readlink(link_path):
 # elevated privileges or not. However this is not a problem since certbot always
 # requires to be run under a privileged shell, so the user will always benefit
 # from the highest (privileged one) set of permissions on a given file.
-def is_executable(path):
-    # type: (str) -> bool
+def is_executable(path: str) -> bool:
     """
     Is path an executable file?
 
@@ -435,8 +422,7 @@ def is_executable(path):
     return _win_is_executable(path)
 
 
-def has_world_permissions(path):
-    # type: (str) -> bool
+def has_world_permissions(path: str) -> bool:
     """
     Check if everybody/world has any right (read/write/execute) on a file given its path.
 
@@ -457,8 +443,7 @@ def has_world_permissions(path):
     }))
 
 
-def compute_private_key_mode(old_key, base_mode):
-    # type: (str, int) -> int
+def compute_private_key_mode(old_key: str, base_mode: int) -> int:
     """
     Calculate the POSIX mode to apply to a private key given the previous private key.
 
@@ -479,8 +464,7 @@ def compute_private_key_mode(old_key, base_mode):
     return base_mode
 
 
-def has_same_ownership(path1, path2):
-    # type: (str, str) -> bool
+def has_same_ownership(path1: str, path2: str) -> bool:
     """
     Return True if the ownership of two files given their respective path is the same.
     On Windows, ownership is checked against owner only, since files do not have a group owner.
@@ -505,8 +489,7 @@ def has_same_ownership(path1, path2):
     return user1 == user2
 
 
-def has_min_permissions(path, min_mode):
-    # type: (str, int) -> bool
+def has_min_permissions(path: str, min_mode: int) -> bool:
     """
     Check if a file given its path has at least the permissions defined by the given minimal mode.
     On Windows, group permissions are ignored since files do not have a group owner.

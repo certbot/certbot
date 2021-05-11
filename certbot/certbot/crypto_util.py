@@ -6,26 +6,28 @@
 """
 import hashlib
 import logging
+import re
 import warnings
 
-import re
 # See https://github.com/pyca/cryptography/issues/4275
 from cryptography import x509  # type: ignore
-from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
+from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.asymmetric.ec import ECDSA, EllipticCurvePublicKey
+from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat
+from cryptography.hazmat.primitives.serialization import Encoding
+from cryptography.hazmat.primitives.serialization import NoEncryption
+from cryptography.hazmat.primitives.serialization import PrivateFormat
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore
-
 import pyrfc3339
 import zope.component
 
 from acme import crypto_util as acme_crypto_util
-from acme.magic_typing import IO  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -269,9 +271,9 @@ def verify_renewable_cert_sig(renewable_cert):
     :raises errors.Error: If signature verification fails.
     """
     try:
-        with open(renewable_cert.chain_path, 'rb') as chain_file:  # type: IO[bytes]
+        with open(renewable_cert.chain_path, 'rb') as chain_file:
             chain = x509.load_pem_x509_certificate(chain_file.read(), default_backend())
-        with open(renewable_cert.cert_path, 'rb') as cert_file:  # type: IO[bytes]
+        with open(renewable_cert.cert_path, 'rb') as cert_file:
             cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
         pk = chain.public_key()
         with warnings.catch_warnings():
@@ -299,8 +301,7 @@ def verify_signed_payload(public_key, signature, payload, signature_hash_algorit
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if isinstance(public_key, RSAPublicKey):
-            # https://github.com/python/typeshed/blob/master/third_party/2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
-            verifier = public_key.verifier(  # type: ignore
+            verifier = public_key.verifier(
                 signature, PKCS1v15(), signature_hash_algorithm
             )
             verifier.update(payload)
@@ -346,11 +347,11 @@ def verify_fullchain(renewable_cert):
     :raises errors.Error: If cert and chain do not combine to fullchain.
     """
     try:
-        with open(renewable_cert.chain_path) as chain_file:  # type: IO[str]
+        with open(renewable_cert.chain_path) as chain_file:
             chain = chain_file.read()
-        with open(renewable_cert.cert_path) as cert_file:  # type: IO[str]
+        with open(renewable_cert.cert_path) as cert_file:
             cert = cert_file.read()
-        with open(renewable_cert.fullchain_path) as fullchain_file:  # type: IO[str]
+        with open(renewable_cert.fullchain_path) as fullchain_file:
             fullchain = fullchain_file.read()
         if (cert + chain) != fullchain:
             error_str = "fullchain does not match cert + chain for {0}!"
@@ -484,7 +485,7 @@ def _notAfterBefore(cert_path, method):
 
     """
     # pylint: disable=redefined-outer-name
-    with open(cert_path, "rb") as f:  # type: IO[bytes]
+    with open(cert_path, "rb") as f:
         x509 = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
     # pyopenssl always returns bytes
     timestamp = method(x509)
@@ -561,7 +562,7 @@ def get_serial_from_cert(cert_path):
     :rtype: int
     """
     # pylint: disable=redefined-outer-name
-    with open(cert_path, "rb") as f:  # type: IO[bytes]
+    with open(cert_path, "rb") as f:
         x509 = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
     return x509.get_serial_number()
 

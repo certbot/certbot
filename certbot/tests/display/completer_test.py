@@ -1,4 +1,6 @@
 """Test certbot._internal.display.completer."""
+from typing import List
+
 try:
     import readline  # pylint: disable=import-error
 except ImportError:
@@ -23,14 +25,14 @@ class CompleterTest(test_util.TempDirTestCase):
     """Test certbot._internal.display.completer.Completer."""
 
     def setUp(self):
-        super(CompleterTest, self).setUp()
+        super().setUp()
 
         # directories must end with os.sep for completer to
         # search inside the directory for possible completions
         if self.tempdir[-1] != os.sep:
             self.tempdir += os.sep
 
-        self.paths = []  # type: List[str]
+        self.paths: List[str] = []
         # create some files and directories in temp_dir
         for c in string.ascii_lowercase:
             path = os.path.join(self.tempdir, c)
@@ -48,12 +50,12 @@ class CompleterTest(test_util.TempDirTestCase):
 
         for i in range(num_paths):
             completion = my_completer.complete(self.tempdir, i)
-            self.assertTrue(completion in self.paths)
+            self.assertIn(completion, self.paths)
             self.paths.remove(completion)
 
-        self.assertFalse(self.paths)
+        self.assertEqual(len(self.paths), 0)
         completion = my_completer.complete(self.tempdir, num_paths)
-        self.assertEqual(completion, None)
+        self.assertIsNone(completion)
 
     @unittest.skipIf('readline' not in sys.modules,
                      reason='Not relevant if readline is not available.')
@@ -96,7 +98,7 @@ class CompleterTest(test_util.TempDirTestCase):
         with completer.Completer():
             pass
 
-        self.assertTrue(mock_readline.parse_and_bind.called)
+        self.assertIs(mock_readline.parse_and_bind.called, True)
 
 
 def enable_tab_completion(unused_command):

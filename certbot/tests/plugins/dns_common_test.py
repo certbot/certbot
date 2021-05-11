@@ -29,14 +29,14 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
         def more_info(self):  # pylint: disable=missing-docstring,no-self-use
             return 'A fake authenticator for testing.'
 
-    class _FakeConfig(object):
+    class _FakeConfig:
         fake_propagation_seconds = 0
         fake_config_key = 1
         fake_other_key = None
         fake_file_path = None
 
     def setUp(self):
-        super(DNSAuthenticatorTest, self).setUp()
+        super().setUp()
 
         self.config = DNSAuthenticatorTest._FakeConfig()
 
@@ -164,7 +164,7 @@ class CredentialsConfigurationTest(test_util.TempDirTestCase):
 class CredentialsConfigurationRequireTest(test_util.TempDirTestCase):
 
     def setUp(self):
-        super(CredentialsConfigurationRequireTest, self).setUp()
+        super().setUp()
 
         self.path = os.path.join(self.tempdir, 'file.ini')
 
@@ -211,20 +211,20 @@ class CredentialsConfigurationRequireTest(test_util.TempDirTestCase):
 class DomainNameGuessTest(unittest.TestCase):
 
     def test_simple_case(self):
-        self.assertTrue(
-            'example.com' in
+        self.assertIn(
+            'example.com',
             dns_common.base_domain_name_guesses("example.com")
         )
 
     def test_sub_domain(self):
-        self.assertTrue(
-            'example.com' in
+        self.assertIn(
+            'example.com',
             dns_common.base_domain_name_guesses("foo.bar.baz.example.com")
         )
 
     def test_second_level_domain(self):
-        self.assertTrue(
-            'example.co.uk' in
+        self.assertIn(
+            'example.co.uk',
             dns_common.base_domain_name_guesses("foo.bar.baz.example.co.uk")
         )
 

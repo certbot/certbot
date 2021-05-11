@@ -27,6 +27,9 @@ from certbot.compat import os
 from certbot.display import util as display_util
 
 try:
+    # When we remove this deprecated import, we should also remove the
+    # "external-mock" test environment and the mock dependency listed in
+    # tools/pinning/pyproject.toml.
     import mock
     warnings.warn(
         "The external mock module is being used for backwards compatibility "
@@ -185,7 +188,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
     return mock.patch(target, new=freezable_mock)
 
 
-class FreezableMock(object):
+class FreezableMock:
     """Mock object with the ability to freeze attributes.
 
     This class works like a regular mock.MagicMock object, except
@@ -331,7 +334,7 @@ class TempDirTestCase(unittest.TestCase):
 class ConfigTestCase(TempDirTestCase):
     """Test class which sets up a NamespaceConfig object."""
     def setUp(self):
-        super(ConfigTestCase, self).setUp()
+        super().setUp()
         self.config = configuration.NamespaceConfig(
             mock.MagicMock(**constants.CLI_DEFAULTS)
         )

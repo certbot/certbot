@@ -11,7 +11,7 @@ class ComplexParserTest(util.ParserTest):
     """Apache Parser Test."""
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(ComplexParserTest, self).setUp(
+        super().setUp(
             "complex_parsing", "complex_parsing")
 
         self.setup_variables()
