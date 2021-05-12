@@ -285,7 +285,7 @@ dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
 dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
 dns-azure_         Y    N    DNS Authentication using Azure DNS
-dns-godaddy        Y    N    DNS Authentication using Godaddy DNS
+dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
