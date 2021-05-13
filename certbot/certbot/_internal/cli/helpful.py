@@ -104,7 +104,7 @@ class HelpfulArgumentParser:
         # elements are added by .parse_args()
         self.defaults: Dict[str, Any] = {}
 
-        if "-c" in sys.argv or "--config" in sys.argv:
+        if "-c" in self.args or "--config" in self.args:
             default_config_files = []
         else:
             default_config_files = flag_default("config_files")
