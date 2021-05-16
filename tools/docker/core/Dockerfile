@@ -39,4 +39,5 @@ RUN apk add --no-cache --virtual .build-deps \
     && python tools/pip_install.py --no-cache-dir \
             --editable src/acme \
             --editable src/certbot \
-    && apk del .build-deps
+    && apk del .build-deps \
+    && rm -rf ${HOME}/.cargo

@@ -32,7 +32,7 @@ if os.environ.get('SNAP_BUILD'):
 # which allows us to potentially upgrade our packages in these distros
 # as necessary.
 if os.environ.get('CERTBOT_OLDEST') == '1':
-    install_requires.append('dns-lexicon>=2.2.1')
+    install_requires.append('dns-lexicon>=3.1.0')  # Changed parameter name
 else:
     install_requires.append('dns-lexicon>=3.2.1')
 
