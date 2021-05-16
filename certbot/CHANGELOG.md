@@ -46,6 +46,7 @@ More details about these changes can be found on our GitHub repo.
 * The module `acme.magic_typing` is deprecated and will be removed in a future release.
   Please use the built-in module `typing` instead.
 * The DigitalOcean plugin now creates TXT records for the DNS-01 challenge with a lower 30s TTL.
+* Use UTF-8 encoding for renewal configuration files
 
 ### Fixed
 

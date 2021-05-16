@@ -616,7 +616,9 @@ def _delete_if_appropriate(config):
 
     # don't delete if the archive_dir is used by some other lineage
     archive_dir = storage.full_archive_path(
-            configobj.ConfigObj(storage.renewal_file_for_certname(config, config.certname)),
+            configobj.ConfigObj(
+                storage.renewal_file_for_certname(config, config.certname),
+                encoding='utf-8', default_encoding='utf-8'),
             config, config.certname)
     try:
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
