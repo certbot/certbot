@@ -1236,12 +1236,8 @@ def renew_cert(config, plugins, lineage):
     :raises errors.PluginSelectionError: MissingCommandlineFlag if supplied parameters do not pass
 
     """
-    try:
-        # installers are used in auth mode to determine domain names
-        installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-    except errors.PluginSelectionError as e:
-        logger.info("Could not choose appropriate plugin: %s", e)
-        raise
+    # installers are used in auth mode to determine domain names
+    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     le_client = _init_le_client(config, auth, installer)
 
     renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
@@ -1279,12 +1275,8 @@ def certonly(config, plugins):
 
     """
     # SETUP: Select plugins and construct a client instance
-    try:
-        # installers are used in auth mode to determine domain names
-        installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-    except errors.PluginSelectionError as e:
-        logger.info("Could not choose appropriate plugin: %s", e)
-        raise
+    # installers are used in auth mode to determine domain names
+    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
 
     le_client = _init_le_client(config, auth, installer)
 
