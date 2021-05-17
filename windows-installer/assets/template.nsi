@@ -83,6 +83,11 @@ SectionEnd
 [% block sections %]
 
 Section "!${PRODUCT_NAME}" sec_app
+  ; CERTBOT CUSTOM BEGIN
+  ; Try to cleanup Certbot pkg directory to avoid dependencies conflicts
+  RMDir /r "$INSTDIR\pkgs"
+  ; CERTBOT CUSTOM END
+
   SetRegView [[ib.py_bitness]]
   SectionIn RO
   File ${PRODUCT_ICON}
