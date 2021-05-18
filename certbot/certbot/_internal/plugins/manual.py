@@ -1,10 +1,11 @@
 """Manual authenticator plugin"""
+from typing import Dict
+
 import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import Dict
-from certbot import achallenges  # pylint: disable=unused-import
+from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter
@@ -42,13 +43,30 @@ class Authenticator(common.Plugin):
         '$CERTBOT_REMAINING_CHALLENGES will be equal to the number of challenges that '
         'remain after the current one, and $CERTBOT_ALL_DOMAINS contains a comma-separated '
         'list of all domains that are challenged for the current certificate.')
+    # Include the full stop at the end of the FQDN in the instructions below for the null
+    # label of the DNS root, as stated in section 3.1 of RFC 1035. While not necessary
+    # for most day to day usage of hostnames, when adding FQDNs to a DNS zone editor, this
+    # full stop is often mandatory. Without a full stop, the entered name is often seen as
+    # relative to the DNS zone origin, which could lead to entries for, e.g.:
+    # _acme-challenge.example.com.example.com. For users unaware of this subtle detail,
+    # including the trailing full stop in the DNS instructions below might avert this issue.
     _DNS_INSTRUCTIONS = """\
-Please deploy a DNS TXT record under the name
-{domain} with the following value:
+Please deploy a DNS TXT record under the name:
+
+{domain}.
+
+with the following value:
 
 {validation}
-
-Before continuing, verify the record is deployed."""
+"""
+    _DNS_VERIFY_INSTRUCTIONS = """
+Before continuing, verify the TXT record has been deployed. Depending on the DNS 
+provider, this may take some time, from a few seconds to multiple minutes. You can
+check if it has finished deploying with aid of online tools, such as the Google
+Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}.
+Look for one or more bolded line(s) below the line ';ANSWER'. It should show the
+value(s) you've just added.
+"""
     _HTTP_INSTRUCTIONS = """\
 Create a file containing just this data:
 
@@ -70,11 +88,10 @@ permitted by DNS standards.)
 """
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
-        self.env = {} \
-        # type: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]]
+        self.env: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]] = {}
         self.subsequent_dns_challenge = False
         self.subsequent_any_challenge = False
 
@@ -114,11 +131,15 @@ permitted by DNS standards.)
 
     def perform(self, achalls):  # pylint: disable=missing-function-docstring
         responses = []
-        for achall in achalls:
+        last_dns_achall = 0
+        for i, achall in enumerate(achalls):
+            if isinstance(achall.chall, challenges.DNS01):
+                last_dns_achall = i
+        for i, achall in enumerate(achalls):
             if self.conf('auth-hook'):
                 self._perform_achall_with_script(achall, achalls)
             else:
-                self._perform_achall_manually(achall)
+                self._perform_achall_manually(achall, i == last_dns_achall)
             responses.append(achall.response(achall.account_key))
         return responses
 
@@ -136,7 +157,7 @@ permitted by DNS standards.)
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
-    def _perform_achall_manually(self, achall):
+    def _perform_achall_manually(self, achall, last_dns_achall=False):
         validation = achall.validation(achall.account_key)
         if isinstance(achall.chall, challenges.HTTP01):
             msg = self._HTTP_INSTRUCTIONS.format(
@@ -152,7 +173,15 @@ permitted by DNS standards.)
             if self.subsequent_dns_challenge:
                 # 2nd or later dns-01 challenge
                 msg += self._SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS
+            elif self.subsequent_any_challenge:
+                # 1st dns-01 challenge, but 2nd or later *any* challenge, so
+                # instruct user not to remove any previous http-01 challenge
+                msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
             self.subsequent_dns_challenge = True
+            if last_dns_achall:
+                # last dns-01 challenge
+                msg += self._DNS_VERIFY_INSTRUCTIONS.format(
+                    domain=achall.validation_domain_name(achall.domain))
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
             msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS

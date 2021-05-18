@@ -27,18 +27,17 @@ RUN apk add --no-cache --virtual .certbot-deps \
         binutils
 
 # Install certbot from sources
-#
-# We don't use tools/pip_install.py below so the hashes in
-# dependency-requirements.txt can be used when installing packages for extra
-# security.
 RUN apk add --no-cache --virtual .build-deps \
         gcc \
         linux-headers \
         openssl-dev \
         musl-dev \
         libffi-dev \
+        python3-dev \
+        cargo \
     && python tools/pipstrap.py \
     && python tools/pip_install.py --no-cache-dir \
             --editable src/acme \
             --editable src/certbot \
-    && apk del .build-deps
+    && apk del .build-deps \
+    && rm -rf ${HOME}/.cargo

@@ -1,3 +1,11 @@
+..
+  Sphinx complains that this file isn't included in any toctree, however, we
+  currently link to it in the section about installing Certbot through Docker.
+  Setting :orphan: below suppresses this warning. See
+  https://www.sphinx-doc.org/en/master/usage/restructuredtext/field-lists.html#special-metadata-fields.
+
+:orphan:
+
 ============
 Ciphersuites
 ============

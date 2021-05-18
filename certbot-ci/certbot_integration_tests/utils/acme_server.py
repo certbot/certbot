@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
-from __future__ import print_function
 
 import argparse
 import errno
@@ -12,14 +11,14 @@ import subprocess
 import sys
 import tempfile
 import time
-
 from typing import List
+
 import requests
 
+# pylint: disable=wildcard-import,unused-wildcard-import
 from certbot_integration_tests.utils import misc
 from certbot_integration_tests.utils import pebble_artifacts
 from certbot_integration_tests.utils import proxy
-# pylint: disable=wildcard-import,unused-wildcard-import
 from certbot_integration_tests.utils.constants import *
 
 
@@ -52,7 +51,7 @@ class ACMEServer:
         self._acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
         self._proxy = http_proxy
         self._workspace = tempfile.mkdtemp()
-        self._processes = []  # type: List[subprocess.Popen]
+        self._processes: List[subprocess.Popen] = []
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w')
         self._dns_server = dns_server
         self._http_01_port = http_01_port

@@ -1,12 +1,12 @@
 """Common code for DNS Authenticator Plugins built on Lexicon."""
 import logging
+from typing import Any
+from typing import Dict
+from typing import Union
 
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
-from acme.magic_typing import Any
-from acme.magic_typing import Dict
-from acme.magic_typing import Union
 from certbot import errors
 from certbot.plugins import dns_common
 
@@ -17,8 +17,10 @@ from certbot.plugins import dns_common
 # if Lexicon is not available, obviously.
 try:
     from lexicon.config import ConfigResolver
+    from lexicon.providers.base import Provider
 except ImportError:
     ConfigResolver = None  # type: ignore
+    Provider = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class LexiconClient:
     """
 
     def __init__(self):
-        self.provider = None
+        self.provider: Provider
 
     def add_txt_record(self, domain, record_name, record_content):
         """
@@ -43,7 +45,7 @@ class LexiconClient:
         self._find_domain_id(domain)
 
         try:
-            self.provider.create_record(type='TXT', name=record_name, content=record_content)
+            self.provider.create_record(rtype='TXT', name=record_name, content=record_content)
         except RequestException as e:
             logger.debug('Encountered error adding TXT record: %s', e, exc_info=True)
             raise errors.PluginError('Error adding TXT record: {0}'.format(e))
@@ -65,7 +67,7 @@ class LexiconClient:
             return
 
         try:
-            self.provider.delete_record(type='TXT', name=record_name, content=record_content)
+            self.provider.delete_record(rtype='TXT', name=record_name, content=record_content)
         except RequestException as e:
             logger.debug('Encountered error deleting TXT record: %s', e, exc_info=True)
 
@@ -116,8 +118,9 @@ class LexiconClient:
         return None
 
 
-def build_lexicon_config(lexicon_provider_name, lexicon_options, provider_options):
-    # type: (str, Dict, Dict) -> Union[ConfigResolver, Dict]
+def build_lexicon_config(lexicon_provider_name: str,
+                         lexicon_options: Dict, provider_options: Dict
+                         ) -> Union[ConfigResolver, Dict]:
     """
     Convenient function to build a Lexicon 2.x/3.x config object.
     :param str lexicon_provider_name: the name of the lexicon provider to use
@@ -126,7 +129,7 @@ def build_lexicon_config(lexicon_provider_name, lexicon_options, provider_option
     :return: configuration to apply to the provider
     :rtype: ConfigurationResolver or dict
     """
-    config = {'provider_name': lexicon_provider_name}  # type: Dict[str, Any]
+    config: Dict[str, Any] = {'provider_name': lexicon_provider_name}
     config.update(lexicon_options)
     if not ConfigResolver:
         # Lexicon 2.x

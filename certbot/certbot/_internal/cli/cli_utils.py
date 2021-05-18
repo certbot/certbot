@@ -5,11 +5,11 @@ import copy
 import zope.interface.interface  # pylint: disable=unused-import
 
 from acme import challenges
+from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot import errors
-from certbot.compat import os
 from certbot._internal import constants
+from certbot.compat import os
 
 
 class _Default:
@@ -62,7 +62,7 @@ def config_help(name, hidden=False):
     """Extract the help message for an `.IConfig` attribute."""
     if hidden:
         return argparse.SUPPRESS
-    field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute
+    field: zope.interface.interface.Attribute = interfaces.IConfig.__getitem__(name)
     return field.__doc__
 
 
@@ -140,7 +140,7 @@ class CaseInsensitiveList(list):
     through the `helpful` wrapper. It is necessary due to special handling of
     command line arguments by `set_by_cli` in which the `type_func` is not applied."""
     def __contains__(self, element):
-        return super(CaseInsensitiveList, self).__contains__(element.lower())
+        return super().__contains__(element.lower())
 
 
 def _user_agent_comment_type(value):

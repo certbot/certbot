@@ -18,7 +18,7 @@ from certbot.tests import util as test_util
 class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
     """Test the Reverter Class."""
     def setUp(self):
-        super(ReverterCheckpointLocalTest, self).setUp()
+        super().setUp()
         from certbot.reverter import Reverter
 
         # Disable spurious errors... we are trying to test for them
@@ -48,7 +48,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         no_change = os.path.join(self.reverter.config.backup_dir, path, "CHANGES_SINCE")
         with open(no_change, "r") as f:
             x = f.read()
-        self.assertTrue("No changes" in x)
+        self.assertIn("No changes", x)
 
     def test_basic_add_to_temp_checkpoint(self):
         # These shouldn't conflict even though they are both named config.txt
@@ -280,7 +280,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
 class TestFullCheckpointsReverter(test_util.ConfigTestCase):
     """Tests functions having to deal with full checkpoints."""
     def setUp(self):
-        super(TestFullCheckpointsReverter, self).setUp()
+        super().setUp()
         from certbot.reverter import Reverter
         # Disable spurious errors...
         logging.disable(logging.CRITICAL)
@@ -328,8 +328,8 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         # One dir left... check title
         all_dirs = os.listdir(self.config.backup_dir)
         self.assertEqual(len(all_dirs), 1)
-        self.assertTrue(
-            "First Checkpoint" in get_save_notes(
+        self.assertIn(
+            "First Checkpoint", get_save_notes(
                 os.path.join(self.config.backup_dir, all_dirs[0])))
         # Final rollback
         self.reverter.rollback_checkpoints(1)

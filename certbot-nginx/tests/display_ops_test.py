@@ -12,7 +12,7 @@ class SelectVhostMultiTest(util.NginxTest):
     """Tests for certbot_nginx._internal.display_ops.select_vhost_multiple."""
 
     def setUp(self):
-        super(SelectVhostMultiTest, self).setUp()
+        super().setUp()
         nparser = parser.NginxParser(self.config_path)
         self.vhosts = nparser.get_vhosts()
 

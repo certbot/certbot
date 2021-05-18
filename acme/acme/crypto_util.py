@@ -5,15 +5,15 @@ import logging
 import os
 import re
 import socket
+from typing import Callable
+from typing import Tuple
+from typing import Union
 
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 
 from acme import errors
-from acme.magic_typing import Callable
-from acme.magic_typing import Tuple
-from acme.magic_typing import Union
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +168,7 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
                 source_address[1]
             ) if any(source_address) else ""
         )
-        socket_tuple = (host, port)  # type: Tuple[str, int]
+        socket_tuple: Tuple[str, int] = (host, port)
         sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore
     except socket.error as error:
         raise errors.Error(error)
@@ -256,7 +256,7 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
 
     if isinstance(cert_or_req, crypto.X509):
         # pylint: disable=line-too-long
-        func = crypto.dump_certificate # type: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]]
+        func: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]] = crypto.dump_certificate
     else:
         func = crypto.dump_certificate_request
     text = func(crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")

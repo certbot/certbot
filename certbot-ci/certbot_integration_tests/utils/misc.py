@@ -26,8 +26,8 @@ from OpenSSL import crypto
 import pkg_resources
 import requests
 
-from certbot_integration_tests.utils.constants import \
-     PEBBLE_ALTERNATE_ROOTS, PEBBLE_MANAGEMENT_URL
+from certbot_integration_tests.utils.constants import PEBBLE_ALTERNATE_ROOTS
+from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
 
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
@@ -311,7 +311,7 @@ def echo(keyword, path=None):
     if not re.match(r'^\w+$', keyword):
         raise ValueError('Error, keyword `{0}` is not a single keyword.'
                          .format(keyword))
-    return '{0} -c "from __future__ import print_function; print(\'{1}\')"{2}'.format(
+    return '{0} -c "print(\'{1}\')"{2}'.format(
         os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
 
 

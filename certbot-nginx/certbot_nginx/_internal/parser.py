@@ -5,18 +5,20 @@ import glob
 import io
 import logging
 import re
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Set
+from typing import Tuple
+from typing import Union
 
 import pyparsing
 
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Set
-from acme.magic_typing import Tuple
-from acme.magic_typing import Union
 from certbot import errors
 from certbot.compat import os
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
+from certbot_nginx._internal.nginxparser import UnspacedList
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ class NginxParser:
     """
 
     def __init__(self, root):
-        self.parsed = {} # type: Dict[str, Union[List, nginxparser.UnspacedList]]
+        self.parsed: Dict[str, Union[List, nginxparser.UnspacedList]] = {}
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
 
@@ -93,7 +95,7 @@ class NginxParser:
         """
         servers = self._get_raw_servers()
 
-        addr_to_ssl = {} # type: Dict[Tuple[str, str], bool]
+        addr_to_ssl: Dict[Tuple[str, str], bool] = {}
         for filename in servers:
             for server, _ in servers[filename]:
                 # Parse the server block to save addr info
@@ -105,12 +107,11 @@ class NginxParser:
                     addr_to_ssl[addr_tuple] = addr.ssl or addr_to_ssl[addr_tuple]
         return addr_to_ssl
 
-    def _get_raw_servers(self):
+    def _get_raw_servers(self) -> Dict:
         # pylint: disable=cell-var-from-loop
-        # type: () -> Dict
         """Get a map of unparsed all server blocks
         """
-        servers = {} # type: Dict[str, Union[List, nginxparser.UnspacedList]]
+        servers: Dict[str, Union[List, nginxparser.UnspacedList]] = {}
         for filename in self.parsed:
             tree = self.parsed[filename]
             servers[filename] = []
@@ -243,6 +244,8 @@ class NginxParser:
             tree = self.parsed[filename]
             if ext:
                 filename = filename + os.path.extsep + ext
+            if not isinstance(tree, UnspacedList):
+                raise ValueError(f"Error tree {tree} is not an UnspacedList")
             try:
                 if lazy and not tree.is_dirty():
                     continue
@@ -361,8 +364,9 @@ class NginxParser:
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
-    def duplicate_vhost(self, vhost_template, remove_singleton_listen_params=False,
-        only_directives=None):
+    def duplicate_vhost(self, vhost_template: obj.VirtualHost,
+                        remove_singleton_listen_params: bool = False,
+                        only_directives: Optional[List] = None) -> obj.VirtualHost:
         """Duplicate the vhost in the configuration files.
 
         :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost_template: The vhost
@@ -739,9 +743,9 @@ def _parse_server_raw(server):
     :rtype: dict
 
     """
-    addrs = set() # type: Set[obj.Addr]
-    ssl = False # type: bool
-    names = set() # type: Set[str]
+    addrs: Set[obj.Addr] = set()
+    ssl: bool = False
+    names: Set[str] = set()
 
     apply_ssl_to_all_addrs = False
 

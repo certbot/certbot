@@ -2,6 +2,7 @@
 import datetime
 import logging
 import platform
+from typing import Optional
 
 from cryptography.hazmat.backends import default_backend
 # See https://github.com/pyca/cryptography/issues/4275
@@ -13,8 +14,6 @@ from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import List
-from acme.magic_typing import Optional
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -58,7 +57,7 @@ def determine_user_agent(config):
         ua = ("CertbotACMEClient/{0} ({1}; {2}{8}) Authenticator/{3} Installer/{4} "
               "({5}; flags: {6}) Py/{7}")
         if os.environ.get("CERTBOT_DOCS") == "1":
-            cli_command = "certbot(-auto)"
+            cli_command = "certbot"
             os_info = "OS_NAME OS_VERSION"
             python_version = "major.minor.patchlevel"
         else:
@@ -254,6 +253,7 @@ class Client:
             acme = acme_from_config_key(config, self.account.key, self.account.regr)
         self.acme = acme
 
+        self.auth_handler: Optional[auth_handler.AuthHandler]
         if auth is not None:
             self.auth_handler = auth_handler.AuthHandler(
                 auth, self.acme, self.account, self.config.pref_challs)
@@ -327,7 +327,7 @@ class Client:
             with open(old_keypath, "rb") as f:
                 keypath = old_keypath
                 keypem = f.read()
-            key = util.Key(file=keypath, pem=keypem) # type: Optional[util.Key]
+            key: Optional[util.Key] = util.Key(file=keypath, pem=keypem)
             logger.info("Reusing existing private key from %s.", old_keypath)
         else:
             # The key is set to None here but will be created below.
@@ -389,8 +389,8 @@ class Client:
             cert, chain = self.obtain_certificate_from_csr(csr, orderr)
             return cert, chain, key, csr
 
-    def _get_order_and_authorizations(self, csr_pem, best_effort):
-        # type: (str, bool) -> List[messages.OrderResource]
+    def _get_order_and_authorizations(self, csr_pem: str,
+                                      best_effort: bool) -> messages.OrderResource:
         """Request a new order and complete its authorizations.
 
         :param str csr_pem: A CSR in PEM format.
@@ -406,6 +406,9 @@ class Client:
         except acme_errors.WildcardUnsupportedError:
             raise errors.Error("The currently selected ACME CA endpoint does"
                                " not support issuing wildcard certificates.")
+
+        if not self.auth_handler:
+            raise errors.Error("No authorization handler has been set.")
 
         # For a dry run, ensure we have an order with fresh authorizations
         if orderr and self.config.dry_run:

@@ -7,13 +7,14 @@ from certbot import util
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
+from certbot_apache._internal.configurator import OsOptions
 
 
 @zope.interface.provider(interfaces.IPluginFactory)
 class FedoraConfigurator(configurator.ApacheConfigurator):
     """Fedora 29+ specific ApacheConfigurator override class"""
 
-    OS_DEFAULTS = dict(
+    OS_DEFAULTS = OsOptions(
         server_root="/etc/httpd",
         vhost_root="/etc/httpd/conf.d",
         vhost_files="*.conf",
@@ -23,13 +24,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         restart_cmd=['apachectl', 'graceful'],
         restart_cmd_alt=['apachectl', 'restart'],
         conftest_cmd=['apachectl', 'configtest'],
-        enmod=None,
-        dismod=None,
-        le_vhost_ext="-le-ssl.conf",
-        handle_modules=False,
-        handle_sites=False,
         challenge_location="/etc/httpd/conf.d",
-        bin=None,
     )
 
     def config_test(self):
@@ -40,14 +35,14 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         during the first (re)start of httpd.
         """
         try:
-            super(FedoraConfigurator, self).config_test()
+            super().config_test()
         except errors.MisconfigurationError:
             self._try_restart_fedora()
 
     def get_parser(self):
         """Initializes the ApacheParser"""
         return FedoraParser(
-            self.option("server_root"), self.option("vhost_root"),
+            self.options.server_root, self.options.vhost_root,
             self.version, configurator=self)
 
     def _try_restart_fedora(self):
@@ -60,7 +55,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
             raise errors.MisconfigurationError(str(err))
 
         # Finish with actual config check to see if systemctl restart helped
-        super(FedoraConfigurator, self).config_test()
+        super().config_test()
 
     def _prepare_options(self):
         """
@@ -68,10 +63,12 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         instead of httpd and so take advantages of this new bash script in newer versions
         of Fedora to restart httpd.
         """
-        super(FedoraConfigurator, self)._prepare_options()
-        self.options["restart_cmd"][0] = 'apachectl'
-        self.options["restart_cmd_alt"][0] = 'apachectl'
-        self.options["conftest_cmd"][0] = 'apachectl'
+        super()._prepare_options()
+        self.options.restart_cmd[0] = 'apachectl'
+        if not self.options.restart_cmd_alt:  # pragma: no cover
+            raise ValueError("OS option restart_cmd_alt must be set for Fedora.")
+        self.options.restart_cmd_alt[0] = 'apachectl'
+        self.options.conftest_cmd[0] = 'apachectl'
 
 
 class FedoraParser(parser.ApacheParser):
@@ -79,12 +76,12 @@ class FedoraParser(parser.ApacheParser):
     def __init__(self, *args, **kwargs):
         # Fedora 29+ specific configuration file for Apache
         self.sysconfig_filep = "/etc/sysconfig/httpd"
-        super(FedoraParser, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def update_runtime_variables(self):
         """ Override for update_runtime_variables for custom parsing """
         # Opportunistic, works if SELinux not enforced
-        super(FedoraParser, self).update_runtime_variables()
+        super().update_runtime_variables()
         self._parse_sysconfig_var()
 
     def _parse_sysconfig_var(self):

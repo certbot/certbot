@@ -1,7 +1,7 @@
 """Module contains classes used by the Apache Configurator."""
 import re
+from typing import Set
 
-from acme.magic_typing import Set
 from certbot.plugins import common
 
 
@@ -26,7 +26,7 @@ class Addr(common.Addr):
     def __hash__(self):  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__ if __eq__ or
         # __cmp__ is overridden. See https://bugs.python.org/issue2235
-        return super(Addr, self).__hash__()
+        return super().__hash__()
 
     def _addr_less_specific(self, addr):
         """Returns if addr.get_addr() is more specific than self.get_addr()."""
@@ -137,7 +137,7 @@ class VirtualHost:
 
     def get_names(self):
         """Return a set of all names."""
-        all_names = set()  # type: Set[str]
+        all_names: Set[str] = set()
         all_names.update(self.aliases)
         # Strip out any scheme:// and <port> field from servername
         if self.name is not None:
@@ -245,7 +245,7 @@ class VirtualHost:
 
         # already_found acts to keep everything very conservative.
         # Don't allow multiple ip:ports in same set.
-        already_found = set()  # type: Set[str]
+        already_found: Set[str] = set()
 
         for addr in vhost.addrs:
             for local_addr in self.addrs:

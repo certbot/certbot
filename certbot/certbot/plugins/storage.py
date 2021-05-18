@@ -1,9 +1,9 @@
 """Plugin storage class."""
 import json
 import logging
+from typing import Any
+from typing import Dict
 
-from acme.magic_typing import Any
-from acme.magic_typing import Dict
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -26,8 +26,8 @@ class PluginStorage:
         self._config = config
         self._classkey = classkey
         self._initialized = False
-        self._data = None
-        self._storagepath = None
+        self._data: Dict
+        self._storagepath: str
 
     def _initialize_storage(self):
         """Initializes PluginStorage data and reads current state from the disk
@@ -42,7 +42,7 @@ class PluginStorage:
 
         :raises .errors.PluginStorageError: when unable to open or read the file
         """
-        data = {}  # type: Dict[str, Any]
+        data: Dict[str, Any] = {}
         filedata = ""
         try:
             with open(self._storagepath, 'r') as fh:

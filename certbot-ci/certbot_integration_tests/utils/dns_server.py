@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 """Module to setup an RFC2136-capable DNS server"""
-from __future__ import print_function
-
 import os
 import os.path
 import shutil
@@ -10,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from typing import Optional
 
 from pkg_resources import resource_filename
 
@@ -40,7 +39,7 @@ class DNSServer:
 
         self.bind_root = tempfile.mkdtemp()
 
-        self.process = None  # type: subprocess.Popen
+        self.process: Optional[subprocess.Popen] = None
 
         self.dns_xdist = {"address": BIND_BIND_ADDRESS[0], "port": BIND_BIND_ADDRESS[1]}
 
@@ -113,8 +112,7 @@ class DNSServer:
             self.stop()
             raise
 
-    def _wait_until_ready(self, attempts=30):
-        # type: (int) -> None
+    def _wait_until_ready(self, attempts: int = 30) -> None:
         """
         Polls the DNS server over TCP until it gets a response, or until
         it runs out of attempts and raises a ValueError.
@@ -122,6 +120,9 @@ class DNSServer:
         but otherwise the contents are ignored.
         :param int attempts: The number of attempts to make.
         """
+        if not self.process:
+            raise ValueError("DNS server has not been started. Please run start() first.")
+
         for _ in range(attempts):
             if self.process.poll():
                 raise ValueError("BIND9 server stopped unexpectedly")

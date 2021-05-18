@@ -3,15 +3,19 @@ import copy
 import fnmatch
 import logging
 import re
-import sys
+from typing import Dict
+from typing import List
+from typing import Optional
 
-
-from acme.magic_typing import Dict
-from acme.magic_typing import List
 from certbot import errors
 from certbot.compat import os
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
+
+try:
+    from augeas import Augeas
+except ImportError:  # pragma: no cover
+    Augeas = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +45,7 @@ class ApacheParser:
         self.configurator = configurator
 
         # Initialize augeas
-        self.aug = None
-        self.init_augeas()
+        self.aug = init_augeas()
 
         if not self.check_aug_version():
             raise errors.NotSupportedError(
@@ -50,9 +53,9 @@ class ApacheParser:
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
-        self.modules = {}  # type: Dict[str, str]
-        self.parser_paths = {}  # type: Dict[str, List[str]]
-        self.variables = {}  # type: Dict[str, str]
+        self.modules: Dict[str, Optional[str]] = {}
+        self.parser_paths: Dict[str, List[str]] = {}
+        self.variables: Dict[str, str] = {}
 
         # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
@@ -78,29 +81,12 @@ class ApacheParser:
         # Must also attempt to parse additional virtual host root
         if vhostroot:
             self.parse_file(os.path.abspath(vhostroot) + "/" +
-                            self.configurator.option("vhost_files"))
+                            self.configurator.options.vhost_files)
 
         # check to see if there were unparsed define statements
         if version < (2, 4):
             if self.find_dir("Define", exclude=False):
                 raise errors.PluginError("Error parsing runtime variables")
-
-    def init_augeas(self):
-        """ Initialize the actual Augeas instance """
-
-        try:
-            import augeas
-        except ImportError:  # pragma: no cover
-            raise errors.NoInstallationError("Problem in Augeas installation")
-
-        self.aug = augeas.Augeas(
-            # specify a directory to load our preferred lens from
-            loadpath=constants.AUGEAS_LENS_DIR,
-            # Do not save backup (we do it ourselves), do not load
-            # anything by default
-            flags=(augeas.Augeas.NONE |
-                   augeas.Augeas.NO_MODL_AUTOLOAD |
-                   augeas.Augeas.ENABLE_SPAN))
 
     def check_parsing_errors(self, lens):
         """Verify Augeas can parse all of the lens files.
@@ -265,7 +251,7 @@ class ApacheParser:
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
-        mods = {}  # type: Dict[str, str]
+        mods: Dict[str, str] = {}
         matches = self.find_dir("LoadModule")
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
@@ -296,7 +282,7 @@ class ApacheParser:
     def update_defines(self):
         """Updates the dictionary of known variables in the configuration"""
 
-        self.variables = apache_util.parse_defines(self.configurator.option("ctl"))
+        self.variables = apache_util.parse_defines(self.configurator.options.ctl)
 
     def update_includes(self):
         """Get includes from httpd process, and add them to DOM if needed"""
@@ -306,7 +292,7 @@ class ApacheParser:
         # configuration files
         _ = self.find_dir("Include")
 
-        matches = apache_util.parse_includes(self.configurator.option("ctl"))
+        matches = apache_util.parse_includes(self.configurator.options.ctl)
         if matches:
             for i in matches:
                 if not self.parsed_in_current(i):
@@ -315,7 +301,7 @@ class ApacheParser:
     def update_modules(self):
         """Get loaded modules from httpd process, and add them to DOM"""
 
-        matches = apache_util.parse_modules(self.configurator.option("ctl"))
+        matches = apache_util.parse_modules(self.configurator.options.ctl)
         for mod in matches:
             self.add_mod(mod.strip())
 
@@ -552,7 +538,7 @@ class ApacheParser:
         else:
             arg_suffix = "/*[self::arg=~regexp('%s')]" % case_i(arg)
 
-        ordered_matches = []  # type: List[str]
+        ordered_matches: List[str] = []
 
         # TODO: Wildcards should be included in alphabetical order
         # https://httpd.apache.org/docs/2.4/mod/core.html#include
@@ -737,9 +723,6 @@ class ApacheParser:
         :rtype: str
 
         """
-        if sys.version_info < (3, 6):
-            # This strips off final /Z(?ms)
-            return fnmatch.translate(clean_fn_match)[:-7]  # pragma: no cover
         # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
         return fnmatch.translate(clean_fn_match)[4:-3]  # pragma: no cover
 
@@ -954,3 +937,19 @@ def get_aug_path(file_path):
 
     """
     return "/files%s" % file_path
+
+
+def init_augeas() -> Augeas:
+    """ Initialize the actual Augeas instance """
+
+    if not Augeas:  # pragma: no cover
+        raise errors.NoInstallationError("Problem in Augeas installation")
+
+    return Augeas(
+        # specify a directory to load our preferred lens from
+        loadpath=constants.AUGEAS_LENS_DIR,
+        # Do not save backup (we do it ourselves), do not load
+        # anything by default
+        flags=(Augeas.NONE |
+               Augeas.NO_MODL_AUTOLOAD |
+               Augeas.ENABLE_SPAN))

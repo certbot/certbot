@@ -5,6 +5,7 @@ import socketserver
 import threading
 import time
 import unittest
+from typing import List
 
 import josepy as jose
 import OpenSSL
@@ -180,7 +181,7 @@ class RandomSnTest(unittest.TestCase):
 
     def setUp(self):
         self.cert_count = 5
-        self.serial_num = [] # type: List[int]
+        self.serial_num: List[int] = []
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 
@@ -190,7 +191,7 @@ class RandomSnTest(unittest.TestCase):
         for _ in range(self.cert_count):
             cert = gen_ss_cert(self.key, ['dummy'], force_san=True)
             self.serial_num.append(cert.get_serial_number())
-        self.assertTrue(len(set(self.serial_num)) > 1)
+        self.assertGreater(len(set(self.serial_num)), 1)
 
 class MakeCSRTest(unittest.TestCase):
     """Test for standalone functions."""
@@ -205,8 +206,8 @@ class MakeCSRTest(unittest.TestCase):
 
     def test_make_csr(self):
         csr_pem = self._call_with_key(["a.example", "b.example"])
-        self.assertTrue(b'--BEGIN CERTIFICATE REQUEST--' in csr_pem)
-        self.assertTrue(b'--END CERTIFICATE REQUEST--' in csr_pem)
+        self.assertIn(b'--BEGIN CERTIFICATE REQUEST--', csr_pem)
+        self.assertIn(b'--END CERTIFICATE REQUEST--', csr_pem)
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, csr_pem)
         # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't

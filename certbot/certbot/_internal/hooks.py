@@ -1,10 +1,9 @@
 """Facilities for implementing hooks that call shell commands."""
-from __future__ import print_function
 
 import logging
+from typing import List
+from typing import Set
 
-from acme.magic_typing import List
-from acme.magic_typing import Set
 from certbot import errors
 from certbot import util
 from certbot.compat import filesystem
@@ -78,7 +77,7 @@ def pre_hook(config):
         _run_pre_hook_if_necessary(cmd)
 
 
-executed_pre_hooks = set()  # type: Set[str]
+executed_pre_hooks: Set[str] = set()
 
 
 def _run_pre_hook_if_necessary(command):
@@ -128,7 +127,7 @@ def post_hook(config):
         _run_hook("post-hook", cmd)
 
 
-post_hooks = []  # type: List[str]
+post_hooks: List[str] = []
 
 
 def _run_eventually(command):

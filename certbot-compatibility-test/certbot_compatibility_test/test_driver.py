@@ -8,6 +8,8 @@ import shutil
 import sys
 import tempfile
 import time
+from typing import List
+from typing import Tuple
 
 import OpenSSL
 from urllib3.util import connection
@@ -15,8 +17,6 @@ from urllib3.util import connection
 from acme import challenges
 from acme import crypto_util
 from acme import messages
-from acme.magic_typing import List
-from acme.magic_typing import Tuple
 from certbot import achallenges
 from certbot import errors as le_errors
 from certbot.tests import acme_util
@@ -178,7 +178,7 @@ def test_enhancements(plugin, domains):
                      "enhancements")
         return False
 
-    domains_and_info = [(domain, []) for domain in domains]  # type: List[Tuple[str, List[bool]]]
+    domains_and_info: List[Tuple[str, List[bool]]] = [(domain, []) for domain in domains]
 
     for domain, info in domains_and_info:
         try:

@@ -1,10 +1,8 @@
 """This is a module that adds configuration to the argument parser regarding
 paths for certificates"""
+from certbot._internal.cli.cli_utils import config_help
+from certbot._internal.cli.cli_utils import flag_default
 from certbot.compat import os
-from certbot._internal.cli import (
-    flag_default,
-    config_help
-)
 
 
 def _paths_parser(helpful):

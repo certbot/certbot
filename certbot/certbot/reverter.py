@@ -3,10 +3,8 @@ import csv
 import glob
 import logging
 import shutil
-import sys
 import time
 import traceback
-
 
 from certbot import errors
 from certbot import util
@@ -251,11 +249,10 @@ class Reverter:
 
     def _run_undo_commands(self, filepath):
         """Run all commands in a file."""
-        # NOTE: csv module uses native strings. That is, bytes on Python 2 and
-        # unicode on Python 3
+        # NOTE: csv module uses native strings. That is unicode on Python 3
         # It is strongly advised to set newline = '' on Python 3 with CSV,
         # and it fixes problems on Windows.
-        kwargs = {'newline': ''} if sys.version_info[0] > 2 else {}
+        kwargs = {'newline': ''}
         with open(filepath, 'r', **kwargs) as csvfile:  # type: ignore
             csvreader = csv.reader(csvfile)
             for command in reversed(list(csvreader)):
@@ -354,7 +351,7 @@ class Reverter:
         command_file = None
         # It is strongly advised to set newline = '' on Python 3 with CSV,
         # and it fixes problems on Windows.
-        kwargs = {'newline': ''} if sys.version_info[0] > 2 else {}
+        kwargs = {'newline': ''}
         try:
             if os.path.isfile(commands_fp):
                 command_file = open(commands_fp, "a", **kwargs)  # type: ignore
