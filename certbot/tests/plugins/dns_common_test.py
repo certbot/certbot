@@ -119,6 +119,12 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
         credentials = self.auth._configure_credentials("credentials", "", {"test": ""})
         self.assertEqual(credentials.conf("test"), "value")
 
+    def test_auth_hint(self):
+        self.assertIn(
+            'try increasing --fake-propagation-seconds (currently 0 seconds).',
+            self.auth.auth_hint([mock.MagicMock()])
+        )
+
 
 class CredentialsConfigurationTest(test_util.TempDirTestCase):
     class _MockLoggingHandler(logging.Handler):

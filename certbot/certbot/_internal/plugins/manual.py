@@ -10,6 +10,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import reverter
 from certbot import util
+from certbot._internal.cli import cli_constants
 from certbot._internal import hooks
 from certbot.compat import misc
 from certbot.compat import os
@@ -124,6 +125,42 @@ permitted by DNS standards.)
             'This plugin allows the user to customize setup for domain '
             'validation challenges either through shell scripts provided by '
             'the user or by performing the setup manually.')
+
+    def auth_hint(self, failed_achalls):
+        has_chall = lambda cls: any(isinstance(achall.chall, cls) for achall in failed_achalls)
+
+        has_dns = has_chall(challenges.DNS01)
+        resource_names = {
+            challenges.DNS01: 'DNS TXT records',
+            challenges.HTTP01: 'challenge files',
+            challenges.TLSALPN01: 'TLS-ALPN certificates'
+        }
+        resources = ' and '.join(sorted([v for k, v in resource_names.items() if has_chall(k)]))
+
+        if self.conf('auth-hook'):
+            return (
+                'The Certificate Authority failed to verify the {resources} created by the '
+                '--manual-auth-hook. Ensure that this hook is functioning correctly{dns_hint}. '
+                'Refer to "{certbot} --help manual" and the Certbot User Guide.'
+                .format(
+                    certbot=cli_constants.cli_command,
+                    resources=resources,
+                    dns_hint=(
+                        ' and that it waits a sufficient duration of time for DNS propagation'
+                    ) if has_dns else ''
+                )
+            )
+        else:
+            return (
+                'The Certificate Authority failed to verify the manually created {resources}. '
+                'Ensure that you created these in the correct location{dns_hint}.'
+                .format(
+                    resources=resources,
+                    dns_hint=(
+                        ', or try waiting longer for DNS propagation on the next attempt'
+                     ) if has_dns else ''
+                )
+            )
 
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-function-docstring

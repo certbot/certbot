@@ -15,6 +15,8 @@ from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import error_handler
+from certbot.display import util as display_util
+from certbot.plugins import common as plugin_common
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +175,7 @@ class AuthHandler:
 
         # In case of failed authzrs, create a report to the user.
         if authzrs_failed_to_report:
-            _report_failed_authzrs(authzrs_failed_to_report, self.account.key)
+            self._report_failed_authzrs(authzrs_failed_to_report)
             if not best_effort:
                 # Without best effort, having failed authzrs is critical and fail the process.
                 raise errors.AuthorizationError('Some challenges have failed.')
@@ -263,6 +265,29 @@ class AuthHandler:
                 challb, self.account.key, authzr.body.identifier.value))
 
         return achalls
+
+    def _report_failed_authzrs(self, failed_authzrs: List[messages.AuthorizationResource]) -> None:
+        """Notifies the user about failed authorizations."""
+        problems: Dict[str, List[achallenges.AnnotatedChallenge]] = {}
+        failed_achalls = [challb_to_achall(challb, self.account.key, authzr.body.identifier.value)
+                        for authzr in failed_authzrs for challb in authzr.body.challenges
+                        if challb.error]
+
+        for achall in failed_achalls:
+            problems.setdefault(achall.error.typ, []).append(achall)
+
+        msg = [f"\nCertbot failed to authenticate some domains (authenticator: {self.auth.name})."
+            " The Certificate Authority reported these problems:"]
+
+        for _, achalls in sorted(problems.items(), key=lambda item: item[0]):
+            msg.append(_generate_failed_chall_msg(achalls))
+
+        # auth_hint will only be called on authenticators that subclass
+        # plugin_common.Plugin. Refer to comment on that function.
+        if failed_achalls and isinstance(self.auth, plugin_common.Plugin):
+            msg.append(f"\nHint: {self.auth.auth_hint(failed_achalls)}\n")
+
+        display_util.notify("".join(msg))
 
 
 def challb_to_achall(challb, account_key, domain):
@@ -393,60 +418,13 @@ def _report_no_chall_path(challbs):
     raise errors.AuthorizationError(msg)
 
 
-_ERROR_HELP_COMMON = (
-    "To fix these errors, please make sure that your domain name was entered "
-    "correctly and the DNS A/AAAA record(s) for that domain contain(s) the "
-    "right IP address.")
-
-
-_ERROR_HELP = {
-    "connection":
-        _ERROR_HELP_COMMON + " Additionally, please check that your computer "
-        "has a publicly routable IP address and that no firewalls are preventing "
-        "the server from communicating with the client. If you're using the "
-        "webroot plugin, you should also verify that you are serving files "
-        "from the webroot path you provided.",
-    "dnssec":
-        _ERROR_HELP_COMMON + " Additionally, if you have DNSSEC enabled for "
-        "your domain, please ensure that the signature is valid.",
-    "malformed":
-        "To fix these errors, please make sure that you did not provide any "
-        "invalid information to the client, and try running Certbot "
-        "again.",
-    "serverInternal":
-        "Unfortunately, an error on the ACME server prevented you from completing "
-        "authorization. Please try again later.",
-    "tls":
-        _ERROR_HELP_COMMON + " Additionally, please check that you have an "
-        "up-to-date TLS configuration that allows the server to communicate "
-        "with the Certbot client.",
-    "unauthorized": _ERROR_HELP_COMMON,
-    "unknownHost": _ERROR_HELP_COMMON,
-}
-
-
-def _report_failed_authzrs(failed_authzrs, account_key):
-    """Notifies the user about failed authorizations."""
-    problems: Dict[str, List[achallenges.AnnotatedChallenge]] = {}
-    failed_achalls = [challb_to_achall(challb, account_key, authzr.body.identifier.value)
-                      for authzr in failed_authzrs for challb in authzr.body.challenges
-                      if challb.error]
-
-    for achall in failed_achalls:
-        problems.setdefault(achall.error.typ, []).append(achall)
-
-    reporter = zope.component.getUtility(interfaces.IReporter)
-    for achalls in problems.values():
-        reporter.add_message(_generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY)
-
-
 def _generate_failed_chall_msg(failed_achalls):
+    # type: (List[achallenges.AnnotatedChallenge]) -> str
     """Creates a user friendly error message about failed challenges.
 
     :param list failed_achalls: A list of failed
         :class:`certbot.achallenges.AnnotatedChallenge` with the same error
         type.
-
     :returns: A formatted error message for the client.
     :rtype: str
 
@@ -455,14 +433,10 @@ def _generate_failed_chall_msg(failed_achalls):
     typ = error.typ
     if messages.is_acme_error(error):
         typ = error.code
-    msg = ["The following errors were reported by the server:"]
+    msg = []
 
     for achall in failed_achalls:
-        msg.append("\n\nDomain: %s\nType:   %s\nDetail: %s" % (
+        msg.append("\n  Domain: %s\n  Type:   %s\n  Detail: %s\n" % (
             achall.domain, typ, achall.error.detail))
-
-    if typ in _ERROR_HELP:
-        msg.append("\n\n")
-        msg.append(_ERROR_HELP[typ])
 
     return "".join(msg)

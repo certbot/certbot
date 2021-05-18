@@ -120,6 +120,35 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             else:
                 self.assertNotIn('CERTBOT_TOKEN', os.environ)
 
+    def test_auth_hint_hook(self):
+        self.config.manual_auth_hook = '/bin/true'
+        self.assertEqual(
+            self.auth.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A]),
+            'The Certificate Authority failed to verify the DNS TXT records and challenge '
+            'files created by the --manual-auth-hook. Ensure that this hook is functioning '
+            'correctly and that it waits a sufficient duration of time for DNS propagation. '
+            'Refer to "certbot --help manual" and the Certbot User Guide.'
+        )
+        self.assertEqual(
+            self.auth.auth_hint([acme_util.HTTP01_A]),
+            'The Certificate Authority failed to verify the challenge files created by the '
+            '--manual-auth-hook. Ensure that this hook is functioning correctly. Refer to '
+            '"certbot --help manual" and the Certbot User Guide.'
+        )
+
+    def test_auth_hint_no_hook(self):
+        self.assertEqual(
+            self.auth.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A]),
+            'The Certificate Authority failed to verify the manually created DNS TXT records '
+            'and challenge files. Ensure that you created these in the correct location, or '
+            'try waiting longer for DNS propagation on the next attempt.'
+        )
+        self.assertEqual(
+            self.auth.auth_hint([acme_util.HTTP01_A, acme_util.HTTP01_A, acme_util.HTTP01_A]),
+            'The Certificate Authority failed to verify the manually created challenge files. '
+            'Ensure that you created these in the correct location.'
+        )
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
