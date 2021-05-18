@@ -2,15 +2,15 @@
 import datetime
 import logging
 import time
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 import zope.component
 
 from acme import challenges
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Tuple
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
@@ -19,7 +19,7 @@ from certbot._internal import error_handler
 logger = logging.getLogger(__name__)
 
 
-class AuthHandler(object):
+class AuthHandler:
     """ACME Authorization Handler for a client.
 
     :ivar auth: Authenticator capable of solving
@@ -98,8 +98,7 @@ class AuthHandler(object):
 
             return authzrs_validated
 
-    def deactivate_valid_authorizations(self, orderr):
-        # type: (messages.OrderResource) -> Tuple[List, List]
+    def deactivate_valid_authorizations(self, orderr: messages.OrderResource) -> Tuple[List, List]:
         """
         Deactivate all `valid` authorizations in the order, so that they cannot be re-used
         in subsequent orders.
@@ -191,7 +190,7 @@ class AuthHandler(object):
         """
         pending_authzrs = [authzr for authzr in authzrs
                            if authzr.body.status != messages.STATUS_VALID]
-        achalls = []  # type: List[achallenges.AnnotatedChallenge]
+        achalls: List[achallenges.AnnotatedChallenge] = []
         if pending_authzrs:
             logger.info("Performing the following challenges:")
         for authzr in pending_authzrs:
@@ -428,7 +427,7 @@ _ERROR_HELP = {
 
 def _report_failed_authzrs(failed_authzrs, account_key):
     """Notifies the user about failed authorizations."""
-    problems = {}  # type: Dict[str, List[achallenges.AnnotatedChallenge]]
+    problems: Dict[str, List[achallenges.AnnotatedChallenge]] = {}
     failed_achalls = [challb_to_achall(challb, account_key, authzr.body.identifier.value)
                       for authzr in failed_authzrs for challb in authzr.body.challenges
                       if challb.error]

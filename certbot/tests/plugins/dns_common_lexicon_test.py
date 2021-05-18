@@ -17,7 +17,7 @@ class LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconCl
         pass
 
     def setUp(self):
-        super(LexiconClientTest, self).setUp()
+        super().setUp()
 
         self.client = LexiconClientTest._FakeLexiconClient()
         self.provider_mock = mock.MagicMock()

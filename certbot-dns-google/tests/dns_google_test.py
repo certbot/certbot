@@ -26,14 +26,14 @@ PROJECT_ID = "test-test-1"
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
 
     def setUp(self):
-        super(AuthenticatorTest, self).setUp()
+        super().setUp()
 
         from certbot_dns_google._internal.dns_google import Authenticator
 
         path = os.path.join(self.tempdir, 'file.json')
         open(path, "wb").close()
 
-        super(AuthenticatorTest, self).setUp()
+        super().setUp()
         self.config = mock.MagicMock(google_credentials=path,
                                      google_propagation_seconds=0)  # don't wait during tests
 
@@ -401,7 +401,7 @@ class GoogleClientTest(unittest.TestCase):
             self.assertRaises(ServerNotFoundError, _GoogleClient.get_project_id)
 
 
-class DummyResponse(object):
+class DummyResponse:
     """
     Dummy object to create a fake HTTPResponse (the actual one requires a socket and we only
      need the status attribute)

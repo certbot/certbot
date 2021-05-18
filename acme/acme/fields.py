@@ -12,7 +12,7 @@ class Fixed(jose.Field):
 
     def __init__(self, json_name, value):
         self.value = value
-        super(Fixed, self).__init__(
+        super().__init__(
             json_name=json_name, default=value, omitempty=False)
 
     def decode(self, value):
@@ -53,7 +53,7 @@ class Resource(jose.Field):
 
     def __init__(self, resource_type, *args, **kwargs):
         self.resource_type = resource_type
-        super(Resource, self).__init__(
+        super().__init__(
             'resource', default=resource_type, *args, **kwargs)
 
     def decode(self, value):

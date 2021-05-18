@@ -102,7 +102,6 @@ For this reason the internal representation of data should not ignore the case.
 import abc
 
 
-
 class ParserNode(object, metaclass=abc.ABCMeta):
     """
     ParserNode is the basic building block of the tree of such nodes,
@@ -239,7 +238,7 @@ class CommentNode(ParserNode, metaclass=abc.ABCMeta):
             created or changed after the last save. Default: False.
         :type dirty: bool
         """
-        super(CommentNode, self).__init__(ancestor=kwargs['ancestor'],
+        super().__init__(ancestor=kwargs['ancestor'],
                                           dirty=kwargs.get('dirty', False),
                                           filepath=kwargs['filepath'],
                                           metadata=kwargs.get('metadata', {}))  # pragma: no cover
@@ -303,7 +302,7 @@ class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
         :type enabled: bool
 
         """
-        super(DirectiveNode, self).__init__(ancestor=kwargs['ancestor'],
+        super().__init__(ancestor=kwargs['ancestor'],
                                             dirty=kwargs.get('dirty', False),
                                             filepath=kwargs['filepath'],
                                             metadata=kwargs.get('metadata', {}))  # pragma: no cover

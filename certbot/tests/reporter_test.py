@@ -26,8 +26,8 @@ class ReporterTest(unittest.TestCase):
         self.reporter.add_message("Line 1\nLine 2", self.reporter.LOW_PRIORITY)
         self.reporter.print_messages()
         output = sys.stdout.getvalue()  # type: ignore
-        self.assertTrue("Line 1\n" in output)
-        self.assertTrue("Line 2" in output)
+        self.assertIn("Line 1\n", output)
+        self.assertIn("Line 2", output)
 
     def test_tty_print_empty(self):
         sys.stdout.isatty = lambda: True  # type: ignore
@@ -60,10 +60,10 @@ class ReporterTest(unittest.TestCase):
         self._add_messages()
         self.reporter.print_messages()
         output = sys.stdout.getvalue()  # type: ignore
-        self.assertTrue("IMPORTANT NOTES:" in output)
-        self.assertTrue("High" in output)
-        self.assertTrue("Med" in output)
-        self.assertTrue("Low" in output)
+        self.assertIn("IMPORTANT NOTES:", output)
+        self.assertIn("High", output)
+        self.assertIn("Med", output)
+        self.assertIn("Low", output)
 
     def _unsuccessful_exit_common(self):
         self._add_messages()
@@ -72,10 +72,10 @@ class ReporterTest(unittest.TestCase):
         except ValueError:
             self.reporter.print_messages()
         output = sys.stdout.getvalue()  # type: ignore
-        self.assertTrue("IMPORTANT NOTES:" in output)
-        self.assertTrue("High" in output)
-        self.assertTrue("Med" not in output)
-        self.assertTrue("Low" not in output)
+        self.assertIn("IMPORTANT NOTES:", output)
+        self.assertIn("High", output)
+        self.assertNotIn("Med", output)
+        self.assertNotIn("Low", output)
 
     def _add_messages(self):
         self.reporter.add_message("High", self.reporter.HIGH_PRIORITY)

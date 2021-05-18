@@ -1,8 +1,8 @@
 """Module executing integration tests against certbot with nginx plugin."""
 import os
 import ssl
-
 from typing import List
+
 import pytest
 
 from certbot_integration_tests.nginx_tests import context as nginx_context
@@ -32,8 +32,8 @@ def test_context(request):
         '--preferred-challenges', 'http'
     ], {'default_server': False}),
 ], indirect=['context'])
-def test_certificate_deployment(certname_pattern, params, context):
-    # type: (str, List[str], nginx_context.IntegrationTestsContext) -> None
+def test_certificate_deployment(certname_pattern: str, params: List[str],
+                                context: nginx_context.IntegrationTestsContext) -> None:
     """
     Test various scenarios to deploy a certificate to nginx using certbot.
     """

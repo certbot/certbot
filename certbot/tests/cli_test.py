@@ -150,80 +150,79 @@ class ParseTest(unittest.TestCase):
     def test_help(self):
         self._help_output(['--help'])  # assert SystemExit is raised here
         out = self._help_output(['--help', 'all'])
-        self.assertTrue("--configurator" in out)
-        self.assertTrue("how a certificate is deployed" in out)
-        self.assertTrue("--webroot-path" in out)
-        self.assertTrue("--text" not in out)
-        self.assertTrue("%s" not in out)
-        self.assertTrue("{0}" not in out)
-        self.assertTrue("--renew-hook" not in out)
+        self.assertIn("--configurator", out)
+        self.assertIn("how a certificate is deployed", out)
+        self.assertIn("--webroot-path", out)
+        self.assertNotIn("--text", out)
+        self.assertNotIn("%s", out)
+        self.assertNotIn("{0}", out)
+        self.assertNotIn("--renew-hook", out)
 
         out = self._help_output(['-h', 'nginx'])
         if "nginx" in PLUGINS:
             # may be false while building distributions without plugins
-            self.assertTrue("--nginx-ctl" in out)
-        self.assertTrue("--webroot-path" not in out)
-        self.assertTrue("--checkpoints" not in out)
+            self.assertIn("--nginx-ctl", out)
+        self.assertNotIn("--webroot-path", out)
+        self.assertNotIn("--checkpoints", out)
 
         out = self._help_output(['-h'])
-        self.assertTrue("letsencrypt-auto" not in out)  # test cli.cli_command
         if "nginx" in PLUGINS:
-            self.assertTrue("Use the Nginx plugin" in out)
+            self.assertIn("Use the Nginx plugin", out)
         else:
-            self.assertTrue("(the certbot nginx plugin is not" in out)
+            self.assertIn("(the certbot nginx plugin is not", out)
 
         out = self._help_output(['--help', 'plugins'])
-        self.assertTrue("--webroot-path" not in out)
-        self.assertTrue("--prepare" in out)
-        self.assertTrue('"plugins" subcommand' in out)
+        self.assertNotIn("--webroot-path", out)
+        self.assertIn("--prepare", out)
+        self.assertIn('"plugins" subcommand', out)
 
         # test multiple topics
         out = self._help_output(['-h', 'renew'])
-        self.assertTrue("--keep" in out)
+        self.assertIn("--keep", out)
         out = self._help_output(['-h', 'automation'])
-        self.assertTrue("--keep" in out)
+        self.assertIn("--keep", out)
         out = self._help_output(['-h', 'revoke'])
-        self.assertTrue("--keep" not in out)
+        self.assertNotIn("--keep", out)
 
         out = self._help_output(['--help', 'install'])
-        self.assertTrue("--cert-path" in out)
-        self.assertTrue("--key-path" in out)
+        self.assertIn("--cert-path", out)
+        self.assertIn("--key-path", out)
 
         out = self._help_output(['--help', 'revoke'])
-        self.assertTrue("--cert-path" in out)
-        self.assertTrue("--key-path" in out)
-        self.assertTrue("--reason" in out)
-        self.assertTrue("--delete-after-revoke" in out)
-        self.assertTrue("--no-delete-after-revoke" in out)
+        self.assertIn("--cert-path", out)
+        self.assertIn("--key-path", out)
+        self.assertIn("--reason", out)
+        self.assertIn("--delete-after-revoke", out)
+        self.assertIn("--no-delete-after-revoke", out)
 
         out = self._help_output(['-h', 'register'])
-        self.assertTrue("--cert-path" not in out)
-        self.assertTrue("--key-path" not in out)
+        self.assertNotIn("--cert-path", out)
+        self.assertNotIn("--key-path", out)
 
         out = self._help_output(['-h'])
-        self.assertTrue(cli.SHORT_USAGE in out)
-        self.assertTrue(cli.COMMAND_OVERVIEW[:100] in out)
-        self.assertTrue("%s" not in out)
-        self.assertTrue("{0}" not in out)
+        self.assertIn(cli.SHORT_USAGE, out)
+        self.assertIn(cli.COMMAND_OVERVIEW[:100], out)
+        self.assertNotIn("%s", out)
+        self.assertNotIn("{0}", out)
 
     def test_help_no_dashes(self):
         self._help_output(['help'])  # assert SystemExit is raised here
 
         out = self._help_output(['help', 'all'])
-        self.assertTrue("--configurator" in out)
-        self.assertTrue("how a certificate is deployed" in out)
-        self.assertTrue("--webroot-path" in out)
-        self.assertTrue("--text" not in out)
-        self.assertTrue("%s" not in out)
-        self.assertTrue("{0}" not in out)
+        self.assertIn("--configurator", out)
+        self.assertIn("how a certificate is deployed", out)
+        self.assertIn("--webroot-path", out)
+        self.assertNotIn("--text", out)
+        self.assertNotIn("%s", out)
+        self.assertNotIn("{0}", out)
 
         out = self._help_output(['help', 'install'])
-        self.assertTrue("--cert-path" in out)
-        self.assertTrue("--key-path" in out)
+        self.assertIn("--cert-path", out)
+        self.assertIn("--key-path", out)
 
         out = self._help_output(['help', 'revoke'])
-        self.assertTrue("--cert-path" in out)
-        self.assertTrue("--key-path" in out)
+        self.assertIn("--cert-path", out)
+        self.assertIn("--key-path", out)
 
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
@@ -271,8 +270,8 @@ class ParseTest(unittest.TestCase):
     def test_must_staple_flag(self):
         short_args = ['--must-staple']
         namespace = self.parse(short_args)
-        self.assertTrue(namespace.must_staple)
-        self.assertTrue(namespace.staple)
+        self.assertIs(namespace.must_staple, True)
+        self.assertIs(namespace.staple, True)
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:
@@ -281,31 +280,31 @@ class ParseTest(unittest.TestCase):
                 "The following flags didn't conflict with "
                 '--server: {0}'.format(', '.join(conflicting_args)))
         except errors.Error as error:
-            self.assertTrue('--server' in str(error))
+            self.assertIn('--server', str(error))
             for arg in conflicting_args:
-                self.assertTrue(arg in str(error))
+                self.assertIn(arg, str(error))
 
     def test_staging_flag(self):
         short_args = ['--staging']
         namespace = self.parse(short_args)
-        self.assertTrue(namespace.staging)
+        self.assertIs(namespace.staging, True)
         self.assertEqual(namespace.server, constants.STAGING_URI)
 
         short_args += '--server example.com'.split()
         self._check_server_conflict_message(short_args, '--staging')
 
     def _assert_dry_run_flag_worked(self, namespace, existing_account):
-        self.assertTrue(namespace.dry_run)
-        self.assertTrue(namespace.break_my_certs)
-        self.assertTrue(namespace.staging)
+        self.assertIs(namespace.dry_run, True)
+        self.assertIs(namespace.break_my_certs, True)
+        self.assertIs(namespace.staging, True)
         self.assertEqual(namespace.server, constants.STAGING_URI)
 
         if existing_account:
-            self.assertTrue(namespace.tos)
-            self.assertTrue(namespace.register_unsafely_without_email)
+            self.assertIs(namespace.tos, True)
+            self.assertIs(namespace.register_unsafely_without_email, True)
         else:
-            self.assertFalse(namespace.tos)
-            self.assertFalse(namespace.register_unsafely_without_email)
+            self.assertIs(namespace.tos, False)
+            self.assertIs(namespace.register_unsafely_without_email, False)
 
     def test_dry_run_flag(self):
         config_dir = tempfile.mkdtemp()
@@ -351,8 +350,8 @@ class ParseTest(unittest.TestCase):
         key_size_value = cli.flag_default(key_size_option)
         self.parse('--rsa-key-size {0}'.format(key_size_value).split())
 
-        self.assertTrue(cli.option_was_set(key_size_option, key_size_value))
-        self.assertTrue(cli.option_was_set('no_verify_ssl', True))
+        self.assertIs(cli.option_was_set(key_size_option, key_size_value), True)
+        self.assertIs(cli.option_was_set('no_verify_ssl', True), True)
 
         config_dir_option = 'config_dir'
         self.assertFalse(cli.option_was_set(
@@ -426,7 +425,7 @@ class ParseTest(unittest.TestCase):
         value = "foo"
         namespace = self.parse(
             ["--renew-hook", value, "--disable-hook-validation"])
-        self.assertEqual(namespace.deploy_hook, None)
+        self.assertIsNone(namespace.deploy_hook)
         self.assertEqual(namespace.renew_hook, value)
 
     def test_max_log_backups_error(self):
@@ -457,19 +456,19 @@ class ParseTest(unittest.TestCase):
         self.assertFalse(self.parse(["--no-directory-hooks"]).directory_hooks)
 
     def test_no_directory_hooks_unset(self):
-        self.assertTrue(self.parse([]).directory_hooks)
+        self.assertIs(self.parse([]).directory_hooks, True)
 
     def test_delete_after_revoke(self):
         namespace = self.parse(["--delete-after-revoke"])
-        self.assertTrue(namespace.delete_after_revoke)
+        self.assertIs(namespace.delete_after_revoke, True)
 
     def test_delete_after_revoke_default(self):
         namespace = self.parse([])
-        self.assertEqual(namespace.delete_after_revoke, None)
+        self.assertIsNone(namespace.delete_after_revoke)
 
     def test_no_delete_after_revoke(self):
         namespace = self.parse(["--no-delete-after-revoke"])
-        self.assertFalse(namespace.delete_after_revoke)
+        self.assertIs(namespace.delete_after_revoke, False)
 
     def test_allow_subset_with_wildcard(self):
         self.assertRaises(errors.Error, self.parse,
@@ -478,7 +477,7 @@ class ParseTest(unittest.TestCase):
     def test_route53_no_revert(self):
         for help_flag in ['-h', '--help']:
             for topic in ['all', 'plugins', 'dns-route53']:
-                self.assertFalse('certbot-route53:auth' in self._help_output([help_flag, topic]))
+                self.assertNotIn('certbot-route53:auth', self._help_output([help_flag, topic]))
 
 
 class DefaultTest(unittest.TestCase):
@@ -491,8 +490,8 @@ class DefaultTest(unittest.TestCase):
         self.default2 = cli._Default()
 
     def test_boolean(self):
-        self.assertFalse(self.default1)
-        self.assertFalse(self.default2)
+        self.assertIs(bool(self.default1), False)
+        self.assertIs(bool(self.default2), False)
 
     def test_equality(self):
         self.assertEqual(self.default1, self.default2)
@@ -515,7 +514,7 @@ class SetByCliTest(unittest.TestCase):
     def test_webroot_map(self):
         args = '-w /var/www/html -d example.com'.split()
         verb = 'renew'
-        self.assertTrue(_call_set_by_cli('webroot_map', args, verb))
+        self.assertIs(_call_set_by_cli('webroot_map', args, verb), True)
 
 
 def _call_set_by_cli(var, args, verb):

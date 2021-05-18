@@ -1,5 +1,6 @@
 """DNS Authenticator for DigitalOcean."""
 import logging
+from typing import Optional
 
 import digitalocean
 import zope.interface
@@ -7,6 +8,7 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
+from certbot.plugins.dns_common import CredentialsConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +23,15 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     description = 'Obtain certificates using a DNS TXT record (if you are ' + \
                   'using DigitalOcean for DNS).'
+    ttl = 30
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
-        self.credentials = None
+        super().__init__(*args, **kwargs)
+        self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(add)
+        super().add_parser_arguments(add)
         add('credentials', help='DigitalOcean credentials INI file.')
 
     def more_info(self):  # pylint: disable=missing-function-docstring
@@ -45,16 +48,19 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
 
     def _perform(self, domain, validation_name, validation):
-        self._get_digitalocean_client().add_txt_record(domain, validation_name, validation)
+        self._get_digitalocean_client().add_txt_record(domain, validation_name, validation,
+                                                       self.ttl)
 
     def _cleanup(self, domain, validation_name, validation):
         self._get_digitalocean_client().del_txt_record(domain, validation_name, validation)
 
     def _get_digitalocean_client(self):
+        if not self.credentials:  # pragma: no cover
+            raise errors.Error("Plugin has not been prepared.")
         return _DigitalOceanClient(self.credentials.conf('token'))
 
 
-class _DigitalOceanClient(object):
+class _DigitalOceanClient:
     """
     Encapsulates all communication with the DigitalOcean API.
     """
@@ -62,13 +68,15 @@ class _DigitalOceanClient(object):
     def __init__(self, token):
         self.manager = digitalocean.Manager(token=token)
 
-    def add_txt_record(self, domain_name, record_name, record_content):
+    def add_txt_record(self, domain_name: str, record_name: str, record_content: str,
+                       record_ttl: int):
         """
         Add a TXT record using the supplied information.
 
         :param str domain_name: The domain to use to associate the record with.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
+        :param int record_ttl: The record TTL.
         :raises certbot.errors.PluginError: if an error occurs communicating with the DigitalOcean
                                             API
         """
@@ -89,7 +97,8 @@ class _DigitalOceanClient(object):
             result = domain.create_new_domain_record(
                 type='TXT',
                 name=self._compute_record_name(domain, record_name),
-                data=record_content)
+                data=record_content,
+                ttl=record_ttl) # ttl kwarg is only effective starting python-digitalocean 1.15.0
 
             record_id = result['domain_record']['id']
 
@@ -99,7 +108,7 @@ class _DigitalOceanClient(object):
             raise errors.PluginError('Error adding TXT record using the DigitalOcean API: {0}'
                                      .format(e))
 
-    def del_txt_record(self, domain_name, record_name, record_content):
+    def del_txt_record(self, domain_name: str, record_name: str, record_content: str):
         """
         Delete a TXT record using the supplied information.
 

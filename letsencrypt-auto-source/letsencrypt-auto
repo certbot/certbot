@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="1.13.0.dev0"
+LE_AUTO_VERSION="1.14.0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -800,6 +800,7 @@ BootstrapMageiaCommon() {
 # packages BOOTSTRAP_VERSION is not set.
 if [ -f /etc/debian_version ]; then
   DEPRECATED_OS=1
+  NO_SELF_UPGRADE=1
 elif [ -f /etc/mageia-release ]; then
   # Mageia has both /etc/mageia-release and /etc/redhat-release
   DEPRECATED_OS=1
@@ -1488,18 +1489,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==1.12.0 \
-    --hash=sha256:f4bb3da5391e4a28e9a2e52ab54986171c0864feff17eaaaca6729a1d4c433a6 \
-    --hash=sha256:5ee738773479bcb7794e43fedd2415acc0969b75bdd2a21f451e3bff9d99df59
-acme==1.12.0 \
-    --hash=sha256:ca4ad044429f1b8b670b958e5c7ea38159def9d601f4af2359355993918c3317 \
-    --hash=sha256:aa363474d50e9fdda27acb8b1aa7efb26fecc5650e02039a0de3a3f0e696c2f2
-certbot-apache==1.12.0 \
-    --hash=sha256:38899f6fa08799de9535795d919acf968f288d7208909baf7733f9a763c15227 \
-    --hash=sha256:e5679b40d99bd241f4fcd9fe44b73e6e25ccc969a617131ff6ebc90d562a49f2
-certbot-nginx==1.12.0 \
-    --hash=sha256:332cd70067bbcf6db52a002650ffa4844d0bd9780279d662aa6725b43f776c14 \
-    --hash=sha256:3fb6a55290d37ad466681a89a85ceca4c4026fdd8702f3010b87a74266a6fe7b
+certbot==1.14.0 \
+    --hash=sha256:67b4d26ceaea6c7f8325d0d45169e7a165a2cabc7122c84bc971ba068ca19cca \
+    --hash=sha256:959ea90c6bb8dca38eab9772722cb940972ef6afcd5f15deef08b3c3636841eb
+acme==1.14.0 \
+    --hash=sha256:4f48c41261202f1a389ec2986b2580b58f53e0d5a1ae2463b34318d78b87fc66 \
+    --hash=sha256:61daccfb0343628cbbca551a7fc4c82482113952c21db3fe0c585b7c98fa1c35
+certbot-apache==1.14.0 \
+    --hash=sha256:b757038db23db707c44630fecb46e99172bd791f0db5a8e623c0842613c4d3d9 \
+    --hash=sha256:887fe4a21af2de1e5c2c9428bacba6eb7c1219257bc70f1a1d8447c8a321adb0
+certbot-nginx==1.14.0 \
+    --hash=sha256:8916a815437988d6c192df9f035bb7a176eab20eee0956677b335d0698d243fb \
+    --hash=sha256:cc2a8a0de56d9bb6b2efbda6c80c647dad8db2bb90675cac03ade94bd5fc8597
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------

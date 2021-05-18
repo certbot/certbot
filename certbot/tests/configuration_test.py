@@ -17,7 +17,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.configuration.NamespaceConfig."""
 
     def setUp(self):
-        super(NamespaceConfigTest, self).setUp()
+        super().setUp()
         self.config.foo = 'bar' # pylint: disable=blacklisted-name
         self.config.server = 'https://acme-server.org:443/new'
         self.config.https_port = 1234

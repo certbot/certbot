@@ -1,5 +1,6 @@
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
 import logging
+from typing import Optional
 
 import dns.flags
 import dns.message
@@ -15,6 +16,7 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
+from certbot.plugins.dns_common import CredentialsConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +45,12 @@ class Authenticator(dns_common.DNSAuthenticator):
     ttl = 120
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
-        self.credentials = None
+        super().__init__(*args, **kwargs)
+        self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=60)
+        super().add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials', help='RFC 2136 credentials INI file.')
 
     def more_info(self):  # pylint: disable=missing-function-docstring
@@ -80,6 +82,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_rfc2136_client().del_txt_record(validation_name, validation)
 
     def _get_rfc2136_client(self):
+        if not self.credentials:  # pragma: no cover
+            raise errors.Error("Plugin has not been prepared.")
         return _RFC2136Client(self.credentials.conf('server'),
                               int(self.credentials.conf('port') or self.PORT),
                               self.credentials.conf('name'),
@@ -88,7 +92,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                                                   dns.tsig.HMAC_MD5))
 
 
-class _RFC2136Client(object):
+class _RFC2136Client:
     """
     Encapsulates all communication with the target DNS server.
     """
