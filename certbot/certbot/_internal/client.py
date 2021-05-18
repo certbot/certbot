@@ -58,7 +58,7 @@ def determine_user_agent(config):
         ua = ("CertbotACMEClient/{0} ({1}; {2}{8}) Authenticator/{3} Installer/{4} "
               "({5}; flags: {6}) Py/{7}")
         if os.environ.get("CERTBOT_DOCS") == "1":
-            cli_command = "certbot(-auto)"
+            cli_command = "certbot"
             os_info = "OS_NAME OS_VERSION"
             python_version = "major.minor.patchlevel"
         else:

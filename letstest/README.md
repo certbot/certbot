@@ -14,17 +14,13 @@ Simple AWS testfarm scripts for certbot client testing
     are needed, they need to be requested via online webform.
 
 ## Installation and configuration
-These tests require Python 3, awscli, boto3, PyYAML, and fabric 2.0+. If you're
-on a Debian based system, make sure you also have the python3-venv package
-installed. If you have Python 3 installed, you can use requirements.txt to
-create a virtual environment with a known set of dependencies by running:
-```
-python3 -m venv venv3
-. ./venv3/bin/activate
-pip install --requirement requirements.txt
-```
 
-You can then configure AWS credentials and create a key by running:
+This package is installed in the Certbot development environment that is
+created by following the instructions at
+https://certbot.eff.org/docs/contributing.html#running-a-local-copy-of-the-client.
+
+After activating that virtual environment, you can then configure AWS
+credentials and create a key by running:
 ```
 >aws configure --profile <profile name>
 [interactive: enter secrets for IAM role]
@@ -35,9 +31,9 @@ Note: whatever you pick for `<key name>` will be shown to other users with AWS a
 When prompted for a default region name, enter: `us-east-1`.
 
 ## Usage
-To run tests, activate the virtual environment you created above and run:
+To run tests, activate the virtual environment you created above and from this directory run:
 ```
->python multitester.py targets.yaml /path/to/your/key.pem <profile name> scripts/<test to run>
+>letstest targets/targets.yaml /path/to/your/key.pem <profile name> scripts/<test to run>
 ```
 
 You can only run up to two tests at once. The following error is often indicative of there being too many AWS instances running on our account:
@@ -52,15 +48,14 @@ aws ec2 terminate-instances --profile <profile name> --instance-ids $(aws ec2 de
 
 It will take a minute for these instances to shut down and become available again. Running this will invalidate any in progress tests.
 
-A folder named `letest-<timestamp>` is also created with a log file from each instance of the test and a file named "results" containing the output above.
+A temporary directory whose name is output by the tests is also created with a log file from each instance of the test and a file named "results" containing the output above.
 The tests take quite a while to run.
 
 ## Scripts
 Example scripts are in the 'scripts' directory, these are just bash scripts that have a few parameters passed
 to them at runtime via environment variables.  test_apache2.sh is a useful reference.
 
-Note that the <pre>test_letsencrypt_auto_*</pre> scripts pull code from PyPI using the letsencrypt-auto script,
-__not__ the local python code.  test_apache2 runs the dev venv and does local tests.
+test_apache2 runs the dev venv and does local tests.
 
 See:
 - https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html

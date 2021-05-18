@@ -1,34 +1,17 @@
-import sys
-
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.16.0.dev0'
-
-install_requires = [
-    'certbot',
-    'certbot-apache',
-    'requests',
-    'zope.interface',
-]
-
-if sys.version_info < (2, 7, 9):
-    # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)
-    install_requires.append('ndg-httpsclient')
-    install_requires.append('pyasn1')
-
-
 setup(
-    name='certbot-compatibility-test',
-    version=version,
-    description="Compatibility tests for Certbot",
-    url='https://github.com/letsencrypt/letsencrypt',
-    author="Certbot Project",
+    name='letstest',
+    version='1.0',
+    description='Test Certbot on different AWS images',
+    url='https://github.com/certbot/certbot',
+    author='Certbot Project',
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
     python_requires='>=3.6',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
@@ -43,10 +26,20 @@ setup(
 
     packages=find_packages(),
     include_package_data=True,
-    install_requires=install_requires,
+    install_requires=[
+        # awscli isn't required by the tests themselves, but it is a useful
+        # tool to have when using these tests to generate keys and control
+        # running instances so the dependency is declared here for convenience.
+        'awscli',
+        'boto3',
+        'botocore',
+        # The API from Fabric 2.0+ is used instead of the 1.0 API.
+        'fabric>=2',
+        'pyyaml',
+    ],
     entry_points={
         'console_scripts': [
-            'certbot-compatibility-test = certbot_compatibility_test.test_driver:main',
+            'letstest=letstest.multitester:main',
         ],
-    },
+    }
 )

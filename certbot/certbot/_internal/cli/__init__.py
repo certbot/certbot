@@ -243,8 +243,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              " to --server " + constants.STAGING_URI)
     helpful.add(
         "testing", "--debug", action="store_true", default=flag_default("debug"),
-        help="Show tracebacks in case of errors, and allow certbot-auto "
-             "execution on experimental platforms")
+        help="Show tracebacks in case of errors")
     helpful.add(
         [None, "certonly", "run"], "--debug-challenges", action="store_true",
         default=flag_default("debug_challenges"),

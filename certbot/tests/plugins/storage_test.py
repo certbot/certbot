@@ -49,7 +49,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
             self.assertRaises(KeyError,
                               nocontent.storage.fetch, "value")
             self.assertTrue(mock_log.called)
-            self.assertTrue("no values loaded" in mock_log.call_args[0][0])
+            self.assertIn("no values loaded", mock_log.call_args[0][0])
 
     def test_load_errors_corrupted(self):
         with open(os.path.join(self.config.config_dir,
@@ -61,7 +61,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
             self.assertRaises(errors.PluginError,
                               corrupted.storage.fetch,
                               "value")
-            self.assertTrue("is corrupted" in mock_log.call_args[0][0])
+            self.assertIn("is corrupted", mock_log.call_args[0][0])
 
     def test_save_errors_cant_serialize(self):
         with mock.patch("certbot.plugins.storage.logger.error") as mock_log:
@@ -71,7 +71,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
             self.plugin.storage._data = self.plugin_cls  # pylint: disable=protected-access
             self.assertRaises(errors.PluginStorageError,
                               self.plugin.storage.save)
-            self.assertTrue("Could not serialize" in mock_log.call_args[0][0])
+            self.assertIn("Could not serialize", mock_log.call_args[0][0])
 
     def test_save_errors_unable_to_write_file(self):
         mock_open = mock.mock_open()
@@ -83,7 +83,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
                 self.plugin.storage._storagepath = "/tmp/whatever"
                 self.assertRaises(errors.PluginStorageError,
                                   self.plugin.storage.save)
-                self.assertTrue("Could not write" in mock_log.call_args[0][0])
+                self.assertIn("Could not write", mock_log.call_args[0][0])
 
     def test_save_uninitialized(self):
         with mock.patch("certbot.reverter.util"):
@@ -114,7 +114,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
                                ".pluginstorage.json"), 'r') as fh:
             psdata = fh.read()
         psjson = json.loads(psdata)
-        self.assertTrue("mockplugin" in psjson.keys())
+        self.assertIn("mockplugin", psjson.keys())
         self.assertEqual(len(psjson), 1)
         self.assertEqual(psjson["mockplugin"]["testkey"], "testvalue")
 

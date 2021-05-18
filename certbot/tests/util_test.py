@@ -260,7 +260,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
 
     def test_basic(self):
         f, path = self._call("wow")
-        self.assertTrue(isinstance(f, file_type))
+        self.assertIsInstance(f, file_type)
         self.assertEqual(os.path.join(self.tempdir, "wow.conf"), path)
         f.close()
 
@@ -269,9 +269,9 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         for _ in range(10):
             items.append(self._call("wow"))
         f, name = items[-1]
-        self.assertTrue(isinstance(f, file_type))
-        self.assertTrue(isinstance(name, str))
-        self.assertTrue("wow-0009.conf" in name)
+        self.assertIsInstance(f, file_type)
+        self.assertIsInstance(name, str)
+        self.assertIn("wow-0009.conf", name)
         for f, _ in items:
             f.close()
 
@@ -349,7 +349,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         with mock.patch("certbot.util.logger.warning") as mock_warn:
             self.parser.parse_args(["--old-option"])
         self.assertEqual(mock_warn.call_count, 1)
-        self.assertTrue("is deprecated" in mock_warn.call_args[0][0])
+        self.assertIn("is deprecated", mock_warn.call_args[0][0])
         self.assertEqual("--old-option", mock_warn.call_args[0][1])
 
     def test_warning_with_arg(self):
@@ -357,7 +357,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         with mock.patch("certbot.util.logger.warning") as mock_warn:
             self.parser.parse_args(["--old-option", "42"])
         self.assertEqual(mock_warn.call_count, 1)
-        self.assertTrue("is deprecated" in mock_warn.call_args[0][0])
+        self.assertIn("is deprecated", mock_warn.call_args[0][0])
         self.assertEqual("--old-option", mock_warn.call_args[0][1])
 
     def test_help(self):
@@ -368,7 +368,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
                 self.parser.parse_args(["-h"])
             except SystemExit:
                 pass
-        self.assertTrue("--old-option" not in stdout.getvalue())
+        self.assertNotIn("--old-option", stdout.getvalue())
 
     def test_set_constant(self):
         """Test when ACTION_TYPES_THAT_DONT_NEED_A_VALUE is a set.
@@ -519,7 +519,7 @@ class OsInfoTest(unittest.TestCase):
         m_distro.like.return_value = "first debian third"
         id_likes = cbutil.get_systemd_os_like()
         self.assertEqual(len(id_likes), 3)
-        self.assertTrue("debian" in id_likes)
+        self.assertIn("debian", id_likes)
 
     @mock.patch("certbot.util.distro")
     @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
@@ -610,7 +610,7 @@ class AtexitRegisterTest(unittest.TestCase):
 
     def test_not_called(self):
         self._test_common(initial_pid=-1)
-        self.assertFalse(self.func.called)
+        self.assertIs(self.func.called, False)
 
     def _test_common(self, initial_pid):
         with mock.patch('certbot.util._INITIAL_PID', initial_pid):

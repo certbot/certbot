@@ -616,7 +616,9 @@ def _delete_if_appropriate(config):
 
     # don't delete if the archive_dir is used by some other lineage
     archive_dir = storage.full_archive_path(
-            configobj.ConfigObj(storage.renewal_file_for_certname(config, config.certname)),
+            configobj.ConfigObj(
+                storage.renewal_file_for_certname(config, config.certname),
+                encoding='utf-8', default_encoding='utf-8'),
             config, config.certname)
     try:
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
@@ -1234,12 +1236,8 @@ def renew_cert(config, plugins, lineage):
     :raises errors.PluginSelectionError: MissingCommandlineFlag if supplied parameters do not pass
 
     """
-    try:
-        # installers are used in auth mode to determine domain names
-        installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-    except errors.PluginSelectionError as e:
-        logger.info("Could not choose appropriate plugin: %s", e)
-        raise
+    # installers are used in auth mode to determine domain names
+    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     le_client = _init_le_client(config, auth, installer)
 
     renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
@@ -1277,12 +1275,8 @@ def certonly(config, plugins):
 
     """
     # SETUP: Select plugins and construct a client instance
-    try:
-        # installers are used in auth mode to determine domain names
-        installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-    except errors.PluginSelectionError as e:
-        logger.info("Could not choose appropriate plugin: %s", e)
-        raise
+    # installers are used in auth mode to determine domain names
+    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
 
     le_client = _init_le_client(config, auth, installer)
 

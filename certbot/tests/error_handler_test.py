@@ -120,7 +120,7 @@ class ErrorHandlerTest(unittest.TestCase):
                 sys.exit(0)
         except SystemExit:
             pass
-        self.assertFalse(self.init_func.called)
+        self.assertIs(self.init_func.called, False)
 
     def test_regular_exit(self):
         func = mock.MagicMock()
