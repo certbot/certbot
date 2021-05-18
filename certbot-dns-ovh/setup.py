@@ -9,7 +9,7 @@ version = '1.16.0.dev0'
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'dns-lexicon>=2.7.14',  # Correct proxy use on OVH provider
+    'dns-lexicon>=3.1.0',  # Changed `rtype` parameter name
     'setuptools>=39.0.1',
     'zope.interface',
 ]
