@@ -28,6 +28,7 @@ import shutil
 import sys
 import tempfile
 import traceback
+from types import TracebackType
 
 from acme import messages
 from certbot import errors
@@ -78,7 +79,9 @@ def pre_arg_parse_setup():
     util.atexit_register(logging.shutdown)
     sys.excepthook = functools.partial(
         pre_arg_parse_except_hook, memory_handler,
-        debug='--debug' in sys.argv, log_path=temp_handler.path)
+        debug='--debug' in sys.argv,
+        quiet='--quiet' in sys.argv or '-q' in sys.argv,
+        log_path=temp_handler.path)
 
 
 def post_arg_parse_setup(config):
@@ -95,7 +98,6 @@ def post_arg_parse_setup(config):
     """
     file_handler, file_path = setup_log_file_handler(
         config, 'letsencrypt.log', FILE_FMT)
-    logs_dir = os.path.dirname(file_path)
 
     root_logger = logging.getLogger()
     memory_handler = stderr_handler = None
@@ -122,10 +124,13 @@ def post_arg_parse_setup(config):
         level = -config.verbose_count * 10
     stderr_handler.setLevel(level)
     logger.debug('Root logging level set at %d', level)
-    logger.info('Saving debug log to %s', file_path)
+
+    if not config.quiet:
+        print(f'Saving debug log to {file_path}', file=sys.stderr)
 
     sys.excepthook = functools.partial(
-        post_arg_parse_except_hook, debug=config.debug, log_path=logs_dir)
+        post_arg_parse_except_hook,
+        debug=config.debug, quiet=config.quiet, log_path=file_path)
 
 
 def setup_log_file_handler(config, logfile, fmt):
@@ -307,7 +312,8 @@ def pre_arg_parse_except_hook(memory_handler, *args, **kwargs):
         memory_handler.flush(force=True)
 
 
-def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
+def post_arg_parse_except_hook(exc_type: type, exc_value: BaseException, trace: TracebackType,
+                               debug: bool, quiet: bool, log_path: str):
     """Logs fatal exceptions and reports them to the user.
 
     If debug is True, the full exception and traceback is shown to the
@@ -318,10 +324,13 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
     :param BaseException exc_value: raised exception
     :param traceback trace: traceback of where the exception was raised
     :param bool debug: True if the traceback should be shown to the user
+    :param bool quiet: True if Certbot is running in quiet mode
     :param str log_path: path to file or directory containing the log
 
     """
     exc_info = (exc_type, exc_value, trace)
+    # Only print human advice if not running under --quiet
+    exit_func = lambda: sys.exit(1) if quiet else exit_with_advice(log_path)
     # constants.QUIET_LOGGING_LEVEL or higher should be used to
     # display message the user, otherwise, a lower level like
     # logger.DEBUG should be used
@@ -337,7 +346,7 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
         # our logger printing warnings and errors in red text.
         if issubclass(exc_type, errors.Error):
             logger.error(str(exc_value))
-            sys.exit(1)
+            exit_func()
         logger.error('An unexpected error occurred:')
         if messages.is_acme_error(exc_value):
             # Remove the ACME error prefix from the exception
@@ -350,11 +359,11 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
             # and remove the final newline before passing it to
             # logger.error.
             logger.error(''.join(output).rstrip())
-    exit_with_log_path(log_path)
+    exit_func()
 
 
-def exit_with_log_path(log_path):
-    """Print a message about the log location and exit.
+def exit_with_advice(log_path: str):
+    """Print a link to the community forums, the debug log path, and exit
 
     The message is printed to stderr and the program will exit with a
     nonzero status.
@@ -362,10 +371,11 @@ def exit_with_log_path(log_path):
     :param str log_path: path to file or directory containing the log
 
     """
-    msg = 'Please see the '
+    msg = ("Ask for help or search for solutions at https://community.letsencrypt.org. "
+           "See the ")
     if os.path.isdir(log_path):
-        msg += 'logfiles in {0} '.format(log_path)
+        msg += f'logfiles in {log_path} '
     else:
-        msg += "logfile '{0}' ".format(log_path)
-    msg += 'for more details.'
+        msg += f"logfile {log_path} "
+    msg += 'or re-run Certbot with -v for more details.'
     sys.exit(msg)
