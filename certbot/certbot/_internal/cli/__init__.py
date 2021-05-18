@@ -14,9 +14,6 @@ from certbot._internal.cli.cli_constants import COMMAND_OVERVIEW
 from certbot._internal.cli.cli_constants import DEPRECATED_OPTIONS
 from certbot._internal.cli.cli_constants import EXIT_ACTIONS
 from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
-from certbot._internal.cli.cli_constants import LEAUTO
-from certbot._internal.cli.cli_constants import new_path_prefix
-from certbot._internal.cli.cli_constants import old_path_fragment
 from certbot._internal.cli.cli_constants import SHORT_USAGE
 from certbot._internal.cli.cli_constants import VAR_MODIFIERS
 from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
@@ -46,7 +43,6 @@ from certbot._internal.cli.verb_help import VERB_HELP_MAP
 from certbot._internal.plugins import disco as plugins_disco
 import certbot._internal.plugins.selection as plugin_selection
 import certbot.plugins.enhancements as enhancements
-
 
 logger = logging.getLogger(__name__)
 
@@ -247,8 +243,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              " to --server " + constants.STAGING_URI)
     helpful.add(
         "testing", "--debug", action="store_true", default=flag_default("debug"),
-        help="Show tracebacks in case of errors, and allow certbot-auto "
-             "execution on experimental platforms")
+        help="Show tracebacks in case of errors")
     helpful.add(
         [None, "certonly", "run"], "--debug-challenges", action="store_true",
         default=flag_default("debug_challenges"),

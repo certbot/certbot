@@ -1,4 +1,5 @@
 """ apacheconfig implementation of the ParserNode interfaces """
+from typing import Tuple
 
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
@@ -14,14 +15,14 @@ class ApacheParserNode(interfaces.ParserNode):
 
     def __init__(self, **kwargs):
         ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
-        super(ApacheParserNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.ancestor = ancestor
         self.filepath = filepath
         self.dirty = dirty
         self.metadata = metadata
         self._raw = self.metadata["ac_ast"]
 
-    def save(self, msg): # pragma: no cover
+    def save(self, msg):  # pragma: no cover
         pass
 
     def find_ancestors(self, name):  # pylint: disable=unused-variable
@@ -38,7 +39,7 @@ class ApacheCommentNode(ApacheParserNode):
 
     def __init__(self, **kwargs):
         comment, kwargs = util.commentnode_kwargs(kwargs)  # pylint: disable=unused-variable
-        super(ApacheCommentNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.comment = comment
 
     def __eq__(self, other):  # pragma: no cover
@@ -56,7 +57,7 @@ class ApacheDirectiveNode(ApacheParserNode):
 
     def __init__(self, **kwargs):
         name, parameters, enabled, kwargs = util.directivenode_kwargs(kwargs)
-        super(ApacheDirectiveNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.name = name
         self.parameters = parameters
         self.enabled = enabled
@@ -82,8 +83,8 @@ class ApacheBlockNode(ApacheDirectiveNode):
     """ apacheconfig implementation of BlockNode interface """
 
     def __init__(self, **kwargs):
-        super(ApacheBlockNode, self).__init__(**kwargs)
-        self.children = ()
+        super().__init__(**kwargs)
+        self.children: Tuple[ApacheParserNode, ...] = ()
 
     def __eq__(self, other):  # pragma: no cover
         if isinstance(other, self.__class__):

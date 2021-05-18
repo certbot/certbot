@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from typing import Optional
 
 from pkg_resources import resource_filename
 
@@ -38,7 +39,7 @@ class DNSServer:
 
         self.bind_root = tempfile.mkdtemp()
 
-        self.process: subprocess.Popen = None
+        self.process: Optional[subprocess.Popen] = None
 
         self.dns_xdist = {"address": BIND_BIND_ADDRESS[0], "port": BIND_BIND_ADDRESS[1]}
 
@@ -119,6 +120,9 @@ class DNSServer:
         but otherwise the contents are ignored.
         :param int attempts: The number of attempts to make.
         """
+        if not self.process:
+            raise ValueError("DNS server has not been started. Please run start() first.")
+
         for _ in range(attempts):
             if self.process.poll():
                 raise ValueError("BIND9 server stopped unexpectedly")

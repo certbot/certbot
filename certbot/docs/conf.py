@@ -98,7 +98,6 @@ language = None
 exclude_patterns = [
     '_build',
     'challenges.rst',
-    'ciphers.rst'
 ]
 
 # The reST default role (used for this markup: `text`) to use for all

@@ -5,6 +5,7 @@ import functools
 import hashlib
 import logging
 import socket
+from typing import Type
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
@@ -29,7 +30,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
     @classmethod
     def from_json(cls, jobj):
         try:
-            return super(Challenge, cls).from_json(jobj)
+            return super().from_json(jobj)
         except jose.UnrecognizedTypeError as error:
             logger.debug(error)
             return UnrecognizedChallenge.from_json(jobj)
@@ -57,7 +58,7 @@ class UnrecognizedChallenge(Challenge):
     """
 
     def __init__(self, jobj):
-        super(UnrecognizedChallenge, self).__init__()
+        super().__init__()
         object.__setattr__(self, "jobj", jobj)
 
     def to_partial_json(self):
@@ -140,7 +141,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return True
 
     def to_partial_json(self):
-        jobj = super(KeyAuthorizationChallengeResponse, self).to_partial_json()
+        jobj = super().to_partial_json()
         jobj.pop('keyAuthorization', None)
         return jobj
 
@@ -152,8 +153,8 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
         that will be used to generate ``response``.
     :param str typ: type of the challenge
     """
-    typ = NotImplemented
-    response_cls = NotImplemented
+    typ: str = NotImplemented
+    response_cls: Type[KeyAuthorizationChallengeResponse] = NotImplemented
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
 

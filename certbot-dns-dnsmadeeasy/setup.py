@@ -4,12 +4,12 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.14.0.dev0'
+version = '1.16.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'dns-lexicon>=2.2.1',  # Support for >1 TXT record per name
+    'dns-lexicon>=3.1.0',  # Changed `rtype` parameter name
     'setuptools>=39.0.1',
     'zope.interface',
 ]
@@ -36,7 +36,7 @@ setup(
     description="DNS Made Easy DNS Authenticator plugin for Certbot",
     url='https://github.com/certbot/certbot',
     author="Certbot Project",
-    author_email='client-dev@letsencrypt.org',
+    author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
     python_requires='>=3.6',
     classifiers=[

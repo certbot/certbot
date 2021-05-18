@@ -18,7 +18,7 @@ class AutoHSTSTest(util.ApacheTest):
     # pylint: disable=protected-access
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(AutoHSTSTest, self).setUp()
+        super().setUp()
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)

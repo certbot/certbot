@@ -1,29 +1,5 @@
 """Certbot command line constants"""
-import sys
-
-from certbot.compat import os
-
-# For help strings, figure out how the user ran us.
-# When invoked from letsencrypt-auto, sys.argv[0] is something like:
-# "/home/user/.local/share/certbot/bin/certbot"
-# Note that this won't work if the user set VENV_PATH or XDG_DATA_HOME before
-# running letsencrypt-auto (and sudo stops us from seeing if they did), so it
-# should only be used for purposes where inability to detect letsencrypt-auto
-# fails safely
-
-LEAUTO = "letsencrypt-auto"
-if "CERTBOT_AUTO" in os.environ:
-    # if we're here, this is probably going to be certbot-auto, unless the
-    # user saved the script under a different name
-    LEAUTO = os.path.basename(os.environ["CERTBOT_AUTO"])
-
-old_path_fragment = os.path.join(".local", "share", "letsencrypt")
-new_path_prefix = os.path.abspath(os.path.join(os.sep, "opt",
-                                               "eff.org", "certbot", "venv"))
-if old_path_fragment in sys.argv[0] or sys.argv[0].startswith(new_path_prefix):
-    cli_command = LEAUTO
-else:
-    cli_command = "certbot"
+cli_command = "certbot"
 
 
 # Argparse's help formatting has a lot of unhelpful peculiarities, so we want

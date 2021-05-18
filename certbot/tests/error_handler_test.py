@@ -3,6 +3,7 @@ import contextlib
 import signal
 import sys
 import unittest
+from typing import Callable, Dict, Union
 
 try:
     import mock
@@ -119,7 +120,7 @@ class ErrorHandlerTest(unittest.TestCase):
                 sys.exit(0)
         except SystemExit:
             pass
-        self.assertFalse(self.init_func.called)
+        self.assertIs(self.init_func.called, False)
 
     def test_regular_exit(self):
         func = mock.MagicMock()
@@ -135,7 +136,7 @@ class ExitHandlerTest(ErrorHandlerTest):
 
     def setUp(self):
         from certbot._internal import error_handler
-        super(ExitHandlerTest, self).setUp()
+        super().setUp()
         self.handler = error_handler.ExitHandler(self.init_func,
                                                  *self.init_args,
                                                  **self.init_kwargs)

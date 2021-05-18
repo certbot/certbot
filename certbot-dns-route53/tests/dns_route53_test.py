@@ -21,7 +21,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
     def setUp(self):
         from certbot_dns_route53._internal.dns_route53 import Authenticator
 
-        super(AuthenticatorTest, self).setUp()
+        super().setUp()
 
         self.config = mock.MagicMock()
 

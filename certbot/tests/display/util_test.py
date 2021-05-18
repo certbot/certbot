@@ -65,7 +65,7 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     """
     def setUp(self):
-        super(FileOutputDisplayTest, self).setUp()
+        super().setUp()
         self.mock_stdout = mock.MagicMock()
         self.displayer = display_util.FileDisplay(self.mock_stdout, False)
 
@@ -74,7 +74,7 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.displayer.notification("message", False)
         string = self.mock_stdout.write.call_args[0][0]
 
-        self.assertTrue("message" in string)
+        self.assertIn("message", string)
         mock_logger.debug.assert_called_with("Notifying user: %s", "message")
 
     def test_notification_pause(self):
@@ -82,25 +82,25 @@ class FileOutputDisplayTest(unittest.TestCase):
         with mock.patch(input_with_timeout, return_value="enter"):
             self.displayer.notification("message", force_interactive=True)
 
-        self.assertTrue("message" in self.mock_stdout.write.call_args[0][0])
+        self.assertIn("message", self.mock_stdout.write.call_args[0][0])
 
     def test_notification_noninteractive(self):
         self._force_noninteractive(self.displayer.notification, "message")
         string = self.mock_stdout.write.call_args[0][0]
-        self.assertTrue("message" in string)
+        self.assertIn("message", string)
 
     def test_notification_noninteractive2(self):
         # The main purpose of this test is to make sure we only call
         # logger.warning once which _force_noninteractive checks internally
         self._force_noninteractive(self.displayer.notification, "message")
         string = self.mock_stdout.write.call_args[0][0]
-        self.assertTrue("message" in string)
+        self.assertIn("message", string)
 
         self.assertTrue(self.displayer.skipped_interaction)
 
         self._force_noninteractive(self.displayer.notification, "message2")
         string = self.mock_stdout.write.call_args[0][0]
-        self.assertTrue("message2" in string)
+        self.assertIn("message2", string)
 
     def test_notification_decoration(self):
         from certbot.compat import os
@@ -110,7 +110,8 @@ class FileOutputDisplayTest(unittest.TestCase):
 
         self.displayer.notification("message2", pause=False)
         string = self.mock_stdout.write.call_args[0][0]
-        self.assertTrue("- - - " in string and ("message2" + os.linesep) in string)
+        self.assertIn("- - - ", string)
+        self.assertIn("message2" + os.linesep, string)
 
     @mock.patch("certbot.display.util."
                 "FileDisplay._get_valid_int_ans")
@@ -265,7 +266,7 @@ class FileOutputDisplayTest(unittest.TestCase):
                 result = func(*args, **kwargs)
 
         if skipped_interaction:
-            self.assertFalse(mock_logger.warning.called)
+            self.assertIs(mock_logger.warning.called, False)
         else:
             self.assertEqual(mock_logger.warning.call_count, 1)
 
@@ -331,7 +332,7 @@ class FileOutputDisplayTest(unittest.TestCase):
         # force_interactive to prevent workflow regressions.
         for name in interfaces.IDisplay.names():
             arg_spec = inspect.getfullargspec(getattr(self.displayer, name))
-            self.assertTrue("force_interactive" in arg_spec.args)
+            self.assertIn("force_interactive", arg_spec.args)
 
 
 class NoninteractiveDisplayTest(unittest.TestCase):
@@ -345,7 +346,7 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         self.displayer.notification("message", 10)
         string = self.mock_stdout.write.call_args[0][0]
 
-        self.assertTrue("message" in string)
+        self.assertIn("message", string)
         mock_logger.debug.assert_called_with("Notifying user: %s", "message")
 
     def test_notification_decoration(self):
@@ -401,7 +402,7 @@ class NoninteractiveDisplayTest(unittest.TestCase):
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
             result = inspect.getfullargspec(method).varkw
-            self.assertFalse(result is None)
+            self.assertIsNotNone(result)
 
 
 class SeparateListInputTest(unittest.TestCase):

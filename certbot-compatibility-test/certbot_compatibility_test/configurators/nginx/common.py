@@ -21,7 +21,7 @@ class Proxy(configurators_common.Proxy):
 
     def load_config(self):
         """Loads the next configuration for the plugin to test"""
-        config = super(Proxy, self).load_config()
+        config = super().load_config()
         self._all_names, self._test_names = _get_names(config)
 
         server_root = _get_server_root(config)

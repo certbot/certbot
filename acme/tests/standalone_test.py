@@ -4,6 +4,7 @@ import socket
 import socketserver
 import threading
 import unittest
+from typing import Set
 from unittest import mock
 
 import josepy as jose

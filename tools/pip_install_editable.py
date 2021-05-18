@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# pip installs packages in editable mode using certbot-auto's requirements file
+# pip installs packages in editable mode using tools/certbot_constraints.txt
 # as constraints
 #
 # cryptography is currently using this script in their CI at
