@@ -1496,6 +1496,24 @@ class MainTest(test_util.ConfigTestCase):
         # without installer
         self.assertIs(mock_run.called, False)
 
+    @mock.patch('certbot._internal.main.updater.run_renewal_deployer')
+    @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
+    @mock.patch('certbot._internal.main._init_le_client')
+    @mock.patch('certbot._internal.main._get_and_save_cert')
+    def test_renew_doesnt_restart_on_dryrun(self, mock_get_cert, mock_init, mock_choose,
+                                            mock_run_renewal_deployer):
+        """A dry-run renewal shouldn't try to restart the installer"""
+        self.config.dry_run = True
+        installer = mock.MagicMock()
+        mock_choose.return_value = (installer, mock.MagicMock())
+
+        main.renew_cert(self.config, None, None)
+
+        self.assertEqual(mock_init.call_count, 1)
+        self.assertEqual(mock_get_cert.call_count, 1)
+        installer.restart.assert_not_called()
+        mock_run_renewal_deployer.assert_not_called()
+
 
 class UnregisterTest(unittest.TestCase):
     def setUp(self):

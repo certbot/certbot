@@ -111,6 +111,7 @@ More details about these changes can be found on our GitHub repo.
 * Fixed the apache component on openSUSE Tumbleweed which no longer provides
   an apache2ctl symlink and uses apachectl instead.
 * Fixed a typo in `certbot/crypto_util.py` causing an error upon attempting `secp521r1` key generation
+* Installers (e.g. nginx, Apache) were being restarted unnecessarily after dry-run renewals.
 
 More details about these changes can be found on our GitHub repo.
 
