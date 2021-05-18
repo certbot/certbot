@@ -1807,7 +1807,7 @@ class ReportNewCertTest(unittest.TestCase):
             'Key is saved at:         /path/to/privkey.pem\n'
             'This certificate expires on 1970-01-01.\n'
             'These files will be updated when the certificate renews.\n'
-            'Certbot will automatically renew this certificate in the background.\n'
+            'Certbot will automatically renew this certificate in the background.'
         )
 
     def test_report_no_key(self):
@@ -1820,7 +1820,7 @@ class ReportNewCertTest(unittest.TestCase):
             'Certificate is saved at: /path/to/fullchain.pem\n'
             'This certificate expires on 1970-01-01.\n'
             'These files will be updated when the certificate renews.\n'
-            'Certbot will automatically renew this certificate in the background.\n'
+            'Certbot will automatically renew this certificate in the background.'
         )
 
     def test_report_no_preconfigured_renewal(self):
@@ -1836,7 +1836,7 @@ class ReportNewCertTest(unittest.TestCase):
             'These files will be updated when the certificate renews.\n'
             'Run "certbot renew" to renew expiring certificates. We recommend setting up a '
             'scheduled task for renewal; see https://certbot.eff.org/docs/using.html#automated'
-            '-renewals for instructions.\n'
+            '-renewals for instructions.'
         )
 
 
