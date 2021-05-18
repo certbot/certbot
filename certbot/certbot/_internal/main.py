@@ -1246,7 +1246,7 @@ def renew_cert(config, plugins, lineage):
         # In case of a renewal, reload server to pick up new certificate.
         updater.run_renewal_deployer(config, renewed_lineage, installer)
         display_util.notify(f"Reloading {config.installer} server after certificate renewal")
-        installer.restart()
+        installer.restart() # type: ignore
 
 
 def certonly(config, plugins):
