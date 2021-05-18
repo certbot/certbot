@@ -838,7 +838,19 @@ def _install_cert(config, le_client, domains, lineage=None):
     path_provider = lineage if lineage else config
     assert path_provider.cert_path is not None
 
-    le_client.deploy_certificate(domains, path_provider.key_path,
+    cert_name: Optional[str] = None
+    if isinstance(path_provider, storage.RenewableCert):
+        cert_name = path_provider.lineagename
+    elif path_provider.certname:
+        cert_name = path_provider.certname
+    else:
+        # Check if the cert path happens to be part of an existing lineage
+        try:
+            cert_name = cert_manager.cert_path_to_lineage(config)
+        except errors.Error:
+            pass
+
+    le_client.deploy_certificate(cert_name, domains, path_provider.key_path,
         path_provider.cert_path, path_provider.chain_path, path_provider.fullchain_path)
     le_client.enhance_config(domains, path_provider.chain_path)
 
