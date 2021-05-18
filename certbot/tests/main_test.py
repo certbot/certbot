@@ -1786,7 +1786,7 @@ class ReportNewCertTest(unittest.TestCase):
 
         self.notafter_patch = mock.patch('certbot._internal.main.crypto_util.notAfter')
         self.mock_notafter = self.notafter_patch.start()
-        self.mock_notafter.return_value = datetime.fromtimestamp(0)
+        self.mock_notafter.return_value = datetime.utcfromtimestamp(0)
 
     def tearDown(self):
         self.notify_patch.stop()
