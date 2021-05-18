@@ -67,11 +67,14 @@ def _suggest_donation_if_appropriate(config):
     if config.staging:
         # --dry-run implies --staging
         return
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    msg = ("If you like Certbot, please consider supporting our work by:\n\n"
-           "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
-           "Donating to EFF:                    https://eff.org/donate-le\n\n")
-    reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
+    disp = zope.component.getUtility(interfaces.IDisplay)
+    util.atexit_register(
+        disp.notification,
+        "If you like Certbot, please consider supporting our work by:\n"
+        " * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
+        " * Donating to EFF:                    https://eff.org/donate-le",
+        pause=False
+    )
 
 
 def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=None):

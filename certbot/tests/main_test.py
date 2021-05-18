@@ -1019,11 +1019,12 @@ class MainTest(test_util.ConfigTestCase):
         self.assertEqual(mock_get_utility().add_message.call_count, 0)
 
     @mock.patch('certbot._internal.main._report_new_cert')
+    @mock.patch('certbot._internal.main.util.atexit_register')
     @mock.patch('certbot._internal.eff.handle_subscription')
     @mock.patch('certbot.crypto_util.notAfter')
     @test_util.patch_get_utility()
-    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter,
-                                          mock_subscription, mock_report):
+    def test_certonly_new_request_success(self, unused_mock_get_utility, mock_notAfter,
+                                          mock_subscription, mock_register, mock_report):
         cert_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/foo.bar'))
         key_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/baz.qux'))
         date = '1970-01-01'
@@ -1039,8 +1040,7 @@ class MainTest(test_util.ConfigTestCase):
         self.assertEqual(mock_report.call_count, 1)
         self.assertIn(cert_path, mock_report.call_args[0][2])
         self.assertIn(key_path, mock_report.call_args[0][3])
-        self.assertIn(
-            'donate', mock_get_utility().add_message.call_args[0][0])
+        self.assertIn('donate',  mock_register.call_args[0][1])
         self.assertIs(mock_subscription.called, True)
 
     @mock.patch('certbot._internal.eff.handle_subscription')
@@ -1129,22 +1129,23 @@ class MainTest(test_util.ConfigTestCase):
         return mock_lineage, mock_get_utility, stdout
 
     @mock.patch('certbot._internal.main._report_new_cert')
+    @mock.patch('certbot._internal.main.util.atexit_register')
     @mock.patch('certbot.crypto_util.notAfter')
-    def test_certonly_renewal(self, _, mock_report):
-        lineage, get_utility, _ = self._test_renewal_common(True, [])
+    def test_certonly_renewal(self, _, mock_register, mock_report):
+        lineage, _, _ = self._test_renewal_common(True, [])
         self.assertEqual(lineage.save_successor.call_count, 1)
         lineage.update_all_links_to.assert_called_once_with(
             lineage.latest_common_version())
         self.assertEqual(mock_report.call_count, 1)
         self.assertIn('fullchain.pem', mock_report.call_args[0][2])
-        self.assertIn('donate', get_utility().add_message.call_args[0][0])
+        self.assertIn('donate', mock_register.call_args[0][1])
 
     @mock.patch('certbot._internal.main.display_util.notify')
     @mock.patch('certbot._internal.log.logging.handlers.RotatingFileHandler.doRollover')
     @mock.patch('certbot.crypto_util.notAfter')
     def test_certonly_renewal_triggers(self, _, __, mock_notify):
         # --dry-run should force renewal
-        _, get_utility, _ = self._test_renewal_common(False, ['--dry-run', '--keep'],
+        _, _, _ = self._test_renewal_common(False, ['--dry-run', '--keep'],
                                                       log_out="simulating renewal")
         mock_notify.assert_any_call('The dry run was successful.')
 
@@ -1410,14 +1411,15 @@ class MainTest(test_util.ConfigTestCase):
         return mock_get_utility
 
     @mock.patch('certbot._internal.main._csr_report_new_cert')
+    @mock.patch('certbot._internal.main.util.atexit_register')
     @mock.patch('certbot._internal.eff.handle_subscription')
-    def test_certonly_csr(self, mock_subscription, mock_csr_report):
-        mock_get_utility = self._test_certonly_csr_common()
+    def test_certonly_csr(self, mock_subscription, mock_register, mock_csr_report):
+        _ = self._test_certonly_csr_common()
         self.assertEqual(mock_csr_report.call_count, 1)
         self.assertIn('cert_512.pem', mock_csr_report.call_args[0][1])
         self.assertIsNone(mock_csr_report.call_args[0][2])
         self.assertIn('fullchain.pem', mock_csr_report.call_args[0][3])
-        self.assertIn('donate', mock_get_utility().add_message.call_args[0][0])
+        self.assertIn('donate', mock_register.call_args[0][1])
         self.assertIs(mock_subscription.called, True)
 
     @mock.patch('certbot._internal.main._csr_report_new_cert')
