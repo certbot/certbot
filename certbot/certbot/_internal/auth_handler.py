@@ -72,7 +72,6 @@ class AuthHandler:
                 resps = self.auth.perform(achalls)
 
                 # If debug is on, wait for user input before starting the verification process.
-                logger.info('Waiting for verification...')
                 config = zope.component.getUtility(interfaces.IConfig)
                 if config.debug_challenges:
                     notify = zope.component.getUtility(interfaces.IDisplay).notification
@@ -90,6 +89,7 @@ class AuthHandler:
                 self.acme.answer_challenge(achall.challb, resp)
 
             # Wait for authorizations to be checked.
+            logger.info('Waiting for verification...')
             self._poll_authorizations(authzrs, max_retries, best_effort)
 
             # Keep validated authorizations only. If there is none, no certificate can be issued.
@@ -150,7 +150,7 @@ class AuthHandler:
             authzrs_failed = [authzr for authzr, _ in authzrs_to_check.values()
                               if authzr.body.status == messages.STATUS_INVALID]
             for authzr_failed in authzrs_failed:
-                logger.warning('Challenge failed for domain %s',
+                logger.info('Challenge failed for domain %s',
                                authzr_failed.body.identifier.value)
             # Accumulating all failed authzrs to build a consolidated report
             # on them at the end of the polling.

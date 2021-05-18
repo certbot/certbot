@@ -1152,8 +1152,9 @@ class MainTest(test_util.ConfigTestCase):
         self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
                                   log_out="Auto-renewal forced")
 
-        self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
-                                  log_out="not yet due", should_renew=False)
+        _, get_utility, _ = self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
+                                  should_renew=False)
+        self.assertIn('not yet due', get_utility().notification.call_args[0][0])
 
     def _dump_log(self):
         print("Logs:")

@@ -193,7 +193,7 @@ def _check_ocsp_cryptography(cert_path: str, chain_path: str, url: str, timeout:
 
     # Check OCSP response validity
     if response_ocsp.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
-        logger.error("Invalid OCSP response status for %s: %s",
+        logger.warning("Invalid OCSP response status for %s: %s",
                      cert_path, response_ocsp.response_status)
         return False
 
@@ -201,13 +201,13 @@ def _check_ocsp_cryptography(cert_path: str, chain_path: str, url: str, timeout:
     try:
         _check_ocsp_response(response_ocsp, request, issuer, cert_path)
     except UnsupportedAlgorithm as e:
-        logger.error(str(e))
+        logger.warning(str(e))
     except errors.Error as e:
-        logger.error(str(e))
+        logger.warning(str(e))
     except InvalidSignature:
-        logger.error('Invalid signature on OCSP response for %s', cert_path)
+        logger.warning('Invalid signature on OCSP response for %s', cert_path)
     except AssertionError as error:
-        logger.error('Invalid OCSP response for %s: %s.', cert_path, str(error))
+        logger.warning('Invalid OCSP response for %s: %s.', cert_path, str(error))
     else:
         # Check OCSP certificate status
         logger.debug("OCSP certificate status for %s is: %s",

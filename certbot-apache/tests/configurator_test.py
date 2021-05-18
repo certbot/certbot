@@ -893,7 +893,7 @@ class MultipleVhostsTest(util.ApacheTest):
             self.config.enhance, "certbot.demo", "unknown_enhancement")
 
     def test_enhance_no_ssl_vhost(self):
-        with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
+        with mock.patch("certbot_apache._internal.configurator.logger.error") as mock_log:
             self.assertRaises(errors.PluginError, self.config.enhance,
                               "certbot.demo", "redirect")
             # Check that correct logger.warning was printed

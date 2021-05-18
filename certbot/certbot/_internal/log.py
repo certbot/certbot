@@ -13,7 +13,7 @@ and properly flushed before program exit.
 
 The `logging` module is useful for recording messages about about what
 Certbot is doing under the hood, but do not necessarily need to be shown
-to the user on the terminal. The default verbosity is INFO.
+to the user on the terminal. The default verbosity is WARNING.
 
 The preferred method to display important information to the user is to
 use `certbot.display.util` and `certbot.display.ops`.

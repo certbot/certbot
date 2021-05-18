@@ -345,7 +345,7 @@ class DeployHookTest(RenewalHookTest):
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
         self.assertIs(mock_execute.called, False)
-        self.assertTrue(mock_logger.warning.called)
+        self.assertTrue(mock_logger.info.called)
 
     @mock.patch("certbot._internal.hooks.logger")
     def test_no_hook(self, mock_logger):
@@ -393,7 +393,7 @@ class RenewHookTest(RenewalHookTest):
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
         self.assertIs(mock_execute.called, False)
-        self.assertEqual(mock_logger.warning.call_count, 2)
+        self.assertEqual(mock_logger.info.call_count, 2)
 
     def test_no_hooks(self):
         self.config.renew_hook = None

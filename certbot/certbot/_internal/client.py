@@ -153,7 +153,7 @@ def register(config, account_storage, tos_cb=None):
         if not config.register_unsafely_without_email:
             msg = ("No email was provided and "
                    "--register-unsafely-without-email was not present.")
-            logger.warning(msg)
+            logger.error(msg)
             raise errors.Error(msg)
         if not config.dry_run:
             logger.debug("Registering without email!")
@@ -275,7 +275,7 @@ class Client:
         if self.auth_handler is None:
             msg = ("Unable to obtain certificate because authenticator is "
                    "not set.")
-            logger.warning(msg)
+            logger.error(msg)
             raise errors.Error(msg)
         if self.account.regr is None:
             raise errors.Error("Please register with the ACME server first.")
@@ -528,7 +528,7 @@ class Client:
 
         """
         if self.installer is None:
-            logger.warning("No installer specified, client is unable to deploy"
+            logger.error("No installer specified, client is unable to deploy"
                            "the certificate")
             raise errors.Error("No installer available")
 
@@ -572,7 +572,7 @@ class Client:
 
         """
         if self.installer is None:
-            logger.warning("No installer is specified, there isn't any "
+            logger.error("No installer is specified, there isn't any "
                            "configuration to enhance.")
             raise errors.Error("No installer available")
 
@@ -593,7 +593,7 @@ class Client:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True
             elif config_value:
-                logger.warning(
+                logger.error(
                     "Option %s is not supported by the selected installer. "
                     "Skipping enhancement.", config_name)
 
@@ -625,10 +625,10 @@ class Client:
                     self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
                     if enhancement == "ensure-http-header":
-                        logger.warning("Enhancement %s was already set.",
+                        logger.info("Enhancement %s was already set.",
                                 options)
                     else:
-                        logger.warning("Enhancement %s was already set.",
+                        logger.info("Enhancement %s was already set.",
                                 enhancement)
                 except errors.PluginError:
                     logger.error("Unable to set enhancement %s for %s",
@@ -652,7 +652,7 @@ class Client:
         :param str success_msg: message to show on successful rollback
 
         """
-        logger.critical("Rolling back to previous server configuration...")
+        logger.info("Rolling back to previous server configuration...")
         try:
             self.installer.rollback_checkpoints()
             self.installer.restart()

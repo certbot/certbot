@@ -996,7 +996,7 @@ def enhance(config, plugins):
     if not enhancements.are_requested(config) and not oldstyle_enh:
         msg = ("Please specify one or more enhancement types to configure. To list "
                "the available enhancement types, run:\n\n%s --help enhance\n")
-        logger.warning(msg, sys.argv[0])
+        logger.error(msg, sys.argv[0])
         raise errors.MisconfigurationError("No enhancements requested, exiting.")
 
     try:

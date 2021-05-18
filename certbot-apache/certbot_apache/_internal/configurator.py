@@ -1871,13 +1871,13 @@ class ApacheConfigurator(common.Installer):
             if options:
                 msg_enhancement += ": " + options
             msg = msg_tmpl.format(domain, msg_enhancement)
-            logger.warning(msg)
+            logger.error(msg)
             raise errors.PluginError(msg)
         try:
             for vhost in vhosts:
                 func(vhost, options)
         except errors.PluginError:
-            logger.warning("Failed %s for %s", enhancement, domain)
+            logger.error("Failed %s for %s", enhancement, domain)
             raise
 
     def _autohsts_increase(self, vhost, id_str, nextstep):
@@ -2441,7 +2441,7 @@ class ApacheConfigurator(common.Installer):
         try:
             util.run_script(self.options.restart_cmd)
         except errors.SubprocessError as err:
-            logger.info("Unable to restart apache using %s",
+            logger.warning("Unable to restart apache using %s",
                         self.options.restart_cmd)
             alt_restart = self.options.restart_cmd_alt
             if alt_restart:
@@ -2603,7 +2603,7 @@ class ApacheConfigurator(common.Installer):
                 msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
                             "domain {0} for enabling AutoHSTS enhancement.")
                 msg = msg_tmpl.format(d)
-                logger.warning(msg)
+                logger.error(msg)
                 raise errors.PluginError(msg)
             for vh in vhosts:
                 try:
@@ -2689,7 +2689,7 @@ class ApacheConfigurator(common.Installer):
                 except errors.PluginError:
                     msg = ("Could not find VirtualHost with ID {0}, disabling "
                            "AutoHSTS for this VirtualHost").format(id_str)
-                    logger.warning(msg)
+                    logger.error(msg)
                     # Remove the orphaned AutoHSTS entry from pluginstorage
                     self._autohsts.pop(id_str)
                     continue
@@ -2729,7 +2729,7 @@ class ApacheConfigurator(common.Installer):
                 except errors.PluginError:
                     msg = ("VirtualHost with id {} was not found, unable to "
                            "make HSTS max-age permanent.").format(id_str)
-                    logger.warning(msg)
+                    logger.error(msg)
                     self._autohsts.pop(id_str)
                     continue
                 if self._autohsts_vhost_in_lineage(vhost, lineage):

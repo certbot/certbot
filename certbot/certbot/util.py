@@ -16,6 +16,7 @@ from typing import Dict
 from typing import Text
 from typing import Tuple
 from typing import Union
+import warnings
 
 import configargparse
 
@@ -434,14 +435,14 @@ def safe_email(email):
     """Scrub email address before using it."""
     if EMAIL_REGEX.match(email) is not None:
         return not email.startswith(".") and ".." not in email
-    logger.warning("Invalid email address: %s.", email)
+    logger.error("Invalid email address: %s.", email)
     return False
 
 
 class DeprecatedArgumentAction(argparse.Action):
     """Action to log a warning when an argument is used."""
     def __call__(self, unused1, unused2, unused3, option_string=None):
-        logger.warning("Use of %s is deprecated.", option_string)
+        warnings.warn("Use of %s is deprecated." % option_string, DeprecationWarning)
 
 
 def add_deprecated_argument(add_argument, argument_name, nargs):

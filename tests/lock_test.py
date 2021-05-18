@@ -133,7 +133,7 @@ def set_up_command(config_dir, logs_dir, work_dir, nginx_dir):
     return (
         'certbot --cert-path {0} --key-path {1} --config-dir {2} '
         '--logs-dir {3} --work-dir {4} --nginx-server-root {5} --debug '
-        '--force-renewal --nginx --verbose '.format(
+        '--force-renewal --nginx -vv '.format(
             test_util.vector_path('cert.pem'),
             test_util.vector_path('rsa512_key.pem'),
             config_dir, logs_dir, work_dir, nginx_dir).split())

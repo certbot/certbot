@@ -217,7 +217,7 @@ class NginxParser:
                                "character. Only UTF-8 encoding is "
                                "supported.", item)
             except pyparsing.ParseException as err:
-                logger.debug("Could not parse file: %s due to %s", item, err)
+                logger.warning("Could not parse file: %s due to %s", item, err)
         return trees
 
     def _find_config_root(self):
@@ -430,7 +430,7 @@ def _parse_ssl_options(ssl_options):
             logger.warning("Could not read file: %s due to invalid character. "
                            "Only UTF-8 encoding is supported.", ssl_options)
         except pyparsing.ParseBaseException as err:
-            logger.debug("Could not parse file: %s due to %s", ssl_options, err)
+            logger.warning("Could not parse file: %s due to %s", ssl_options, err)
     return []
 
 def _do_for_subarray(entry, condition, func, path=None):
