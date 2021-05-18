@@ -3,12 +3,12 @@ import functools
 import logging
 import signal
 import traceback
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Union
 
-from acme.magic_typing import Any
-from acme.magic_typing import Callable
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Union
 from certbot import errors
 from certbot.compat import os
 
@@ -45,7 +45,7 @@ else:
     _SIGNALS = []
 
 
-class ErrorHandler(object):
+class ErrorHandler:
     """Context manager for running code that must be cleaned up on failure.
 
     The context manager allows you to register functions that will be called
@@ -77,9 +77,9 @@ class ErrorHandler(object):
     def __init__(self, func, *args, **kwargs):
         self.call_on_regular_exit = False
         self.body_executed = False
-        self.funcs = []  # type: List[Callable[[], Any]]
-        self.prev_handlers = {}  # type: Dict[int, Union[int, None, Callable]]
-        self.received_signals = []  # type: List[int]
+        self.funcs: List[Callable[[], Any]] = []
+        self.prev_handlers: Dict[int, Union[int, None, Callable]] = {}
+        self.received_signals: List[int] = []
         if func is not None:
             self.register(func, *args, **kwargs)
 
@@ -108,8 +108,7 @@ class ErrorHandler(object):
         self._call_signals()
         return retval
 
-    def register(self, func, *args, **kwargs):
-        # type: (Callable, *Any, **Any) -> None
+    def register(self, func: Callable, *args: Any, **kwargs: Any) -> None:
         """Sets func to be run with the given arguments during cleanup.
 
         :param function func: function to be called in case of an error

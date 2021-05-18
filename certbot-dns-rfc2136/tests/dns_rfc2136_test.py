@@ -28,7 +28,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
     def setUp(self):
         from certbot_dns_rfc2136._internal.dns_rfc2136 import Authenticator
 
-        super(AuthenticatorTest, self).setUp()
+        super().setUp()
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write(VALID_CONFIG, path)

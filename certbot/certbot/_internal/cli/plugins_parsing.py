@@ -1,5 +1,5 @@
 """This is a module that handles parsing of plugins for the argument parser"""
-from certbot._internal.cli import flag_default
+from certbot._internal.cli.cli_utils import flag_default
 
 
 def _plugins_parsing(helpful, plugins):

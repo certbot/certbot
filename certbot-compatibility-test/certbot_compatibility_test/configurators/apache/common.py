@@ -2,11 +2,8 @@
 import os
 import shutil
 import subprocess
+from unittest import mock
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import zope.interface
 
 from certbot import errors as le_errors
@@ -25,7 +22,7 @@ class Proxy(configurators_common.Proxy):
 
     def __init__(self, args):
         """Initializes the plugin with the given command line args"""
-        super(Proxy, self).__init__(args)
+        super().__init__(args)
         self.le_config.apache_le_vhost_ext = "-le-ssl.conf"
 
         self.modules = self.server_root = self.test_conf = self.version = None
@@ -37,7 +34,7 @@ class Proxy(configurators_common.Proxy):
 
     def load_config(self):
         """Loads the next configuration for the plugin to test"""
-        config = super(Proxy, self).load_config()
+        config = super().load_config()
         self._all_names, self._test_names = _get_names(config)
 
         server_root = _get_server_root(config)
@@ -57,9 +54,9 @@ class Proxy(configurators_common.Proxy):
 
     def _prepare_configurator(self):
         """Prepares the Apache plugin for testing"""
-        for k in entrypoint.ENTRYPOINT.OS_DEFAULTS:
+        for k in entrypoint.ENTRYPOINT.OS_DEFAULTS.__dict__.keys():
             setattr(self.le_config, "apache_" + k,
-                    entrypoint.ENTRYPOINT.OS_DEFAULTS[k])
+                    getattr(entrypoint.ENTRYPOINT.OS_DEFAULTS, k))
 
         self._configurator = entrypoint.ENTRYPOINT(
             config=configuration.NamespaceConfig(self.le_config),
@@ -68,7 +65,7 @@ class Proxy(configurators_common.Proxy):
 
     def cleanup_from_tests(self):
         """Performs any necessary cleanup from running plugin tests"""
-        super(Proxy, self).cleanup_from_tests()
+        super().cleanup_from_tests()
         mock.patch.stopall()
 
 

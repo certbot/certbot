@@ -1,10 +1,6 @@
 """Tests for acme.errors."""
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
+from unittest import mock
 
 
 class BadNonceTest(unittest.TestCase):
@@ -28,8 +24,8 @@ class MissingNonceTest(unittest.TestCase):
         self.error = MissingNonce(self.response)
 
     def test_str(self):
-        self.assertTrue("FOO" in str(self.error))
-        self.assertTrue("{}" in str(self.error))
+        self.assertIn("FOO", str(self.error))
+        self.assertIn("{}", str(self.error))
 
 
 class PollErrorTest(unittest.TestCase):

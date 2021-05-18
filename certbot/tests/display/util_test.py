@@ -1,19 +1,21 @@
 """Test :mod:`certbot.display.util`."""
 import inspect
+import io
 import socket
 import tempfile
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-import six
 
 from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
@@ -34,7 +36,7 @@ class InputWithTimeoutTest(unittest.TestCase):
 
     def test_input(self, prompt=None):
         expected = "foo bar"
-        stdin = six.StringIO(expected + "\n")
+        stdin = io.StringIO(expected + "\n")
         with mock.patch("certbot.compat.misc.select.select") as mock_select:
             mock_select.return_value = ([stdin], [], [],)
             self.assertEqual(self._call(prompt), expected)
@@ -63,7 +65,7 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     """
     def setUp(self):
-        super(FileOutputDisplayTest, self).setUp()
+        super().setUp()
         self.mock_stdout = mock.MagicMock()
         self.displayer = display_util.FileDisplay(self.mock_stdout, False)
 
@@ -72,7 +74,7 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.displayer.notification("message", False)
         string = self.mock_stdout.write.call_args[0][0]
 
-        self.assertTrue("message" in string)
+        self.assertIn("message", string)
         mock_logger.debug.assert_called_with("Notifying user: %s", "message")
 
     def test_notification_pause(self):
@@ -80,25 +82,25 @@ class FileOutputDisplayTest(unittest.TestCase):
         with mock.patch(input_with_timeout, return_value="enter"):
             self.displayer.notification("message", force_interactive=True)
 
-        self.assertTrue("message" in self.mock_stdout.write.call_args[0][0])
+        self.assertIn("message", self.mock_stdout.write.call_args[0][0])
 
     def test_notification_noninteractive(self):
         self._force_noninteractive(self.displayer.notification, "message")
         string = self.mock_stdout.write.call_args[0][0]
-        self.assertTrue("message" in string)
+        self.assertIn("message", string)
 
     def test_notification_noninteractive2(self):
         # The main purpose of this test is to make sure we only call
         # logger.warning once which _force_noninteractive checks internally
         self._force_noninteractive(self.displayer.notification, "message")
         string = self.mock_stdout.write.call_args[0][0]
-        self.assertTrue("message" in string)
+        self.assertIn("message", string)
 
         self.assertTrue(self.displayer.skipped_interaction)
 
         self._force_noninteractive(self.displayer.notification, "message2")
         string = self.mock_stdout.write.call_args[0][0]
-        self.assertTrue("message2" in string)
+        self.assertIn("message2", string)
 
     def test_notification_decoration(self):
         from certbot.compat import os
@@ -108,7 +110,8 @@ class FileOutputDisplayTest(unittest.TestCase):
 
         self.displayer.notification("message2", pause=False)
         string = self.mock_stdout.write.call_args[0][0]
-        self.assertTrue("- - - " in string and ("message2" + os.linesep) in string)
+        self.assertIn("- - - ", string)
+        self.assertIn("message2" + os.linesep, string)
 
     @mock.patch("certbot.display.util."
                 "FileDisplay._get_valid_int_ans")
@@ -263,7 +266,7 @@ class FileOutputDisplayTest(unittest.TestCase):
                 result = func(*args, **kwargs)
 
         if skipped_interaction:
-            self.assertFalse(mock_logger.warning.called)
+            self.assertIs(mock_logger.warning.called, False)
         else:
             self.assertEqual(mock_logger.warning.call_count, 1)
 
@@ -328,12 +331,8 @@ class FileOutputDisplayTest(unittest.TestCase):
         # Every IDisplay method implemented by FileDisplay must take
         # force_interactive to prevent workflow regressions.
         for name in interfaces.IDisplay.names():
-            if six.PY2:
-                getargspec = inspect.getargspec
-            else:
-                getargspec = inspect.getfullargspec
-            arg_spec = getargspec(getattr(self.displayer, name))  # pylint: disable=deprecated-method
-            self.assertTrue("force_interactive" in arg_spec.args)
+            arg_spec = inspect.getfullargspec(getattr(self.displayer, name))
+            self.assertIn("force_interactive", arg_spec.args)
 
 
 class NoninteractiveDisplayTest(unittest.TestCase):
@@ -347,7 +346,7 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         self.displayer.notification("message", 10)
         string = self.mock_stdout.write.call_args[0][0]
 
-        self.assertTrue("message" in string)
+        self.assertIn("message", string)
         mock_logger.debug.assert_called_with("Notifying user: %s", "message")
 
     def test_notification_decoration(self):
@@ -402,12 +401,8 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         for name in interfaces.IDisplay.names():  # pylint: disable=E1120
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
-            if six.PY2:
-                result = inspect.getargspec(method).keywords  # pylint:deprecated-method
-                self.assertFalse(result is None)
-            else:
-                result = inspect.getfullargspec(method).varkw
-                self.assertFalse(result is None)
+            result = inspect.getfullargspec(method).varkw
+            self.assertIsNotNone(result)
 
 
 class SeparateListInputTest(unittest.TestCase):

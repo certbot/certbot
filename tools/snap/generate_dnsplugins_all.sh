@@ -9,8 +9,5 @@ for PLUGIN_PATH in "${CERTBOT_DIR}"/certbot-dns-*; do
   bash "${CERTBOT_DIR}"/tools/snap/generate_dnsplugins_snapcraft.sh $PLUGIN_PATH
   bash "${CERTBOT_DIR}"/tools/snap/generate_dnsplugins_postrefreshhook.sh $PLUGIN_PATH
   # Create constraints file
-  "${CERTBOT_DIR}"/tools/merge_requirements.py tools/dev_constraints.txt \
-    <("${CERTBOT_DIR}"/tools/strip_hashes.py letsencrypt-auto-source/pieces/dependency-requirements.txt) \
-    <("${CERTBOT_DIR}"/tools/strip_hashes.py tools/pipstrap_constraints.txt) \
-    > "${PLUGIN_PATH}"/snap-constraints.txt
+  cp "${CERTBOT_DIR}"/tools/requirements.txt "${PLUGIN_PATH}"/snap-constraints.txt
 done

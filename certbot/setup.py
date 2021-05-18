@@ -8,6 +8,12 @@ from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 
+min_setuptools_version='39.0.1'
+# This conditional isn't necessary, but it provides better error messages to
+# people who try to install this package with older versions of setuptools.
+if LooseVersion(setuptools_version) < LooseVersion(min_setuptools_version):
+    raise RuntimeError(f'setuptools {min_setuptools_version}+ is required')
+
 # Workaround for https://bugs.python.org/issue8876, see
 # https://bugs.python.org/issue8876#msg208792
 # This can be removed when using Python 2.7.9 or later:
@@ -31,72 +37,52 @@ meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", read_file(init_fn)))
 readme = read_file(os.path.join(here, 'README.rst'))
 version = meta['version']
 
-# This package relies on PyOpenSSL, requests, and six, however, it isn't
-# specified here to avoid masking the more specific request requirements in
-# acme. See https://github.com/pypa/pip/issues/988 for more info.
+# This package relies on PyOpenSSL and requests, however, it isn't specified
+# here to avoid masking the more specific request requirements in acme. See
+# https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
     'acme>=1.8.0',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
     'ConfigArgParse>=0.9.3',
-    'configobj',
-    'cryptography>=1.2.3',  # load_pem_x509_certificate
+    'configobj>=5.0.6',
+    'cryptography>=2.1.4',
     'distro>=1.0.1',
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
-    'parsedatetime>=1.3',  # Calendar.parseDT
+    'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz',
-    'setuptools',
+    # This dependency needs to be added using environment markers to avoid its
+    # installation on Linux.
+    'pywin32>=300 ; sys_platform == "win32"',
+    f'setuptools>={min_setuptools_version}',
     'zope.component',
     'zope.interface',
 ]
 
-# Add pywin32 on Windows platforms to handle low-level system calls.
-# This dependency needs to be added using environment markers to avoid its installation on Linux.
-# However environment markers are supported only with setuptools >= 36.2.
-# So this dependency is not added for old Linux distributions with old setuptools,
-# in order to allow these systems to build certbot from sources.
-pywin32_req = 'pywin32>=227'  # do not forget to edit pywin32 dependency accordingly in windows-installer/construct.py
-setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
-if setuptools_known_environment_markers:
-    install_requires.append(pywin32_req + " ; sys_platform == 'win32'")
-elif 'bdist_wheel' in sys.argv[1:]:
-    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
-                       'of setuptools. Version 36.2+ of setuptools is required.')
-elif os.name == 'nt':
-    # This branch exists to improve this package's behavior on Windows. Without
-    # it, if the sdist is installed on Windows with an old version of
-    # setuptools, pywin32 will not be specified as a dependency.
-    install_requires.append(pywin32_req)
-
-if setuptools_known_environment_markers:
-    install_requires.append('mock ; python_version < "3.3"')
-elif 'bdist_wheel' in sys.argv[1:]:
-    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
-                       'of setuptools. Version 36.2+ of setuptools is required.')
-elif sys.version_info < (3,3):
-    install_requires.append('mock')
-
 dev_extras = [
-    'coverage',
-    'pytest',
-    'pytest-cov',
-    'pytest-xdist',
-    'tox',
-    'twine',
-    'wheel',
-]
-
-dev3_extras = [
     'astroid',
     'azure-devops',
+    'coverage',
     'ipdb',
     'mypy',
     'PyGithub',
+    # 1.1.0+ is required for poetry to use the poetry-core library for the
+    # build system declared in tools/pinning/pyproject.toml.
+    'poetry>=1.1.0',
     'pylint',
+    'pytest',
+    'pytest-cov',
+    'pytest-xdist',
+    # typing-extensions is required to import typing.Protocol and make the mypy checks
+    # pass (along with pylint about non-existent objects) on Python 3.6 & 3.7
+    'typing-extensions',
+    'tox',
+    'twine',
+    'wheel',
 ]
 
 docs_extras = [
@@ -114,9 +100,9 @@ setup(
     long_description=readme,
     url='https://github.com/letsencrypt/letsencrypt',
     author="Certbot Project",
-    author_email='client-dev@letsencrypt.org',
+    author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*',
+    python_requires='>=3.6',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -125,8 +111,6 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
@@ -146,7 +130,6 @@ setup(
     install_requires=install_requires,
     extras_require={
         'dev': dev_extras,
-        'dev3': dev3_extras,
         'docs': docs_extras,
     },
 

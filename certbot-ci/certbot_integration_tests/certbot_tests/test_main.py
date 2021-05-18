@@ -1,5 +1,4 @@
 """Module executing integration tests against certbot core."""
-from __future__ import print_function
 
 import os
 from os.path import exists
@@ -9,19 +8,20 @@ import shutil
 import subprocess
 import time
 
-from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1, SECP384R1
+from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
+from cryptography.hazmat.primitives.asymmetric.ec import SECP384R1
+from cryptography.hazmat.primitives.asymmetric.ec import SECP521R1
 from cryptography.x509 import NameOID
-
 import pytest
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
 from certbot_integration_tests.certbot_tests.assertions import assert_elliptic_key
-from certbot_integration_tests.certbot_tests.assertions import assert_rsa_key
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_owner
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_hook_execution
+from certbot_integration_tests.certbot_tests.assertions import assert_rsa_key
 from certbot_integration_tests.certbot_tests.assertions import assert_saved_renew_hook
 from certbot_integration_tests.certbot_tests.assertions import assert_world_no_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
@@ -147,6 +147,17 @@ def test_manual_dns_auth(context):
 def test_certonly(context):
     """Test the certonly verb on certbot."""
     context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname')])
+
+    assert_cert_count_for_lineage(context.config_dir, 'newname', 1)
+
+
+def test_certonly_webroot(context):
+    """Test the certonly verb with webroot plugin"""
+    with misc.create_http_server(context.http_01_port) as webroot:
+        certname = context.get_domain('webroot')
+        context.certbot(['certonly', '-a', 'webroot', '--webroot-path', webroot, '-d', certname])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
 
 def test_auth_and_install_with_csr(context):
@@ -474,6 +485,28 @@ def test_default_curve_type(context):
     ])
     key1 = join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname))
     assert_elliptic_key(key1, SECP256R1)
+
+
+@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
+    # Curve name, Curve class, ACME servers to skip
+    ('secp256r1', SECP256R1, []),
+    ('secp384r1', SECP384R1, []),
+    ('secp521r1', SECP521R1, ['boulder-v1', 'boulder-v2'])]
+)
+def test_ecdsa_curves(context, curve, curve_cls, skip_servers):
+    """Test issuance for each supported ECDSA curve"""
+    if context.acme_server in skip_servers:
+        pytest.skip('ACME server {} does not support ECDSA curve {}'
+                    .format(context.acme_server, curve))
+
+    domain = context.get_domain('curve')
+    context.certbot([
+        'certonly',
+        '--key-type', 'ecdsa', '--elliptic-curve', curve,
+        '--force-renewal', '-d', domain,
+    ])
+    key = join(context.config_dir, "live", domain, 'privkey.pem')
+    assert_elliptic_key(key, curve_cls)
 
 
 def test_renew_with_ec_keys(context):

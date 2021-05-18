@@ -21,25 +21,23 @@ jobs:
           PYTHON_VERSION: 3.7
           TOXENV: py37
           CERTBOT_NO_PIN: 1
+        linux-external-mock:
+          TOXENV: external-mock
         linux-boulder-v1-integration-certbot-oldest:
+          PYTHON_VERSION: 3.6
           TOXENV: integration-certbot-oldest
           ACME_SERVER: boulder-v1
         linux-boulder-v2-integration-certbot-oldest:
+          PYTHON_VERSION: 3.6
           TOXENV: integration-certbot-oldest
           ACME_SERVER: boulder-v2
         linux-boulder-v1-integration-nginx-oldest:
+          PYTHON_VERSION: 3.6
           TOXENV: integration-nginx-oldest
           ACME_SERVER: boulder-v1
         linux-boulder-v2-integration-nginx-oldest:
+          PYTHON_VERSION: 3.6
           TOXENV: integration-nginx-oldest
-          ACME_SERVER: boulder-v2
-        linux-boulder-v1-py27-integration:
-          PYTHON_VERSION: 2.7
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
-        linux-boulder-v2-py27-integration:
-          PYTHON_VERSION: 2.7
-          TOXENV: integration
           ACME_SERVER: boulder-v2
         linux-boulder-v1-py36-integration:
           PYTHON_VERSION: 3.6
@@ -87,12 +85,6 @@ jobs:
           IMAGE_NAME: macOS-10.15
           PYTHON_VERSION: 3.8
           TOXENV: test-farm-apache2
-        farmtest-leauto-upgrades:
-          PYTHON_VERSION: 3.7
-          TOXENV: test-farm-leauto-upgrades
-        farmtest-certonly-standalone:
-          PYTHON_VERSION: 3.7
-          TOXENV: test-farm-certonly-standalone
         farmtest-sdists:
           PYTHON_VERSION: 3.7
           TOXENV: test-farm-sdists

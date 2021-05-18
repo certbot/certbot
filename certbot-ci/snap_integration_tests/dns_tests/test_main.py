@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-import pytest
-import subprocess
 import glob
 import os
 import re
+import subprocess
+
+import pytest
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -43,4 +44,4 @@ def test_dns_plugin_install(dns_snap_path):
             'certbot:certbot-metadata'])
         subprocess.check_call(['snap', 'install', '--dangerous', dns_snap_path])
     finally:
-        subprocess.call(['snap', 'remove', 'plugin_name'])
+        subprocess.call(['snap', 'remove', plugin_name])

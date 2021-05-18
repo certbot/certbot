@@ -5,7 +5,7 @@ stages:
         variables:
           - group: certbot-common
         pool:
-          vmImage: ubuntu-latest
+          vmImage: ubuntu-20.04
         steps:
           - bash: |
               set -e

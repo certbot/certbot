@@ -1,18 +1,23 @@
 """Certbot main entry point."""
 # pylint: disable=too-many-lines
-from __future__ import print_function
 
 import functools
 import logging.handlers
 import sys
-import warnings
+from contextlib import contextmanager
+from typing import Generator
+from typing import IO
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 import configobj
 import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
-from acme.magic_typing import Union, Iterable, Optional, List, Tuple  # pylint: disable=unused-import
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -146,8 +151,8 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
     return lineage
 
 
-def _handle_unexpected_key_type_migration(config, cert):
-    # type: (configuration.NamespaceConfig, storage.RenewableCert) -> None
+def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
+                                          cert: storage.RenewableCert) -> None:
     """
     This function ensures that the user will not implicitly migrate an existing key
     from one type to another in the situation where a certificate for that lineage
@@ -168,11 +173,10 @@ def _handle_unexpected_key_type_migration(config, cert):
             raise errors.Error(msg)
 
 
-def _handle_subset_cert_request(config,  # type: configuration.NamespaceConfig
-                                domains,  # type: List[str]
-                                cert  # type: storage.RenewableCert
-                                ):
-    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
+def _handle_subset_cert_request(config: configuration.NamespaceConfig,
+                                domains: List[str],
+                                cert: storage.RenewableCert
+                                ) -> Tuple[str, Optional[storage.RenewableCert]]:
     """Figure out what to do if a previous cert had a subset of the names now requested
 
     :param config: Configuration object
@@ -219,10 +223,9 @@ def _handle_subset_cert_request(config,  # type: configuration.NamespaceConfig
     raise errors.Error(USER_CANCELLED)
 
 
-def _handle_identical_cert_request(config,  # type: configuration.NamespaceConfig
-                                   lineage,  # type: storage.RenewableCert
-                                   ):
-    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
+def _handle_identical_cert_request(config: configuration.NamespaceConfig,
+                                   lineage: storage.RenewableCert,
+                                   ) -> Tuple[str, Optional[storage.RenewableCert]]:
     """Figure out what to do if a lineage has the same names as a previously obtained one
 
     :param config: Configuration object
@@ -338,11 +341,10 @@ def _find_cert(config, domains, certname):
     return (action != "reinstall"), lineage
 
 
-def _find_lineage_for_domains_and_certname(config,  # type: configuration.NamespaceConfig
-                                           domains,  # type: List[str]
-                                           certname  # type: str
-                                           ):
-    # type: (...) -> Tuple[str, Optional[storage.RenewableCert]]
+def _find_lineage_for_domains_and_certname(config: configuration.NamespaceConfig,
+                                           domains: List[str],
+                                           certname: str
+                                           ) -> Tuple[str, Optional[storage.RenewableCert]]:
     """Find appropriate lineage based on given domains and/or certname.
 
     :param config: Configuration object
@@ -617,7 +619,9 @@ def _delete_if_appropriate(config):
 
     # don't delete if the archive_dir is used by some other lineage
     archive_dir = storage.full_archive_path(
-            configobj.ConfigObj(storage.renewal_file_for_certname(config, config.certname)),
+            configobj.ConfigObj(
+                storage.renewal_file_for_certname(config, config.certname),
+                encoding='utf-8', default_encoding='utf-8'),
             config, config.certname)
     try:
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
@@ -669,7 +673,7 @@ def unregister(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -709,7 +713,7 @@ def register(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None` or a string indicating and error
     :rtype: None or str
@@ -739,7 +743,7 @@ def update_account(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None` or a string indicating and error
     :rtype: None or str
@@ -759,7 +763,7 @@ def update_account(config, unused_plugins):
     cb_client = client.Client(config, acc, None, None, acme=acme)
     # Empty list of contacts in case the user is removing all emails
 
-    acc_contacts = () # type: Iterable[str]
+    acc_contacts: Iterable[str] = ()
     if config.email:
         acc_contacts = ['mailto:' + email for email in config.email.split(',')]
     # We rely on an exception to interrupt this process if it didn't work.
@@ -816,7 +820,7 @@ def install(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -899,7 +903,7 @@ def plugins_cmd(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -938,7 +942,7 @@ def enhance(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -997,7 +1001,7 @@ def rollback(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1015,7 +1019,7 @@ def update_symlinks(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1033,7 +1037,7 @@ def rename(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1051,7 +1055,7 @@ def delete(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1067,7 +1071,7 @@ def certificates(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1076,15 +1080,14 @@ def certificates(config, unused_plugins):
     cert_manager.certificates(config)
 
 
-# TODO: coop with renewal config
-def revoke(config, unused_plugins):
+def revoke(config, unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
     """Revoke a previously obtained certificate.
 
     :param config: Configuration object
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None` or string indicating error in case of error
     :rtype: None or str
@@ -1094,7 +1097,13 @@ def revoke(config, unused_plugins):
     config.installer = config.authenticator = None
 
     if config.cert_path is None and config.certname:
-        config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
+        # When revoking via --cert-name, take the cert path and server from renewalparams
+        lineage = storage.RenewableCert(
+            storage.renewal_file_for_certname(config, config.certname), config)
+        config.cert_path = lineage.cert_path
+        # --server takes priority over lineage.server
+        if lineage.server and not cli.set_by_cli("server"):
+            config.server = lineage.server
     elif not config.cert_path or (config.cert_path and config.certname):
         # intentionally not supporting --cert-path & --cert-name together,
         # to avoid dealing with mismatched values
@@ -1102,15 +1111,18 @@ def revoke(config, unused_plugins):
 
     if config.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using certificate key %s",
-                     config.cert_path[0], config.key_path[0])
-        crypto_util.verify_cert_matches_priv_key(config.cert_path[0], config.key_path[0])
-        key = jose.JWK.load(config.key_path[1])
+                     config.cert_path, config.key_path)
+        crypto_util.verify_cert_matches_priv_key(config.cert_path, config.key_path)
+        with open(config.key_path, 'rb') as f:
+            key = jose.JWK.load(f.read())
         acme = client.acme_from_config_key(config, key)
     else:  # revocation by account key
-        logger.debug("Revoking %s using Account Key", config.cert_path[0])
+        logger.debug("Revoking %s using Account Key", config.cert_path)
         acc, _ = _determine_account(config)
         acme = client.acme_from_config_key(config, acc.key, acc.regr)
-    cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
+
+    with open(config.cert_path, 'rb') as f:
+        cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
     logger.debug("Reason code for revocation: %s", config.reason)
     try:
         acme.revoke(jose.ComparableX509(cert), config.reason)
@@ -1118,7 +1130,7 @@ def revoke(config, unused_plugins):
     except acme_errors.ClientError as e:
         return str(e)
 
-    display_ops.success_revocation(config.cert_path[0])
+    display_ops.success_revocation(config.cert_path)
     return None
 
 
@@ -1129,7 +1141,7 @@ def run(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1216,7 +1228,7 @@ def renew_cert(config, plugins, lineage):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :param lineage: Certificate lineage object
     :type lineage: storage.RenewableCert
@@ -1227,12 +1239,8 @@ def renew_cert(config, plugins, lineage):
     :raises errors.PluginSelectionError: MissingCommandlineFlag if supplied parameters do not pass
 
     """
-    try:
-        # installers are used in auth mode to determine domain names
-        installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-    except errors.PluginSelectionError as e:
-        logger.info("Could not choose appropriate plugin: %s", e)
-        raise
+    # installers are used in auth mode to determine domain names
+    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     le_client = _init_le_client(config, auth, installer)
 
     renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
@@ -1261,7 +1269,7 @@ def certonly(config, plugins):
     :type config: interfaces.IConfig
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1270,12 +1278,8 @@ def certonly(config, plugins):
 
     """
     # SETUP: Select plugins and construct a client instance
-    try:
-        # installers are used in auth mode to determine domain names
-        installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-    except errors.PluginSelectionError as e:
-        logger.info("Could not choose appropriate plugin: %s", e)
-        raise
+    # installers are used in auth mode to determine domain names
+    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
 
     le_client = _init_le_client(config, auth, installer)
 
@@ -1311,7 +1315,7 @@ def renew(config, unused_plugins):
     :type config: interfaces.IConfig
 
     :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: `list` of `str`
+    :type unused_plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -1343,26 +1347,36 @@ def make_or_verify_needed_dirs(config):
         util.make_or_verify_dir(hook_dir, strict=config.strict_permissions)
 
 
-def set_displayer(config):
-    """Set the displayer
+@contextmanager
+def make_displayer(config: configuration.NamespaceConfig
+                   ) -> Generator[Union[display_util.NoninteractiveDisplay,
+                                        display_util.FileDisplay], None, None]:
+    """Creates a display object appropriate to the flags in the supplied config.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
 
-    :returns: `None`
-    :rtype: None
+    :returns: Display object implementing :class:`certbot.interfaces.IDisplay`
 
     """
+    displayer: Union[None, display_util.NoninteractiveDisplay,
+                     display_util.FileDisplay] = None
+    devnull: Optional[IO] = None
+
     if config.quiet:
         config.noninteractive_mode = True
-        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w")) \
-        # type: Union[None, display_util.NoninteractiveDisplay, display_util.FileDisplay]
+        devnull = open(os.devnull, "w")
+        displayer = display_util.NoninteractiveDisplay(devnull)
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
-        displayer = display_util.FileDisplay(sys.stdout,
-                                             config.force_interactive)
-    zope.component.provideUtility(displayer)
+        displayer = display_util.FileDisplay(
+            sys.stdout, config.force_interactive)
+
+    try:
+        yield displayer
+    finally:
+        if devnull:
+            devnull.close()
 
 
 def main(cli_args=None):
@@ -1407,18 +1421,12 @@ def main(cli_args=None):
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
 
-    if sys.version_info[0] == 2:
-        warnings.warn(
-            "Python 2 support will be dropped in the next release of Certbot. "
-            "Please upgrade your Python version.",
-            PendingDeprecationWarning,
-        )  # pragma: no cover
-
-    set_displayer(config)
-
     # Reporter
     report = reporter.Reporter(config)
     zope.component.provideUtility(report)
     util.atexit_register(report.print_messages)
 
-    return config.func(config, plugins)
+    with make_displayer(config) as displayer:
+        zope.component.provideUtility(displayer)
+
+        return config.func(config, plugins)

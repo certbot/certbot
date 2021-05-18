@@ -11,7 +11,7 @@ from certbot_integration_tests.utils import misc
 class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
     """General fixture describing a certbot-nginx integration tests context"""
     def __init__(self, request):
-        super(IntegrationTestsContext, self).__init__(request)
+        super().__init__(request)
 
         self.nginx_root = os.path.join(self.workspace, 'nginx')
         os.mkdir(self.nginx_root)
@@ -29,7 +29,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
 
     def cleanup(self):
         self._stop_nginx()
-        super(IntegrationTestsContext, self).cleanup()
+        super().cleanup()
 
     def certbot_test_nginx(self, args):
         """

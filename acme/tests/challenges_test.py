@@ -1,14 +1,11 @@
 """Tests for acme.challenges."""
+import urllib.parse as urllib_parse
 import unittest
+from unittest import mock
 
 import josepy as jose
 import OpenSSL
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import requests
-from six.moves.urllib import parse as urllib_parse
 
 from acme import errors
 
@@ -295,7 +292,7 @@ class TLSALPN01ResponseTest(unittest.TestCase):
 
     def test_gen_verify_cert_gen_key(self):
         cert, key = self.response.gen_cert(self.domain)
-        self.assertTrue(isinstance(key, OpenSSL.crypto.PKey))
+        self.assertIsInstance(key, OpenSSL.crypto.PKey)
         self.assertTrue(self.response.verify_cert(self.domain, cert))
 
     def test_verify_bad_cert(self):
@@ -434,7 +431,7 @@ class DNSTest(unittest.TestCase):
             mock_gen.return_value = mock.sentinel.validation
             response = self.msg.gen_response(KEY)
         from acme.challenges import DNSResponse
-        self.assertTrue(isinstance(response, DNSResponse))
+        self.assertIsInstance(response, DNSResponse)
         self.assertEqual(response.validation, mock.sentinel.validation)
 
     def test_validation_domain_name(self):

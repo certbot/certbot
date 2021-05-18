@@ -1,16 +1,14 @@
 """Tests for acme.standalone."""
+import http.client as http_client
 import socket
+import socketserver
 import threading
 import unittest
+from typing import Set
+from unittest import mock
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import requests
-from six.moves import http_client  # pylint: disable=import-error
-from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
 from acme import challenges
 from acme import crypto_util
@@ -44,7 +42,7 @@ class HTTP01ServerTest(unittest.TestCase):
     def setUp(self):
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))
-        self.resources = set() # type: Set
+        self.resources: Set = set()
 
         from acme.standalone import HTTP01Server
         self.server = HTTP01Server(('', 0), resources=self.resources)
@@ -221,7 +219,7 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
     def setUp(self):
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))
-        self.resources = set() # type: Set
+        self.resources: Set = set()
 
         from acme.standalone import HTTP01DualNetworkedServers
         self.servers = HTTP01DualNetworkedServers(('', 0), resources=self.resources)

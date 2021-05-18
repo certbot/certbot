@@ -2,7 +2,26 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.12.0 - master
+## 1.16.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* DNS plugins based on lexicon now require dns-lexicon >= v3.1.0
+* Use UTF-8 encoding for renewal configuration files
+* Windows installer now cleans up old Certbot dependency packages
+  before installing the new ones to avoid version conflicts.
+
+### Fixed
+
+* Fix TypeError due to incompatibility with lexicon >= v3.6.0
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.15.0 - 2021-05-04
 
 ### Added
 
@@ -15,6 +34,83 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.14.0 - 2021-04-06
+
+### Added
+
+*
+
+### Changed
+
+* certbot-auto no longer checks for updates on any operating system.
+* The module `acme.magic_typing` is deprecated and will be removed in a future release.
+  Please use the built-in module `typing` instead.
+* The DigitalOcean plugin now creates TXT records for the DNS-01 challenge with a lower 30s TTL.
+
+### Fixed
+
+* Don't output an empty line for a hidden certificate when `certbot certificates` is being used
+  in combination with `--cert-name` or `-d`.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.13.0 - 2021-03-02
+
+### Added
+
+*
+
+### Changed
+
+* CLI flags `--os-packages-only`, `--no-self-upgrade`, `--no-bootstrap` and `--no-permissions-check`,
+  which are related to certbot-auto, are deprecated and will be removed in a future release.
+* Certbot no longer conditionally depends on an external mock module. Certbot's
+  test API will continue to use it if it is available for backwards
+  compatibility, however, this behavior has been deprecated and will be removed
+  in a future release.
+* The acme library no longer depends on the `security` extras from `requests`
+  which was needed to support SNI in TLS requests when using old versions of
+  Python 2.
+* Certbot and all of its components no longer depend on the library `six`.
+* The update of certbot-auto itself is now disabled on all RHEL-like systems.
+* When revoking a certificate by `--cert-name`, it is no longer necessary to specify the `--server`
+  if the certificate was obtained from a non-default ACME server.
+* The nginx authenticator now configures all matching HTTP and HTTPS vhosts for the HTTP-01
+  challenge. It is now compatible with external HTTPS redirection by a CDN or load balancer.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.12.0 - 2021-02-02
+
+### Added
+
+*
+
+### Changed
+
+* The `--preferred-chain` flag now only checks the Issuer Common Name of the
+  topmost (closest to the root) certificate in the chain, instead of checking
+  every certificate in the chain.
+  See [#8577](https://github.com/certbot/certbot/issues/8577).
+* Support for Python 2 has been removed.
+* In previous releases, we caused certbot-auto to stop updating its Certbot
+  installation. In this release, we are beginning to disable updates to the
+  certbot-auto script itself. This release includes Amazon Linux users, and all
+  other systems that are not based on Debian or RHEL. We plan to make this
+  change to the certbot-auto script for all users in the coming months.
+
+### Fixed
+
+* Fixed the apache component on openSUSE Tumbleweed which no longer provides
+  an apache2ctl symlink and uses apachectl instead.
+* Fixed a typo in `certbot/crypto_util.py` causing an error upon attempting `secp521r1` key generation
 
 More details about these changes can be found on our GitHub repo.
 
