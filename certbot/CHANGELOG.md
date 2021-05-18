@@ -14,6 +14,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Use UTF-8 encoding for renewal configuration files
 * Windows installer now cleans up old Certbot dependency packages
   before installing the new ones to avoid version conflicts.
+* This release contains a substantial command-line UX overhaul,
+  based on previous user research. The main goal was to streamline
+  and clarify output. If you would like to see more information, use
+  the -v or -vv flags. UX improvements are an iterative process and
+  the Certbot team welcomes constructive feedback.
 
 ### Fixed
 
