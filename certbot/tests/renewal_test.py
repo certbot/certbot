@@ -1,4 +1,6 @@
 """Tests for certbot._internal.renewal"""
+import copy
+
 import unittest
 
 try:
@@ -98,6 +100,23 @@ class RenewalTest(test_util.ConfigTestCase):
 
         assert self.config.elliptic_curve == 'secp256r1'
 
+    @test_util.patch_get_utility()
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
+    def test_remove_deprecated_config_elements(self, mock_set_by_cli, unused_mock_get_utility):
+        mock_set_by_cli.return_value = False
+        config = configuration.NamespaceConfig(self.config)
+        config.certname = "sample-renewal-deprecated-option"
+
+        rc_path = test_util.make_lineage(
+            self.config.config_dir, 'sample-renewal-deprecated-option.conf')
+
+        from certbot._internal import renewal
+        lineage_config = copy.deepcopy(self.config)
+        renewal_candidate = renewal._reconstitute(lineage_config, rc_path)
+        # This means that manual_public_ip_logging_ok was not modified in the config based on its
+        # value in the renewal conf file
+        self.assertIsInstance(lineage_config.manual_public_ip_logging_ok, mock.MagicMock)
+
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.renewal.restore_required_config_elements."""
@@ -110,7 +129,7 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     def test_allow_subset_of_names_success(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         self._call(self.config, {'allow_subset_of_names': 'True'})
-        self.assertTrue(self.config.allow_subset_of_names is True)
+        self.assertIs(self.config.allow_subset_of_names, True)
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_allow_subset_of_names_failure(self, mock_set_by_cli):
@@ -145,7 +164,7 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     def test_must_staple_success(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         self._call(self.config, {'must_staple': 'True'})
-        self.assertTrue(self.config.must_staple is True)
+        self.assertIs(self.config.must_staple, True)
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_must_staple_failure(self, mock_set_by_cli):

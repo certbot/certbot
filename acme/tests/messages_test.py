@@ -1,11 +1,9 @@
 """Tests for acme.messages."""
+from typing import Dict
 import unittest
+from unittest import mock
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 
 from acme import challenges
 import test_util
@@ -43,13 +41,13 @@ class ErrorTest(unittest.TestCase):
 
     def test_description(self):
         self.assertEqual('The request message was malformed', self.error.description)
-        self.assertTrue(self.error_custom.description is None)
+        self.assertIsNone(self.error_custom.description)
 
     def test_code(self):
         from acme.messages import Error
         self.assertEqual('malformed', self.error.code)
-        self.assertEqual(None, self.error_custom.code)
-        self.assertEqual(None, Error().code)
+        self.assertIsNone(self.error_custom.code)
+        self.assertIsNone(Error().code)
 
     def test_is_acme_error(self):
         from acme.messages import is_acme_error, Error
@@ -84,7 +82,7 @@ class ConstantTest(unittest.TestCase):
         from acme.messages import _Constant
 
         class MockConstant(_Constant):  # pylint: disable=missing-docstring
-            POSSIBLE_NAMES = {} # type: Dict
+            POSSIBLE_NAMES: Dict = {}
 
         self.MockConstant = MockConstant  # pylint: disable=invalid-name
         self.const_a = MockConstant('a')
@@ -262,10 +260,10 @@ class RegistrationTest(unittest.TestCase):
         self.assertEqual(empty_new_reg.contact, ())
         self.assertEqual(new_reg_with_contact.contact, ())
 
-        self.assertTrue('contact' not in empty_new_reg.to_partial_json())
-        self.assertTrue('contact' not in empty_new_reg.fields_to_partial_json())
-        self.assertTrue('contact' in new_reg_with_contact.to_partial_json())
-        self.assertTrue('contact' in new_reg_with_contact.fields_to_partial_json())
+        self.assertNotIn('contact', empty_new_reg.to_partial_json())
+        self.assertNotIn('contact', empty_new_reg.fields_to_partial_json())
+        self.assertIn('contact', new_reg_with_contact.to_partial_json())
+        self.assertIn('contact', new_reg_with_contact.fields_to_partial_json())
 
 
 class UpdateRegistrationTest(unittest.TestCase):
@@ -408,7 +406,7 @@ class AuthorizationResourceTest(unittest.TestCase):
         authzr = AuthorizationResource(
             uri=mock.sentinel.uri,
             body=mock.sentinel.body)
-        self.assertTrue(isinstance(authzr, jose.JSONDeSerializable))
+        self.assertIsInstance(authzr, jose.JSONDeSerializable)
 
 
 class CertificateRequestTest(unittest.TestCase):
@@ -419,7 +417,7 @@ class CertificateRequestTest(unittest.TestCase):
         self.req = CertificateRequest(csr=CSR)
 
     def test_json_de_serializable(self):
-        self.assertTrue(isinstance(self.req, jose.JSONDeSerializable))
+        self.assertIsInstance(self.req, jose.JSONDeSerializable)
         from acme.messages import CertificateRequest
         self.assertEqual(
             self.req, CertificateRequest.from_json(self.req.to_json()))
@@ -435,7 +433,7 @@ class CertificateResourceTest(unittest.TestCase):
             cert_chain_uri=mock.sentinel.cert_chain_uri)
 
     def test_json_de_serializable(self):
-        self.assertTrue(isinstance(self.certr, jose.JSONDeSerializable))
+        self.assertIsInstance(self.certr, jose.JSONDeSerializable)
         from acme.messages import CertificateResource
         self.assertEqual(
             self.certr, CertificateResource.from_json(self.certr.to_json()))

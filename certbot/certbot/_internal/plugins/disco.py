@@ -1,25 +1,20 @@
 """Utilities for plugins discovery and selection."""
-import collections
 import itertools
 import logging
 import sys
+from collections.abc import Mapping
+from typing import Dict
+from typing import Optional
+from typing import Union
 
 import pkg_resources
-import six
 import zope.interface
 import zope.interface.verify
-
-from acme.magic_typing import Dict
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os
-
-try:
-    # Python 3.3+
-    from collections.abc import Mapping
-except ImportError:  # pragma: no cover
-    from collections import Mapping
+from certbot.errors import Error
 
 logger = logging.getLogger(__name__)
 
@@ -45,21 +40,21 @@ PREFIX_FREE_DISTRIBUTIONS = [
 """Distributions for which prefix will be omitted."""
 
 
-class PluginEntryPoint(object):
+class PluginEntryPoint:
     """Plugin entry point."""
 
     # this object is mutable, don't allow it to be hashed!
     __hash__ = None  # type: ignore
 
-    def __init__(self, entry_point, with_prefix=False):
+    def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix=False):
         self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
-        self.plugin_cls = entry_point.load()
+        self.plugin_cls: interfaces.IPluginFactory = entry_point.load()
         self.entry_point = entry_point
-        self.warning_message = None
-        self._initialized = None
-        self._prepared = None
+        self.warning_message: Optional[str] = None
+        self._initialized: Optional[interfaces.IPlugin] = None
+        self._prepared: Optional[Union[bool, Error]] = None
         self._hidden = False
-        self._long_description = None
+        self._long_description: Optional[str] = None
 
     def check_name(self, name):
         """Check if the name refers to this plugin."""
@@ -125,12 +120,15 @@ class PluginEntryPoint(object):
         """Memoized plugin initialization."""
         if not self.initialized:
             self.entry_point.require()  # fetch extras!
-            self._initialized = self.plugin_cls(config, self.name)
+            # TODO: remove type ignore once the interface becomes a proper
+            #  abstract class (using abc) that mypy understands.
+            self._initialized = self.plugin_cls(config, self.name)  # type: ignore
         return self._initialized
 
     def verify(self, ifaces):
         """Verify that the plugin conforms to the specified interfaces."""
-        assert self.initialized
+        if not self.initialized:
+            raise ValueError("Plugin is not initialized.")
         for iface in ifaces:  # zope.interface.providedBy(plugin)
             try:
                 zope.interface.verify.verifyObject(iface, self.init())
@@ -151,10 +149,13 @@ class PluginEntryPoint(object):
 
     def prepare(self):
         """Memoized plugin preparation."""
-        assert self.initialized
+        if self._initialized is None:
+            raise ValueError("Plugin is not initialized.")
         if self._prepared is None:
             try:
-                self._initialized.prepare()
+                # TODO: remove type ignore once the interface becomes a proper
+                #  abstract class (using abc) that mypy understands.
+                self._initialized.prepare()  # type: ignore
             except errors.MisconfigurationError as error:
                 logger.debug("Misconfigured %r: %s", self, error, exc_info=True)
                 self._prepared = error
@@ -215,12 +216,12 @@ class PluginsRegistry(Mapping):
         # This prevents deadlock caused by plugins acquiring a lock
         # and ensures at least one concurrent Certbot instance will run
         # successfully.
-        self._plugins = collections.OrderedDict(sorted(six.iteritems(plugins)))
+        self._plugins = dict(sorted(plugins.items()))
 
     @classmethod
     def find_all(cls):
         """Find plugins using setuptools entry points."""
-        plugins = {}  # type: Dict[str, PluginEntryPoint]
+        plugins: Dict[str, PluginEntryPoint] = {}
         plugin_paths_string = os.getenv('CERTBOT_PLUGIN_PATH')
         plugin_paths = plugin_paths_string.split(':') if plugin_paths_string else []
         # XXX should ensure this only happens once
@@ -254,8 +255,10 @@ class PluginsRegistry(Mapping):
         plugin_ep = PluginEntryPoint(entry_point, with_prefix)
         if plugin_ep.name in plugins:
             other_ep = plugins[plugin_ep.name]
+            plugin1 = plugin_ep.entry_point.dist.key if plugin_ep.entry_point.dist else "unknown"
+            plugin2 = other_ep.entry_point.dist.key if other_ep.entry_point.dist else "unknown"
             raise Exception("Duplicate plugin name {0} from {1} and {2}.".format(
-                plugin_ep.name, plugin_ep.entry_point.dist.key, other_ep.entry_point.dist.key))
+                plugin_ep.name, plugin1, plugin2))
         if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
             plugins[plugin_ep.name] = plugin_ep
         else:  # pragma: no cover
@@ -276,12 +279,12 @@ class PluginsRegistry(Mapping):
     def init(self, config):
         """Initialize all plugins in the registry."""
         return [plugin_ep.init(config) for plugin_ep
-                in six.itervalues(self._plugins)]
+                in self._plugins.values()]
 
     def filter(self, pred):
         """Filter plugins based on predicate."""
         return type(self)({name: plugin_ep for name, plugin_ep
-                               in six.iteritems(self._plugins) if pred(plugin_ep)})
+                               in self._plugins.items() if pred(plugin_ep)})
 
     def visible(self):
         """Filter plugins based on visibility."""
@@ -297,7 +300,7 @@ class PluginsRegistry(Mapping):
 
     def prepare(self):
         """Prepare all plugins in the registry."""
-        return [plugin_ep.prepare() for plugin_ep in six.itervalues(self._plugins)]
+        return [plugin_ep.prepare() for plugin_ep in self._plugins.values()]
 
     def available(self):
         """Filter plugins based on availability."""
@@ -319,7 +322,7 @@ class PluginsRegistry(Mapping):
 
         """
         # use list instead of set because PluginEntryPoint is not hashable
-        candidates = [plugin_ep for plugin_ep in six.itervalues(self._plugins)
+        candidates = [plugin_ep for plugin_ep in self._plugins.values()
                       if plugin_ep.initialized and plugin_ep.init() is plugin]
         assert len(candidates) <= 1
         if candidates:
@@ -329,9 +332,9 @@ class PluginsRegistry(Mapping):
     def __repr__(self):
         return "{0}({1})".format(
             self.__class__.__name__, ','.join(
-                repr(p_ep) for p_ep in six.itervalues(self._plugins)))
+                repr(p_ep) for p_ep in self._plugins.values()))
 
     def __str__(self):
         if not self._plugins:
             return "No plugins"
-        return "\n\n".join(str(p_ep) for p_ep in six.itervalues(self._plugins))
+        return "\n\n".join(str(p_ep) for p_ep in self._plugins.values())

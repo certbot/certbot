@@ -3,11 +3,8 @@ import csv
 import glob
 import logging
 import shutil
-import sys
 import time
 import traceback
-
-import six
 
 from certbot import errors
 from certbot import util
@@ -18,7 +15,7 @@ from certbot.compat import os
 logger = logging.getLogger(__name__)
 
 
-class Reverter(object):
+class Reverter:
     """Reverter Class - save and revert configuration checkpoints.
 
     This class can be used by the plugins, especially Installers, to
@@ -252,11 +249,10 @@ class Reverter(object):
 
     def _run_undo_commands(self, filepath):
         """Run all commands in a file."""
-        # NOTE: csv module uses native strings. That is, bytes on Python 2 and
-        # unicode on Python 3
+        # NOTE: csv module uses native strings. That is unicode on Python 3
         # It is strongly advised to set newline = '' on Python 3 with CSV,
         # and it fixes problems on Windows.
-        kwargs = {'newline': ''} if sys.version_info[0] > 2 else {}
+        kwargs = {'newline': ''}
         with open(filepath, 'r', **kwargs) as csvfile:  # type: ignore
             csvreader = csv.reader(csvfile)
             for command in reversed(list(csvreader)):
@@ -355,7 +351,7 @@ class Reverter(object):
         command_file = None
         # It is strongly advised to set newline = '' on Python 3 with CSV,
         # and it fixes problems on Windows.
-        kwargs = {'newline': ''} if sys.version_info[0] > 2 else {}
+        kwargs = {'newline': ''}
         try:
             if os.path.isfile(commands_fp):
                 command_file = open(commands_fp, "a", **kwargs)  # type: ignore
@@ -518,7 +514,7 @@ class Reverter(object):
         # It is possible save checkpoints faster than 1 per second resulting in
         # collisions in the naming convention.
 
-        for _ in six.moves.range(2):
+        for _ in range(2):
             timestamp = self._checkpoint_timestamp()
             final_dir = os.path.join(self.config.backup_dir, timestamp)
             try:

@@ -2,15 +2,15 @@
 import datetime
 import logging
 import time
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 import zope.component
 
 from acme import challenges
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Tuple
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
@@ -21,7 +21,7 @@ from certbot.plugins import common as plugin_common
 logger = logging.getLogger(__name__)
 
 
-class AuthHandler(object):
+class AuthHandler:
     """ACME Authorization Handler for a client.
 
     :ivar auth: Authenticator capable of solving
@@ -100,8 +100,7 @@ class AuthHandler(object):
 
             return authzrs_validated
 
-    def deactivate_valid_authorizations(self, orderr):
-        # type: (messages.OrderResource) -> Tuple[List, List]
+    def deactivate_valid_authorizations(self, orderr: messages.OrderResource) -> Tuple[List, List]:
         """
         Deactivate all `valid` authorizations in the order, so that they cannot be re-used
         in subsequent orders.
@@ -193,7 +192,7 @@ class AuthHandler(object):
         """
         pending_authzrs = [authzr for authzr in authzrs
                            if authzr.body.status != messages.STATUS_VALID]
-        achalls = []  # type: List[achallenges.AnnotatedChallenge]
+        achalls: List[achallenges.AnnotatedChallenge] = []
         if pending_authzrs:
             logger.info("Performing the following challenges:")
         for authzr in pending_authzrs:

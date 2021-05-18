@@ -1,5 +1,8 @@
 """Provides Tab completion when prompting users for a path."""
 import glob
+from typing import Callable
+from typing import Iterator
+from typing import Optional
 
 # readline module is not available on all systems
 try:
@@ -8,7 +11,7 @@ except ImportError:
     import certbot._internal.display.dummy_readline as readline  # type: ignore
 
 
-class Completer(object):
+class Completer:
     """Provides Tab completion when prompting users for a path.
 
     This class is meant to be used with readline to provide Tab
@@ -26,7 +29,9 @@ class Completer(object):
     """
 
     def __init__(self):
-        self._iter = self._original_completer = self._original_delims = None
+        self._iter: Iterator[str]
+        self._original_completer: Optional[Callable]
+        self._original_delims: str
 
     def complete(self, text, state):
         """Provides path completion for use with readline.

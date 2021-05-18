@@ -5,14 +5,14 @@ import logging
 import re
 import shutil
 import stat
+from typing import Optional
 
 import configobj
-import parsedatetime
-import pytz
-import six
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
+import parsedatetime
+import pytz
 
 import certbot
 from certbot import crypto_util
@@ -59,7 +59,7 @@ def renewal_file_for_certname(config, certname):
     return path
 
 
-def cert_path_for_cert_name(config, cert_name):
+def cert_path_for_cert_name(config: interfaces.IConfig, cert_name: str) -> str:
     """ If `--cert-name` was specified, but you need a value for `--cert-path`.
 
     :param `configuration.NamespaceConfig` config: parsed command line arguments
@@ -67,16 +67,16 @@ def cert_path_for_cert_name(config, cert_name):
 
     """
     cert_name_implied_conf = renewal_file_for_certname(config, cert_name)
-    fullchain_path = configobj.ConfigObj(cert_name_implied_conf)["fullchain"]
-    with open(fullchain_path) as f:
-        cert_path = (fullchain_path, f.read())
-    return cert_path
+    return configobj.ConfigObj(
+        cert_name_implied_conf, encoding='utf-8', default_encoding='utf-8')["fullchain"]
 
 
 def config_with_defaults(config=None):
     """Merge supplied config, if provided, on top of builtin defaults."""
-    defaults_copy = configobj.ConfigObj(constants.RENEWER_DEFAULTS)
-    defaults_copy.merge(config if config is not None else configobj.ConfigObj())
+    defaults_copy = configobj.ConfigObj(
+        constants.RENEWER_DEFAULTS, encoding='utf-8', default_encoding='utf-8')
+    defaults_copy.merge(config if config is not None else configobj.ConfigObj(
+        encoding='utf-8', default_encoding='utf-8'))
     return defaults_copy
 
 
@@ -117,7 +117,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     :rtype: configobj.ConfigObj
 
     """
-    config = configobj.ConfigObj(o_filename)
+    config = configobj.ConfigObj(o_filename, encoding='utf-8', default_encoding='utf-8')
     config["version"] = certbot.__version__
     config["archive_dir"] = archive_dir
     for kind in ALL_FOUR:
@@ -199,7 +199,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
     filesystem.replace(temp_filename, config_filename)
 
-    return configobj.ConfigObj(config_filename)
+    return configobj.ConfigObj(config_filename, encoding='utf-8', default_encoding='utf-8')
 
 
 def get_link_target(link):
@@ -275,7 +275,7 @@ def relevant_values(all_values):
 
     rv = dict(
         (option, value)
-        for option, value in six.iteritems(all_values)
+        for option, value in all_values.items()
         if _relevant(namespaces, option) and cli.option_was_set(option, value))
     # We always save the server value to help with forward compatibility
     # and behavioral consistency when versions of Certbot with different
@@ -327,7 +327,8 @@ def delete_files(config, certname):
     full_default_archive_dir = full_archive_path(None, config, certname)
     full_default_live_dir = _full_live_path(config, certname)
     try:
-        renewal_config = configobj.ConfigObj(renewal_filename)
+        renewal_config = configobj.ConfigObj(
+            renewal_filename, encoding='utf-8', default_encoding='utf-8')
     except configobj.ConfigObjError:
         # config is corrupted
         logger.warning("Could not parse %s. You may wish to manually "
@@ -437,7 +438,8 @@ class RenewableCert(interfaces.RenewableCert):
         # systemwide renewal configuration; self.configfile should be
         # used to make and save changes.
         try:
-            self.configfile = configobj.ConfigObj(config_filename)
+            self.configfile = configobj.ConfigObj(
+                config_filename, encoding='utf-8', default_encoding='utf-8')
         except configobj.ConfigObjError:
             raise errors.CertStorageError(
                 "error parsing {0}".format(config_filename))
@@ -522,11 +524,15 @@ class RenewableCert(interfaces.RenewableCert):
         return _relpath_from_file(self.archive_dir, from_file)
 
     @property
-    def is_test_cert(self):
+    def server(self) -> Optional[str]:
+        """Returns the ACME server associated with this certificate"""
+        return self.configuration["renewalparams"].get("server", None)
+
+    @property
+    def is_test_cert(self) -> bool:
         """Returns true if this is a test cert from a staging server."""
-        server = self.configuration["renewalparams"].get("server", None)
-        if server:
-            return util.is_staging(server)
+        if self.server:
+            return util.is_staging(self.server)
         return False
 
     def _check_symlinks(self):
