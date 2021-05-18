@@ -8,9 +8,9 @@ version = '1.16.0.dev0'
 install_requires = [
     'acme>=1.8.0',
     'certbot>=1.10.0',
-    'PyOpenSSL',
-    'pyparsing>=1.5.5',  # Python3 support
-    'setuptools',
+    'PyOpenSSL>=17.3.0',
+    'pyparsing>=2.2.0',
+    'setuptools>=39.0.1',
     'zope.interface',
 ]
 
