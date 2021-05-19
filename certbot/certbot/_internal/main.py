@@ -515,8 +515,8 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
     )
 
 
-def _csr_report_new_cert(config, cert_path, chain_path, fullchain_path):
-    # type: (interfaces.IConfig, Optional[str], Optional[str], Optional[str]) -> None
+def _csr_report_new_cert(config: interfaces.IConfig, cert_path: Optional[str],
+                         chain_path: Optional[str], fullchain_path: Optional[str]):
     """ --csr variant of _report_new_cert.
 
     Until --csr is overhauled (#8332) this is transitional function to report the creation
@@ -526,14 +526,11 @@ def _csr_report_new_cert(config, cert_path, chain_path, fullchain_path):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param cert_path: path to cert.pem
-    :type cert_path: str
+    :param str cert_path: path to cert.pem
 
-    :param chain_path: path to chain.pem
-    :type chain_path: str
+    :param str chain_path: path to chain.pem
 
-    :param fullchain_path: path to fullchain.pem
-    :type fullchain_path: str
+    :param str fullchain_path: path to fullchain.pem
 
     """
     if config.dry_run:

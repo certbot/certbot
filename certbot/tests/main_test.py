@@ -6,7 +6,6 @@ from importlib import reload as reload_module
 import io
 import itertools
 import json
-from operator import is_
 import shutil
 import sys
 import tempfile
