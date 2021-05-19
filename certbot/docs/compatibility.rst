@@ -9,7 +9,7 @@ application itself. This means that we will not change behavior in a backwards
 incompatible way except in a new major version of the project.
 
 .. note:: None of this applies to the behavior of Certbot distribution
-    mechanisms such as :ref:`certbot-auto <certbot-auto>` or OS packages whose
+    mechanisms such as :ref:`our snaps <snap-install>` or OS packages whose
     behavior may change at any time. Semantic versioning only applies to the
     common Certbot components that are installed by various distribution
     methods.
@@ -21,9 +21,9 @@ may change at any time. The second is that Certbot's behavior should only be
 considered stable with certain files but not all. Files with which users should
 expect Certbot to maintain its current behavior with are:
 
-* ``/etc/letsencrypt/live/<domain>/{cert,chain,fullchain,privkey}.pem`` where
-  ``<domain>`` is the name given to ``--cert-name``. If ``--cert-name`` is not
-  set by the user, it is the first domain given to ``--domains``.
+* ``/etc/letsencrypt/live/$domain/{cert,chain,fullchain,privkey}.pem``, where
+  ``$domain`` is the certificate name (see :ref:`where-certs`
+  for more details)
 * :ref:`CLI configuration files <config-file>`
 * Hook directories in ``/etc/letsencrypt/renewal-hooks``
 

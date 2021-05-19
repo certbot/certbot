@@ -64,10 +64,10 @@ Translates over to:
     "/files/etc/apache2/apache2.conf/bLoCk[1]",
 ]
 """
-from acme.magic_typing import Set
+from typing import Set
+
 from certbot import errors
 from certbot.compat import os
-
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
@@ -80,7 +80,7 @@ class AugeasParserNode(interfaces.ParserNode):
 
     def __init__(self, **kwargs):
         ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
-        super(AugeasParserNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.ancestor = ancestor
         self.filepath = filepath
         self.dirty = dirty
@@ -169,7 +169,7 @@ class AugeasCommentNode(AugeasParserNode):
 
     def __init__(self, **kwargs):
         comment, kwargs = util.commentnode_kwargs(kwargs)  # pylint: disable=unused-variable
-        super(AugeasCommentNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         # self.comment = comment
         self.comment = comment
 
@@ -188,7 +188,7 @@ class AugeasDirectiveNode(AugeasParserNode):
 
     def __init__(self, **kwargs):
         name, parameters, enabled, kwargs = util.directivenode_kwargs(kwargs)
-        super(AugeasDirectiveNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.name = name
         self.enabled = enabled
         if parameters:
@@ -245,7 +245,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
     """ Augeas implementation of BlockNode interface """
 
     def __init__(self, **kwargs):
-        super(AugeasBlockNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.children = ()
 
     def __eq__(self, other):
@@ -355,7 +355,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         ownpath = self.metadata.get("augeaspath")
 
         directives = self.parser.find_dir(name, start=ownpath, exclude=exclude)
-        already_parsed = set()  # type: Set[str]
+        already_parsed: Set[str] = set()
         for directive in directives:
             # Remove the /arg part from the Augeas path
             directive = directive.partition("/arg")[0]

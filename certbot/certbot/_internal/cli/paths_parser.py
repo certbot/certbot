@@ -1,11 +1,8 @@
 """This is a module that adds configuration to the argument parser regarding
 paths for certificates"""
+from certbot._internal.cli.cli_utils import config_help
+from certbot._internal.cli.cli_utils import flag_default
 from certbot.compat import os
-from certbot._internal.cli import (
-    read_file,
-    flag_default,
-    config_help
-)
 
 
 def _paths_parser(helpful):
@@ -14,22 +11,19 @@ def _paths_parser(helpful):
     if verb == "help":
         verb = helpful.help_arg
 
-    cph = "Path to where certificate is saved (with auth --csr), installed from, or revoked."
-    sections = ["paths", "install", "revoke", "certonly", "manage"]
+    cpkwargs = {
+        "type": os.path.abspath,
+        "help": "Path to where certificate is saved (with certonly --csr), installed "
+                "from, or revoked"
+    }
     if verb == "certonly":
-        add(sections, "--cert-path", type=os.path.abspath,
-            default=flag_default("auth_cert_path"), help=cph)
-    elif verb == "revoke":
-        add(sections, "--cert-path", type=read_file, required=False, help=cph)
-    else:
-        add(sections, "--cert-path", type=os.path.abspath, help=cph)
+        cpkwargs["default"] = flag_default("auth_cert_path")
+    add(["paths", "install", "revoke", "certonly", "manage"], "--cert-path", **cpkwargs)
 
     section = "paths"
     if verb in ("install", "revoke"):
         section = verb
-    # revoke --key-path reads a file, install --key-path takes a string
-    add(section, "--key-path",
-        type=((verb == "revoke" and read_file) or os.path.abspath),
+    add(section, "--key-path", type=os.path.abspath,
         help="Path to private key for certificate installation "
              "or revocation (if account key is missing)")
 

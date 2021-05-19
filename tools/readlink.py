@@ -6,8 +6,6 @@ useful as there are often differences in readlink on different
 platforms.
 
 """
-from __future__ import print_function
-
 import os
 import sys
 

@@ -20,7 +20,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
     _multiprocess_can_split_ = True
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(MultipleVhostsTestDebian, self).setUp()
+        super().setUp()
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
             os_info="debian")

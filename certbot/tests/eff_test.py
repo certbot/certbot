@@ -22,7 +22,7 @@ _KEY = josepy.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 class SubscriptionTest(test_util.ConfigTestCase):
     """Abstract class for subscription tests."""
     def setUp(self):
-        super(SubscriptionTest, self).setUp()
+        super().setUp()
         self.account = account.Account(
             regr=messages.RegistrationResource(
                 uri=None, body=messages.Registration(),
@@ -43,13 +43,14 @@ class PrepareSubscriptionTest(SubscriptionTest):
         prepare_subscription(self.config, self.account)
 
     @test_util.patch_get_utility()
-    def test_failure(self, mock_get_utility):
+    @mock.patch("certbot._internal.eff.display_util.notify")
+    def test_failure(self, mock_notify, mock_get_utility):
         self.config.email = None
         self.config.eff_email = True
         self._call()
-        actual = mock_get_utility().add_message.call_args[0][0]
+        actual = mock_notify.call_args[0][0]
         expected_part = "because you didn't provide an e-mail address"
-        self.assertTrue(expected_part in actual)
+        self.assertIn(expected_part, actual)
         self.assertIsNone(self.account.meta.register_to_eff)
 
     @test_util.patch_get_utility()
@@ -91,7 +92,7 @@ class PrepareSubscriptionTest(SubscriptionTest):
         call_args, call_kwargs = mock_get_utility().yesno.call_args
         actual = call_args[0]
         expected_part = 'Electronic Frontier Foundation'
-        self.assertTrue(expected_part in actual)
+        self.assertIn(expected_part, actual)
         self.assertFalse(call_kwargs.get('default', True))
 
 
@@ -104,7 +105,7 @@ class HandleSubscriptionTest(SubscriptionTest):
     @mock.patch('certbot._internal.eff.subscribe')
     def test_no_subscribe(self, mock_subscribe):
         self._call()
-        self.assertFalse(mock_subscribe.called)
+        self.assertIs(mock_subscribe.called, False)
 
     @mock.patch('certbot._internal.eff.subscribe')
     def test_subscribe(self, mock_subscribe):
@@ -121,6 +122,9 @@ class SubscribeTest(unittest.TestCase):
         self.json = {'status': True}
         self.response = mock.Mock(ok=True)
         self.response.json.return_value = self.json
+        patcher = mock.patch("certbot._internal.eff.display_util.notify")
+        self.mock_notify = patcher.start()
+        self.addCleanup(patcher.stop)
 
     @mock.patch('certbot._internal.eff.requests.post')
     def _call(self, mock_post):
@@ -136,50 +140,46 @@ class SubscribeTest(unittest.TestCase):
         self.assertEqual(call_args[0], constants.EFF_SUBSCRIBE_URI)
 
         data = call_kwargs.get('data')
-        self.assertFalse(data is None)
+        self.assertIsNotNone(data)
         self.assertEqual(data.get('email'), self.email)
 
-    @test_util.patch_get_utility()
-    def test_bad_status(self, mock_get_utility):
+    def test_bad_status(self):
         self.json['status'] = False
         self._call()
-        actual = self._get_reported_message(mock_get_utility)
+        actual = self._get_reported_message()
         expected_part = 'because your e-mail address appears to be invalid.'
-        self.assertTrue(expected_part in actual)
+        self.assertIn(expected_part, actual)
 
-    @test_util.patch_get_utility()
-    def test_not_ok(self, mock_get_utility):
+    def test_not_ok(self):
         self.response.ok = False
         self.response.raise_for_status.side_effect = requests.exceptions.HTTPError
         self._call()
-        actual = self._get_reported_message(mock_get_utility)
+        actual = self._get_reported_message()
         unexpected_part = 'because'
-        self.assertFalse(unexpected_part in actual)
+        self.assertNotIn(unexpected_part, actual)
 
-    @test_util.patch_get_utility()
-    def test_response_not_json(self, mock_get_utility):
+    def test_response_not_json(self):
         self.response.json.side_effect = ValueError()
         self._call()
-        actual = self._get_reported_message(mock_get_utility)
+        actual = self._get_reported_message()
         expected_part = 'problem'
-        self.assertTrue(expected_part in actual)
+        self.assertIn(expected_part, actual)
 
-    @test_util.patch_get_utility()
-    def test_response_json_missing_status_element(self, mock_get_utility):
+    def test_response_json_missing_status_element(self):
         self.json.clear()
         self._call()
-        actual = self._get_reported_message(mock_get_utility)
+        actual = self._get_reported_message()
         expected_part = 'problem'
-        self.assertTrue(expected_part in actual)
+        self.assertIn(expected_part, actual)
 
-    def _get_reported_message(self, mock_get_utility):
-        self.assertTrue(mock_get_utility().add_message.called)
-        return mock_get_utility().add_message.call_args[0][0]
+    def _get_reported_message(self):
+        self.assertTrue(self.mock_notify.called)
+        return self.mock_notify.call_args[0][0]
 
     @test_util.patch_get_utility()
     def test_subscribe(self, mock_get_utility):
         self._call()
-        self.assertFalse(mock_get_utility.called)
+        self.assertIs(mock_get_utility.called, False)
 
 
 if __name__ == '__main__':

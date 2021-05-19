@@ -44,7 +44,7 @@ class LockFileTest(test_util.TempDirTestCase):
         return LockFile(*args, **kwargs)
 
     def setUp(self):
-        super(LockFileTest, self).setUp()
+        super().setUp()
         self.lock_path = os.path.join(self.tempdir, 'test.lock')
 
     def test_acquire_without_deletion(self):
@@ -69,7 +69,7 @@ class LockFileTest(test_util.TempDirTestCase):
         try:
             locked_repr = repr(lock_file)
             self._test_repr_common(lock_file, locked_repr)
-            self.assertTrue('acquired' in locked_repr)
+            self.assertIn('acquired', locked_repr)
         finally:
             lock_file.release()
 
@@ -78,11 +78,11 @@ class LockFileTest(test_util.TempDirTestCase):
         lock_file.release()
         released_repr = repr(lock_file)
         self._test_repr_common(lock_file, released_repr)
-        self.assertTrue('released' in released_repr)
+        self.assertIn('released', released_repr)
 
     def _test_repr_common(self, lock_file, lock_repr):
-        self.assertTrue(lock_file.__class__.__name__ in lock_repr)
-        self.assertTrue(self.lock_path in lock_repr)
+        self.assertIn(lock_file.__class__.__name__, lock_repr)
+        self.assertIn(self.lock_path, lock_repr)
 
     @test_util.skip_on_windows(
         'Race conditions on lock are specific to the non-blocking file access approach on Linux.')
@@ -102,7 +102,7 @@ class LockFileTest(test_util.TempDirTestCase):
         with mock.patch('certbot._internal.lock.filesystem.os.stat') as mock_stat:
             mock_stat.side_effect = delete_and_stat
             self._call(self.lock_path)
-        self.assertFalse(should_delete)
+        self.assertEqual(len(should_delete), 0)
 
     def test_removed(self):
         lock_file = self._call(self.lock_path)
@@ -120,7 +120,7 @@ class LockFileTest(test_util.TempDirTestCase):
             try:
                 self._call(self.lock_path)
             except IOError as err:
-                self.assertTrue(msg in str(err))
+                self.assertIn(msg, str(err))
             else:  # pragma: no cover
                 self.fail('IOError not raised')
 
@@ -136,7 +136,7 @@ class LockFileTest(test_util.TempDirTestCase):
             try:
                 self._call(self.lock_path)
             except OSError as err:
-                self.assertTrue(msg in str(err))
+                self.assertIn(msg, str(err))
             else:  # pragma: no cover
                 self.fail('OSError not raised')
 

@@ -14,15 +14,9 @@ WORKDIR /opt/certbot
 
 # Copy certbot code
 COPY CHANGELOG.md README.rst src/
-COPY letsencrypt-auto-source/pieces/dependency-requirements.txt .
-COPY letsencrypt-auto-source/pieces/pipstrap.py .
 COPY tools tools
 COPY acme src/acme
 COPY certbot src/certbot
-
-# Generate constraints file to pin dependency versions
-RUN cat dependency-requirements.txt | tools/strip_hashes.py > unhashed_requirements.txt \
- && cat tools/dev_constraints.txt unhashed_requirements.txt | tools/merge_requirements.py > docker_constraints.txt
 
 # Install certbot runtime dependencies
 RUN apk add --no-cache --virtual .certbot-deps \
@@ -39,9 +33,11 @@ RUN apk add --no-cache --virtual .build-deps \
         openssl-dev \
         musl-dev \
         libffi-dev \
-    && python pipstrap.py \
-    && pip install -r dependency-requirements.txt \
-    && pip install --no-cache-dir --no-deps \
-        --editable src/acme \
-        --editable src/certbot \
-&& apk del .build-deps
+        python3-dev \
+        cargo \
+    && python tools/pipstrap.py \
+    && python tools/pip_install.py --no-cache-dir \
+            --editable src/acme \
+            --editable src/certbot \
+    && apk del .build-deps \
+    && rm -rf ${HOME}/.cargo

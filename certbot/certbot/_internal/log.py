@@ -11,8 +11,15 @@ configured by the user. Any logged messages before
 Special care is taken by both methods to ensure all errors are logged
 and properly flushed before program exit.
 
+The `logging` module is useful for recording messages about about what
+Certbot is doing under the hood, but do not necessarily need to be shown
+to the user on the terminal. The default verbosity is INFO.
+
+The preferred method to display important information to the user is to
+use `certbot.display.util` and `certbot.display.ops`.
+
 """
-from __future__ import print_function
+
 
 import functools
 import logging
@@ -102,11 +109,12 @@ def post_arg_parse_setup(config):
 
     root_logger.addHandler(file_handler)
     root_logger.removeHandler(memory_handler)
-    temp_handler = memory_handler.target  # pylint: disable=no-member
+    temp_handler = getattr(memory_handler, 'target', None)
     memory_handler.setTarget(file_handler)  # pylint: disable=no-member
     memory_handler.flush(force=True)  # pylint: disable=unexpected-keyword-arg
     memory_handler.close()
-    temp_handler.close()
+    if temp_handler:
+        temp_handler.close()
 
     if config.quiet:
         level = constants.QUIET_LOGGING_LEVEL
@@ -163,7 +171,7 @@ class ColoredStreamHandler(logging.StreamHandler):
 
     """
     def __init__(self, stream=None):
-        super(ColoredStreamHandler, self).__init__(stream)
+        super().__init__(stream)
         self.colored = (sys.stderr.isatty() if stream is None else
                         stream.isatty())
         self.red_level = logging.WARNING
@@ -177,7 +185,7 @@ class ColoredStreamHandler(logging.StreamHandler):
         :rtype: str
 
         """
-        out = super(ColoredStreamHandler, self).format(record)
+        out = super().format(record)
         if self.colored and record.levelno >= self.red_level:
             return ''.join((util.ANSI_SGR_RED, out, util.ANSI_SGR_RESET))
         return out
@@ -192,14 +200,14 @@ class MemoryHandler(logging.handlers.MemoryHandler):
     """
     def __init__(self, target=None, capacity=10000):
         # capacity doesn't matter because should_flush() is overridden
-        super(MemoryHandler, self).__init__(capacity, target=target)
+        super().__init__(capacity, target=target)
 
     def close(self):
         """Close the memory handler, but don't set the target to None."""
         # This allows the logging module which may only have a weak
         # reference to the target handler to properly flush and close it.
-        target = self.target
-        super(MemoryHandler, self).close()
+        target = getattr(self, 'target')
+        super().close()
         self.target = target
 
     def flush(self, force=False):  # pylint: disable=arguments-differ
@@ -213,7 +221,7 @@ class MemoryHandler(logging.handlers.MemoryHandler):
         # This method allows flush() calls in logging.shutdown to be a
         # noop so we can control when this handler is flushed.
         if force:
-            super(MemoryHandler, self).flush()
+            super().flush()
 
     def shouldFlush(self, record):
         """Should the buffer be automatically flushed?
@@ -241,7 +249,7 @@ class TempHandler(logging.StreamHandler):
         self._workdir = tempfile.mkdtemp()
         self.path = os.path.join(self._workdir, 'log')
         stream = util.safe_open(self.path, mode='w', chmod=0o600)
-        super(TempHandler, self).__init__(stream)
+        super().__init__(stream)
         self._delete = True
 
     def emit(self, record):
@@ -251,7 +259,7 @@ class TempHandler(logging.StreamHandler):
 
         """
         self._delete = False
-        super(TempHandler, self).emit(record)
+        super().emit(record)
 
     def close(self):
         """Close the handler and the temporary log file.
@@ -267,7 +275,7 @@ class TempHandler(logging.StreamHandler):
             if self._delete:
                 shutil.rmtree(self._workdir)
             self._delete = False
-            super(TempHandler, self).close()
+            super().close()
         finally:
             self.release()
 

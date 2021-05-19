@@ -5,8 +5,6 @@
 # set to 1, packages are installed using pinned versions of all of our
 # dependencies. See pip_install.py for more information on the versions pinned
 # to.
-from __future__ import print_function
-
 import os
 import re
 import subprocess

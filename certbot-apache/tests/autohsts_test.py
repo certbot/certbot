@@ -7,7 +7,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
-import six  # pylint: disable=unused-import  # six is used in mock.patch()
 
 from certbot import errors
 from certbot_apache._internal import constants
@@ -19,7 +18,7 @@ class AutoHSTSTest(util.ApacheTest):
     # pylint: disable=protected-access
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(AutoHSTSTest, self).setUp()
+        super().setUp()
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)

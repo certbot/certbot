@@ -28,7 +28,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
     def setUp(self):
         from certbot_dns_rfc2136._internal.dns_rfc2136 import Authenticator
 
-        super(AuthenticatorTest, self).setUp()
+        super().setUp()
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write(VALID_CONFIG, path)
@@ -154,7 +154,7 @@ class RFC2136ClientTest(unittest.TestCase):
         # _find_domain | pylint: disable=protected-access
         domain = self.rfc2136_client._find_domain('foo.bar.'+DOMAIN)
 
-        self.assertTrue(domain == DOMAIN)
+        self.assertEqual(domain, DOMAIN)
 
     def test_find_domain_wraps_errors(self):
         # _query_soa | pylint: disable=protected-access

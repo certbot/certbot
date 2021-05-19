@@ -4,10 +4,16 @@ import collections
 import datetime
 from email.utils import parsedate_tz
 import heapq
+import http.client as http_client
 import logging
 import re
-import sys
 import time
+from typing import cast
+from typing import Dict
+from typing import List
+from typing import Set
+from typing import Text
+from typing import Union
 
 import josepy as jose
 import OpenSSL
@@ -15,38 +21,21 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
 from requests_toolbelt.adapters.source import SourceAddressAdapter
-import six
-from six.moves import http_client
 
 from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-from acme.magic_typing import Dict
-from acme.magic_typing import List
-from acme.magic_typing import Set
-from acme.magic_typing import Text
 from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
-
-# Prior to Python 2.7.9 the stdlib SSL module did not allow a user to configure
-# many important security related options. On these platforms we use PyOpenSSL
-# for SSL, which does allow these options to be configured.
-# https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
-if sys.version_info < (2, 7, 9):  # pragma: no cover
-    try:
-        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
-    except AttributeError:
-        import urllib3.contrib.pyopenssl
-        urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 DEFAULT_NETWORK_TIMEOUT = 60
 
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
 
-class ClientBase(object):
+class ClientBase:
     """ACME client base object.
 
     :ivar messages.Directory directory:
@@ -125,8 +114,9 @@ class ClientBase(object):
         """
         return self.update_registration(regr, update={'status': 'deactivated'})
 
-    def deactivate_authorization(self, authzr):
-        # type: (messages.AuthorizationResource) -> messages.AuthorizationResource
+    def deactivate_authorization(self,
+                                 authzr: messages.AuthorizationResource
+                                 ) -> messages.AuthorizationResource:
         """Deactivate authorization.
 
         :param messages.AuthorizationResource authzr: The Authorization resource
@@ -202,7 +192,7 @@ class ClientBase(object):
             when = parsedate_tz(retry_after)
             if when is not None:
                 try:
-                    tz_secs = datetime.timedelta(when[-1] if when[-1] else 0)
+                    tz_secs = datetime.timedelta(when[-1] if when[-1] is not None else 0)
                     return datetime.datetime(*when[:7]) - tz_secs
                 except (ValueError, OverflowError):
                     pass
@@ -261,10 +251,10 @@ class Client(ClientBase):
         if net is None:
             net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl)
 
-        if isinstance(directory, six.string_types):
+        if isinstance(directory, str):
             directory = messages.Directory.from_json(
                 net.get(directory).json())
-        super(Client, self).__init__(directory=directory,
+        super().__init__(directory=directory,
             net=net, acme_version=1)
 
     def register(self, new_reg=None):
@@ -437,7 +427,7 @@ class Client(ClientBase):
 
         """
         assert max_attempts > 0
-        attempts = collections.defaultdict(int) # type: Dict[messages.AuthorizationResource, int]
+        attempts: Dict[messages.AuthorizationResource, int] = collections.defaultdict(int)
         exhausted = set()
 
         # priority queue with datetime.datetime (based on Retry-After) as key,
@@ -476,7 +466,7 @@ class Client(ClientBase):
                     exhausted.add(authzr)
 
         if exhausted or any(authzr.body.status == messages.STATUS_INVALID
-                            for authzr in six.itervalues(updated)):
+                            for authzr in updated.values()):
             raise errors.PollError(exhausted, updated)
 
         updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
@@ -550,7 +540,7 @@ class Client(ClientBase):
         :rtype: `list` of `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
 
         """
-        chain = [] # type: List[jose.ComparableX509]
+        chain: List[jose.ComparableX509] = []
         uri = certr.cert_chain_uri
         while uri is not None and len(chain) < max_length:
             response, cert = self._get_cert(uri)
@@ -588,7 +578,7 @@ class ClientV2(ClientBase):
         :param .messages.Directory directory: Directory Resource
         :param .ClientNetwork net: Client network.
         """
-        super(ClientV2, self).__init__(directory=directory,
+        super().__init__(directory=directory,
             net=net, acme_version=2)
 
     def new_account(self, new_account):
@@ -638,7 +628,7 @@ class ClientV2(ClientBase):
         """
         # https://github.com/certbot/certbot/issues/6155
         new_regr = self._get_v2_account(regr)
-        return super(ClientV2, self).update_registration(new_regr, update)
+        return super().update_registration(new_regr, update)
 
     def _get_v2_account(self, regr):
         self.net.account = None
@@ -812,7 +802,7 @@ class ClientV2(ClientBase):
                 if 'rel' in l and 'url' in l and l['rel'] == relation_type]
 
 
-class BackwardsCompatibleClientV2(object):
+class BackwardsCompatibleClientV2:
     """ACME client wrapper that tends towards V2-style calls, but
     supports V1 servers.
 
@@ -834,6 +824,7 @@ class BackwardsCompatibleClientV2(object):
     def __init__(self, net, key, server):
         directory = messages.Directory.from_json(net.get(server).json())
         self.acme_version = self._acme_version_from_directory(directory)
+        self.client: Union[Client, ClientV2]
         if self.acme_version == 1:
             self.client = Client(directory, key=key, net=net)
         else:
@@ -853,16 +844,18 @@ class BackwardsCompatibleClientV2(object):
             if check_tos_cb is not None:
                 check_tos_cb(tos)
         if self.acme_version == 1:
-            regr = self.client.register(regr)
+            client_v1 = cast(Client, self.client)
+            regr = client_v1.register(regr)
             if regr.terms_of_service is not None:
                 _assess_tos(regr.terms_of_service)
-                return self.client.agree_to_tos(regr)
+                return client_v1.agree_to_tos(regr)
             return regr
         else:
-            if "terms_of_service" in self.client.directory.meta:
-                _assess_tos(self.client.directory.meta.terms_of_service)
+            client_v2 = cast(ClientV2, self.client)
+            if "terms_of_service" in client_v2.directory.meta:
+                _assess_tos(client_v2.directory.meta.terms_of_service)
                 regr = regr.update(terms_of_service_agreed=True)
-            return self.client.new_account(regr)
+            return client_v2.new_account(regr)
 
     def new_order(self, csr_pem):
         """Request a new Order object from the server.
@@ -880,14 +873,15 @@ class BackwardsCompatibleClientV2(object):
 
         """
         if self.acme_version == 1:
+            client_v1 = cast(Client, self.client)
             csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
             # pylint: disable=protected-access
             dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
             authorizations = []
             for domain in dnsNames:
-                authorizations.append(self.client.request_domain_challenges(domain))
+                authorizations.append(client_v1.request_domain_challenges(domain))
             return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem)
-        return self.client.new_order(csr_pem)
+        return cast(ClientV2, self.client).new_order(csr_pem)
 
     def finalize_order(self, orderr, deadline, fetch_alternative_chains=False):
         """Finalize an order and obtain a certificate.
@@ -902,8 +896,9 @@ class BackwardsCompatibleClientV2(object):
 
         """
         if self.acme_version == 1:
+            client_v1 = cast(Client, self.client)
             csr_pem = orderr.csr_pem
-            certr = self.client.request_issuance(
+            certr = client_v1.request_issuance(
                 jose.ComparableX509(
                     OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)),
                     orderr.authorizations)
@@ -911,7 +906,7 @@ class BackwardsCompatibleClientV2(object):
             chain = None
             while datetime.datetime.now() < deadline:
                 try:
-                    chain = self.client.fetch_chain(certr)
+                    chain = client_v1.fetch_chain(certr)
                     break
                 except errors.Error:
                     time.sleep(1)
@@ -926,7 +921,8 @@ class BackwardsCompatibleClientV2(object):
             chain = crypto_util.dump_pyopenssl_chain(chain).decode()
 
             return orderr.update(fullchain_pem=(cert + chain))
-        return self.client.finalize_order(orderr, deadline, fetch_alternative_chains)
+        return cast(ClientV2, self.client).finalize_order(
+            orderr, deadline, fetch_alternative_chains)
 
     def revoke(self, cert, rsn):
         """Revoke certificate.
@@ -952,10 +948,10 @@ class BackwardsCompatibleClientV2(object):
         Always return False for ACMEv1 servers, as it doesn't use External Account Binding."""
         if self.acme_version == 1:
             return False
-        return self.client.external_account_required()
+        return cast(ClientV2, self.client).external_account_required()
 
 
-class ClientNetwork(object):
+class ClientNetwork:
     """Wrapper around requests that signs POSTs for authentication.
 
     Also adds user agent, and handles Content-Type.
@@ -985,7 +981,7 @@ class ClientNetwork(object):
         self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
-        self._nonces = set() # type: Set[Text]
+        self._nonces: Set[Text] = set()
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout
@@ -1145,6 +1141,7 @@ class ClientNetwork(object):
 
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
+        debug_content: Union[bytes, str]
         if response.headers.get("Content-Type") == DER_CONTENT_TYPE:
             debug_content = base64.b64encode(response.content)
         else:

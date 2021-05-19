@@ -1,6 +1,7 @@
 Authors
 =======
 
+* [Aaron Gable](https://github.com/aarongable)
 * [Aaron Zirbes](https://github.com/aaronzirbes)
 * Aaron Zuehlke
 * Ada Lovelace
@@ -60,6 +61,7 @@ Authors
 * [DanCld](https://github.com/DanCld)
 * [Daniel Albers](https://github.com/AID)
 * [Daniel Aleksandersen](https://github.com/da2x)
+* [Daniel Almasi](https://github.com/almasen)
 * [Daniel Convissor](https://github.com/convissor)
 * [Daniel "Drex" Drexler](https://github.com/aeturnum)
 * [Daniel Huang](https://github.com/dhuang)
@@ -149,11 +151,13 @@ Authors
 * [Lior Sabag](https://github.com/liorsbg)
 * [Lipis](https://github.com/lipis)
 * [lord63](https://github.com/lord63)
+* [Lorenzo Fundaró](https://github.com/lfundaro)
 * [Luca Beltrame](https://github.com/lbeltrame)
 * [Luca Ebach](https://github.com/lucebac)
 * [Luca Olivetti](https://github.com/olivluca)
 * [Luke Rogers](https://github.com/lukeroge)
 * [Maarten](https://github.com/mrtndwrd)
+* [Mads Jensen](https://github.com/atombrella)
 * [Maikel Martens](https://github.com/krukas)
 * [Malte Janduda](https://github.com/MalteJ)
 * [Mantas Mikulėnas](https://github.com/grawity)
@@ -213,6 +217,7 @@ Authors
 * [Richard Barnes](https://github.com/r-barnes)
 * [Richard Panek](https://github.com/kernelpanek)
 * [Robert Buchholz](https://github.com/rbu)
+* [Robert Dailey](https://github.com/pahrohfit)
 * [Robert Habermann](https://github.com/frennkie)
 * [Robert Xiao](https://github.com/nneonneo)
 * [Roland Shoemaker](https://github.com/rolandshoemaker)

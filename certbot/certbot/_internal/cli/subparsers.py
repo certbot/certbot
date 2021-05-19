@@ -1,14 +1,11 @@
 """This module creates subparsers for the argument parser"""
 from certbot import interfaces
 from certbot._internal import constants
-
-from certbot._internal.cli import (
-    flag_default,
-    read_file,
-    CaseInsensitiveList,
-    _user_agent_comment_type,
-    _EncodeReasonAction
-)
+from certbot._internal.cli.cli_utils import _EncodeReasonAction
+from certbot._internal.cli.cli_utils import _user_agent_comment_type
+from certbot._internal.cli.cli_utils import CaseInsensitiveList
+from certbot._internal.cli.cli_utils import flag_default
+from certbot._internal.cli.cli_utils import read_file
 
 
 def _create_subparsers(helpful):
@@ -35,8 +32,7 @@ def _create_subparsers(helpful):
                 " Currently --csr only works with the 'certonly' subcommand.")
     helpful.add("revoke",
                 "--reason", dest="reason",
-                choices=CaseInsensitiveList(sorted(constants.REVOCATION_REASONS,
-                                                   key=constants.REVOCATION_REASONS.get)),
+                choices=CaseInsensitiveList(constants.REVOCATION_REASONS.keys()),
                 action=_EncodeReasonAction, default=flag_default("reason"),
                 help="Specify reason for revoking certificate. (default: unspecified)")
     helpful.add("revoke",

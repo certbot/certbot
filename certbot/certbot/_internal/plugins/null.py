@@ -1,7 +1,6 @@
 """Null plugin."""
 import logging
 
-import zope.component
 import zope.interface
 
 from certbot import interfaces

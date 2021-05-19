@@ -2,6 +2,7 @@
 import datetime
 import logging
 import platform
+from typing import Optional
 
 from cryptography.hazmat.backends import default_backend
 # See https://github.com/pyca/cryptography/issues/4275
@@ -14,8 +15,6 @@ from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import List
-from acme.magic_typing import Optional
 import certbot
 from certbot import crypto_util
 from certbot import errors
@@ -59,7 +58,7 @@ def determine_user_agent(config):
         ua = ("CertbotACMEClient/{0} ({1}; {2}{8}) Authenticator/{3} Installer/{4} "
               "({5}; flags: {6}) Py/{7}")
         if os.environ.get("CERTBOT_DOCS") == "1":
-            cli_command = "certbot(-auto)"
+            cli_command = "certbot"
             os_info = "OS_NAME OS_VERSION"
             python_version = "major.minor.patchlevel"
         else:
@@ -93,7 +92,7 @@ def ua_flags(config):
         flags.append("hook")
     return " ".join(flags)
 
-class DummyConfig(object):
+class DummyConfig:
     "Shim for computing a sample user agent."
     def __init__(self):
         self.authenticator = "XXX"
@@ -227,7 +226,7 @@ def perform_registration(acme, config, tos_cb):
         raise
 
 
-class Client(object):
+class Client:
     """Certbot's client.
 
     :ivar .IConfig config: Client configuration.
@@ -255,6 +254,7 @@ class Client(object):
             acme = acme_from_config_key(config, self.account.key, self.account.regr)
         self.acme = acme
 
+        self.auth_handler: Optional[auth_handler.AuthHandler]
         if auth is not None:
             self.auth_handler = auth_handler.AuthHandler(
                 auth, self.acme, self.account, self.config.pref_challs)
@@ -312,7 +312,6 @@ class Client(object):
         :rtype: tuple
 
         """
-
         # We need to determine the key path, key PEM data, CSR path,
         # and CSR PEM data.  For a dry run, the paths are None because
         # they aren't permanently saved to disk.  For a lineage with
@@ -329,22 +328,47 @@ class Client(object):
             with open(old_keypath, "rb") as f:
                 keypath = old_keypath
                 keypem = f.read()
-            key = util.Key(file=keypath, pem=keypem) # type: Optional[util.Key]
+            key: Optional[util.Key] = util.Key(file=keypath, pem=keypem)
             logger.info("Reusing existing private key from %s.", old_keypath)
         else:
             # The key is set to None here but will be created below.
             key = None
 
+        key_size = self.config.rsa_key_size
+        elliptic_curve = None
+
+        # key-type defaults to a list, but we are only handling 1 currently
+        if isinstance(self.config.key_type, list):
+            self.config.key_type = self.config.key_type[0]
+        if self.config.elliptic_curve and self.config.key_type == 'ecdsa':
+            elliptic_curve = self.config.elliptic_curve
+            self.config.auth_chain_path = "./chain-ecdsa.pem"
+            self.config.auth_cert_path = "./cert-ecdsa.pem"
+            self.config.key_path = "./key-ecdsa.pem"
+        elif self.config.rsa_key_size and self.config.key_type.lower() == 'rsa':
+            key_size = self.config.rsa_key_size
+
         # Create CSR from names
         if self.config.dry_run:
-            key = key or util.Key(file=None,
-                                  pem=crypto_util.make_key(self.config.rsa_key_size))
+            key = key or util.Key(
+                file=None,
+                pem=crypto_util.make_key(
+                    bits=key_size,
+                    elliptic_curve=elliptic_curve,
+                    key_type=self.config.key_type,
+
+                ),
+            )
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            key = key or crypto_util.init_save_key(self.config.rsa_key_size,
-                                                   self.config.key_dir)
+            key = key or crypto_util.init_save_key(
+                key_size=key_size,
+                key_dir=self.config.key_dir,
+                key_type=self.config.key_type,
+                elliptic_curve=elliptic_curve,
+            )
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
@@ -366,8 +390,8 @@ class Client(object):
             cert, chain = self.obtain_certificate_from_csr(csr, orderr)
             return cert, chain, key, csr
 
-    def _get_order_and_authorizations(self, csr_pem, best_effort):
-        # type: (str, bool) -> List[messages.OrderResource]
+    def _get_order_and_authorizations(self, csr_pem: str,
+                                      best_effort: bool) -> messages.OrderResource:
         """Request a new order and complete its authorizations.
 
         :param str csr_pem: A CSR in PEM format.
@@ -383,6 +407,9 @@ class Client(object):
         except acme_errors.WildcardUnsupportedError:
             raise errors.Error("The currently selected ACME CA endpoint does"
                                " not support issuing wildcard certificates.")
+
+        if not self.auth_handler:
+            raise errors.Error("No authorization handler has been set.")
 
         # For a dry run, ensure we have an order with fresh authorizations
         if orderr and self.config.dry_run:

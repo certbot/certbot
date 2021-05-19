@@ -46,9 +46,9 @@ class FedoraRestartTest(util.ApacheTest):
         test_dir = "centos7_apache/apache"
         config_root = "centos7_apache/apache/httpd"
         vhost_root = "centos7_apache/apache/httpd/conf.d"
-        super(FedoraRestartTest, self).setUp(test_dir=test_dir,
-                                             config_root=config_root,
-                                             vhost_root=vhost_root)
+        super().setUp(test_dir=test_dir,
+                      config_root=config_root,
+                      vhost_root=vhost_root)
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
             os_info="fedora")
@@ -90,9 +90,9 @@ class MultipleVhostsTestFedora(util.ApacheTest):
         test_dir = "centos7_apache/apache"
         config_root = "centos7_apache/apache/httpd"
         vhost_root = "centos7_apache/apache/httpd/conf.d"
-        super(MultipleVhostsTestFedora, self).setUp(test_dir=test_dir,
-                                                    config_root=config_root,
-                                                    vhost_root=vhost_root)
+        super().setUp(test_dir=test_dir,
+                      config_root=config_root,
+                      vhost_root=vhost_root)
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
