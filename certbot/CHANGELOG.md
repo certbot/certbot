@@ -16,7 +16,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   before installing the new ones to avoid version conflicts.
 * This release contains a substantial command-line UX overhaul,
   based on previous user research. The main goal was to streamline
-  and clarify output. If you would like to see more information, use
+  and clarify output. If you would like to see more verbose output, use
   the -v or -vv flags. UX improvements are an iterative process and
   the Certbot team welcomes constructive feedback.
 
