@@ -538,7 +538,7 @@ class Client:
 
         msg = f"Failed to install the certificate (installer: {self.config.installer})."
         if cert_name:
-            msg += (" Try again by running:\n\n"
+            msg += (" Try again after fixing errors by running:\n\n"
                     f"  {cli.cli_constants.cli_command} install --cert-name {cert_name}\n")
 
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):

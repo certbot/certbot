@@ -552,7 +552,7 @@ class ClientTest(ClientTestCommon):
         mock_notify.assert_any_call('Deploying certificate')
         mock_notify.assert_any_call(
             'Failed to install the certificate (installer: foobar). '
-            'Try again by running:\n\n  certbot install --cert-name foo.bar\n'
+            'Try again after fixing errors by running:\n\n  certbot install --cert-name foo.bar\n'
         )
 
     @mock.patch('certbot._internal.client.display_util.notify')
