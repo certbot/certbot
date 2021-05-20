@@ -1,5 +1,6 @@
 """Tests for certbot._internal.plugins.manual"""
 import sys
+import textwrap
 import unittest
 
 try:
@@ -20,6 +21,10 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
     def setUp(self):
         super().setUp()
+        get_utility_patch = test_util.patch_get_utility()
+        self.mock_get_utility = get_utility_patch.start()
+        self.addCleanup(get_utility_patch.stop)
+
         self.http_achall = acme_util.HTTP01_A
         self.dns_achall = acme_util.DNS01_A
         self.dns_achall_2 = acme_util.DNS01_A_2
@@ -89,12 +94,19 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.auth.env[self.http_achall]['CERTBOT_AUTH_OUTPUT'],
             http_expected)
 
-    @test_util.patch_get_utility()
-    def test_manual_perform(self, mock_get_utility):
+        # Successful hook output should be sent to notify
+        self.assertEqual(self.mock_get_utility().notification.call_count, len(self.achalls))
+        for i, (args, _) in enumerate(self.mock_get_utility().notification.call_args_list):
+            needle = textwrap.indent(self.auth.env[self.achalls[i]]['CERTBOT_AUTH_OUTPUT'], ' ')
+            self.assertIn(needle, args[0])
+
+    def test_manual_perform(self):
         self.assertEqual(
             self.auth.perform(self.achalls),
             [achall.response(achall.account_key) for achall in self.achalls])
-        for i, (args, kwargs) in enumerate(mock_get_utility().notification.call_args_list):
+
+        self.assertEqual(self.mock_get_utility().notification.call_count, len(self.achalls))
+        for i, (args, kwargs) in enumerate(self.mock_get_utility().notification.call_args_list):
             achall = self.achalls[i]
             self.assertIn(achall.validation(achall.account_key), args[0])
             self.assertIs(kwargs['wrap'], False)

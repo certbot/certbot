@@ -46,3 +46,6 @@ class ExecuteTest(unittest.TestCase):
                                              mock.ANY, stdout)
         if stderr or returncode:
             self.assertIs(mock_logger.error.called, True)
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover
