@@ -64,7 +64,10 @@ extension-pkg-whitelist=pywintypes,win32api,win32file,win32security
 #    in the future. You can read more about exception chaining and this pylint
 #    check at
 #    https://blog.ram.rachum.com/post/621791438475296768/improving-python-exception-chaining-with.
-disable=fixme,locally-disabled,locally-enabled,bad-continuation,no-self-use,invalid-name,cyclic-import,duplicate-code,design,import-outside-toplevel,useless-object-inheritance,unsubscriptable-object,no-value-for-parameter,no-else-return,no-else-raise,no-else-break,no-else-continue,raise-missing-from
+# 5) wrong-import-order generates false positives and a pylint developer
+#    suggests that people using isort should disable this check at
+#    https://github.com/PyCQA/pylint/issues/3817#issuecomment-687892090.
+disable=fixme,locally-disabled,locally-enabled,bad-continuation,no-self-use,invalid-name,cyclic-import,duplicate-code,design,import-outside-toplevel,useless-object-inheritance,unsubscriptable-object,no-value-for-parameter,no-else-return,no-else-raise,no-else-break,no-else-continue,raise-missing-from,wrong-import-order
 
 [REPORTS]
 
