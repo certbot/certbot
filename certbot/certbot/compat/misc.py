@@ -115,35 +115,36 @@ def underscores_for_unsupported_characters_in_path(path: str) -> str:
 def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -> Tuple[str, str]:
     """
     Run a command:
-        - on Linux command will be run by the standard shell selected with Popen(shell=True)
+        - on Linux command will be run by the standard shell selected with
+          subprocess.run(shell=True)
         - on Windows command will be run in a Powershell shell
 
     :param str cmd_name: the user facing name of the hook being run
     :param str shell_cmd: shell command to execute
-    :param dict env: environ to pass into Popen
+    :param dict env: environ to pass into subprocess.run
 
     :returns: `tuple` (`str` stderr, `str` stdout)
     """
     logger.info("Running %s command: %s", cmd_name, shell_cmd)
 
     if POSIX_MODE:
-        cmd = subprocess.Popen(shell_cmd, shell=True, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, universal_newlines=True,
-                               env=env)
+        proc = subprocess.run(shell_cmd, shell=True, stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE, universal_newlines=True,
+                              check=False, env=env)
     else:
         line = ['powershell.exe', '-Command', shell_cmd]
-        cmd = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               universal_newlines=True, env=env)
+        proc = subprocess.run(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              universal_newlines=True, check=False, env=env)
 
-    # universal_newlines causes Popen.communicate()
-    # to return str objects instead of bytes in Python 3
-    out, err = cmd.communicate()
+    # universal_newlines causes stdout and stderr to be str objects instead of
+    # bytes in Python 3
+    out, err = proc.stdout, proc.stderr
     base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
     if out:
         logger.info('Output from %s command %s:\n%s', cmd_name, base_cmd, out)
-    if cmd.returncode != 0:
+    if proc.returncode != 0:
         logger.error('%s command "%s" returned error code %d',
-                     cmd_name, shell_cmd, cmd.returncode)
+                     cmd_name, shell_cmd, proc.returncode)
     if err:
         logger.error('Error output from %s command %s:\n%s', cmd_name, base_cmd, err)
     return err, out

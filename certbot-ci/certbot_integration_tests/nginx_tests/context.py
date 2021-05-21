@@ -51,6 +51,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         with open(self.nginx_config_path, 'w') as file:
             file.write(self.nginx_config)
 
+        # pylint: disable=consider-using-with
         process = subprocess.Popen(['nginx', '-c', self.nginx_config_path, '-g', 'daemon off;'])
 
         assert process.poll() is None

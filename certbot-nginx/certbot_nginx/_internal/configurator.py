@@ -985,13 +985,14 @@ class NginxConfigurator(common.Installer):
             Unable to run Nginx version command
         """
         try:
-            proc = subprocess.Popen(
+            proc = subprocess.run(
                 [self.conf('ctl'), "-c", self.nginx_conf, "-V"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
+                check=False,
                 env=util.env_no_snap_for_external_calls())
-            text = proc.communicate()[1]  # nginx prints output to stderr
+            text = proc.stderr  # nginx prints output to stderr
         except (OSError, ValueError) as error:
             logger.debug(str(error), exc_info=True)
             raise errors.PluginError(
@@ -1224,10 +1225,9 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
     try:
         reload_output: Text = u""
         with tempfile.TemporaryFile() as out:
-            proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
-                                    env=util.env_no_snap_for_external_calls(),
-                                    stdout=out, stderr=out)
-            proc.communicate()
+            proc = subprocess.run([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
+                                  env=util.env_no_snap_for_external_calls(),
+                                  stdout=out, stderr=out, check=False)
             out.seek(0)
             reload_output = out.read().decode("utf-8")
 
@@ -1237,9 +1237,8 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
             # Write to temporary files instead of piping because of communication issues on Arch
             # https://github.com/certbot/certbot/issues/4324
             with tempfile.TemporaryFile() as out:
-                nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
-                    stdout=out, stderr=out, env=util.env_no_snap_for_external_calls())
-                nginx_proc.communicate()
+                nginx_proc = subprocess.run([nginx_ctl, "-c", nginx_conf],
+                    stdout=out, stderr=out, env=util.env_no_snap_for_external_calls(), check=False)
                 if nginx_proc.returncode != 0:
                     out.seek(0)
                     # Enter recovery routine...

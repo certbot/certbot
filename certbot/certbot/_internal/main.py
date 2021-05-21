@@ -1361,7 +1361,7 @@ def make_displayer(config: configuration.NamespaceConfig
 
     if config.quiet:
         config.noninteractive_mode = True
-        devnull = open(os.devnull, "w")
+        devnull = open(os.devnull, "w")  # pylint: disable=consider-using-with
         displayer = display_util.NoninteractiveDisplay(devnull)
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)

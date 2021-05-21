@@ -59,26 +59,26 @@ class RunScriptTest(unittest.TestCase):
         from certbot.util import run_script
         return run_script(params)
 
-    @mock.patch("certbot.util.subprocess.Popen")
-    def test_default(self, mock_popen):
+    @mock.patch("certbot.util.subprocess.run")
+    def test_default(self, mock_run):
         """These will be changed soon enough with reload."""
-        mock_popen().returncode = 0
-        mock_popen().communicate.return_value = ("stdout", "stderr")
+        mock_run().returncode = 0
+        mock_run().stdout = "stdout"
+        mock_run().stderr = "stderr"
 
         out, err = self._call(["test"])
         self.assertEqual(out, "stdout")
         self.assertEqual(err, "stderr")
 
-    @mock.patch("certbot.util.subprocess.Popen")
-    def test_bad_process(self, mock_popen):
-        mock_popen.side_effect = OSError
+    @mock.patch("certbot.util.subprocess.run")
+    def test_bad_process(self, mock_run):
+        mock_run.side_effect = OSError
 
         self.assertRaises(errors.SubprocessError, self._call, ["test"])
 
-    @mock.patch("certbot.util.subprocess.Popen")
-    def test_failure(self, mock_popen):
-        mock_popen().communicate.return_value = ("", "")
-        mock_popen().returncode = 1
+    @mock.patch("certbot.util.subprocess.run")
+    def test_failure(self, mock_run):
+        mock_run().returncode = 1
 
         self.assertRaises(errors.SubprocessError, self._call, ["test"])
 
@@ -557,12 +557,8 @@ class OsInfoTest(unittest.TestCase):
 
             with mock.patch('platform.system_alias',
                             return_value=('darwin', '', '')):
-                with mock.patch("subprocess.Popen") as popen_mock:
-                    comm_mock = mock.Mock()
-                    comm_attrs = {'communicate.return_value':
-                                ('42.42.42', 'error')}
-                    comm_mock.configure_mock(**comm_attrs)
-                    popen_mock.return_value = comm_mock
+                with mock.patch("subprocess.run") as run_mock:
+                    run_mock().stdout = '42.42.42'
                     self.assertEqual(cbutil.get_python_os_info()[0], 'darwin')
                     self.assertEqual(cbutil.get_python_os_info()[1], '42.42.42')
 
