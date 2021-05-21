@@ -119,13 +119,15 @@ def execute_command_status(cmd_name: str, shell_cmd: str,
         - on Linux command will be run by the standard shell selected with Popen(shell=True)
         - on Windows command will be run in a Powershell shell
 
+    This differs from execute_command: it returns the exit code, and does not log the result
+    and output of the command.
+
     :param str cmd_name: the user facing name of the hook being run
     :param str shell_cmd: shell command to execute
     :param dict env: environ to pass into Popen
 
     :returns: `tuple` (`int` returncode, `str` stderr, `str` stdout)
     """
-    # TODO: redesign execute_command and execute_command_status in Certbot 2.0 API.
     logger.info("Running %s command: %s", cmd_name, shell_cmd)
 
     if POSIX_MODE:
@@ -149,7 +151,8 @@ def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -
         - on Linux command will be run by the standard shell selected with Popen(shell=True)
         - on Windows command will be run in a Powershell shell
 
-    If the process return code is required, use execute_command_status.
+    This differs from execute_command_status: it does not return the exit code, but logs
+    the result and output of the command.
 
     :param str cmd_name: the user facing name of the hook being run
     :param str shell_cmd: shell command to execute
@@ -157,7 +160,6 @@ def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -
 
     :returns: `tuple` (`str` stderr, `str` stdout)
     """
-    # TODO: redesign execute_command and execute_command_status in Certbot 2.0 API.
     returncode, err, out = execute_command_status(cmd_name, shell_cmd, env)
     base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
     if out:
