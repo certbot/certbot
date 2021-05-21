@@ -8,6 +8,7 @@ import logging
 import select
 import subprocess
 import sys
+import warnings
 from typing import Optional
 from typing import Tuple
 
@@ -160,6 +161,11 @@ def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -
 
     :returns: `tuple` (`str` stderr, `str` stdout)
     """
+    # Deprecation per https://github.com/certbot/certbot/issues/8854
+    warnings.warn(
+        "execute_command will be deprecated in future, use execute_command_status instead",
+        PendingDeprecationWarning
+    )
     returncode, err, out = execute_command_status(cmd_name, shell_cmd, env)
     base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
     if out:
