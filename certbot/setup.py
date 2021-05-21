@@ -73,9 +73,9 @@ dev_extras = [
     'ipdb',
     'mypy',
     'PyGithub',
-    # 1.1.0+ is required for poetry to use the poetry-core library for the
-    # build system declared in tools/pinning/pyproject.toml.
-    'poetry>=1.1.0',
+    # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
+    # https://github.com/python-poetry/poetry/issues/1584.
+    'poetry>=1.2.0a1',
     'pylint',
     'pytest',
     'pytest-cov',
