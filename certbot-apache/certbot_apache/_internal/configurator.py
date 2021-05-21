@@ -2396,7 +2396,7 @@ class ApacheConfigurator(common.Installer):
             vhost.enabled = True
         return
 
-    def enable_mod(self, mod_name, temp=False):
+    def enable_mod(self, mod_name, temp=False):  # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
