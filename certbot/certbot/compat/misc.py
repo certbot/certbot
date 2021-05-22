@@ -163,7 +163,7 @@ def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -
     """
     # Deprecation per https://github.com/certbot/certbot/issues/8854
     warnings.warn(
-        "execute_command will be deprecated in future, use execute_command_status instead",
+        "execute_command will be deprecated in the future, use execute_command_status instead",
         PendingDeprecationWarning
     )
     returncode, err, out = execute_command_status(cmd_name, shell_cmd, env)
