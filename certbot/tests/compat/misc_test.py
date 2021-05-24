@@ -25,14 +25,15 @@ class ExecuteTest(unittest.TestCase):
     def _test_common(self, returncode, stdout, stderr):
         given_command = "foo"
         given_name = "foo-hook"
-        with mock.patch("certbot.compat.misc.subprocess.Popen") as mock_popen:
-            mock_popen.return_value.communicate.return_value = (stdout, stderr)
-            mock_popen.return_value.returncode = returncode
+        with mock.patch("certbot.compat.misc.subprocess.run") as mock_run:
+            mock_run.return_value.stdout = stdout
+            mock_run.return_value.stderr = stderr
+            mock_run.return_value.returncode = returncode
             with mock.patch("certbot.compat.misc.logger") as mock_logger:
                 self.assertEqual(self._call(given_name, given_command), (stderr, stdout))
 
-        executed_command = mock_popen.call_args[1].get(
-            "args", mock_popen.call_args[0][0])
+        executed_command = mock_run.call_args[1].get(
+            "args", mock_run.call_args[0][0])
         if os.name == 'nt':
             expected_command = ['powershell.exe', '-Command', given_command]
         else:
