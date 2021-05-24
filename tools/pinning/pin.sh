@@ -9,8 +9,8 @@ REPO_ROOT="$(dirname "$(dirname "${WORK_DIR}")")"
 RELATIVE_SCRIPT_PATH="$(realpath --relative-to "$REPO_ROOT" "$WORK_DIR")/$(basename "${BASH_SOURCE[0]}")"
 REQUIREMENTS_FILE="$REPO_ROOT/tools/requirements.txt"
 
-if ! command -v poetry >/dev/null; then
-    echo "Please install poetry."
+if ! command -v poetry >/dev/null || [ $(poetry --version | grep -oE '[0-9]+\.[0-9]+' | sed 's/\.//') -lt 12 ]; then
+    echo "Please install poetry 1.2+."
     echo "You may need to recreate Certbot's virtual environment and activate it."
     exit 1
 fi
