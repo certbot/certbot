@@ -8,7 +8,6 @@ WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 REPO_ROOT="$(dirname "$(dirname "${WORK_DIR}")")"
 RELATIVE_SCRIPT_PATH="$(realpath --relative-to "$REPO_ROOT" "$WORK_DIR")/$(basename "${BASH_SOURCE[0]}")"
 REQUIREMENTS_FILE="$REPO_ROOT/tools/requirements.txt"
-STRIP_HASHES="${REPO_ROOT}/tools/strip_hashes.py"
 
 if ! command -v poetry >/dev/null; then
     echo "Please install poetry."
