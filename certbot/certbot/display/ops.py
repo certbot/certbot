@@ -1,5 +1,6 @@
 """Contains UI methods for LE user operations."""
 import logging
+from textwrap import indent
 
 import zope.component
 
@@ -268,6 +269,24 @@ def success_revocation(cert_path):
         "Congratulations! You have successfully revoked the certificate "
         "that was located at {0}.".format(cert_path)
     )
+
+
+def report_executed_command(command_name: str, returncode: int, stdout: str, stderr: str) -> None:
+    """Display a message describing the success or failure of an executed process (e.g. hook).
+
+    :param str command_name: Human-readable description of the executed command
+    :param int returncode: The exit code of the executed command
+    :param str stdout: The stdout output of the executed command
+    :param str stderr: The stderr output of the executed command
+
+    """
+    out_s, err_s = stdout.strip(), stderr.strip()
+    if returncode != 0:
+        logger.warning("%s reported error code %d", command_name, returncode)
+    if out_s:
+        display_util.notify(f"{command_name} ran with output:\n{indent(out_s, ' ')}")
+    if err_s:
+        logger.warning("%s ran with error output:\n%s", command_name, indent(err_s, ' '))
 
 
 def _gen_https_names(domains):

@@ -8,6 +8,7 @@ import logging
 import select
 import subprocess
 import sys
+import warnings
 from typing import Optional
 from typing import Tuple
 
@@ -112,17 +113,21 @@ def underscores_for_unsupported_characters_in_path(path: str) -> str:
     return drive + tail.replace(':', '_')
 
 
-def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -> Tuple[str, str]:
+def execute_command_status(cmd_name: str, shell_cmd: str,
+                           env: Optional[dict] = None) -> Tuple[int, str, str]:
     """
     Run a command:
         - on Linux command will be run by the standard shell selected with Popen(shell=True)
         - on Windows command will be run in a Powershell shell
 
+    This differs from execute_command: it returns the exit code, and does not log the result
+    and output of the command.
+
     :param str cmd_name: the user facing name of the hook being run
     :param str shell_cmd: shell command to execute
     :param dict env: environ to pass into Popen
 
-    :returns: `tuple` (`str` stderr, `str` stdout)
+    :returns: `tuple` (`int` returncode, `str` stderr, `str` stdout)
     """
     logger.info("Running %s command: %s", cmd_name, shell_cmd)
 
@@ -138,12 +143,36 @@ def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -
     # universal_newlines causes Popen.communicate()
     # to return str objects instead of bytes in Python 3
     out, err = cmd.communicate()
+    return cmd.returncode, err, out
+
+
+def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -> Tuple[str, str]:
+    """
+    Run a command:
+        - on Linux command will be run by the standard shell selected with Popen(shell=True)
+        - on Windows command will be run in a Powershell shell
+
+    This differs from execute_command_status: it does not return the exit code, but logs
+    the result and output of the command.
+
+    :param str cmd_name: the user facing name of the hook being run
+    :param str shell_cmd: shell command to execute
+    :param dict env: environ to pass into Popen
+
+    :returns: `tuple` (`str` stderr, `str` stdout)
+    """
+    # Deprecation per https://github.com/certbot/certbot/issues/8854
+    warnings.warn(
+        "execute_command will be deprecated in the future, use execute_command_status instead",
+        PendingDeprecationWarning
+    )
+    returncode, err, out = execute_command_status(cmd_name, shell_cmd, env)
     base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
     if out:
         logger.info('Output from %s command %s:\n%s', cmd_name, base_cmd, out)
-    if cmd.returncode != 0:
+    if returncode != 0:
         logger.error('%s command "%s" returned error code %d',
-                     cmd_name, shell_cmd, cmd.returncode)
+                     cmd_name, shell_cmd, returncode)
     if err:
         logger.error('Error output from %s command %s:\n%s', cmd_name, base_cmd, err)
     return err, out

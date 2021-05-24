@@ -1,4 +1,5 @@
 """Manual authenticator plugin"""
+import logging
 from typing import Dict
 
 import zope.component
@@ -14,8 +15,10 @@ from certbot._internal.cli import cli_constants
 from certbot._internal import hooks
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.display import ops as display_ops
 from certbot.plugins import common
 
+logger = logging.getLogger(__name__)
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -61,7 +64,7 @@ with the following value:
 {validation}
 """
     _DNS_VERIFY_INSTRUCTIONS = """
-Before continuing, verify the TXT record has been deployed. Depending on the DNS 
+Before continuing, verify the TXT record has been deployed. Depending on the DNS
 provider, this may take some time, from a few seconds to multiple minutes. You can
 check if it has finished deploying with aid of online tools, such as the Google
 Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}.
@@ -190,7 +193,7 @@ permitted by DNS standards.)
         else:
             os.environ.pop('CERTBOT_TOKEN', None)
         os.environ.update(env)
-        _, out = self._execute_hook('auth-hook')
+        _, out = self._execute_hook('auth-hook', achall.domain)
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
@@ -233,9 +236,16 @@ permitted by DNS standards.)
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
                 os.environ.update(env)
-                self._execute_hook('cleanup-hook')
+                self._execute_hook('cleanup-hook', achall.domain)
         self.reverter.recovery_routine()
 
-    def _execute_hook(self, hook_name):
-        return misc.execute_command(self.option_name(hook_name), self.conf(hook_name),
-                                    env=util.env_no_snap_for_external_calls())
+    def _execute_hook(self, hook_name, achall_domain):
+        returncode, err, out = misc.execute_command_status(
+            self.option_name(hook_name), self.conf(hook_name),
+            env=util.env_no_snap_for_external_calls()
+        )
+
+        display_ops.report_executed_command(
+            f"Hook '--manual-{hook_name}' for {achall_domain}", returncode, out, err)
+
+        return err, out
