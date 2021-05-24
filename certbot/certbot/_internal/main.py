@@ -469,6 +469,30 @@ def _find_domains_or_certname(config, installer, question=None):
     return domains, certname
 
 
+def _show_renewal_advice(config: interfaces.IConfig) -> None:
+    """Print advice about whether any additional action needs to be taken for autorenewal.
+
+    The advice varies based on runtime options.
+
+    :param config: Certbot runtime config
+    :type config: interfaces.IConfig
+
+    """
+    msg: str = ""
+
+    if config.csr:
+        msg = ("Certificates created using --csr will not be renewed automatically by Certbot. "
+               "Run the same command again in order to renew the certificate, as necessary.")
+    elif config.preconfigured_renewal:
+        msg = "Certbot will automatically renew this certificate in the background."
+    else:
+        msg = (f'Run "{cli.cli_constants.cli_command} renew" to renew expiring certificates. '
+                "We recommend setting up a scheduled task for renewal; see "
+                "https://certbot.eff.org/docs/using.html#automated-renewals for instructions.")
+
+    display_util.notify(msg)
+
+
 def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
     # type: (interfaces.IConfig, Optional[str], Optional[str], Optional[str]) -> None
     """Reports the creation of a new certificate to the user.
@@ -499,18 +523,10 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
         ("\nSuccessfully received certificate.\n"
         "Certificate is saved at: {cert_path}\n{key_msg}"
         "This certificate expires on {expiry}.\n"
-        "These files will be updated when the certificate renews.\n{renew_msg}{nl}").format(
+        "These files will be updated when the certificate renews.\n").format(
             cert_path=fullchain_path,
             expiry=crypto_util.notAfter(cert_path).date(),
-            key_msg="Key is saved at:         {}\n".format(key_path) if key_path else "",
-            renew_msg="Certbot will automatically renew this certificate in the background."
-                      if config.preconfigured_renewal else
-                      (f'Run "{cli.cli_constants.cli_command} renew" to renew '
-                       "expiring certificates. "
-                       "We recommend setting up a scheduled task for renewal; see "
-                       "https://certbot.eff.org/docs/using.html#automated-renewals "
-                       "for instructions."),
-            nl="\n" if config.verb == "run" else "" # visually split output if also deploying
+            key_msg="Key is saved at:         {}\n".format(key_path) if key_path else ""
         )
     )
 
@@ -813,6 +829,21 @@ def update_account(config, unused_plugins):
     return None
 
 
+def _cert_name_from_config_or_lineage(config: interfaces.IConfig,
+                                      lineage: Optional[storage.RenewableCert]) -> Optional[str]:
+    if lineage:
+        return lineage.lineagename
+    elif config.certname:
+        return config.certname
+    try:
+        cert_name = cert_manager.cert_path_to_lineage(config)
+        return cert_name
+    except errors.Error:
+        pass
+
+    return None
+
+
 def _install_cert(config, le_client, domains, lineage=None):
     """Install a cert
 
@@ -835,20 +866,8 @@ def _install_cert(config, le_client, domains, lineage=None):
     path_provider = lineage if lineage else config
     assert path_provider.cert_path is not None
 
-    cert_name: Optional[str] = None
-    if isinstance(path_provider, storage.RenewableCert):
-        cert_name = path_provider.lineagename
-    elif path_provider.certname:
-        cert_name = path_provider.certname
-    else:
-        # Check if the cert path happens to be part of an existing lineage
-        try:
-            cert_name = cert_manager.cert_path_to_lineage(config)
-        except errors.Error:
-            pass
-
-    le_client.deploy_certificate(cert_name, domains, path_provider.key_path,
-        path_provider.cert_path, path_provider.chain_path, path_provider.fullchain_path)
+    le_client.deploy_certificate(domains, path_provider.key_path, path_provider.cert_path,
+                                 path_provider.chain_path, path_provider.fullchain_path)
     le_client.enhance_config(domains, path_provider.chain_path)
 
 
@@ -1216,15 +1235,28 @@ def run(config, plugins):
     if should_get_cert:
         _report_new_cert(config, cert_path, fullchain_path, key_path)
 
-    _install_cert(config, le_client, domains, new_lineage)
+    try:
+        _install_cert(config, le_client, domains, new_lineage)
 
-    if enhancements.are_requested(config) and new_lineage:
-        enhancements.enable(new_lineage, domains, installer, config)
+        if enhancements.are_requested(config) and new_lineage:
+            enhancements.enable(new_lineage, domains, installer, config)
 
-    if lineage is None or not should_get_cert:
-        display_ops.success_installation(domains)
-    else:
-        display_ops.success_renewal(domains)
+        if lineage is None or not should_get_cert:
+            display_ops.success_installation(domains)
+        else:
+            display_ops.success_renewal(domains)
+    except Exception:
+        logger.error(
+            "The certificate was saved, but could not be installed (installer: %s). "
+            "After fixing the shown error, try installing it again by running:\n"
+            "  %s install --cert-name %s", config.installer, cli.cli_command,
+            _cert_name_from_config_or_lineage(config, new_lineage)
+        )
+        raise
+    finally:
+        # Even if installation failed, we should let the user know about automatic renewal
+        if should_get_cert:
+            _show_renewal_advice(config)
 
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)
@@ -1327,6 +1359,7 @@ def certonly(config, plugins):
     if config.csr:
         cert_path, chain_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
         _csr_report_new_cert(config, cert_path, chain_path, fullchain_path)
+        _show_renewal_advice(config)
         _suggest_donation_if_appropriate(config)
         eff.handle_subscription(config, le_client.account)
         return
@@ -1345,6 +1378,7 @@ def certonly(config, plugins):
     fullchain_path = lineage.fullchain_path if lineage else None
     key_path = lineage.key_path if lineage else None
     _report_new_cert(config, cert_path, fullchain_path, key_path)
+    _show_renewal_advice(config)
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)
 

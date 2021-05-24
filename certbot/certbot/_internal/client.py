@@ -516,11 +516,9 @@ class Client:
 
         return abs_cert_path, abs_chain_path, abs_fullchain_path
 
-    def deploy_certificate(self, cert_name, domains, privkey_path,
-                           cert_path, chain_path, fullchain_path):
+    def deploy_certificate(self, domains, privkey_path, cert_path, chain_path, fullchain_path):
         """Install certificate
 
-        :param str cert_name: name of the certificate lineage (optional)
         :param list domains: list of domains to install the certificate
         :param str privkey_path: path to certificate private key
         :param str cert_path: certificate file path (optional)
@@ -536,12 +534,7 @@ class Client:
 
         display_util.notify("Deploying certificate")
 
-        msg = f"Failed to install the certificate (installer: {self.config.installer})."
-        if cert_name:
-            msg += (" Try again after fixing errors by running:\n\n"
-                    f"  {cli.cli_constants.cli_command} install --cert-name {cert_name}\n")
-
-        with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
+        with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
             for dom in domains:
                 self.installer.deploy_cert(
                     domain=dom, cert_path=os.path.abspath(cert_path),
@@ -616,9 +609,7 @@ class Client:
 
 
         """
-        msg = ("We were unable to set up enhancement %s for your server, "
-               "however, we successfully installed your certificate."
-               % (enhancement))
+        msg = f"Could not set up {enhancement} enhancement"
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 try:
@@ -644,7 +635,8 @@ class Client:
 
         """
         self.installer.recovery_routine()
-        display_util.notify(success_msg)
+        if success_msg:
+            display_util.notify(success_msg)
 
     def _rollback_and_restart(self, success_msg):
         """Rollback the most recent checkpoint and restart the webserver
