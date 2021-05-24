@@ -101,6 +101,7 @@ parso==0.8.2; python_version == "3.6"
 pathlib2==2.3.5; python_version >= "3.6"
 pexpect==4.8.0; python_version >= "3.6" and python_version < "4.0" or python_version == "3.6" and sys_platform != "win32" or python_version >= "3.7" and sys_platform != "win32"
 pickleshare==0.7.5; python_version == "3.6" or python_version >= "3.7"
+pip==21.1.2; python_version >= "3.6"
 pkginfo==1.7.0; python_version >= "3.6" and python_version < "4.0" or python_version >= "3.6"
 pluggy==0.13.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6" or python_version >= "3.6" and python_full_version >= "3.5.0"
 ply==3.11; python_version >= "3.6"
@@ -185,6 +186,3 @@ zope.component==5.0.0; python_version >= "3.6" and python_full_version < "3.0.0"
 zope.event==4.5.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 zope.hookable==5.0.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 zope.interface==5.4.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
-pip==20.2.4
-setuptools==54.1.2
-wheel==0.35.1

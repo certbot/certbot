@@ -73,6 +73,7 @@ dev_extras = [
     'ipdb',
     'mypy',
     'PyGithub',
+    'pip',
     # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
     # https://github.com/python-poetry/poetry/issues/1584.
     'poetry>=1.2.0a1',
