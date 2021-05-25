@@ -123,8 +123,7 @@ def choose_names(installer, question=None):
     names = get_valid_domains(domains)
 
     if not names:
-        return _choose_names_manually(
-            "No names were found in your configuration files. ")
+        return _choose_names_manually()
 
     code, names = _filter_names(names, question)
     if code == display_util.OK and names:
