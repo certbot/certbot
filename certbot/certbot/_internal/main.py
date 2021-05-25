@@ -562,8 +562,8 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
             cert_path=fullchain_path,
             expiry=crypto_util.notAfter(cert_path).date(),
             key_msg="Key is saved at:         {}\n".format(key_path) if key_path else "",
-            renewal_msg=f"\nCertbot has set up a scheduled task to automatically renew this "
-                        f"certificate in the background." if config.preconfigured_renewal else "",
+            renewal_msg="\nCertbot has set up a scheduled task to automatically renew this "
+                        "certificate in the background." if config.preconfigured_renewal else "",
             nl="\n" if config.verb == "run" else "" # Normalize spacing across verbs
         )
     )
