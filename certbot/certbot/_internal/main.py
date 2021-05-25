@@ -469,29 +469,63 @@ def _find_domains_or_certname(config, installer, question=None):
     return domains, certname
 
 
-def _show_renewal_advice(config: interfaces.IConfig) -> None:
-    """Print advice about whether any additional action needs to be taken for autorenewal.
+def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[errors.Error],
+                       lineage: Optional[storage.RenewableCert],
+                       new_or_renewed_cert: bool = True) -> None:
+    """Displays post-run/certonly advice to the user about renewal and installation.
 
-    The advice varies based on runtime options.
+    The output varies by runtime configuration and any errors encountered during installation.
 
-    :param config: Certbot runtime config
+    :param config: Configuration object
     :type config: interfaces.IConfig
 
+    :param installer_err: The installer/enhancement error encountered, if any.
+    :type error: Optional[errors.Error]
+
+    :param lineage: The resulting certificate lineage from the issuance, if any.
+    :type lineage: Optional[storage.RenewableCert]
+
+    :param bool new_or_renewed_cert: Whether the verb execution resulted in a certificate
+                                     being saved (created or renewed).
+
     """
-    msg: str = ""
+    steps: List[str] = []
 
-    if config.csr:
-        msg = ("Certificates created using --csr will not be renewed automatically by Certbot. "
-               "Run the same command again in order to renew the certificate, as necessary.")
-    elif config.preconfigured_renewal:
-        msg = ("Certbot has set up a scheduled task to automatically renew this certificate in "
-               "the background.")
-    else:
-        msg = (f'Run "{cli.cli_constants.cli_command} renew" to renew expiring certificates. '
-                "We recommend setting up a scheduled task for renewal; see "
-                "https://certbot.eff.org/docs/using.html#automated-renewals for instructions.")
+    # If the installation or enhancement raised an error, show advice on trying again
+    if installer_err:
+        steps.append(
+            "The certificate was saved, but could not be installed (installer: "
+            f"{config.installer}). After fixing the error shown below, try installing it again "
+            f"by running:\n  {cli.cli_command} install --cert-name "
+            f"{_cert_name_from_config_or_lineage(config, lineage)}"
+        )
 
-    display_util.notify(msg)
+    # If a certificate was obtained or renewed, show applicable renewal advice
+    if new_or_renewed_cert:
+        if config.csr:
+            steps.append(
+                "Certificates created using --csr will not be renewed automatically by Certbot. "
+                "Run the same command again in order to renew the certificate, as necessary.")
+        elif not config.preconfigured_renewal:
+            steps.append(
+                f'Run "{cli.cli_constants.cli_command} renew" to renew expiring certificates. '
+                 "We recommend setting up a scheduled task for renewal; see "
+                 "https://certbot.eff.org/docs/using.html#automated-renewals for instructions.")
+
+    if not steps:
+        return
+
+    # TODO: refactor ANSI escapes during https://github.com/certbot/certbot/issues/8848
+    (bold_on, bold_off) = [c if sys.stdout.isatty() and not config.quiet else '' \
+                           for c in (util.ANSI_SGR_BOLD, util.ANSI_SGR_RESET)]
+
+    print(bold_on, '\n', 'NEXT STEPS:', bold_off, sep='')
+    for step in steps:
+        display_util.notify(f"- {step}")
+
+    # If there was an installer error, segregate the error output with a trailing newline
+    if installer_err:
+        print()
 
 
 def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
@@ -524,10 +558,13 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
         ("\nSuccessfully received certificate.\n"
         "Certificate is saved at: {cert_path}\n{key_msg}"
         "This certificate expires on {expiry}.\n"
-        "These files will be updated when the certificate renews.\n").format(
+        "These files will be updated when the certificate renews.{renewal_msg}{nl}").format(
             cert_path=fullchain_path,
             expiry=crypto_util.notAfter(cert_path).date(),
-            key_msg="Key is saved at:         {}\n".format(key_path) if key_path else ""
+            key_msg="Key is saved at:         {}\n".format(key_path) if key_path else "",
+            renewal_msg=f"\nCertbot has set up a scheduled task to automatically renew this "
+                        f"certificate in the background." if config.preconfigured_renewal else "",
+            nl="\n" if config.verb == "run" else "" # Normalize spacing across verbs
         )
     )
 
@@ -1236,6 +1273,9 @@ def run(config, plugins):
     if should_get_cert:
         _report_new_cert(config, cert_path, fullchain_path, key_path)
 
+    # The installer error, if any, is being stored as a value here, in order to first print
+    # relevant advice in a nice way, before re-raising the error for normal processing.
+    installer_err: Optional[errors.Error] = None
     try:
         _install_cert(config, le_client, domains, new_lineage)
 
@@ -1246,18 +1286,14 @@ def run(config, plugins):
             display_ops.success_installation(domains)
         else:
             display_ops.success_renewal(domains)
-    except Exception:
-        logger.error(
-            "The certificate was saved, but could not be installed (installer: %s). "
-            "After fixing the shown error, try installing it again by running:\n"
-            "  %s install --cert-name %s", config.installer, cli.cli_command,
-            _cert_name_from_config_or_lineage(config, new_lineage)
-        )
-        raise
+    except errors.Error as e:
+        installer_err = e
     finally:
-        # Even if installation failed, we should let the user know about automatic renewal
-        if should_get_cert:
-            _show_renewal_advice(config)
+        _report_next_steps(config, installer_err, new_lineage,
+                           new_or_renewed_cert=should_get_cert)
+        # If the installer did fail, re-raise the error to bail out
+        if installer_err:
+            raise installer_err
 
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)
@@ -1360,7 +1396,7 @@ def certonly(config, plugins):
     if config.csr:
         cert_path, chain_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
         _csr_report_new_cert(config, cert_path, chain_path, fullchain_path)
-        _show_renewal_advice(config)
+        _report_next_steps(config, None, None)
         _suggest_donation_if_appropriate(config)
         eff.handle_subscription(config, le_client.account)
         return
@@ -1379,7 +1415,7 @@ def certonly(config, plugins):
     fullchain_path = lineage.fullchain_path if lineage else None
     key_path = lineage.key_path if lineage else None
     _report_new_cert(config, cert_path, fullchain_path, key_path)
-    _show_renewal_advice(config)
+    _report_next_steps(config, None, lineage, new_or_renewed_cert=should_get_cert)
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)
 

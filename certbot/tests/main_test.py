@@ -112,7 +112,7 @@ class RunTest(test_util.ConfigTestCase):
             mock.patch('certbot._internal.main._report_new_cert'),
             mock.patch('certbot._internal.main._find_cert'),
             mock.patch('certbot._internal.eff.handle_subscription'),
-            mock.patch('certbot._internal.main._show_renewal_advice'),
+            mock.patch('certbot._internal.main._report_next_steps')
         ]
 
         self.mock_auth = patches[0].start()
@@ -123,7 +123,7 @@ class RunTest(test_util.ConfigTestCase):
         self.mock_report_cert = patches[5].start()
         self.mock_find_cert = patches[6].start()
         self.mock_subscription = patches[7].start()
-        self.mock_renewal_advice = patches[8].start()
+        self.mock_report_next_steps = patches[8].start()
         for patch in patches:
             self.addCleanup(patch.stop)
 
@@ -141,7 +141,8 @@ class RunTest(test_util.ConfigTestCase):
         self.mock_find_cert.return_value = True, None
         self._call()
         self.mock_success_installation.assert_called_once_with([self.domain])
-        self.mock_renewal_advice.assert_called_once()
+        self.mock_report_next_steps.assert_called_once_with(mock.ANY, None, mock.ANY,
+            new_or_renewed_cert=True)
 
     def test_reinstall_success(self):
         self.mock_auth.return_value = mock.Mock()
@@ -165,18 +166,15 @@ class RunTest(test_util.ConfigTestCase):
                           self.config, plugins)
 
     @mock.patch('certbot._internal.main._install_cert')
-    @mock.patch('certbot._internal.main.logger')
-    def test_cert_success_install_error(self, mock_logger, mock_install_cert):
+    def test_cert_success_install_error(self, mock_install_cert):
         mock_install_cert.side_effect = errors.PluginError("Fake installation error")
         self.mock_auth.return_value = mock.Mock()
         self.mock_find_cert.return_value = True, None
         self.assertRaises(errors.PluginError, self._call)
 
-        # Advice to retry `certbot install` should be printed
-        mock_logger.error.assert_called_once()
-        self.assertIn("try installing it again", mock_logger.error.call_args[0][0])
-        # Renewal advice should be printed, because the certificate was saved
-        self.mock_renewal_advice.assert_called_once()
+        # Next steps should contain both renewal advice and installation error
+        self.mock_report_next_steps.assert_called_once_with(
+            mock.ANY, mock_install_cert.side_effect, mock.ANY, new_or_renewed_cert=True)
         # The final success message shouldn't be shown
         self.mock_success_installation.assert_not_called()
 
@@ -216,14 +214,14 @@ class CertonlyTest(unittest.TestCase):
     def _assert_no_pause(self, message, pause=True):  # pylint: disable=unused-argument
         self.assertIs(pause, False)
 
-    @mock.patch('certbot._internal.main._show_renewal_advice')
+    @mock.patch('certbot._internal.main._report_next_steps')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.cert_manager.domains_for_certname')
     @mock.patch('certbot._internal.renewal.renew_cert')
     @mock.patch('certbot._internal.main._handle_unexpected_key_type_migration')
     @mock.patch('certbot._internal.main._report_new_cert')
     def test_find_lineage_for_domains_and_certname(self, mock_report_cert,
-        mock_handle_type, mock_renew_cert, mock_domains, mock_lineage, mock_renewal_advice):
+        mock_handle_type, mock_renew_cert, mock_domains, mock_lineage, mock_report_next_steps):
         domains = ['example.com', 'test.org']
         mock_domains.return_value = domains
         mock_lineage.names.return_value = domains
@@ -235,7 +233,8 @@ class CertonlyTest(unittest.TestCase):
         self.assertEqual(mock_renew_cert.call_count, 1)
         self.assertEqual(mock_report_cert.call_count, 1)
         self.assertEqual(mock_handle_type.call_count, 1)
-        self.assertEqual(mock_renewal_advice.call_count, 1)
+        mock_report_next_steps.assert_called_once_with(
+            mock.ANY, None, mock.ANY, new_or_renewed_cert=True)
 
         # user confirms updating lineage with new domains
         self._call(('certonly --webroot -d example.com -d test.com '
@@ -1843,6 +1842,8 @@ class ReportNewCertTest(unittest.TestCase):
             'Key is saved at:         /path/to/privkey.pem\n'
             'This certificate expires on 1970-01-01.\n'
             'These files will be updated when the certificate renews.\n'
+            'Certbot has set up a scheduled task to automatically renew this '
+            'certificate in the background.'
         )
 
     def test_report_no_key(self):
@@ -1855,6 +1856,8 @@ class ReportNewCertTest(unittest.TestCase):
             'Certificate is saved at: /path/to/fullchain.pem\n'
             'This certificate expires on 1970-01-01.\n'
             'These files will be updated when the certificate renews.\n'
+            'Certbot has set up a scheduled task to automatically renew this '
+            'certificate in the background.'
         )
 
     def test_report_no_preconfigured_renewal(self):
@@ -1867,9 +1870,8 @@ class ReportNewCertTest(unittest.TestCase):
             'Certificate is saved at: /path/to/fullchain.pem\n'
             'Key is saved at:         /path/to/privkey.pem\n'
             'This certificate expires on 1970-01-01.\n'
-            'These files will be updated when the certificate renews.\n'
+            'These files will be updated when the certificate renews.'
         )
-
 
     def test_csr_report(self):
         self._call_csr(mock.Mock(dry_run=False), '/path/to/cert.pem',
