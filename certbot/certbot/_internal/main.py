@@ -484,7 +484,8 @@ def _show_renewal_advice(config: interfaces.IConfig) -> None:
         msg = ("Certificates created using --csr will not be renewed automatically by Certbot. "
                "Run the same command again in order to renew the certificate, as necessary.")
     elif config.preconfigured_renewal:
-        msg = "Certbot will automatically renew this certificate in the background."
+        msg = ("Certbot has set up a scheduled task to automatically renew this certificate in "
+               "the background.")
     else:
         msg = (f'Run "{cli.cli_constants.cli_command} renew" to renew expiring certificates. '
                 "We recommend setting up a scheduled task for renewal; see "
