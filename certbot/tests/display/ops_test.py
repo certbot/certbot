@@ -209,7 +209,6 @@ class ChooseNamesTest(unittest.TestCase):
         actual_doms = self._call(self.mock_install)
         self.assertEqual(mock_util().input.call_count, 1)
         self.assertEqual(actual_doms, [domain])
-        self.assertIn("configuration files", mock_util().input.call_args[0][0])
 
     def test_sort_names_trivial(self):
         from certbot.display.ops import _sort_names
