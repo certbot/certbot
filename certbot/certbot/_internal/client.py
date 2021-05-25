@@ -534,7 +534,8 @@ class Client:
 
         display_util.notify("Deploying certificate")
 
-        with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
+        msg = "Could not install certificate"
+        with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 self.installer.deploy_cert(
                     domain=dom, cert_path=os.path.abspath(cert_path),
@@ -635,8 +636,7 @@ class Client:
 
         """
         self.installer.recovery_routine()
-        if success_msg:
-            display_util.notify(success_msg)
+        display_util.notify(success_msg)
 
     def _rollback_and_restart(self, success_msg):
         """Rollback the most recent checkpoint and restart the webserver
