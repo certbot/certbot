@@ -265,9 +265,9 @@ def subprocess_call(args):
     :rtype: tuple
 
     """
-    process = subprocess.Popen(args, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, universal_newlines=True)
-    out, err = process.communicate()
+    process = subprocess.run(args, stdout=subprocess.PIPE, check=False,
+                             stderr=subprocess.PIPE, universal_newlines=True)
+    out, err = process.stdout, process.stderr
     logger.debug('Return code was %d', process.returncode)
     log_output(logging.DEBUG, out, err)
     return process.returncode, out, err

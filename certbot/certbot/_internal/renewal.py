@@ -14,7 +14,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-import OpenSSL
 import zope.component
 
 from certbot import crypto_util
@@ -306,13 +305,6 @@ def should_renew(config, lineage):
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
     """Do not renew a valid cert with one from a staging server!"""
-    # Some lineages may have begun with --staging, but then had production
-    # certificates added to them
-    with open(lineage.cert) as the_file:
-        contents = the_file.read()
-    latest_cert = OpenSSL.crypto.load_certificate(
-        OpenSSL.crypto.FILETYPE_PEM, contents)
-
     if util.is_staging(config.server):
         if not util.is_staging(original_server):
             if not config.break_my_certs:

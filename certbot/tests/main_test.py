@@ -1082,29 +1082,25 @@ class MainTest(test_util.ConfigTestCase):
                     with test_util.patch_get_utility() as mock_get_utility:
                         if not quiet_mode:
                             mock_get_utility().notification.side_effect = write_msg
-                        with mock.patch('certbot._internal.main.renewal.OpenSSL') as mock_ssl:
-                            mock_latest = mock.MagicMock()
-                            mock_latest.get_issuer.return_value = "Artificial pretend"
-                            mock_ssl.crypto.load_certificate.return_value = mock_latest
-                            with mock.patch('certbot._internal.main.renewal.crypto_util') \
-                                as mock_crypto_util:
-                                mock_crypto_util.notAfter.return_value = expiry_date
-                                with mock.patch('certbot._internal.eff.handle_subscription'):
-                                    if not args:
-                                        args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
-                                    if extra_args:
-                                        args += extra_args
-                                    try:
-                                        ret, stdout, _, _ = self._call(args, stdout)
-                                        if ret:
-                                            print("Returned", ret)
-                                            raise AssertionError(ret)
-                                        assert not error_expected, "renewal should have errored"
-                                    except: # pylint: disable=bare-except
-                                        if not error_expected:
-                                            raise AssertionError(
-                                                "Unexpected renewal error:\n" +
-                                                traceback.format_exc())
+                        with mock.patch('certbot._internal.main.renewal.crypto_util') \
+                            as mock_crypto_util:
+                            mock_crypto_util.notAfter.return_value = expiry_date
+                            with mock.patch('certbot._internal.eff.handle_subscription'):
+                                if not args:
+                                    args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
+                                if extra_args:
+                                    args += extra_args
+                                try:
+                                    ret, stdout, _, _ = self._call(args, stdout)
+                                    if ret:
+                                        print("Returned", ret)
+                                        raise AssertionError(ret)
+                                    assert not error_expected, "renewal should have errored"
+                                except: # pylint: disable=bare-except
+                                    if not error_expected:
+                                        raise AssertionError(
+                                            "Unexpected renewal error:\n" +
+                                            traceback.format_exc())
 
             if should_renew:
                 if reuse_key:

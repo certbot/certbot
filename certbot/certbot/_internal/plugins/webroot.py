@@ -140,7 +140,7 @@ to serve all files under specified web root ({0})."""
                     "webroot when using the webroot plugin.")
             return None if index == 0 else known_webroots[index - 1]  # code == display_util.OK
 
-    def _prompt_for_new_webroot(self, domain, allowraise=False):  # pylint: no-self-use
+    def _prompt_for_new_webroot(self, domain, allowraise=False):
         code, webroot = ops.validated_directory(
             _validate_webroot,
             "Input the webroot for {0}:".format(domain),
@@ -198,7 +198,7 @@ to serve all files under specified web root ({0})."""
             finally:
                 filesystem.umask(old_umask)
 
-    def _get_validation_path(self, root_path, achall):  # pylint: no-self-use
+    def _get_validation_path(self, root_path, achall):
         return os.path.join(root_path, achall.chall.encode("token"))
 
     def _perform_single(self, achall):

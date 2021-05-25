@@ -90,32 +90,31 @@ def env_no_snap_for_external_calls():
 def run_script(params, log=logger.error):
     """Run the script with the given params.
 
-    :param list params: List of parameters to pass to Popen
+    :param list params: List of parameters to pass to subprocess.run
     :param callable log: Logger method to use for errors
 
     """
     try:
-        proc = subprocess.Popen(params,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                universal_newlines=True,
-                                env=env_no_snap_for_external_calls())
+        proc = subprocess.run(params,
+                              check=False,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
+                              universal_newlines=True,
+                              env=env_no_snap_for_external_calls())
 
     except (OSError, ValueError):
         msg = "Unable to run the command: %s" % " ".join(params)
         log(msg)
         raise errors.SubprocessError(msg)
 
-    stdout, stderr = proc.communicate()
-
     if proc.returncode != 0:
         msg = "Error while running %s.\n%s\n%s" % (
-            " ".join(params), stdout, stderr)
+            " ".join(params), proc.stdout, proc.stderr)
         # Enter recovery routine...
         log(msg)
         raise errors.SubprocessError(msg)
 
-    return stdout, stderr
+    return proc.stdout, proc.stderr
 
 
 def exe_exists(exe):
@@ -400,20 +399,20 @@ def get_python_os_info(pretty=False):
             os_ver = info[1]
     elif os_type.startswith('darwin'):
         try:
-            proc = subprocess.Popen(
+            proc = subprocess.run(
                 ["/usr/bin/sw_vers", "-productVersion"],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                universal_newlines=True,
+                check=False, universal_newlines=True,
                 env=env_no_snap_for_external_calls(),
             )
         except OSError:
-            proc = subprocess.Popen(
+            proc = subprocess.run(
                 ["sw_vers", "-productVersion"],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                universal_newlines=True,
+                check=False, universal_newlines=True,
                 env=env_no_snap_for_external_calls(),
             )
-        os_ver = proc.communicate()[0].rstrip('\n')
+        os_ver = proc.stdout.rstrip('\n')
     elif os_type.startswith('freebsd'):
         # eg "9.3-RC3-p1"
         os_ver = os_ver.partition("-")[0]
