@@ -19,6 +19,12 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   and clarify output. If you would like to see more verbose output, use
   the -v or -vv flags. UX improvements are an iterative process and
   the Certbot team welcomes constructive feedback.
+* We changed how dependencies are specified between Certbot packages. For this
+  and future releases, higher level Certbot components will require that lower
+  level components are the same version or newer. More specifically, version X
+  of the Certbot package will now always require acme>=X and version Y of a
+  plugin package will always require acme>=Y and certbot=>Y. Specifying
+  dependencies in this way simplifies testing and development.
 
 ### Fixed
 
