@@ -9,7 +9,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
 import josepy as jose
 import OpenSSL
-import zope.component
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -18,7 +17,6 @@ from acme import messages
 import certbot
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot._internal import account
 from certbot._internal import auth_handler
@@ -30,6 +28,7 @@ from certbot._internal import storage
 from certbot._internal.plugins import selection as plugin_selection
 from certbot.compat import os
 from certbot.display import ops as display_ops
+from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +153,7 @@ def register(config, account_storage, tos_cb=None):
         if not config.register_unsafely_without_email:
             msg = ("No email was provided and "
                    "--register-unsafely-without-email was not present.")
-            logger.warning(msg)
+            logger.error(msg)
             raise errors.Error(msg)
         if not config.dry_run:
             logger.debug("Registering without email!")
@@ -276,7 +275,7 @@ class Client:
         if self.auth_handler is None:
             msg = ("Unable to obtain certificate because authenticator is "
                    "not set.")
-            logger.warning(msg)
+            logger.error(msg)
             raise errors.Error(msg)
         if self.account.regr is None:
             raise errors.Error("Please register with the ACME server first.")
@@ -506,8 +505,6 @@ class Client:
             cert_file.write(cert_pem)
         finally:
             cert_file.close()
-        logger.info("Server issued certificate; certificate written to %s",
-                    abs_cert_path)
 
         chain_file, abs_chain_path =\
                 _open_pem_file('chain_path', chain_path)
@@ -519,10 +516,11 @@ class Client:
 
         return abs_cert_path, abs_chain_path, abs_fullchain_path
 
-    def deploy_certificate(self, domains, privkey_path,
+    def deploy_certificate(self, cert_name, domains, privkey_path,
                            cert_path, chain_path, fullchain_path):
         """Install certificate
 
+        :param str cert_name: name of the certificate lineage (optional)
         :param list domains: list of domains to install the certificate
         :param str privkey_path: path to certificate private key
         :param str cert_path: certificate file path (optional)
@@ -530,13 +528,19 @@ class Client:
 
         """
         if self.installer is None:
-            logger.warning("No installer specified, client is unable to deploy"
+            logger.error("No installer specified, client is unable to deploy"
                            "the certificate")
             raise errors.Error("No installer available")
 
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
-        msg = ("Unable to install the certificate")
+        display_util.notify("Deploying certificate")
+
+        msg = f"Failed to install the certificate (installer: {self.config.installer})."
+        if cert_name:
+            msg += (" Try again after fixing errors by running:\n\n"
+                    f"  {cli.cli_constants.cli_command} install --cert-name {cert_name}\n")
+
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 self.installer.deploy_cert(
@@ -568,7 +572,7 @@ class Client:
 
         """
         if self.installer is None:
-            logger.warning("No installer is specified, there isn't any "
+            logger.error("No installer is specified, there isn't any "
                            "configuration to enhance.")
             raise errors.Error("No installer available")
 
@@ -589,7 +593,7 @@ class Client:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True
             elif config_value:
-                logger.warning(
+                logger.error(
                     "Option %s is not supported by the selected installer. "
                     "Skipping enhancement.", config_name)
 
@@ -621,13 +625,13 @@ class Client:
                     self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
                     if enhancement == "ensure-http-header":
-                        logger.warning("Enhancement %s was already set.",
+                        logger.info("Enhancement %s was already set.",
                                 options)
                     else:
-                        logger.warning("Enhancement %s was already set.",
+                        logger.info("Enhancement %s was already set.",
                                 enhancement)
                 except errors.PluginError:
-                    logger.warning("Unable to set enhancement %s for %s",
+                    logger.error("Unable to set enhancement %s for %s",
                             enhancement, dom)
                     raise
 
@@ -640,8 +644,7 @@ class Client:
 
         """
         self.installer.recovery_routine()
-        reporter = zope.component.getUtility(interfaces.IReporter)
-        reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
+        display_util.notify(success_msg)
 
     def _rollback_and_restart(self, success_msg):
         """Rollback the most recent checkpoint and restart the webserver
@@ -649,20 +652,19 @@ class Client:
         :param str success_msg: message to show on successful rollback
 
         """
-        logger.critical("Rolling back to previous server configuration...")
-        reporter = zope.component.getUtility(interfaces.IReporter)
+        logger.info("Rolling back to previous server configuration...")
         try:
             self.installer.rollback_checkpoints()
             self.installer.restart()
         except:
-            reporter.add_message(
+            logger.error(
                 "An error occurred and we failed to restore your config and "
                 "restart your server. Please post to "
                 "https://community.letsencrypt.org/c/help "
-                "with details about your configuration and this error you received.",
-                reporter.HIGH_PRIORITY)
+                "with details about your configuration and this error you received."
+            )
             raise
-        reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
+        display_util.notify(success_msg)
 
 
 def validate_key_csr(privkey, csr=None):
@@ -761,5 +763,3 @@ def _save_chain(chain_pem, chain_file):
         chain_file.write(chain_pem)
     finally:
         chain_file.close()
-
-    logger.info("Cert chain written to %s", chain_file.name)

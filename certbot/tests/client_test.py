@@ -99,7 +99,8 @@ class RegisterTest(test_util.ConfigTestCase):
                 self._call()
                 self.assertIs(mock_prepare.called, True)
 
-    def test_it(self):
+    @test_util.patch_get_utility()
+    def test_it(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
@@ -159,7 +160,8 @@ class RegisterTest(test_util.ConfigTestCase):
                 # check Certbot created an account with no email. Contact should return empty
                 self.assertFalse(mock_client().new_account_and_tos.call_args[0][0].contact)
 
-    def test_with_eab_arguments(self):
+    @test_util.patch_get_utility()
+    def test_with_eab_arguments(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().client.directory.__getitem__ = mock.Mock(
                 side_effect=self._new_acct_dir_mock
@@ -174,7 +176,8 @@ class RegisterTest(test_util.ConfigTestCase):
 
                     self.assertIs(mock_eab_from_data.called, True)
 
-    def test_without_eab_arguments(self):
+    @test_util.patch_get_utility()
+    def test_without_eab_arguments(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
@@ -315,7 +318,7 @@ class ClientTest(ClientTestCommon):
             errors.Error,
             self.client.obtain_certificate_from_csr,
             test_csr)
-        mock_logger.warning.assert_called_once_with(mock.ANY)
+        mock_logger.error.assert_called_once_with(mock.ANY)
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate(self, mock_crypto_util):
@@ -515,15 +518,16 @@ class ClientTest(ClientTestCommon):
 
         shutil.rmtree(tmp_path)
 
-    def test_deploy_certificate_success(self):
+    @test_util.patch_get_utility()
+    def test_deploy_certificate_success(self, mock_util):
         self.assertRaises(errors.Error, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain", "fullchain")
+                          "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
 
         installer = mock.MagicMock()
         self.client.installer = installer
 
         self.client.deploy_certificate(
-            ["foo.bar"], "key", "cert", "chain", "fullchain")
+            "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.deploy_cert.assert_called_once_with(
             cert_path=os.path.abspath("cert"),
             chain_path=os.path.abspath("chain"),
@@ -533,46 +537,81 @@ class ClientTest(ClientTestCommon):
         self.assertEqual(installer.save.call_count, 2)
         installer.restart.assert_called_once_with()
 
-    def test_deploy_certificate_failure(self):
+    @mock.patch('certbot._internal.client.display_util.notify')
+    @test_util.patch_get_utility()
+    def test_deploy_certificate_failure(self, mock_util, mock_notify):
         installer = mock.MagicMock()
         self.client.installer = installer
+        self.config.installer = "foobar"
 
         installer.deploy_cert.side_effect = errors.PluginError
         self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain", "fullchain")
+                          "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
-    def test_deploy_certificate_save_failure(self):
+        mock_notify.assert_any_call('Deploying certificate')
+        mock_notify.assert_any_call(
+            'Failed to install the certificate (installer: foobar). '
+            'Try again after fixing errors by running:\n\n  certbot install --cert-name foo.bar\n'
+        )
+
+    @mock.patch('certbot._internal.client.display_util.notify')
+    @test_util.patch_get_utility()
+    def test_deploy_certificate_failure_no_certname(self, mock_util, mock_notify):
+        installer = mock.MagicMock()
+        self.client.installer = installer
+        self.config.installer = "foobar"
+
+        installer.deploy_cert.side_effect = errors.PluginError
+        self.assertRaises(errors.PluginError, self.client.deploy_certificate,
+                          None, ["foo.bar"], "key", "cert", "chain", "fullchain")
+        installer.recovery_routine.assert_called_once_with()
+
+        mock_notify.assert_any_call('Deploying certificate')
+        mock_notify.assert_any_call(
+            'Failed to install the certificate (installer: foobar).'
+        )
+
+
+    @test_util.patch_get_utility()
+    def test_deploy_certificate_save_failure(self, mock_util):
         installer = mock.MagicMock()
         self.client.installer = installer
 
         installer.save.side_effect = errors.PluginError
         self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain", "fullchain")
+                          "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
+    @mock.patch('certbot._internal.client.display_util.notify')
     @test_util.patch_get_utility()
-    def test_deploy_certificate_restart_failure(self, mock_get_utility):
+    def test_deploy_certificate_restart_failure(self, mock_get_utility, mock_notify):
         installer = mock.MagicMock()
         installer.restart.side_effect = [errors.PluginError, None]
         self.client.installer = installer
 
         self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain", "fullchain")
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
+                          "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
+        mock_notify.assert_called_with(
+            'We were unable to install your certificate, however, we successfully restored '
+            'your server to its prior configuration.')
         installer.rollback_checkpoints.assert_called_once_with()
         self.assertEqual(installer.restart.call_count, 2)
 
+    @mock.patch('certbot._internal.client.logger')
     @test_util.patch_get_utility()
-    def test_deploy_certificate_restart_failure2(self, mock_get_utility):
+    def test_deploy_certificate_restart_failure2(self, mock_get_utility, mock_logger):
         installer = mock.MagicMock()
         installer.restart.side_effect = errors.PluginError
         installer.rollback_checkpoints.side_effect = errors.ReverterError
         self.client.installer = installer
 
         self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain", "fullchain")
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
+                          "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
+        self.assertEqual(mock_logger.error.call_count, 1)
+        self.assertIn(
+            'An error occurred and we failed to restore your config',
+            mock_logger.error.call_args[0][0])
         installer.rollback_checkpoints.assert_called_once_with()
         self.assertEqual(installer.restart.call_count, 1)
 
@@ -601,23 +640,23 @@ class EnhanceConfigTest(ClientTestCommon):
         self.config.hsts = True
         with mock.patch("certbot._internal.client.logger") as mock_logger:
             self.client.enhance_config([self.domain], None)
-        self.assertEqual(mock_logger.warning.call_count, 1)
+        self.assertEqual(mock_logger.error.call_count, 1)
         self.client.installer.enhance.assert_not_called()
 
     @mock.patch("certbot._internal.client.logger")
     def test_already_exists_header(self, mock_log):
         self.config.hsts = True
         self._test_with_already_existing()
-        self.assertIs(mock_log.warning.called, True)
-        self.assertEqual(mock_log.warning.call_args[0][1],
+        self.assertIs(mock_log.info.called, True)
+        self.assertEqual(mock_log.info.call_args[0][1],
                           'Strict-Transport-Security')
 
     @mock.patch("certbot._internal.client.logger")
     def test_already_exists_redirect(self, mock_log):
         self.config.redirect = True
         self._test_with_already_existing()
-        self.assertIs(mock_log.warning.called, True)
-        self.assertEqual(mock_log.warning.call_args[0][1],
+        self.assertIs(mock_log.info.called, True)
+        self.assertEqual(mock_log.info.call_args[0][1],
                           'redirect')
 
     @mock.patch("certbot._internal.client.logger")
@@ -659,7 +698,7 @@ class EnhanceConfigTest(ClientTestCommon):
     def test_enhance_failure(self):
         self.client.installer = mock.MagicMock()
         self.client.installer.enhance.side_effect = errors.PluginError
-        self._test_error()
+        self._test_error(enhance_error=True)
         self.client.installer.recovery_routine.assert_called_once_with()
 
     def test_save_failure(self):
@@ -685,12 +724,19 @@ class EnhanceConfigTest(ClientTestCommon):
         self._test_error()
         self.assertIs(self.client.installer.restart.called, True)
 
-    def _test_error(self):
+    def _test_error(self, enhance_error=False, restart_error=False):
         self.config.redirect = True
-        with test_util.patch_get_utility() as mock_gu:
+        with mock.patch('certbot._internal.client.logger') as mock_logger, \
+             test_util.patch_get_utility() as mock_gu:
             self.assertRaises(
                 errors.PluginError, self._test_with_all_supported)
-        self.assertEqual(mock_gu().add_message.call_count, 1)
+
+        if enhance_error:
+            self.assertEqual(mock_logger.error.call_count, 1)
+            self.assertIn('Unable to set enhancement', mock_logger.error.call_args_list[0][0][0])
+        if restart_error:
+            mock_logger.critical.assert_called_with(
+                'Rolling back to previous server configuration...')
 
     def _test_with_all_supported(self):
         if self.client.installer is None:

@@ -9,6 +9,7 @@ import logging
 import re
 import warnings
 
+from typing import List
 # See https://github.com/pyca/cryptography/issues/4275
 from cryptography import x509  # type: ignore
 from cryptography.exceptions import InvalidSignature
@@ -64,7 +65,8 @@ def init_save_key(
             bits=key_size, elliptic_curve=elliptic_curve or "secp256r1", key_type=key_type,
         )
     except ValueError as err:
-        logger.error("", exc_info=True)
+        logger.debug("", exc_info=True)
+        logger.error("Encountered error while making key: %s", str(err))
         raise err
 
     config = zope.component.getUtility(interfaces.IConfig)
@@ -387,8 +389,9 @@ def _load_cert_or_req(cert_or_req_str, load_func,
                       typ=crypto.FILETYPE_PEM):
     try:
         return load_func(typ, cert_or_req_str)
-    except crypto.Error:
-        logger.error("", exc_info=True)
+    except crypto.Error as err:
+        logger.debug("", exc_info=True)
+        logger.error("Encountered error while loading certificate or csr: %s", str(err))
         raise
 
 
@@ -435,6 +438,18 @@ def get_names_from_cert(csr, typ=crypto.FILETYPE_PEM):
     """
     return _get_names_from_cert_or_req(
         csr, crypto.load_certificate, typ)
+
+
+def get_names_from_req(csr: str, typ: int = crypto.FILETYPE_PEM) -> List[str]:
+    """Get a list of domains from a CSR, including the CN if it is set.
+
+    :param str cert: CSR (encoded).
+    :param typ: `crypto.FILETYPE_PEM` or `crypto.FILETYPE_ASN1`
+    :returns: A list of domain names.
+    :rtype: list
+
+    """
+    return _get_names_from_cert_or_req(csr, crypto.load_certificate_request, typ)
 
 
 def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
@@ -589,7 +604,7 @@ def find_chain_with_issuer(fullchains, issuer_cn, warn_on_no_match=False):
 
     # Nothing matched, return whatever was first in the list.
     if warn_on_no_match:
-        logger.info("Certbot has been configured to prefer certificate chains with "
+        logger.warning("Certbot has been configured to prefer certificate chains with "
                     "issuer '%s', but no chain from the CA matched this issuer. Using "
                     "the default certificate chain instead.", issuer_cn)
     return fullchains[0]

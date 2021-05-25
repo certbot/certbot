@@ -1,5 +1,6 @@
 """Test for certbot_apache._internal.configurator for CentOS 6 overrides"""
 import unittest
+from unittest import mock
 
 from certbot.compat import os
 from certbot.errors import MisconfigurationError
@@ -65,7 +66,8 @@ class CentOS6Tests(util.ApacheTest):
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
         self.assertEqual(found, 2)
 
-    def test_loadmod_default(self):
+    @mock.patch("certbot_apache._internal.configurator.display_util.notify")
+    def test_loadmod_default(self, unused_mock_notify):
         ssl_loadmods = self.config.parser.find_dir(
             "LoadModule", "ssl_module", exclude=False)
         self.assertEqual(len(ssl_loadmods), 1)
@@ -95,7 +97,8 @@ class CentOS6Tests(util.ApacheTest):
             ifmod_args = self.config.parser.get_all_args(lm[:-17])
             self.assertTrue("!mod_ssl.c" in ifmod_args)
 
-    def test_loadmod_multiple(self):
+    @mock.patch("certbot_apache._internal.configurator.display_util.notify")
+    def test_loadmod_multiple(self, unused_mock_notify):
         sslmod_args = ["ssl_module", "modules/mod_ssl.so"]
         # Adds another LoadModule to main httpd.conf in addtition to ssl.conf
         self.config.parser.add_dir(self.config.parser.loc["default"], "LoadModule",
@@ -115,7 +118,8 @@ class CentOS6Tests(util.ApacheTest):
         for mod in post_loadmods:
             self.assertTrue(self.config.parser.not_modssl_ifmodule(mod))  #pylint: disable=no-member
 
-    def test_loadmod_rootconf_exists(self):
+    @mock.patch("certbot_apache._internal.configurator.display_util.notify")
+    def test_loadmod_rootconf_exists(self, unused_mock_notify):
         sslmod_args = ["ssl_module", "modules/mod_ssl.so"]
         rootconf_ifmod = self.config.parser.get_ifmod(
             parser.get_aug_path(self.config.parser.loc["default"]),
@@ -142,7 +146,8 @@ class CentOS6Tests(util.ApacheTest):
             self.config.parser.get_all_args(mods[0][:-7]),
             sslmod_args)
 
-    def test_neg_loadmod_already_on_path(self):
+    @mock.patch("certbot_apache._internal.configurator.display_util.notify")
+    def test_neg_loadmod_already_on_path(self, unused_mock_notify):
         loadmod_args = ["ssl_module", "modules/mod_ssl.so"]
         ifmod = self.config.parser.get_ifmod(
             self.vh_truth[1].path, "!mod_ssl.c", beginning=True)
@@ -185,7 +190,8 @@ class CentOS6Tests(util.ApacheTest):
         # Make sure that none was changed
         self.assertEqual(pre_matches, post_matches)
 
-    def test_loadmod_not_found(self):
+    @mock.patch("certbot_apache._internal.configurator.display_util.notify")
+    def test_loadmod_not_found(self, unused_mock_notify):
         # Remove all existing LoadModule ssl_module... directives
         orig_loadmods = self.config.parser.find_dir("LoadModule",
                                                     "ssl_module",

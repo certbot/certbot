@@ -381,6 +381,37 @@ class GetNamesFromCertTest(unittest.TestCase):
         self.assertRaises(OpenSSL.crypto.Error, self._call, "hello there")
 
 
+class GetNamesFromReqTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.get_names_from_req."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import get_names_from_req
+        return get_names_from_req(*args, **kwargs)
+
+    def test_nonames(self):
+        self.assertEqual(
+            [],
+            self._call(test_util.load_vector('csr-nonames_512.pem')))
+
+    def test_nosans(self):
+        self.assertEqual(
+            ['example.com'],
+            self._call(test_util.load_vector('csr-nosans_512.pem')))
+
+    def test_sans(self):
+        self.assertEqual(
+            ['example.com', 'example.org', 'example.net', 'example.info',
+             'subdomain.example.com', 'other.subdomain.example.com'],
+            self._call(test_util.load_vector('csr-6sans_512.pem')))
+
+    def test_der(self):
+        from OpenSSL.crypto import FILETYPE_ASN1
+        self.assertEqual(
+            ['Example.com'],
+            self._call(test_util.load_vector('csr_512.der'), typ=FILETYPE_ASN1))
+
+
 class CertLoaderTest(unittest.TestCase):
     """Tests for certbot.crypto_util.pyopenssl_load_certificate"""
 
@@ -493,13 +524,13 @@ class FindChainWithIssuerTest(unittest.TestCase):
         self.assertEqual(matched, fullchains[0])
         mock_info.assert_not_called()
 
-    @mock.patch('certbot.crypto_util.logger.info')
-    def test_warning_on_no_match(self, mock_info):
+    @mock.patch('certbot.crypto_util.logger.warning')
+    def test_warning_on_no_match(self, mock_warning):
         fullchains = self._all_fullchains()
         matched = self._call(fullchains, "non-existent issuer",
                              warn_on_no_match=True)
         self.assertEqual(matched, fullchains[0])
-        mock_info.assert_called_once_with("Certbot has been configured to prefer "
+        mock_warning.assert_called_once_with("Certbot has been configured to prefer "
             "certificate chains with issuer '%s', but no chain from the CA matched "
             "this issuer. Using the default certificate chain instead.",
             "non-existent issuer")

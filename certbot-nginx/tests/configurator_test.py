@@ -31,6 +31,10 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config = self.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
+        patch = mock.patch('certbot_nginx._internal.configurator.display_util.notify')
+        self.mock_notify = patch.start()
+        self.addCleanup(patch.stop)
+
     @mock.patch("certbot_nginx._internal.configurator.util.exe_exists")
     def test_prepare_no_install(self, mock_exe_exists):
         mock_exe_exists.return_value = False

@@ -1004,21 +1004,26 @@ class MainTest(test_util.ConfigTestCase):
                 args += '-d foo.bar -a standalone certonly'.split()
                 self._call(args)
 
+    @mock.patch('certbot._internal.main._report_new_cert')
     @test_util.patch_get_utility()
-    def test_certonly_dry_run_new_request_success(self, mock_get_utility):
+    def test_certonly_dry_run_new_request_success(self, mock_get_utility, mock_report):
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = None
         self._certonly_new_request_common(mock_client, ['--dry-run'])
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
-        self.assertIn('dry run', mock_get_utility().add_message.call_args[0][0])
+        self.assertEqual(mock_report.call_count, 1)
+        self.assertIs(mock_report.call_args[0][0].dry_run, True)
         # Asserts we don't suggest donating after a successful dry run
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
+        self.assertEqual(mock_get_utility().add_message.call_count, 0)
 
+    @mock.patch('certbot._internal.main._report_new_cert')
+    @mock.patch('certbot._internal.main.util.atexit_register')
     @mock.patch('certbot._internal.eff.handle_subscription')
     @mock.patch('certbot.crypto_util.notAfter')
     @test_util.patch_get_utility()
-    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter, mock_subscription):
+    def test_certonly_new_request_success(self, unused_mock_get_utility, mock_notAfter,
+                                          mock_subscription, mock_register, mock_report):
         cert_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/foo.bar'))
         key_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/baz.qux'))
         date = '1970-01-01'
@@ -1031,11 +1036,10 @@ class MainTest(test_util.ConfigTestCase):
         self._certonly_new_request_common(mock_client)
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
-        cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
-        self.assertIn(cert_path, cert_msg)
-        self.assertIn(date, cert_msg)
-        self.assertIn(key_path, cert_msg)
-        self.assertIn('donate', mock_get_utility().add_message.call_args[0][0])
+        self.assertEqual(mock_report.call_count, 1)
+        self.assertIn(cert_path, mock_report.call_args[0][2])
+        self.assertIn(key_path, mock_report.call_args[0][3])
+        self.assertIn('donate',  mock_register.call_args[0][1])
         self.assertIs(mock_subscription.called, True)
 
     @mock.patch('certbot._internal.eff.handle_subscription')
@@ -1119,31 +1123,33 @@ class MainTest(test_util.ConfigTestCase):
 
         return mock_lineage, mock_get_utility, stdout
 
+    @mock.patch('certbot._internal.main._report_new_cert')
+    @mock.patch('certbot._internal.main.util.atexit_register')
     @mock.patch('certbot.crypto_util.notAfter')
-    def test_certonly_renewal(self, _):
-        lineage, get_utility, _ = self._test_renewal_common(True, [])
+    def test_certonly_renewal(self, _, mock_register, mock_report):
+        lineage, _, _ = self._test_renewal_common(True, [])
         self.assertEqual(lineage.save_successor.call_count, 1)
         lineage.update_all_links_to.assert_called_once_with(
             lineage.latest_common_version())
-        cert_msg = get_utility().add_message.call_args_list[0][0][0]
-        self.assertIn('fullchain.pem', cert_msg)
-        self.assertIn('donate', get_utility().add_message.call_args[0][0])
+        self.assertEqual(mock_report.call_count, 1)
+        self.assertIn('fullchain.pem', mock_report.call_args[0][2])
+        self.assertIn('donate', mock_register.call_args[0][1])
 
+    @mock.patch('certbot._internal.main.display_util.notify')
     @mock.patch('certbot._internal.log.logging.handlers.RotatingFileHandler.doRollover')
     @mock.patch('certbot.crypto_util.notAfter')
-    def test_certonly_renewal_triggers(self, _, __):
+    def test_certonly_renewal_triggers(self, _, __, mock_notify):
         # --dry-run should force renewal
-        _, get_utility, _ = self._test_renewal_common(False, ['--dry-run', '--keep'],
+        _, _, _ = self._test_renewal_common(False, ['--dry-run', '--keep'],
                                                       log_out="simulating renewal")
-        self.assertEqual(get_utility().add_message.call_count, 1)
-        self.assertIn('dry run', get_utility().add_message.call_args[0][0])
+        mock_notify.assert_any_call('The dry run was successful.')
 
         self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
                                   log_out="Auto-renewal forced")
-        self.assertEqual(get_utility().add_message.call_count, 1)
 
-        self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
-                                  log_out="not yet due", should_renew=False)
+        _, get_utility, _ = self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
+                                  should_renew=False)
+        self.assertIn('not yet due', get_utility().notification.call_args[0][0])
 
     def _dump_log(self):
         print("Logs:")
@@ -1400,19 +1406,23 @@ class MainTest(test_util.ConfigTestCase):
 
         return mock_get_utility
 
+    @mock.patch('certbot._internal.main._csr_report_new_cert')
+    @mock.patch('certbot._internal.main.util.atexit_register')
     @mock.patch('certbot._internal.eff.handle_subscription')
-    def test_certonly_csr(self, mock_subscription):
-        mock_get_utility = self._test_certonly_csr_common()
-        cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
-        self.assertIn('fullchain.pem', cert_msg)
-        self.assertNotIn('Your key file has been saved at', cert_msg)
-        self.assertIn('donate', mock_get_utility().add_message.call_args[0][0])
+    def test_certonly_csr(self, mock_subscription, mock_register, mock_csr_report):
+        _ = self._test_certonly_csr_common()
+        self.assertEqual(mock_csr_report.call_count, 1)
+        self.assertIn('cert_512.pem', mock_csr_report.call_args[0][1])
+        self.assertIsNone(mock_csr_report.call_args[0][2])
+        self.assertIn('fullchain.pem', mock_csr_report.call_args[0][3])
+        self.assertIn('donate', mock_register.call_args[0][1])
         self.assertIs(mock_subscription.called, True)
 
-    def test_certonly_csr_dry_run(self):
-        mock_get_utility = self._test_certonly_csr_common(['--dry-run'])
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
-        self.assertIn('dry run', mock_get_utility().add_message.call_args[0][0])
+    @mock.patch('certbot._internal.main._csr_report_new_cert')
+    def test_certonly_csr_dry_run(self, mock_csr_report):
+        _ = self._test_certonly_csr_common(['--dry-run'])
+        self.assertEqual(mock_csr_report.call_count, 1)
+        self.assertIs(mock_csr_report.call_args[0][0].dry_run, True)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.main.client.acme_client')
@@ -1481,6 +1491,24 @@ class MainTest(test_util.ConfigTestCase):
         # Make sure we're returning None, and hence not trying to run the
         # without installer
         self.assertIs(mock_run.called, False)
+
+    @mock.patch('certbot._internal.main.updater.run_renewal_deployer')
+    @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
+    @mock.patch('certbot._internal.main._init_le_client')
+    @mock.patch('certbot._internal.main._get_and_save_cert')
+    def test_renew_doesnt_restart_on_dryrun(self, mock_get_cert, mock_init, mock_choose,
+                                            mock_run_renewal_deployer):
+        """A dry-run renewal shouldn't try to restart the installer"""
+        self.config.dry_run = True
+        installer = mock.MagicMock()
+        mock_choose.return_value = (installer, mock.MagicMock())
+
+        main.renew_cert(self.config, None, None)
+
+        self.assertEqual(mock_init.call_count, 1)
+        self.assertEqual(mock_get_cert.call_count, 1)
+        installer.restart.assert_not_called()
+        mock_run_renewal_deployer.assert_not_called()
 
 
 class UnregisterTest(unittest.TestCase):
@@ -1739,6 +1767,106 @@ class InstallTest(test_util.ConfigTestCase):
         self.assertRaises(errors.ConfigurationError,
                           main.install,
                           self.config, plugins)
+
+
+class ReportNewCertTest(unittest.TestCase):
+    """Tests for certbot._internal.main._report_new_cert and
+       certbot._internal.main._csr_report_new_cert.
+    """
+
+    def setUp(self):
+        from datetime import datetime
+        self.notify_patch = mock.patch('certbot._internal.main.display_util.notify')
+        self.mock_notify = self.notify_patch.start()
+
+        self.notafter_patch = mock.patch('certbot._internal.main.crypto_util.notAfter')
+        self.mock_notafter = self.notafter_patch.start()
+        self.mock_notafter.return_value = datetime.utcfromtimestamp(0)
+
+    def tearDown(self):
+        self.notify_patch.stop()
+        self.notafter_patch.stop()
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot._internal.main import _report_new_cert
+        return _report_new_cert(*args, **kwargs)
+
+    @classmethod
+    def _call_csr(cls, *args, **kwargs):
+        from certbot._internal.main import _csr_report_new_cert
+        return _csr_report_new_cert(*args, **kwargs)
+
+    def test_report_dry_run(self):
+        self._call(mock.Mock(dry_run=True), None, None, None)
+        self.mock_notify.assert_called_with("The dry run was successful.")
+
+    def test_csr_report_dry_run(self):
+        self._call_csr(mock.Mock(dry_run=True), None, None, None)
+        self.mock_notify.assert_called_with("The dry run was successful.")
+
+    def test_report_no_paths(self):
+        with self.assertRaises(AssertionError):
+            self._call(mock.Mock(dry_run=False), None, None, None)
+
+        with self.assertRaises(AssertionError):
+            self._call_csr(mock.Mock(dry_run=False), None, None, None)
+
+    def test_report(self):
+        self._call(mock.Mock(dry_run=False),
+                  '/path/to/cert.pem', '/path/to/fullchain.pem',
+                  '/path/to/privkey.pem')
+
+        self.mock_notify.assert_called_with(
+            '\nSuccessfully received certificate.\n'
+            'Certificate is saved at: /path/to/fullchain.pem\n'
+            'Key is saved at:         /path/to/privkey.pem\n'
+            'This certificate expires on 1970-01-01.\n'
+            'These files will be updated when the certificate renews.\n'
+            'Certbot will automatically renew this certificate in the background.'
+        )
+
+    def test_report_no_key(self):
+        self._call(mock.Mock(dry_run=False),
+                  '/path/to/cert.pem', '/path/to/fullchain.pem',
+                  None)
+
+        self.mock_notify.assert_called_with(
+            '\nSuccessfully received certificate.\n'
+            'Certificate is saved at: /path/to/fullchain.pem\n'
+            'This certificate expires on 1970-01-01.\n'
+            'These files will be updated when the certificate renews.\n'
+            'Certbot will automatically renew this certificate in the background.'
+        )
+
+    def test_report_no_preconfigured_renewal(self):
+        self._call(mock.Mock(dry_run=False, preconfigured_renewal=False),
+                  '/path/to/cert.pem', '/path/to/fullchain.pem',
+                  '/path/to/privkey.pem')
+
+        self.mock_notify.assert_called_with(
+            '\nSuccessfully received certificate.\n'
+            'Certificate is saved at: /path/to/fullchain.pem\n'
+            'Key is saved at:         /path/to/privkey.pem\n'
+            'This certificate expires on 1970-01-01.\n'
+            'These files will be updated when the certificate renews.\n'
+            'Run "certbot renew" to renew expiring certificates. We recommend setting up a '
+            'scheduled task for renewal; see https://certbot.eff.org/docs/using.html#automated'
+            '-renewals for instructions.'
+        )
+
+
+    def test_csr_report(self):
+        self._call_csr(mock.Mock(dry_run=False), '/path/to/cert.pem',
+                      '/path/to/chain.pem', '/path/to/fullchain.pem')
+
+        self.mock_notify.assert_called_with(
+            '\nSuccessfully received certificate.\n'
+            'Certificate is saved at:            /path/to/cert.pem\n'
+            'Intermediate CA chain is saved at:  /path/to/chain.pem\n'
+            'Full certificate chain is saved at: /path/to/fullchain.pem\n'
+            'This certificate expires on 1970-01-01.'
+        )
 
 
 class UpdateAccountTest(test_util.ConfigTestCase):

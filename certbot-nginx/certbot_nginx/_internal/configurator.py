@@ -24,6 +24,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.display import util as display_util
 from certbot.compat import os
 from certbot.plugins import common
 from certbot_nginx._internal import constants
@@ -234,6 +235,8 @@ class NginxConfigurator(common.Installer):
         vhosts = self.choose_vhosts(domain, create_if_no_match=True)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
+            display_util.notify("Successfully deployed certificate for {} to {}"
+                                .format(domain, vhost.filep))
 
     def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):  # pylint: disable=unused-argument
         """
@@ -766,7 +769,7 @@ class NginxConfigurator(common.Installer):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
         except errors.PluginError:
-            logger.warning("Failed %s for %s", enhancement, domain)
+            logger.error("Failed %s for %s", enhancement, domain)
             raise
 
     def _has_certbot_redirect(self, vhost, domain):
@@ -1074,6 +1077,13 @@ class NginxConfigurator(common.Installer):
             "Version: {version}".format(
                 os.linesep, root=self.parser.config_root,
                 version=".".join(str(i) for i in self.version))
+        )
+
+    def auth_hint(self, failed_achalls): # pragma: no cover
+        return (
+            "The Certificate Authority failed to verify the temporary nginx configuration changes "
+            "made by Certbot. Ensure the listed domains point to this nginx server and that it is "
+            "accessible from the internet."
         )
 
     ###################################################

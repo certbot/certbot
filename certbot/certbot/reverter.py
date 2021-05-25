@@ -514,7 +514,7 @@ class Reverter:
                 filesystem.replace(self.config.in_progress_dir, final_dir)
                 return
             except OSError:
-                logger.warning("Extreme, unexpected race condition, retrying (%s)", timestamp)
+                logger.warning("Unexpected race condition, retrying (%s)", timestamp)
 
         # After 10 attempts... something is probably wrong here...
         logger.error(
