@@ -505,7 +505,8 @@ def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[error
         if config.csr:
             steps.append(
                 "Certificates created using --csr will not be renewed automatically by Certbot. "
-                "Run the same command again in order to renew the certificate, as necessary.")
+                "You will need to renew the certificate before it expires, by running the same "
+                "Certbot command again.")
         elif not config.preconfigured_renewal:
             steps.append(
                 f'Run "{cli.cli_constants.cli_command} renew" to renew expiring certificates. '
