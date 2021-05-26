@@ -67,13 +67,16 @@ def cert_path_for_cert_name(config: interfaces.IConfig, cert_name: str) -> str:
 
     """
     cert_name_implied_conf = renewal_file_for_certname(config, cert_name)
-    return configobj.ConfigObj(cert_name_implied_conf)["fullchain"]
+    return configobj.ConfigObj(
+        cert_name_implied_conf, encoding='utf-8', default_encoding='utf-8')["fullchain"]
 
 
 def config_with_defaults(config=None):
     """Merge supplied config, if provided, on top of builtin defaults."""
-    defaults_copy = configobj.ConfigObj(constants.RENEWER_DEFAULTS)
-    defaults_copy.merge(config if config is not None else configobj.ConfigObj())
+    defaults_copy = configobj.ConfigObj(
+        constants.RENEWER_DEFAULTS, encoding='utf-8', default_encoding='utf-8')
+    defaults_copy.merge(config if config is not None else configobj.ConfigObj(
+        encoding='utf-8', default_encoding='utf-8'))
     return defaults_copy
 
 
@@ -114,7 +117,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     :rtype: configobj.ConfigObj
 
     """
-    config = configobj.ConfigObj(o_filename)
+    config = configobj.ConfigObj(o_filename, encoding='utf-8', default_encoding='utf-8')
     config["version"] = certbot.__version__
     config["archive_dir"] = archive_dir
     for kind in ALL_FOUR:
@@ -196,7 +199,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
     filesystem.replace(temp_filename, config_filename)
 
-    return configobj.ConfigObj(config_filename)
+    return configobj.ConfigObj(config_filename, encoding='utf-8', default_encoding='utf-8')
 
 
 def get_link_target(link):
@@ -324,10 +327,11 @@ def delete_files(config, certname):
     full_default_archive_dir = full_archive_path(None, config, certname)
     full_default_live_dir = _full_live_path(config, certname)
     try:
-        renewal_config = configobj.ConfigObj(renewal_filename)
+        renewal_config = configobj.ConfigObj(
+            renewal_filename, encoding='utf-8', default_encoding='utf-8')
     except configobj.ConfigObjError:
         # config is corrupted
-        logger.warning("Could not parse %s. You may wish to manually "
+        logger.error("Could not parse %s. You may wish to manually "
             "delete the contents of %s and %s.", renewal_filename,
             full_default_live_dir, full_default_archive_dir)
         raise errors.CertStorageError(
@@ -336,7 +340,7 @@ def delete_files(config, certname):
         # we couldn't read it, but let's at least delete it
         # if this was going to fail, it already would have.
         os.remove(renewal_filename)
-        logger.debug("Removed %s", renewal_filename)
+        logger.info("Removed %s", renewal_filename)
 
     # cert files and (hopefully) live directory
     # it's not guaranteed that the files are in our default storage
@@ -434,7 +438,8 @@ class RenewableCert(interfaces.RenewableCert):
         # systemwide renewal configuration; self.configfile should be
         # used to make and save changes.
         try:
-            self.configfile = configobj.ConfigObj(config_filename)
+            self.configfile = configobj.ConfigObj(
+                config_filename, encoding='utf-8', default_encoding='utf-8')
         except configobj.ConfigObjError:
             raise errors.CertStorageError(
                 "error parsing {0}".format(config_filename))

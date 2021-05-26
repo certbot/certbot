@@ -198,6 +198,7 @@ class Reverter:
         Read the file returning the lines, and a pointer to the end of the file.
 
         """
+        # pylint: disable=consider-using-with
         # Open up filepath differently depending on if it already exists
         if os.path.isfile(filepath):
             op_fd = open(filepath, "r+")
@@ -348,26 +349,18 @@ class Reverter:
 
         """
         commands_fp = os.path.join(self._get_cp_dir(temporary), "COMMANDS")
-        command_file = None
         # It is strongly advised to set newline = '' on Python 3 with CSV,
         # and it fixes problems on Windows.
         kwargs = {'newline': ''}
         try:
-            if os.path.isfile(commands_fp):
-                command_file = open(commands_fp, "a", **kwargs)  # type: ignore
-            else:
-                command_file = open(commands_fp, "w", **kwargs)  # type: ignore
-
-            csvwriter = csv.writer(command_file)
-            csvwriter.writerow(command)
-
+            mode = "a" if os.path.isfile(commands_fp) else "w"
+            with open(commands_fp, mode, **kwargs) as f:  # type: ignore
+                csvwriter = csv.writer(f)
+                csvwriter.writerow(command)
         except (IOError, OSError):
             logger.error("Unable to register undo command")
             raise errors.ReverterError(
                 "Unable to register undo command.")
-        finally:
-            if command_file is not None:
-                command_file.close()
 
     def _get_cp_dir(self, temporary):
         """Return the proper reverter directory."""
@@ -521,7 +514,7 @@ class Reverter:
                 filesystem.replace(self.config.in_progress_dir, final_dir)
                 return
             except OSError:
-                logger.warning("Extreme, unexpected race condition, retrying (%s)", timestamp)
+                logger.warning("Unexpected race condition, retrying (%s)", timestamp)
 
         # After 10 attempts... something is probably wrong here...
         logger.error(

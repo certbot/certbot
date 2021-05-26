@@ -37,6 +37,15 @@ class DNSAuthenticator(common.Plugin):
             help='The number of seconds to wait for DNS to propagate before asking the ACME server '
                  'to verify the DNS record.')
 
+    def auth_hint(self, failed_achalls):
+        delay = self.conf('propagation-seconds')
+        return (
+            'The Certificate Authority failed to verify the DNS TXT records created by --{name}. '
+            'Ensure the above domains are hosted by this DNS provider, or try increasing '
+            '--{name}-propagation-seconds (currently {secs} second{suffix}).'
+            .format(name=self.name, secs=delay, suffix='s' if delay != 1 else '')
+        )
+
     def get_chall_pref(self, unused_domain):  # pylint: disable=missing-function-docstring
         return [challenges.DNS01]
 
@@ -63,7 +72,7 @@ class DNSAuthenticator(common.Plugin):
         # DNS updates take time to propagate and checking to see if the update has occurred is not
         # reliable (the machine this code is running on might be able to see an update before
         # the ACME server). So: we sleep for a short amount of time we believe to be long enough.
-        logger.info("Waiting %d seconds for DNS changes to propagate",
+        display_util.notify("Waiting %d seconds for DNS changes to propagate" %
                     self.conf('propagation-seconds'))
         sleep(self.conf('propagation-seconds'))
 

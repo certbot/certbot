@@ -67,7 +67,8 @@ class _LexiconAwareTestCase(Protocol):
 
 class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
 
-    def test_perform(self: _AuthenticatorCallableLexiconTestCase):
+    @test_util.patch_get_utility()
+    def test_perform(self: _AuthenticatorCallableLexiconTestCase, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
@@ -94,7 +95,7 @@ class BaseLexiconClientTest:
     def test_add_txt_record(self: _LexiconAwareTestCase):
         self.client.add_txt_record(DOMAIN, self.record_name, self.record_content)
 
-        self.provider_mock.create_record.assert_called_with(type='TXT',
+        self.provider_mock.create_record.assert_called_with(rtype='TXT',
                                                             name=self.record_name,
                                                             content=self.record_content)
 
@@ -103,7 +104,7 @@ class BaseLexiconClientTest:
 
         self.client.add_txt_record(DOMAIN, self.record_name, self.record_content)
 
-        self.provider_mock.create_record.assert_called_with(type='TXT',
+        self.provider_mock.create_record.assert_called_with(rtype='TXT',
                                                             name=self.record_name,
                                                             content=self.record_content)
 
@@ -147,7 +148,7 @@ class BaseLexiconClientTest:
     def test_del_txt_record(self: _LexiconAwareTestCase):
         self.client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
-        self.provider_mock.delete_record.assert_called_with(type='TXT',
+        self.provider_mock.delete_record.assert_called_with(rtype='TXT',
                                                             name=self.record_name,
                                                             content=self.record_content)
 

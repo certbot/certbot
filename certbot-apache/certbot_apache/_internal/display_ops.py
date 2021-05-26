@@ -117,7 +117,7 @@ def _vhost_menu(domain, vhosts):
             "guidance in non-interactive mode. Certbot may need "
             "vhosts to be explicitly labelled with ServerName or "
             "ServerAlias directives.".format(domain))
-        logger.warning(msg)
+        logger.error(msg)
         raise errors.MissingCommandlineFlag(msg)
 
     return code, tag

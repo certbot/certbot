@@ -24,6 +24,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.display import util as display_util
 from certbot.compat import os
 from certbot.plugins import common
 from certbot_nginx._internal import constants
@@ -234,6 +235,8 @@ class NginxConfigurator(common.Installer):
         vhosts = self.choose_vhosts(domain, create_if_no_match=True)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
+            display_util.notify("Successfully deployed certificate for {} to {}"
+                                .format(domain, vhost.filep))
 
     def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):  # pylint: disable=unused-argument
         """
@@ -766,7 +769,7 @@ class NginxConfigurator(common.Installer):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
         except errors.PluginError:
-            logger.warning("Failed %s for %s", enhancement, domain)
+            logger.error("Failed %s for %s", enhancement, domain)
             raise
 
     def _has_certbot_redirect(self, vhost, domain):
@@ -985,13 +988,14 @@ class NginxConfigurator(common.Installer):
             Unable to run Nginx version command
         """
         try:
-            proc = subprocess.Popen(
+            proc = subprocess.run(
                 [self.conf('ctl'), "-c", self.nginx_conf, "-V"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
+                check=False,
                 env=util.env_no_snap_for_external_calls())
-            text = proc.communicate()[1]  # nginx prints output to stderr
+            text = proc.stderr  # nginx prints output to stderr
         except (OSError, ValueError) as error:
             logger.debug(str(error), exc_info=True)
             raise errors.PluginError(
@@ -1073,6 +1077,13 @@ class NginxConfigurator(common.Installer):
             "Version: {version}".format(
                 os.linesep, root=self.parser.config_root,
                 version=".".join(str(i) for i in self.version))
+        )
+
+    def auth_hint(self, failed_achalls): # pragma: no cover
+        return (
+            "The Certificate Authority failed to verify the temporary nginx configuration changes "
+            "made by Certbot. Ensure the listed domains point to this nginx server and that it is "
+            "accessible from the internet."
         )
 
     ###################################################
@@ -1224,10 +1235,9 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
     try:
         reload_output: Text = u""
         with tempfile.TemporaryFile() as out:
-            proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
-                                    env=util.env_no_snap_for_external_calls(),
-                                    stdout=out, stderr=out)
-            proc.communicate()
+            proc = subprocess.run([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
+                                  env=util.env_no_snap_for_external_calls(),
+                                  stdout=out, stderr=out, check=False)
             out.seek(0)
             reload_output = out.read().decode("utf-8")
 
@@ -1237,9 +1247,8 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
             # Write to temporary files instead of piping because of communication issues on Arch
             # https://github.com/certbot/certbot/issues/4324
             with tempfile.TemporaryFile() as out:
-                nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
-                    stdout=out, stderr=out, env=util.env_no_snap_for_external_calls())
-                nginx_proc.communicate()
+                nginx_proc = subprocess.run([nginx_ctl, "-c", nginx_conf],
+                    stdout=out, stderr=out, env=util.env_no_snap_for_external_calls(), check=False)
                 if nginx_proc.returncode != 0:
                     out.seek(0)
                     # Enter recovery routine...

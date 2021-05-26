@@ -10,11 +10,20 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* DNS plugins based on lexicon now require dns-lexicon >= v3.1.0
+* Use UTF-8 encoding for renewal configuration files
+* Windows installer now cleans up old Certbot dependency packages
+  before installing the new ones to avoid version conflicts.
+* This release contains a substantial command-line UX overhaul,
+  based on previous user research. The main goal was to streamline
+  and clarify output. If you would like to see more verbose output, use
+  the -v or -vv flags. UX improvements are an iterative process and
+  the Certbot team welcomes constructive feedback.
 
 ### Fixed
 
-*
+* Fix TypeError due to incompatibility with lexicon >= v3.6.0
+* Installers (e.g. nginx, Apache) were being restarted unnecessarily after dry-run renewals.
 
 More details about these changes can be found on our GitHub repo.
 

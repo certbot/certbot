@@ -240,6 +240,7 @@ class ACMEServer:
         if not env:
             env = os.environ
         stdout = sys.stderr if force_stderr else self._stdout
+        # pylint: disable=consider-using-with
         process = subprocess.Popen(
             command, stdout=stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env
         )
