@@ -250,12 +250,13 @@ class CertonlyTest(unittest.TestCase):
         self.assertRaises(errors.ConfigurationError, self._call,
             'certonly --webroot -d example.com -d test.com --cert-name example.com'.split())
 
+    @mock.patch('certbot._internal.main._report_next_steps')
     @mock.patch('certbot._internal.cert_manager.domains_for_certname')
     @mock.patch('certbot.display.ops.choose_names')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.main._report_new_cert')
     def test_find_lineage_for_domains_new_certname(self, mock_report_cert,
-        mock_lineage, mock_choose_names, mock_domains_for_certname):
+        mock_lineage, mock_choose_names, mock_domains_for_certname, unused_mock_report_next_steps):
         mock_lineage.return_value = None
 
         # no lineage with this name but we specified domains so create a new cert
