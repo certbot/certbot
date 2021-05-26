@@ -367,8 +367,10 @@ class Client:
                 key_dir=self.config.key_dir,
                 key_type=self.config.key_type,
                 elliptic_curve=elliptic_curve,
+                strict_permissions=self.config.strict_permissions,
             )
-            csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
+            csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir,
+                                            self.config.must_staple, self.config.strict_permissions)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
         authzr = orderr.authorizations
@@ -394,6 +396,7 @@ class Client:
         """Request a new order and complete its authorizations.
 
         :param str csr_pem: A CSR in PEM format.
+        :param interfaces.IConfig config: current Certbot configuration
         :param bool best_effort: True if failing to complete all
             authorizations should not raise an exception
 
@@ -420,7 +423,7 @@ class Client:
                 logger.warning("Certbot was unable to obtain fresh authorizations for every domain"
                                ". The dry run will continue, but results may not be accurate.")
 
-        authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
+        authzr = self.auth_handler.handle_authorizations(orderr, self.config, best_effort)
         return orderr.update(authorizations=authzr)
 
     def obtain_and_enroll_certificate(self, domains, certname):

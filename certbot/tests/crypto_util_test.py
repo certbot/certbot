@@ -7,10 +7,8 @@ try:
 except ImportError:  # pragma: no cover
     from unittest import mock
 import OpenSSL
-import zope.component
 
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -42,8 +40,6 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
         filesystem.mkdir(self.workdir, mode=0o700)
 
         logging.disable(logging.CRITICAL)
-        zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
 
     def tearDown(self):
         super().tearDown()
@@ -53,7 +49,7 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
     @classmethod
     def _call(cls, key_size, key_dir):
         from certbot.crypto_util import init_save_key
-        return init_save_key(key_size, key_dir, 'key-certbot.pem')
+        return init_save_key(key_size, key_dir, 'key-certbot.pem', strict_permissions=True)
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
@@ -72,12 +68,6 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
 class InitSaveCSRTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_csr."""
 
-    def setUp(self):
-        super().setUp()
-
-        zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
-
     @mock.patch('acme.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
     def test_it(self, unused_mock_verify, mock_csr):
@@ -86,7 +76,7 @@ class InitSaveCSRTest(test_util.TempDirTestCase):
         mock_csr.return_value = b'csr_pem'
 
         csr = init_save_csr(
-            mock.Mock(pem='dummy_key'), 'example.com', self.tempdir)
+            mock.Mock(pem='dummy_key'), 'example.com', self.tempdir, strict_permissions=True)
 
         self.assertEqual(csr.data, b'csr_pem')
         self.assertIn('csr-certbot.pem', csr.file)

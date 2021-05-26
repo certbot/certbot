@@ -26,11 +26,9 @@ from cryptography.hazmat.primitives.serialization import PrivateFormat
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore
 import pyrfc3339
-import zope.component
 
 from acme import crypto_util as acme_crypto_util
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot.compat import os
 
@@ -39,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 # High level functions
 def init_save_key(
-        key_size, key_dir, key_type="rsa", elliptic_curve="secp256r1", keyname="key-certbot.pem"
+        key_size, key_dir, key_type="rsa", elliptic_curve="secp256r1",
+        keyname="key-certbot.pem", strict_permissions=True,
 ):
     """Initializes and saves a privkey.
 
@@ -53,6 +52,8 @@ def init_save_key(
     :param str key_type: Key Type [rsa, ecdsa]
     :param str elliptic_curve: Name of the elliptic curve if key type is ecdsa.
     :param str keyname: Filename of key
+    :param boolean strict_permissions: If true, key will be saved with strict permissions
+        (POSIX mode 0600).
 
     :returns: Key
     :rtype: :class:`certbot.util.Key`
@@ -69,9 +70,8 @@ def init_save_key(
         logger.error("Encountered error while making key: %s", str(err))
         raise err
 
-    config = zope.component.getUtility(interfaces.IConfig)
     # Save file
-    util.make_or_verify_dir(key_dir, 0o700, config.strict_permissions)
+    util.make_or_verify_dir(key_dir, 0o700, strict_permissions)
     key_f, key_path = util.unique_file(
         os.path.join(key_dir, keyname), 0o600, "wb")
     with key_f:
@@ -84,27 +84,26 @@ def init_save_key(
     return util.Key(key_path, key_pem)
 
 
-def init_save_csr(privkey, names, path):
+def init_save_csr(privkey, names, path, must_staple=False, strict_permissions=True):
     """Initialize a CSR with the given private key.
 
     :param privkey: Key to include in the CSR
     :type privkey: :class:`certbot.util.Key`
-
     :param set names: `str` names to include in the CSR
-
     :param str path: Certificate save directory.
+    :param boolean must_staple: If true, include the TLS Feature extension "OCSP Must Staple"
+    :param boolean strict_permissions: If true, the CSR file will be saved with strict
+        permissions (POSIX mode 0600).
 
     :returns: CSR
     :rtype: :class:`certbot.util.CSR`
 
     """
-    config = zope.component.getUtility(interfaces.IConfig)
-
     csr_pem = acme_crypto_util.make_csr(
-        privkey.pem, names, must_staple=config.must_staple)
+        privkey.pem, names, must_staple=must_staple)
 
     # Save CSR
-    util.make_or_verify_dir(path, 0o755, config.strict_permissions)
+    util.make_or_verify_dir(path, 0o755, strict_permissions)
     csr_f, csr_filename = util.unique_file(
         os.path.join(path, "csr-certbot.pem"), 0o644, "wb")
     with csr_f:

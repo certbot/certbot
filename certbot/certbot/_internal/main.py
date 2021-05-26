@@ -4,6 +4,7 @@
 import functools
 import logging.handlers
 import sys
+import warnings
 from contextlib import contextmanager
 from typing import Generator
 from typing import IO
@@ -1448,7 +1449,12 @@ def main(cli_args=None):
     # note: arg parser internally handles --help (and exits afterwards)
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
-    zope.component.provideUtility(config)
+
+    # This call is done only for retro-compatibility purposes.
+    # TODO: Remove this call once zope dependencies are removed from Certbot.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        zope.component.provideUtility(config)
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
