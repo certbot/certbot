@@ -191,7 +191,8 @@ def _choose_names_manually(prompt_prefix=""):
     """
     code, input_ = z_util(interfaces.IDisplay).input(
         prompt_prefix +
-        "Please enter the domain name(s) you would like on your certificate (comma and/or space separated)",
+        "Please enter the domain name(s) you would like on your certificate "
+        "(comma and/or space separated)",
         cli_flag="--domains", force_interactive=True)
 
     if code == display_util.OK:
