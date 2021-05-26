@@ -339,10 +339,10 @@ class SuccessInstallationTest(unittest.TestCase):
         from certbot.display.ops import success_installation
         success_installation(names)
 
-    @test_util.patch_get_utility("certbot.display.util.notify")
-    @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_success_installation(self, mock_util, mock_notify):
-        mock_util().notification.return_value = None
+    @test_util.patch_display_service()
+    @mock.patch("certbot.display.util.notify")
+    def test_success_installation(self, mock_notify, mock_display):
+        mock_display().notification.return_value = None
         names = ["example.com", "abc.com"]
 
         self._call(names)
@@ -361,15 +361,16 @@ class SuccessRenewalTest(unittest.TestCase):
         from certbot.display.ops import success_renewal
         success_renewal(names)
 
-    @test_util.patch_get_utility("certbot.display.util.notify")
-    @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_success_renewal(self, mock_util, mock_notify):
-        mock_util().notification.return_value = None
+    @test_util.patch_display_service()
+    @mock.patch("certbot.display.util.notify")
+    def test_success_renewal(self, mock_notify, mock_display):
+        mock_display().notification.return_value = None
         names = ["example.com", "abc.com"]
 
         self._call(names)
 
         self.assertEqual(mock_notify.call_count, 1)
+
 
 class SuccessRevocationTest(unittest.TestCase):
     """Test the success revocation message."""
@@ -380,7 +381,7 @@ class SuccessRevocationTest(unittest.TestCase):
 
     @test_util.patch_display_service()
     @mock.patch("certbot.display.util.notify")
-    def test_success_revocation(self, mock_notify, unused_mock_util):
+    def test_success_revocation(self, mock_notify, unused_mock_display):
         path = "/path/to/cert.pem"
         self._call(path)
         mock_notify.assert_called_once_with(

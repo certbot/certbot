@@ -1079,9 +1079,9 @@ class MainTest(test_util.ConfigTestCase):
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot._internal.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
-                    with mock.patch('certbot.services.get_reporter') as mock_reporter:
+                    with mock.patch('certbot.services.get_display') as mock_display:
                         if not quiet_mode:
-                            mock_reporter().notification.side_effect = write_msg
+                            mock_display().notification.side_effect = write_msg
                         with mock.patch('certbot._internal.main.renewal.crypto_util') \
                             as mock_crypto_util:
                             mock_crypto_util.notAfter.return_value = expiry_date
@@ -1121,7 +1121,7 @@ class MainTest(test_util.ConfigTestCase):
                 with open(os.path.join(self.config.logs_dir, "letsencrypt.log")) as lf:
                     self.assertIn(log_out, lf.read())
 
-        return mock_lineage, mock_reporter, stdout
+        return mock_lineage, mock_display, stdout
 
     @mock.patch('certbot._internal.main._report_new_cert')
     @mock.patch('certbot._internal.main.util.atexit_register')
@@ -1147,9 +1147,9 @@ class MainTest(test_util.ConfigTestCase):
         self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
                                   log_out="Auto-renewal forced")
 
-        _, get_utility, _ = self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
+        _, mock_displayer, _ = self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
                                   should_renew=False)
-        self.assertIn('not yet due', get_utility().notification.call_args[0][0])
+        self.assertIn('not yet due', mock_displayer().notification.call_args[0][0])
 
     def _dump_log(self):
         print("Logs:")

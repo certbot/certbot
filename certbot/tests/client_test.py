@@ -104,7 +104,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 self._call()
                 self.assertIs(mock_prepare.called, True)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_it(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
@@ -165,7 +165,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 # check Certbot created an account with no email. Contact should return empty
                 self.assertFalse(mock_client().new_account_and_tos.call_args[0][0].contact)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_with_eab_arguments(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().client.directory.__getitem__ = mock.Mock(
@@ -181,7 +181,7 @@ class RegisterTest(test_util.ConfigTestCase):
 
                     self.assertIs(mock_eab_from_data.called, True)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_without_eab_arguments(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
@@ -523,7 +523,7 @@ class ClientTest(ClientTestCommon):
 
         shutil.rmtree(tmp_path)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_deploy_certificate_success(self, mock_util):
         self.assertRaises(errors.Error, self.client.deploy_certificate,
                           "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
@@ -543,7 +543,7 @@ class ClientTest(ClientTestCommon):
         installer.restart.assert_called_once_with()
 
     @mock.patch('certbot._internal.client.display_util.notify')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_deploy_certificate_failure(self, mock_util, mock_notify):
         installer = mock.MagicMock()
         self.client.installer = installer
@@ -561,7 +561,7 @@ class ClientTest(ClientTestCommon):
         )
 
     @mock.patch('certbot._internal.client.display_util.notify')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_deploy_certificate_failure_no_certname(self, mock_util, mock_notify):
         installer = mock.MagicMock()
         self.client.installer = installer
@@ -578,7 +578,7 @@ class ClientTest(ClientTestCommon):
         )
 
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_deploy_certificate_save_failure(self, mock_util):
         installer = mock.MagicMock()
         self.client.installer = installer
@@ -589,7 +589,7 @@ class ClientTest(ClientTestCommon):
         installer.recovery_routine.assert_called_once_with()
 
     @mock.patch('certbot._internal.client.display_util.notify')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_deploy_certificate_restart_failure(self, mock_get_utility, mock_notify):
         installer = mock.MagicMock()
         installer.restart.side_effect = [errors.PluginError, None]
@@ -604,7 +604,7 @@ class ClientTest(ClientTestCommon):
         self.assertEqual(installer.restart.call_count, 2)
 
     @mock.patch('certbot._internal.client.logger')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_service()
     def test_deploy_certificate_restart_failure2(self, mock_get_utility, mock_logger):
         installer = mock.MagicMock()
         installer.restart.side_effect = errors.PluginError
@@ -732,7 +732,7 @@ class EnhanceConfigTest(ClientTestCommon):
     def _test_error(self, enhance_error=False, restart_error=False):
         self.config.redirect = True
         with mock.patch('certbot._internal.client.logger') as mock_logger, \
-             test_util.patch_get_utility() as mock_gu:
+             test_util.patch_display_service() as mock_gu:
             self.assertRaises(
                 errors.PluginError, self._test_with_all_supported)
 

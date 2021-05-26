@@ -192,7 +192,7 @@ def patch_get_utility(target='zope.component.getUtility'):  # pylint: disable=un
     :rtype: mock.MagicMock
 
     """
-    warnings.warn('Decorator certbot.tests.util.patch_get_utility is deprecated, '
+    warnings.warn('Decorator certbot.tests.util.patch_display_service is deprecated, '
                   'use certbot.tests.util.patch_display_service instead.')
     return patch_display_service()
 
@@ -209,7 +209,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',  # pylint:
     :rtype: mock.MagicMock
 
     """
-    warnings.warn('Decorator certbot.tests.util.patch_get_utility_with_stdout is deprecated, '
+    warnings.warn('Decorator certbot.tests.util.patch_display_service_with_stdout is deprecated, '
                   'use certbot.tests.util.patch_display_service_with_stdout instead.')
     return patch_display_service_with_stdout(stdout)
 
