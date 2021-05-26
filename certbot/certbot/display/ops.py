@@ -118,8 +118,7 @@ def choose_names(installer, question=None):
     names = get_valid_domains(domains)
 
     if not names:
-        return _choose_names_manually(
-            "No names were found in your configuration files. ")
+        return _choose_names_manually()
 
     code, names = _filter_names(names, question)
     if code == display_util.OK and names:
@@ -187,7 +186,8 @@ def _choose_names_manually(prompt_prefix=""):
     """
     code, input_ = services.get_display().input(
         prompt_prefix +
-        "Please enter in your domain name(s) (comma and/or space separated) ",
+        "Please enter the domain name(s) you would like on your certificate "
+        "(comma and/or space separated)",
         cli_flag="--domains", force_interactive=True)
 
     if code == display_util.OK:
