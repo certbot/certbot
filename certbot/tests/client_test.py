@@ -521,13 +521,12 @@ class ClientTest(ClientTestCommon):
     @test_util.patch_get_utility()
     def test_deploy_certificate_success(self, mock_util):
         self.assertRaises(errors.Error, self.client.deploy_certificate,
-                          "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
+                          ["foo.bar"], "key", "cert", "chain", "fullchain")
 
         installer = mock.MagicMock()
         self.client.installer = installer
 
-        self.client.deploy_certificate(
-            "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
+        self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.deploy_cert.assert_called_once_with(
             cert_path=os.path.abspath("cert"),
             chain_path=os.path.abspath("chain"),
@@ -546,31 +545,10 @@ class ClientTest(ClientTestCommon):
 
         installer.deploy_cert.side_effect = errors.PluginError
         self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
+                          ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
         mock_notify.assert_any_call('Deploying certificate')
-        mock_notify.assert_any_call(
-            'Failed to install the certificate (installer: foobar). '
-            'Try again after fixing errors by running:\n\n  certbot install --cert-name foo.bar\n'
-        )
-
-    @mock.patch('certbot._internal.client.display_util.notify')
-    @test_util.patch_get_utility()
-    def test_deploy_certificate_failure_no_certname(self, mock_util, mock_notify):
-        installer = mock.MagicMock()
-        self.client.installer = installer
-        self.config.installer = "foobar"
-
-        installer.deploy_cert.side_effect = errors.PluginError
-        self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          None, ["foo.bar"], "key", "cert", "chain", "fullchain")
-        installer.recovery_routine.assert_called_once_with()
-
-        mock_notify.assert_any_call('Deploying certificate')
-        mock_notify.assert_any_call(
-            'Failed to install the certificate (installer: foobar).'
-        )
 
 
     @test_util.patch_get_utility()
@@ -580,7 +558,7 @@ class ClientTest(ClientTestCommon):
 
         installer.save.side_effect = errors.PluginError
         self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
+                          ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
     @mock.patch('certbot._internal.client.display_util.notify')
@@ -591,7 +569,7 @@ class ClientTest(ClientTestCommon):
         self.client.installer = installer
 
         self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
+                          ["foo.bar"], "key", "cert", "chain", "fullchain")
         mock_notify.assert_called_with(
             'We were unable to install your certificate, however, we successfully restored '
             'your server to its prior configuration.')
@@ -607,7 +585,7 @@ class ClientTest(ClientTestCommon):
         self.client.installer = installer
 
         self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          "foo.bar", ["foo.bar"], "key", "cert", "chain", "fullchain")
+                          ["foo.bar"], "key", "cert", "chain", "fullchain")
         self.assertEqual(mock_logger.error.call_count, 1)
         self.assertIn(
             'An error occurred and we failed to restore your config',
