@@ -687,9 +687,11 @@ def test_ocsp_status_stale(context):
     sample_data_path = misc.load_sample_data_path(context.workspace)
     output = context.certbot(['certificates', '--config-dir', sample_data_path])
 
-    assert output.count('TEST_CERT') == 2, ('Did not find two test certs as expected ({0})'
+    # Output counts are doubled because context.certbot sets --verbose and
+    # messages are logged before they are printed to the user.
+    assert output.count('TEST_CERT') == 4, ('Did not find two test certs as expected ({0})'
                                             .format(output.count('TEST_CERT')))
-    assert output.count('EXPIRED') == 2, ('Did not find two expired certs as expected ({0})'
+    assert output.count('EXPIRED') == 4, ('Did not find two expired certs as expected ({0})'
                                           .format(output.count('EXPIRED')))
 
 
@@ -701,7 +703,9 @@ def test_ocsp_status_live(context):
     context.certbot(['--domains', cert])
     output = context.certbot(['certificates'])
 
-    assert output.count('VALID') == 1, 'Expected {0} to be VALID'.format(cert)
+    # Output counts are doubled because context.certbot sets --verbose and
+    # messages are logged before they are printed to the user.
+    assert output.count('VALID') == 2, 'Expected {0} to be VALID'.format(cert)
     assert output.count('EXPIRED') == 0, 'Did not expect {0} to be EXPIRED'.format(cert)
 
     # OSCP 2: Check live certificate OCSP status (REVOKED)
@@ -711,8 +715,10 @@ def test_ocsp_status_live(context):
     time.sleep(5)
     output = context.certbot(['certificates'])
 
-    assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)
-    assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
+    # Output counts are doubled because context.certbot sets --verbose and
+    # messages are logged before they are printed to the user.
+    assert output.count('INVALID') == 2, 'Expected {0} to be INVALID'.format(cert)
+    assert output.count('REVOKED') == 2, 'Expected {0} to be REVOKED'.format(cert)
 
 
 def test_ocsp_renew(context):
