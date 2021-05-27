@@ -334,7 +334,7 @@ class Client:
             key = None
 
         key_size = self.config.rsa_key_size
-        elliptic_curve = None
+        elliptic_curve = "secp256r1"
 
         # key-type defaults to a list, but we are only handling 1 currently
         if isinstance(self.config.key_type, list):
