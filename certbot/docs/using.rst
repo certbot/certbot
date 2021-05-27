@@ -716,7 +716,7 @@ these instructions should not cause any problems.
 
 If you're using Windows, these instructions will not work.
 
-Run the following line, which will add a cron job to the default crontab:
+Run the following line, which will add a cron job to `/etc/crontab`:
 
 .. code-block:: shell
 
