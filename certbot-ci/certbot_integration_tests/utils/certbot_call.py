@@ -31,8 +31,9 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     command, env = _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
                                      config_dir, workspace, force_renew)
 
-    proc = subprocess.run(command, capture_output=True, check=False,
-                          universal_newlines=True, cwd=workspace, env=env)
+    proc = subprocess.run(command, stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE, check=False, universal_newlines=True,
+                          cwd=workspace, env=env)
     print('--> Certbot log output was:')
     print(proc.stderr)
     proc.check_returncode()
