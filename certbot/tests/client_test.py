@@ -333,7 +333,7 @@ class ClientTest(ClientTestCommon):
             key_size=self.config.rsa_key_size,
             key_dir=self.config.key_dir,
             key_type=self.config.key_type,
-            elliptic_curve=None,  # elliptic curve is not set
+            elliptic_curve="secp256r1",
             strict_permissions=True,
         )
         mock_crypto_util.generate_csr.assert_called_once_with(
@@ -373,7 +373,7 @@ class ClientTest(ClientTestCommon):
 
         mock_crypto.make_key.assert_called_once_with(
             bits=self.config.rsa_key_size,
-            elliptic_curve=None,  # not making an elliptic private key
+            elliptic_curve="secp256r1",
             key_type=self.config.key_type,
         )
         mock_acme_crypto.make_csr.assert_called_once_with(
