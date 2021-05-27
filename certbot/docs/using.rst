@@ -723,14 +723,15 @@ Run the following line, which will add a cron job to `/etc/crontab`:
   SLEEPTIME=$(awk 'BEGIN{srand(); print int(rand()*(3600+1))}'); echo "0 0,12 * * * root sleep $SLEEPTIME && certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
 
 If you needed to stop your webserver to run Certbot, you'll want to
-add ``--pre-hook`` and ``--post-hook`` flags after ``certbot renew`` to stop
-and start your webserver automatically. For example, if your webserver is HAProxy, modify the
-command as follows:
+add ``pre`` and ``post`` hooks to stop and start your webserver automatically.
+For example, if your webserver is HAProxy, run the following commands to create the hook files
+in the appropriate directory:
 
 .. code-block:: shell
 
-  SLEEPTIME=$(awk 'BEGIN{srand(); print int(rand()*(3600+1))}'); echo "0 0,12 * * * root sleep $SLEEPTIME && certbot renew -q --pre-hook 'service haproxy stop' --post-hook 'service haproxy start'" | sudo tee -a /etc/crontab > /dev/null
-
+  echo 'service haproxy stop' | sudo tee -a /etc/letsencrypt/renewal-hooks/pre/haproxy-stop > /dev/null
+  echo 'service haproxy start' | sudo tee -a /etc/letsencrypt/renewal-hooks/post/haproxy-start > /dev/null
+  chmod +x /etc/letsencrypt/renewal-hooks/pre/haproxy-stop /etc/letsencrypt/renewal-hooks/post/haproxy-start
 
 Congratulations, Certbot will now automatically renew your certificates in the background.
 
