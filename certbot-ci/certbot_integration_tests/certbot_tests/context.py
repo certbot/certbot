@@ -61,7 +61,7 @@ class IntegrationTestsContext:
         Execute certbot with given args, not renewing certificates by default.
         :param args: args to pass to certbot
         :param force_renew: set to False to not renew by default
-        :return: output of certbot execution
+        :return: stdout and stderr from certbot execution
         """
         command = ['--authenticator', 'standalone', '--installer', 'null']
         command.extend(args)

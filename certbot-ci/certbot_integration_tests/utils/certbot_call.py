@@ -25,14 +25,18 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     :param str config_dir: certbot configuration directory to use
     :param str workspace: certbot current directory to use
     :param bool force_renew: set False to not force renew existing certificates (default: True)
-    :return: stdout as string
-    :rtype: str
+    :return: stdout and stderr as strings
+    :rtype: `tuple` of `str`
     """
     command, env = _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
                                      config_dir, workspace, force_renew)
 
-    return subprocess.check_output(command, stderr=subprocess.STDOUT,
-                                   universal_newlines=True, cwd=workspace, env=env)
+    proc = subprocess.run(command, capture_output=True, check=False,
+                          universal_newlines=True, cwd=workspace, env=env)
+    print('--> Certbot log output was:')
+    print(proc.stderr)
+    proc.check_returncode()
+    return proc.stdout, proc.stderr
 
 
 def _prepare_environ(workspace):
