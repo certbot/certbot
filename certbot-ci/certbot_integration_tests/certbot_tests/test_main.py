@@ -688,9 +688,9 @@ def test_ocsp_status_stale(context):
     stdout, _ = context.certbot(['certificates', '--config-dir', sample_data_path])
 
     assert stdout.count('TEST_CERT') == 2, ('Did not find two test certs as expected ({0})'
-                                            .format(output.count('TEST_CERT')))
+                                            .format(stdout.count('TEST_CERT')))
     assert stdout.count('EXPIRED') == 2, ('Did not find two expired certs as expected ({0})'
-                                          .format(output.count('EXPIRED')))
+                                          .format(stdout.count('EXPIRED')))
 
 
 def test_ocsp_status_live(context):
