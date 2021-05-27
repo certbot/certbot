@@ -24,6 +24,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Fix TypeError due to incompatibility with lexicon >= v3.6.0
 * Installers (e.g. nginx, Apache) were being restarted unnecessarily after dry-run renewals.
+* Colors and bold text should properly render in all supported versions of Windows.
 
 More details about these changes can be found on our GitHub repo.
 

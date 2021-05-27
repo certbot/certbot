@@ -17,6 +17,8 @@ from certbot.compat import os
 
 try:
     from win32com.shell import shell as shellwin32
+    from win32console import GetStdHandle, STD_OUTPUT_HANDLE
+    from pywintypes import error as pywinerror
     POSIX_MODE = False
 except ImportError:  # pragma: no cover
     POSIX_MODE = True
@@ -37,6 +39,26 @@ def raise_for_non_administrative_windows_rights() -> None:
     """
     if not POSIX_MODE and shellwin32.IsUserAnAdmin() == 0:  # pragma: no cover
         raise errors.Error('Error, certbot must be run on a shell with administrative rights.')
+
+
+def prepare_virtual_console() -> None:
+    """
+    On Windows, ensure that Console Virtual Terminal Sequences are enabled.
+
+    """
+    if POSIX_MODE:
+        return
+
+    # https://docs.microsoft.com/en-us/windows/console/setconsolemode
+    ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+
+    # stdout/stderr will be the same console screen buffer, but this could return None or raise
+    try:
+        h = GetStdHandle(STD_OUTPUT_HANDLE)
+        if h:
+            h.SetConsoleMode(h.GetConsoleMode() | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+    except pywinerror:
+        logger.debug("Failed to set console mode", exc_info=True)
 
 
 def readline_with_timeout(timeout: float, prompt: str) -> str:
