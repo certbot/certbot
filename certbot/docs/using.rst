@@ -695,10 +695,47 @@ is done by means of a scheduled task which runs ``certbot renew`` periodically.
 
 If you are unsure whether you need to configure automated renewal:
 
-1. Review the instructions for your system at https://certbot.eff.org/instructions.
-   They will describe how to set up a scheduled task, if necessary.
-2. (Linux/BSD): Check your system's crontab (typically `/etc/crontab` and
-   `/etc/cron.*/*`) and systemd timers (``systemctl list-timers``).
+1. Review the instructions for your system and installation method at
+   https://certbot.eff.org/instructions. They will describe how to set up a scheduled task,
+   if necessary. If no step is listed, your system comes with automated renewal pre-installed,
+   and you should not need to take any additional actions.
+2. On Linux and BSD, you can check to see if your installation method has pre-installed a timer
+   for you. To do so, look for the ``certbot renew`` command in either your system's crontab
+   (typically `/etc/crontab` or `/etc/cron.*/*`) or systemd timers (``systemctl list-timers``).
+3. If you're still not sure, you can configure automated renewal manually by following the steps
+   in the next section. Certbot has been carefully engineered to handle the case where both manual
+   automated renewal and pre-installed automated renewal are set up.
+
+Setting up automated renewal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you think you may need to set up automated renewal, follow these instructions to set up a
+scheduled task to automatically renew your certificates in the background. On the off chance you
+ended up at these instructions but automated renewal was pre-installed on your system, following
+these instructions should not cause any problems.
+
+If you're using Windows, these instructions will not work.
+
+Run the following line, which will add a cron job to the default crontab:
+
+.. code-block:: shell
+
+  SLEEPTIME=$(awk 'BEGIN{srand(); print int(rand()*(3600+1))}'); echo "0 0,12 * * * root sleep $SLEEPTIME &amp;&amp; certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
+
+If you needed to stop your webserver to run Certbot, you'll want to
+add ``--pre-hook`` and ``--post-hook`` flags after ``certbot renew`` to stop
+and start your webserver automatically. For example, if your webserver is HAProxy, modify the
+command as follows:
+
+.. code-block:: shell
+
+  SLEEPTIME=$(awk 'BEGIN{srand(); print int(rand()*(3600+1))}'); echo "0 0,12 * * * root sleep $SLEEPTIME &amp;&amp; certbot renew -q --pre-hook 'service haproxy stop' --post-hook 'service haproxy start'" | sudo tee -a /etc/crontab > /dev/null
+
+
+Congratulations, Certbot will now automatically renew your certificates in the background.
+
+If you are interested in learning more about how Certbot renews your certificates, see the
+`Renewing certificates`_ section above.
 
 .. _where-certs:
 
