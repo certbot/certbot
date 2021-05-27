@@ -678,7 +678,7 @@ class NginxConfigurator(common.Installer):
         """Generate invalid certs that let us create ssl directives for Nginx"""
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
-        le_key = crypto_util.init_save_key(
+        le_key = crypto_util.generate_key(
             key_size=1024, key_dir=tmp_dir, keyname="key.pem",
             strict_permissions=self.config.strict_permissions)
         key = OpenSSL.crypto.load_privatekey(

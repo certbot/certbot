@@ -4,7 +4,6 @@
 import functools
 import logging.handlers
 import sys
-import warnings
 from contextlib import contextmanager
 from typing import Generator
 from typing import IO
@@ -1452,9 +1451,7 @@ def main(cli_args=None):
 
     # This call is done only for retro-compatibility purposes.
     # TODO: Remove this call once zope dependencies are removed from Certbot.
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        zope.component.provideUtility(config)
+    zope.component.provideUtility(config)
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.

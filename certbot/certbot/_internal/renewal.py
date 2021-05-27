@@ -7,7 +7,6 @@ import random
 import sys
 import time
 import traceback
-import warnings
 from typing import List
 from typing import Optional
 
@@ -453,9 +452,7 @@ def handle_renewal_request(config):
             else:
                 # This call is done only for retro-compatibility purposes.
                 # TODO: Remove this call once zope dependencies are removed from Certbot.
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    zope.component.provideUtility(lineage_config)
+                zope.component.provideUtility(lineage_config)
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main
                 plugins = plugins_disco.PluginsRegistry.find_all()

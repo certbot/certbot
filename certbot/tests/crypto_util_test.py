@@ -31,8 +31,8 @@ CERT_ISSUER = test_util.load_vector('cert_intermediate_1.pem')
 CERT_ALT_ISSUER = test_util.load_vector('cert_intermediate_2.pem')
 
 
-class InitSaveKeyTest(test_util.TempDirTestCase):
-    """Tests for certbot.crypto_util.init_save_key."""
+class GenerateKeyTest(test_util.TempDirTestCase):
+    """Tests for certbot.crypto_util.generate_key."""
     def setUp(self):
         super().setUp()
 
@@ -48,8 +48,8 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
 
     @classmethod
     def _call(cls, key_size, key_dir):
-        from certbot.crypto_util import init_save_key
-        return init_save_key(key_size, key_dir, 'key-certbot.pem', strict_permissions=True)
+        from certbot.crypto_util import generate_key
+        return generate_key(key_size, key_dir, 'key-certbot.pem', strict_permissions=True)
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
@@ -65,17 +65,17 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
         self.assertRaises(ValueError, self._call, 431, self.workdir)
 
 
-class InitSaveCSRTest(test_util.TempDirTestCase):
-    """Tests for certbot.crypto_util.init_save_csr."""
+class GenerateCSRTest(test_util.TempDirTestCase):
+    """Tests for certbot.crypto_util.generate_csr."""
 
     @mock.patch('acme.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
     def test_it(self, unused_mock_verify, mock_csr):
-        from certbot.crypto_util import init_save_csr
+        from certbot.crypto_util import generate_csr
 
         mock_csr.return_value = b'csr_pem'
 
-        csr = init_save_csr(
+        csr = generate_csr(
             mock.Mock(pem='dummy_key'), 'example.com', self.tempdir, strict_permissions=True)
 
         self.assertEqual(csr.data, b'csr_pem')
