@@ -731,7 +731,7 @@ in the appropriate directory:
 
   echo 'service haproxy stop' | sudo tee -a /etc/letsencrypt/renewal-hooks/pre/haproxy-stop > /dev/null
   echo 'service haproxy start' | sudo tee -a /etc/letsencrypt/renewal-hooks/post/haproxy-start > /dev/null
-  chmod +x /etc/letsencrypt/renewal-hooks/pre/haproxy-stop /etc/letsencrypt/renewal-hooks/post/haproxy-start
+  sudo chmod +x /etc/letsencrypt/renewal-hooks/pre/haproxy-stop /etc/letsencrypt/renewal-hooks/post/haproxy-start
 
 Congratulations, Certbot will now automatically renew your certificates in the background.
 
