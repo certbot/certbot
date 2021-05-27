@@ -49,7 +49,6 @@ class PluginEntryPoint:
     def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix=False):
         self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
         self.version = entry_point.dist.version
-        logger.debug("Plugin version: %s", self.version)
         self.plugin_cls: interfaces.IPluginFactory = entry_point.load()
         self.entry_point = entry_point
         self.warning_message: Optional[str] = None
