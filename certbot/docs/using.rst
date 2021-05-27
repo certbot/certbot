@@ -710,9 +710,9 @@ Setting up automated renewal
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you think you may need to set up automated renewal, follow these instructions to set up a
-scheduled task to automatically renew your certificates in the background. On the off chance you
-ended up at these instructions but automated renewal was pre-installed on your system, following
-these instructions should not cause any problems.
+scheduled task to automatically renew your certificates in the background. If you are unsure 
+whether your system has a pre-installed scheduled task for Certbot, it is safe to follow these
+instructions to create one.
 
 If you're using Windows, these instructions will not work.
 
