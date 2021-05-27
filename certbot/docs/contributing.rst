@@ -56,18 +56,18 @@ Set up the Python virtual environment that will host your Certbot local instance
 .. code-block:: shell
 
    cd certbot
-   python tools/venv3.py
+   python tools/venv.py
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
 
 You can now run the copy of Certbot from git either by executing
-``venv3/bin/certbot``, or by activating the virtual environment. You can do the
+``venv/bin/certbot``, or by activating the virtual environment. You can do the
 latter by running:
 
 .. code-block:: shell
 
-   source venv3/bin/activate
+   source venv/bin/activate
 
 After running this command, ``certbot`` and development tools like ``ipdb``,
 ``ipython``, ``pytest``, and ``tox`` are available in the shell where you ran
@@ -169,7 +169,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv3.py` contains two commands
+The virtual environment set up with `python tools/venv.py` contains two CLI tools
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -179,6 +179,9 @@ that can be used once the virtual environment is activated:
 - Starts a local instance of Pebble and runs in the foreground printing its logs.
 - Press CTRL+C to stop this instance.
 - This instance is configured to validate challenges against certbot executed locally.
+
+.. note:: Some options are available to tweak the local ACME server. You can execute
+    ``run_acme_server --help`` to see the inline help of the ``run_acme_server`` tool.
 
 .. code-block:: shell
 
@@ -194,8 +197,8 @@ using an HTTP-01 challenge on a machine with Python 3:
 
 .. code-block:: shell
 
-    python tools/venv3.py
-    source venv3/bin/activate
+    python tools/venv.py
+    source venv/bin/activate
     run_acme_server &
     certbot_test certonly --standalone -d test.example.com
     # To stop Pebble, launch `fg` to get back the background job, then press CTRL+C
@@ -219,8 +222,6 @@ certbot-apache and certbot-nginx
   client code to configure specific web servers
 certbot-dns-*
   client code to configure DNS providers
-certbot-auto and letsencrypt-auto
-  shell scripts to install Certbot and its dependencies on UNIX systems
 windows installer
   Installs Certbot on Windows and is built using the files in windows-installer/
 
@@ -279,8 +280,8 @@ support for IIS, Icecast and Plesk.
 Installers and Authenticators will oftentimes be the same class/object
 (because for instance both tasks can be performed by a webserver like nginx)
 though this is not always the case (the standalone plugin is an authenticator
-that listens on port 80, but it cannot install certs; a postfix plugin would
-be an installer but not an authenticator).
+that listens on port 80, but it cannot install certificates; a postfix plugin
+would be an installer but not an authenticator).
 
 Installers and Authenticators are kept separate because
 it should be possible to use the `~.StandaloneAuthenticator` (it sets
@@ -303,7 +304,7 @@ configuration checkpoints and rollback.
 .. _dev-plugin:
 
 Writing your own plugin
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 .. note:: The Certbot team is not currently accepting any new DNS plugins
     because we want to rethink our approach to the challenge and resolve some
@@ -338,16 +339,71 @@ it was not installed properly.
 Once you've finished your plugin and published it, you can have your
 users install it system-wide with `pip install`. Note that this will
 only work for users who have Certbot installed from OS packages or via
-pip. Users who run `certbot-auto` are currently unable to use third-party
-plugins. It's technically possible to install third-party plugins into
-the virtualenv used by `certbot-auto`, but they will be wiped away when
-`certbot-auto` upgrades. If you'd like your plugin to be used alongside
-the Certbot snap, you will also have to publish your plugin as a snap.
-Certbot's DNS plugins and the README file in ``tools/snap/`` provide a
-starting reference for how to do this.
+pip.
 
 .. _`setuptools entry points`:
     https://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
+
+Writing your own plugin snap
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you'd like your plugin to be used alongside the Certbot snap, you
+will also have to publish your plugin as a snap. Plugin snaps are
+regular confined snaps, but normally do not provide any "apps"
+themselves. Plugin snaps export loadable Python modules to the Certbot
+snap.
+
+When the Certbot snap runs, it will use its version of Python and prefer
+Python modules contained in its own snap over modules contained in
+external snaps. This means that your snap doesn't have to contain things
+like an extra copy of Python, Certbot, or their dependencies, but also
+that if you need a different version of a dependency than is already
+installed in the Certbot snap, the Certbot snap will have to be updated.
+
+Certbot plugin snaps expose their Python modules to the Certbot snap via a
+`snap content interface`_ where ``certbot-1`` is the value for the ``content``
+attribute. The Certbot snap only uses this to find the names of connected
+plugin snaps and it expects to find the Python modules to be loaded under
+``lib/python3.8/site-packages/`` in the plugin snap. This location is the
+default when using the ``core20`` `base snap`_ and the `python snapcraft
+plugin`_.
+
+The Certbot snap also provides a separate content interface which
+you can use to get metadata about the Certbot snap using the ``content``
+identifier ``metadata-1``.
+
+The script used to generate the snapcraft.yaml files for our own externally
+snapped plugins can be found at
+https://github.com/certbot/certbot/blob/master/tools/snap/generate_dnsplugins_snapcraft.sh.
+
+For more information on building externally snapped plugins, see the section on
+:ref:`Building snaps`.
+
+Once you have created your own snap, if you have the snap file locally,
+it can be installed for use with Certbot by running:
+
+.. code-block:: shell
+
+    snap install --classic certbot
+    snap set certbot trust-plugin-with-root=ok
+    snap install --dangerous your-snap-filename.snap
+    sudo snap connect certbot:plugin your-snap-name
+    sudo /snap/bin/certbot plugins
+
+If everything worked, the last command should list your plugin in the
+list of plugins found by Certbot. Once your snap is published to the
+snap store, it will be installable through the name of the snap on the
+snap store without the ``--dangerous`` flag. If you are also using
+Certbot's metadata interface, you can run ``sudo snap connect
+your-snap-name:your-plug-name-for-metadata certbot:certbot-metadata`` to
+connect your snap to it.
+
+.. _`snap content interface`:
+    https://snapcraft.io/docs/content-interface
+.. _`base snap`:
+    https://snapcraft.io/docs/base-snaps
+.. _`python snapcraft plugin`:
+    https://snapcraft.io/docs/python-plugin
 
 .. _coding-style:
 
@@ -376,15 +432,22 @@ Please:
 
 4. Remember to use ``pylint``.
 
+5. You may consider installing a plugin for `editorconfig`_ in
+   your editor to prevent some linting warnings.
+
+6. Please avoid `unittest.assertTrue` or `unittest.assertFalse` when
+   possible, and use `assertEqual` or more specific assert. They give
+   better messages when it's failing, and are generally more correct.
+
 .. _Google Python Style Guide:
   https://google.github.io/styleguide/pyguide.html
 .. _Sphinx-style: https://www.sphinx-doc.org/
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
+.. _editorconfig: https://editorconfig.org/
 
 Use ``certbot.compat.os`` instead of ``os``
 ===========================================
-
 
 Python's standard library ``os`` module lacks full support for several Windows
 security features about file permissions (eg. DACLs). However several files
@@ -405,23 +468,13 @@ Mypy type annotations
 =====================
 
 Certbot uses the `mypy`_ static type checker. Python 3 natively supports official type annotations,
-which can then be tested for consistency using mypy. Python 2 doesn’t, but type annotations can
-be `added in comments`_. Mypy does some type checks even without type annotations; we can find
-bugs in Certbot even without a fully annotated codebase.
-
-Certbot supports both Python 2 and 3, so we’re using Python 2-style annotations.
+which can then be tested for consistency using mypy. Mypy does some type checks even without type
+annotations; we can find bugs in Certbot even without a fully annotated codebase.
 
 Zulip wrote a `great guide`_ to using mypy. It’s useful, but you don’t have to read the whole thing
 to start contributing to Certbot.
 
 To run mypy on Certbot, use ``tox -e mypy`` on a machine that has Python 3 installed.
-
-Note that instead of just importing ``typing``, due to packaging issues, in Certbot we import from
-``acme.magic_typing`` and have to add some comments for pylint like this:
-
-.. code-block:: python
-
-  from acme.magic_typing import Dict
 
 Also note that OpenSSL, which we rely on, has type definitions for crypto but not SSL. We use both.
 Those imports should look like this:
@@ -451,11 +504,13 @@ Steps:
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
-5. Submit the PR. Once your PR is open, please do not force push to the branch
+5. If any documentation should be added or updated as part of the changes you
+   have made, please include the documentation changes in your PR.
+6. Submit the PR. Once your PR is open, please do not force push to the branch
    containing your pull request to squash or amend commits. We use `squash
    merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
    rewriting commits makes changes harder to track between reviews.
-6. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
+7. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
 
 .. _ask for help:
 
@@ -482,52 +537,14 @@ Use of EFFOSCCP is subject to the `EFF Code of Conduct
 <https://www.eff.org/pages/eppcode>`_. When investigating an alleged Code of
 Conduct violation, EFF may review discussion channels or direct messages.
 
-Updating certbot-auto and letsencrypt-auto
-==========================================
+.. _Building snaps:
 
-.. note:: We are currently only accepting changes to certbot-auto that fix
-  regressions on platforms where certbot-auto is the recommended installation
-  method at https://certbot.eff.org/instructions. If you are unsure if a change
-  you want to make qualifies, don't hesitate to `ask for help`_!
+Building the Certbot and DNS plugin snaps
+=========================================
 
-Updating the scripts
---------------------
-Developers should *not* modify the ``certbot-auto`` and ``letsencrypt-auto`` files
-in the root directory of the repository.  Rather, modify the
-``letsencrypt-auto.template`` and associated platform-specific shell scripts in
-the ``letsencrypt-auto-source`` and
-``letsencrypt-auto-source/pieces/bootstrappers`` directory, respectively.
-
-Building letsencrypt-auto-source/letsencrypt-auto
--------------------------------------------------
-Once changes to any of the aforementioned files have been made, the
-``letsencrypt-auto-source/letsencrypt-auto`` script should be updated.  In lieu of
-manually updating this script, run the build script, which lives at
-``letsencrypt-auto-source/build.py``:
-
-.. code-block:: shell
-
-   python letsencrypt-auto-source/build.py
-
-Running ``build.py`` will update the ``letsencrypt-auto-source/letsencrypt-auto``
-script.  Note that the ``certbot-auto`` and ``letsencrypt-auto`` scripts in the root
-directory of the repository will remain **unchanged** after this script is run.
-Your changes will be propagated to these files during the next release of
-Certbot.
-
-Opening a PR
-------------
-When opening a PR, ensure that the following files are committed:
-
-1. ``letsencrypt-auto-source/letsencrypt-auto.template`` and
-   ``letsencrypt-auto-source/pieces/bootstrappers/*``
-2. ``letsencrypt-auto-source/letsencrypt-auto`` (generated by ``build.py``)
-
-It might also be a good idea to double check that **no** changes were
-inadvertently made to the ``certbot-auto`` or ``letsencrypt-auto`` scripts in the
-root of the repository.  These scripts will be updated by the core developers
-during the next release.
-
+Instructions for how to manually build and run the Certbot snap and the externally
+snapped DNS plugins that the Certbot project supplies are located in the README
+file at https://github.com/certbot/certbot/tree/master/tools/snap.
 
 Updating the documentation
 ==========================

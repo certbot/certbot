@@ -1,4 +1,6 @@
 """Test utilities."""
+from importlib import reload as reload_module
+import io
 import logging
 from multiprocessing import Event
 from multiprocessing import Process
@@ -6,18 +8,13 @@ import shutil
 import sys
 import tempfile
 import unittest
+import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import OpenSSL
 import pkg_resources
-import six
-from six.moves import reload_module
 
 from certbot import interfaces
 from certbot import util
@@ -28,6 +25,21 @@ from certbot._internal import storage
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
+
+try:
+    # When we remove this deprecated import, we should also remove the
+    # "external-mock" test environment and the mock dependency listed in
+    # tools/pinning/pyproject.toml.
+    import mock
+    warnings.warn(
+        "The external mock module is being used for backwards compatibility "
+        "since it is available, however, future versions of Certbot's tests will "
+        "use unittest.mock. Be sure to update your code accordingly.",
+        PendingDeprecationWarning
+    )
+except ImportError: # pragma: no cover
+    from unittest import mock # type: ignore
+
 
 
 def vector_path(*names):
@@ -93,7 +105,7 @@ def load_pyopenssl_private_key(*names):
     return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
 
 
-def make_lineage(config_dir, testfile):
+def make_lineage(config_dir, testfile, ec=False):
     """Creates a lineage defined by testfile.
 
     This creates the archive, live, and renewal directories if
@@ -119,7 +131,7 @@ def make_lineage(config_dir, testfile):
         if not os.path.exists(directory):
             filesystem.makedirs(directory)
 
-    sample_archive = vector_path('sample-archive')
+    sample_archive = vector_path('sample-archive{}'.format('-ec' if ec else ''))
     for kind in os.listdir(sample_archive):
         shutil.copyfile(os.path.join(sample_archive, kind),
                         os.path.join(archive_dir, kind))
@@ -170,13 +182,13 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
     :rtype: mock.MagicMock
 
     """
-    stdout = stdout if stdout else six.StringIO()
+    stdout = stdout if stdout else io.StringIO()
 
     freezable_mock = _create_get_utility_mock_with_stdout(stdout)
     return mock.patch(target, new=freezable_mock)
 
 
-class FreezableMock(object):
+class FreezableMock:
     """Mock object with the ability to freeze attributes.
 
     This class works like a regular mock.MagicMock object, except
@@ -247,7 +259,7 @@ class FreezableMock(object):
 def _create_get_utility_mock():
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():  # pylint: E1120
+    for name in interfaces.IDisplay.names():
         if name != 'notification':
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
@@ -272,7 +284,7 @@ def _create_get_utility_mock_with_stdout(stdout):
 
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():  # pylint: E1120
+    for name in interfaces.IDisplay.names():
         if name == 'notification':
             frozen_mock = FreezableMock(frozen=True,
                                         func=_write_msg)
@@ -322,7 +334,7 @@ class TempDirTestCase(unittest.TestCase):
 class ConfigTestCase(TempDirTestCase):
     """Test class which sets up a NamespaceConfig object."""
     def setUp(self):
-        super(ConfigTestCase, self).setUp()
+        super().setUp()
         self.config = configuration.NamespaceConfig(
             mock.MagicMock(**constants.CLI_DEFAULTS)
         )

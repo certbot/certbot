@@ -1,3 +1,5 @@
+# pylint: disable=missing-module-docstring
+
 import json
 import os
 import stat
@@ -5,18 +7,20 @@ import stat
 import pkg_resources
 import requests
 
+from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 
 PEBBLE_VERSION = 'v2.3.0'
 ASSETS_PATH = pkg_resources.resource_filename('certbot_integration_tests', 'assets')
 
 
-def fetch(workspace):
+def fetch(workspace, http_01_port=DEFAULT_HTTP_01_PORT):
+    # pylint: disable=missing-function-docstring
     suffix = 'linux-amd64' if os.name != 'nt' else 'windows-amd64.exe'
 
     pebble_path = _fetch_asset('pebble', suffix)
     challtestsrv_path = _fetch_asset('pebble-challtestsrv', suffix)
-    pebble_config_path = _build_pebble_config(workspace)
+    pebble_config_path = _build_pebble_config(workspace, http_01_port)
 
     return pebble_path, challtestsrv_path, pebble_config_path
 
@@ -35,7 +39,7 @@ def _fetch_asset(asset, suffix):
     return asset_path
 
 
-def _build_pebble_config(workspace):
+def _build_pebble_config(workspace, http_01_port):
     config_path = os.path.join(workspace, 'pebble-config.json')
     with open(config_path, 'w') as file_h:
         file_h.write(json.dumps({
@@ -44,7 +48,7 @@ def _build_pebble_config(workspace):
                 'managementListenAddress': '0.0.0.0:15000',
                 'certificate': os.path.join(ASSETS_PATH, 'cert.pem'),
                 'privateKey': os.path.join(ASSETS_PATH, 'key.pem'),
-                'httpPort': 5002,
+                'httpPort': http_01_port,
                 'tlsPort': 5001,
                 'ocspResponderURL': 'http://127.0.0.1:{0}'.format(MOCK_OCSP_SERVER_PORT),
             },

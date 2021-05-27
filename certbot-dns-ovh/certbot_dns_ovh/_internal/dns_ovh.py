@@ -1,5 +1,6 @@
 """DNS Authenticator for OVH DNS."""
 import logging
+from typing import Optional
 
 from lexicon.providers import ovh
 import zope.interface
@@ -8,6 +9,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
 from certbot.plugins import dns_common_lexicon
+from certbot.plugins.dns_common import CredentialsConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +28,12 @@ class Authenticator(dns_common.DNSAuthenticator):
     ttl = 60
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
-        self.credentials = None
+        super().__init__(*args, **kwargs)
+        self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=30)
+        super().add_parser_arguments(add, default_propagation_seconds=30)
         add('credentials', help='OVH credentials INI file.')
 
     def more_info(self):  # pylint: disable=missing-function-docstring
@@ -60,6 +62,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_ovh_client().del_txt_record(domain, validation_name, validation)
 
     def _get_ovh_client(self):
+        if not self.credentials:  # pragma: no cover
+            raise errors.Error("Plugin has not been prepared.")
         return _OVHLexiconClient(
             self.credentials.conf('endpoint'),
             self.credentials.conf('application-key'),
@@ -75,7 +79,7 @@ class _OVHLexiconClient(dns_common_lexicon.LexiconClient):
     """
 
     def __init__(self, endpoint, application_key, application_secret, consumer_key, ttl):
-        super(_OVHLexiconClient, self).__init__()
+        super().__init__()
 
         config = dns_common_lexicon.build_lexicon_config('ovh', {
             'ttl': ttl,
@@ -102,4 +106,4 @@ class _OVHLexiconClient(dns_common_lexicon.LexiconClient):
         if domain_name in str(e) and str(e).endswith('not found'):
             return
 
-        super(_OVHLexiconClient, self)._handle_general_error(e, domain_name)
+        super()._handle_general_error(e, domain_name)

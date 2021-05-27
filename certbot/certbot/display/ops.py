@@ -1,5 +1,6 @@
 """Contains UI methods for LE user operations."""
 import logging
+from textwrap import indent
 
 import zope.component
 
@@ -122,8 +123,7 @@ def choose_names(installer, question=None):
     names = get_valid_domains(domains)
 
     if not names:
-        return _choose_names_manually(
-            "No names were found in your configuration files. ")
+        return _choose_names_manually()
 
     code, names = _filter_names(names, question)
     if code == display_util.OK and names:
@@ -191,7 +191,8 @@ def _choose_names_manually(prompt_prefix=""):
     """
     code, input_ = z_util(interfaces.IDisplay).input(
         prompt_prefix +
-        "Please enter in your domain name(s) (comma and/or space separated) ",
+        "Please enter the domain name(s) you would like on your certificate "
+        "(comma and/or space separated)",
         cli_flag="--domains", force_interactive=True)
 
     if code == display_util.OK:
@@ -240,39 +241,52 @@ def success_installation(domains):
     :param list domains: domain names which were enabled
 
     """
-    z_util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully enabled {0}".format(
-            _gen_https_names(domains)),
-        pause=False)
+    display_util.notify(
+        "Congratulations! You have successfully enabled HTTPS on {0}"
+        .format(_gen_https_names(domains))
+    )
 
 
-def success_renewal(domains):
+def success_renewal(unused_domains):
     """Display a box confirming the renewal of an existing certificate.
 
     :param list domains: domain names which were renewed
 
     """
-    z_util(interfaces.IDisplay).notification(
+    display_util.notify(
         "Your existing certificate has been successfully renewed, and the "
-        "new certificate has been installed.{1}{1}"
-        "The new certificate covers the following domains: {0}".format(
-            _gen_https_names(domains),
-            os.linesep),
-        pause=False)
+        "new certificate has been installed."
+    )
 
 
 def success_revocation(cert_path):
-    """Display a box confirming a certificate has been revoked.
+    """Display a message confirming a certificate has been revoked.
 
     :param list cert_path: path to certificate which was revoked.
 
     """
-    z_util(interfaces.IDisplay).notification(
+    display_util.notify(
         "Congratulations! You have successfully revoked the certificate "
-        "that was located at {0}{1}{1}".format(
-            cert_path,
-            os.linesep),
-        pause=False)
+        "that was located at {0}.".format(cert_path)
+    )
+
+
+def report_executed_command(command_name: str, returncode: int, stdout: str, stderr: str) -> None:
+    """Display a message describing the success or failure of an executed process (e.g. hook).
+
+    :param str command_name: Human-readable description of the executed command
+    :param int returncode: The exit code of the executed command
+    :param str stdout: The stdout output of the executed command
+    :param str stderr: The stderr output of the executed command
+
+    """
+    out_s, err_s = stdout.strip(), stderr.strip()
+    if returncode != 0:
+        logger.warning("%s reported error code %d", command_name, returncode)
+    if out_s:
+        display_util.notify(f"{command_name} ran with output:\n{indent(out_s, ' ')}")
+    if err_s:
+        logger.warning("%s ran with error output:\n%s", command_name, indent(err_s, ' '))
 
 
 def _gen_https_names(domains):

@@ -83,24 +83,6 @@ class MetaTest(unittest.TestCase):
         self.assertIsNotNone(meta.creation_host)
         self.assertIsNotNone(meta.register_to_eff)
 
-class ReportNewAccountTest(test_util.ConfigTestCase):
-    """Tests for certbot._internal.account.report_new_account."""
-
-    def _call(self):
-        from certbot._internal.account import report_new_account
-        report_new_account(self.config)
-
-    @mock.patch("certbot._internal.account.zope.component.queryUtility")
-    def test_no_reporter(self, mock_zope):
-        mock_zope.return_value = None
-        self._call()
-
-    @mock.patch("certbot._internal.account.zope.component.queryUtility")
-    def test_it(self, mock_zope):
-        self._call()
-        call_list = mock_zope().add_message.call_args_list
-        self.assertTrue(self.config.config_dir in call_list[0][0][0])
-
 
 class AccountMemoryStorageTest(unittest.TestCase):
     """Tests for certbot._internal.account.AccountMemoryStorage."""
@@ -124,18 +106,23 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.account.AccountFileStorage."""
 
     def setUp(self):
-        super(AccountFileStorageTest, self).setUp()
+        super().setUp()
 
         from certbot._internal.account import AccountFileStorage
         self.storage = AccountFileStorage(self.config)
 
         from certbot._internal.account import Account
         new_authzr_uri = "hi"
+        meta = Account.Meta(
+            creation_host="test.example.org",
+            creation_dt=datetime.datetime(
+                2021, 1, 5, 14, 4, 10, tzinfo=pytz.UTC))
         self.acc = Account(
             regr=messages.RegistrationResource(
                 uri=None, body=messages.Registration(),
                 new_authzr_uri=new_authzr_uri),
-            key=KEY)
+            key=KEY,
+            meta=meta)
         self.mock_client = mock.MagicMock()
         self.mock_client.directory.new_authz = new_authzr_uri
 
@@ -163,7 +150,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         path = os.path.join(self.config.accounts_dir, self.acc.id, "regr.json")
         with open(path, "r") as f:
             regr = json.load(f)
-        self.assertTrue("new_authzr_uri" in regr)
+        self.assertIn("new_authzr_uri", regr)
 
     def test_update_regr(self):
         self.storage.update_regr(self.acc, self.mock_client)
@@ -289,14 +276,14 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self.storage.save(self.acc, self.mock_client)
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError
-        with mock.patch("six.moves.builtins.open", mock_open):
+        with mock.patch("builtins.open", mock_open):
             self.assertRaises(
                 errors.AccountStorageError, self.storage.load, self.acc.id)
 
     def test_save_ioerrors(self):
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError  # TODO: [None, None, IOError]
-        with mock.patch("six.moves.builtins.open", mock_open):
+        with mock.patch("builtins.open", mock_open):
             self.assertRaises(
                 errors.AccountStorageError, self.storage.save,
                     self.acc, self.mock_client)

@@ -5,7 +5,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
-import six
 
 
 class InstallerTest(unittest.TestCase):
@@ -16,7 +15,7 @@ class InstallerTest(unittest.TestCase):
         self.installer = Installer(config=mock.MagicMock(), name="null")
 
     def test_it(self):
-        self.assertTrue(isinstance(self.installer.more_info(), six.string_types))
+        self.assertIsInstance(self.installer.more_info(), str)
         self.assertEqual([], self.installer.get_all_names())
         self.assertEqual([], self.installer.supported_enhancements())
 

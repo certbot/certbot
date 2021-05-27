@@ -1,5 +1,6 @@
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
 import logging
+from typing import Optional
 
 import dns.flags
 import dns.message
@@ -15,9 +16,11 @@ import zope.interface
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
+from certbot.plugins.dns_common import CredentialsConfiguration
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_NETWORK_TIMEOUT = 45
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -42,12 +45,12 @@ class Authenticator(dns_common.DNSAuthenticator):
     ttl = 120
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
-        self.credentials = None
+        super().__init__(*args, **kwargs)
+        self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=60)
+        super().add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials', help='RFC 2136 credentials INI file.')
 
     def more_info(self):  # pylint: disable=missing-function-docstring
@@ -79,6 +82,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_rfc2136_client().del_txt_record(validation_name, validation)
 
     def _get_rfc2136_client(self):
+        if not self.credentials:  # pragma: no cover
+            raise errors.Error("Plugin has not been prepared.")
         return _RFC2136Client(self.credentials.conf('server'),
                               int(self.credentials.conf('port') or self.PORT),
                               self.credentials.conf('name'),
@@ -87,17 +92,19 @@ class Authenticator(dns_common.DNSAuthenticator):
                                                   dns.tsig.HMAC_MD5))
 
 
-class _RFC2136Client(object):
+class _RFC2136Client:
     """
     Encapsulates all communication with the target DNS server.
     """
-    def __init__(self, server, port, key_name, key_secret, key_algorithm):
+    def __init__(self, server, port, key_name, key_secret, key_algorithm,
+        timeout=DEFAULT_NETWORK_TIMEOUT):
         self.server = server
         self.port = port
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
         })
         self.algorithm = key_algorithm
+        self._default_timeout = timeout
 
     def add_txt_record(self, record_name, record_content, record_ttl):
         """
@@ -122,7 +129,7 @@ class _RFC2136Client(object):
         update.add(rel, record_ttl, dns.rdatatype.TXT, record_content)
 
         try:
-            response = dns.query.tcp(update, self.server, port=self.port)
+            response = dns.query.tcp(update, self.server, self._default_timeout, self.port)
         except Exception as e:
             raise errors.PluginError('Encountered error adding TXT record: {0}'
                                      .format(e))
@@ -157,7 +164,7 @@ class _RFC2136Client(object):
         update.delete(rel, dns.rdatatype.TXT, record_content)
 
         try:
-            response = dns.query.tcp(update, self.server, port=self.port)
+            response = dns.query.tcp(update, self.server, self._default_timeout, self.port)
         except Exception as e:
             raise errors.PluginError('Encountered error deleting TXT record: {0}'
                                      .format(e))
@@ -207,10 +214,10 @@ class _RFC2136Client(object):
 
         try:
             try:
-                response = dns.query.tcp(request, self.server, port=self.port)
-            except OSError as e:
+                response = dns.query.tcp(request, self.server, self._default_timeout, self.port)
+            except (OSError, dns.exception.Timeout) as e:
                 logger.debug('TCP query failed, fallback to UDP: %s', e)
-                response = dns.query.udp(request, self.server, port=self.port)
+                response = dns.query.udp(request, self.server, self._default_timeout, self.port)
             rcode = response.rcode()
 
             # Authoritative Answer bit should be set

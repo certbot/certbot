@@ -3,11 +3,8 @@ import csv
 import glob
 import logging
 import shutil
-import sys
 import time
 import traceback
-
-import six
 
 from certbot import errors
 from certbot import util
@@ -18,7 +15,7 @@ from certbot.compat import os
 logger = logging.getLogger(__name__)
 
 
-class Reverter(object):
+class Reverter:
     """Reverter Class - save and revert configuration checkpoints.
 
     This class can be used by the plugins, especially Installers, to
@@ -201,6 +198,7 @@ class Reverter(object):
         Read the file returning the lines, and a pointer to the end of the file.
 
         """
+        # pylint: disable=consider-using-with
         # Open up filepath differently depending on if it already exists
         if os.path.isfile(filepath):
             op_fd = open(filepath, "r+")
@@ -252,11 +250,10 @@ class Reverter(object):
 
     def _run_undo_commands(self, filepath):
         """Run all commands in a file."""
-        # NOTE: csv module uses native strings. That is, bytes on Python 2 and
-        # unicode on Python 3
+        # NOTE: csv module uses native strings. That is unicode on Python 3
         # It is strongly advised to set newline = '' on Python 3 with CSV,
         # and it fixes problems on Windows.
-        kwargs = {'newline': ''} if sys.version_info[0] > 2 else {}
+        kwargs = {'newline': ''}
         with open(filepath, 'r', **kwargs) as csvfile:  # type: ignore
             csvreader = csv.reader(csvfile)
             for command in reversed(list(csvreader)):
@@ -352,26 +349,18 @@ class Reverter(object):
 
         """
         commands_fp = os.path.join(self._get_cp_dir(temporary), "COMMANDS")
-        command_file = None
         # It is strongly advised to set newline = '' on Python 3 with CSV,
         # and it fixes problems on Windows.
-        kwargs = {'newline': ''} if sys.version_info[0] > 2 else {}
+        kwargs = {'newline': ''}
         try:
-            if os.path.isfile(commands_fp):
-                command_file = open(commands_fp, "a", **kwargs)  # type: ignore
-            else:
-                command_file = open(commands_fp, "w", **kwargs)  # type: ignore
-
-            csvwriter = csv.writer(command_file)
-            csvwriter.writerow(command)
-
+            mode = "a" if os.path.isfile(commands_fp) else "w"
+            with open(commands_fp, mode, **kwargs) as f:  # type: ignore
+                csvwriter = csv.writer(f)
+                csvwriter.writerow(command)
         except (IOError, OSError):
             logger.error("Unable to register undo command")
             raise errors.ReverterError(
                 "Unable to register undo command.")
-        finally:
-            if command_file is not None:
-                command_file.close()
 
     def _get_cp_dir(self, temporary):
         """Return the proper reverter directory."""
@@ -518,14 +507,14 @@ class Reverter(object):
         # It is possible save checkpoints faster than 1 per second resulting in
         # collisions in the naming convention.
 
-        for _ in six.moves.range(2):
+        for _ in range(2):
             timestamp = self._checkpoint_timestamp()
             final_dir = os.path.join(self.config.backup_dir, timestamp)
             try:
                 filesystem.replace(self.config.in_progress_dir, final_dir)
                 return
             except OSError:
-                logger.warning("Extreme, unexpected race condition, retrying (%s)", timestamp)
+                logger.warning("Unexpected race condition, retrying (%s)", timestamp)
 
         # After 10 attempts... something is probably wrong here...
         logger.error(

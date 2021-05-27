@@ -1,11 +1,9 @@
 """New interface style Certbot enhancements"""
 import abc
+from typing import Any
+from typing import Dict
+from typing import List
 
-import six
-
-from acme.magic_typing import Any
-from acme.magic_typing import Dict
-from acme.magic_typing import List
 from certbot._internal import constants
 
 ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]
@@ -91,8 +89,7 @@ def populate_cli(add):
             help=enh["cli_help"])
 
 
-@six.add_metaclass(abc.ABCMeta)
-class AutoHSTSEnhancement(object):
+class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
     """
     Enhancement interface that installer plugins can implement in order to
     provide functionality that configures the software to have a
@@ -159,7 +156,7 @@ class AutoHSTSEnhancement(object):
 # This is used to configure internal new style enhancements in Certbot. These
 # enhancement interfaces need to be defined in this file. Please do not modify
 # this list from plugin code.
-_INDEX = [
+_INDEX: List[Dict[str, Any]] = [
     {
         "name": "AutoHSTS",
         "cli_help": "Gradually increasing max-age value for HTTP Strict Transport "+
@@ -174,4 +171,4 @@ _INDEX = [
         "deployer_function": "deploy_autohsts",
         "enable_function": "enable_autohsts"
     }
-]  # type: List[Dict[str, Any]]
+]

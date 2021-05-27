@@ -2,16 +2,14 @@
 import logging
 import re
 import shutil
-import sys
 import tempfile
-import warnings
+from typing import List
 
 from josepy import util as jose_util
 import pkg_resources
 import zope.interface
 
-from acme.magic_typing import List
-from certbot import achallenges  # pylint: disable=unused-import
+from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -42,7 +40,7 @@ hostname_regex = re.compile(
 
 
 @zope.interface.implementer(interfaces.IPlugin)
-class Plugin(object):
+class Plugin:
     """Generic plugin."""
     # provider is not inherited, subclasses must define it on their own
     # @zope.interface.provider(interfaces.IPluginFactory)
@@ -54,10 +52,6 @@ class Plugin(object):
     @jose_util.abstractclassmethod
     def add_parser_arguments(cls, add):
         """Add plugin arguments to the CLI argument parser.
-
-        NOTE: If some of your flags interact with others, you can
-        use cli.report_config_interaction to register this to ensure
-        values are correctly saved/overridable during renewal.
 
         :param callable add: Function that proxies calls to
             `argparse.ArgumentParser.add_argument` prepending options
@@ -103,6 +97,33 @@ class Plugin(object):
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
 
+    def auth_hint(self, failed_achalls):
+        # type: (List[achallenges.AnnotatedChallenge]) -> str
+        """Human-readable string to help the user troubleshoot the authenticator.
+
+        Shown to the user if one or more of the attempted challenges were not a success.
+
+        Should describe, in simple language, what the authenticator tried to do, what went
+        wrong and what the user should try as their "next steps".
+
+        TODO: auth_hint belongs in IAuthenticator but can't be added until the next major
+        version of Certbot. For now, it lives in .Plugin and auth_handler will only call it
+        on authenticators that subclass .Plugin. For now, inherit from `.Plugin` to implement
+        and/or override the method.
+
+        :param list failed_achalls: List of one or more failed challenges
+                                    (:class:`achallenges.AnnotatedChallenge` subclasses).
+
+        :rtype str:
+        """
+        # This is a fallback hint. Authenticators should implement their own auth_hint that
+        # addresses the specific mechanics of that authenticator.
+        challs = " and ".join(sorted({achall.typ for achall in failed_achalls}))
+        return ("The Certificate Authority couldn't exterally verify that the {name} plugin "
+                "completed the required {challs} challenges. Ensure the plugin is configured "
+                "correctly and that the changes it makes are accessible from the internet."
+                .format(name=self.name, challs=challs))
+
 
 class Installer(Plugin):
     """An installer base class with reverter and ssl_dhparam methods defined.
@@ -111,7 +132,7 @@ class Installer(Plugin):
 
     """
     def __init__(self, *args, **kwargs):
-        super(Installer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.storage = PluginStorage(self.config, self.name)
         self.reverter = reverter.Reverter(self.config)
 
@@ -207,7 +228,7 @@ class Installer(Plugin):
             constants.ALL_SSL_DHPARAMS_HASHES)
 
 
-class Addr(object):
+class Addr:
     r"""Represents an virtual host address.
 
     :param str addr: addr part of vhost address
@@ -305,7 +326,7 @@ class Addr(object):
         return result
 
 
-class ChallengePerformer(object):
+class ChallengePerformer:
     """Abstract base for challenge performers.
 
     :ivar configurator: Authenticator and installer plugin
@@ -319,8 +340,8 @@ class ChallengePerformer(object):
 
     def __init__(self, configurator):
         self.configurator = configurator
-        self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
-        self.indices = []  # type: List[int]
+        self.achalls: List[achallenges.KeyAuthorizationAnnotatedChallenge] = []
+        self.indices: List[int] = []
 
     def add_chall(self, achall, idx=None):
         """Store challenge to be performed when perform() is called.
@@ -423,34 +444,3 @@ def dir_setup(test_dir, pkg):  # pragma: no cover
         test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
 
     return temp_dir, config_dir, work_dir
-
-
-# This class takes a similar approach to the cryptography project to deprecate attributes
-# in public modules. See the _ModuleWithDeprecation class here:
-# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
-class _TLSSNI01DeprecationModule(object):
-    """
-    Internal class delegating to a module, and displaying warnings when
-    attributes related to TLS-SNI-01 are accessed.
-    """
-    def __init__(self, module):
-        self.__dict__['_module'] = module
-
-    def __getattr__(self, attr):
-        if attr == 'TLSSNI01':
-            warnings.warn('TLSSNI01 is deprecated and will be removed soon.',
-                          DeprecationWarning, stacklevel=2)
-        return getattr(self._module, attr)
-
-    def __setattr__(self, attr, value):  # pragma: no cover
-        setattr(self._module, attr, value)
-
-    def __delattr__(self, attr):  # pragma: no cover
-        delattr(self._module, attr)
-
-    def __dir__(self):  # pragma: no cover
-        return ['_module'] + dir(self._module)
-
-
-# Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
-sys.modules[__name__] = _TLSSNI01DeprecationModule(sys.modules[__name__])

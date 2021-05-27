@@ -12,6 +12,9 @@ jobs:
             DOCKER_ARCH: arm32v6
           arm64v8:
             DOCKER_ARCH: arm64v8
+    # The default timeout of 60 minutes is a little low for compiling
+    # cryptography on ARM architectures.
+    timeoutInMinutes: 180
     steps:
       - bash: set -e && tools/docker/build.sh $(dockerTag) $DOCKER_ARCH
         displayName: Build the Docker images
@@ -31,16 +34,41 @@ jobs:
           path: $(Build.ArtifactStagingDirectory)
           artifact: docker_$(DOCKER_ARCH)
         displayName: Store Docker artifact
+  - job: docker_run
+    dependsOn: docker_build
+    pool:
+      vmImage: ubuntu-18.04
+    steps:
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          artifact: docker_amd64
+          path: $(Build.SourcesDirectory)
+        displayName: Retrieve Docker images
+      - bash: set -e && docker load --input $(Build.SourcesDirectory)/images.tar
+        displayName: Load Docker images
+      - bash: |
+          set -ex
+          DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}:{{.Tag}}')
+          for DOCKER_IMAGE in ${DOCKER_IMAGES}
+            do docker run --rm "${DOCKER_IMAGE}" plugins --prepare
+          done
+        displayName: Run integration tests for Docker images
   - job: installer_build
     pool:
       vmImage: vs2017-win2016
     steps:
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: 3.7
+          versionSpec: 3.8
           architecture: x86
           addToPath: true
-      - script: python windows-installer/construct.py
+      - script: |
+          python -m venv venv
+          venv\Scripts\python tools\pipstrap.py
+          venv\Scripts\python tools\pip_install.py -e windows-installer
+        displayName: Prepare Windows installer build environment
+      - script: |
+          venv\Scripts\construct-windows-installer
         displayName: Build Certbot installer
       - task: CopyFiles@2
         inputs:
@@ -79,13 +107,9 @@ jobs:
           artifact: windows-installer
           path: $(Build.SourcesDirectory)/bin
         displayName: Retrieve Windows installer
-      # pip 9.0 provided by pipstrap is not able to resolve properly the pywin32 dependency
-      # required by certbot-ci: as a temporary workaround until pipstrap is updated, we install
-      # a recent version of pip, but we also to disable the isolated feature as described in
-      # https://github.com/certbot/certbot/issues/8256
       - script: |
-          py -3 -m venv venv
-          venv\Scripts\python -m pip install pip==20.2.3 setuptools==50.3.0 wheel==0.35.1
+          python -m venv venv
+          venv\Scripts\python tools\pipstrap.py
           venv\Scripts\python tools\pip_install.py -e certbot-ci
         env:
           PIP_NO_BUILD_ISOLATION: no
@@ -101,13 +125,17 @@ jobs:
   - job: snaps_build
     pool:
       vmImage: ubuntu-18.04
+    strategy:
+      matrix:
+        amd64:
+          SNAP_ARCH: amd64
+        # Do not run the heavy non-amd64 builds for test branches
+        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
+          armhf:
+            SNAP_ARCH: armhf
+          arm64:
+            SNAP_ARCH: arm64
     timeoutInMinutes: 0
-    variables:
-      # Do not run the heavy non-amd64 builds for test branches
-      ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-        ARCHS: amd64 arm64 armhf
-      ${{ if startsWith(variables['Build.SourceBranchName'], 'test-') }}:
-        ARCHS: amd64
     steps:
       - script: |
           set -e
@@ -129,7 +157,7 @@ jobs:
           git config --global user.name "$(Build.RequestedFor)"
           mkdir -p ~/.local/share/snapcraft/provider/launchpad
           cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
-          python3 tools/snap/build_remote.py ALL --archs ${ARCHS}
+          python3 tools/snap/build_remote.py ALL --archs ${SNAP_ARCH} --timeout 19800
         displayName: Build snaps
       - script: |
           set -e
@@ -139,7 +167,7 @@ jobs:
       - task: PublishPipelineArtifact@1
         inputs:
           path: $(Build.ArtifactStagingDirectory)
-          artifact: snaps
+          artifact: snaps_$(SNAP_ARCH)
         displayName: Store snaps artifacts
   - job: snap_run
     dependsOn: snaps_build
@@ -155,17 +183,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends nginx-light snapd
           python3 -m venv venv
-          venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
+          venv/bin/python tools/pipstrap.py
           venv/bin/python tools/pip_install.py -U tox
         displayName: Install dependencies
       - task: DownloadPipelineArtifact@2
         inputs:
-          artifact: snaps
+          artifact: snaps_amd64
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snaps
       - script: |
           set -e
-          sudo snap install --dangerous --classic snap/certbot_*_amd64.snap
+          sudo snap install --dangerous --classic snap/certbot_*.snap
         displayName: Install Certbot snap
       - script: |
           set -e
@@ -187,13 +215,13 @@ jobs:
           addToPath: true
       - task: DownloadPipelineArtifact@2
         inputs:
-          artifact: snaps
+          artifact: snaps_amd64
           path: $(Build.SourcesDirectory)/snap
         displayName: Retrieve Certbot snaps
       - script: |
           set -e
           python3 -m venv venv
-          venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
+          venv/bin/python tools/pipstrap.py
           venv/bin/python tools/pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
       - script: |
