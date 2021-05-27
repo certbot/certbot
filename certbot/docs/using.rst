@@ -720,7 +720,7 @@ Run the following line, which will add a cron job to `/etc/crontab`:
 
 .. code-block:: shell
 
-  SLEEPTIME=$(awk 'BEGIN{srand(); print int(rand()*(3600+1))}'); echo "0 0,12 * * * root sleep $SLEEPTIME &amp;&amp; certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
+  SLEEPTIME=$(awk 'BEGIN{srand(); print int(rand()*(3600+1))}'); echo "0 0,12 * * * root sleep $SLEEPTIME && certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
 
 If you needed to stop your webserver to run Certbot, you'll want to
 add ``--pre-hook`` and ``--post-hook`` flags after ``certbot renew`` to stop
