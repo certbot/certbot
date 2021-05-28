@@ -69,10 +69,9 @@ class HandleAuthorizationsTest(unittest.TestCase):
         from certbot._internal.auth_handler import AuthHandler
 
         self.mock_display = mock.Mock()
+        self.mock_config = mock.Mock(debug_challenges=False)
         zope.component.provideUtility(
             self.mock_display, interfaces.IDisplay)
-        zope.component.provideUtility(
-            mock.Mock(debug_challenges=False), interfaces.IConfig)
 
         self.mock_auth = mock.MagicMock(name="ApacheConfigurator")
 
@@ -99,7 +98,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll(retry=1, wait_value=30)
         with mock.patch('certbot._internal.auth_handler.time') as mock_time:
-            authzr = self.handler.handle_authorizations(mock_order)
+            authzr = self.handler.handle_authorizations(mock_order, self.mock_config)
 
             self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
 
@@ -131,7 +130,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=False)
         mock_order = mock.MagicMock(authorizations=[authzr])
-        authzr = self.handler.handle_authorizations(mock_order)
+        authzr = self.handler.handle_authorizations(mock_order, self.mock_config)
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 2)
 
@@ -152,7 +151,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=False)
         mock_order = mock.MagicMock(authorizations=[authzr])
-        authzr = self.handler.handle_authorizations(mock_order)
+        authzr = self.handler.handle_authorizations(mock_order, self.mock_config)
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
 
@@ -176,7 +175,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         mock_order = mock.MagicMock(authorizations=authzrs)
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll()
-        authzr = self.handler.handle_authorizations(mock_order)
+        authzr = self.handler.handle_authorizations(mock_order, self.mock_config)
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 3)
 
@@ -195,14 +194,13 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self._test_name3_http_01_3_common(combos=False)
 
     def test_debug_challenges(self):
-        zope.component.provideUtility(
-            mock.Mock(debug_challenges=True), interfaces.IConfig)
+        config = mock.Mock(debug_challenges=True)
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll()
 
-        self.handler.handle_authorizations(mock_order)
+        self.handler.handle_authorizations(mock_order, config)
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
         self.assertEqual(self.mock_display.notification.call_count, 1)
@@ -214,7 +212,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_auth.perform.side_effect = errors.AuthorizationError
 
         self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+            errors.AuthorizationError, self.handler.handle_authorizations,
+            mock_order, self.mock_config)
 
     def test_max_retries_exceeded(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
@@ -225,12 +224,13 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         with self.assertRaises(errors.AuthorizationError) as error:
             # We retry only once, so retries will be exhausted before STATUS_VALID is returned.
-            self.handler.handle_authorizations(mock_order, False, 1)
+            self.handler.handle_authorizations(mock_order, self.mock_config, False, 1)
         self.assertIn('All authorizations were not finalized by the CA.', str(error.exception))
 
     def test_no_domains(self):
         mock_order = mock.MagicMock(authorizations=[])
-        self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+        self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations,
+                          mock_order, self.mock_config)
 
     def _test_preferred_challenge_choice_common(self, combos):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=combos)]
@@ -242,7 +242,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
                                          challenges.DNS01.typ,))
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll()
-        self.handler.handle_authorizations(mock_order)
+        self.handler.handle_authorizations(mock_order, self.mock_config)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
@@ -260,7 +260,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
         mock_order = mock.MagicMock(authorizations=authzrs)
         self.handler.pref_challs.append(challenges.DNS01.typ)
         self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+            errors.AuthorizationError, self.handler.handle_authorizations,
+            mock_order, self.mock_config)
 
     def test_preferred_challenges_not_supported_acme_1(self):
         self._test_preferred_challenges_not_supported_common(combos=True)
@@ -273,14 +274,16 @@ class HandleAuthorizationsTest(unittest.TestCase):
         authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.DNS01])]
         mock_order = mock.MagicMock(authorizations=authzrs)
         self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+            errors.AuthorizationError, self.handler.handle_authorizations,
+            mock_order, self.mock_config)
 
     def test_perform_error(self):
         self.mock_auth.perform.side_effect = errors.AuthorizationError
 
         authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=True)
         mock_order = mock.MagicMock(authorizations=[authzr])
-        self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+        self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations,
+                          mock_order, self.mock_config)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
@@ -293,7 +296,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
         mock_order = mock.MagicMock(authorizations=authzrs)
 
         self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+            errors.AuthorizationError, self.handler.handle_authorizations,
+            mock_order, self.mock_config)
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
@@ -305,7 +309,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         with test_util.patch_get_utility():
             with self.assertRaises(errors.AuthorizationError) as error:
-                self.handler.handle_authorizations(mock_order, False)
+                self.handler.handle_authorizations(mock_order, self.mock_config, False)
         self.assertIn('Some challenges have failed.', str(error.exception))
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
@@ -330,7 +334,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         with mock.patch('certbot._internal.auth_handler.AuthHandler._report_failed_authzrs') \
             as mock_report:
-            valid_authzr = self.handler.handle_authorizations(mock_order, True)
+            valid_authzr = self.handler.handle_authorizations(mock_order, self.mock_config, True)
 
         # Because best_effort=True, we did not blow up. Instead ...
         self.assertEqual(len(valid_authzr), 1)  # ... the valid authzr has been processed
@@ -340,7 +344,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         with test_util.patch_get_utility():
             with self.assertRaises(errors.AuthorizationError) as error:
-                self.handler.handle_authorizations(mock_order, True)
+                self.handler.handle_authorizations(mock_order, self.mock_config, True)
 
         # Despite best_effort=True, process will fail because no authzr is valid.
         self.assertIn('All challenges have failed.', str(error.exception))
@@ -354,7 +358,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
                 [messages.STATUS_PENDING], False)
         mock_order = mock.MagicMock(authorizations=[authzr])
         self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+            errors.AuthorizationError, self.handler.handle_authorizations,
+            mock_order, self.mock_config)
 
         # With a validated challenge that is not supported by the plugin, we
         # expect the challenge to not be solved again and
@@ -364,7 +369,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
                 [acme_util.DNS01],
                 [messages.STATUS_VALID], False)
         mock_order = mock.MagicMock(authorizations=[authzr])
-        self.handler.handle_authorizations(mock_order)
+        self.handler.handle_authorizations(mock_order, self.mock_config)
 
     def test_valid_authzrs_deactivated(self):
         """When we deactivate valid authzrs in an orderr, we expect them to become deactivated

@@ -450,7 +450,8 @@ def handle_renewal_request(config):
             if renewal_candidate is None:
                 parse_failures.append(renewal_file)
             else:
-                # XXX: ensure that each call here replaces the previous one
+                # This call is done only for retro-compatibility purposes.
+                # TODO: Remove this call once zope dependencies are removed from Certbot.
                 zope.component.provideUtility(lineage_config)
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main

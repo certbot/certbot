@@ -334,7 +334,7 @@ class Client:
             key = None
 
         key_size = self.config.rsa_key_size
-        elliptic_curve = None
+        elliptic_curve = "secp256r1"
 
         # key-type defaults to a list, but we are only handling 1 currently
         if isinstance(self.config.key_type, list):
@@ -362,13 +362,15 @@ class Client:
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            key = key or crypto_util.init_save_key(
+            key = key or crypto_util.generate_key(
                 key_size=key_size,
                 key_dir=self.config.key_dir,
                 key_type=self.config.key_type,
                 elliptic_curve=elliptic_curve,
+                strict_permissions=self.config.strict_permissions,
             )
-            csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
+            csr = crypto_util.generate_csr(key, domains, self.config.csr_dir,
+                                           self.config.must_staple, self.config.strict_permissions)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
         authzr = orderr.authorizations
@@ -420,7 +422,7 @@ class Client:
                 logger.warning("Certbot was unable to obtain fresh authorizations for every domain"
                                ". The dry run will continue, but results may not be accurate.")
 
-        authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
+        authzr = self.auth_handler.handle_authorizations(orderr, self.config, best_effort)
         return orderr.update(authorizations=authzr)
 
     def obtain_and_enroll_certificate(self, domains, certname):
@@ -516,11 +518,9 @@ class Client:
 
         return abs_cert_path, abs_chain_path, abs_fullchain_path
 
-    def deploy_certificate(self, cert_name, domains, privkey_path,
-                           cert_path, chain_path, fullchain_path):
+    def deploy_certificate(self, domains, privkey_path, cert_path, chain_path, fullchain_path):
         """Install certificate
 
-        :param str cert_name: name of the certificate lineage (optional)
         :param list domains: list of domains to install the certificate
         :param str privkey_path: path to certificate private key
         :param str cert_path: certificate file path (optional)
@@ -536,11 +536,7 @@ class Client:
 
         display_util.notify("Deploying certificate")
 
-        msg = f"Failed to install the certificate (installer: {self.config.installer})."
-        if cert_name:
-            msg += (" Try again after fixing errors by running:\n\n"
-                    f"  {cli.cli_constants.cli_command} install --cert-name {cert_name}\n")
-
+        msg = "Could not install certificate"
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 self.installer.deploy_cert(
@@ -616,9 +612,7 @@ class Client:
 
 
         """
-        msg = ("We were unable to set up enhancement %s for your server, "
-               "however, we successfully installed your certificate."
-               % (enhancement))
+        msg = f"Could not set up {enhancement} enhancement"
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 try:

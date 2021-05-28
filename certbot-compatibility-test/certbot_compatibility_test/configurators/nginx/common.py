@@ -48,7 +48,6 @@ class Proxy(configurators_common.Proxy):
             setattr(self.le_config, "nginx_" + k, constants.os_constant(k))
 
         conf = configuration.NamespaceConfig(self.le_config)
-        zope.component.provideUtility(conf)
         self._configurator = configurator.NginxConfigurator(
             config=conf, name="nginx")
         self._configurator.prepare()
