@@ -44,11 +44,12 @@ class AuthHandler:
         self.account = account
         self.pref_challs = pref_challs
 
-    def handle_authorizations(self, orderr, best_effort=False, max_retries=30):
+    def handle_authorizations(self, orderr, config, best_effort=False, max_retries=30):
         """
         Retrieve all authorizations, perform all challenges required to validate
         these authorizations, then poll and wait for the authorization to be checked.
         :param acme.messages.OrderResource orderr: must have authorizations filled in
+        :param interfaces.IConfig config: current Certbot configuration
         :param bool best_effort: if True, not all authorizations need to be validated (eg. renew)
         :param int max_retries: maximum number of retries to poll authorizations
         :returns: list of all validated authorizations
@@ -72,7 +73,6 @@ class AuthHandler:
                 resps = self.auth.perform(achalls)
 
                 # If debug is on, wait for user input before starting the verification process.
-                config = zope.component.getUtility(interfaces.IConfig)
                 if config.debug_challenges:
                     notify = zope.component.getUtility(interfaces.IDisplay).notification
                     notify('Challenges loaded. Press continue to submit to CA. '

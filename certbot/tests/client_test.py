@@ -242,6 +242,7 @@ class ClientTest(ClientTestCommon):
 
         self.config.allow_subset_of_names = False
         self.config.dry_run = False
+        self.config.strict_permissions = True
         self.eg_domains = ["example.com", "www.example.com"]
         self.eg_order = mock.MagicMock(
             authorizations=[None],
@@ -263,6 +264,7 @@ class ClientTest(ClientTestCommon):
         if auth_count == 1:
             self.client.auth_handler.handle_authorizations.assert_called_once_with(
                 self.eg_order,
+                self.config,
                 self.config.allow_subset_of_names)
         else:
             self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, auth_count)
@@ -273,16 +275,14 @@ class ClientTest(ClientTestCommon):
 
     @mock.patch("certbot._internal.client.crypto_util")
     @mock.patch("certbot._internal.client.logger")
-    @test_util.patch_get_utility()
-    def test_obtain_certificate_from_csr(self, unused_mock_get_utility,
-                                         mock_logger, mock_crypto_util):
+    def test_obtain_certificate_from_csr(self, mock_logger, mock_crypto_util):
         self._mock_obtain_certificate()
         test_csr = util.CSR(form="pem", file=None, data=CSR_SAN)
         auth_handler = self.client.auth_handler
         self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         orderr = self.acme.new_order(test_csr.data)
-        auth_handler.handle_authorizations(orderr, False)
+        auth_handler.handle_authorizations(orderr, self.config, False)
         self.assertEqual(
             (mock.sentinel.cert, mock.sentinel.chain),
             self.client.obtain_certificate_from_csr(
@@ -310,7 +310,7 @@ class ClientTest(ClientTestCommon):
             self.client.obtain_certificate_from_csr(
                 test_csr,
                 orderr=None))
-        auth_handler.handle_authorizations.assert_called_with(self.eg_order, False)
+        auth_handler.handle_authorizations.assert_called_with(self.eg_order, self.config, False)
 
         # Test for no auth_handler
         self.client.auth_handler = None
@@ -323,20 +323,21 @@ class ClientTest(ClientTestCommon):
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate(self, mock_crypto_util):
         csr = util.CSR(form="pem", file=None, data=CSR_SAN)
-        mock_crypto_util.init_save_csr.return_value = csr
-        mock_crypto_util.init_save_key.return_value = mock.sentinel.key
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = mock.sentinel.key
         self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         self._test_obtain_certificate_common(mock.sentinel.key, csr)
 
-        mock_crypto_util.init_save_key.assert_called_once_with(
+        mock_crypto_util.generate_key.assert_called_once_with(
             key_size=self.config.rsa_key_size,
             key_dir=self.config.key_dir,
             key_type=self.config.key_type,
-            elliptic_curve=None,  # elliptic curve is not set
+            elliptic_curve="secp256r1",
+            strict_permissions=True,
         )
-        mock_crypto_util.init_save_csr.assert_called_once_with(
-            mock.sentinel.key, self.eg_domains, self.config.csr_dir)
+        mock_crypto_util.generate_csr.assert_called_once_with(
+            mock.sentinel.key, self.eg_domains, self.config.csr_dir, False, True)
         mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
             self.eg_order.fullchain_pem)
 
@@ -345,16 +346,16 @@ class ClientTest(ClientTestCommon):
     def test_obtain_certificate_partial_success(self, mock_remove, mock_crypto_util):
         csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
         key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
-        mock_crypto_util.init_save_csr.return_value = csr
-        mock_crypto_util.init_save_key.return_value = key
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = key
         self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         authzr = self._authzr_from_domains(["example.com"])
         self.config.allow_subset_of_names = True
         self._test_obtain_certificate_common(key, csr, authzr_ret=authzr, auth_count=2)
 
-        self.assertEqual(mock_crypto_util.init_save_key.call_count, 2)
-        self.assertEqual(mock_crypto_util.init_save_csr.call_count, 2)
+        self.assertEqual(mock_crypto_util.generate_key.call_count, 2)
+        self.assertEqual(mock_crypto_util.generate_csr.call_count, 2)
         self.assertEqual(mock_remove.call_count, 2)
         self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
 
@@ -372,13 +373,13 @@ class ClientTest(ClientTestCommon):
 
         mock_crypto.make_key.assert_called_once_with(
             bits=self.config.rsa_key_size,
-            elliptic_curve=None,  # not making an elliptic private key
+            elliptic_curve="secp256r1",
             key_type=self.config.key_type,
         )
         mock_acme_crypto.make_csr.assert_called_once_with(
             mock.sentinel.key_pem, self.eg_domains, self.config.must_staple)
-        mock_crypto.init_save_key.assert_not_called()
-        mock_crypto.init_save_csr.assert_not_called()
+        mock_crypto.generate_key.assert_not_called()
+        mock_crypto.generate_csr.assert_not_called()
         self.assertEqual(mock_crypto.cert_and_chain_from_fullchain.call_count, 1)
 
     @mock.patch("certbot._internal.client.logger")

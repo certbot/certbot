@@ -2,15 +2,15 @@
 import logging
 import unittest
 
+import certbot.util
+
 try:
     import mock
 except ImportError:  # pragma: no cover
     from unittest import mock
 import OpenSSL
-import zope.component
 
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -33,8 +33,8 @@ CERT_ISSUER = test_util.load_vector('cert_intermediate_1.pem')
 CERT_ALT_ISSUER = test_util.load_vector('cert_intermediate_2.pem')
 
 
-class InitSaveKeyTest(test_util.TempDirTestCase):
-    """Tests for certbot.crypto_util.init_save_key."""
+class GenerateKeyTest(test_util.TempDirTestCase):
+    """Tests for certbot.crypto_util.generate_key."""
     def setUp(self):
         super().setUp()
 
@@ -42,8 +42,6 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
         filesystem.mkdir(self.workdir, mode=0o700)
 
         logging.disable(logging.CRITICAL)
-        zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
 
     def tearDown(self):
         super().tearDown()
@@ -52,8 +50,8 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
 
     @classmethod
     def _call(cls, key_size, key_dir):
-        from certbot.crypto_util import init_save_key
-        return init_save_key(key_size, key_dir, 'key-certbot.pem')
+        from certbot.crypto_util import generate_key
+        return generate_key(key_size, key_dir, 'key-certbot.pem', strict_permissions=True)
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
@@ -69,27 +67,55 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
         self.assertRaises(ValueError, self._call, 431, self.workdir)
 
 
-class InitSaveCSRTest(test_util.TempDirTestCase):
-    """Tests for certbot.crypto_util.init_save_csr."""
+class InitSaveKey(unittest.TestCase):
+    """Test for certbot.crypto_util.init_save_key."""
+    @mock.patch("certbot.crypto_util.generate_key")
+    @mock.patch("certbot.crypto_util.zope.component")
+    def test_it(self, mock_zope, mock_generate):
+        from certbot.crypto_util import init_save_key
 
-    def setUp(self):
-        super().setUp()
+        mock_zope.getUtility.return_value = mock.MagicMock(strict_permissions=True)
 
-        zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
+        with self.assertWarns(DeprecationWarning):
+            init_save_key(4096, "/some/path")
 
+        mock_generate.assert_called_with(4096, "/some/path", elliptic_curve="secp256r1",
+                                         key_type="rsa", keyname="key-certbot.pem",
+                                         strict_permissions=True)
+
+
+class GenerateCSRTest(test_util.TempDirTestCase):
+    """Tests for certbot.crypto_util.generate_csr."""
     @mock.patch('acme.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
     def test_it(self, unused_mock_verify, mock_csr):
-        from certbot.crypto_util import init_save_csr
+        from certbot.crypto_util import generate_csr
 
         mock_csr.return_value = b'csr_pem'
 
-        csr = init_save_csr(
-            mock.Mock(pem='dummy_key'), 'example.com', self.tempdir)
+        csr = generate_csr(
+            mock.Mock(pem='dummy_key'), 'example.com', self.tempdir, strict_permissions=True)
 
         self.assertEqual(csr.data, b'csr_pem')
         self.assertIn('csr-certbot.pem', csr.file)
+
+
+class InitSaveCsr(unittest.TestCase):
+    """Tests for certbot.crypto_util.init_save_csr."""
+    @mock.patch("certbot.crypto_util.generate_csr")
+    @mock.patch("certbot.crypto_util.zope.component")
+    def test_it(self, mock_zope, mock_generate):
+        from certbot.crypto_util import init_save_csr
+
+        mock_zope.getUtility.return_value = mock.MagicMock(must_staple=True,
+                                                           strict_permissions=True)
+        key = certbot.util.Key(file=None, pem=None)
+
+        with self.assertWarns(DeprecationWarning):
+            init_save_csr(key, {"dummy"}, "/some/path")
+
+        mock_generate.assert_called_with(key, {"dummy"}, "/some/path",
+                                         must_staple=True, strict_permissions=True)
 
 
 class ValidCSRTest(unittest.TestCase):

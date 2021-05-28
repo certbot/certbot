@@ -334,7 +334,7 @@ class Client:
             key = None
 
         key_size = self.config.rsa_key_size
-        elliptic_curve = None
+        elliptic_curve = "secp256r1"
 
         # key-type defaults to a list, but we are only handling 1 currently
         if isinstance(self.config.key_type, list):
@@ -362,13 +362,15 @@ class Client:
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            key = key or crypto_util.init_save_key(
+            key = key or crypto_util.generate_key(
                 key_size=key_size,
                 key_dir=self.config.key_dir,
                 key_type=self.config.key_type,
                 elliptic_curve=elliptic_curve,
+                strict_permissions=self.config.strict_permissions,
             )
-            csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
+            csr = crypto_util.generate_csr(key, domains, self.config.csr_dir,
+                                           self.config.must_staple, self.config.strict_permissions)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
         authzr = orderr.authorizations
@@ -420,7 +422,7 @@ class Client:
                 logger.warning("Certbot was unable to obtain fresh authorizations for every domain"
                                ". The dry run will continue, but results may not be accurate.")
 
-        authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
+        authzr = self.auth_handler.handle_authorizations(orderr, self.config, best_effort)
         return orderr.update(authorizations=authzr)
 
     def obtain_and_enroll_certificate(self, domains, certname):

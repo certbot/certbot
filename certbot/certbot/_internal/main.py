@@ -1525,6 +1525,9 @@ def main(cli_args=None):
     # note: arg parser internally handles --help (and exits afterwards)
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
+
+    # This call is done only for retro-compatibility purposes.
+    # TODO: Remove this call once zope dependencies are removed from Certbot.
     zope.component.provideUtility(config)
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
