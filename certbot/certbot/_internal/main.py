@@ -1519,6 +1519,9 @@ def main(cli_args=None):
     logger.debug("Arguments: %r", cli_args)
     logger.debug("Discovered plugins: %r", plugins)
 
+    # Some releases of Windows require escape sequences to be enable explicitly
+    misc.prepare_virtual_console()
+
     # note: arg parser internally handles --help (and exits afterwards)
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
