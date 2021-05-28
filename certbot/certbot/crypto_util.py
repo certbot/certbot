@@ -128,7 +128,7 @@ def generate_csr(privkey: util.Key, names: Set[str], path: str,
     :type privkey: :class:`certbot.util.Key`
     :param set names: `str` names to include in the CSR
     :param str path: Certificate save directory.
-    :param boolean must_staple: If true, include the TLS Feature extension "OCSP Must Staple"
+    :param bool must_staple: If true, include the TLS Feature extension "OCSP Must Staple"
     :param boolean strict_permissions: If true, the CSR file will be saved with strict
         permissions (POSIX mode 0600).
 
