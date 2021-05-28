@@ -54,8 +54,8 @@ def generate_key(key_size: int, key_dir: str, key_type: str = "rsa",
     :param str key_type: Key Type [rsa, ecdsa]
     :param str elliptic_curve: Name of the elliptic curve if key type is ecdsa.
     :param str keyname: Filename of key
-    :param bool strict_permissions: If true, key will be saved with strict permissions
-        (POSIX mode 0600).
+    :param bool strict_permissions: If true and key_dir exists, an exception is raised if
+        the directory doesn't have 0700 permissions or isn't owned by the current user.
 
     :returns: Key
     :rtype: :class:`certbot.util.Key`
@@ -129,8 +129,8 @@ def generate_csr(privkey: util.Key, names: Set[str], path: str,
     :param set names: `str` names to include in the CSR
     :param str path: Certificate save directory.
     :param bool must_staple: If true, include the TLS Feature extension "OCSP Must Staple"
-    :param bool strict_permissions: If true, the CSR file will be saved with strict
-        permissions (POSIX mode 0600).
+    :param bool strict_permissions: If true and path exists, an exception is raised if
+        the directory doesn't have 0755 permissions or isn't owned by the current user.
 
     :returns: CSR
     :rtype: :class:`certbot.util.CSR`
