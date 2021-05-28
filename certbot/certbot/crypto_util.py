@@ -129,7 +129,7 @@ def generate_csr(privkey: util.Key, names: Set[str], path: str,
     :param set names: `str` names to include in the CSR
     :param str path: Certificate save directory.
     :param bool must_staple: If true, include the TLS Feature extension "OCSP Must Staple"
-    :param boolean strict_permissions: If true, the CSR file will be saved with strict
+    :param bool strict_permissions: If true, the CSR file will be saved with strict
         permissions (POSIX mode 0600).
 
     :returns: CSR
