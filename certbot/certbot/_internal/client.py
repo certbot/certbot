@@ -396,7 +396,6 @@ class Client:
         """Request a new order and complete its authorizations.
 
         :param str csr_pem: A CSR in PEM format.
-        :param interfaces.IConfig config: current Certbot configuration
         :param bool best_effort: True if failing to complete all
             authorizations should not raise an exception
 
