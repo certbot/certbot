@@ -14,8 +14,8 @@ from acme import errors as acme_errors
 from acme import messages
 from certbot import achallenges
 from certbot import errors
-from certbot import services
 from certbot import util
+from certbot.display import util as display_util
 from certbot.plugins import common as plugin_common
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -69,7 +69,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_display = mock.Mock()
         self.mock_config = mock.Mock(debug_challenges=False)
-        services.set_display(self.mock_display)
+        with mock.patch("certbot.display.util.zope.component.provideUtility"):
+            display_util.set_display(self.mock_display)
 
         self.mock_auth = mock.MagicMock(name="ApacheConfigurator")
 
@@ -300,8 +301,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
 
-    @mock.patch('certbot.services.get_reporter')
-    def test_incomplete_authzr_error(self, _mock_reporter):
+    def test_incomplete_authzr_error(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
@@ -314,8 +314,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
 
-    @mock.patch('certbot.services.get_reporter')
-    def test_best_effort(self, _mock_reporter):
+    def test_best_effort(self):
         def _conditional_mock_on_poll(authzr):
             """This mock will invalidate one authzr, and invalidate the other one"""
             valid_mock = _gen_mock_on_poll(messages.STATUS_VALID)

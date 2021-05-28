@@ -11,7 +11,6 @@ from acme import errors as acme_errors
 from acme import messages
 from certbot import achallenges
 from certbot import errors
-from certbot import services
 from certbot._internal import error_handler
 from certbot.display import util as display_util
 from certbot.plugins import common as plugin_common
@@ -72,7 +71,7 @@ class AuthHandler:
 
                 # If debug is on, wait for user input before starting the verification process.
                 if config.debug_challenges:
-                    notify = services.get_display().notification
+                    notify = display_util.get_display().notification
                     notify('Challenges loaded. Press continue to submit to CA. '
                            'Pass "-v" for more info about challenges.', pause=True)
             except errors.AuthorizationError as error:

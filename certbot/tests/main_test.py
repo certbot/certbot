@@ -1025,8 +1025,7 @@ class MainTest(test_util.ConfigTestCase):
                 self._call(args)
 
     @mock.patch('certbot._internal.main._report_new_cert')
-    @mock.patch('certbot.services.get_reporter')
-    def test_certonly_dry_run_new_request_success(self, mock_reporter, mock_report):
+    def test_certonly_dry_run_new_request_success(self, mock_report):
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = None
         self._certonly_new_request_common(mock_client, ['--dry-run'])
@@ -1034,15 +1033,12 @@ class MainTest(test_util.ConfigTestCase):
             mock_client.obtain_and_enroll_certificate.call_count, 1)
         self.assertEqual(mock_report.call_count, 1)
         self.assertIs(mock_report.call_args[0][0].dry_run, True)
-        # Asserts we don't suggest donating after a successful dry run
-        self.assertEqual(mock_reporter().add_message.call_count, 0)
 
     @mock.patch('certbot._internal.main._report_new_cert')
     @mock.patch('certbot._internal.main.util.atexit_register')
     @mock.patch('certbot._internal.eff.handle_subscription')
     @mock.patch('certbot.crypto_util.notAfter')
-    @mock.patch('certbot.services.get_reporter')
-    def test_certonly_new_request_success(self, unused_mock_reporter, mock_notAfter,
+    def test_certonly_new_request_success(self, mock_notAfter,
                                           mock_subscription, mock_register, mock_report):
         cert_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/foo.bar'))
         key_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/baz.qux'))
@@ -1099,7 +1095,7 @@ class MainTest(test_util.ConfigTestCase):
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot._internal.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
-                    with mock.patch('certbot.services.get_display') as mock_display:
+                    with mock.patch('certbot.display.util.get_display') as mock_display:
                         if not quiet_mode:
                             mock_display().notification.side_effect = write_msg
                         with mock.patch('certbot._internal.main.renewal.crypto_util') \
@@ -1406,17 +1402,16 @@ class MainTest(test_util.ConfigTestCase):
         mock_client.save_certificate.return_value = cert_path, None, full_path
         with mock.patch('certbot._internal.main._init_le_client') as mock_init:
             mock_init.return_value = mock_client
-            with mock.patch('certbot.services.get_reporter') as mock_reporter:
-                chain_path = os.path.normpath(os.path.join(
-                    self.config.config_dir,
-                    'live/example.com/chain.pem'))
-                args = ('-a standalone certonly --csr {0} --cert-path {1} '
-                        '--chain-path {2} --fullchain-path {3}').format(
-                            CSR, cert_path, chain_path, full_path).split()
-                if extra_args:
-                    args += extra_args
-                with mock.patch('certbot._internal.main.crypto_util'):
-                    self._call(args)
+            chain_path = os.path.normpath(os.path.join(
+                self.config.config_dir,
+                'live/example.com/chain.pem'))
+            args = ('-a standalone certonly --csr {0} --cert-path {1} '
+                    '--chain-path {2} --fullchain-path {3}').format(
+                        CSR, cert_path, chain_path, full_path).split()
+            if extra_args:
+                args += extra_args
+            with mock.patch('certbot._internal.main.crypto_util'):
+                self._call(args)
 
         if '--dry-run' in args:
             self.assertIs(mock_client.save_certificate.called, False)
@@ -1424,13 +1419,11 @@ class MainTest(test_util.ConfigTestCase):
             mock_client.save_certificate.assert_called_once_with(
                 certr, chain, cert_path, chain_path, full_path)
 
-        return mock_reporter
-
     @mock.patch('certbot._internal.main._csr_report_new_cert')
     @mock.patch('certbot._internal.main.util.atexit_register')
     @mock.patch('certbot._internal.eff.handle_subscription')
     def test_certonly_csr(self, mock_subscription, mock_register, mock_csr_report):
-        _ = self._test_certonly_csr_common()
+        self._test_certonly_csr_common()
         self.assertEqual(mock_csr_report.call_count, 1)
         self.assertIn('cert_512.pem', mock_csr_report.call_args[0][1])
         self.assertIsNone(mock_csr_report.call_args[0][2])
@@ -1440,7 +1433,7 @@ class MainTest(test_util.ConfigTestCase):
 
     @mock.patch('certbot._internal.main._csr_report_new_cert')
     def test_certonly_csr_dry_run(self, mock_csr_report):
-        _ = self._test_certonly_csr_common(['--dry-run'])
+        self._test_certonly_csr_common(['--dry-run'])
         self.assertEqual(mock_csr_report.call_count, 1)
         self.assertIs(mock_csr_report.call_args[0][0].dry_run, True)
 

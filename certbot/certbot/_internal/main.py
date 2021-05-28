@@ -15,13 +15,13 @@ from typing import Union
 
 import configobj
 import josepy as jose
+import zope.component
 
 from acme import errors as acme_errors
 import certbot
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces  # pylint: disable=unused-import
-from certbot import services
 from certbot import util
 from certbot._internal import account
 from certbot._internal import cert_manager
@@ -67,7 +67,7 @@ def _suggest_donation_if_appropriate(config):
     if config.staging:
         # --dry-run implies --staging
         return
-    disp = services.get_display()
+    disp = display_util.get_display()
     util.atexit_register(
         disp.notification,
         "If you like Certbot, please consider supporting our work by:\n"
@@ -191,7 +191,7 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
              existing,
              ", ".join(domains),
              br=os.linesep)
-    if config.expand or config.renew_by_default or services.get_display().yesno(
+    if config.expand or config.renew_by_default or display_util.get_display().yesno(
         question, "Expand", "Cancel", cli_flag="--expand", force_interactive=True):
         return "renew", cert
     display_util.notify(
@@ -245,7 +245,7 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     choices = [keep_opt,
                "Renew & replace the certificate (may be subject to CA rate limits)"]
 
-    display = services.get_display()
+    display = display_util.get_display()
     response = display.menu(question, choices,
                             default=0, force_interactive=True)
     if response[0] == display_util.CANCEL:
@@ -421,7 +421,7 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
                _format_list("+", added),
                _format_list("-", removed),
                br=os.linesep))
-    obj = services.get_display()
+    obj = display_util.get_display()
     if not obj.yesno(msg, "Update certificate", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched certificate name and domains.")
 
@@ -630,7 +630,7 @@ def _determine_account(config):
         msg = ("Please read the Terms of Service at {0}. You "
                "must agree in order to register with the ACME "
                "server. Do you agree?".format(terms_of_service))
-        obj = services.get_display()
+        obj = display_util.get_display()
         result = obj.yesno(msg, cli_flag="--agree-tos", force_interactive=True)
         if not result:
             raise errors.Error(
@@ -680,7 +680,7 @@ def _delete_if_appropriate(config):
     :raises errors.Error: If anything goes wrong, including bad user input, if an overlapping
         archive dir is found for the specified lineage, etc ...
     """
-    display = services.get_display()
+    display = display_util.get_display()
 
     attempt_deletion = config.delete_after_revoke
     if attempt_deletion is None:
@@ -766,7 +766,7 @@ def unregister(config, unused_plugins):
 
     if not accounts:
         return "Could not find existing account to deactivate."
-    yesno = services.get_display().yesno
+    yesno = display_util.get_display().yesno
     prompt = ("Are you sure you would like to irrevocably deactivate "
               "your account?")
     wants_deactivate = yesno(prompt, yes_label='Deactivate', no_label='Abort',
@@ -1012,7 +1012,7 @@ def plugins_cmd(config, plugins):
     filtered = plugins.visible().ifaces(ifaces)
     logger.debug("Filtered plugins: %r", filtered)
 
-    notify = functools.partial(services.get_display().notification, pause=False)
+    notify = functools.partial(display_util.get_display().notification, pause=False)
     if not config.init and not config.prepare:
         notify(str(filtered))
         return
@@ -1405,7 +1405,7 @@ def certonly(config, plugins):
     should_get_cert, lineage = _find_cert(config, domains, certname)
 
     if not should_get_cert:
-        notify = services.get_display().notification
+        notify = display_util.get_display().notification
         notify("Certificate not yet due for renewal; no action taken.", pause=False)
         return
 
@@ -1539,12 +1539,13 @@ def main(cli_args=None):
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
 
-    # Reporter
+    # These calls are done only for retro-compatibility purposes.
+    # TODO: Remove these calls once zope dependencies are removed from Certbot.
     report = reporter.Reporter(config)
-    services.set_reporter(report)
+    zope.component.provideUtility(report)
     util.atexit_register(report.print_messages)
 
     with make_displayer(config) as displayer:
-        services.set_display(displayer)
+        display_util.set_display(displayer)
 
         return config.func(config, plugins)

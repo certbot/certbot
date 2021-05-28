@@ -3,7 +3,6 @@ import logging
 from textwrap import indent
 
 from certbot import errors
-from certbot import services
 from certbot import util
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -43,7 +42,7 @@ def get_email(invalid=False, optional=True):
 
     while True:
         try:
-            code, email = services.get_display().input(
+            code, email = display_util.get_display().input(
                 invalid_prefix + msg if invalid else msg,
                 force_interactive=True)
         except errors.MissingCommandlineFlag:
@@ -76,7 +75,7 @@ def choose_account(accounts):
     # Note this will get more complicated once we start recording authorizations
     labels = [acc.slug for acc in accounts]
 
-    code, index = services.get_display().menu(
+    code, index = display_util.get_display().menu(
         "Please choose an account", labels, force_interactive=True)
     if code == display_util.OK:
         return accounts[index]
@@ -91,7 +90,7 @@ def choose_values(values, question=None):
     :returns: List of selected values
     :rtype: list
     """
-    code, items = services.get_display().checklist(
+    code, items = display_util.get_display().checklist(
         question, tags=values, force_interactive=True)
     if code == display_util.OK and items:
         return items
@@ -170,7 +169,7 @@ def _filter_names(names, override_question=None):
         question = override_question
     else:
         question = "Which names would you like to activate HTTPS for?"
-    code, names = services.get_display().checklist(
+    code, names = display_util.get_display().checklist(
         question, tags=sorted_names, cli_flag="--domains", force_interactive=True)
     return code, [str(s) for s in names]
 
@@ -184,7 +183,7 @@ def _choose_names_manually(prompt_prefix=""):
     :rtype: `list` of `str`
 
     """
-    code, input_ = services.get_display().input(
+    code, input_ = display_util.get_display().input(
         prompt_prefix +
         "Please enter the domain name(s) you would like on your certificate "
         "(comma and/or space separated)",
@@ -221,7 +220,7 @@ def _choose_names_manually(prompt_prefix=""):
 
         if retry_message:
             # We had error in input
-            retry = services.get_display().yesno(retry_message,
+            retry = display_util.get_display().yesno(retry_message,
                                                  force_interactive=True)
             if retry:
                 return _choose_names_manually()
@@ -327,7 +326,7 @@ def _get_validated(method, validator, message, default=None, **kwargs):
                              raw,
                              message,
                              exc_info=True)
-                services.get_display().notification(str(error), pause=False)
+                display_util.get_display().notification(str(error), pause=False)
         else:
             return code, raw
 
@@ -343,7 +342,7 @@ def validated_input(validator, *args, **kwargs):
     :return: as `~certbot.interfaces.IDisplay.input`
     :rtype: tuple
     """
-    return _get_validated(services.get_display().input,
+    return _get_validated(display_util.get_display().input,
                           validator, *args, **kwargs)
 
 
@@ -359,5 +358,5 @@ def validated_directory(validator, *args, **kwargs):
     :return: as `~certbot.interfaces.IDisplay.directory_select`
     :rtype: tuple
     """
-    return _get_validated(services.get_display().directory_select,
+    return _get_validated(display_util.get_display().directory_select,
                           validator, *args, **kwargs)

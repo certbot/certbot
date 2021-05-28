@@ -26,8 +26,10 @@ from cryptography.hazmat.primitives.serialization import PrivateFormat
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore
 import pyrfc3339
+import zope.component
 
 from acme import crypto_util as acme_crypto_util
+from certbot import interfaces
 from certbot import errors
 from certbot import util
 from certbot.compat import os

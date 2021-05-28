@@ -12,7 +12,6 @@ import configargparse
 
 from certbot import crypto_util
 from certbot import errors
-from certbot import services
 from certbot import util
 from certbot._internal import constants
 from certbot._internal import hooks
@@ -64,7 +63,7 @@ class HelpfulArgumentParser:
 
         # Get notification function for printing
         try:
-            self.notify = services.get_display().notification
+            self.notify = display_util.get_display().notification
         except ValueError:
             self.notify = display_util.NoninteractiveDisplay(sys.stdout).notification
 

@@ -17,7 +17,7 @@ from acme import standalone as acme_standalone
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
-from certbot import services
+from certbot.display import util as display_util
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
@@ -194,7 +194,7 @@ def _handle_perform_error(error):
             "aren't running this program as "
             "root).".format(error.port))
     if error.socket_error.errno == errno.EADDRINUSE:
-        display = services.get_display()
+        display = display_util.get_display()
         msg = (
             "Could not bind TCP port {0} because it is already in "
             "use by another process on this system (such as a web "

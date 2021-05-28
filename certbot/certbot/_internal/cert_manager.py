@@ -10,7 +10,6 @@ import pytz
 from certbot import crypto_util
 from certbot import errors
 from certbot import ocsp
-from certbot import services
 from certbot import util
 from certbot._internal import storage
 from certbot.compat import os
@@ -44,7 +43,7 @@ def rename_lineage(config):
     :type config: :class:`certbot._internal.configuration.NamespaceConfig`
 
     """
-    disp = services.get_display()
+    disp = display_util.get_display()
 
     certname = get_certnames(config, "rename")[0]
 
@@ -91,7 +90,7 @@ def certificates(config):
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
     certnames = get_certnames(config, "delete", allow_multiple=True)
-    disp = services.get_display()
+    disp = display_util.get_display()
     msg = ["The following certificate(s) are selected for deletion:\n"]
     for certname in certnames:
         msg.append("  * " + certname)
@@ -315,7 +314,7 @@ def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
     if certname:
         certnames = [certname]
     else:
-        disp = services.get_display()
+        disp = display_util.get_display()
         filenames = storage.renewal_conf_files(config)
         choices = [storage.lineagename_for_filename(name) for name in filenames]
         if not choices:
@@ -381,7 +380,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
                "were invalid:")
             notify(_report_lines(parse_failures))
 
-    disp = services.get_display()
+    disp = display_util.get_display()
     disp.notification("\n".join(out), pause=False, wrap=False)
 
 

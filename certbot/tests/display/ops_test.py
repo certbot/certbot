@@ -7,7 +7,6 @@ import josepy as jose
 
 from acme import messages
 from certbot import errors
-from certbot import services
 from certbot._internal import account
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -93,7 +92,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
     def setUp(self):
         super().setUp()
 
-        services.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
 
         self.account_keys_dir = os.path.join(self.tempdir, "keys")
         filesystem.makedirs(self.account_keys_dir, 0o700)
@@ -134,7 +133,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
 class GenHttpsNamesTest(unittest.TestCase):
     """Test _gen_https_names."""
     def setUp(self):
-        services.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
 
     @classmethod
     def _call(cls, domains):
@@ -181,7 +180,7 @@ class GenHttpsNamesTest(unittest.TestCase):
 class ChooseNamesTest(unittest.TestCase):
     """Test choose names."""
     def setUp(self):
-        services.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
         self.mock_install = mock.MagicMock()
 
     @classmethod

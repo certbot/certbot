@@ -9,13 +9,13 @@ from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter
-from certbot import services
 from certbot import util
 from certbot._internal.cli import cli_constants
 from certbot._internal import hooks
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import ops as display_ops
+from certbot.display import util as display_util
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
@@ -225,7 +225,7 @@ permitted by DNS standards.)
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
             msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
-        display = services.get_display()
+        display = display_util.get_display()
         display.notification(msg, wrap=False, force_interactive=True)
         self.subsequent_any_challenge = True
 

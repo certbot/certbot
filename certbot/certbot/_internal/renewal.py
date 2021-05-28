@@ -19,7 +19,6 @@ import zope.component
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
-from certbot import services
 from certbot import util
 from certbot._internal import cli
 from certbot._internal import client
@@ -430,7 +429,7 @@ def handle_renewal_request(config):
     apply_random_sleep = not sys.stdin.isatty() and config.random_sleep_on_renew
 
     for renewal_file in conf_files:
-        disp = services.get_display()
+        disp = display_util.get_display()
         disp.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
         lineagename = storage.lineagename_for_filename(renewal_file)

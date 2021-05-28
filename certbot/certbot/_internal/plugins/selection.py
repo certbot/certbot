@@ -6,7 +6,6 @@ from typing import Optional, Tuple
 
 from certbot import errors
 from certbot import interfaces
-from certbot import services
 from certbot._internal.plugins import disco
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -138,13 +137,13 @@ def choose_plugin(prepared, question):
             for plugin_ep in prepared]
 
     while True:
-        disp = services.get_display()
+        disp = display_util.get_display()
         code, index = disp.menu(question, opts, force_interactive=True)
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
             if plugin_ep.misconfigured:
-                services.get_display().notification(
+                display_util.get_display().notification(
                     "The selected plugin encountered an error while parsing "
                     "your server configuration and cannot be used. The error "
                     "was:\n\n{0}".format(plugin_ep.prepare()), pause=False)

@@ -12,13 +12,13 @@ Other messages can use the `logging` module. See `log.py`.
 import logging
 import sys
 import textwrap
-from typing import List
+from typing import List, Optional, Any
 
+import zope.component
 import zope.interface
 
 from certbot import errors
 from certbot import interfaces
-from certbot import services
 from certbot._internal import constants
 from certbot._internal.display import completer
 from certbot.compat import misc
@@ -46,6 +46,15 @@ SIDE_FRAME = ("- " * 39) + "-"
 """Display boundary (alternates spaces, so when copy-pasted, markdown doesn't interpret
 it as a heading)"""
 
+
+class _DisplayService:
+    def __init__(self):
+        self.display: Optional[interfaces.IDisplay] = None
+
+
+_SERVICE = _DisplayService()
+
+
 def _wrap_lines(msg):
     """Format lines nicely to 80 chars.
 
@@ -66,6 +75,38 @@ def _wrap_lines(msg):
             break_on_hyphens=False))
 
     return '\n'.join(fixed_l)
+
+
+# The following two functions use "Any" for their parameter/output types. Normally interfaces from
+# certbot.interfaces would be used, but MyPy will not understand their semantic. These interfaces
+# will be removed soon and replaced by ABC classes that will be used also here for type checking.
+# TODO: replace Any by actual ABC classes once available
+
+def get_display() -> Any:
+    """Get the display utility.
+
+    :return: the display utility
+    :rtype: IDisplay
+    :raise: ValueError if the display utility is not set
+
+    """
+    if not _SERVICE.display:
+        raise ValueError("Display service not set, please call "
+                         "certbot.display.util.set_display() first to set it.")
+    return _SERVICE.display
+
+
+def set_display(display: Any) -> None:
+    """Set the display service.
+
+    :param IDisplay display: the display service
+
+    """
+    # This call is done only for retro-compatibility purposes.
+    # TODO: Remove this call once zope dependencies are removed from Certbot.
+    zope.component.provideUtility(display)
+
+    _SERVICE.display = display
 
 
 def input_with_timeout(prompt=None, timeout=36000.0):
@@ -104,7 +145,7 @@ def notify(msg: str) -> None:
     :param str msg: message to display
 
     """
-    services.get_display().notification(
+    get_display().notification(
         msg, pause=False, decorate=False, wrap=False
     )
 

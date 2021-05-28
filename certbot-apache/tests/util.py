@@ -8,10 +8,9 @@ import josepy as jose
 
 try:
     import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
+except ImportError:  # pragma: no cover
+    from unittest import mock  # type: ignore
 
-from certbot import services
 from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.plugins import common
@@ -70,7 +69,7 @@ class ParserTest(ApacheTest):
               vhost_root="debian_apache_2_4/multiple_vhosts/apache2/sites-available"):
         super().setUp(test_dir, config_root, vhost_root)
 
-        services.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
 
         from certbot_apache._internal.parser import ApacheParser
         self.aug = augeas.Augeas(

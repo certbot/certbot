@@ -8,15 +8,15 @@ from unittest.mock import MagicMock
 from josepy import interfaces
 
 from certbot import errors
-from certbot import services
 from certbot import util
+from certbot.display import util as display_util
 from certbot._internal import account
 from certbot.compat import os
 import certbot.tests.util as test_util
 
 try:
     import mock
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     from unittest import mock
 
 
@@ -66,7 +66,8 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.register_unsafely_without_email = False
         self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
-        services.set_display(MagicMock())
+        with mock.patch("certbot.display.util.zope.component.provideUtility"):
+            display_util.set_display(MagicMock())
 
     def _call(self):
         from certbot._internal.client import register

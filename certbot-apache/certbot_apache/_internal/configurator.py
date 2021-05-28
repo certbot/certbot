@@ -20,7 +20,6 @@ import zope.interface
 from acme import challenges
 from certbot import errors
 from certbot import interfaces
-from certbot import services
 from certbot import util
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.compat import filesystem
@@ -884,7 +883,7 @@ class ApacheConfigurator(common.Installer):
                         all_names.add(name)
 
         if vhost_macro:
-            services.get_display().notification(
+            display_util.get_display().notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
                     "\n  ".join(vhost_macro)), force_interactive=True)
