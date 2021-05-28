@@ -512,8 +512,7 @@ def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[error
                 "The certificate will need to be renewed before it expires. Certbot can "
                 "automatically renew the certificate in the background, but you may need "
                 "to take steps to enable that functionality. "
-                "See https://certbot.eff.org/docs/using.html#automated-renewals for "
-                "instructions.")
+                "See https://certbot.org/renewal-setup for instructions.")
 
     if not steps:
         return
