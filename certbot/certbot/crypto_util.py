@@ -54,7 +54,7 @@ def generate_key(key_size: int, key_dir: str, key_type: str = "rsa",
     :param str key_type: Key Type [rsa, ecdsa]
     :param str elliptic_curve: Name of the elliptic curve if key type is ecdsa.
     :param str keyname: Filename of key
-    :param boolean strict_permissions: If true, key will be saved with strict permissions
+    :param bool strict_permissions: If true, key will be saved with strict permissions
         (POSIX mode 0600).
 
     :returns: Key
