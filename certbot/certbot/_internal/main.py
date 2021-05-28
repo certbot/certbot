@@ -1516,10 +1516,16 @@ def main(cli_args=None):
     logger.debug("Arguments: %r", cli_args)
     logger.debug("Discovered plugins: %r", plugins)
 
+    # Some releases of Windows require escape sequences to be enable explicitly
+    misc.prepare_virtual_console()
+
     # note: arg parser internally handles --help (and exits afterwards)
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
-    services.set_config(config)
+
+    # This call is done only for retro-compatibility purposes.
+    # TODO: Remove this call once zope dependencies are removed from Certbot.
+    zope.component.provideUtility(config)
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.

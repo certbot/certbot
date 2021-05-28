@@ -19,11 +19,16 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   and clarify output. If you would like to see more verbose output, use
   the -v or -vv flags. UX improvements are an iterative process and
   the Certbot team welcomes constructive feedback.
+* Functions `certbot.crypto_util.init_save_key` and `certbot.crypto_util.init_save_csr`,
+  whose behaviors rely on the global Certbot `config` singleton, are deprecated and will
+  be removed in a future release. Please use `certbot.crypto_util.generate_key` and
+  `certbot.crypto_util.generate_csr` instead.
 
 ### Fixed
 
 * Fix TypeError due to incompatibility with lexicon >= v3.6.0
 * Installers (e.g. nginx, Apache) were being restarted unnecessarily after dry-run renewals.
+* Colors and bold text should properly render in all supported versions of Windows.
 
 More details about these changes can be found on our GitHub repo.
 
