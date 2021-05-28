@@ -16,7 +16,7 @@ install_requires = [
 if not os.environ.get('SNAP_BUILD'):
     install_requires.extend([
         'acme>=0.31.0',
-        'certbot>=1.1.0',
+        'certbot>=1.16.0.dev0',
     ])
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Unset SNAP_BUILD when building wheels '
