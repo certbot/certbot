@@ -29,7 +29,6 @@ from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
 from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
 from certbot.compat import os
-from certbot.display import service as display_service
 from certbot.display import util as display_util
 
 
@@ -64,7 +63,7 @@ class HelpfulArgumentParser:
 
         # Get notification function for printing
         try:
-            self.notify = display_service.notification
+            self.notify = display_util.notification
         except ValueError:
             self.notify = display_util.NoninteractiveDisplay(sys.stdout).notification
 

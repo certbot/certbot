@@ -8,7 +8,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot._internal.plugins.disco import PluginsRegistry
 from certbot.display import util as display_util
-from certbot.display import service as display_service
 from certbot.tests import util as test_util
 
 try:
@@ -118,7 +117,7 @@ class ChoosePluginTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.selection.choose_plugin."""
 
     def setUp(self):
-        display_service.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
 
         self.mock_apache = mock.Mock(
             description_with_name="a", misconfigured=True)

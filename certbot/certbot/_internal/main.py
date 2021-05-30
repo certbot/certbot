@@ -44,7 +44,6 @@ from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import ops as display_ops
 from certbot.display import util as display_util
-from certbot.display import service as display_service
 from certbot.plugins import enhancements
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
@@ -69,7 +68,7 @@ def _suggest_donation_if_appropriate(config):
         # --dry-run implies --staging
         return
     util.atexit_register(
-        display_service.notification,
+        display_util.notification,
         "If you like Certbot, please consider supporting our work by:\n"
         " * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
         " * Donating to EFF:                    https://eff.org/donate-le",
@@ -191,7 +190,7 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
              existing,
              ", ".join(domains),
              br=os.linesep)
-    if config.expand or config.renew_by_default or display_service.yesno(
+    if config.expand or config.renew_by_default or display_util.yesno(
         question, "Expand", "Cancel", cli_flag="--expand", force_interactive=True):
         return "renew", cert
     display_util.notify(
@@ -245,7 +244,7 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     choices = [keep_opt,
                "Renew & replace the certificate (may be subject to CA rate limits)"]
 
-    response = display_service.menu(question, choices,
+    response = display_util.menu(question, choices,
                                     default=0, force_interactive=True)
     if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
@@ -420,7 +419,7 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
                _format_list("+", added),
                _format_list("-", removed),
                br=os.linesep))
-    if not display_service.yesno(msg, "Update certificate", "Cancel", default=True):
+    if not display_util.yesno(msg, "Update certificate", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched certificate name and domains.")
 
 
@@ -628,7 +627,7 @@ def _determine_account(config):
         msg = ("Please read the Terms of Service at {0}. You "
                "must agree in order to register with the ACME "
                "server. Do you agree?".format(terms_of_service))
-        result = display_service.yesno(msg, cli_flag="--agree-tos", force_interactive=True)
+        result = display_util.yesno(msg, cli_flag="--agree-tos", force_interactive=True)
         if not result:
             raise errors.Error(
                 "Registration cannot proceed without accepting "
@@ -681,7 +680,7 @@ def _delete_if_appropriate(config):
     if attempt_deletion is None:
         msg = ("Would you like to delete the certificate(s) you just revoked, "
                "along with all earlier and later versions of the certificate?")
-        attempt_deletion = display_service.yesno(msg, yes_label="Yes (recommended)", no_label="No",
+        attempt_deletion = display_util.yesno(msg, yes_label="Yes (recommended)", no_label="No",
                                                  force_interactive=True, default=True)
 
     if not attempt_deletion:
@@ -763,7 +762,7 @@ def unregister(config, unused_plugins):
         return "Could not find existing account to deactivate."
     prompt = ("Are you sure you would like to irrevocably deactivate "
               "your account?")
-    wants_deactivate = display_service.yesno(prompt, yes_label='Deactivate', no_label='Abort',
+    wants_deactivate = display_util.yesno(prompt, yes_label='Deactivate', no_label='Abort',
                                              default=True)
 
     if not wants_deactivate:
@@ -1006,7 +1005,7 @@ def plugins_cmd(config, plugins):
     filtered = plugins.visible().ifaces(ifaces)
     logger.debug("Filtered plugins: %r", filtered)
 
-    notify = functools.partial(display_service.notification, pause=False)
+    notify = functools.partial(display_util.notification, pause=False)
     if not config.init and not config.prepare:
         notify(str(filtered))
         return
@@ -1399,7 +1398,7 @@ def certonly(config, plugins):
     should_get_cert, lineage = _find_cert(config, domains, certname)
 
     if not should_get_cert:
-        display_service.notification("Certificate not yet due for renewal; no action taken.",
+        display_util.notification("Certificate not yet due for renewal; no action taken.",
                                      pause=False)
         return
 
@@ -1540,6 +1539,6 @@ def main(cli_args=None):
     util.atexit_register(report.print_messages)
 
     with make_displayer(config) as displayer:
-        display_service.set_display(displayer)
+        display_util.set_display(displayer)
 
         return config.func(config, plugins)

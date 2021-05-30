@@ -19,7 +19,6 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import ops
 from certbot.display import util as display_util
-from certbot.display import service as display_service
 from certbot.plugins import common
 from certbot.plugins import util
 from certbot.util import safe_open
@@ -129,7 +128,7 @@ to serve all files under specified web root ({0})."""
         path_flag = "--" + self.option_name("path")
 
         while True:
-            code, index = display_service.menu(
+            code, index = display_util.menu(
                 "Select the webroot for {0}:".format(domain),
                 ["Enter a new webroot"] + known_webroots,
                 cli_flag=path_flag, force_interactive=True)

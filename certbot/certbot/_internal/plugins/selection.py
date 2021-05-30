@@ -9,7 +9,6 @@ from certbot import interfaces
 from certbot._internal.plugins import disco
 from certbot.compat import os
 from certbot.display import util as display_util
-from certbot.display import service as display_service
 
 logger = logging.getLogger(__name__)
 
@@ -138,12 +137,12 @@ def choose_plugin(prepared, question):
             for plugin_ep in prepared]
 
     while True:
-        code, index = display_service.menu(question, opts, force_interactive=True)
+        code, index = display_util.menu(question, opts, force_interactive=True)
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
             if plugin_ep.misconfigured:
-                display_service.notification(
+                display_util.notification(
                     "The selected plugin encountered an error while parsing "
                     "your server configuration and cannot be used. The error "
                     "was:\n\n{0}".format(plugin_ep.prepare()), pause=False)

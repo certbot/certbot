@@ -17,7 +17,7 @@ from acme import standalone as acme_standalone
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
-from certbot.display import service as display_service
+from certbot.display import util as display_util
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
@@ -200,7 +200,7 @@ def _handle_perform_error(error):
             "use by another process on this system (such as a web "
             "server). Please stop the program in question and "
             "then try again.".format(error.port))
-        should_retry = display_service.yesno(msg, "Retry",
+        should_retry = display_util.yesno(msg, "Retry",
                                              "Cancel", default=False)
         if not should_retry:
             raise errors.PluginError(msg)

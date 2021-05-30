@@ -28,7 +28,6 @@ from certbot._internal import storage
 from certbot._internal import updater
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import os
-from certbot.display import service as display_service
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
@@ -430,7 +429,7 @@ def handle_renewal_request(config):
     apply_random_sleep = not sys.stdin.isatty() and config.random_sleep_on_renew
 
     for renewal_file in conf_files:
-        display_service.notification("Processing " + renewal_file, pause=False)
+        display_util.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
         lineagename = storage.lineagename_for_filename(renewal_file)
 

@@ -15,7 +15,7 @@ from certbot._internal import hooks
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import ops as display_ops
-from certbot.display import service as display_service
+from certbot.display import util as display_util
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
@@ -226,7 +226,7 @@ permitted by DNS standards.)
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
             msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
-        display_service.notification(msg, wrap=False, force_interactive=True)
+        display_util.notification(msg, wrap=False, force_interactive=True)
         self.subsequent_any_challenge = True
 
     def cleanup(self, achalls):  # pylint: disable=missing-function-docstring
