@@ -20,11 +20,11 @@ except ImportError:  # pragma: no cover
     from unittest import mock
 
 
-
 KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")
 
 # pylint: disable=line-too-long
+
 
 class DetermineUserAgentTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.client.determine_user_agent."""
@@ -66,7 +66,7 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.register_unsafely_without_email = False
         self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
-        with mock.patch("certbot.display.service.zope.component.provideUtility"):
+        with mock.patch("certbot.display.util.zope.component.provideUtility"):
             display_util.set_display(MagicMock())
 
     def _call(self):

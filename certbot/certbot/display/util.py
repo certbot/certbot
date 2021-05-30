@@ -22,7 +22,6 @@ from certbot._internal import constants
 from certbot._internal.display import completer
 from certbot.compat import misc
 from certbot.compat import os
-from certbot.display import service
 
 logger = logging.getLogger(__name__)
 
@@ -595,7 +594,7 @@ def get_display() -> Any:
     """
     if not _SERVICE.display:
         raise ValueError("Display service not set, please call "
-                         "certbot.display.service.set_display() first to set it.")
+                         "certbot.display.util.set_display() first to set it.")
     return _SERVICE.display
 
 
