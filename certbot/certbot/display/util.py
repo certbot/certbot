@@ -131,8 +131,9 @@ def input_text(message: str, default: Optional[str] = None, cli_flag: Optional[s
                                force_interactive=force_interactive)
 
 
-def yesno(message: str, yes_label: str ="Yes", no_label: str = "No", default: Optional[bool] = None,
-          cli_flag: Optional[str] = None, force_interactive: bool = False) -> bool:
+def yesno(message: str, yes_label: str = "Yes", no_label: str = "No",
+          default: Optional[bool] = None, cli_flag: Optional[str] = None,
+          force_interactive: bool = False) -> bool:
     """Query the user with a yes/no question.
 
     Yes and No label must begin with different letters, and must contain at
