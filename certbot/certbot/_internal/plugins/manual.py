@@ -10,8 +10,8 @@ from certbot import errors
 from certbot import interfaces
 from certbot import reverter
 from certbot import util
-from certbot._internal.cli import cli_constants
 from certbot._internal import hooks
+from certbot._internal.cli import cli_constants
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import ops as display_ops

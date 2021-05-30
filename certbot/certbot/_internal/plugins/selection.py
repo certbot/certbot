@@ -1,8 +1,8 @@
 """Decide which plugins to use for authentication & installation"""
 
 import logging
-
-from typing import Optional, Tuple
+from typing import Optional
+from typing import Tuple
 
 from certbot import errors
 from certbot import interfaces

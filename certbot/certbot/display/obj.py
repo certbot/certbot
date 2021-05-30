@@ -12,7 +12,6 @@ from certbot._internal.display import completer
 from certbot.compat import os
 from certbot.display import util
 
-
 logger = logging.getLogger(__name__)
 
 

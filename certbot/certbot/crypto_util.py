@@ -7,9 +7,10 @@
 import hashlib
 import logging
 import re
+from typing import List
+from typing import Set
 import warnings
 
-from typing import List, Set
 # See https://github.com/pyca/cryptography/issues/4275
 from cryptography import x509  # type: ignore
 from cryptography.exceptions import InvalidSignature
@@ -29,8 +30,8 @@ import pyrfc3339
 import zope.component
 
 from acme import crypto_util as acme_crypto_util
-from certbot import interfaces
 from certbot import errors
+from certbot import interfaces
 from certbot import util
 from certbot.compat import os
 

@@ -11,14 +11,19 @@ Other messages can use the `logging` module. See `log.py`.
 """
 import logging
 import sys
-from typing import Optional, Any, Union, List, Tuple
+from typing import Any
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 import zope.interface
 
 from certbot import interfaces
 from certbot.compat import misc
-# This import is done to not break the public API of the module.
-from certbot.display.obj import FileDisplay, NoninteractiveDisplay  # pylint: disable=unused-import
+# These imports are done to not break the public API of the module.
+from certbot.display.obj import FileDisplay  # pylint: disable=unused-import
+from certbot.display.obj import NoninteractiveDisplay  # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 
