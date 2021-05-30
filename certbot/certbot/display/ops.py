@@ -6,6 +6,7 @@ from certbot import errors
 from certbot import util
 from certbot.compat import os
 from certbot.display import util as display_util
+from certbot.display import service as display_service
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ def get_email(invalid=False, optional=True):
 
     while True:
         try:
-            code, email = display_util.get_display().input(
+            code, email = display_service.input(
                 invalid_prefix + msg if invalid else msg,
                 force_interactive=True)
         except errors.MissingCommandlineFlag:
@@ -75,11 +76,12 @@ def choose_account(accounts):
     # Note this will get more complicated once we start recording authorizations
     labels = [acc.slug for acc in accounts]
 
-    code, index = display_util.get_display().menu(
+    code, index = display_service.menu(
         "Please choose an account", labels, force_interactive=True)
     if code == display_util.OK:
         return accounts[index]
     return None
+
 
 def choose_values(values, question=None):
     """Display screen to let user pick one or multiple values from the provided
@@ -90,11 +92,12 @@ def choose_values(values, question=None):
     :returns: List of selected values
     :rtype: list
     """
-    code, items = display_util.get_display().checklist(
+    code, items = display_service.checklist(
         question, tags=values, force_interactive=True)
     if code == display_util.OK and items:
         return items
     return []
+
 
 def choose_names(installer, question=None):
     """Display screen to select domains to validate.
@@ -141,6 +144,7 @@ def get_valid_domains(domains):
             continue
     return valid_domains
 
+
 def _sort_names(FQDNs):
     """Sort FQDNs by SLD (and if many, by their subdomains)
 
@@ -169,7 +173,7 @@ def _filter_names(names, override_question=None):
         question = override_question
     else:
         question = "Which names would you like to activate HTTPS for?"
-    code, names = display_util.get_display().checklist(
+    code, names = display_service.checklist(
         question, tags=sorted_names, cli_flag="--domains", force_interactive=True)
     return code, [str(s) for s in names]
 
@@ -183,7 +187,7 @@ def _choose_names_manually(prompt_prefix=""):
     :rtype: `list` of `str`
 
     """
-    code, input_ = display_util.get_display().input(
+    code, input_ = display_service.input(
         prompt_prefix +
         "Please enter the domain name(s) you would like on your certificate "
         "(comma and/or space separated)",
@@ -220,8 +224,8 @@ def _choose_names_manually(prompt_prefix=""):
 
         if retry_message:
             # We had error in input
-            retry = display_util.get_display().yesno(retry_message,
-                                                 force_interactive=True)
+            retry = display_service.yesno(retry_message,
+                                          force_interactive=True)
             if retry:
                 return _choose_names_manually()
         else:
@@ -326,7 +330,7 @@ def _get_validated(method, validator, message, default=None, **kwargs):
                              raw,
                              message,
                              exc_info=True)
-                display_util.get_display().notification(str(error), pause=False)
+                display_service.notification(str(error), pause=False)
         else:
             return code, raw
 
@@ -342,7 +346,7 @@ def validated_input(validator, *args, **kwargs):
     :return: as `~certbot.interfaces.IDisplay.input`
     :rtype: tuple
     """
-    return _get_validated(display_util.get_display().input,
+    return _get_validated(display_service.input,
                           validator, *args, **kwargs)
 
 
@@ -358,5 +362,5 @@ def validated_directory(validator, *args, **kwargs):
     :return: as `~certbot.interfaces.IDisplay.directory_select`
     :rtype: tuple
     """
-    return _get_validated(display_util.get_display().directory_select,
+    return _get_validated(display_service.directory_select,
                           validator, *args, **kwargs)

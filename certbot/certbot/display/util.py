@@ -12,9 +12,8 @@ Other messages can use the `logging` module. See `log.py`.
 import logging
 import sys
 import textwrap
-from typing import List, Optional, Any
+from typing import List
 
-import zope.component
 import zope.interface
 
 from certbot import errors
@@ -23,6 +22,7 @@ from certbot._internal import constants
 from certbot._internal.display import completer
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.display import service
 
 logger = logging.getLogger(__name__)
 
@@ -45,109 +45,6 @@ ESC = "esc"
 SIDE_FRAME = ("- " * 39) + "-"
 """Display boundary (alternates spaces, so when copy-pasted, markdown doesn't interpret
 it as a heading)"""
-
-
-class _DisplayService:
-    def __init__(self):
-        self.display: Optional[interfaces.IDisplay] = None
-
-
-_SERVICE = _DisplayService()
-
-
-def _wrap_lines(msg):
-    """Format lines nicely to 80 chars.
-
-    :param str msg: Original message
-
-    :returns: Formatted message respecting newlines in message
-    :rtype: str
-
-    """
-    lines = msg.splitlines()
-    fixed_l = []
-
-    for line in lines:
-        fixed_l.append(textwrap.fill(
-            line,
-            80,
-            break_long_words=False,
-            break_on_hyphens=False))
-
-    return '\n'.join(fixed_l)
-
-
-# The following two functions use "Any" for their parameter/output types. Normally interfaces from
-# certbot.interfaces would be used, but MyPy will not understand their semantic. These interfaces
-# will be removed soon and replaced by ABC classes that will be used also here for type checking.
-# TODO: replace Any by actual ABC classes once available
-
-def get_display() -> Any:
-    """Get the display utility.
-
-    :return: the display utility
-    :rtype: IDisplay
-    :raise: ValueError if the display utility is not set
-
-    """
-    if not _SERVICE.display:
-        raise ValueError("Display service not set, please call "
-                         "certbot.display.util.set_display() first to set it.")
-    return _SERVICE.display
-
-
-def set_display(display: Any) -> None:
-    """Set the display service.
-
-    :param IDisplay display: the display service
-
-    """
-    # This call is done only for retro-compatibility purposes.
-    # TODO: Remove this call once zope dependencies are removed from Certbot.
-    zope.component.provideUtility(display)
-
-    _SERVICE.display = display
-
-
-def input_with_timeout(prompt=None, timeout=36000.0):
-    """Get user input with a timeout.
-
-    Behaves the same as the builtin input, however, an error is raised if
-    a user doesn't answer after timeout seconds. The default timeout
-    value was chosen to place it just under 12 hours for users following
-    our advice and running Certbot twice a day.
-
-    :param str prompt: prompt to provide for input
-    :param float timeout: maximum number of seconds to wait for input
-
-    :returns: user response
-    :rtype: str
-
-    :raises errors.Error if no answer is given before the timeout
-
-    """
-    # use of sys.stdin and sys.stdout to mimic the builtin input based on
-    # https://github.com/python/cpython/blob/baf7bb30a02aabde260143136bdf5b3738a1d409/Lib/getpass.py#L129
-    if prompt:
-        sys.stdout.write(prompt)
-        sys.stdout.flush()
-
-    line = misc.readline_with_timeout(timeout, prompt)
-
-    if not line:
-        raise EOFError
-    return line.rstrip('\n')
-
-
-def notify(msg: str) -> None:
-    """Display a basic status message.
-
-    :param str msg: message to display
-
-    """
-    get_display().notification(
-        msg, pause=False, decorate=False, wrap=False
-    )
 
 
 @zope.interface.implementer(interfaces.IDisplay)
@@ -185,7 +82,7 @@ class FileDisplay:
             (("{line}{frame}{line}" if decorate else "") +
              "{msg}{line}" +
              ("{frame}{line}" if decorate else ""))
-            .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
+                .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
         )
         self.outfile.flush()
 
@@ -291,10 +188,10 @@ class FileDisplay:
             # Couldn't get pylint indentation right with elif
             # elif doesn't matter in this situation
             if (ans.startswith(yes_label[0].lower()) or
-                    ans.startswith(yes_label[0].upper())):
+                ans.startswith(yes_label[0].upper())):
                 return True
             if (ans.startswith(no_label[0].lower()) or
-                    ans.startswith(no_label[0].upper())):
+                ans.startswith(no_label[0].upper())):
                 return False
 
     def checklist(self, message, tags, default=None,
@@ -378,7 +275,7 @@ class FileDisplay:
 
         """
         if (self.force_interactive or force_interactive or
-                sys.stdin.isatty() and self.outfile.isatty()):
+            sys.stdin.isatty() and self.outfile.isatty()):
             return True
         if not self.skipped_interaction:
             logger.warning(
@@ -499,24 +396,6 @@ class FileDisplay:
         return OK, selection
 
 
-def assert_valid_call(prompt, default, cli_flag, force_interactive):
-    """Verify that provided arguments is a valid IDisplay call.
-
-    :param str prompt: prompt for the user
-    :param default: default answer to prompt
-    :param str cli_flag: command line option for setting an answer
-        to this question
-    :param bool force_interactive: if interactivity is forced by the
-        IDisplay call
-
-    """
-    msg = "Invalid IDisplay call for this prompt:\n{0}".format(prompt)
-    if cli_flag:
-        msg += ("\nYou can set an answer to "
-                "this prompt with the {0} flag".format(cli_flag))
-    assert default is not None or force_interactive, msg
-
-
 @zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay:
     """An iDisplay implementation that never asks for interactive user input"""
@@ -553,7 +432,7 @@ class NoninteractiveDisplay:
             (("{line}{frame}{line}" if decorate else "") +
              "{msg}{line}" +
              ("{frame}{line}" if decorate else ""))
-            .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
+                .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
         )
         self.outfile.flush()
 
@@ -652,6 +531,65 @@ class NoninteractiveDisplay:
         return self.input(message, default, cli_flag)
 
 
+def input_with_timeout(prompt=None, timeout=36000.0):
+    """Get user input with a timeout.
+
+    Behaves the same as the builtin input, however, an error is raised if
+    a user doesn't answer after timeout seconds. The default timeout
+    value was chosen to place it just under 12 hours for users following
+    our advice and running Certbot twice a day.
+
+    :param str prompt: prompt to provide for input
+    :param float timeout: maximum number of seconds to wait for input
+
+    :returns: user response
+    :rtype: str
+
+    :raises errors.Error if no answer is given before the timeout
+
+    """
+    # use of sys.stdin and sys.stdout to mimic the builtin input based on
+    # https://github.com/python/cpython/blob/baf7bb30a02aabde260143136bdf5b3738a1d409/Lib/getpass.py#L129
+    if prompt:
+        sys.stdout.write(prompt)
+        sys.stdout.flush()
+
+    line = misc.readline_with_timeout(timeout, prompt)
+
+    if not line:
+        raise EOFError
+    return line.rstrip('\n')
+
+
+def notify(msg: str) -> None:
+    """Display a basic status message.
+
+    :param str msg: message to display
+
+    """
+    service.notification(
+        msg, pause=False, decorate=False, wrap=False
+    )
+
+
+def assert_valid_call(prompt, default, cli_flag, force_interactive):
+    """Verify that provided arguments is a valid IDisplay call.
+
+    :param str prompt: prompt for the user
+    :param default: default answer to prompt
+    :param str cli_flag: command line option for setting an answer
+        to this question
+    :param bool force_interactive: if interactivity is forced by the
+        IDisplay call
+
+    """
+    msg = "Invalid IDisplay call for this prompt:\n{0}".format(prompt)
+    if cli_flag:
+        msg += ("\nYou can set an answer to "
+                "this prompt with the {0} flag".format(cli_flag))
+    assert default is not None or force_interactive, msg
+
+
 def separate_list_input(input_):
     """Separate a comma or space separated list.
 
@@ -698,3 +636,25 @@ def summarize_domain_list(domains: List[str]) -> str:
         return " and ".join(domains)
     else:
         return "{0} and {1} more domains".format(domains[0], l-1)
+
+
+def _wrap_lines(msg):
+    """Format lines nicely to 80 chars.
+
+    :param str msg: Original message
+
+    :returns: Formatted message respecting newlines in message
+    :rtype: str
+
+    """
+    lines = msg.splitlines()
+    fixed_l = []
+
+    for line in lines:
+        fixed_l.append(textwrap.fill(
+            line,
+            80,
+            break_long_words=False,
+            break_on_hyphens=False))
+
+    return '\n'.join(fixed_l)

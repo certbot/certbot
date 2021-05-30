@@ -24,6 +24,7 @@ from certbot import util
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.compat import filesystem
 from certbot.compat import os
+from certbot.display import service as display_service
 from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.plugins.enhancements import AutoHSTSEnhancement
@@ -883,7 +884,7 @@ class ApacheConfigurator(common.Installer):
                         all_names.add(name)
 
         if vhost_macro:
-            display_util.get_display().notification(
+            display_service.notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
                     "\n  ".join(vhost_macro)), force_interactive=True)

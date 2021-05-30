@@ -13,6 +13,7 @@ except ImportError:  # pragma: no cover
 
 from certbot.compat import os
 from certbot.display import util as display_util
+from certbot.display import service as display_service
 from certbot.plugins import common
 from certbot.tests import util as test_util
 from certbot_apache._internal import configurator
@@ -69,7 +70,7 @@ class ParserTest(ApacheTest):
               vhost_root="debian_apache_2_4/multiple_vhosts/apache2/sites-available"):
         super().setUp(test_dir, config_root, vhost_root)
 
-        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_service.set_display(display_util.FileDisplay(sys.stdout, False))
 
         from certbot_apache._internal.parser import ApacheParser
         self.aug = augeas.Augeas(

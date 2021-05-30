@@ -15,10 +15,11 @@ from certbot._internal import hooks
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import ops as display_ops
-from certbot.display import util as display_util
+from certbot.display import service as display_service
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
+
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -225,8 +226,7 @@ permitted by DNS standards.)
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
             msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
-        display = display_util.get_display()
-        display.notification(msg, wrap=False, force_interactive=True)
+        display_service.notification(msg, wrap=False, force_interactive=True)
         self.subsequent_any_challenge = True
 
     def cleanup(self, achalls):  # pylint: disable=missing-function-docstring

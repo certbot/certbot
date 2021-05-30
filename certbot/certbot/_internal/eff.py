@@ -8,6 +8,7 @@ from certbot._internal import constants
 from certbot._internal.account import Account
 from certbot._internal.account import AccountFileStorage
 from certbot.display import util as display_util
+from certbot.display import service as display_service
 from certbot.interfaces import IConfig
 
 logger = logging.getLogger(__name__)
@@ -73,8 +74,7 @@ def _want_subscription() -> bool:
         "founding partner of the Let's Encrypt project and the non-profit organization "
         "that develops Certbot? We'd like to send you email about our work encrypting "
         "the web, EFF news, campaigns, and ways to support digital freedom. ")
-    display = display_util.get_display()
-    return display.yesno(prompt, default=False)
+    return display_service.yesno(prompt, default=False)
 
 
 def subscribe(email: str) -> None:
