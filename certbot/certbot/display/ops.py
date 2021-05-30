@@ -42,7 +42,7 @@ def get_email(invalid=False, optional=True):
 
     while True:
         try:
-            code, email = display_util.input(
+            code, email = display_util.input_text(
                 invalid_prefix + msg if invalid else msg,
                 force_interactive=True)
         except errors.MissingCommandlineFlag:
@@ -186,7 +186,7 @@ def _choose_names_manually(prompt_prefix=""):
     :rtype: `list` of `str`
 
     """
-    code, input_ = display_util.input(
+    code, input_ = display_util.input_text(
         prompt_prefix +
         "Please enter the domain name(s) you would like on your certificate "
         "(comma and/or space separated)",
@@ -345,7 +345,7 @@ def validated_input(validator, *args, **kwargs):
     :return: as `~certbot.interfaces.IDisplay.input`
     :rtype: tuple
     """
-    return _get_validated(display_util.input,
+    return _get_validated(display_util.input_text,
                           validator, *args, **kwargs)
 
 

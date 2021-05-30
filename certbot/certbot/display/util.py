@@ -17,7 +17,8 @@ import zope.interface
 
 from certbot import interfaces
 from certbot.compat import misc
-from certbot.display.obj import FileDisplay, NoninteractiveDisplay
+# This import is done to not break the public API of the module.
+from certbot.display.obj import FileDisplay, NoninteractiveDisplay  # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 
@@ -105,8 +106,8 @@ def menu(message: str, choices: Union[List[Tuple[str, str]], List[str]],
                               force_interactive=force_interactive)
 
 
-def input(message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
-          force_interactive: bool = False) -> Tuple[str, str]:
+def input_text(message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
+               force_interactive: bool = False) -> Tuple[str, str]:
     """Accept input from the user.
 
     :param str message: message to display to the user

@@ -1,7 +1,6 @@
 """Contains UI methods for Nginx operations."""
 import logging
 
-import certbot.display.util as display_util
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)

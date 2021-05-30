@@ -50,7 +50,7 @@ def rename_lineage(config):
 
     new_certname = config.new_certname
     if not new_certname:
-        code, new_certname = display_util.input(
+        code, new_certname = display_util.input_text(
             "Enter the new name for certificate {0}".format(certname),
             force_interactive=True)
         if code != display_util.OK or not new_certname:
