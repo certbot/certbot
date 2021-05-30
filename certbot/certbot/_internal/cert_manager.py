@@ -52,7 +52,7 @@ def rename_lineage(config):
     if not new_certname:
         code, new_certname = display_util.input(
             "Enter the new name for certificate {0}".format(certname),
-            flag="--updated-cert-name", force_interactive=True)
+            force_interactive=True)
         if code != display_util.OK or not new_certname:
             raise errors.Error("User ended interaction.")
 

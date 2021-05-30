@@ -544,11 +544,23 @@ def notify(msg: str) -> None:
     :param str msg: message to display
 
     """
-    notification(msg, pause=False, decorate=False, wrap=False)
+    get_display().notification(msg, pause=False, decorate=False, wrap=False)
 
 
 def notification(message: str, pause: bool = True, wrap: bool = True,
-                 force_interactive: bool = True, decorate: bool = True) -> None:
+                 force_interactive: bool = False, decorate: bool = True) -> None:
+    """Displays a notification and waits for user acceptance.
+
+    :param str message: Message to display
+    :param bool pause: Whether or not the program should pause for the
+        user's confirmation
+    :param bool wrap: Whether or not the application should wrap text
+    :param bool force_interactive: True if it's safe to prompt the user
+        because it won't cause any workflow regressions
+    :param bool decorate: Whether to surround the message with a
+        decorated frame
+
+    """
     get_display().notification(message, pause=pause, wrap=wrap,
                                force_interactive=force_interactive, decorate=decorate)
 
@@ -556,18 +568,70 @@ def notification(message: str, pause: bool = True, wrap: bool = True,
 def menu(message: str, choices: Union[List[Tuple[str, str]], List[str]],
          default: Optional[int] = None, cli_flag: Optional[str] = None,
          force_interactive: bool = False) -> Tuple[str, int]:
+    """Display a menu.
+
+    .. todo:: This doesn't enable the help label/button (I wasn't sold on
+        any interface I came up with for this). It would be a nice feature.
+
+    :param str message: title of menu
+    :param choices: Menu lines, len must be > 0
+    :type choices: list of tuples (tag, item) or
+        list of descriptions (tags will be enumerated)
+    :param default: default value to return (if one exists)
+    :param str cli_flag: option used to set this value with the CLI
+    :param bool force_interactive: True if it's safe to prompt the user
+        because it won't cause any workflow regressions
+
+    :returns: tuple of (`code`, `index`) where
+        `code` - str display exit code
+        `index` - int index of the user's selection
+
+    :rtype: tuple
+
+    """
     return get_display().menu(message, choices, default=default, cli_flag=cli_flag,
                               force_interactive=force_interactive)
 
 
 def input(message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
           force_interactive: bool = False) -> Tuple[str, str]:
+    """Accept input from the user.
+
+    :param str message: message to display to the user
+    :param default: default value to return (if one exists)
+    :param str cli_flag: option used to set this value with the CLI
+    :param bool force_interactive: True if it's safe to prompt the user
+        because it won't cause any workflow regressions
+
+    :returns: tuple of (`code`, `input`) where
+        `code` - str display exit code
+        `input` - str of the user's input
+    :rtype: tuple
+
+    """
     return get_display().input(message, default=default, cli_flag=cli_flag,
                                force_interactive=force_interactive)
 
 
 def yesno(message: str, yes_label: str ="Yes", no_label: str = "No", default: Optional[bool] = None,
           cli_flag: Optional[str] = None, force_interactive: bool = False) -> bool:
+    """Query the user with a yes/no question.
+
+    Yes and No label must begin with different letters, and must contain at
+    least one letter each.
+
+    :param str message: question for the user
+    :param str yes_label: Label of the "Yes" parameter
+    :param str no_label: Label of the "No" parameter
+    :param default: default value to return (if one exists)
+    :param str cli_flag: option used to set this value with the CLI
+    :param bool force_interactive: True if it's safe to prompt the user
+        because it won't cause any workflow regressions
+
+    :returns: True for "Yes", False for "No"
+    :rtype: bool
+
+    """
     return get_display().yesno(message, yes_label=yes_label, no_label=no_label, default=default,
                                cli_flag=cli_flag, force_interactive=force_interactive)
 
@@ -575,8 +639,42 @@ def yesno(message: str, yes_label: str ="Yes", no_label: str = "No", default: Op
 def checklist(message: str, tags: List[str], default: Optional[str] = None,
               cli_flag: Optional[str] = None,
               force_interactive: bool = False) -> Tuple[str, List[str]]:
+    """Display a checklist.
+
+    :param str message: Message to display to user
+    :param list tags: `str` tags to select, len(tags) > 0
+    :param default: default value to return (if one exists)
+    :param str cli_flag: option used to set this value with the CLI
+    :param bool force_interactive: True if it's safe to prompt the user
+        because it won't cause any workflow regressions
+
+    :returns: tuple of (`code`, `tags`) where
+        `code` - str display exit code
+        `tags` - list of selected tags
+    :rtype: tuple
+
+    """
     return get_display().checklist(message, tags, default=default, cli_flag=cli_flag,
                                    force_interactive=force_interactive)
+
+
+def directory_select(message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
+                     force_interactive: bool = False) -> Tuple[int, str]:
+    """Display a directory selection screen.
+
+    :param str message: prompt to give the user
+    :param default: default value to return (if one exists)
+    :param str cli_flag: option used to set this value with the CLI
+    :param bool force_interactive: True if it's safe to prompt the user
+        because it won't cause any workflow regressions
+
+    :returns: tuple of the form (`code`, `string`) where
+        `code` - display exit code
+        `string` - input entered by the user
+
+    """
+    return get_display().directory_select(message, default=default, cli_flag=cli_flag,
+                                          force_interactive=force_interactive)
 
 
 # The two following functions use "Any" for their parameter/output types. Normally interfaces from

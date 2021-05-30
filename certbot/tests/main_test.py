@@ -203,16 +203,15 @@ class CertonlyTest(unittest.TestCase):
     @mock.patch('certbot._internal.main._find_cert')
     @mock.patch('certbot._internal.main._get_and_save_cert')
     @mock.patch('certbot._internal.main._report_new_cert')
-    def test_no_reinstall_text_pause(self, unused_report, mock_auth,
-        mock_find_cert):
+    def test_no_reinstall_text_pause(self, unused_report, mock_auth, mock_find_cert):
         mock_notification = self.mock_get_utility().notification
         mock_notification.side_effect = self._assert_no_pause
         mock_auth.return_value = mock.Mock()
         mock_find_cert.return_value = False, None
         self._call('certonly --webroot -d example.com'.split())
 
-    def _assert_no_pause(self, message, pause=True):  # pylint: disable=unused-argument
-        self.assertIs(pause, False)
+    def _assert_no_pause(self, *args, **kwargs):  # pylint: disable=unused-argument
+        self.assertIs(kwargs.get("pause"), False)
 
     @mock.patch('certbot._internal.main._report_next_steps')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')

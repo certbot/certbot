@@ -85,7 +85,7 @@ class SelectVhostTest(unittest.TestCase):
     @mock.patch("certbot_apache._internal.display_ops.logger")
     def test_small_display(self, mock_logger, mock_display_util):
         mock_display_util.WIDTH = 20
-        mock_display_util.get_display.return_value.menu.return_value = (display_util.OK, 0)
+        mock_display_util.menu.return_value = (display_util.OK, 0)
         self._call(self.vhosts)
 
         self.assertEqual(mock_logger.debug.call_count, 1)
