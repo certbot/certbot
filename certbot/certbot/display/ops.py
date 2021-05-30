@@ -42,9 +42,8 @@ def get_email(invalid=False, optional=True):
 
     while True:
         try:
-            code, email = display_util.input_text(
-                invalid_prefix + msg if invalid else msg,
-                force_interactive=True)
+            code, email = display_util.input_text(invalid_prefix + msg if invalid else msg,
+                                                  force_interactive=True)
         except errors.MissingCommandlineFlag:
             msg = ("You should register before running non-interactively, "
                    "or provide --agree-tos and --email <email_address> flags.")
@@ -75,8 +74,7 @@ def choose_account(accounts):
     # Note this will get more complicated once we start recording authorizations
     labels = [acc.slug for acc in accounts]
 
-    code, index = display_util.menu(
-        "Please choose an account", labels, force_interactive=True)
+    code, index = display_util.menu("Please choose an account", labels, force_interactive=True)
     if code == display_util.OK:
         return accounts[index]
     return None
@@ -91,8 +89,7 @@ def choose_values(values, question=None):
     :returns: List of selected values
     :rtype: list
     """
-    code, items = display_util.checklist(
-        question, tags=values, force_interactive=True)
+    code, items = display_util.checklist(question, tags=values, force_interactive=True)
     if code == display_util.OK and items:
         return items
     return []
@@ -166,7 +163,7 @@ def _filter_names(names, override_question=None):
     :rtype: tuple
 
     """
-    #Sort by domain first, and then by subdomain
+    # Sort by domain first, and then by subdomain
     sorted_names = _sort_names(names)
     if override_question:
         question = override_question
@@ -223,8 +220,7 @@ def _choose_names_manually(prompt_prefix=""):
 
         if retry_message:
             # We had error in input
-            retry = display_util.yesno(retry_message,
-                                          force_interactive=True)
+            retry = display_util.yesno(retry_message, force_interactive=True)
             if retry:
                 return _choose_names_manually()
         else:
@@ -345,8 +341,7 @@ def validated_input(validator, *args, **kwargs):
     :return: as `~certbot.interfaces.IDisplay.input`
     :rtype: tuple
     """
-    return _get_validated(display_util.input_text,
-                          validator, *args, **kwargs)
+    return _get_validated(display_util.input_text, validator, *args, **kwargs)
 
 
 def validated_directory(validator, *args, **kwargs):
@@ -361,5 +356,4 @@ def validated_directory(validator, *args, **kwargs):
     :return: as `~certbot.interfaces.IDisplay.directory_select`
     :rtype: tuple
     """
-    return _get_validated(display_util.directory_select,
-                          validator, *args, **kwargs)
+    return _get_validated(display_util.directory_select, validator, *args, **kwargs)

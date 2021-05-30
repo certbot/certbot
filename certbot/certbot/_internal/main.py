@@ -21,7 +21,7 @@ from acme import errors as acme_errors
 import certbot
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces  # pylint: disable=unused-import
+from certbot import interfaces
 from certbot import util
 from certbot._internal import account
 from certbot._internal import cert_manager
@@ -681,7 +681,7 @@ def _delete_if_appropriate(config):
         msg = ("Would you like to delete the certificate(s) you just revoked, "
                "along with all earlier and later versions of the certificate?")
         attempt_deletion = display_util.yesno(msg, yes_label="Yes (recommended)", no_label="No",
-                                                 force_interactive=True, default=True)
+                                              force_interactive=True, default=True)
 
     if not attempt_deletion:
         return
@@ -763,7 +763,7 @@ def unregister(config, unused_plugins):
     prompt = ("Are you sure you would like to irrevocably deactivate "
               "your account?")
     wants_deactivate = display_util.yesno(prompt, yes_label='Deactivate', no_label='Abort',
-                                             default=True)
+                                          default=True)
 
     if not wants_deactivate:
         return "Deactivation aborted."

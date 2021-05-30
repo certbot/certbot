@@ -200,8 +200,7 @@ def _handle_perform_error(error):
             "use by another process on this system (such as a web "
             "server). Please stop the program in question and "
             "then try again.".format(error.port))
-        should_retry = display_util.yesno(msg, "Retry",
-                                             "Cancel", default=False)
+        should_retry = display_util.yesno(msg, "Retry", "Cancel", default=False)
         if not should_retry:
             raise errors.PluginError(msg)
     else:
