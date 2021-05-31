@@ -10,7 +10,7 @@ if sys.platform == 'win32':
     # problem at build time or run time with python-augeas
     packages = []
     install_requires = []
-    extra_require = {}
+    extra_require = {'dev': []}
     entry_points = {}
 else:
     packages = find_packages()
