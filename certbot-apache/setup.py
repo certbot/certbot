@@ -1,22 +1,39 @@
+import sys
+
 from setuptools import find_packages
 from setuptools import setup
 
 version = '1.16.0.dev0'
 
-# Remember to update local-oldest-requirements.txt when changing the minimum
-# acme/certbot version.
-install_requires = [
-    'acme>=1.8.0',
-    'certbot>=1.10.1',
-    'python-augeas',
-    'setuptools>=39.0.1',
-    'zope.component',
-    'zope.interface',
-]
-
-dev_extras = [
-    'apacheconfig>=0.3.2',
-]
+if sys.platform == 'win32':
+    # On Windows, makes certbot-apache essentially an empty project to avoid any
+    # problem at build time or run time with python-augeas
+    packages = []
+    install_requires = []
+    extra_require = {}
+    entry_points = {}
+else:
+    packages = find_packages()
+    # Remember to update local-oldest-requirements.txt when changing the minimum
+    # acme/certbot version.
+    install_requires = [
+        'acme>=1.8.0',
+        'certbot>=1.10.1',
+        'python-augeas',
+        'setuptools>=39.0.1',
+        'zope.component',
+        'zope.interface',
+    ]
+    extra_require = {
+        'dev': [
+            'apacheconfig>=0.3.2',
+        ],
+    }
+    entry_points = {
+        'certbot.plugins': [
+            'apache = certbot_apache._internal.entrypoint:ENTRYPOINT',
+        ],
+    }
 
 setup(
     name='certbot-apache',
@@ -47,15 +64,9 @@ setup(
         'Topic :: Utilities',
     ],
 
-    packages=find_packages(),
+    packages=packages,
     include_package_data=True,
     install_requires=install_requires,
-    extras_require={
-        'dev': dev_extras,
-    },
-    entry_points={
-        'certbot.plugins': [
-            'apache = certbot_apache._internal.entrypoint:ENTRYPOINT',
-        ],
-    },
+    extras_require=extra_require,
+    entry_points=entry_points,
 )

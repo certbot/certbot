@@ -10,8 +10,6 @@ import re
 import subprocess
 import sys
 
-SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache']
-
 
 def call_with_print(command):
     print(command)
@@ -22,16 +20,7 @@ def main(args):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     command = [sys.executable, os.path.join(script_dir, 'pip_install_editable.py')]
 
-    new_args = []
-    for arg in args:
-        if os.name == 'nt' and arg in SKIP_PROJECTS_ON_WINDOWS:
-            print((
-                'Info: currently {0} is not supported on Windows and will not be tested.'
-                .format(arg)))
-        else:
-            new_args.append(arg)
-
-    for requirement in new_args:
+    for requirement in args:
         current_command = command[:]
         current_command.append(requirement)
         call_with_print(' '.join(current_command))
@@ -39,6 +28,7 @@ def main(args):
 
         call_with_print(' '.join([
             sys.executable, '-m', 'pytest', pkg]))
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
