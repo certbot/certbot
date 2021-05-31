@@ -4,6 +4,9 @@
 # modifying pyproject.toml in the same directory as this file.
 set -euo pipefail
 
+# Since certbot-apache is crafted as an empty project on Windows, the
+# result of pinning dependencies would not be accurate on that platform,
+# so we forbid it.
 if uname -a | grep -q -E 'CYGWIN|MINGW'; then
     echo "This script cannot be run on Windows"
     exit 1
