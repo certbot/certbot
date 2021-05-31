@@ -36,7 +36,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-*
+* CLI flag `--dns-azure` added to specify the Azure DNS plugin
 
 ### Changed
 

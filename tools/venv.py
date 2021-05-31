@@ -27,6 +27,7 @@ REQUIREMENTS = [
     '-e acme[dev]',
     '-e certbot[dev,docs]',
     '-e certbot-apache',
+    '-e certbot-dns-azure',
     '-e certbot-dns-cloudflare',
     '-e certbot-dns-cloudxns',
     '-e certbot-dns-digitalocean',

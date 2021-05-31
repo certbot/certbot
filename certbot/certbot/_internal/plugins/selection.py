@@ -270,6 +270,8 @@ def cli_plugin_requests(config):
         req_auth = set_configurator(req_auth, "webroot")
     if config.manual:
         req_auth = set_configurator(req_auth, "manual")
+    if config.dns_azure:
+        req_auth = set_configurator(req_auth, "dns-azure")
     if config.dns_cloudflare:
         req_auth = set_configurator(req_auth, "dns-cloudflare")
     if config.dns_cloudxns:
