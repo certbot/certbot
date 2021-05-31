@@ -34,19 +34,11 @@ COVER_THRESHOLDS = {
     'certbot_nginx': {'linux': 97, 'windows': 97},
 }
 
-SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache']
-
 
 def cover(package):
     threshold = COVER_THRESHOLDS.get(package)['windows' if os.name == 'nt' else 'linux']
 
     pkg_dir = package.replace('_', '-')
-
-    if os.name == 'nt' and pkg_dir in SKIP_PROJECTS_ON_WINDOWS:
-        print((
-            'Info: currently {0} is not supported on Windows and will not be tested/covered.'
-            .format(pkg_dir)))
-        return
 
     subprocess.check_call([sys.executable, '-m', 'pytest',
                            '--cov', pkg_dir, '--cov-append', '--cov-report=', pkg_dir])
