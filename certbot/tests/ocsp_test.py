@@ -42,11 +42,9 @@ class OCSPTestOpenSSL(unittest.TestCase):
 
     def setUp(self):
         from certbot import ocsp
-        with mock.patch('certbot.ocsp.Popen') as mock_popen:
+        with mock.patch('certbot.ocsp.subprocess.run') as mock_run:
             with mock.patch('certbot.util.exe_exists') as mock_exists:
-                mock_communicate = mock.MagicMock()
-                mock_communicate.communicate.return_value = (None, out)
-                mock_popen.return_value = mock_communicate
+                mock_run.stderr = out
                 mock_exists.return_value = True
                 self.checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
 
@@ -54,28 +52,26 @@ class OCSPTestOpenSSL(unittest.TestCase):
         pass
 
     @mock.patch('certbot.ocsp.logger.info')
-    @mock.patch('certbot.ocsp.Popen')
+    @mock.patch('certbot.ocsp.subprocess.run')
     @mock.patch('certbot.util.exe_exists')
-    def test_init(self, mock_exists, mock_popen, mock_log):
-        mock_communicate = mock.MagicMock()
-        mock_communicate.communicate.return_value = (None, out)
-        mock_popen.return_value = mock_communicate
+    def test_init(self, mock_exists, mock_run, mock_log):
+        mock_run.return_value.stderr = out
         mock_exists.return_value = True
 
         from certbot import ocsp
         checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
-        self.assertEqual(mock_popen.call_count, 1)
+        self.assertEqual(mock_run.call_count, 1)
         self.assertEqual(checker.host_args("x"), ["Host=x"])
 
-        mock_communicate.communicate.return_value = (None, out.partition("\n")[2])
+        mock_run.return_value.stderr = out.partition("\n")[2]
         checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
         self.assertEqual(checker.host_args("x"), ["Host", "x"])
         self.assertIs(checker.broken, False)
 
         mock_exists.return_value = False
-        mock_popen.call_count = 0
+        mock_run.call_count = 0
         checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
-        self.assertEqual(mock_popen.call_count, 0)
+        self.assertEqual(mock_run.call_count, 0)
         self.assertEqual(mock_log.call_count, 1)
         self.assertIs(checker.broken, True)
 

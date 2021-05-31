@@ -6,9 +6,8 @@ from setuptools import setup
 
 version = '1.16.0.dev0'
 
-# Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    'dns-lexicon>=2.2.3',
+    'dns-lexicon>=3.1.0',  # Changed `rtype` parameter name
     'setuptools>=39.0.1',
     'zope.interface',
 ]
@@ -16,7 +15,7 @@ install_requires = [
 if not os.environ.get('SNAP_BUILD'):
     install_requires.extend([
         'acme>=0.31.0',
-        'certbot>=1.1.0',
+        'certbot>=1.16.0.dev0',
     ])
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Unset SNAP_BUILD when building wheels '

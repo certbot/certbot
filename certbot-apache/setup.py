@@ -6,8 +6,8 @@ version = '1.16.0.dev0'
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'acme>=0.29.0',
-    'certbot>=1.6.0',
+    'acme>=1.8.0',
+    'certbot>=1.16.0.dev0',
     'python-augeas',
     'setuptools>=39.0.1',
     'zope.component',

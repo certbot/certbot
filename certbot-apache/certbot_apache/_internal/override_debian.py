@@ -54,7 +54,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
                 # Already in shape
                 vhost.enabled = True
                 return None
-            logger.warning(
+            logger.error(
                 "Could not symlink %s to %s, got error: %s", enabled_path,
                 vhost.filep, err.strerror)
             errstring = ("Encountered error while trying to enable a " +

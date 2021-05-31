@@ -16,7 +16,7 @@ install_requires = [
 if not os.environ.get('SNAP_BUILD'):
     install_requires.extend([
         'acme>=0.31.0',
-        'certbot>=1.1.0',
+        'certbot>=1.16.0.dev0',
     ])
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Unset SNAP_BUILD when building wheels '
@@ -32,7 +32,7 @@ if os.environ.get('SNAP_BUILD'):
 # which allows us to potentially upgrade our packages in these distros
 # as necessary.
 if os.environ.get('CERTBOT_OLDEST') == '1':
-    install_requires.append('dns-lexicon>=2.2.1')
+    install_requires.append('dns-lexicon>=3.1.0')  # Changed parameter name
 else:
     install_requires.append('dns-lexicon>=3.2.1')
 

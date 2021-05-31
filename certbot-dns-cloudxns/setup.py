@@ -9,7 +9,7 @@ version = '1.16.0.dev0'
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'dns-lexicon>=2.2.1',  # Support for >1 TXT record per name
+    'dns-lexicon>=3.1.0',  # Changed `rtype` parameter name
     'setuptools>=39.0.1',
     'zope.interface',
 ]
@@ -17,7 +17,7 @@ install_requires = [
 if not os.environ.get('SNAP_BUILD'):
     install_requires.extend([
         'acme>=0.31.0',
-        'certbot>=1.1.0',
+        'certbot>=1.16.0.dev0',
     ])
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Unset SNAP_BUILD when building wheels '

@@ -2,9 +2,8 @@
 import logging
 
 from certbot import errors
-from certbot import services
 from certbot.compat import os
-import certbot.display.util as display_util
+from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +23,14 @@ def select_vhost_multiple(vhosts):
     # Remove the extra newline from the last entry
     if tags_list:
         tags_list[-1] = tags_list[-1][:-1]
-    code, names = services.get_display().checklist(
+    code, names = display_util.checklist(
         "Which VirtualHosts would you like to install the wildcard certificate for?",
         tags=tags_list, force_interactive=True)
     if code == display_util.OK:
         return_vhosts = _reversemap_vhosts(names, vhosts)
         return return_vhosts
     return []
+
 
 def _reversemap_vhosts(names, vhosts):
     """Helper function for select_vhost_multiple for mapping string
@@ -42,6 +42,7 @@ def _reversemap_vhosts(names, vhosts):
             if vhost.display_repr().strip() == selection.strip():
                 return_vhosts.append(vhost)
     return return_vhosts
+
 
 def select_vhost(domain, vhosts):
     """Select an appropriate Apache Vhost.
@@ -59,6 +60,7 @@ def select_vhost(domain, vhosts):
     if code == display_util.OK:
         return vhosts[tag]
     return None
+
 
 def _vhost_menu(domain, vhosts):
     """Select an appropriate Apache Vhost.
@@ -105,7 +107,7 @@ def _vhost_menu(domain, vhosts):
         )
 
     try:
-        code, tag = services.get_display().menu(
+        code, tag = display_util.menu(
             "We were unable to find a vhost with a ServerName "
             "or Address of {0}.{1}Which virtual host would you "
             "like to choose?".format(domain, os.linesep),
@@ -117,7 +119,7 @@ def _vhost_menu(domain, vhosts):
             "guidance in non-interactive mode. Certbot may need "
             "vhosts to be explicitly labelled with ServerName or "
             "ServerAlias directives.".format(domain))
-        logger.warning(msg)
+        logger.error(msg)
         raise errors.MissingCommandlineFlag(msg)
 
     return code, tag

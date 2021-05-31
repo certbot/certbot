@@ -90,6 +90,13 @@ class PluginTest(unittest.TestCase):
         parser.add_argument.assert_called_once_with(
             "--mock-foo-bar", dest="different_to_foo_bar", x=1, y=None)
 
+    def test_fallback_auth_hint(self):
+        self.assertIn("the mock plugin completed the required dns-01 challenges",
+                      self.plugin.auth_hint([acme_util.DNS01_A, acme_util.DNS01_A]))
+        self.assertIn("the mock plugin completed the required dns-01 and http-01 challenges",
+                      self.plugin.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A,
+                                             acme_util.DNS01_A]))
+
 
 class InstallerTest(test_util.ConfigTestCase):
     """Tests for certbot.plugins.common.Installer."""

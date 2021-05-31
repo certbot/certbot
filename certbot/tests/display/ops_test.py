@@ -7,7 +7,6 @@ import josepy as jose
 
 from acme import messages
 from certbot import errors
-from certbot import services
 from certbot._internal import account
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -93,7 +92,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
     def setUp(self):
         super().setUp()
 
-        services.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
 
         self.account_keys_dir = os.path.join(self.tempdir, "keys")
         filesystem.makedirs(self.account_keys_dir, 0o700)
@@ -134,7 +133,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
 class GenHttpsNamesTest(unittest.TestCase):
     """Test _gen_https_names."""
     def setUp(self):
-        services.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
 
     @classmethod
     def _call(cls, domains):
@@ -181,7 +180,7 @@ class GenHttpsNamesTest(unittest.TestCase):
 class ChooseNamesTest(unittest.TestCase):
     """Test choose names."""
     def setUp(self):
-        services.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
         self.mock_install = mock.MagicMock()
 
     @classmethod
@@ -208,7 +207,6 @@ class ChooseNamesTest(unittest.TestCase):
         actual_doms = self._call(self.mock_install)
         self.assertEqual(mock_util().input.call_count, 1)
         self.assertEqual(actual_doms, [domain])
-        self.assertIn("configuration files", mock_util().input.call_args[0][0])
 
     def test_sort_names_trivial(self):
         from certbot.display.ops import _sort_names
@@ -340,14 +338,15 @@ class SuccessInstallationTest(unittest.TestCase):
         success_installation(names)
 
     @test_util.patch_display_service()
-    def test_success_installation(self, mock_util):
-        mock_util().notification.return_value = None
+    @mock.patch("certbot.display.util.notify")
+    def test_success_installation(self, mock_notify, mock_display):
+        mock_display().notification.return_value = None
         names = ["example.com", "abc.com"]
 
         self._call(names)
 
-        self.assertEqual(mock_util().notification.call_count, 1)
-        arg = mock_util().notification.call_args_list[0][0][0]
+        self.assertEqual(mock_notify.call_count, 1)
+        arg = mock_notify.call_args_list[0][0][0]
 
         for name in names:
             self.assertIn(name, arg)
@@ -361,17 +360,15 @@ class SuccessRenewalTest(unittest.TestCase):
         success_renewal(names)
 
     @test_util.patch_display_service()
-    def test_success_renewal(self, mock_util):
-        mock_util().notification.return_value = None
+    @mock.patch("certbot.display.util.notify")
+    def test_success_renewal(self, mock_notify, mock_display):
+        mock_display().notification.return_value = None
         names = ["example.com", "abc.com"]
 
         self._call(names)
 
-        self.assertEqual(mock_util().notification.call_count, 1)
-        arg = mock_util().notification.call_args_list[0][0][0]
+        self.assertEqual(mock_notify.call_count, 1)
 
-        for name in names:
-            self.assertIn(name, arg)
 
 class SuccessRevocationTest(unittest.TestCase):
     """Test the success revocation message."""
@@ -382,7 +379,7 @@ class SuccessRevocationTest(unittest.TestCase):
 
     @test_util.patch_display_service()
     @mock.patch("certbot.display.util.notify")
-    def test_success_revocation(self, mock_notify, unused_mock_util):
+    def test_success_revocation(self, mock_notify, unused_mock_display):
         path = "/path/to/cert.pem"
         self._call(path)
         mock_notify.assert_called_once_with(
@@ -498,6 +495,30 @@ class ChooseValuesTest(unittest.TestCase):
         self.assertIs(mock_util().checklist.called, True)
         self.assertEqual(mock_util().checklist.call_args[0][0], question)
 
+
+@mock.patch('certbot.display.ops.logger')
+@mock.patch('certbot.display.util.notify')
+class ReportExecutedCommand(unittest.TestCase):
+    """Test report_executed_command"""
+    @classmethod
+    def _call(cls, cmd_name: str, rc: int, out: str, err: str):
+        from certbot.display.ops import report_executed_command
+        report_executed_command(cmd_name, rc, out, err)
+
+    def test_mixed_success(self, mock_notify, mock_logger):
+        self._call("some-hook", 0, "Did a thing", "Some warning")
+        self.assertEqual(mock_logger.warning.call_count, 1)
+        self.assertEqual(mock_notify.call_count, 1)
+
+    def test_mixed_error(self, mock_notify, mock_logger):
+        self._call("some-hook", -127, "Did a thing", "Some warning")
+        self.assertEqual(mock_logger.warning.call_count, 2)
+        self.assertEqual(mock_notify.call_count, 1)
+
+    def test_empty_success(self, mock_notify, mock_logger):
+        self._call("some-hook", 0, "\n", " ")
+        self.assertEqual(mock_logger.warning.call_count, 0)
+        self.assertEqual(mock_notify.call_count, 0)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

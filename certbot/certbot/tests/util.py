@@ -193,11 +193,11 @@ def patch_display_service():
     The mock IDisplay works like a regular mock object, except it also
     also asserts that methods are called with valid arguments.
 
-    :returns: mock certbot.services.get_display
+    :returns: mock certbot.display.util.get_display
     :rtype: mock.MagicMock
 
     """
-    return mock.patch('certbot.services.get_display', new_callable=_create_display_service_mock)
+    return mock.patch('certbot.display.util.get_display', new_callable=_create_display_service_mock)
 
 
 def patch_display_service_with_stdout(stdout=None):
@@ -212,13 +212,13 @@ def patch_display_service_with_stdout(stdout=None):
     :param object stdout: object to write standard output to; it is
         expected to have a `write` method
 
-    :returns: mock certbot.services.get_display
+    :returns: mock certbot.display.util.get_display
     :rtype: mock.MagicMock
 
     """
     stdout = stdout if stdout else io.StringIO()
 
-    return mock.patch('certbot.services.get_display',
+    return mock.patch('certbot.display.util.get_display',
                       new=_create_display_service_mock_with_stdout(stdout))
 
 
@@ -227,11 +227,11 @@ def patch_get_utility(target='zope.component.getUtility'):  # pylint: disable=un
 
     :param str target: path to patch (warning, value is ignored due to deprecation)
 
-    :returns: mock certbot.services.get_display
+    :returns: mock certbot.display.util.get_display
     :rtype: mock.MagicMock
 
     """
-    warnings.warn('Decorator certbot.tests.util.patch_get_utility is deprecated, '
+    warnings.warn('Decorator certbot.tests.util.patch_display_service is deprecated, '
                   'use certbot.tests.util.patch_display_service instead.')
     return patch_display_service()
 
@@ -244,11 +244,11 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',  # pylint:
     :param object stdout: object to write standard output to; it is
         expected to have a `write` method
 
-    :returns: mock certbot.services.get_display
+    :returns: mock certbot.display.util.get_display
     :rtype: mock.MagicMock
 
     """
-    warnings.warn('Decorator certbot.tests.util.patch_get_utility_with_stdout is deprecated, '
+    warnings.warn('Decorator certbot.tests.util.patch_display_service_with_stdout is deprecated, '
                   'use certbot.tests.util.patch_display_service_with_stdout instead.')
     return patch_display_service_with_stdout(stdout)
 
@@ -353,7 +353,6 @@ def _create_display_service_mock_with_stdout(stdout):
     method_list = [func for func in dir(interfaces.Display)
                    if callable(getattr(interfaces.Display, func)) and not func.startswith("__")]
     for method in method_list:
-        print(method)
         if method == 'notification':
             frozen_mock = FreezableMock(frozen=True,
                                         func=_write_msg)

@@ -1,8 +1,7 @@
 """Contains UI methods for Nginx operations."""
 import logging
 
-from certbot import services
-import certbot.display.util as display_util
+from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
@@ -20,13 +19,14 @@ def select_vhost_multiple(vhosts):
     # Remove the extra newline from the last entry
     if tags_list:
         tags_list[-1] = tags_list[-1][:-1]
-    code, names = services.get_display().checklist(
+    code, names = display_util.checklist(
         "Which server blocks would you like to modify?",
         tags=tags_list, force_interactive=True)
     if code == display_util.OK:
         return_vhosts = _reversemap_vhosts(names, vhosts)
         return return_vhosts
     return []
+
 
 def _reversemap_vhosts(names, vhosts):
     """Helper function for select_vhost_multiple for mapping string

@@ -82,6 +82,7 @@ def _copy_assets(build_path, repo_path):
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'template.nsi'), build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'renew-up.ps1'), build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'renew-down.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'preamble.py'), build_path)
 
 
 def _generate_pynsist_config(repo_path, build_path):
@@ -121,6 +122,7 @@ files=run.bat
 
 [Command certbot]
 entry_point=certbot.main:main
+extra_preamble=preamble.py
 '''.format(certbot_version=certbot_version,
            installer_suffix='win_amd64' if PYTHON_BITNESS == 64 else 'win32',
            python_bitness=PYTHON_BITNESS,

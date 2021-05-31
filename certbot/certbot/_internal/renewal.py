@@ -14,12 +14,11 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-import OpenSSL
+import zope.component
 
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
-from certbot import services
 from certbot import util
 from certbot._internal import cli
 from certbot._internal import client
@@ -68,18 +67,18 @@ def _reconstitute(config, full_path):
     """
     try:
         renewal_candidate = storage.RenewableCert(full_path, config)
-    except (errors.CertStorageError, IOError):
-        logger.warning("", exc_info=True)
-        logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
+    except (errors.CertStorageError, IOError) as error:
+        logger.error("Renewal configuration file %s is broken.", full_path)
+        logger.error("The error was: %s\nSkipping.", str(error))
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
     if "renewalparams" not in renewal_candidate.configuration:
-        logger.warning("Renewal configuration file %s lacks "
+        logger.error("Renewal configuration file %s lacks "
                        "renewalparams. Skipping.", full_path)
         return None
     renewalparams = renewal_candidate.configuration["renewalparams"]
     if "authenticator" not in renewalparams:
-        logger.warning("Renewal configuration file %s does not specify "
+        logger.error("Renewal configuration file %s does not specify "
                        "an authenticator. Skipping.", full_path)
         return None
     # Now restore specific values along with their data types, if
@@ -89,7 +88,7 @@ def _reconstitute(config, full_path):
         restore_required_config_elements(config, renewalparams)
         _restore_plugin_configs(config, renewalparams)
     except (ValueError, errors.Error) as error:
-        logger.warning(
+        logger.error(
             "An error occurred while parsing %s. The error was %s. "
             "Skipping the file.", full_path, str(error))
         logger.debug("Traceback was:\n%s", traceback.format_exc())
@@ -99,7 +98,7 @@ def _reconstitute(config, full_path):
         config.domains = [util.enforce_domain_sanity(d)
                           for d in renewal_candidate.names()]
     except errors.ConfigurationError as error:
-        logger.warning("Renewal configuration file %s references a certificate "
+        logger.error("Renewal configuration file %s references a certificate "
                        "that contains an invalid domain name. The problem "
                        "was: %s. Skipping.", full_path, error)
         return None
@@ -295,24 +294,17 @@ def should_renew(config, lineage):
         logger.debug("Auto-renewal forced with --force-renewal...")
         return True
     if lineage.should_autorenew():
-        logger.info("Cert is due for renewal, auto-renewing...")
+        logger.info("Certificate is due for renewal, auto-renewing...")
         return True
     if config.dry_run:
-        logger.info("Cert not due for renewal, but simulating renewal for dry run")
+        logger.info("Certificate not due for renewal, but simulating renewal for dry run")
         return True
-    logger.info("Cert not yet due for renewal")
+    display_util.notify("Certificate not yet due for renewal")
     return False
 
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
     """Do not renew a valid cert with one from a staging server!"""
-    # Some lineages may have begun with --staging, but then had production
-    # certificates added to them
-    with open(lineage.cert) as the_file:
-        contents = the_file.read()
-    latest_cert = OpenSSL.crypto.load_certificate(
-        OpenSSL.crypto.FILETYPE_PEM, contents)
-
     if util.is_staging(config.server):
         if not util.is_staging(original_server):
             if not config.break_my_certs:
@@ -437,8 +429,7 @@ def handle_renewal_request(config):
     apply_random_sleep = not sys.stdin.isatty() and config.random_sleep_on_renew
 
     for renewal_file in conf_files:
-        disp = services.get_display()
-        disp.notification("Processing " + renewal_file, pause=False)
+        display_util.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
         lineagename = storage.lineagename_for_filename(renewal_file)
 
@@ -447,7 +438,7 @@ def handle_renewal_request(config):
         try:
             renewal_candidate = _reconstitute(lineage_config, renewal_file)
         except Exception as e:  # pylint: disable=broad-except
-            logger.warning("Renewal configuration file %s (cert: %s) "
+            logger.error("Renewal configuration file %s (cert: %s) "
                            "produced an unexpected error: %s. Skipping.",
                            renewal_file, lineagename, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
@@ -458,8 +449,9 @@ def handle_renewal_request(config):
             if renewal_candidate is None:
                 parse_failures.append(renewal_file)
             else:
-                # XXX: ensure that each call here replaces the previous one
-                services.set_config(lineage_config)
+                # This call is done only for retro-compatibility purposes.
+                # TODO: Remove this call once zope dependencies are removed from Certbot.
+                zope.component.provideUtility(lineage_config)
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main
                 plugins = plugins_disco.PluginsRegistry.find_all()

@@ -6,8 +6,8 @@ version = '1.16.0.dev0'
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'acme>=1.4.0',
-    'certbot>=1.6.0',
+    'acme>=1.8.0',
+    'certbot>=1.16.0.dev0',
     'PyOpenSSL>=17.3.0',
     'pyparsing>=2.2.0',
     'setuptools>=39.0.1',
