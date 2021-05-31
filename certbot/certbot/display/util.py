@@ -83,7 +83,7 @@ def notification(message: str, pause: bool = True, wrap: bool = True,
                                force_interactive=force_interactive, decorate=decorate)
 
 
-def menu(message: str, choices: Union[List[Tuple[str, str]], List[str]],
+def menu(message: str, choices: Union[List[str], Tuple[str, str]],
          default: Optional[int] = None, cli_flag: Optional[str] = None,
          force_interactive: bool = False) -> Tuple[str, int]:
     """Display a menu.
