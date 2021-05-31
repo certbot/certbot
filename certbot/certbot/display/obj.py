@@ -542,4 +542,3 @@ def _parens_around_char(label):
 
     """
     return "({first}){rest}".format(first=label[0], rest=label[1:])
-

@@ -545,7 +545,7 @@ class Display(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def menu(self, message: str, choices: Union[List[str], Tuple[str], str],
+    def menu(self, message: str, choices: Union[List[str], Tuple[str, str]],
              ok_label: Optional[str] = None, cancel_label: Optional[str] = None,
              help_label: Optional[str] = None, default: Optional[int] = None,
              cli_flag: Optional[str] = None, force_interactive: bool = False) -> Tuple[str, int]:
@@ -556,8 +556,9 @@ class Display(metaclass=ABCMeta):
 
         :param str message: message to display
 
-        :param choices: choices
-        :type choices: :class:`list` of :func:`tuple` or :class:`str`
+        :param choices: Menu lines, len must be > 0
+        :type choices: list of tuples (tag, item) or
+            list of descriptions (tags will be enumerated)
 
         :param str ok_label: label for OK button (UNUSED)
         :param str cancel_label: label for Cancel button (UNUSED)

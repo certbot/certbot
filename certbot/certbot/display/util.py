@@ -50,7 +50,7 @@ it as a heading)"""
 
 class _DisplayService:
     def __init__(self):
-        self.display: Optional[interfaces.IDisplay] = None
+        self.display: Optional[interfaces.Display] = None
 
 
 _SERVICE = _DisplayService()
