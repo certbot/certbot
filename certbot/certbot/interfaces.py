@@ -52,6 +52,7 @@ class IConfig(zope.interface.Interface):  # pylint: disable=inherit-non-class
     """Deprecated, use certbot.interfaces.Config as ABC instead."""
 
 
+@zope.interface.implementer(IConfig)
 class Config(metaclass=ABCMeta):
     """Certbot user-supplied configuration.
 
@@ -229,6 +230,8 @@ class IPlugin(zope.interface.Interface):  # pylint: disable=inherit-non-class
     """Deprecated, use certbot.interfaces.Plugin as ABC instead."""
 
 
+@zope.interface.implementer(IPlugin)
+@zope.interface.provider(IPluginFactory)
 class Plugin(metaclass=ABCMeta):
     """Certbot plugin.
 
@@ -325,6 +328,7 @@ class IAuthenticator(IPlugin):  # pylint: disable=inherit-non-class
     """Deprecated, use certbot.interfaces.Authenticator as ABC instead."""
 
 
+@zope.interface.implementer(IAuthenticator)
 class Authenticator(Plugin):
     """Generic Certbot Authenticator.
 
@@ -388,6 +392,7 @@ class IInstaller(IPlugin):  # pylint: disable=inherit-non-class
     """Deprecated, use certbot.interfaces.Installer as ABC instead."""
 
 
+@zope.interface.implementer(IInstaller)
 class Installer(Plugin):
     """Generic Certbot Installer Interface.
 
@@ -518,6 +523,7 @@ class IDisplay(zope.interface.Interface):  # pylint: disable=inherit-non-class
     """Deprecated, use certbot.interfaces.Display as ABC instead."""
 
 
+@zope.interface.implementer(IDisplay)
 class Display(metaclass=ABCMeta):
     """Generic display."""
     # see https://github.com/certbot/certbot/issues/3915
@@ -572,7 +578,7 @@ class Display(metaclass=ABCMeta):
 
     @abstractmethod
     def input(self, message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
-              force_interactive: bool = False) -> Tuple[str, int]:
+              force_interactive: bool = False) -> Tuple[str, str]:
         """Accept input from the user.
 
         When not setting force_interactive=True, you must provide a
@@ -676,6 +682,7 @@ class IReporter(zope.interface.Interface):  # pylint: disable=inherit-non-class
     """Deprecated, use certbot.interfaces.Reporter as ABC instead."""
 
 
+@zope.interface.implementer(IReporter)
 class Reporter(metaclass=ABCMeta):
     """Interface to collect and display information to the user."""
 

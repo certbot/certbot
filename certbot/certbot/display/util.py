@@ -11,12 +11,12 @@ Other messages can use the `logging` module. See `log.py`.
 """
 import logging
 import sys
-from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
+import zope.component
 import zope.interface
 
 from certbot import interfaces
@@ -196,16 +196,11 @@ def directory_select(message: str, default: Optional[str] = None, cli_flag: Opti
                                           force_interactive=force_interactive)
 
 
-# The two following functions use "Any" for their parameter/output types. Normally interfaces from
-# certbot.interfaces would be used, but MyPy will not understand their semantic. These interfaces
-# will be removed soon and replaced by ABC classes that will be used also here for type checking.
-# TODO: replace Any by actual ABC classes once available
-
-def get_display() -> Any:
+def get_display() -> interfaces.Display:
     """Get the display utility.
 
     :return: the display utility
-    :rtype: IDisplay
+    :rtype: interfaces.Display
     :raise: ValueError if the display utility is not set
 
     """
@@ -215,10 +210,10 @@ def get_display() -> Any:
     return _SERVICE.display
 
 
-def set_display(display: Any) -> None:
+def set_display(display: interfaces.Display) -> None:
     """Set the display service.
 
-    :param IDisplay display: the display service
+    :param interfaces.Display display: the display service
 
     """
     # This call is done only for retro-compatibility purposes.
