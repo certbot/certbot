@@ -4,6 +4,11 @@
 # modifying pyproject.toml in the same directory as this file.
 set -euo pipefail
 
+if uname -a | grep -q -E 'CYGWIN|MINGW'; then
+    echo "This script cannot be run on Windows"
+    exit 1
+fi
+
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 REPO_ROOT="$(dirname "$(dirname "${WORK_DIR}")")"
 PIPSTRAP_CONSTRAINTS="${REPO_ROOT}/tools/pipstrap_constraints.txt"
