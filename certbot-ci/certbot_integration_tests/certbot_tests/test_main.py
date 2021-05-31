@@ -78,9 +78,9 @@ def test_registration_override(context):
 
 def test_prepare_plugins(context):
     """Test that plugins are correctly instantiated and displayed."""
-    output = context.certbot(['plugins', '--init', '--prepare'])
+    stdout, _ = context.certbot(['plugins', '--init', '--prepare'])
 
-    assert 'webroot' in output
+    assert 'webroot' in stdout
 
 
 def test_http_01(context):
@@ -407,9 +407,9 @@ def test_invalid_domain_with_dns_challenge(context):
         '--manual-cleanup-hook', context.manual_dns_cleanup_hook
     ])
 
-    output = context.certbot(['certificates'])
+    stdout, _ = context.certbot(['certificates'])
 
-    assert context.get_domain('fail-dns1') not in output
+    assert context.get_domain('fail-dns1') not in stdout
 
 
 def test_reuse_key(context):
@@ -614,11 +614,11 @@ def test_revoke_and_unregister(context):
 
     context.certbot(['unregister'])
 
-    output = context.certbot(['certificates'])
+    stdout, _ = context.certbot(['certificates'])
 
-    assert cert1 not in output
-    assert cert2 not in output
-    assert cert3 in output
+    assert cert1 not in stdout
+    assert cert2 not in stdout
+    assert cert3 in stdout
 
 
 def test_revoke_mutual_exclusive_flags(context):
@@ -630,7 +630,7 @@ def test_revoke_mutual_exclusive_flags(context):
             'revoke', '--cert-name', cert,
             '--cert-path', join(context.config_dir, 'live', cert, 'fullchain.pem')
         ])
-        assert 'Exactly one of --cert-path or --cert-name must be specified' in error.out
+    assert 'Exactly one of --cert-path or --cert-name must be specified' in error.value.stderr
 
 
 def test_revoke_multiple_lineages(context):
@@ -685,12 +685,12 @@ def test_wildcard_certificates(context):
 def test_ocsp_status_stale(context):
     """Test retrieval of OCSP statuses for staled config"""
     sample_data_path = misc.load_sample_data_path(context.workspace)
-    output = context.certbot(['certificates', '--config-dir', sample_data_path])
+    stdout, _ = context.certbot(['certificates', '--config-dir', sample_data_path])
 
-    assert output.count('TEST_CERT') == 2, ('Did not find two test certs as expected ({0})'
-                                            .format(output.count('TEST_CERT')))
-    assert output.count('EXPIRED') == 2, ('Did not find two expired certs as expected ({0})'
-                                          .format(output.count('EXPIRED')))
+    assert stdout.count('TEST_CERT') == 2, ('Did not find two test certs as expected ({0})'
+                                            .format(stdout.count('TEST_CERT')))
+    assert stdout.count('EXPIRED') == 2, ('Did not find two expired certs as expected ({0})'
+                                          .format(stdout.count('EXPIRED')))
 
 
 def test_ocsp_status_live(context):
@@ -699,20 +699,20 @@ def test_ocsp_status_live(context):
 
     # OSCP 1: Check live certificate OCSP status (VALID)
     context.certbot(['--domains', cert])
-    output = context.certbot(['certificates'])
+    stdout, _ = context.certbot(['certificates'])
 
-    assert output.count('VALID') == 1, 'Expected {0} to be VALID'.format(cert)
-    assert output.count('EXPIRED') == 0, 'Did not expect {0} to be EXPIRED'.format(cert)
+    assert stdout.count('VALID') == 1, 'Expected {0} to be VALID'.format(cert)
+    assert stdout.count('EXPIRED') == 0, 'Did not expect {0} to be EXPIRED'.format(cert)
 
     # OSCP 2: Check live certificate OCSP status (REVOKED)
     context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
     # Sometimes in oldest tests (using openssl binary and not cryptography), the OCSP status is
     # not seen immediately by Certbot as invalid. Waiting few seconds solves this transient issue.
     time.sleep(5)
-    output = context.certbot(['certificates'])
+    stdout, _ = context.certbot(['certificates'])
 
-    assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)
-    assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
+    assert stdout.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)
+    assert stdout.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
 
 
 def test_ocsp_renew(context):
