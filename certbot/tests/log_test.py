@@ -28,8 +28,13 @@ class PreArgParseSetupTest(unittest.TestCase):
     @classmethod
     def _call(cls, *args, **kwargs):  # pylint: disable=unused-argument
         from certbot._internal.log import pre_arg_parse_setup
-        with mock.patch('builtins.open', mock.mock_open()):
-            return pre_arg_parse_setup()
+        return pre_arg_parse_setup()
+
+    def tearDown(self):
+        # We need to call logging.shutdown() at the end of this test to
+        # properly clean up any resources created by pre_arg_parse_setup.
+        logging.shutdown()
+        super().tearDown()
 
     @mock.patch('certbot._internal.log.sys')
     @mock.patch('certbot._internal.log.pre_arg_parse_except_hook')
