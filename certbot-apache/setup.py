@@ -3,11 +3,12 @@ from setuptools import setup
 
 version = '1.17.0.dev0'
 
-# Remember to update local-oldest-requirements.txt when changing the minimum
-# acme/certbot version.
 install_requires = [
-    'acme>=1.8.0',
-    'certbot>=1.10.1',
+    # We specify the minimum acme and certbot version as the current plugin
+    # version for simplicity. See
+    # https://github.com/certbot/certbot/issues/8761 for more info.
+    f'acme>={version}',
+    f'certbot>={version}',
     'python-augeas',
     'setuptools>=39.0.1',
     'zope.component',
