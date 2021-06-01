@@ -2,7 +2,28 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.16.0 - master
+## 1.17.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* We changed how dependencies are specified between Certbot packages. For this
+  and future releases, higher level Certbot components will require that lower
+  level components are the same version or newer. More specifically, version X
+  of the Certbot package will now always require acme>=X and version Y of a
+  plugin package will always require acme>=Y and certbot=>Y. Specifying
+  dependencies in this way simplifies testing and development.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.16.0 - 2021-06-01
 
 ### Added
 
@@ -19,12 +40,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   and clarify output. If you would like to see more verbose output, use
   the -v or -vv flags. UX improvements are an iterative process and
   the Certbot team welcomes constructive feedback.
-* We changed how dependencies are specified between Certbot packages. For this
-  and future releases, higher level Certbot components will require that lower
-  level components are the same version or newer. More specifically, version X
-  of the Certbot package will now always require acme>=X and version Y of a
-  plugin package will always require acme>=Y and certbot=>Y. Specifying
-  dependencies in this way simplifies testing and development.
 * Functions `certbot.crypto_util.init_save_key` and `certbot.crypto_util.init_save_csr`,
   whose behaviors rely on the global Certbot `config` singleton, are deprecated and will
   be removed in a future release. Please use `certbot.crypto_util.generate_key` and
