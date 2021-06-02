@@ -48,6 +48,8 @@ SIDE_FRAME = ("- " * 39) + "-"
 it as a heading)"""
 
 
+# This class holds the global state of the display service to store, in a more
+# consistent way than the "global" keyword.
 class _DisplayService:
     def __init__(self):
         self.display: Optional[interfaces.IDisplay] = None
