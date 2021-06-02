@@ -62,10 +62,7 @@ class HelpfulArgumentParser:
         }
 
         # Get notification function for printing
-        try:
-            self.notify = display_util.get_display().notification
-        except ValueError:
-            self.notify = display_util.NoninteractiveDisplay(sys.stdout).notification
+        self.notify = display_util.NoninteractiveDisplay(sys.stdout).notification
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
