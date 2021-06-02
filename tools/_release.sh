@@ -87,14 +87,6 @@ for pkg_dir in $SUBPKGS certbot-compatibility-test
 do
   sed -i 's/\.dev0//' "$pkg_dir/setup.py"
   git add "$pkg_dir/setup.py"
-
-  if [ -f "$pkg_dir/local-oldest-requirements.txt" ]; then
-    sed -i "s/-e acme\[dev\]/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e acme/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e certbot\[dev\]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e certbot/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    git add "$pkg_dir/local-oldest-requirements.txt"
-  fi
 done
 
 SetVersion() {
