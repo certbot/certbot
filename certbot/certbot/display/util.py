@@ -64,7 +64,7 @@ def notify(msg: str) -> None:
     :param str msg: message to display
 
     """
-    get_display().notification(msg, pause=False, decorate=False, wrap=False)
+    _get_display().notification(msg, pause=False, decorate=False, wrap=False)
 
 
 def notification(message: str, pause: bool = True, wrap: bool = True,
@@ -81,7 +81,7 @@ def notification(message: str, pause: bool = True, wrap: bool = True,
         decorated frame
 
     """
-    get_display().notification(message, pause=pause, wrap=wrap,
+    _get_display().notification(message, pause=pause, wrap=wrap,
                                force_interactive=force_interactive, decorate=decorate)
 
 
@@ -109,7 +109,7 @@ def menu(message: str, choices: Union[List[str], Tuple[str, str]],
     :rtype: tuple
 
     """
-    return get_display().menu(message, choices, default=default, cli_flag=cli_flag,
+    return _get_display().menu(message, choices, default=default, cli_flag=cli_flag,
                               force_interactive=force_interactive)
 
 
@@ -129,7 +129,7 @@ def input_text(message: str, default: Optional[str] = None, cli_flag: Optional[s
     :rtype: tuple
 
     """
-    return get_display().input(message, default=default, cli_flag=cli_flag,
+    return _get_display().input(message, default=default, cli_flag=cli_flag,
                                force_interactive=force_interactive)
 
 
@@ -153,7 +153,7 @@ def yesno(message: str, yes_label: str = "Yes", no_label: str = "No",
     :rtype: bool
 
     """
-    return get_display().yesno(message, yes_label=yes_label, no_label=no_label, default=default,
+    return _get_display().yesno(message, yes_label=yes_label, no_label=no_label, default=default,
                                cli_flag=cli_flag, force_interactive=force_interactive)
 
 
@@ -175,7 +175,7 @@ def checklist(message: str, tags: List[str], default: Optional[str] = None,
     :rtype: tuple
 
     """
-    return get_display().checklist(message, tags, default=default, cli_flag=cli_flag,
+    return _get_display().checklist(message, tags, default=default, cli_flag=cli_flag,
                                    force_interactive=force_interactive)
 
 
@@ -194,7 +194,7 @@ def directory_select(message: str, default: Optional[str] = None, cli_flag: Opti
         `string` - input entered by the user
 
     """
-    return get_display().directory_select(message, default=default, cli_flag=cli_flag,
+    return _get_display().directory_select(message, default=default, cli_flag=cli_flag,
                                           force_interactive=force_interactive)
 
 
@@ -203,7 +203,7 @@ def directory_select(message: str, default: Optional[str] = None, cli_flag: Opti
 # will be removed soon and replaced by ABC classes that will be used also here for type checking.
 # TODO: replace Any by actual ABC classes once available
 
-def get_display() -> Any:
+def _get_display() -> Any:
     """Get the display utility.
 
     :return: the display utility

@@ -1094,7 +1094,7 @@ class MainTest(test_util.ConfigTestCase):
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot._internal.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
-                    with mock.patch('certbot.display.util.get_display') as mock_display:
+                    with mock.patch('certbot.display.util._get_display') as mock_display:
                         if not quiet_mode:
                             mock_display().notification.side_effect = write_msg
                         with mock.patch('certbot._internal.main.renewal.crypto_util') \
