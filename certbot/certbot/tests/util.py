@@ -158,7 +158,8 @@ def patch_display_service():
     :rtype: mock.MagicMock
 
     """
-    return mock.patch('certbot.display.util._get_display', new_callable=_create_display_service_mock)
+    return mock.patch('certbot.display.util._get_display',
+                      new_callable=_create_display_service_mock)
 
 
 def patch_display_service_with_stdout(stdout=None):
