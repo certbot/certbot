@@ -119,7 +119,7 @@ class Plugin:
         # This is a fallback hint. Authenticators should implement their own auth_hint that
         # addresses the specific mechanics of that authenticator.
         challs = " and ".join(sorted({achall.typ for achall in failed_achalls}))
-        return ("The Certificate Authority couldn't exterally verify that the {name} plugin "
+        return ("The Certificate Authority couldn't externally verify that the {name} plugin "
                 "completed the required {challs} challenges. Ensure the plugin is configured "
                 "correctly and that the changes it makes are accessible from the internet."
                 .format(name=self.name, challs=challs))
