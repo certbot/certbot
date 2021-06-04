@@ -67,7 +67,8 @@ class _LexiconAwareTestCase(Protocol):
 
 class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
 
-    def test_perform(self: _AuthenticatorCallableLexiconTestCase):
+    @test_util.patch_get_utility()
+    def test_perform(self: _AuthenticatorCallableLexiconTestCase, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]

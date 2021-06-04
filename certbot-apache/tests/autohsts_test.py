@@ -146,7 +146,7 @@ class AutoHSTSTest(util.ApacheTest):
     @mock.patch("certbot_apache._internal.display_ops.select_vhost")
     def test_autohsts_no_ssl_vhost(self, mock_select):
         mock_select.return_value = self.vh_truth[0]
-        with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
+        with mock.patch("certbot_apache._internal.configurator.logger.error") as mock_log:
             self.assertRaises(errors.PluginError,
                               self.config.enable_autohsts,
                               mock.MagicMock(), "invalid.example.com")
@@ -179,7 +179,7 @@ class AutoHSTSTest(util.ApacheTest):
         self.config._autohsts_fetch_state()
         self.config._autohsts["orphan_id"] = {"laststep": 999, "timestamp": 0}
         self.config._autohsts_save_state()
-        with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
+        with mock.patch("certbot_apache._internal.configurator.logger.error") as mock_log:
             self.config.deploy_autohsts(mock.MagicMock())
             self.assertTrue(mock_log.called)
             self.assertTrue(

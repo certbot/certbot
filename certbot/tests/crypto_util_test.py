@@ -2,15 +2,15 @@
 import logging
 import unittest
 
+import certbot.util
+
 try:
     import mock
 except ImportError:  # pragma: no cover
     from unittest import mock
 import OpenSSL
-import zope.component
 
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -33,8 +33,8 @@ CERT_ISSUER = test_util.load_vector('cert_intermediate_1.pem')
 CERT_ALT_ISSUER = test_util.load_vector('cert_intermediate_2.pem')
 
 
-class InitSaveKeyTest(test_util.TempDirTestCase):
-    """Tests for certbot.crypto_util.init_save_key."""
+class GenerateKeyTest(test_util.TempDirTestCase):
+    """Tests for certbot.crypto_util.generate_key."""
     def setUp(self):
         super().setUp()
 
@@ -42,8 +42,6 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
         filesystem.mkdir(self.workdir, mode=0o700)
 
         logging.disable(logging.CRITICAL)
-        zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
 
     def tearDown(self):
         super().tearDown()
@@ -52,8 +50,8 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
 
     @classmethod
     def _call(cls, key_size, key_dir):
-        from certbot.crypto_util import init_save_key
-        return init_save_key(key_size, key_dir, 'key-certbot.pem')
+        from certbot.crypto_util import generate_key
+        return generate_key(key_size, key_dir, 'key-certbot.pem', strict_permissions=True)
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
@@ -69,27 +67,55 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
         self.assertRaises(ValueError, self._call, 431, self.workdir)
 
 
-class InitSaveCSRTest(test_util.TempDirTestCase):
-    """Tests for certbot.crypto_util.init_save_csr."""
+class InitSaveKey(unittest.TestCase):
+    """Test for certbot.crypto_util.init_save_key."""
+    @mock.patch("certbot.crypto_util.generate_key")
+    @mock.patch("certbot.crypto_util.zope.component")
+    def test_it(self, mock_zope, mock_generate):
+        from certbot.crypto_util import init_save_key
 
-    def setUp(self):
-        super().setUp()
+        mock_zope.getUtility.return_value = mock.MagicMock(strict_permissions=True)
 
-        zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
+        with self.assertWarns(DeprecationWarning):
+            init_save_key(4096, "/some/path")
 
+        mock_generate.assert_called_with(4096, "/some/path", elliptic_curve="secp256r1",
+                                         key_type="rsa", keyname="key-certbot.pem",
+                                         strict_permissions=True)
+
+
+class GenerateCSRTest(test_util.TempDirTestCase):
+    """Tests for certbot.crypto_util.generate_csr."""
     @mock.patch('acme.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
     def test_it(self, unused_mock_verify, mock_csr):
-        from certbot.crypto_util import init_save_csr
+        from certbot.crypto_util import generate_csr
 
         mock_csr.return_value = b'csr_pem'
 
-        csr = init_save_csr(
-            mock.Mock(pem='dummy_key'), 'example.com', self.tempdir)
+        csr = generate_csr(
+            mock.Mock(pem='dummy_key'), 'example.com', self.tempdir, strict_permissions=True)
 
         self.assertEqual(csr.data, b'csr_pem')
         self.assertIn('csr-certbot.pem', csr.file)
+
+
+class InitSaveCsr(unittest.TestCase):
+    """Tests for certbot.crypto_util.init_save_csr."""
+    @mock.patch("certbot.crypto_util.generate_csr")
+    @mock.patch("certbot.crypto_util.zope.component")
+    def test_it(self, mock_zope, mock_generate):
+        from certbot.crypto_util import init_save_csr
+
+        mock_zope.getUtility.return_value = mock.MagicMock(must_staple=True,
+                                                           strict_permissions=True)
+        key = certbot.util.Key(file=None, pem=None)
+
+        with self.assertWarns(DeprecationWarning):
+            init_save_csr(key, {"dummy"}, "/some/path")
+
+        mock_generate.assert_called_with(key, {"dummy"}, "/some/path",
+                                         must_staple=True, strict_permissions=True)
 
 
 class ValidCSRTest(unittest.TestCase):
@@ -381,6 +407,37 @@ class GetNamesFromCertTest(unittest.TestCase):
         self.assertRaises(OpenSSL.crypto.Error, self._call, "hello there")
 
 
+class GetNamesFromReqTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.get_names_from_req."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import get_names_from_req
+        return get_names_from_req(*args, **kwargs)
+
+    def test_nonames(self):
+        self.assertEqual(
+            [],
+            self._call(test_util.load_vector('csr-nonames_512.pem')))
+
+    def test_nosans(self):
+        self.assertEqual(
+            ['example.com'],
+            self._call(test_util.load_vector('csr-nosans_512.pem')))
+
+    def test_sans(self):
+        self.assertEqual(
+            ['example.com', 'example.org', 'example.net', 'example.info',
+             'subdomain.example.com', 'other.subdomain.example.com'],
+            self._call(test_util.load_vector('csr-6sans_512.pem')))
+
+    def test_der(self):
+        from OpenSSL.crypto import FILETYPE_ASN1
+        self.assertEqual(
+            ['Example.com'],
+            self._call(test_util.load_vector('csr_512.der'), typ=FILETYPE_ASN1))
+
+
 class CertLoaderTest(unittest.TestCase):
     """Tests for certbot.crypto_util.pyopenssl_load_certificate"""
 
@@ -493,13 +550,13 @@ class FindChainWithIssuerTest(unittest.TestCase):
         self.assertEqual(matched, fullchains[0])
         mock_info.assert_not_called()
 
-    @mock.patch('certbot.crypto_util.logger.info')
-    def test_warning_on_no_match(self, mock_info):
+    @mock.patch('certbot.crypto_util.logger.warning')
+    def test_warning_on_no_match(self, mock_warning):
         fullchains = self._all_fullchains()
         matched = self._call(fullchains, "non-existent issuer",
                              warn_on_no_match=True)
         self.assertEqual(matched, fullchains[0])
-        mock_info.assert_called_once_with("Certbot has been configured to prefer "
+        mock_warning.assert_called_once_with("Certbot has been configured to prefer "
             "certificate chains with issuer '%s', but no chain from the CA matched "
             "this issuer. Using the default certificate chain instead.",
             "non-existent issuer")

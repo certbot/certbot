@@ -41,7 +41,10 @@ version = meta['version']
 # here to avoid masking the more specific request requirements in acme. See
 # https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
-    'acme>=1.8.0',
+    # We specify the minimum acme version as the current Certbot version for
+    # simplicity. See https://github.com/certbot/certbot/issues/8761 for more
+    # info.
+    f'acme>={version}',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.

@@ -3,9 +3,8 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.16.0.dev0'
+version = '1.17.0.dev0'
 
-# Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'cryptography>=2.1.4',
     # formerly known as acme.jose:

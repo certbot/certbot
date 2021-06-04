@@ -83,6 +83,7 @@ class DNSServer:
     def _start_bind(self):
         """Launch the BIND9 server as a Docker container"""
         addr_str = "{}:{}".format(BIND_BIND_ADDRESS[0], BIND_BIND_ADDRESS[1])
+        # pylint: disable=consider-using-with
         self.process = subprocess.Popen(
             [
                 "docker",

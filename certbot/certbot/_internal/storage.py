@@ -331,7 +331,7 @@ def delete_files(config, certname):
             renewal_filename, encoding='utf-8', default_encoding='utf-8')
     except configobj.ConfigObjError:
         # config is corrupted
-        logger.warning("Could not parse %s. You may wish to manually "
+        logger.error("Could not parse %s. You may wish to manually "
             "delete the contents of %s and %s.", renewal_filename,
             full_default_live_dir, full_default_archive_dir)
         raise errors.CertStorageError(
@@ -340,7 +340,7 @@ def delete_files(config, certname):
         # we couldn't read it, but let's at least delete it
         # if this was going to fail, it already would have.
         os.remove(renewal_filename)
-        logger.debug("Removed %s", renewal_filename)
+        logger.info("Removed %s", renewal_filename)
 
     # cert files and (hopefully) live directory
     # it's not guaranteed that the files are in our default storage
