@@ -6,13 +6,14 @@ import unittest
 
 from certbot import errors
 from certbot import interfaces
+from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins.disco import PluginsRegistry
 from certbot.display import util as display_util
 from certbot.tests import util as test_util
 
 try:
     import mock
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     from unittest import mock
 
 
@@ -117,7 +118,7 @@ class ChoosePluginTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.selection.choose_plugin."""
 
     def setUp(self):
-        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))
 
         self.mock_apache = mock.Mock(
             description_with_name="a", misconfigured=True)

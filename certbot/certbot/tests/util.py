@@ -154,11 +154,11 @@ def patch_display_service():
     The mock IDisplay works like a regular mock object, except it also
     also asserts that methods are called with valid arguments.
 
-    :returns: mock certbot.display.util._get_display
+    :returns: mock certbot._internal.display.obj.get_display
     :rtype: mock.MagicMock
 
     """
-    return mock.patch('certbot.display.util._get_display',
+    return mock.patch('certbot._internal.display.obj.get_display',
                       new_callable=_create_display_service_mock)
 
 
@@ -174,13 +174,13 @@ def patch_display_service_with_stdout(stdout=None):
     :param object stdout: object to write standard output to; it is
         expected to have a `write` method
 
-    :returns: mock certbot.display.util._get_display
+    :returns: mock certbot._internal.display.obj.get_display
     :rtype: mock.MagicMock
 
     """
     stdout = stdout if stdout else io.StringIO()
 
-    return mock.patch('certbot.display.util._get_display',
+    return mock.patch('certbot._internal.display.obj.get_display',
                       new=_create_display_service_mock_with_stdout(stdout))
 
 
@@ -189,7 +189,7 @@ def patch_get_utility(target='zope.component.getUtility'):  # pylint: disable=un
 
     :param str target: path to patch (warning, value is ignored due to deprecation)
 
-    :returns: mock certbot.display.util._get_display
+    :returns: mock certbot._internal.display.obj.get_display
     :rtype: mock.MagicMock
 
     """
@@ -206,7 +206,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',  # pylint:
     :param object stdout: object to write standard output to; it is
         expected to have a `write` method
 
-    :returns: mock certbot.display.util._get_display
+    :returns: mock certbot._internal.display.obj.get_display
     :rtype: mock.MagicMock
 
     """

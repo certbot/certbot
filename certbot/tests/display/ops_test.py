@@ -7,6 +7,7 @@ import josepy as jose
 
 from acme import messages
 from certbot import errors
+from certbot._internal.display import obj as display_obj
 from certbot._internal import account
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -16,7 +17,7 @@ import certbot.tests.util as test_util
 
 try:
     import mock
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     from unittest import mock
 
 
@@ -92,7 +93,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
     def setUp(self):
         super().setUp()
 
-        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))
 
         self.account_keys_dir = os.path.join(self.tempdir, "keys")
         filesystem.makedirs(self.account_keys_dir, 0o700)
@@ -133,7 +134,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
 class GenHttpsNamesTest(unittest.TestCase):
     """Test _gen_https_names."""
     def setUp(self):
-        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))
 
     @classmethod
     def _call(cls, domains):
@@ -180,7 +181,7 @@ class GenHttpsNamesTest(unittest.TestCase):
 class ChooseNamesTest(unittest.TestCase):
     """Test choose names."""
     def setUp(self):
-        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))
         self.mock_install = mock.MagicMock()
 
     @classmethod

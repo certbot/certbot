@@ -2,7 +2,10 @@
 import logging
 import sys
 import textwrap
+from typing import Any
+from typing import Optional
 
+import zope.component
 import zope.interface
 
 from certbot import errors
@@ -13,6 +16,16 @@ from certbot.compat import os
 from certbot.display import util
 
 logger = logging.getLogger(__name__)
+
+
+# This class holds the global state of the display service to store, in a more
+# consistent way than the "global" keyword.
+class _DisplayService:
+    def __init__(self):
+        self.display: Optional[interfaces.IDisplay] = None
+
+
+_SERVICE = _DisplayService()
 
 
 @zope.interface.implementer(interfaces.IDisplay)
@@ -497,6 +510,38 @@ class NoninteractiveDisplay:
 
         """
         return self.input(message, default, cli_flag)
+
+
+# The two following functions use "Any" for their parameter/output types. Normally interfaces from
+# certbot.interfaces would be used, but MyPy will not understand their semantic. These interfaces
+# will be removed soon and replaced by ABC classes that will be used also here for type checking.
+# TODO: replace Any by actual ABC classes once available
+
+def get_display() -> Any:
+    """Get the display utility.
+
+    :return: the display utility
+    :rtype: IDisplay
+    :raise: ValueError if the display utility is not configured yet.
+
+    """
+    if not _SERVICE.display:
+        raise ValueError("This function was called too early in Certbot's execution "
+                         "as the display utility hasn't been configured yet.")
+    return _SERVICE.display
+
+
+def set_display(display: Any) -> None:
+    """Set the display service.
+
+    :param IDisplay display: the display service
+
+    """
+    # This call is done only for retro-compatibility purposes.
+    # TODO: Remove this call once zope dependencies are removed from Certbot.
+    zope.component.provideUtility(display)
+
+    _SERVICE.display = display
 
 
 def _wrap_lines(msg):

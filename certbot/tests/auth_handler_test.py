@@ -15,7 +15,7 @@ from acme import messages
 from certbot import achallenges
 from certbot import errors
 from certbot import util
-from certbot.display import util as display_util
+from certbot._internal.display import obj as display_obj
 from certbot.plugins import common as plugin_common
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -69,8 +69,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_display = mock.Mock()
         self.mock_config = mock.Mock(debug_challenges=False)
-        with mock.patch("certbot.display.util.zope.component.provideUtility"):
-            display_util.set_display(self.mock_display)
+        with mock.patch("zope.component.provideUtility"):
+            display_obj.set_display(self.mock_display)
 
         self.mock_auth = mock.MagicMock(name="ApacheConfigurator")
 

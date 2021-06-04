@@ -37,6 +37,7 @@ from certbot._internal import reporter
 from certbot._internal import snap_config
 from certbot._internal import storage
 from certbot._internal import updater
+from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins import disco as plugins_disco
 from certbot._internal.plugins import selection as plug_sel
 from certbot.compat import filesystem
@@ -1538,6 +1539,6 @@ def main(cli_args=None):
     util.atexit_register(report.print_messages)
 
     with make_displayer(config) as displayer:
-        display_util.set_display(displayer)
+        display_obj.set_display(displayer)
 
         return config.func(config, plugins)
