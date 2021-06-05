@@ -1,0 +1,6 @@
+$TTL 3600
+
+@        SOA ns1.example.test. dummy.example.test. 1 12h 15m 3w 2h
+         NS  ns1.example.test.
+
+_acme-challenge.aliased.example   IN     CNAME   _acme-challenge.example.com.

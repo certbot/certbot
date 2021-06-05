@@ -22,7 +22,7 @@ CLI_DEFAULTS = dict(
     ],
 
     # Main parser
-    verbose_count=-int(logging.INFO / 10),
+    verbose_count=-int(logging.WARNING / 10),
     text_mode=False,
     max_log_backups=1000,
     preconfigured_renewal=False,
@@ -57,6 +57,8 @@ CLI_DEFAULTS = dict(
     https_port=443,
     break_my_certs=False,
     rsa_key_size=2048,
+    elliptic_curve="secp256r1",
+    key_type="rsa",
     must_staple=False,
     redirect=None,
     auto_hsts=False,
@@ -138,7 +140,7 @@ REVOCATION_REASONS = {
 
 """Defaults for CLI flags and `.IConfig` attributes."""
 
-QUIET_LOGGING_LEVEL = logging.WARNING
+QUIET_LOGGING_LEVEL = logging.ERROR
 """Logging level to use in quiet mode."""
 
 RENEWER_DEFAULTS = dict(

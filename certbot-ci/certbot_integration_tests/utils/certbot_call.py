@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 """Module to call certbot in test mode"""
-from __future__ import absolute_import
 
 from distutils.version import LooseVersion
 import os
@@ -8,6 +7,7 @@ import subprocess
 import sys
 
 import certbot_integration_tests
+# pylint: disable=wildcard-import,unused-wildcard-import
 from certbot_integration_tests.utils.constants import *
 
 
@@ -17,7 +17,7 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     Invoke the certbot executable available in PATH in a test context for the given args.
     The test context consists in running certbot in debug mode, with various flags suitable
     for tests (eg. no ssl check, customizable ACME challenge ports and config directory ...).
-    This command captures stdout and returns it to the caller.
+    This command captures both stdout and stderr and returns it to the caller.
     :param list certbot_args: the arguments to pass to the certbot executable
     :param str directory_url: URL of the ACME directory server to use
     :param int http_01_port: port for the HTTP-01 challenges
@@ -25,16 +25,24 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     :param str config_dir: certbot configuration directory to use
     :param str workspace: certbot current directory to use
     :param bool force_renew: set False to not force renew existing certificates (default: True)
-    :return: stdout as string
-    :rtype: str
+    :return: stdout and stderr as strings
+    :rtype: `tuple` of `str`
     """
     command, env = _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
                                      config_dir, workspace, force_renew)
 
-    return subprocess.check_output(command, universal_newlines=True, cwd=workspace, env=env)
+    proc = subprocess.run(command, stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE, check=False, universal_newlines=True,
+                          cwd=workspace, env=env)
+    print('--> Certbot log output was:')
+    print(proc.stderr)
+    proc.check_returncode()
+    return proc.stdout, proc.stderr
 
 
 def _prepare_environ(workspace):
+    # pylint: disable=missing-function-docstring
+
     new_environ = os.environ.copy()
     new_environ['TMPDIR'] = workspace
 
@@ -58,8 +66,13 @@ def _prepare_environ(workspace):
         # certbot_integration_tests.__file__ is:
         # '/path/to/certbot/certbot-ci/certbot_integration_tests/__init__.pyc'
         # ... and we want '/path/to/certbot'
-        certbot_root = os.path.dirname(os.path.dirname(os.path.dirname(certbot_integration_tests.__file__)))
-        python_paths = [path for path in new_environ['PYTHONPATH'].split(':') if path != certbot_root]
+        certbot_root = os.path.dirname(os.path.dirname(
+            os.path.dirname(certbot_integration_tests.__file__))
+        )
+        python_paths = [
+            path for path in new_environ['PYTHONPATH'].split(':')
+            if path != certbot_root
+        ]
         new_environ['PYTHONPATH'] = ':'.join(python_paths)
 
     return new_environ
@@ -70,7 +83,8 @@ def _compute_additional_args(workspace, environ, force_renew):
     output = subprocess.check_output(['certbot', '--version'],
                                      universal_newlines=True, stderr=subprocess.STDOUT,
                                      cwd=workspace, env=environ)
-    version_str = output.split(' ')[1].strip()  # Typical response is: output = 'certbot 0.31.0.dev0'
+    # Typical response is: output = 'certbot 0.31.0.dev0'
+    version_str = output.split(' ')[1].strip()
     if LooseVersion(version_str) >= LooseVersion('0.30.0'):
         additional_args.append('--no-random-sleep-on-renew')
 
@@ -92,6 +106,7 @@ def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_por
         '--no-verify-ssl',
         '--http-01-port', str(http_01_port),
         '--https-port', str(tls_alpn_01_port),
+        '--manual-public-ip-logging-ok',
         '--config-dir', config_dir,
         '--work-dir', os.path.join(workspace, 'work'),
         '--logs-dir', os.path.join(workspace, 'logs'),
@@ -112,11 +127,12 @@ def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_por
 
 
 def main():
+    # pylint: disable=missing-function-docstring
     args = sys.argv[1:]
 
     # Default config is pebble
     directory_url = os.environ.get('SERVER', PEBBLE_DIRECTORY_URL)
-    http_01_port = int(os.environ.get('HTTP_01_PORT', HTTP_01_PORT))
+    http_01_port = int(os.environ.get('HTTP_01_PORT', DEFAULT_HTTP_01_PORT))
     tls_alpn_01_port = int(os.environ.get('TLS_ALPN_01_PORT', TLS_ALPN_01_PORT))
 
     # Execution of certbot in a self-contained workspace

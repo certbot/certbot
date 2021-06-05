@@ -1,14 +1,13 @@
 """Certbot client interfaces."""
 import abc
+from typing import Optional
 
-import six
 import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument,inherit-non-class
 
 
-@six.add_metaclass(abc.ABCMeta)
-class AccountStorage(object):
+class AccountStorage(object, metaclass=abc.ABCMeta):
     """Accounts storage interface."""
 
     @abc.abstractmethod
@@ -198,6 +197,13 @@ class IConfig(zope.interface.Interface):
         "register multiple emails, ex: u1@example.com,u2@example.com. "
         "(default: Ask).")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
+    elliptic_curve = zope.interface.Attribute(
+        "The SECG elliptic curve name to use. Please see RFC 8446 "
+        "for supported values."
+    )
+    key_type = zope.interface.Attribute(
+        "Type of generated private key"
+        "(Only *ONE* per invocation can be provided at this time)")
     must_staple = zope.interface.Attribute(
         "Adds the OCSP Must Staple extension to the certificate. "
         "Autoconfigures OCSP Stapling for supported setups "
@@ -255,10 +261,11 @@ class IConfig(zope.interface.Interface):
         " with \"renew\" verb should be disabled.")
 
     preferred_chain = zope.interface.Attribute(
-        "If the CA offers multiple certificate chains, prefer the chain with "
-        "an issuer matching this Subject Common Name. If no match, the default "
-        "offered chain will be used."
+        "If the CA offers multiple certificate chains, prefer the chain whose "
+        "topmost certificate was issued from this Subject Common Name. "
+        "If no match, the default offered chain will be used."
     )
+
 
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.
@@ -321,7 +328,7 @@ class IInstaller(IPlugin):
 
         """
 
-    def save(title=None, temporary=False):
+    def save(title: Optional[str] = None, temporary: bool = False):
         """Saves all changes to the configuration files.
 
         Both title and temporary are needed because a save may be
@@ -343,7 +350,7 @@ class IInstaller(IPlugin):
 
         """
 
-    def rollback_checkpoints(rollback=1):
+    def rollback_checkpoints(rollback: int = 1):
         """Revert `rollback` number of configuration checkpoints.
 
         :raises .PluginError: when configuration cannot be fully reverted
@@ -539,8 +546,7 @@ class IReporter(zope.interface.Interface):
         """Prints messages to the user and clears the message queue."""
 
 
-@six.add_metaclass(abc.ABCMeta)
-class RenewableCert(object):
+class RenewableCert(object, metaclass=abc.ABCMeta):
     """Interface to a certificate lineage."""
 
     @abc.abstractproperty
@@ -605,8 +611,7 @@ class RenewableCert(object):
 # an update during the run or install subcommand, it should do so when
 # :func:`IInstaller.deploy_cert` is called.
 
-@six.add_metaclass(abc.ABCMeta)
-class GenericUpdater(object):
+class GenericUpdater(object, metaclass=abc.ABCMeta):
     """Interface for update types not currently specified by Certbot.
 
     This class allows plugins to perform types of updates that Certbot hasn't
@@ -638,8 +643,7 @@ class GenericUpdater(object):
         """
 
 
-@six.add_metaclass(abc.ABCMeta)
-class RenewDeployer(object):
+class RenewDeployer(object, metaclass=abc.ABCMeta):
     """Interface for update types run when a lineage is renewed
 
     This class allows plugins to perform types of updates that need to run at

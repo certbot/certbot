@@ -1,12 +1,10 @@
 """Collects and displays information to the user."""
-from __future__ import print_function
-
 import collections
 import logging
+import queue
 import sys
 import textwrap
 
-from six.moves import queue  # type: ignore
 import zope.interface
 
 from certbot import interfaces
@@ -16,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @zope.interface.implementer(interfaces.IReporter)
-class Reporter(object):
+class Reporter:
     """Collects and displays information to the user.
 
     :ivar `queue.PriorityQueue` messages: Messages to be displayed to
@@ -31,10 +29,10 @@ class Reporter(object):
     LOW_PRIORITY = 2
     """Low priority constant. See `add_message`."""
 
-    _msg_type = collections.namedtuple('ReporterMsg', 'priority text on_crash')
+    _msg_type = collections.namedtuple('_msg_type', 'priority text on_crash')
 
     def __init__(self, config):
-        self.messages = queue.PriorityQueue()  # type: queue.PriorityQueue[Reporter._msg_type]
+        self.messages: queue.PriorityQueue[Reporter._msg_type] = queue.PriorityQueue()
         self.config = config
 
     def add_message(self, msg, priority, on_crash=True):

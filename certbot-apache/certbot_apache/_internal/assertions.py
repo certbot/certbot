@@ -3,7 +3,6 @@ import fnmatch
 
 from certbot_apache._internal import interfaces
 
-
 PASS = "CERTBOT_PASS_ASSERT"
 
 
@@ -137,6 +136,6 @@ def assertEqualPathsList(first, second):  # pragma: no cover
     if any(isPass(path) for path in second):
         return
     for fpath in first:
-        assert any([fnmatch.fnmatch(fpath, spath) for spath in second])
+        assert any(fnmatch.fnmatch(fpath, spath) for spath in second)
     for spath in second:
-        assert any([fnmatch.fnmatch(fpath, spath) for fpath in first])
+        assert any(fnmatch.fnmatch(fpath, spath) for fpath in first)

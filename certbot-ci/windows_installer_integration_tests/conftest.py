@@ -6,10 +6,8 @@ for a directory a specific configuration using built-in pytest hooks.
 
 See https://docs.pytest.org/en/latest/reference.html#hook-reference
 """
-from __future__ import print_function
-import os
 
-import pytest
+import os
 
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 

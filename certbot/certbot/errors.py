@@ -53,7 +53,7 @@ class FailedChallenges(AuthorizationError):
     def __init__(self, failed_achalls):
         assert failed_achalls
         self.failed_achalls = failed_achalls
-        super(FailedChallenges, self).__init__()
+        super().__init__()
 
     def __str__(self):
         return "Failed authorization procedure. {0}".format(
@@ -95,7 +95,7 @@ class StandaloneBindError(Error):
     """Standalone plugin bind error."""
 
     def __init__(self, socket_error, port):
-        super(StandaloneBindError, self).__init__(
+        super().__init__(
             "Problem binding to port {0}: {1}".format(port, socket_error))
         self.socket_error = socket_error
         self.port = port

@@ -9,7 +9,6 @@ import pkg_resources
 
 from certbot import errors
 from certbot import util
-
 from certbot.compat import os
 
 logger = logging.getLogger(__name__)
@@ -221,13 +220,14 @@ def _get_runtime_cfg(command):
 
     """
     try:
-        proc = subprocess.Popen(
+        proc = subprocess.run(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
+            check=False,
             env=util.env_no_snap_for_external_calls())
-        stdout, stderr = proc.communicate()
+        stdout, stderr = proc.stdout, proc.stderr
 
     except (OSError, ValueError):
         logger.error(

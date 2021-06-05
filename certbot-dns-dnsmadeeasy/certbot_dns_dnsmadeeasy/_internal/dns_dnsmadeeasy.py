@@ -1,5 +1,6 @@
 """DNS Authenticator for DNS Made Easy DNS."""
 import logging
+from typing import Optional
 
 from lexicon.providers import dnsmadeeasy
 import zope.interface
@@ -8,6 +9,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
 from certbot.plugins import dns_common_lexicon
+from certbot.plugins.dns_common import CredentialsConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +29,12 @@ class Authenticator(dns_common.DNSAuthenticator):
     ttl = 60
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
-        self.credentials = None
+        super().__init__(*args, **kwargs)
+        self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=60)
+        super().add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials', help='DNS Made Easy credentials INI file.')
 
     def more_info(self):  # pylint: disable=missing-function-docstring
@@ -58,6 +60,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_dnsmadeeasy_client().del_txt_record(domain, validation_name, validation)
 
     def _get_dnsmadeeasy_client(self):
+        if not self.credentials:  # pragma: no cover
+            raise errors.Error("Plugin has not been prepared.")
         return _DNSMadeEasyLexiconClient(self.credentials.conf('api-key'),
                                          self.credentials.conf('secret-key'),
                                          self.ttl)
@@ -69,7 +73,7 @@ class _DNSMadeEasyLexiconClient(dns_common_lexicon.LexiconClient):
     """
 
     def __init__(self, api_key, secret_key, ttl):
-        super(_DNSMadeEasyLexiconClient, self).__init__()
+        super().__init__()
 
         config = dns_common_lexicon.build_lexicon_config('dnsmadeeasy', {
             'ttl': ttl,

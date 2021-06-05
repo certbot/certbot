@@ -5,11 +5,11 @@ import logging
 import re
 import sys
 import traceback
+from typing import List
 
 import pytz
 import zope.component
 
-from acme.magic_typing import List
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -67,6 +67,7 @@ def rename_lineage(config):
     disp.notification("Successfully renamed {0} to {1}."
         .format(certname, new_certname), pause=False)
 
+
 def certificates(config):
     """Display information about certs configured with Certbot
 
@@ -92,6 +93,7 @@ def certificates(config):
 
     # Describe all the certs
     _describe_certs(config, parsed_certs, parse_failures)
+
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
@@ -129,10 +131,12 @@ def lineage_for_certname(cli_config, certname):
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
 
+
 def domains_for_certname(config, certname):
     """Find the domains in the cert with name certname."""
     lineage = lineage_for_certname(config, certname)
     return lineage.names() if lineage else None
+
 
 def find_duplicative_certs(config, domains):
     """Find existing certs that match the given domain names.
@@ -178,6 +182,7 @@ def find_duplicative_certs(config, domains):
 
     return _search_lineages(config, update_certs_for_domain_matches, (None, None))
 
+
 def _archive_files(candidate_lineage, filetype):
     """ In order to match things like:
         /etc/letsencrypt/archive/example.com/chain1.pem.
@@ -199,6 +204,7 @@ def _archive_files(candidate_lineage, filetype):
         return pattern
     return None
 
+
 def _acceptable_matches():
     """ Generates the list that's passed to match_and_check_overlaps. Is its own function to
     make unit testing easier.
@@ -208,6 +214,7 @@ def _acceptable_matches():
     """
     return [lambda x: x.fullchain_path, lambda x: x.cert_path,
             lambda x: _archive_files(x, "cert"), lambda x: _archive_files(x, "fullchain")]
+
 
 def cert_path_to_lineage(cli_config):
     """ If config.cert_path is defined, try to find an appropriate value for config.certname.
@@ -222,8 +229,9 @@ def cert_path_to_lineage(cli_config):
     """
     acceptable_matches = _acceptable_matches()
     match = match_and_check_overlaps(cli_config, acceptable_matches,
-            lambda x: cli_config.cert_path[0], lambda x: x.lineagename)
+            lambda x: cli_config.cert_path, lambda x: x.lineagename)
     return match[0]
+
 
 def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func):
     """ Searches through all lineages for a match, and checks for duplicates.
@@ -239,7 +247,7 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
     def find_matches(candidate_lineage, return_value, acceptable_matches):
         """Returns a list of matches using _search_lineages."""
         acceptable_matches = [func(candidate_lineage) for func in acceptable_matches]
-        acceptable_matches_rv = []  # type: List[str]
+        acceptable_matches_rv: List[str] = []
         for item in acceptable_matches:
             if isinstance(item, list):
                 acceptable_matches_rv += item
@@ -252,7 +260,7 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
 
     matched = _search_lineages(cli_config, find_matches, [], acceptable_matches)
     if not matched:
-        raise errors.Error("No match found for cert-path {0}!".format(cli_config.cert_path[0]))
+        raise errors.Error("No match found for cert-path {0}!".format(cli_config.cert_path))
     elif len(matched) > 1:
         raise errors.OverlappingMatchFound()
     return matched
@@ -304,9 +312,9 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
     checker = ocsp.RevocationChecker()
 
     if config.certname and cert.lineagename != config.certname and not skip_filter_checks:
-        return ""
+        return None
     if config.domains and not set(config.domains).issubset(cert.names()):
-        return ""
+        return None
     now = pytz.UTC.fromutc(datetime.datetime.utcnow())
 
     reasons = []
@@ -330,19 +338,22 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
 
     valid_string = "{0} ({1})".format(cert.target_expiry, status)
     serial = format(crypto_util.get_serial_from_cert(cert.cert_path), 'x')
-    certinfo.append("  Certificate Name: {0}\n"
-                    "    Serial Number: {1}\n"
-                    "    Domains: {2}\n"
-                    "    Expiry Date: {3}\n"
-                    "    Certificate Path: {4}\n"
-                    "    Private Key Path: {5}".format(
+    certinfo.append("  Certificate Name: {}\n"
+                    "    Serial Number: {}\n"
+                    "    Key Type: {}\n"
+                    "    Domains: {}\n"
+                    "    Expiry Date: {}\n"
+                    "    Certificate Path: {}\n"
+                    "    Private Key Path: {}".format(
                          cert.lineagename,
                          serial,
+                         cert.private_key_type,
                          " ".join(cert.names()),
                          valid_string,
                          cert.fullchain,
                          cert.privkey))
     return "".join(certinfo)
+
 
 def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
     """Get certname from flag, interactively, or error out.
@@ -383,29 +394,32 @@ def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
 # Private Helpers
 ###################
 
+
 def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""
     return "  " + "\n  ".join(str(msg) for msg in msgs)
+
 
 def _report_human_readable(config, parsed_certs, output_format="human"):
     """Format a results report for a parsed cert"""
     certinfo = []
 
     if output_format == "human":
-        cert_info = human_readable_cert_info
+        cert_info_function = human_readable_cert_info
     elif output_format == "json":
-        cert_info = json_parsable_cert_info
+        cert_info_function = json_parsable_cert_info
     for cert in parsed_certs:
-        info = cert_info(config, cert)
+        info = cert_info_function(config, cert)
         if info:
             certinfo.append(info)
     return "\n".join(certinfo) if output_format == "human" else certinfo
+
 
 def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
     format_json = config.format_json
 
-    out = []  # type: List[str]
+    out: List[str] = []
     out_json = {}  # type: ignore
 
     notify = out.append
@@ -415,7 +429,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
         if format_json:
             notify_json({'certificates': []})
         else:
-            notify("No certs found.")
+            notify("No certificates found.")
     else:
         if parsed_certs:
             if format_json:
@@ -434,6 +448,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
 
     output = json.dumps(out_json, sort_keys=True, indent=4) if format_json else "\n".join(out)
     display_util.notify(output)
+
 
 def _search_lineages(cli_config, func, initial_rv, *args):
     """Iterate func over unbroken lineages, allowing custom return conditions.

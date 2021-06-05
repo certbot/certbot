@@ -8,14 +8,17 @@ import logging
 import select
 import subprocess
 import sys
+import warnings
+from typing import Optional
+from typing import Tuple
 
 from certbot import errors
 from certbot.compat import os
 
-from acme.magic_typing import Tuple, Optional
-
 try:
     from win32com.shell import shell as shellwin32
+    from win32console import GetStdHandle, STD_OUTPUT_HANDLE
+    from pywintypes import error as pywinerror
     POSIX_MODE = False
 except ImportError:  # pragma: no cover
     POSIX_MODE = True
@@ -27,8 +30,7 @@ logger = logging.getLogger(__name__)
 STANDARD_BINARY_DIRS = ["/usr/sbin", "/usr/local/bin", "/usr/local/sbin"] if POSIX_MODE else []
 
 
-def raise_for_non_administrative_windows_rights():
-    # type: () -> None
+def raise_for_non_administrative_windows_rights() -> None:
     """
     On Windows, raise if current shell does not have the administrative rights.
     Do nothing on Linux.
@@ -39,8 +41,27 @@ def raise_for_non_administrative_windows_rights():
         raise errors.Error('Error, certbot must be run on a shell with administrative rights.')
 
 
-def readline_with_timeout(timeout, prompt):
-    # type: (float, str) -> str
+def prepare_virtual_console() -> None:
+    """
+    On Windows, ensure that Console Virtual Terminal Sequences are enabled.
+
+    """
+    if POSIX_MODE:
+        return
+
+    # https://docs.microsoft.com/en-us/windows/console/setconsolemode
+    ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+
+    # stdout/stderr will be the same console screen buffer, but this could return None or raise
+    try:
+        h = GetStdHandle(STD_OUTPUT_HANDLE)
+        if h:
+            h.SetConsoleMode(h.GetConsoleMode() | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+    except pywinerror:
+        logger.debug("Failed to set console mode", exc_info=True)
+
+
+def readline_with_timeout(timeout: float, prompt: str) -> str:
     """
     Read user input to return the first line entered, or raise after specified timeout.
 
@@ -81,8 +102,7 @@ LINUX_DEFAULT_FOLDERS = {
 }
 
 
-def get_default_folder(folder_type):
-    # type: (str) -> str
+def get_default_folder(folder_type: str) -> str:
     """
     Return the relevant default folder for the current OS
 
@@ -99,8 +119,7 @@ def get_default_folder(folder_type):
     return WINDOWS_DEFAULT_FOLDERS[folder_type]
 
 
-def underscores_for_unsupported_characters_in_path(path):
-    # type: (str) -> str
+def underscores_for_unsupported_characters_in_path(path: str) -> str:
     """
     Replace unsupported characters in path for current OS by underscores.
     :param str path: the path to normalize
@@ -116,39 +135,68 @@ def underscores_for_unsupported_characters_in_path(path):
     return drive + tail.replace(':', '_')
 
 
-def execute_command(cmd_name, shell_cmd, env=None):
-    # type: (str, str, Optional[dict]) -> Tuple[str, str]
+def execute_command_status(cmd_name: str, shell_cmd: str,
+                           env: Optional[dict] = None) -> Tuple[int, str, str]:
     """
     Run a command:
-        - on Linux command will be run by the standard shell selected with Popen(shell=True)
+        - on Linux command will be run by the standard shell selected with
+          subprocess.run(shell=True)
         - on Windows command will be run in a Powershell shell
+
+    This differs from execute_command: it returns the exit code, and does not log the result
+    and output of the command.
 
     :param str cmd_name: the user facing name of the hook being run
     :param str shell_cmd: shell command to execute
-    :param dict env: environ to pass into Popen
+    :param dict env: environ to pass into subprocess.run
 
-    :returns: `tuple` (`str` stderr, `str` stdout)
+    :returns: `tuple` (`int` returncode, `str` stderr, `str` stdout)
     """
     logger.info("Running %s command: %s", cmd_name, shell_cmd)
 
     if POSIX_MODE:
-        cmd = subprocess.Popen(shell_cmd, shell=True, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, universal_newlines=True,
-                               env=env)
+        proc = subprocess.run(shell_cmd, shell=True, stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE, universal_newlines=True,
+                              check=False, env=env)
     else:
         line = ['powershell.exe', '-Command', shell_cmd]
-        cmd = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               universal_newlines=True, env=env)
+        proc = subprocess.run(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              universal_newlines=True, check=False, env=env)
 
-    # universal_newlines causes Popen.communicate()
-    # to return str objects instead of bytes in Python 3
-    out, err = cmd.communicate()
+    # universal_newlines causes stdout and stderr to be str objects instead of
+    # bytes in Python 3
+    out, err = proc.stdout, proc.stderr
+    return proc.returncode, err, out
+
+
+def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -> Tuple[str, str]:
+    """
+    Run a command:
+        - on Linux command will be run by the standard shell selected with
+          subprocess.run(shell=True)
+        - on Windows command will be run in a Powershell shell
+
+    This differs from execute_command: it returns the exit code, and does not log the result
+    and output of the command.
+
+    :param str cmd_name: the user facing name of the hook being run
+    :param str shell_cmd: shell command to execute
+    :param dict env: environ to pass into subprocess.run
+
+    :returns: `tuple` (`str` stderr, `str` stdout)
+    """
+    # Deprecation per https://github.com/certbot/certbot/issues/8854
+    warnings.warn(
+        "execute_command will be deprecated in the future, use execute_command_status instead",
+        PendingDeprecationWarning
+    )
+    returncode, err, out = execute_command_status(cmd_name, shell_cmd, env)
     base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
     if out:
         logger.info('Output from %s command %s:\n%s', cmd_name, base_cmd, out)
-    if cmd.returncode != 0:
+    if returncode != 0:
         logger.error('%s command "%s" returned error code %d',
-                     cmd_name, shell_cmd, cmd.returncode)
+                     cmd_name, shell_cmd, returncode)
     if err:
         logger.error('Error output from %s command %s:\n%s', cmd_name, base_cmd, err)
     return err, out

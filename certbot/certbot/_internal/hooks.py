@@ -1,15 +1,15 @@
 """Facilities for implementing hooks that call shell commands."""
-from __future__ import print_function
 
 import logging
+from typing import List
+from typing import Set
 
-from acme.magic_typing import List
-from acme.magic_typing import Set
 from certbot import errors
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.display import ops as display_ops
 from certbot.plugins import util as plug_util
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ def pre_hook(config):
         _run_pre_hook_if_necessary(cmd)
 
 
-executed_pre_hooks = set()  # type: Set[str]
+executed_pre_hooks: Set[str] = set()
 
 
 def _run_pre_hook_if_necessary(command):
@@ -128,7 +128,7 @@ def post_hook(config):
         _run_hook("post-hook", cmd)
 
 
-post_hooks = []  # type: List[str]
+post_hooks: List[str] = []
 
 
 def _run_eventually(command):
@@ -211,7 +211,7 @@ def _run_deploy_hook(command, domains, lineage_path, dry_run):
 
     """
     if dry_run:
-        logger.warning("Dry run: skipping deploy hook command: %s",
+        logger.info("Dry run: skipping deploy hook command: %s",
                        command)
         return
 
@@ -228,7 +228,9 @@ def _run_hook(cmd_name, shell_cmd):
     :type shell_cmd: `list` of `str` or `str`
 
     :returns: stderr if there was any"""
-    err, _ = misc.execute_command(cmd_name, shell_cmd, env=util.env_no_snap_for_external_calls())
+    returncode, err, out = misc.execute_command_status(
+        cmd_name, shell_cmd, env=util.env_no_snap_for_external_calls())
+    display_ops.report_executed_command(f"Hook '{cmd_name}'", returncode, out, err)
     return err
 
 

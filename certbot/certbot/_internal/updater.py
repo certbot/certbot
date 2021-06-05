@@ -18,7 +18,7 @@ def run_generic_updaters(config, lineage, plugins):
     :type lineage: storage.RenewableCert
 
     :param plugins: List of plugins
-    :type plugins: `list` of `str`
+    :type plugins: certbot._internal.plugins.disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -29,7 +29,7 @@ def run_generic_updaters(config, lineage, plugins):
     try:
         installer = plug_sel.get_unprepared_installer(config, plugins)
     except errors.Error as e:
-        logger.warning("Could not choose appropriate plugin for updaters: %s", e)
+        logger.error("Could not choose appropriate plugin for updaters: %s", e)
         return
     if installer:
         _run_updaters(lineage, installer, config)

@@ -3,13 +3,13 @@ import logging
 import re
 import shutil
 import tempfile
+from typing import List
 
 from josepy import util as jose_util
 import pkg_resources
 import zope.interface
 
-from acme.magic_typing import List
-from certbot import achallenges  # pylint: disable=unused-import
+from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -40,7 +40,7 @@ hostname_regex = re.compile(
 
 
 @zope.interface.implementer(interfaces.IPlugin)
-class Plugin(object):
+class Plugin:
     """Generic plugin."""
     # provider is not inherited, subclasses must define it on their own
     # @zope.interface.provider(interfaces.IPluginFactory)
@@ -97,6 +97,33 @@ class Plugin(object):
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
 
+    def auth_hint(self, failed_achalls):
+        # type: (List[achallenges.AnnotatedChallenge]) -> str
+        """Human-readable string to help the user troubleshoot the authenticator.
+
+        Shown to the user if one or more of the attempted challenges were not a success.
+
+        Should describe, in simple language, what the authenticator tried to do, what went
+        wrong and what the user should try as their "next steps".
+
+        TODO: auth_hint belongs in IAuthenticator but can't be added until the next major
+        version of Certbot. For now, it lives in .Plugin and auth_handler will only call it
+        on authenticators that subclass .Plugin. For now, inherit from `.Plugin` to implement
+        and/or override the method.
+
+        :param list failed_achalls: List of one or more failed challenges
+                                    (:class:`achallenges.AnnotatedChallenge` subclasses).
+
+        :rtype str:
+        """
+        # This is a fallback hint. Authenticators should implement their own auth_hint that
+        # addresses the specific mechanics of that authenticator.
+        challs = " and ".join(sorted({achall.typ for achall in failed_achalls}))
+        return ("The Certificate Authority couldn't externally verify that the {name} plugin "
+                "completed the required {challs} challenges. Ensure the plugin is configured "
+                "correctly and that the changes it makes are accessible from the internet."
+                .format(name=self.name, challs=challs))
+
 
 class Installer(Plugin):
     """An installer base class with reverter and ssl_dhparam methods defined.
@@ -105,7 +132,7 @@ class Installer(Plugin):
 
     """
     def __init__(self, *args, **kwargs):
-        super(Installer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.storage = PluginStorage(self.config, self.name)
         self.reverter = reverter.Reverter(self.config)
 
@@ -201,7 +228,7 @@ class Installer(Plugin):
             constants.ALL_SSL_DHPARAMS_HASHES)
 
 
-class Addr(object):
+class Addr:
     r"""Represents an virtual host address.
 
     :param str addr: addr part of vhost address
@@ -299,7 +326,7 @@ class Addr(object):
         return result
 
 
-class ChallengePerformer(object):
+class ChallengePerformer:
     """Abstract base for challenge performers.
 
     :ivar configurator: Authenticator and installer plugin
@@ -313,8 +340,8 @@ class ChallengePerformer(object):
 
     def __init__(self, configurator):
         self.configurator = configurator
-        self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
-        self.indices = []  # type: List[int]
+        self.achalls: List[achallenges.KeyAuthorizationAnnotatedChallenge] = []
+        self.indices: List[int] = []
 
     def add_chall(self, achall, idx=None):
         """Store challenge to be performed when perform() is called.

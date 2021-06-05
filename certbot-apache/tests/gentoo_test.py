@@ -50,9 +50,9 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         test_dir = "gentoo_apache/apache"
         config_root = "gentoo_apache/apache/apache2"
         vhost_root = "gentoo_apache/apache/apache2/vhosts.d"
-        super(MultipleVhostsTestGentoo, self).setUp(test_dir=test_dir,
-                                                    config_root=config_root,
-                                                    vhost_root=vhost_root)
+        super().setUp(test_dir=test_dir,
+                      config_root=config_root,
+                      vhost_root=vhost_root)
 
         # pylint: disable=line-too-long
         with mock.patch("certbot_apache._internal.override_gentoo.GentooParser.update_runtime_variables"):

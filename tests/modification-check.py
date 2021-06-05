@@ -1,125 +1,58 @@
 #!/usr/bin/env python
+"""Ensures there have been no changes to important certbot-auto files."""
 
-from __future__ import print_function
-
+import hashlib
 import os
-import shutil
-import subprocess
-import sys
-import tempfile
 
-try:
-    from urllib.request import urlretrieve
-except ImportError:
-    from urllib import urlretrieve
 
-def find_repo_path():
+# Relative to the root of the Certbot repo, these files are expected to exist
+# and have the SHA-256 hashes contained in this dictionary. These hashes were
+# taken from our v1.14.0 tag which was the last release we intended to make
+# changes to certbot-auto.
+#
+# certbot-auto, letsencrypt-auto, and letsencrypt-auto-source/certbot-auto.asc
+# can be removed from this dict after coordinating with tech ops to ensure we
+# get the behavior we want from https://dl.eff.org. See
+# https://github.com/certbot/certbot/issues/8742 for more info.
+#
+# Deleting letsencrypt-auto-source/letsencrypt-auto and
+# letsencrypt-auto-source/letsencrypt-auto.sig can be done once we're
+# comfortable breaking any certbot-auto scripts that haven't already updated to
+# the last version. See
+# https://opensource.eff.org/eff-open-source/pl/65geri7c4tr6iqunc1rpb3mpna for
+# more info.
+EXPECTED_FILES = {
+    'certbot-auto':
+        'b997e3608526650a08e36e682fc3bf0c29903c06fa5ba4cc49308c43832450c2',
+    'letsencrypt-auto':
+        'b997e3608526650a08e36e682fc3bf0c29903c06fa5ba4cc49308c43832450c2',
+    os.path.join('letsencrypt-auto-source', 'letsencrypt-auto'):
+        'b997e3608526650a08e36e682fc3bf0c29903c06fa5ba4cc49308c43832450c2',
+    os.path.join('letsencrypt-auto-source', 'certbot-auto.asc'):
+        '0558ba7bd816732b38c092e8fedb6033dad01f263e290ec6b946263aaf6625a8',
+    os.path.join('letsencrypt-auto-source', 'letsencrypt-auto.sig'):
+        '61c036aabf75da350b0633da1b2bef0260303921ecda993455ea5e6d3af3b2fe',
+}
+
+
+def find_repo_root():
     return os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
-# We do not use filecmp.cmp to take advantage of universal newlines 
-# handling in open() for Python 3.x and be insensitive to CRLF/LF when run on Windows.
-# As a consequence, this function will not work correctly if executed by Python 2.x on Windows.
-# But it will work correctly on Linux for any version, because every file tested will be LF.
-def compare_files(path_1, path_2):
-    l1 = l2 = True
-    with open(path_1, 'r') as f1, open(path_2, 'r') as f2:
-        line = 1
-        while l1 and l2:
-            line += 1
-            l1 = f1.readline()
-            l2 = f2.readline()
-            if l1 != l2:
-                print('---')
-                print((
-                    'While comparing {0} (1) and {1} (2), a difference was found at line {2}:'
-                    .format(os.path.basename(path_1), os.path.basename(path_2), line)))
-                print('(1): {0}'.format(repr(l1)))
-                print('(2): {0}'.format(repr(l2)))
-                print('---')
-                return False
 
-    return True
+def sha256_hash(filename):
+    hash_object = hashlib.sha256()
+    with open(filename, 'rb') as f:
+        hash_object.update(f.read())
+    return hash_object.hexdigest()
 
-def validate_scripts_content(repo_path, temp_cwd):
-    errors = False
-
-    if not compare_files(
-            os.path.join(repo_path, 'certbot-auto'),
-            os.path.join(repo_path, 'letsencrypt-auto')):
-        print('Root certbot-auto and letsencrypt-auto differ.')
-        errors = True
-    else:
-        shutil.copyfile(
-            os.path.join(repo_path, 'certbot-auto'), 
-            os.path.join(temp_cwd, 'local-auto'))
-        shutil.copy(os.path.normpath(os.path.join(
-            repo_path, 
-            'letsencrypt-auto-source/pieces/fetch.py')), temp_cwd)
-
-        # Compare file against current version in the target branch
-        branch = os.environ.get('TARGET_BRANCH', 'master')
-        url = (
-            'https://raw.githubusercontent.com/certbot/certbot/{0}/certbot-auto'
-            .format(branch))
-        urlretrieve(url, os.path.join(temp_cwd, 'certbot-auto'))
-
-        if compare_files(
-                os.path.join(temp_cwd, 'certbot-auto'),
-                os.path.join(temp_cwd, 'local-auto')):
-            print('Root *-auto were unchanged')
-        else:
-            # Compare file against the latest released version
-            latest_version = subprocess.check_output(
-                [sys.executable, 'fetch.py', '--latest-version'], cwd=temp_cwd)
-            subprocess.check_call(
-                [sys.executable, 'fetch.py', '--le-auto-script', 
-                 'v{0}'.format(latest_version.decode().strip())], cwd=temp_cwd)
-            if compare_files(
-                    os.path.join(temp_cwd, 'letsencrypt-auto'),
-                    os.path.join(temp_cwd, 'local-auto')):
-                print('Root *-auto were updated to the latest version.')
-            else:
-                print('Root *-auto have unexpected changes.')
-                errors = True
-
-    return errors
 
 def main():
-    repo_path = find_repo_path()
-    temp_cwd = tempfile.mkdtemp()
-    errors = False
+    repo_root = find_repo_root()
+    for filename, expected_hash in EXPECTED_FILES.items():
+        filepath = os.path.join(repo_root, filename)
+        assert sha256_hash(filepath) == expected_hash, f'unexpected changes to {filepath}'
+    print('All certbot-auto files have correct hashes.')
 
-    try:
-        errors = validate_scripts_content(repo_path, temp_cwd)
-
-        shutil.copyfile(
-            os.path.normpath(os.path.join(repo_path, 'letsencrypt-auto-source/letsencrypt-auto')),
-            os.path.join(temp_cwd, 'original-lea')
-        )
-        subprocess.check_call([sys.executable, os.path.normpath(os.path.join(
-            repo_path, 'letsencrypt-auto-source/build.py'))])
-        shutil.copyfile(
-            os.path.normpath(os.path.join(repo_path, 'letsencrypt-auto-source/letsencrypt-auto')),
-            os.path.join(temp_cwd, 'build-lea')
-        )
-        shutil.copyfile(
-            os.path.join(temp_cwd, 'original-lea'),
-            os.path.normpath(os.path.join(repo_path, 'letsencrypt-auto-source/letsencrypt-auto'))
-        )
-
-        if not compare_files(
-                os.path.join(temp_cwd, 'original-lea'),
-                os.path.join(temp_cwd, 'build-lea')):
-            print('Script letsencrypt-auto-source/letsencrypt-auto '
-                  'doesn\'t match output of build.py.')
-            errors = True
-        else:
-            print('Script letsencrypt-auto-source/letsencrypt-auto matches output of build.py.')
-    finally:
-        shutil.rmtree(temp_cwd)
-
-    return errors
 
 if __name__ == '__main__':
-    if main():
-        sys.exit(1)
+    main()

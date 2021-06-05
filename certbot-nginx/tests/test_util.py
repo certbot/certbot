@@ -9,7 +9,6 @@ try:
 except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
 import pkg_resources
-import zope.component
 
 from certbot import util
 from certbot.compat import os
@@ -17,13 +16,12 @@ from certbot.plugins import common
 from certbot.tests import util as test_util
 from certbot_nginx._internal import configurator
 from certbot_nginx._internal import nginxparser
-import test_log_util
 
 
-class NginxTest(test_log_util.AssertLogsMixin, test_util.ConfigTestCase):
+class NginxTest(test_util.ConfigTestCase):
 
     def setUp(self):
-        super(NginxTest, self).setUp()
+        super().setUp()
 
         self.configuration = self.config
         self.config = None
@@ -79,9 +77,6 @@ class NginxTest(test_log_util.AssertLogsMixin, test_util.ConfigTestCase):
                     version=version,
                     openssl_version=openssl_version)
                 config.prepare()
-
-        # Provide general config utility.
-        zope.component.provideUtility(self.configuration)
 
         return config
 

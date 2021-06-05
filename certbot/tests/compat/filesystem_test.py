@@ -1,7 +1,6 @@
 """Tests for certbot.compat.filesystem"""
 import contextlib
 import errno
-import stat
 import unittest
 
 try:
@@ -35,7 +34,7 @@ ADMINS_SID = 'S-1-5-32-544'
 class WindowsChmodTests(TempDirTestCase):
     """Unit tests for Windows chmod function in filesystem module"""
     def setUp(self):
-        super(WindowsChmodTests, self).setUp()
+        super().setUp()
         self.probe_path = _create_probe(self.tempdir)
 
     def test_symlink_resolution(self):
@@ -158,17 +157,17 @@ class UmaskTest(TempDirTestCase):
         try:
             dir1 = os.path.join(self.tempdir, 'probe1')
             filesystem.mkdir(dir1)
-            self.assertTrue(filesystem.check_mode(dir1, 0o755))
+            self.assertIs(filesystem.check_mode(dir1, 0o755), True)
 
             filesystem.umask(0o077)
 
             dir2 = os.path.join(self.tempdir, 'dir2')
             filesystem.mkdir(dir2)
-            self.assertTrue(filesystem.check_mode(dir2, 0o700))
+            self.assertIs(filesystem.check_mode(dir2, 0o700), True)
 
             dir3 = os.path.join(self.tempdir, 'dir3')
             filesystem.mkdir(dir3, mode=0o777)
-            self.assertTrue(filesystem.check_mode(dir3, 0o700))
+            self.assertIs(filesystem.check_mode(dir3, 0o700), True)
         finally:
             filesystem.umask(previous_umask)
 
@@ -178,17 +177,17 @@ class UmaskTest(TempDirTestCase):
         try:
             file1 = os.path.join(self.tempdir, 'probe1')
             UmaskTest._create_file(file1)
-            self.assertTrue(filesystem.check_mode(file1, 0o755))
+            self.assertIs(filesystem.check_mode(file1, 0o755), True)
 
             filesystem.umask(0o077)
 
             file2 = os.path.join(self.tempdir, 'probe2')
             UmaskTest._create_file(file2)
-            self.assertTrue(filesystem.check_mode(file2, 0o700))
+            self.assertIs(filesystem.check_mode(file2, 0o700), True)
 
             file3 = os.path.join(self.tempdir, 'probe3')
             UmaskTest._create_file(file3)
-            self.assertTrue(filesystem.check_mode(file3, 0o700))
+            self.assertIs(filesystem.check_mode(file3, 0o700), True)
         finally:
             filesystem.umask(previous_umask)
 
@@ -204,7 +203,7 @@ class UmaskTest(TempDirTestCase):
 
 class ComputePrivateKeyModeTest(TempDirTestCase):
     def setUp(self):
-        super(ComputePrivateKeyModeTest, self).setUp()
+        super().setUp()
         self.probe_path = _create_probe(self.tempdir)
 
     def test_compute_private_key_mode(self):
@@ -352,7 +351,7 @@ class MakedirsTests(test_util.TempDirTestCase):
 class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
     """Tests about copy_ownership_and_apply_mode, copy_ownership_and_mode and has_same_ownership"""
     def setUp(self):
-        super(CopyOwnershipAndModeTest, self).setUp()
+        super().setUp()
         self.probe_path = _create_probe(self.tempdir)
 
     @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
@@ -401,7 +400,7 @@ class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
         util.safe_open(path1, 'w').close()
         util.safe_open(path2, 'w').close()
 
-        self.assertTrue(filesystem.has_same_ownership(path1, path2))
+        self.assertIs(filesystem.has_same_ownership(path1, path2), True)
 
     @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
     def test_copy_ownership_and_mode_windows(self):
@@ -409,8 +408,8 @@ class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
         dst = _create_probe(self.tempdir, name='dst')
 
         filesystem.chmod(src, 0o700)
-        self.assertTrue(filesystem.check_mode(src, 0o700))
-        self.assertTrue(filesystem.check_mode(dst, 0o744))
+        self.assertIs(filesystem.check_mode(src, 0o700), True)
+        self.assertIs(filesystem.check_mode(dst, 0o744), True)
 
         # Checking an actual change of owner is tricky during a unit test, since we do not know
         # if any user exists beside the current one. So we mock _copy_win_ownership. It's behavior
@@ -419,24 +418,24 @@ class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
             filesystem.copy_ownership_and_mode(src, dst)
 
         mock_copy_owner.assert_called_once_with(src, dst)
-        self.assertTrue(filesystem.check_mode(dst, 0o700))
+        self.assertIs(filesystem.check_mode(dst, 0o700), True)
 
 
 class CheckPermissionsTest(test_util.TempDirTestCase):
     """Tests relative to functions that check modes."""
     def setUp(self):
-        super(CheckPermissionsTest, self).setUp()
+        super().setUp()
         self.probe_path = _create_probe(self.tempdir)
 
     def test_check_mode(self):
-        self.assertTrue(filesystem.check_mode(self.probe_path, 0o744))
+        self.assertIs(filesystem.check_mode(self.probe_path, 0o744), True)
 
         filesystem.chmod(self.probe_path, 0o700)
         self.assertFalse(filesystem.check_mode(self.probe_path, 0o744))
 
     @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
     def test_check_owner_windows(self):
-        self.assertTrue(filesystem.check_owner(self.probe_path))
+        self.assertIs(filesystem.check_owner(self.probe_path), True)
 
         system = win32security.ConvertStringSidToSid(SYSTEM_SID)
         security = win32security.SECURITY_ATTRIBUTES().SECURITY_DESCRIPTOR
@@ -448,7 +447,7 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
 
     @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
     def test_check_owner_linux(self):
-        self.assertTrue(filesystem.check_owner(self.probe_path))
+        self.assertIs(filesystem.check_owner(self.probe_path), True)
 
         import os as std_os  # pylint: disable=os-module-forbidden
         # See related inline comment in certbot.compat.filesystem.check_owner method
@@ -460,7 +459,7 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
             self.assertFalse(filesystem.check_owner(self.probe_path))
 
     def test_check_permissions(self):
-        self.assertTrue(filesystem.check_permissions(self.probe_path, 0o744))
+        self.assertIs(filesystem.check_permissions(self.probe_path, 0o744), True)
 
         with mock.patch('certbot.compat.filesystem.check_mode') as mock_mode:
             mock_mode.return_value = False
@@ -472,7 +471,7 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
 
     def test_check_min_permissions(self):
         filesystem.chmod(self.probe_path, 0o744)
-        self.assertTrue(filesystem.has_min_permissions(self.probe_path, 0o744))
+        self.assertIs(filesystem.has_min_permissions(self.probe_path, 0o744), True)
 
         filesystem.chmod(self.probe_path, 0o700)
         self.assertFalse(filesystem.has_min_permissions(self.probe_path, 0o744))
@@ -482,7 +481,7 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
 
     def test_is_world_reachable(self):
         filesystem.chmod(self.probe_path, 0o744)
-        self.assertTrue(filesystem.has_world_permissions(self.probe_path))
+        self.assertIs(filesystem.has_world_permissions(self.probe_path), True)
 
         filesystem.chmod(self.probe_path, 0o700)
         self.assertFalse(filesystem.has_world_permissions(self.probe_path))
@@ -501,13 +500,13 @@ class OsReplaceTest(test_util.TempDirTestCase):
         filesystem.replace(src, dst)
 
         self.assertFalse(os.path.exists(src))
-        self.assertTrue(os.path.exists(dst))
+        self.assertIs(os.path.exists(dst), True)
 
 
 class RealpathTest(test_util.TempDirTestCase):
     """Tests for realpath method"""
     def setUp(self):
-        super(RealpathTest, self).setUp()
+        super().setUp()
         self.probe_path = _create_probe(self.tempdir)
 
     def test_symlink_resolution(self):
@@ -543,7 +542,7 @@ class RealpathTest(test_util.TempDirTestCase):
 
         with self.assertRaises(RuntimeError) as error:
             filesystem.realpath(link1_path)
-        self.assertTrue('link1 is a loop!' in str(error.exception))
+        self.assertIn('link1 is a loop!', str(error.exception))
 
 
 class IsExecutableTest(test_util.TempDirTestCase):
@@ -579,7 +578,7 @@ class IsExecutableTest(test_util.TempDirTestCase):
         with _fix_windows_runtime():
             mock_access.return_value = True
             mock_isfile.return_value = True
-            self.assertTrue(filesystem.is_executable("/path/to/exe"))
+            self.assertIs(filesystem.is_executable("/path/to/exe"), True)
 
     @mock.patch("certbot.compat.filesystem.os.path.isfile")
     @mock.patch("certbot.compat.filesystem.os.access")
@@ -587,7 +586,7 @@ class IsExecutableTest(test_util.TempDirTestCase):
         with _fix_windows_runtime():
             mock_access.return_value = True
             mock_isfile.return_value = True
-            self.assertTrue(filesystem.is_executable("exe"))
+            self.assertIs(filesystem.is_executable("exe"), True)
 
     @mock.patch("certbot.compat.filesystem.os.path.isfile")
     @mock.patch("certbot.compat.filesystem.os.access")
@@ -597,6 +596,32 @@ class IsExecutableTest(test_util.TempDirTestCase):
             mock_isfile.return_value = False
             self.assertFalse(filesystem.is_executable("exe"))
 
+
+class ReadlinkTest(unittest.TestCase):
+    @unittest.skipUnless(POSIX_MODE, reason='Tests specific to Linux')
+    @mock.patch("certbot.compat.filesystem.os.readlink")
+    def test_path_posix(self, mock_readlink):
+        mock_readlink.return_value = "/normal/path"
+        self.assertEqual(filesystem.readlink("dummy"), "/normal/path")
+
+    @unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows')
+    @mock.patch("certbot.compat.filesystem.os.readlink")
+    def test_normal_path_windows(self, mock_readlink):
+        # Python <3.8
+        mock_readlink.return_value = "C:\\short\\path"
+        self.assertEqual(filesystem.readlink("dummy"), "C:\\short\\path")
+
+        # Python >=3.8 (os.readlink always returns the extended form)
+        mock_readlink.return_value = "\\\\?\\C:\\short\\path"
+        self.assertEqual(filesystem.readlink("dummy"), "C:\\short\\path")
+
+    @unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows')
+    @mock.patch("certbot.compat.filesystem.os.readlink")
+    def test_extended_path_windows(self, mock_readlink):
+        # Following path is largely over the 260 characters permitted in the normal form.
+        mock_readlink.return_value = "\\\\?\\C:\\long" + 1000 * "\\path"
+        with self.assertRaises(ValueError):
+            filesystem.readlink("dummy")
 
 @contextlib.contextmanager
 def _fix_windows_runtime():

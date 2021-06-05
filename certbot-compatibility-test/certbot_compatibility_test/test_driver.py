@@ -8,6 +8,9 @@ import shutil
 import sys
 import tempfile
 import time
+from typing import List
+from typing import Tuple
+import zope.component
 
 import OpenSSL
 from urllib3.util import connection
@@ -15,10 +18,9 @@ from urllib3.util import connection
 from acme import challenges
 from acme import crypto_util
 from acme import messages
-from acme.magic_typing import List
-from acme.magic_typing import Tuple
 from certbot import achallenges
 from certbot import errors as le_errors
+from certbot.display import util as display_util
 from certbot.tests import acme_util
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
@@ -178,7 +180,7 @@ def test_enhancements(plugin, domains):
                      "enhancements")
         return False
 
-    domains_and_info = [(domain, []) for domain in domains]  # type: List[Tuple[str, List[bool]]]
+    domains_and_info: List[Tuple[str, List[bool]]] = [(domain, []) for domain in domains]
 
     for domain, info in domains_and_info:
         try:
@@ -327,10 +329,17 @@ def setup_logging(args):
     root_logger.addHandler(handler)
 
 
+def setup_display():
+    """"Prepares IDisplay for the Certbot plugins """
+    displayer = display_util.NoninteractiveDisplay(sys.stdout)
+    zope.component.provideUtility(displayer)
+
+
 def main():
     """Main test script execution."""
     args = get_args()
     setup_logging(args)
+    setup_display()
 
     if args.plugin not in PLUGINS:
         raise errors.Error("Unknown plugin {0}".format(args.plugin))
