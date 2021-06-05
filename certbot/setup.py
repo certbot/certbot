@@ -8,6 +8,12 @@ from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 
+min_setuptools_version='39.0.1'
+# This conditional isn't necessary, but it provides better error messages to
+# people who try to install this package with older versions of setuptools.
+if LooseVersion(setuptools_version) < LooseVersion(min_setuptools_version):
+    raise RuntimeError(f'setuptools {min_setuptools_version}+ is required')
+
 # Workaround for https://bugs.python.org/issue8876, see
 # https://bugs.python.org/issue8876#msg208792
 # This can be removed when using Python 2.7.9 or later:
@@ -35,7 +41,10 @@ version = meta['version']
 # here to avoid masking the more specific request requirements in acme. See
 # https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
-    'acme>=1.8.0',
+    # We specify the minimum acme version as the current Certbot version for
+    # simplicity. See https://github.com/certbot/certbot/issues/8761 for more
+    # info.
+    f'acme>={version}',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
@@ -49,28 +58,13 @@ install_requires = [
     'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz',
-    'setuptools>=39.0.1',
+    # This dependency needs to be added using environment markers to avoid its
+    # installation on Linux.
+    'pywin32>=300 ; sys_platform == "win32"',
+    f'setuptools>={min_setuptools_version}',
     'zope.component',
     'zope.interface',
 ]
-
-# Add pywin32 on Windows platforms to handle low-level system calls.
-# This dependency needs to be added using environment markers to avoid its installation on Linux.
-# However environment markers are supported only with setuptools >= 36.2.
-# So this dependency is not added for old Linux distributions with old setuptools,
-# in order to allow these systems to build certbot from sources.
-pywin32_req = 'pywin32>=300'
-setuptools_known_environment_markers = (LooseVersion(setuptools_version) >= LooseVersion('36.2'))
-if setuptools_known_environment_markers:
-    install_requires.append(pywin32_req + " ; sys_platform == 'win32'")
-elif 'bdist_wheel' in sys.argv[1:]:
-    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
-                       'of setuptools. Version 36.2+ of setuptools is required.')
-elif os.name == 'nt':
-    # This branch exists to improve this package's behavior on Windows. Without
-    # it, if the sdist is installed on Windows with an old version of
-    # setuptools, pywin32 will not be specified as a dependency.
-    install_requires.append(pywin32_req)
 
 dev_extras = [
     'astroid',
@@ -86,6 +80,9 @@ dev_extras = [
     'pytest',
     'pytest-cov',
     'pytest-xdist',
+    # typing-extensions is required to import typing.Protocol and make the mypy checks
+    # pass (along with pylint about non-existent objects) on Python 3.6 & 3.7
+    'typing-extensions',
     'tox',
     'twine',
     'wheel',
@@ -106,7 +103,7 @@ setup(
     long_description=readme,
     url='https://github.com/letsencrypt/letsencrypt',
     author="Certbot Project",
-    author_email='client-dev@letsencrypt.org',
+    author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
     python_requires='>=3.6',
     classifiers=[

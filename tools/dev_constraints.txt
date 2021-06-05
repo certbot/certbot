@@ -1,7 +1,7 @@
-# Specifies Python package versions for development and building Docker images.
-# It includes in particular packages not specified in tools/certbot_constraints.txt.
-# Some dev package versions specified here may be overridden by higher level constraints
-# files during tests (eg. tools/oldest_constraints.txt).
+# Specifies extra Python package versions during our tests with the oldest
+# supported versions of our dependencies. Some dev package versions specified
+# here may be overridden by higher level constraints files during tests (eg.
+# tools/oldest_constraints.txt).
 alabaster==0.7.10
 apacheconfig==0.3.2
 apipkg==1.4
@@ -60,7 +60,7 @@ MarkupSafe==1.1.1
 mccabe==0.6.1
 more-itertools==5.0.0
 msrest==0.6.18
-mypy==0.710
+mypy==0.812
 mypy-extensions==0.4.3
 ndg-httpsclient==0.3.2
 oauth2client==4.0.0
@@ -83,10 +83,10 @@ PyGithub==1.52
 Pygments==2.2.0
 pyjwt==1.7.1
 pylint==2.4.3
+pynacl==1.3.0
 # If pynsist version is upgraded, our NSIS template windows-installer/template.nsi
 # must be upgraded if necessary using the new built-in one from pynsist.
-pynacl==1.3.0
-pynsist==2.6
+pynsist==2.7
 pytest==3.2.5
 pytest-cov==2.5.1
 pytest-forked==0.2
@@ -120,6 +120,7 @@ traitlets==4.3.3
 twine==1.11.0
 typed-ast==1.4.1
 typing==3.6.4
+typing-extensions==3.7.4.3
 uritemplate==3.0.0
 virtualenv==16.6.2
 wcwidth==0.1.8

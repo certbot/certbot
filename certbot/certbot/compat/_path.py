@@ -3,6 +3,10 @@ This compat module wraps os.path to forbid some functions.
 
 isort:skip_file
 """
+
+# NB: Each function defined in compat._path is marked with "type: ignore" to avoid mypy
+#     to complain that a function is redefined (because we imported if first from os.path).
+
 # pylint: disable=function-redefined
 from __future__ import absolute_import
 
@@ -29,7 +33,7 @@ del ourselves, std_os_path, std_sys
 
 
 # Function os.path.realpath is broken on some versions of Python for Windows.
-def realpath(*unused_args, **unused_kwargs):
+def realpath(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.path.realpath() is forbidden"""
     raise RuntimeError('Usage of os.path.realpath() is forbidden. '
                        'Use certbot.compat.filesystem.realpath() instead.')

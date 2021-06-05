@@ -133,7 +133,7 @@ def set_up_command(config_dir, logs_dir, work_dir, nginx_dir):
     return (
         'certbot --cert-path {0} --key-path {1} --config-dir {2} '
         '--logs-dir {3} --work-dir {4} --nginx-server-root {5} --debug '
-        '--force-renewal --nginx --verbose '.format(
+        '--force-renewal --nginx -vv '.format(
             test_util.vector_path('cert.pem'),
             test_util.vector_path('rsa512_key.pem'),
             config_dir, logs_dir, work_dir, nginx_dir).split())
@@ -213,7 +213,8 @@ def check_error(command, dir_path):
     if ret == 0:
         report_failure("Certbot didn't exit with a nonzero status!", out, err)
 
-    match = re.search("Please see the logfile '(.*)' for more details", err)
+    # this regex looks weird in order to deal with a text change between HEAD and -oldest
+    match = re.search("ee the logfile '?(.*?)'? ", err)
     if match is not None:
         # Get error output from more verbose logfile
         with open(match.group(1)) as f:
@@ -264,9 +265,9 @@ def subprocess_call(args):
     :rtype: tuple
 
     """
-    process = subprocess.Popen(args, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, universal_newlines=True)
-    out, err = process.communicate()
+    process = subprocess.run(args, stdout=subprocess.PIPE, check=False,
+                             stderr=subprocess.PIPE, universal_newlines=True)
+    out, err = process.stdout, process.stderr
     logger.debug('Return code was %d', process.returncode)
     log_output(logging.DEBUG, out, err)
     return process.returncode, out, err

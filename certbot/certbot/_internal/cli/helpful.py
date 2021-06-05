@@ -116,6 +116,8 @@ class HelpfulArgumentParser:
         # This is the only way to turn off overly verbose config flag documentation
         self.parser._add_config_file_help = False
 
+        self.verb: str
+
     # Help that are synonyms for --help subcommands
     COMMANDS_TOPICS = ["command", "commands", "subcommand", "subcommands", "verbs"]
 

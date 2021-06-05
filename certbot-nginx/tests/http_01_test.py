@@ -51,7 +51,7 @@ class HttpPerformTest(util.NginxTest):
     ]
 
     def setUp(self):
-        super(HttpPerformTest, self).setUp()
+        super().setUp()
 
         config = self.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)

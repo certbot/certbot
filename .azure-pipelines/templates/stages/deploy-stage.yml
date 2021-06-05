@@ -63,8 +63,7 @@ stages:
               secureFile: snapcraft.cfg
           - bash: |
               set -e
-              mkdir -p .snapcraft
-              ln -s $(snapcraftCfg.secureFilePath) .snapcraft/snapcraft.cfg
+              snapcraft login --with $(snapcraftCfg.secureFilePath)
               for SNAP_FILE in snap/*.snap; do
                 tools/retry.sh eval snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
               done

@@ -18,6 +18,7 @@ from certbot import errors
 from certbot.compat import os
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
+from certbot_nginx._internal.nginxparser import UnspacedList
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +217,7 @@ class NginxParser:
                                "character. Only UTF-8 encoding is "
                                "supported.", item)
             except pyparsing.ParseException as err:
-                logger.debug("Could not parse file: %s due to %s", item, err)
+                logger.warning("Could not parse file: %s due to %s", item, err)
         return trees
 
     def _find_config_root(self):
@@ -243,6 +244,8 @@ class NginxParser:
             tree = self.parsed[filename]
             if ext:
                 filename = filename + os.path.extsep + ext
+            if not isinstance(tree, UnspacedList):
+                raise ValueError(f"Error tree {tree} is not an UnspacedList")
             try:
                 if lazy and not tree.is_dirty():
                     continue
@@ -427,7 +430,7 @@ def _parse_ssl_options(ssl_options):
             logger.warning("Could not read file: %s due to invalid character. "
                            "Only UTF-8 encoding is supported.", ssl_options)
         except pyparsing.ParseBaseException as err:
-            logger.debug("Could not parse file: %s due to %s", ssl_options, err)
+            logger.warning("Could not parse file: %s due to %s", ssl_options, err)
     return []
 
 def _do_for_subarray(entry, condition, func, path=None):

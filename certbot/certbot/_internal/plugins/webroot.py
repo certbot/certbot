@@ -61,12 +61,18 @@ to serve all files under specified web root ({0})."""
                  "file, it needs to be on a single line, like: webroot-map = "
                  '{"example.com":"/var/www"}.')
 
+    def auth_hint(self, failed_achalls): # pragma: no cover
+        return ("The Certificate Authority failed to download the temporary challenge files "
+                "created by Certbot. Ensure that the listed domains serve their content from "
+                "the provided --webroot-path/-w and that files created there can be downloaded "
+                "from the internet.")
+
     def get_chall_pref(self, domain):  # pragma: no cover
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01]
 
     def __init__(self, *args, **kwargs):
-        super(Authenticator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.full_roots: Dict[str, str] = {}
         self.performed: DefaultDict[str, Set[AnnotatedChallenge]] = collections.defaultdict(set)
         # stack of dirs successfully created by this authenticator
@@ -134,7 +140,7 @@ to serve all files under specified web root ({0})."""
                     "webroot when using the webroot plugin.")
             return None if index == 0 else known_webroots[index - 1]  # code == display_util.OK
 
-    def _prompt_for_new_webroot(self, domain, allowraise=False):  # pylint: no-self-use
+    def _prompt_for_new_webroot(self, domain, allowraise=False):
         code, webroot = ops.validated_directory(
             _validate_webroot,
             "Input the webroot for {0}:".format(domain),
@@ -183,7 +189,7 @@ to serve all files under specified web root ({0})."""
                             filesystem.copy_ownership_and_apply_mode(
                                 path, prefix, 0o755, copy_user=True, copy_group=True)
                         except (OSError, AttributeError) as exception:
-                            logger.info("Unable to change owner and uid of webroot directory")
+                            logger.warning("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)
                     except OSError as exception:
                         raise errors.PluginError(
@@ -192,7 +198,7 @@ to serve all files under specified web root ({0})."""
             finally:
                 filesystem.umask(old_umask)
 
-    def _get_validation_path(self, root_path, achall):  # pylint: no-self-use
+    def _get_validation_path(self, root_path, achall):
         return os.path.join(root_path, achall.chall.encode("token"))
 
     def _perform_single(self, achall):
@@ -250,7 +256,7 @@ class _WebrootPathAction(argparse.Action):
     """Action class for parsing webroot_path."""
 
     def __init__(self, *args, **kwargs):
-        super(_WebrootPathAction, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._domain_before_webroot = False
 
     def __call__(self, parser, namespace, webroot_path, option_string=None):

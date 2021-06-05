@@ -2,7 +2,74 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.14.0 - master
+## 1.17.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* We changed how dependencies are specified between Certbot packages. For this
+  and future releases, higher level Certbot components will require that lower
+  level components are the same version or newer. More specifically, version X
+  of the Certbot package will now always require acme>=X and version Y of a
+  plugin package will always require acme>=Y and certbot=>Y. Specifying
+  dependencies in this way simplifies testing and development.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.16.0 - 2021-06-01
+
+### Added
+
+*
+
+### Changed
+
+* DNS plugins based on lexicon now require dns-lexicon >= v3.1.0
+* Use UTF-8 encoding for renewal configuration files
+* Windows installer now cleans up old Certbot dependency packages
+  before installing the new ones to avoid version conflicts.
+* This release contains a substantial command-line UX overhaul,
+  based on previous user research. The main goal was to streamline
+  and clarify output. If you would like to see more verbose output, use
+  the -v or -vv flags. UX improvements are an iterative process and
+  the Certbot team welcomes constructive feedback.
+* Functions `certbot.crypto_util.init_save_key` and `certbot.crypto_util.init_save_csr`,
+  whose behaviors rely on the global Certbot `config` singleton, are deprecated and will
+  be removed in a future release. Please use `certbot.crypto_util.generate_key` and
+  `certbot.crypto_util.generate_csr` instead.
+
+### Fixed
+
+* Fix TypeError due to incompatibility with lexicon >= v3.6.0
+* Installers (e.g. nginx, Apache) were being restarted unnecessarily after dry-run renewals.
+* Colors and bold text should properly render in all supported versions of Windows.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.15.0 - 2021-05-04
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.14.0 - 2021-04-06
 
 ### Added
 

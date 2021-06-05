@@ -44,7 +44,11 @@ REQUIREMENTS = [
     '-e certbot-nginx',
     '-e certbot-compatibility-test',
     '-e certbot-ci',
+    '-e letstest',
 ]
+
+if sys.platform == 'win32':
+    REQUIREMENTS.append('-e windows-installer')
 
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
 

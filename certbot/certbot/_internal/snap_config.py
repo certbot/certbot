@@ -80,7 +80,7 @@ def prepare_env(cli_args: List[str]) -> List[str]:
 
 class _SnapdConnection(HTTPConnection):
     def __init__(self):
-        super(_SnapdConnection, self).__init__("localhost")
+        super().__init__("localhost")
         self.sock = None
 
     def connect(self):
@@ -90,7 +90,7 @@ class _SnapdConnection(HTTPConnection):
 
 class _SnapdConnectionPool(HTTPConnectionPool):
     def __init__(self):
-        super(_SnapdConnectionPool, self).__init__("localhost")
+        super().__init__("localhost")
 
     def _new_conn(self):
         return _SnapdConnection()

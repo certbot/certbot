@@ -1,5 +1,6 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
 import logging
+from typing import cast
 from typing import List
 
 import zope.interface
@@ -11,6 +12,7 @@ from certbot.errors import MisconfigurationError
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
+from certbot_apache._internal.configurator import OsOptions
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,7 @@ logger = logging.getLogger(__name__)
 class CentOSConfigurator(configurator.ApacheConfigurator):
     """CentOS specific ApacheConfigurator override class"""
 
-    OS_DEFAULTS = dict(
+    OS_DEFAULTS = OsOptions(
         server_root="/etc/httpd",
         vhost_root="/etc/httpd/conf.d",
         vhost_files="*.conf",
@@ -29,13 +31,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         restart_cmd=['apachectl', 'graceful'],
         restart_cmd_alt=['apachectl', 'restart'],
         conftest_cmd=['apachectl', 'configtest'],
-        enmod=None,
-        dismod=None,
-        le_vhost_ext="-le-ssl.conf",
-        handle_modules=False,
-        handle_sites=False,
         challenge_location="/etc/httpd/conf.d",
-        bin=None,
     )
 
     def config_test(self):
@@ -50,7 +46,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         fedora = os_info[0].lower() == "fedora"
 
         try:
-            super(CentOSConfigurator, self).config_test()
+            super().config_test()
         except errors.MisconfigurationError:
             if fedora:
                 self._try_restart_fedora()
@@ -68,20 +64,22 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             raise errors.MisconfigurationError(str(err))
 
         # Finish with actual config check to see if systemctl restart helped
-        super(CentOSConfigurator, self).config_test()
+        super().config_test()
 
     def _prepare_options(self):
         """
         Override the options dictionary initialization in order to support
         alternative restart cmd used in CentOS.
         """
-        super(CentOSConfigurator, self)._prepare_options()
-        self.options["restart_cmd_alt"][0] = self.option("ctl")
+        super()._prepare_options()
+        if not self.options.restart_cmd_alt:  # pragma: no cover
+            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
+        self.options.restart_cmd_alt[0] = self.options.ctl
 
     def get_parser(self):
         """Initializes the ApacheParser"""
         return CentOSParser(
-            self.option("server_root"), self.option("vhost_root"),
+            self.options.server_root, self.options.vhost_root,
             self.version, configurator=self)
 
     def _deploy_cert(self, *args, **kwargs):  # pylint: disable=arguments-differ
@@ -90,7 +88,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         has "LoadModule ssl_module..." before parsing the VirtualHost configuration
         that was created by Certbot
         """
-        super(CentOSConfigurator, self)._deploy_cert(*args, **kwargs)
+        super()._deploy_cert(*args, **kwargs)
         if self.version < (2, 4, 0):
             self._deploy_loadmodule_ssl_if_needed()
 
@@ -118,8 +116,9 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             else:
                 loadmod_args = path_args
 
-            if self.parser.not_modssl_ifmodule(noarg_path):  # pylint: disable=no-member
-                if self.parser.loc["default"] in noarg_path:
+            centos_parser: CentOSParser = cast(CentOSParser, self.parser)
+            if centos_parser.not_modssl_ifmodule(noarg_path):
+                if centos_parser.loc["default"] in noarg_path:
                     # LoadModule already in the main configuration file
                     if ("ifmodule/" in noarg_path.lower() or
                         "ifmodule[1]" in noarg_path.lower()):
@@ -167,12 +166,12 @@ class CentOSParser(parser.ApacheParser):
     def __init__(self, *args, **kwargs):
         # CentOS specific configuration file for Apache
         self.sysconfig_filep = "/etc/sysconfig/httpd"
-        super(CentOSParser, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def update_runtime_variables(self):
         """ Override for update_runtime_variables for custom parsing """
         # Opportunistic, works if SELinux not enforced
-        super(CentOSParser, self).update_runtime_variables()
+        super().update_runtime_variables()
         self.parse_sysconfig_var()
 
     def parse_sysconfig_var(self):

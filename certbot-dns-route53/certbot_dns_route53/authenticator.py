@@ -18,4 +18,4 @@ class Authenticator(dns_route53.Authenticator):
     def __init__(self, *args, **kwargs):
         warnings.warn("The 'authenticator' module was renamed 'dns_route53'",
                       DeprecationWarning)
-        super(Authenticator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)

@@ -17,6 +17,12 @@ if ! command -v poetry >/dev/null; then
     exit 1
 fi
 
+# Old eggs can cause outdated dependency information to be used by poetry so we
+# delete them before generating the lock file. See
+# https://github.com/python-poetry/poetry/issues/4103 for more info.
+cd "${REPO_ROOT}"
+rm -rf */*.egg-info
+
 cd "${WORK_DIR}"
 
 if [ -f poetry.lock ]; then

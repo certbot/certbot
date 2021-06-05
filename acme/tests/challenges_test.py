@@ -292,7 +292,7 @@ class TLSALPN01ResponseTest(unittest.TestCase):
 
     def test_gen_verify_cert_gen_key(self):
         cert, key = self.response.gen_cert(self.domain)
-        self.assertTrue(isinstance(key, OpenSSL.crypto.PKey))
+        self.assertIsInstance(key, OpenSSL.crypto.PKey)
         self.assertTrue(self.response.verify_cert(self.domain, cert))
 
     def test_verify_bad_cert(self):
@@ -431,7 +431,7 @@ class DNSTest(unittest.TestCase):
             mock_gen.return_value = mock.sentinel.validation
             response = self.msg.gen_response(KEY)
         from acme.challenges import DNSResponse
-        self.assertTrue(isinstance(response, DNSResponse))
+        self.assertIsInstance(response, DNSResponse)
         self.assertEqual(response.validation, mock.sentinel.validation)
 
     def test_validation_domain_name(self):
