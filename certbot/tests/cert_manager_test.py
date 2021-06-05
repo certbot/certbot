@@ -283,7 +283,6 @@ class CertificatesTest(BaseCertManagerTest):
         parsed_certs = [cert]
 
         mock_config = mock.MagicMock(certname=None, lineagename=None)
-        # pylint: disable=protected-access
 
         # pylint: disable=protected-access
         get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs, "json")
@@ -292,7 +291,6 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertTrue('invalid' in out and 'expired' in out)
 
         cert.target_expiry += datetime.timedelta(hours=2)
-        # pylint: disable=protected-access
         out = str(get_report())
         self.assertTrue('valid' in out and 'invalid' not in out)
 
@@ -345,7 +343,6 @@ class CertificatesTest(BaseCertManagerTest):
         parsed_certs = [cert]
 
         mock_config = mock.MagicMock(certname=None, lineagename=None)
-        # pylint: disable=protected-access
 
         # pylint: disable=protected-access
         get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs)
@@ -354,14 +351,12 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertIn("INVALID: EXPIRED", out)
 
         cert.target_expiry += datetime.timedelta(hours=2)
-        # pylint: disable=protected-access
         out = get_report()
         self.assertIs('1 hour' in out or '2 hour(s)' in out, True)
         self.assertIn('VALID', out)
         self.assertNotIn('INVALID', out)
 
         cert.target_expiry += datetime.timedelta(days=1)
-        # pylint: disable=protected-access
         out = get_report()
         self.assertIn('1 day', out)
         self.assertNotIn('under', out)
@@ -369,7 +364,6 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertNotIn('INVALID', out)
 
         cert.target_expiry += datetime.timedelta(days=2)
-        # pylint: disable=protected-access
         out = get_report()
         self.assertIn('3 days', out)
         self.assertIn('VALID', out)
