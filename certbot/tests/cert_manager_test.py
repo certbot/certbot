@@ -254,6 +254,18 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertTrue(mock_utility.called)
         shutil.rmtree(empty_tempdir)
 
+    def test_report_human_readable_nonexistant_format(self):
+        from certbot._internal import cert_manager
+
+        cert = mock.MagicMock(lineagename="nameone")
+        parsed_certs = [cert]
+
+        mock_config = mock.MagicMock(certname=None, lineagename=None)
+
+        out = lambda: cert_manager._report_human_readable(mock_config, parsed_certs, "nonexistant_format")
+
+        self.assertRaises(errors.ConfigurationError, out)
+
     @mock.patch('certbot.crypto_util.get_serial_from_cert')
     @mock.patch('certbot._internal.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
     def test_report_human_readable_json(self, mock_revoked, mock_serial):

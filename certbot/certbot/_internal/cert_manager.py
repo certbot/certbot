@@ -408,6 +408,8 @@ def _report_human_readable(config, parsed_certs, output_format="human"):
         cert_info_function = human_readable_cert_info
     elif output_format == "json":
         cert_info_function = json_parsable_cert_info
+    else:
+        raise errors.ConfigurationError("Unknown `certbot certificates` output format.")
     for cert in parsed_certs:
         info = cert_info_function(config, cert)
         if info:
