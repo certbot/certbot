@@ -512,8 +512,7 @@ def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[error
                 "The certificate will need to be renewed before it expires. Certbot can "
                 "automatically renew the certificate in the background, but you may need "
                 "to take steps to enable that functionality. "
-                "See https://certbot.eff.org/docs/using.html#automated-renewals for "
-                "instructions.")
+                "See https://certbot.org/renewal-setup for instructions.")
 
     if not steps:
         return
@@ -1519,9 +1518,15 @@ def main(cli_args=None):
     logger.debug("Arguments: %r", cli_args)
     logger.debug("Discovered plugins: %r", plugins)
 
+    # Some releases of Windows require escape sequences to be enable explicitly
+    misc.prepare_virtual_console()
+
     # note: arg parser internally handles --help (and exits afterwards)
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
+
+    # This call is done only for retro-compatibility purposes.
+    # TODO: Remove this call once zope dependencies are removed from Certbot.
     zope.component.provideUtility(config)
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
