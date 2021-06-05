@@ -479,6 +479,15 @@ class ParseTest(unittest.TestCase):
             for topic in ['all', 'plugins', 'dns-route53']:
                 self.assertNotIn('certbot-route53:auth', self._help_output([help_flag, topic]))
 
+    def test_config_option(self):
+        namespace = self.parse([])
+        self.assertIsNone(namespace.config_file)
+        with tempfile.NamedTemporaryFile() as tmp_config:
+            namespace = self.parse(['-c', tmp_config.name])
+            self.assertEqual(namespace.config_file, tmp_config.name)
+            namespace = self.parse(['--config', tmp_config.name])
+            self.assertEqual(namespace.config_file, tmp_config.name)
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot._internal.cli._Default."""
