@@ -30,9 +30,6 @@ echo Releasing production version "$version"...
 nextversion="$2"
 RELEASE_BRANCH="candidate-$version"
 
-if [ "$RELEASE_OPENSSL_PUBKEY" = "" ] ; then
-    RELEASE_OPENSSL_PUBKEY="`realpath \`dirname $0\``/eff-pubkey.pem"
-fi
 RELEASE_GPG_KEY=${RELEASE_GPG_KEY:-A2CFB51FA275A7286234E7B24D17C995CD9775F2}
 # Needed to fix problems with git signatures and pinentry
 export GPG_TTY=$(tty)
@@ -40,14 +37,13 @@ export GPG_TTY=$(tty)
 # port for a local Python Package Index (used in testing)
 PORT=${PORT:-1234}
 
-# subpackages to be released (the way developers think about them)
-SUBPKGS_IN_AUTO_NO_CERTBOT="acme certbot-apache certbot-nginx"
-SUBPKGS_NOT_IN_AUTO="certbot-dns-cloudflare certbot-dns-cloudxns certbot-dns-digitalocean certbot-dns-dnsimple certbot-dns-dnsmadeeasy certbot-dns-gehirn certbot-dns-google certbot-dns-linode certbot-dns-luadns certbot-dns-nsone certbot-dns-ovh certbot-dns-rfc2136 certbot-dns-route53 certbot-dns-sakuracloud"
-
 # subpackages to be released (the way the script thinks about them)
-SUBPKGS_IN_AUTO="certbot $SUBPKGS_IN_AUTO_NO_CERTBOT"
-SUBPKGS_NO_CERTBOT="$SUBPKGS_IN_AUTO_NO_CERTBOT $SUBPKGS_NOT_IN_AUTO"
-SUBPKGS="$SUBPKGS_IN_AUTO $SUBPKGS_NOT_IN_AUTO"
+SUBPKGS_NO_CERTBOT="acme certbot-apache certbot-nginx certbot-dns-cloudflare certbot-dns-cloudxns \
+                    certbot-dns-digitalocean certbot-dns-dnsimple certbot-dns-dnsmadeeasy \
+                    certbot-dns-gehirn certbot-dns-google certbot-dns-linode certbot-dns-luadns \
+                    certbot-dns-nsone certbot-dns-ovh certbot-dns-rfc2136 certbot-dns-route53 \
+                    certbot-dns-sakuracloud"
+SUBPKGS="certbot $SUBPKGS_NO_CERTBOT"
 # certbot_compatibility_test is not packaged because:
 # - it is not meant to be used by anyone else than Certbot devs
 # - it causes problems when running pytest - the latter tries to
@@ -91,14 +87,6 @@ for pkg_dir in $SUBPKGS certbot-compatibility-test
 do
   sed -i 's/\.dev0//' "$pkg_dir/setup.py"
   git add "$pkg_dir/setup.py"
-
-  if [ -f "$pkg_dir/local-oldest-requirements.txt" ]; then
-    sed -i "s/-e acme\[dev\]/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e acme/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e certbot\[dev\]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e certbot/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    git add "$pkg_dir/local-oldest-requirements.txt"
-  fi
 done
 
 SetVersion() {
@@ -181,77 +169,10 @@ cd ~-
 CERTBOT_DOCS=1 certbot --help all > certbot/docs/cli-help.txt
 jws --help > acme/docs/jws-help.txt
 
-cd ..
-# freeze before installing anything else, so that we know end-user KGS
-# make sure "twine upload" doesn't catch "kgs"
-if [ -d kgs ] ; then
-    echo Deleting old kgs...
-    rm -rf kgs
-fi
-mkdir kgs
-kgs="kgs/$version"
-pip freeze | tee $kgs
-python ../tools/pip_install.py pytest
-cd ~-
-for module in $SUBPKGS ; do
-    echo testing $module
-    # use an empty configuration file rather than the one in the repo root
-    pytest -c <(echo '') $module
-done
-
-# pin pip hashes of the things we just built
-for pkg in $SUBPKGS_IN_AUTO ; do
-    echo $pkg==$version \\
-    pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python -c 'from sys import stdin; input = stdin.read(); print("   ", input.replace("\n--hash", " \\\n    --hash"), end="")'
-done > letsencrypt-auto-source/pieces/certbot-requirements.txt
 deactivate
 
-# there should be one requirement specifier and two hashes for each subpackage
-expected_count=$(expr $(echo $SUBPKGS_IN_AUTO | wc -w) \* 3)
-if ! wc -l letsencrypt-auto-source/pieces/certbot-requirements.txt | grep -qE "^\s*$expected_count " ; then
-    echo Unexpected pip hash output
-    exit 1
-fi
 
-# ensure we have the latest built version of leauto
-letsencrypt-auto-source/build.py
-
-# Now we have to sign the built version of leauto.
-SignLEAuto() {
-    yubico-piv-tool -a verify-pin --sign -s 9c -i letsencrypt-auto-source/letsencrypt-auto -o letsencrypt-auto-source/letsencrypt-auto.sig
-}
-
-# Loop until letsencrypt-auto is signed correctly.
-SignLEAuto || true
-while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
-        letsencrypt-auto-source/letsencrypt-auto.sig \
-        letsencrypt-auto-source/letsencrypt-auto            ; do
-    echo "The signature on letsencrypt-auto is not correct."
-    read -p "Would you like this script to try and sign it again [Y/n]?" response
-    case $response in
-      [yY][eE][sS]|[yY]|"")
-        SignLEAuto || true;;
-      *)
-        ;;
-    esac
-done
-
-# This signature is not quite as strong, but easier for people to verify out of band
-while ! gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 letsencrypt-auto-source/letsencrypt-auto; do
-    echo "Unable to sign letsencrypt-auto using $RELEASE_KEY."
-    echo "Make sure your OpenPGP card is in your computer if you are using one."
-    echo "You may need to take the card out and put it back in again."
-    read -p "Press enter to try signing again."
-done
-# We can't rename the openssl letsencrypt-auto.sig for compatibility reasons,
-# but we can use the right name for certbot-auto.asc from day one
-mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-auto.asc
-
-# copy leauto to the root, overwriting the previous release version
-cp -p letsencrypt-auto-source/letsencrypt-auto certbot-auto
-cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
-
-git add certbot-auto letsencrypt-auto letsencrypt-auto-source certbot/docs/cli-help.txt
+git add certbot/docs/cli-help.txt
 while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
     echo "Unable to sign the release commit using git."
     echo "You may have to configure git to use gpg2 by running:"
@@ -259,15 +180,6 @@ while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
     read -p "Press enter to try signing again."
 done
 git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
-
-cd ..
-echo Now in $PWD
-name=${root_without_le%.*}
-ext="${root_without_le##*.}"
-rev="$(git rev-parse --short HEAD)"
-echo tar cJvf $name.$rev.tar.xz $name.$rev
-echo gpg2 -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
-cd ~-
 
 # Add master section to CHANGELOG.md
 header=$(head -n 4 certbot/CHANGELOG.md)
@@ -281,17 +193,7 @@ $footer" > certbot/CHANGELOG.md
 git add certbot/CHANGELOG.md
 git commit -m "Add contents to certbot/CHANGELOG.md for next version"
 
-echo "New root: $root"
-echo "Test commands (in the letstest repo):"
-echo 'python multitester.py auto_targets.yaml $AWS_KEY $USERNAME scripts/test_leauto_upgrades.sh --alt_pip $YOUR_PIP_REPO --branch public-beta'
-echo 'python multitester.py auto_targets.yaml $AWK_KEY $USERNAME scripts/test_letsencrypt_auto_certonly_standalone.sh --branch candidate-0.1.1'
-echo 'python multitester.py --saveinstances targets.yaml $AWS_KEY $USERNAME scripts/test_apache2.sh'
-echo "In order to upload packages run the following command:"
-echo twine upload "$root/dist.$version/*/*"
-
 if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
-    letsencrypt-auto-source/build.py
-    git add letsencrypt-auto-source/letsencrypt-auto
     git commit -m "Bump version to $nextversion"
 fi

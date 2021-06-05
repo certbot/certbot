@@ -99,7 +99,7 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
     def setUp(self):
         from certbot._internal import storage
 
-        super(BaseRenewableCertTest, self).setUp()
+        super().setUp()
 
         # TODO: maybe provide NamespaceConfig.make_dirs?
         # TODO: main() should create those dirs, c.f. #902
@@ -195,11 +195,11 @@ class RenewableCertTests(BaseRenewableCertTest):
         from certbot._internal import storage
 
         self._write_out_ex_kinds()
-        self.assertTrue("version" not in self.config_file)
+        self.assertNotIn("version", self.config_file)
 
         with mock.patch("certbot._internal.storage.logger") as mock_logger:
             storage.RenewableCert(self.config_file.filename, self.config)
-        self.assertFalse(mock_logger.warning.called)
+        self.assertIs(mock_logger.warning.called, False)
 
     def test_renewal_newer_version(self):
         from certbot._internal import storage
@@ -211,7 +211,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         with mock.patch("certbot._internal.storage.logger") as mock_logger:
             storage.RenewableCert(self.config_file.filename, self.config)
         self.assertTrue(mock_logger.info.called)
-        self.assertTrue("version" in mock_logger.info.call_args[0][0])
+        self.assertIn("version", mock_logger.info.call_args[0][0])
 
     def test_consistent(self):
         # pylint: disable=protected-access
@@ -282,7 +282,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(self.test_rc.current_version("cert"), 10)
 
     def test_no_current_version(self):
-        self.assertEqual(self.test_rc.current_version("cert"), None)
+        self.assertIsNone(self.test_rc.current_version("cert"))
 
     def test_latest_and_next_versions(self):
         for ver in range(1, 6):
@@ -314,12 +314,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.latest_common_version = mock.Mock()
 
         mock_has_pending.return_value = False
-        self.assertEqual(self.test_rc.ensure_deployed(), True)
+        self.assertIs(self.test_rc.ensure_deployed(), True)
         self.assertEqual(mock_update.call_count, 0)
         self.assertEqual(mock_logger.warning.call_count, 0)
 
         mock_has_pending.return_value = True
-        self.assertEqual(self.test_rc.ensure_deployed(), False)
+        self.assertIs(self.test_rc.ensure_deployed(), False)
         self.assertEqual(mock_update.call_count, 1)
         self.assertEqual(mock_logger.warning.call_count, 1)
 
@@ -586,7 +586,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             self._write_out_kind(kind, 1)
         self.test_rc.update_all_links_to(1)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
-        self.assertFalse(mock_ownership.called)
+        self.assertIs(mock_ownership.called, False)
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
         self.assertTrue(mock_ownership.called)
 
@@ -767,7 +767,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_server(self):
         self.test_rc.configuration["renewalparams"] = {}
-        self.assertEqual(self.test_rc.server, None)
+        self.assertIsNone(self.test_rc.server)
         rp = self.test_rc.configuration["renewalparams"]
         rp["server"] = "https://acme.example/dir"
         self.assertEqual(self.test_rc.server, "https://acme.example/dir")
@@ -775,15 +775,15 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_is_test_cert(self):
         self.test_rc.configuration["renewalparams"] = {}
         rp = self.test_rc.configuration["renewalparams"]
-        self.assertEqual(self.test_rc.is_test_cert, False)
+        self.assertIs(self.test_rc.is_test_cert, False)
         rp["server"] = "https://acme-staging-v02.api.letsencrypt.org/directory"
-        self.assertEqual(self.test_rc.is_test_cert, True)
+        self.assertIs(self.test_rc.is_test_cert, True)
         rp["server"] = "https://staging.someotherca.com/directory"
-        self.assertEqual(self.test_rc.is_test_cert, True)
+        self.assertIs(self.test_rc.is_test_cert, True)
         rp["server"] = "https://acme-v01.api.letsencrypt.org/directory"
-        self.assertEqual(self.test_rc.is_test_cert, False)
+        self.assertIs(self.test_rc.is_test_cert, False)
         rp["server"] = "https://acme-v02.api.letsencrypt.org/directory"
-        self.assertEqual(self.test_rc.is_test_cert, False)
+        self.assertIs(self.test_rc.is_test_cert, False)
 
     def test_missing_cert(self):
         from certbot._internal import storage
@@ -817,13 +817,13 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(temp2, "r") as f:
             content = f.read()
         # useful value was updated
-        self.assertTrue("useful = new_value" in content)
+        self.assertIn("useful = new_value", content)
         # associated comment was preserved
-        self.assertTrue("A useful value" in content)
+        self.assertIn("A useful value", content)
         # useless value was deleted
-        self.assertTrue("useless" not in content)
+        self.assertNotIn("useless", content)
         # check version was stored
-        self.assertTrue("version = {0}".format(certbot.__version__) in content)
+        self.assertIn("version = {0}".format(certbot.__version__), content)
         # ensure permissions are copied
         self.assertEqual(stat.S_IMODE(os.lstat(temp).st_mode),
                          stat.S_IMODE(os.lstat(temp2).st_mode))
@@ -846,7 +846,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 class DeleteFilesTest(BaseRenewableCertTest):
     """Tests for certbot._internal.storage.delete_files"""
     def setUp(self):
-        super(DeleteFilesTest, self).setUp()
+        super().setUp()
 
         for kind in ALL_FOUR:
             kind_path = os.path.join(self.config.config_dir, "live", "example.org",
@@ -936,7 +936,7 @@ class DeleteFilesTest(BaseRenewableCertTest):
 class CertPathForCertNameTest(BaseRenewableCertTest):
     """Test for certbot._internal.storage.cert_path_for_cert_name"""
     def setUp(self):
-        super(CertPathForCertNameTest, self).setUp()
+        super().setUp()
         self.config_file.write()
         self._write_out_ex_kinds()
         self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',

@@ -33,7 +33,9 @@ class Proxy:
         self.args = args
         self.http_port = 80
         self.https_port = 443
-        self._configurator = self._all_names = self._test_names = None
+        self._configurator = None
+        self._all_names = None
+        self._test_names = None
 
     def __getattr__(self, name):
         """Wraps the configurator methods"""
@@ -93,5 +95,7 @@ class Proxy:
         """Installs cert"""
         cert_path, key_path, chain_path = self.copy_certs_and_keys(
             cert_path, key_path, chain_path)
+        if not self._configurator:
+            raise ValueError("Configurator plugin is not set.")
         self._configurator.deploy_cert(
             domain, cert_path, key_path, chain_path, fullchain_path)

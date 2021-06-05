@@ -13,11 +13,10 @@ from certbot_integration_tests.utils import certbot_call
 class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
     """Integration test context for certbot-dns-rfc2136"""
     def __init__(self, request):
-        super(IntegrationTestsContext, self).__init__(request)
+        super().__init__(request)
 
         self.request = request
 
-        self._dns_xdist = None
         if hasattr(request.config, 'workerinput'):  # Worker node
             self._dns_xdist = request.config.workerinput['dns_xdist']
         else:  # Primary node
@@ -45,7 +44,6 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         src_file = resource_filename('certbot_integration_tests',
                                      'assets/bind-config/rfc2136-credentials-{}.ini.tpl'
                                      .format(label))
-        contents = None
 
         with open(src_file, 'r') as f:
             contents = f.read().format(

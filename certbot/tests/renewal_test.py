@@ -115,7 +115,7 @@ class RenewalTest(test_util.ConfigTestCase):
         renewal_candidate = renewal._reconstitute(lineage_config, rc_path)
         # This means that manual_public_ip_logging_ok was not modified in the config based on its
         # value in the renewal conf file
-        self.assertTrue(isinstance(lineage_config.manual_public_ip_logging_ok, mock.MagicMock))
+        self.assertIsInstance(lineage_config.manual_public_ip_logging_ok, mock.MagicMock)
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
@@ -129,7 +129,7 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     def test_allow_subset_of_names_success(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         self._call(self.config, {'allow_subset_of_names': 'True'})
-        self.assertTrue(self.config.allow_subset_of_names is True)
+        self.assertIs(self.config.allow_subset_of_names, True)
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_allow_subset_of_names_failure(self, mock_set_by_cli):
@@ -164,7 +164,7 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     def test_must_staple_success(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         self._call(self.config, {'must_staple': 'True'})
-        self.assertTrue(self.config.must_staple is True)
+        self.assertIs(self.config.must_staple, True)
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_must_staple_failure(self, mock_set_by_cli):

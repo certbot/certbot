@@ -26,7 +26,7 @@ class Addr(common.Addr):
     def __hash__(self):  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__ if __eq__ or
         # __cmp__ is overridden. See https://bugs.python.org/issue2235
-        return super(Addr, self).__hash__()
+        return super().__hash__()
 
     def _addr_less_specific(self, addr):
         """Returns if addr.get_addr() is more specific than self.get_addr()."""

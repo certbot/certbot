@@ -56,7 +56,18 @@ extension-pkg-whitelist=pywintypes,win32api,win32file,win32security
 #    See https://github.com/PyCQA/pylint/issues/1498.
 # 3) Same as point 2 for no-value-for-parameter.
 #    See https://github.com/PyCQA/pylint/issues/2820.
-disable=fixme,locally-disabled,locally-enabled,bad-continuation,no-self-use,invalid-name,cyclic-import,duplicate-code,design,import-outside-toplevel,useless-object-inheritance,unsubscriptable-object,no-value-for-parameter,no-else-return,no-else-raise,no-else-break,no-else-continue
+# 4) raise-missing-from makes it an error to raise an exception from except
+#    block without using explicit exception chaining. While explicit exception
+#    chaining results in a slightly more informative traceback, I don't think
+#    it's beneficial enough for us to change all of our current instances and
+#    give Certbot developers errors about this when they're working on new code
+#    in the future. You can read more about exception chaining and this pylint
+#    check at
+#    https://blog.ram.rachum.com/post/621791438475296768/improving-python-exception-chaining-with.
+# 5) wrong-import-order generates false positives and a pylint developer
+#    suggests that people using isort should disable this check at
+#    https://github.com/PyCQA/pylint/issues/3817#issuecomment-687892090.
+disable=fixme,locally-disabled,locally-enabled,bad-continuation,no-self-use,invalid-name,cyclic-import,duplicate-code,design,import-outside-toplevel,useless-object-inheritance,unsubscriptable-object,no-value-for-parameter,no-else-return,no-else-raise,no-else-break,no-else-continue,raise-missing-from,wrong-import-order
 
 [REPORTS]
 

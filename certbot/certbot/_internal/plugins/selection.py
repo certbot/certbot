@@ -2,10 +2,12 @@
 
 import logging
 
+from typing import Optional, Tuple
 import zope.component
 
 from certbot import errors
 from certbot import interfaces
+from certbot._internal.plugins import disco
 from certbot.compat import os
 from certbot.display import util as display_util
 
@@ -164,7 +166,9 @@ def record_chosen_plugins(config, plugins, auth, inst):
          config.authenticator, config.installer)
 
 
-def choose_configurator_plugins(config, plugins, verb):
+def choose_configurator_plugins(config: interfaces.IConfig, plugins: disco.PluginsRegistry,
+                                verb: str) -> Tuple[Optional[interfaces.IInstaller],
+                                                    Optional[interfaces.IAuthenticator]]:
     """
     Figure out which configurator we're going to use, modifies
     config.authenticator and config.installer strings to reflect that choice if
@@ -172,7 +176,7 @@ def choose_configurator_plugins(config, plugins, verb):
 
     :raises errors.PluginSelectionError if there was a problem
 
-    :returns: (an `IAuthenticator` or None, an `IInstaller` or None)
+    :returns: tuple of (`IInstaller` or None, `IAuthenticator` or None)
     :rtype: tuple
     """
 

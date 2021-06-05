@@ -27,6 +27,9 @@ from certbot.compat import os
 from certbot.display import util as display_util
 
 try:
+    # When we remove this deprecated import, we should also remove the
+    # "external-mock" test environment and the mock dependency listed in
+    # tools/pinning/pyproject.toml.
     import mock
     warnings.warn(
         "The external mock module is being used for backwards compatibility "
@@ -256,7 +259,7 @@ class FreezableMock:
 def _create_get_utility_mock():
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():  # pylint: E1120
+    for name in interfaces.IDisplay.names():
         if name != 'notification':
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
@@ -281,7 +284,7 @@ def _create_get_utility_mock_with_stdout(stdout):
 
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():  # pylint: E1120
+    for name in interfaces.IDisplay.names():
         if name == 'notification':
             frozen_mock = FreezableMock(frozen=True,
                                         func=_write_msg)
@@ -331,7 +334,7 @@ class TempDirTestCase(unittest.TestCase):
 class ConfigTestCase(TempDirTestCase):
     """Test class which sets up a NamespaceConfig object."""
     def setUp(self):
-        super(ConfigTestCase, self).setUp()
+        super().setUp()
         self.config = configuration.NamespaceConfig(
             mock.MagicMock(**constants.CLI_DEFAULTS)
         )

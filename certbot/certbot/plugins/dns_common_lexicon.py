@@ -17,8 +17,10 @@ from certbot.plugins import dns_common
 # if Lexicon is not available, obviously.
 try:
     from lexicon.config import ConfigResolver
+    from lexicon.providers.base import Provider
 except ImportError:
     ConfigResolver = None  # type: ignore
+    Provider = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class LexiconClient:
     """
 
     def __init__(self):
-        self.provider = None
+        self.provider: Provider
 
     def add_txt_record(self, domain, record_name, record_content):
         """
@@ -43,7 +45,7 @@ class LexiconClient:
         self._find_domain_id(domain)
 
         try:
-            self.provider.create_record(type='TXT', name=record_name, content=record_content)
+            self.provider.create_record(rtype='TXT', name=record_name, content=record_content)
         except RequestException as e:
             logger.debug('Encountered error adding TXT record: %s', e, exc_info=True)
             raise errors.PluginError('Error adding TXT record: {0}'.format(e))
@@ -65,7 +67,7 @@ class LexiconClient:
             return
 
         try:
-            self.provider.delete_record(type='TXT', name=record_name, content=record_content)
+            self.provider.delete_record(rtype='TXT', name=record_name, content=record_content)
         except RequestException as e:
             logger.debug('Encountered error deleting TXT record: %s', e, exc_info=True)
 

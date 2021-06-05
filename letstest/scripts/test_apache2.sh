@@ -12,25 +12,6 @@ then
     # For apache 2.4, set up ServerName
     sudo sed -i '/ServerName/ s/#ServerName/ServerName/' $CONFFILE
     sudo sed -i '/ServerName/ s/www.example.com/'$PUBLIC_HOSTNAME'/' $CONFFILE
-    if [ $(python3 -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -lt 36 ]
-    then
-        # Upgrade python version using pyenv because py3.5 is deprecated
-        # Don't upgrade if it's already 3.8 because pyenv doesn't work great on arm, and
-        # our arm representative happens to be ubuntu20, which already has a perfectly
-        # good version of python.
-        sudo apt-get install -y make gcc build-essential libssl-dev zlib1g-dev libbz2-dev \
-          libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
-          xz-utils tk-dev libffi-dev liblzma-dev python-openssl git # pyenv deps
-        curl https://pyenv.run | bash
-        export PATH="~/.pyenv/bin:$PATH"
-        pyenv init -
-        pyenv virtualenv-init -
-        pyenv install 3.8.5
-        pyenv global 3.8.5
-        # you do, in fact need to run these again, exactly like this.
-        eval "$(pyenv init -)"
-        eval "$(pyenv virtualenv-init -)"
-    fi
 elif [ "$OS_TYPE" = "centos" ]
 then
     CONFFILE=/etc/httpd/conf/httpd.conf
@@ -59,7 +40,7 @@ fi
 cd letsencrypt
 
 echo "Bootstrapping dependencies..."
-sudo tests/letstest/scripts/bootstrap_os_packages.sh
+sudo letstest/scripts/bootstrap_os_packages.sh
 if [ $? -ne 0 ] ; then
     exit 1
 fi
@@ -113,7 +94,7 @@ elif [ "$OS_TYPE" = "centos" ]; then
 fi
 OPENSSL_VERSION=$(strings "$MOD_SSL_LOCATION" | egrep -o -m1 '^OpenSSL ([0-9]\.[^ ]+) ' | tail -c +9)
 APACHE_VERSION=$(sudo $APACHE_NAME -v | egrep -o 'Apache/([0-9]\.[^ ]+)' | tail -c +8)
-"venv/bin/python" tests/letstest/scripts/test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
+"venv/bin/python" letstest/scripts/test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
 if [ $? -ne 0 ] ; then
     FAIL=1
 fi

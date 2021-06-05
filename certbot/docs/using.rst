@@ -84,7 +84,7 @@ Apache
 
 The Apache plugin currently `supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/entrypoint.py>`_
-modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
+modern OSes based on Debian, Fedora, SUSE, Gentoo, CentOS and Darwin.
 This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include
 ``--apache``.
@@ -284,6 +284,8 @@ dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
 dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
+dns-azure_         Y    N    DNS Authentication using Azure DNS
+dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -298,6 +300,8 @@ dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 .. _dns-lightsail: https://github.com/noi/certbot-dns-lightsail
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
+.. _dns-azure: https://github.com/binkhq/certbot-dns-azure
+.. _dns-godaddy: https://github.com/miigotu/certbot-dns-godaddy
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -691,10 +695,50 @@ is done by means of a scheduled task which runs ``certbot renew`` periodically.
 
 If you are unsure whether you need to configure automated renewal:
 
-1. Review the instructions for your system at https://certbot.eff.org/instructions.
-   They will describe how to set up a scheduled task, if necessary.
-2. (Linux/BSD): Check your system's crontab (typically `/etc/crontab` and
-   `/etc/cron.*/*`) and systemd timers (``systemctl list-timers``).
+1. Review the instructions for your system and installation method at
+   https://certbot.eff.org/instructions. They will describe how to set up a scheduled task,
+   if necessary. If no step is listed, your system comes with automated renewal pre-installed,
+   and you should not need to take any additional actions.
+2. On Linux and BSD, you can check to see if your installation method has pre-installed a timer
+   for you. To do so, look for the ``certbot renew`` command in either your system's crontab
+   (typically `/etc/crontab` or `/etc/cron.*/*`) or systemd timers (``systemctl list-timers``).
+3. If you're still not sure, you can configure automated renewal manually by following the steps
+   in the next section. Certbot has been carefully engineered to handle the case where both manual
+   automated renewal and pre-installed automated renewal are set up.
+
+Setting up automated renewal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you think you may need to set up automated renewal, follow these instructions to set up a
+scheduled task to automatically renew your certificates in the background. If you are unsure 
+whether your system has a pre-installed scheduled task for Certbot, it is safe to follow these
+instructions to create one.
+
+If you're using Windows, these instructions are not neccessary as Certbot on Windows comes with
+a scheduled task for automated renewal pre-installed.
+
+Run the following line, which will add a cron job to `/etc/crontab`:
+
+.. code-block:: shell
+
+  SLEEPTIME=$(awk 'BEGIN{srand(); print int(rand()*(3600+1))}'); echo "0 0,12 * * * root sleep $SLEEPTIME && certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
+
+If you needed to stop your webserver to run Certbot, you'll want to
+add ``pre`` and ``post`` hooks to stop and start your webserver automatically.
+For example, if your webserver is HAProxy, run the following commands to create the hook files
+in the appropriate directory:
+
+.. code-block:: shell
+
+  sudo sh -c 'printf "#!/bin/sh\nservice haproxy stop\n" > /etc/letsencrypt/renewal-hooks/pre/haproxy.sh'
+  sudo sh -c 'printf "#!/bin/sh\nservice haproxy start\n" > /etc/letsencrypt/renewal-hooks/post/haproxy.sh'
+  sudo chmod 755 /etc/letsencrypt/renewal-hooks/pre/haproxy.sh
+  sudo chmod 755 /etc/letsencrypt/renewal-hooks/post/haproxy.sh
+
+Congratulations, Certbot will now automatically renew your certificates in the background.
+
+If you are interested in learning more about how Certbot renews your certificates, see the
+`Renewing certificates`_ section above.
 
 .. _where-certs:
 
