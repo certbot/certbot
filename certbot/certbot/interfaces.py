@@ -1,5 +1,6 @@
 """Certbot client interfaces."""
 import abc
+from typing import Optional
 
 import zope.interface
 
@@ -327,7 +328,7 @@ class IInstaller(IPlugin):
 
         """
 
-    def save(title=None, temporary=False):
+    def save(title: Optional[str] = None, temporary: bool = False):
         """Saves all changes to the configuration files.
 
         Both title and temporary are needed because a save may be

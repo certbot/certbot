@@ -29,7 +29,7 @@ class NonceError(ClientError):
 class BadNonce(NonceError):
     """Bad nonce error."""
     def __init__(self, nonce, error, *args):
-        super(BadNonce, self).__init__(*args)
+        super().__init__(*args)
         self.nonce = nonce
         self.error = error
 
@@ -48,7 +48,7 @@ class MissingNonce(NonceError):
 
     """
     def __init__(self, response, *args):
-        super(MissingNonce, self).__init__(*args)
+        super().__init__(*args)
         self.response = response
 
     def __str__(self):
@@ -72,7 +72,7 @@ class PollError(ClientError):
     def __init__(self, exhausted, updated):
         self.exhausted = exhausted
         self.updated = updated
-        super(PollError, self).__init__()
+        super().__init__()
 
     @property
     def timeout(self):
@@ -90,7 +90,7 @@ class ValidationError(Error):
     """
     def __init__(self, failed_authzrs):
         self.failed_authzrs = failed_authzrs
-        super(ValidationError, self).__init__()
+        super().__init__()
 
 
 class TimeoutError(Error):  # pylint: disable=redefined-builtin
@@ -106,7 +106,7 @@ class IssuanceError(Error):
         :param messages.Error error: The error provided by the server.
         """
         self.error = error
-        super(IssuanceError, self).__init__()
+        super().__init__()
 
 
 class ConflictError(ClientError):
@@ -119,7 +119,7 @@ class ConflictError(ClientError):
     """
     def __init__(self, location):
         self.location = location
-        super(ConflictError, self).__init__()
+        super().__init__()
 
 
 class WildcardUnsupportedError(Error):

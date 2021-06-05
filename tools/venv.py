@@ -44,6 +44,7 @@ REQUIREMENTS = [
     '-e certbot-nginx',
     '-e certbot-compatibility-test',
     '-e certbot-ci',
+    '-e letstest',
 ]
 
 if sys.platform == 'win32':

@@ -9,6 +9,7 @@ from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.display import ops as display_ops
 from certbot.plugins import util as plug_util
 
 logger = logging.getLogger(__name__)
@@ -210,7 +211,7 @@ def _run_deploy_hook(command, domains, lineage_path, dry_run):
 
     """
     if dry_run:
-        logger.warning("Dry run: skipping deploy hook command: %s",
+        logger.info("Dry run: skipping deploy hook command: %s",
                        command)
         return
 
@@ -227,7 +228,9 @@ def _run_hook(cmd_name, shell_cmd):
     :type shell_cmd: `list` of `str` or `str`
 
     :returns: stderr if there was any"""
-    err, _ = misc.execute_command(cmd_name, shell_cmd, env=util.env_no_snap_for_external_calls())
+    returncode, err, out = misc.execute_command_status(
+        cmd_name, shell_cmd, env=util.env_no_snap_for_external_calls())
+    display_ops.report_executed_command(f"Hook '{cmd_name}'", returncode, out, err)
     return err
 
 

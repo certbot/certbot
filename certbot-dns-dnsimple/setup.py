@@ -4,10 +4,8 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.14.0.dev0'
+version = '1.17.0.dev0'
 
-# Remember to update local-oldest-requirements.txt when changing the minimum
-# acme/certbot version.
 install_requires = [
     'setuptools>=39.0.1',
     'zope.interface',
@@ -15,8 +13,11 @@ install_requires = [
 
 if not os.environ.get('SNAP_BUILD'):
     install_requires.extend([
-        'acme>=0.31.0',
-        'certbot>=1.1.0',
+        # We specify the minimum acme and certbot version as the current plugin
+        # version for simplicity. See
+        # https://github.com/certbot/certbot/issues/8761 for more info.
+        f'acme>={version}',
+        f'certbot>={version}',
     ])
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Unset SNAP_BUILD when building wheels '
@@ -32,7 +33,7 @@ if os.environ.get('SNAP_BUILD'):
 # which allows us to potentially upgrade our packages in these distros
 # as necessary.
 if os.environ.get('CERTBOT_OLDEST') == '1':
-    install_requires.append('dns-lexicon>=2.2.1')
+    install_requires.append('dns-lexicon>=3.1.0')  # Changed parameter name
 else:
     install_requires.append('dns-lexicon>=3.2.1')
 
@@ -47,7 +48,7 @@ setup(
     description="DNSimple DNS Authenticator plugin for Certbot",
     url='https://github.com/certbot/certbot',
     author="Certbot Project",
-    author_email='client-dev@letsencrypt.org',
+    author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
     python_requires='>=3.6',
     classifiers=[

@@ -223,6 +223,8 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     def release(self):
         """Release the lock."""
         try:
+            if not self._fd:
+                raise errors.Error("The lock has not been acquired first.")
             # This "type: ignore" is currently needed because msvcrt methods
             # are only defined on Windows. See
             # https://github.com/python/typeshed/blob/16ae4c61201cd8b96b8b22cdfb2ab9e89ba5bcf2/stdlib/msvcrt.pyi.

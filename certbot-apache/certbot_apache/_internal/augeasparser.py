@@ -80,7 +80,7 @@ class AugeasParserNode(interfaces.ParserNode):
 
     def __init__(self, **kwargs):
         ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
-        super(AugeasParserNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.ancestor = ancestor
         self.filepath = filepath
         self.dirty = dirty
@@ -169,7 +169,7 @@ class AugeasCommentNode(AugeasParserNode):
 
     def __init__(self, **kwargs):
         comment, kwargs = util.commentnode_kwargs(kwargs)  # pylint: disable=unused-variable
-        super(AugeasCommentNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         # self.comment = comment
         self.comment = comment
 
@@ -188,7 +188,7 @@ class AugeasDirectiveNode(AugeasParserNode):
 
     def __init__(self, **kwargs):
         name, parameters, enabled, kwargs = util.directivenode_kwargs(kwargs)
-        super(AugeasDirectiveNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.name = name
         self.enabled = enabled
         if parameters:
@@ -245,7 +245,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
     """ Augeas implementation of BlockNode interface """
 
     def __init__(self, **kwargs):
-        super(AugeasBlockNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.children = ()
 
     def __eq__(self, other):

@@ -35,7 +35,7 @@ class Addr(common.Addr):
     CANONICAL_UNSPECIFIED_ADDRESS = UNSPECIFIED_IPV4_ADDRESSES[0]
 
     def __init__(self, host, port, ssl, default, ipv6, ipv6only):
-        super(Addr, self).__init__((host, port))
+        super().__init__((host, port))
         self.ssl = ssl
         self.default = default
         self.ipv6 = ipv6
@@ -120,7 +120,7 @@ class Addr(common.Addr):
     def __hash__(self):  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__
         # See certbot-apache/certbot_apache/_internal/obj.py for more information
-        return super(Addr, self).__hash__()
+        return super().__hash__()
 
     def super_eq(self, other):
         """Check ip/port equality, with IPv6 support.
@@ -132,7 +132,7 @@ class Addr(common.Addr):
                                 self.tup[1]), self.ipv6) == \
                    common.Addr((other.CANONICAL_UNSPECIFIED_ADDRESS,
                                 other.tup[1]), other.ipv6)
-        return super(Addr, self).__eq__(other)
+        return super().__eq__(other)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):

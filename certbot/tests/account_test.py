@@ -106,7 +106,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.account.AccountFileStorage."""
 
     def setUp(self):
-        super(AccountFileStorageTest, self).setUp()
+        super().setUp()
 
         from certbot._internal.account import AccountFileStorage
         self.storage = AccountFileStorage(self.config)
@@ -150,7 +150,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         path = os.path.join(self.config.accounts_dir, self.acc.id, "regr.json")
         with open(path, "r") as f:
             regr = json.load(f)
-        self.assertTrue("new_authzr_uri" in regr)
+        self.assertIn("new_authzr_uri", regr)
 
     def test_update_regr(self):
         self.storage.update_regr(self.acc, self.mock_client)

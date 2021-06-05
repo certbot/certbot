@@ -253,7 +253,7 @@ class Client(ClientBase):
         if isinstance(directory, str):
             directory = messages.Directory.from_json(
                 net.get(directory).json())
-        super(Client, self).__init__(directory=directory,
+        super().__init__(directory=directory,
             net=net, acme_version=1)
 
     def register(self, new_reg=None):
@@ -577,7 +577,7 @@ class ClientV2(ClientBase):
         :param .messages.Directory directory: Directory Resource
         :param .ClientNetwork net: Client network.
         """
-        super(ClientV2, self).__init__(directory=directory,
+        super().__init__(directory=directory,
             net=net, acme_version=2)
 
     def new_account(self, new_account):
@@ -627,7 +627,7 @@ class ClientV2(ClientBase):
         """
         # https://github.com/certbot/certbot/issues/6155
         new_regr = self._get_v2_account(regr)
-        return super(ClientV2, self).update_registration(new_regr, update)
+        return super().update_registration(new_regr, update)
 
     def _get_v2_account(self, regr):
         self.net.account = None
