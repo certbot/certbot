@@ -19,6 +19,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   and clarify output. If you would like to see more verbose output, use
   the -v or -vv flags. UX improvements are an iterative process and
   the Certbot team welcomes constructive feedback.
+* Add plugin version to `certbot certificates` output as wel as the
+  User Agent header used in communication with the ACME server.
 
 ### Fixed
 
