@@ -306,7 +306,7 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
                     "    Serial Number: {}\n"
                     "    Key Type: {}\n"
                     "    Domains: {}\n"
-                    "    Must Staple TLS Feature Enabled: {}\n"
+                    "    Must Staple TLS Feature: {}\n"
                     "    Expiry Date: {}\n"
                     "    Certificate Path: {}\n"
                     "    Private Key Path: {}".format(
@@ -314,7 +314,7 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
                          serial,
                          cert.private_key_type,
                          " ".join(cert.names()),
-                         "Yes" if must_staple else "No",
+                         "Enabled" if must_staple else "Disabled",
                          valid_string,
                          cert.fullchain,
                          cert.privkey))
