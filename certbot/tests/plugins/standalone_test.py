@@ -29,9 +29,8 @@ class ServerManagerTest(unittest.TestCase):
         self.mgr = ServerManager(self.certs, self.http_01_resources)
 
     def test_init(self):
-        self.assertTrue(self.mgr.certs is self.certs)
-        self.assertTrue(
-            self.mgr.http_01_resources is self.http_01_resources)
+        self.assertIs(self.mgr.certs, self.certs)
+        self.assertIs(self.mgr.http_01_resources, self.http_01_resources)
 
     def _test_run_stop(self, challenge_type):
         server = self.mgr.run(port=0, challenge_type=challenge_type)
@@ -48,7 +47,7 @@ class ServerManagerTest(unittest.TestCase):
         port = server.getsocknames()[0][1]
         server2 = self.mgr.run(port=port, challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {port: server})
-        self.assertTrue(server is server2)
+        self.assertIs(server, server2)
         self.mgr.stop(port)
         self.assertEqual(self.mgr.running(), {})
 
@@ -89,7 +88,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.servers = mock.MagicMock()
 
     def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), str))
+        self.assertIsInstance(self.auth.more_info(), str)
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref(domain=None),
@@ -126,7 +125,7 @@ class AuthenticatorTest(unittest.TestCase):
 
     def _assert_correct_yesno_call(self, mock_yesno):
         yesno_args, yesno_kwargs = mock_yesno.call_args
-        self.assertTrue("in use" in yesno_args[0])
+        self.assertIn("in use", yesno_args[0])
         self.assertFalse(yesno_kwargs.get("default", True))
 
     def test_perform_eacces(self):

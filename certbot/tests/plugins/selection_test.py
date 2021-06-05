@@ -70,7 +70,7 @@ class PickPluginTest(unittest.TestCase):
         self.assertEqual(1, self.reg.visible().ifaces.call_count)
 
     def test_no_candidate(self):
-        self.assertTrue(self._call() is None)
+        self.assertIsNone(self._call())
 
     def test_single(self):
         plugin_ep = mock.MagicMock()
@@ -88,7 +88,7 @@ class PickPluginTest(unittest.TestCase):
 
         self.reg.visible().ifaces().verify().available.return_value = {
             "bar": plugin_ep}
-        self.assertTrue(self._call() is None)
+        self.assertIsNone(self._call())
 
     def test_multiple(self):
         plugin_ep = mock.MagicMock()
@@ -111,7 +111,7 @@ class PickPluginTest(unittest.TestCase):
 
         with mock.patch("certbot._internal.plugins.selection.choose_plugin") as mock_choose:
             mock_choose.return_value = None
-            self.assertTrue(self._call() is None)
+            self.assertIsNone(self._call())
 
 
 class ChoosePluginTest(unittest.TestCase):
@@ -153,7 +153,7 @@ class ChoosePluginTest(unittest.TestCase):
     @test_util.patch_get_utility("certbot._internal.plugins.selection.z_util")
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
-        self.assertTrue(self._call() is None)
+        self.assertIsNone(self._call())
 
 
 class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
@@ -180,7 +180,7 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
 
     def test_no_installer_defined(self):
         self.config.configurator = None
-        self.assertEqual(self._call(), None)
+        self.assertIsNone(self._call())
 
     def test_no_available_installers(self):
         self.config.configurator = "apache"
@@ -190,7 +190,7 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
     def test_get_plugin(self):
         self.config.configurator = "apache"
         installer = self._call()
-        self.assertTrue(installer is self.mock_apache_plugin)
+        self.assertIs(installer, self.mock_apache_plugin)
 
     def test_multiple_installers_returned(self):
         self.config.configurator = "apache"

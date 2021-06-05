@@ -2,7 +2,7 @@
 
 cd letsencrypt
 
-BOOTSTRAP_SCRIPT="tests/letstest/scripts/bootstrap_os_packages.sh"
+BOOTSTRAP_SCRIPT="letstest/scripts/bootstrap_os_packages.sh"
 VENV_PATH=venv
 
 # install OS packages
@@ -41,7 +41,7 @@ for pkg_dir in acme certbot $PLUGINS; do
     cd -
 done
 
-VERSION=$(python letsencrypt-auto-source/version.py)
+VERSION=$(python letstest/scripts/version.py)
 # test sdists
 cd $TEMP_DIR
 for pkg in acme certbot $PLUGINS; do

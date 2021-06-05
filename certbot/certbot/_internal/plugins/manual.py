@@ -1,4 +1,5 @@
 """Manual authenticator plugin"""
+import logging
 from typing import Dict
 
 import zope.component
@@ -10,11 +11,14 @@ from certbot import errors
 from certbot import interfaces
 from certbot import reverter
 from certbot import util
+from certbot._internal.cli import cli_constants
 from certbot._internal import hooks
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.display import ops as display_ops
 from certbot.plugins import common
 
+logger = logging.getLogger(__name__)
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -60,7 +64,7 @@ with the following value:
 {validation}
 """
     _DNS_VERIFY_INSTRUCTIONS = """
-Before continuing, verify the TXT record has been deployed. Depending on the DNS 
+Before continuing, verify the TXT record has been deployed. Depending on the DNS
 provider, this may take some time, from a few seconds to multiple minutes. You can
 check if it has finished deploying with aid of online tools, such as the Google
 Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}.
@@ -125,6 +129,42 @@ permitted by DNS standards.)
             'validation challenges either through shell scripts provided by '
             'the user or by performing the setup manually.')
 
+    def auth_hint(self, failed_achalls):
+        has_chall = lambda cls: any(isinstance(achall.chall, cls) for achall in failed_achalls)
+
+        has_dns = has_chall(challenges.DNS01)
+        resource_names = {
+            challenges.DNS01: 'DNS TXT records',
+            challenges.HTTP01: 'challenge files',
+            challenges.TLSALPN01: 'TLS-ALPN certificates'
+        }
+        resources = ' and '.join(sorted([v for k, v in resource_names.items() if has_chall(k)]))
+
+        if self.conf('auth-hook'):
+            return (
+                'The Certificate Authority failed to verify the {resources} created by the '
+                '--manual-auth-hook. Ensure that this hook is functioning correctly{dns_hint}. '
+                'Refer to "{certbot} --help manual" and the Certbot User Guide.'
+                .format(
+                    certbot=cli_constants.cli_command,
+                    resources=resources,
+                    dns_hint=(
+                        ' and that it waits a sufficient duration of time for DNS propagation'
+                    ) if has_dns else ''
+                )
+            )
+        else:
+            return (
+                'The Certificate Authority failed to verify the manually created {resources}. '
+                'Ensure that you created these in the correct location{dns_hint}.'
+                .format(
+                    resources=resources,
+                    dns_hint=(
+                        ', or try waiting longer for DNS propagation on the next attempt'
+                     ) if has_dns else ''
+                )
+            )
+
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01, challenges.DNS01]
@@ -153,7 +193,7 @@ permitted by DNS standards.)
         else:
             os.environ.pop('CERTBOT_TOKEN', None)
         os.environ.update(env)
-        _, out = self._execute_hook('auth-hook')
+        _, out = self._execute_hook('auth-hook', achall.domain)
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
@@ -196,9 +236,16 @@ permitted by DNS standards.)
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
                 os.environ.update(env)
-                self._execute_hook('cleanup-hook')
+                self._execute_hook('cleanup-hook', achall.domain)
         self.reverter.recovery_routine()
 
-    def _execute_hook(self, hook_name):
-        return misc.execute_command(self.option_name(hook_name), self.conf(hook_name),
-                                    env=util.env_no_snap_for_external_calls())
+    def _execute_hook(self, hook_name, achall_domain):
+        returncode, err, out = misc.execute_command_status(
+            self.option_name(hook_name), self.conf(hook_name),
+            env=util.env_no_snap_for_external_calls()
+        )
+
+        display_ops.report_executed_command(
+            f"Hook '--manual-{hook_name}' for {achall_domain}", returncode, out, err)
+
+        return err, out

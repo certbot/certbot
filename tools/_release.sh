@@ -87,14 +87,6 @@ for pkg_dir in $SUBPKGS certbot-compatibility-test
 do
   sed -i 's/\.dev0//' "$pkg_dir/setup.py"
   git add "$pkg_dir/setup.py"
-
-  if [ -f "$pkg_dir/local-oldest-requirements.txt" ]; then
-    sed -i "s/-e acme\[dev\]/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e acme/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e certbot\[dev\]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e certbot/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    git add "$pkg_dir/local-oldest-requirements.txt"
-  fi
 done
 
 SetVersion() {
@@ -177,23 +169,6 @@ cd ~-
 CERTBOT_DOCS=1 certbot --help all > certbot/docs/cli-help.txt
 jws --help > acme/docs/jws-help.txt
 
-cd ..
-# freeze before installing anything else, so that we know end-user KGS
-# make sure "twine upload" doesn't catch "kgs"
-if [ -d kgs ] ; then
-    echo Deleting old kgs...
-    rm -rf kgs
-fi
-mkdir kgs
-kgs="kgs/$version"
-pip freeze | tee $kgs
-python ../tools/pip_install.py pytest
-cd ~-
-for module in $SUBPKGS ; do
-    echo testing $module
-    # use an empty configuration file rather than the one in the repo root
-    pytest -c <(echo '') $module
-done
 deactivate
 
 
@@ -206,15 +181,6 @@ while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
 done
 git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
 
-cd ..
-echo Now in $PWD
-name=${root_without_le%.*}
-ext="${root_without_le##*.}"
-rev="$(git rev-parse --short HEAD)"
-echo tar cJvf $name.$rev.tar.xz $name.$rev
-echo gpg2 -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
-cd ~-
-
 # Add master section to CHANGELOG.md
 header=$(head -n 4 certbot/CHANGELOG.md)
 body=$(sed s/nextversion/$nextversion/ tools/_changelog_top.txt)
@@ -226,12 +192,6 @@ $body
 $footer" > certbot/CHANGELOG.md
 git add certbot/CHANGELOG.md
 git commit -m "Add contents to certbot/CHANGELOG.md for next version"
-
-echo "New root: $root"
-echo "Test commands (in the letstest repo):"
-echo 'python multitester.py --saveinstances targets.yaml $AWS_KEY $USERNAME scripts/test_apache2.sh'
-echo "In order to upload packages run the following command:"
-echo twine upload "$root/dist.$version/*/*"
 
 if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0

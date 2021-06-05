@@ -42,7 +42,8 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
 
         self.auth = DNSAuthenticatorTest._FakeDNSAuthenticator(self.config, "fake")
 
-    def test_perform(self):
+    @test_util.patch_get_utility()
+    def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
         self.auth._perform.assert_called_once_with(dns_test_common.DOMAIN, mock.ANY, mock.ANY)
@@ -118,6 +119,12 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
 
         credentials = self.auth._configure_credentials("credentials", "", {"test": ""})
         self.assertEqual(credentials.conf("test"), "value")
+
+    def test_auth_hint(self):
+        self.assertIn(
+            'try increasing --fake-propagation-seconds (currently 0 seconds).',
+            self.auth.auth_hint([mock.MagicMock()])
+        )
 
 
 class CredentialsConfigurationTest(test_util.TempDirTestCase):
@@ -211,20 +218,20 @@ class CredentialsConfigurationRequireTest(test_util.TempDirTestCase):
 class DomainNameGuessTest(unittest.TestCase):
 
     def test_simple_case(self):
-        self.assertTrue(
-            'example.com' in
+        self.assertIn(
+            'example.com',
             dns_common.base_domain_name_guesses("example.com")
         )
 
     def test_sub_domain(self):
-        self.assertTrue(
-            'example.com' in
+        self.assertIn(
+            'example.com',
             dns_common.base_domain_name_guesses("foo.bar.baz.example.com")
         )
 
     def test_second_level_domain(self):
-        self.assertTrue(
-            'example.co.uk' in
+        self.assertIn(
+            'example.co.uk',
             dns_common.base_domain_name_guesses("foo.bar.baz.example.co.uk")
         )
 

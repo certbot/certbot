@@ -42,7 +42,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         mock_generic_updater.generic_updates.reset_mock()
         updater.run_generic_updaters(self.config, mock.MagicMock(), None)
         self.assertEqual(mock_generic_updater.generic_updates.call_count, 1)
-        self.assertFalse(mock_generic_updater.restart.called)
+        self.assertIs(mock_generic_updater.restart.called, False)
 
     def test_renew_deployer(self):
         lineage = mock.MagicMock()
@@ -83,13 +83,13 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         self.config.disable_renew_updates = True
         mock_geti.return_value = self.mockinstaller
         updater.run_generic_updaters(self.config, mock.MagicMock(), None)
-        self.assertFalse(self.mockinstaller.update_autohsts.called)
+        self.assertIs(self.mockinstaller.update_autohsts.called, False)
 
     def test_enhancement_deployer_not_called(self):
         self.config.disable_renew_updates = True
         updater.run_renewal_deployer(self.config, mock.MagicMock(),
                                      self.mockinstaller)
-        self.assertFalse(self.mockinstaller.deploy_autohsts.called)
+        self.assertIs(self.mockinstaller.deploy_autohsts.called, False)
 
     @mock.patch('certbot._internal.plugins.selection.get_unprepared_installer')
     def test_enhancement_no_updater(self, mock_geti):
@@ -105,7 +105,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         mock_geti.return_value = self.mockinstaller
         with mock.patch("certbot.plugins.enhancements._INDEX", FAKEINDEX):
             updater.run_generic_updaters(self.config, mock.MagicMock(), None)
-        self.assertFalse(self.mockinstaller.update_autohsts.called)
+        self.assertIs(self.mockinstaller.update_autohsts.called, False)
 
     def test_enhancement_no_deployer(self):
         FAKEINDEX = [
@@ -120,7 +120,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         with mock.patch("certbot.plugins.enhancements._INDEX", FAKEINDEX):
             updater.run_renewal_deployer(self.config, mock.MagicMock(),
                                          self.mockinstaller)
-        self.assertFalse(self.mockinstaller.deploy_autohsts.called)
+        self.assertIs(self.mockinstaller.deploy_autohsts.called, False)
 
 
 if __name__ == '__main__':

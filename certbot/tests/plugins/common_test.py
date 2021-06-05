@@ -83,6 +83,13 @@ class PluginTest(unittest.TestCase):
         parser.add_argument.assert_called_once_with(
             "--mock-foo-bar", dest="different_to_foo_bar", x=1, y=None)
 
+    def test_fallback_auth_hint(self):
+        self.assertIn("the mock plugin completed the required dns-01 challenges",
+                      self.plugin.auth_hint([acme_util.DNS01_A, acme_util.DNS01_A]))
+        self.assertIn("the mock plugin completed the required dns-01 and http-01 challenges",
+                      self.plugin.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A,
+                                             acme_util.DNS01_A]))
+
 
 class InstallerTest(test_util.ConfigTestCase):
     """Tests for certbot.plugins.common.Installer."""
@@ -174,7 +181,7 @@ class InstallerTest(test_util.ConfigTestCase):
 
     def test_current_file_hash_in_all_hashes(self):
         from certbot._internal.constants import ALL_SSL_DHPARAMS_HASHES
-        self.assertTrue(self._current_ssl_dhparams_hash() in ALL_SSL_DHPARAMS_HASHES,
+        self.assertIn(self._current_ssl_dhparams_hash(), ALL_SSL_DHPARAMS_HASHES,
             "Constants.ALL_SSL_DHPARAMS_HASHES must be appended"
             " with the sha256 hash of self.config.ssl_dhparams when it is updated.")
 
@@ -330,7 +337,7 @@ class InstallVersionControlledFileTest(test_util.TempDirTestCase):
             mod_ssl_conf.write("a new line for the wrong hash\n")
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
-            self.assertFalse(mock_logger.warning.called)
+            self.assertIs(mock_logger.warning.called, False)
         self.assertTrue(os.path.isfile(self.dest_path))
         self.assertEqual(crypto_util.sha256sum(self.source_path),
             self._current_file_hash())
@@ -352,7 +359,7 @@ class InstallVersionControlledFileTest(test_util.TempDirTestCase):
         # only print warning once
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
-            self.assertFalse(mock_logger.warning.called)
+            self.assertIs(mock_logger.warning.called, False)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

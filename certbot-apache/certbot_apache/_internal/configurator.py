@@ -25,6 +25,7 @@ from certbot import util
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.compat import filesystem
 from certbot.compat import os
+from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 from certbot.plugins.util import path_surgery
@@ -515,6 +516,8 @@ class ApacheConfigurator(common.Installer):
         vhosts = self.choose_vhosts(domain)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
+            display_util.notify("Successfully deployed certificate for {} to {}"
+                                .format(domain, vhost.filep))
 
     def choose_vhosts(self, domain, create_if_no_ssl=True):
         """
@@ -553,6 +556,19 @@ class ApacheConfigurator(common.Installer):
 
         return list(matched)
 
+    def _raise_no_suitable_vhost_error(self, target_name: str):
+        """
+        Notifies the user that Certbot could not find a vhost to secure
+        and raises an error.
+        :param str target_name: The server name that could not be mapped
+        :raises errors.PluginError: Raised unconditionally
+        """
+        raise errors.PluginError(
+            "Certbot could not find a VirtualHost for {0} in the Apache "
+            "configuration. Please create a VirtualHost with a ServerName "
+            "matching {0} and try again.".format(target_name)
+        )
+
     def _in_wildcard_scope(self, name, domain):
         """
         Helper method for _vhosts_for_wildcard() that makes sure that the domain
@@ -590,12 +606,7 @@ class ApacheConfigurator(common.Installer):
         dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
 
         if not dialog_output:
-            logger.error(
-                "No vhost exists with servername or alias for domain %s. "
-                "No vhost was selected. Please specify ServerName or ServerAlias "
-                "in the Apache config.",
-                domain)
-            raise errors.PluginError("No vhost selected")
+            self._raise_no_suitable_vhost_error(domain)
 
         # Make sure we create SSL vhosts for the ones that are HTTP only
         # if requested.
@@ -719,12 +730,7 @@ class ApacheConfigurator(common.Installer):
         # Select a vhost from a list
         vhost = display_ops.select_vhost(target_name, self.vhosts)
         if vhost is None:
-            logger.error(
-                "No vhost exists with servername or alias of %s. "
-                "No vhost was selected. Please specify ServerName or ServerAlias "
-                "in the Apache config.",
-                target_name)
-            raise errors.PluginError("No vhost selected")
+            self._raise_no_suitable_vhost_error(target_name)
         if temp:
             return vhost
         if not vhost.ssl:
@@ -1532,12 +1538,11 @@ class ApacheConfigurator(common.Installer):
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 
         if sift:
-            reporter = zope.component.getUtility(interfaces.IReporter)
-            reporter.add_message(
-                "Some rewrite rules copied from {0} were disabled in the "
-                "vhost for your HTTPS site located at {1} because they have "
-                "the potential to create redirection loops.".format(
-                    vhost.filep, ssl_fp), reporter.MEDIUM_PRIORITY)
+            display_util.notify(
+                f"Some rewrite rules copied from {vhost.filep} were disabled in the "
+                f"vhost for your HTTPS site located at {ssl_fp} because they have "
+                "the potential to create redirection loops."
+            )
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")
 
@@ -1866,13 +1871,13 @@ class ApacheConfigurator(common.Installer):
             if options:
                 msg_enhancement += ": " + options
             msg = msg_tmpl.format(domain, msg_enhancement)
-            logger.warning(msg)
+            logger.error(msg)
             raise errors.PluginError(msg)
         try:
             for vhost in vhosts:
                 func(vhost, options)
         except errors.PluginError:
-            logger.warning("Failed %s for %s", enhancement, domain)
+            logger.error("Failed %s for %s", enhancement, domain)
             raise
 
     def _autohsts_increase(self, vhost, id_str, nextstep):
@@ -2396,7 +2401,7 @@ class ApacheConfigurator(common.Installer):
             vhost.enabled = True
         return
 
-    def enable_mod(self, mod_name, temp=False):
+    def enable_mod(self, mod_name, temp=False):  # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -2436,7 +2441,7 @@ class ApacheConfigurator(common.Installer):
         try:
             util.run_script(self.options.restart_cmd)
         except errors.SubprocessError as err:
-            logger.info("Unable to restart apache using %s",
+            logger.warning("Unable to restart apache using %s",
                         self.options.restart_cmd)
             alt_restart = self.options.restart_cmd_alt
             if alt_restart:
@@ -2499,6 +2504,11 @@ class ApacheConfigurator(common.Installer):
                 os.linesep, root=self.parser.loc["root"],
                 version=".".join(str(i) for i in self.version))
         )
+
+    def auth_hint(self, failed_achalls): # pragma: no cover
+        return ("The Certificate Authority failed to verify the temporary Apache configuration "
+                "changes made by Certbot. Ensure that the listed domains point to this Apache "
+                "server and that it is accessible from the internet.")
 
     ###########################################################################
     # Challenges Section
@@ -2593,7 +2603,7 @@ class ApacheConfigurator(common.Installer):
                 msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
                             "domain {0} for enabling AutoHSTS enhancement.")
                 msg = msg_tmpl.format(d)
-                logger.warning(msg)
+                logger.error(msg)
                 raise errors.PluginError(msg)
             for vh in vhosts:
                 try:
@@ -2679,7 +2689,7 @@ class ApacheConfigurator(common.Installer):
                 except errors.PluginError:
                     msg = ("Could not find VirtualHost with ID {0}, disabling "
                            "AutoHSTS for this VirtualHost").format(id_str)
-                    logger.warning(msg)
+                    logger.error(msg)
                     # Remove the orphaned AutoHSTS entry from pluginstorage
                     self._autohsts.pop(id_str)
                     continue
@@ -2719,7 +2729,7 @@ class ApacheConfigurator(common.Installer):
                 except errors.PluginError:
                     msg = ("VirtualHost with id {} was not found, unable to "
                            "make HSTS max-age permanent.").format(id_str)
-                    logger.warning(msg)
+                    logger.error(msg)
                     self._autohsts.pop(id_str)
                     continue
                 if self._autohsts_vhost_in_lineage(vhost, lineage):

@@ -97,6 +97,33 @@ class Plugin:
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
 
+    def auth_hint(self, failed_achalls):
+        # type: (List[achallenges.AnnotatedChallenge]) -> str
+        """Human-readable string to help the user troubleshoot the authenticator.
+
+        Shown to the user if one or more of the attempted challenges were not a success.
+
+        Should describe, in simple language, what the authenticator tried to do, what went
+        wrong and what the user should try as their "next steps".
+
+        TODO: auth_hint belongs in IAuthenticator but can't be added until the next major
+        version of Certbot. For now, it lives in .Plugin and auth_handler will only call it
+        on authenticators that subclass .Plugin. For now, inherit from `.Plugin` to implement
+        and/or override the method.
+
+        :param list failed_achalls: List of one or more failed challenges
+                                    (:class:`achallenges.AnnotatedChallenge` subclasses).
+
+        :rtype str:
+        """
+        # This is a fallback hint. Authenticators should implement their own auth_hint that
+        # addresses the specific mechanics of that authenticator.
+        challs = " and ".join(sorted({achall.typ for achall in failed_achalls}))
+        return ("The Certificate Authority couldn't externally verify that the {name} plugin "
+                "completed the required {challs} challenges. Ensure the plugin is configured "
+                "correctly and that the changes it makes are accessible from the internet."
+                .format(name=self.name, challs=challs))
+
 
 class Installer(Plugin):
     """An installer base class with reverter and ssl_dhparam methods defined.

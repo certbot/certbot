@@ -43,7 +43,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         # _get_google_client | pylint: disable=protected-access
         self.auth._get_google_client = mock.MagicMock(return_value=self.mock_client)
 
-    def test_perform(self):
+    @test_util.patch_get_utility()
+    def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
@@ -58,7 +59,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.assertEqual(expected, self.mock_client.mock_calls)
 
     @mock.patch('httplib2.Http.request', side_effect=ServerNotFoundError)
-    def test_without_auth(self, unused_mock):
+    @test_util.patch_get_utility()
+    def test_without_auth(self, unused_mock_get_utility, unused_mock):
         self.config.google_credentials = None
         self.assertRaises(PluginError, self.auth.perform, [self.achall])
 

@@ -59,7 +59,7 @@ class ValidateHookTest(test_util.TempDirTestCase):
     @mock.patch("certbot._internal.hooks._prog")
     def test_unset(self, mock_prog):
         self._call(None, "foo")
-        self.assertFalse(mock_prog.called)
+        self.assertIs(mock_prog.called, False)
 
 
 class HookTest(test_util.ConfigTestCase):
@@ -72,14 +72,14 @@ class HookTest(test_util.ConfigTestCase):
 
     @classmethod
     def _call_with_mock_execute(cls, *args, **kwargs):
-        """Calls self._call after mocking out certbot.compat.misc.execute_command.
+        """Calls self._call after mocking out certbot.compat.misc.execute_command_status.
 
         The mock execute object is returned rather than the return value
         of self._call.
 
         """
-        with mock.patch("certbot.compat.misc.execute_command") as mock_execute:
-            mock_execute.return_value = ("", "")
+        with mock.patch("certbot.compat.misc.execute_command_status") as mock_execute:
+            mock_execute.return_value = (0, "", "")
             cls._call(*args, **kwargs)
         return mock_execute
 
@@ -132,8 +132,8 @@ class PreHookTest(HookTest):
 
         with mock.patch("certbot._internal.hooks.logger") as mock_logger:
             mock_execute = self._call_with_mock_execute(self.config)
-        self.assertFalse(mock_execute.called)
-        self.assertFalse(mock_logger.info.called)
+        self.assertIs(mock_execute.called, False)
+        self.assertIs(mock_logger.info.called, False)
 
     def test_renew_disabled_dir_hooks(self):
         self.config.directory_hooks = False
@@ -158,7 +158,7 @@ class PreHookTest(HookTest):
     def _test_no_executions_common(self):
         with mock.patch("certbot._internal.hooks.logger") as mock_logger:
             mock_execute = self._call_with_mock_execute(self.config)
-        self.assertFalse(mock_execute.called)
+        self.assertIs(mock_execute.called, False)
         self.assertTrue(mock_logger.info.called)
 
 
@@ -292,7 +292,7 @@ class RenewalHookTest(HookTest):
     # pylint: disable=abstract-method
 
     def _call_with_mock_execute(self, *args, **kwargs):
-        """Calls self._call after mocking out certbot.compat.misc.execute_command.
+        """Calls self._call after mocking out certbot.compat.misc.execute_command_status.
 
         The mock execute object is returned rather than the return value
         of self._call. The mock execute object asserts that environment
@@ -311,9 +311,9 @@ class RenewalHookTest(HookTest):
             """
             self.assertEqual(os.environ["RENEWED_DOMAINS"], " ".join(domains))
             self.assertEqual(os.environ["RENEWED_LINEAGE"], lineage)
-            return ("", "")
+            return (0, "", "")
 
-        with mock.patch("certbot.compat.misc.execute_command") as mock_execute:
+        with mock.patch("certbot.compat.misc.execute_command_status") as mock_execute:
             mock_execute.side_effect = execute_side_effect
             self._call(*args, **kwargs)
         return mock_execute
@@ -344,16 +344,16 @@ class DeployHookTest(RenewalHookTest):
         self.config.dry_run = True
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
-        self.assertFalse(mock_execute.called)
-        self.assertTrue(mock_logger.warning.called)
+        self.assertIs(mock_execute.called, False)
+        self.assertTrue(mock_logger.info.called)
 
     @mock.patch("certbot._internal.hooks.logger")
     def test_no_hook(self, mock_logger):
         self.config.deploy_hook = None
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
-        self.assertFalse(mock_execute.called)
-        self.assertFalse(mock_logger.info.called)
+        self.assertIs(mock_execute.called, False)
+        self.assertIs(mock_logger.info.called, False)
 
     def test_success(self):
         domains = ["example.org", "example.net"]
@@ -392,8 +392,8 @@ class RenewHookTest(RenewalHookTest):
         self.config.dry_run = True
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
-        self.assertFalse(mock_execute.called)
-        self.assertEqual(mock_logger.warning.call_count, 2)
+        self.assertIs(mock_execute.called, False)
+        self.assertEqual(mock_logger.info.call_count, 2)
 
     def test_no_hooks(self):
         self.config.renew_hook = None
@@ -402,8 +402,8 @@ class RenewHookTest(RenewalHookTest):
         with mock.patch("certbot._internal.hooks.logger") as mock_logger:
             mock_execute = self._call_with_mock_execute(
                 self.config, ["example.org"], "/foo/bar")
-        self.assertFalse(mock_execute.called)
-        self.assertFalse(mock_logger.info.called)
+        self.assertIs(mock_execute.called, False)
+        self.assertIs(mock_logger.info.called, False)
 
     def test_overlap(self):
         self.config.renew_hook = self.dir_hook
