@@ -483,6 +483,7 @@ class ParseTest(unittest.TestCase):
         namespace = self.parse([])
         self.assertIsNone(namespace.config_file)
         with tempfile.NamedTemporaryFile() as tmp_config:
+            tmp_config.close()  # close now because of compatibility issues on Windows
             namespace = self.parse(['-c', tmp_config.name])
             self.assertEqual(namespace.config_file, tmp_config.name)
             namespace = self.parse(['--config', tmp_config.name])
