@@ -55,6 +55,13 @@ class GetEmailTest(unittest.TestCase):
         for call in mock_input.call_args_list:
             self.assertNotIn("--register-unsafely-without-email", call[0][0])
 
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
+    def test_emtpy_email(self, mock_get_utility):
+        mock_input = mock_get_utility().input
+        mock_input.side_effect = [(display_util.OK, ""), (display_util.OK, "foo@bar.baz")]
+        self._call()
+        self.assertEqual(mock_input.call_count, 2)
+
 
 class ChooseAccountTest(test_util.TempDirTestCase):
     """Tests for certbot.display.ops.choose_account."""
