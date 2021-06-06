@@ -1,4 +1,5 @@
 """Tests for certbot.helpful_parser"""
+import tempfile
 import unittest
 
 try:
@@ -10,6 +11,26 @@ from certbot import errors
 from certbot._internal.cli import HelpfulArgumentParser
 from certbot._internal.cli import _DomainsAction
 from certbot._internal import constants
+from certbot.compat import os
+
+
+class TestConfigFiles(unittest.TestCase):
+    '''Test `-c` and `--config` options'''
+    def test_config_option(self):
+        arg_parser = HelpfulArgumentParser([], {})
+        self.assertEqual(arg_parser.parser._default_config_files,
+                         constants.CLI_DEFAULTS['config_files'])
+        tmp_config = tempfile.NamedTemporaryFile(delete=False)
+        try:
+            tmp_config.close()  # close now because of compatibility issues on Windows
+            arg_parser = HelpfulArgumentParser(['-c', tmp_config.name], {})
+            self.assertEqual(arg_parser.parser._default_config_files, [])
+            self.assertEqual(arg_parser.args, ['-c', tmp_config.name])
+            arg_parser = HelpfulArgumentParser(['--config', tmp_config.name], {})
+            self.assertEqual(arg_parser.parser._default_config_files, [])
+            self.assertEqual(arg_parser.args, ['--config', tmp_config.name])
+        finally:
+            os.remove(tmp_config.name)
 
 
 class TestScanningFlags(unittest.TestCase):
