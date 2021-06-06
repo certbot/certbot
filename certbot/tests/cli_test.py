@@ -482,12 +482,15 @@ class ParseTest(unittest.TestCase):
     def test_config_option(self):
         namespace = self.parse([])
         self.assertIsNone(namespace.config_file)
-        with tempfile.NamedTemporaryFile() as tmp_config:
+        tmp_config = tempfile.NamedTemporaryFile(delete=False)
+        try:
             tmp_config.close()  # close now because of compatibility issues on Windows
             namespace = self.parse(['-c', tmp_config.name])
             self.assertEqual(namespace.config_file, tmp_config.name)
             namespace = self.parse(['--config', tmp_config.name])
             self.assertEqual(namespace.config_file, tmp_config.name)
+        finally:
+            os.remove(tmp_config.name)
 
 
 class DefaultTest(unittest.TestCase):
