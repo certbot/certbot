@@ -91,10 +91,11 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_gethostname.return_value = ('example.net')
         names = self.config.get_all_names()
         self.assertEqual(names, {
-            "155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
-             "migration.com", "summer.com", "geese.com", "sslon.com",
+            "155.225.50.69.nephoscale.net", "www.example.org", "*.www.example.com",
+             "another.alias", "migration.com", "summer.com", "geese.com", "sslon.com",
              "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com",
-             "headers.com", "example.net", "ssl.both.com"})
+             "headers.com", "example.net", "ssl.both.com", "*.both.com",
+             "*.www.foo.com"})
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'ensure-http-header', 'staple-ocsp'],

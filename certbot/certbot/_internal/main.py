@@ -428,7 +428,7 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
         raise errors.ConfigurationError("Specified mismatched certificate name and domains.")
 
 
-def _find_domains_or_certname(config, installer, question=None):
+def _find_domains_or_certname(config, installer, authenticator=None, question=None):
     """Retrieve domains and certname from config or user input.
 
     :param config: Configuration object
@@ -436,6 +436,9 @@ def _find_domains_or_certname(config, installer, question=None):
 
     :param installer: Installer object
     :type installer: interfaces.IInstaller
+
+    :param authenticator: Authenticator object
+    :type authenticator: interfaces.IAuthenticator
 
     :param `str` question: Overriding default question to ask the user if asked
         to choose from domain names.
@@ -459,7 +462,7 @@ def _find_domains_or_certname(config, installer, question=None):
     # that certname might not have existed, or there was a problem.
     # try to get domains from the user.
     if not domains:
-        domains = display_ops.choose_names(installer, question)
+        domains = display_ops.choose_names(installer, authenticator, question)
 
     if not domains and not certname:
         raise errors.Error("Please specify --domains, or --installer that "
@@ -1260,7 +1263,7 @@ def run(config, plugins):
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
-    domains, certname = _find_domains_or_certname(config, installer)
+    domains, certname = _find_domains_or_certname(config, installer, authenticator)
     should_get_cert, lineage = _find_cert(config, domains, certname)
 
     new_lineage = lineage
@@ -1403,7 +1406,7 @@ def certonly(config, plugins):
         eff.handle_subscription(config, le_client.account)
         return
 
-    domains, certname = _find_domains_or_certname(config, installer)
+    domains, certname = _find_domains_or_certname(config, installer, auth)
     should_get_cert, lineage = _find_cert(config, domains, certname)
 
     if not should_get_cert:

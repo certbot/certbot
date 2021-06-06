@@ -16,6 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   of the Certbot package will now always require acme>=X and version Y of a
   plugin package will always require acme>=Y and certbot=>Y. Specifying
   dependencies in this way simplifies testing and development.
+* Wildcard hostnames are no longer filtered from the list of hostnames acquired
+  from the installer if the authenticator supports the `dns-01` challenge.
 
 ### Fixed
 

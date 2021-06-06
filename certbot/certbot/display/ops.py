@@ -4,6 +4,7 @@ from textwrap import indent
 
 import zope.component
 
+from acme import challenges
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -102,11 +103,14 @@ def choose_values(values, question=None):
         return items
     return []
 
-def choose_names(installer, question=None):
+def choose_names(installer, authenticator, question=None):
     """Display screen to select domains to validate.
 
     :param installer: An installer object
     :type installer: :class:`certbot.interfaces.IInstaller`
+
+    :param authenticator: An authenticator object
+    :type authenticator: :class:`certbot.interfaces.IAuthenticator`
 
     :param `str` question: Overriding default question to ask the user if asked
         to choose from domain names.
@@ -124,6 +128,10 @@ def choose_names(installer, question=None):
 
     if not names:
         return _choose_names_manually()
+
+    names = [name for name in names if not util.is_wildcard_domain(name)
+                                       or util.is_wildcard_domain(name)
+                                       and challenges.DNS01 in authenticator.get_chall_pref(name)]
 
     code, names = _filter_names(names, question)
     if code == display_util.OK and names:

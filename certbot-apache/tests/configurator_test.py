@@ -141,9 +141,9 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_utility = mock_getutility()
         mock_utility.notification = mock.MagicMock(return_value=True)
         names = self.config.get_all_names()
-        self.assertEqual(names, {"certbot.demo", "ocspvhost.com", "encryption-example.demo",
-             "nonsym.link", "vhost.in.rootconf", "www.certbot.demo",
-             "duplicate.example.com"})
+        self.assertEqual(names, {"*.blue.purple.com", "certbot.demo", "ocspvhost.com",
+             "encryption-example.demo", "nonsym.link", "vhost.in.rootconf",
+             "www.certbot.demo", "duplicate.example.com"})
 
     @certbot_util.patch_get_utility()
     @mock.patch("certbot_apache._internal.configurator.socket.gethostbyaddr")
@@ -161,7 +161,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.vhosts.append(vhost)
 
         names = self.config.get_all_names()
-        self.assertEqual(len(names), 9)
+        self.assertEqual(len(names), 10)
         self.assertTrue("zombo.com" in names)
         self.assertTrue("google.com" in names)
         self.assertTrue("certbot.demo" in names)

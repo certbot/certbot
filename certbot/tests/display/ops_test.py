@@ -10,7 +10,7 @@ except ImportError: # pragma: no cover
     from unittest import mock
 import zope.component
 
-from acme import messages
+from acme import challenges, messages
 from certbot import errors
 from certbot._internal import account
 from certbot.compat import filesystem
@@ -186,9 +186,22 @@ class ChooseNamesTest(unittest.TestCase):
         self.mock_install = mock.MagicMock()
 
     @classmethod
-    def _call(cls, installer, question=None):
+    def _call(cls, installer, authenticator=None, question=None):
         from certbot.display.ops import choose_names
-        return choose_names(installer, question)
+        return choose_names(installer, authenticator, question)
+
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
+    def test_wildcard_authenticator_filter(self, mock_util):
+        mock_util().checklist.return_value = (display_util.OK, [])
+        domains = ["example.com", "*.example.com"]
+        self.mock_install.get_all_names.return_value = set(domains)
+        mock_auth = mock.MagicMock(name="Authenticator")
+        mock_auth.get_chall_pref.return_value = [challenges.HTTP01]
+        self._call(self.mock_install, mock_auth)
+        self.assertEqual(mock_util().checklist.call_args[1]['tags'], [domains[0]])
+        mock_auth.get_chall_pref.return_value = [challenges.DNS01]
+        self._call(self.mock_install, mock_auth)
+        self.assertEqual(mock_util().checklist.call_args[1]['tags'], domains)
 
     @mock.patch("certbot.display.ops._choose_names_manually")
     def test_no_installer(self, mock_manual):
@@ -259,10 +272,10 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(mock_util().checklist.call_count, 1)
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
-    def test_filter_namees_override_question(self, mock_util):
+    def test_filter_names_override_question(self, mock_util):
         self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
-        names = self._call(self.mock_install, "Custom")
+        names = self._call(self.mock_install, question="Custom")
         self.assertEqual(names, ["example.com"])
         self.assertEqual(mock_util().checklist.call_count, 1)
         self.assertEqual(mock_util().checklist.call_args[0][0], "Custom")
