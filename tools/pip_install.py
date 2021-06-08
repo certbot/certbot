@@ -14,7 +14,6 @@ import subprocess
 import sys
 import tempfile
 
-import merge_requirements as merge_module
 import readlink
 
 
