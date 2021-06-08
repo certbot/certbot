@@ -19,15 +19,14 @@ install_requires = [
     'setuptools>=39.0.1',
 ]
 
-dev_extras = [
-    'pytest',
-    'pytest-xdist',
-    'tox',
-]
-
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
+]
+
+test_extras = [
+    'pytest',
+    'pytest-xdist',
 ]
 
 setup(
@@ -57,7 +56,7 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
-        'dev': dev_extras,
         'docs': docs_extras,
+        'test': test_extras,
     },
 )

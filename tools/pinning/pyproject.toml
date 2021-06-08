@@ -30,8 +30,8 @@ certbot-dns-route53 = {path = "../../certbot-dns-route53", extras = ["docs"]}
 certbot-dns-sakuracloud = {path = "../../certbot-dns-sakuracloud", extras = ["docs"]}
 certbot-nginx = {path = "../../certbot-nginx", extras = ["docs"]}
 certbot-apache = {path = "../../certbot-apache", extras = ["dev"]}
-certbot = {path = "../../certbot", extras = ["dev", "docs"]}
-acme = {path = "../../acme", extras = ["dev", "docs"]}
+certbot = {path = "../../certbot", extras = ["all"]}
+acme = {path = "../../acme", extras = ["test"]}
 letstest = {path = "../../letstest"}
 windows-installer = {path = "../../windows-installer"}
 
