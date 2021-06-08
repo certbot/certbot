@@ -59,10 +59,10 @@ def main(args):
             repo_path = os.path.dirname(tools_path)
             if os.environ.get('CERTBOT_OLDEST') == '1':
                 constraints_path = os.path.normpath(os.path.join(
-                    repo_path, 'tools', 'requirements.txt'))
+                    repo_path, 'tools', 'oldest_constraints.txt'))
             else:
                 constraints_path = os.path.normpath(os.path.join(
-                    repo_path, 'tools', 'oldest_constraints.txt'))
+                    repo_path, 'tools', 'requirements.txt'))
 
             env = os.environ.copy()
             env["PIP_CONSTRAINT"] = constraints_path
