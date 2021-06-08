@@ -35,7 +35,7 @@ def pip_install_with_print(args_str, env=None):
 def main(args):
     tools_path = find_tools_path()
 
-    with tempfile.TemporaryDirectory as working_dir:
+    with tempfile.TemporaryDirectory() as working_dir:
         if os.environ.get('CERTBOT_NO_PIN') == '1':
             # With unpinned dependencies, there is no constraint
             pip_install_with_print(' '.join(args))
