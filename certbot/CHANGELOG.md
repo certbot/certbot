@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Add Void Linux overrides for certbot-apache.
 
 ### Changed
 
