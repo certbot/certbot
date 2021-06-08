@@ -257,6 +257,7 @@ Authors
 * [Thom Wiggers](https://github.com/thomwiggers)
 * [Till Maas](https://github.com/tyll)
 * [Timothy Guan-tin Chien](https://github.com/timdream)
+* [Tom Anthony](https://github.com/tomanthony)
 * [Torsten Bögershausen](https://github.com/tboegi)
 * [Travis Raines](https://github.com/rainest)
 * [Trung Ngo](https://github.com/Ngo-The-Trung)

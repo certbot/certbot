@@ -465,6 +465,66 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.test_rc.configuration["renew_before_expiry"] = interval
             self.assertEqual(self.test_rc.should_autorenew(), result)
 
+
+    @mock.patch("certbot._internal.storage.cli")
+    @mock.patch("certbot._internal.storage.datetime")
+    def test_time_interval_selection(self, mock_datetime, mock_cli):
+        """Test should_autorenew() on the basis of various different
+        expiry time intervals via config/cli."""
+        test_cert = test_util.load_vector("cert_512.pem")
+
+        self._write_out_ex_kinds()
+
+        self.test_rc.update_all_links_to(12)
+        with open(self.test_rc.cert, "wb") as f:
+            f.write(test_cert)
+        self.test_rc.update_all_links_to(11)
+        with open(self.test_rc.cert, "wb") as f:
+            f.write(test_cert)
+
+        mock_datetime.timedelta = datetime.timedelta
+        mock_cli.set_by_cli.return_value = False
+        self.test_rc.configuration["renewalparams"] = {}
+
+        for (current_time, cli_rbe, config_rbe, result) in [
+                # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
+                # Config that should result in autorenewal/autodeployment
+                (1418472000, "1 day", "2 months", True),
+                (1418472000, "1 week", "1 day", True),
+                # Times that should not
+                (1418472000, "1 day", "1 day", False),
+                # 2014-11-13 12:00:00+00:00 (about 35 days prior to expiry)
+                # Config that should result in autorenewal/autodeployment
+                (1415880000, "30 days", "40 days", True),
+                # Times that should not
+                (1415880000, "30 days", "30 days", False),
+                # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
+                # Config that should result in autorenewal/autodeployment
+                (1241179200, "7 years", "7 years", True),
+                (1241179200, "30 days", "7 years", True),
+                (1241179200, "2200 days", "30 days", True),
+                # Config that should not
+                (1241179200, "8 hours", "30 days", False),
+                (1241179200, "2 days", "2 days", False),
+                (1241179200, "30 days", "40 days", False),
+                (1241179200, "9 months", "9 months", False),
+                # 2015-01-01 (after expiry has already happened, so all
+                #            intervals should cause autorenewal/autodeployment)
+                (1420070400, "0 seconds", "0 seconds", True),
+                (1420070400, "10 seconds", "10 seconds", True),
+                (1420070400, "10 minutes", "10 minutes", True),
+                (1420070400, "10 weeks", "10 weeks", True),
+                (1420070400, "10 months", "10 months", True),
+                (1420070400, "10 years", "10 years", True),
+                (1420070400, "99 months", "99 months", True),
+        ]:
+            sometime = datetime.datetime.utcfromtimestamp(current_time)
+            mock_datetime.datetime.utcnow.return_value = sometime
+            self.test_rc.cli_config.renew_before_expiry = cli_rbe
+            self.test_rc.configuration["deploy_before_expiry"] = config_rbe
+            self.test_rc.configuration["renew_before_expiry"] = config_rbe
+            self.assertEqual(self.test_rc.should_autorenew(), result)
+
     def test_autorenewal_is_enabled(self):
         self.test_rc.configuration["renewalparams"] = {}
         self.assertTrue(self.test_rc.autorenewal_is_enabled())

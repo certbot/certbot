@@ -104,6 +104,40 @@ def add_time_interval(base_time, interval, textparser=parsedatetime.Calendar()):
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
 
+def get_longest_time_interval(intervals, textparser=parsedatetime.Calendar()):
+    """Parse the time intervals, and return the longest (time-wise) interval
+
+    The interval can be in the English-language format understood by
+    parsedatetime, e.g., '10 days', '3 weeks', '6 months', '9 hours', or
+    a sequence of such intervals like '6 months 1 week' or '3 days 12
+    hours'. If an integer is found with no associated unit, it is
+    interpreted by default as a number of days.
+
+    :param list intervals: List of time intervals to select from.
+
+    :returns: A str interval, from intervals, that represents longest period.
+    :rtype: :class:`str`"""
+
+    now = datetime.datetime.utcnow()
+    now = now.replace(tzinfo=pytz.utc)
+
+    furthest_date = now
+    furthest_interval = intervals[0]
+
+    for interval in intervals:
+
+        if interval.strip().isdigit():
+            interval += " days"
+
+        interval_date = textparser.parseDT(interval, now, tzinfo=pytz.UTC)[0]
+
+        if furthest_date < interval_date:
+            furthest_date = interval_date
+            furthest_interval = interval
+
+    return furthest_interval
+
+
 def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_data):
     """Writes a renewal config file with the specified name and values.
 
@@ -959,8 +993,31 @@ class RenewableCert(interfaces.RenewableCert):
                 return True
 
             # Renews some period before expiry time
+            # There are three sources for the expiry setting:
             default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
-            interval = self.configuration.get("renew_before_expiry", default_interval)
+            cli_interval = self.cli_config.renew_before_expiry
+            config_interval = self.configuration.get("renew_before_expiry", default_interval)
+
+            # `config` and `cli` will both have picked up the `default`
+            # if they were not explicitly set. Those that are `default`
+            # are ignored. `default` is only used if neither `config`
+            # or `cli` are set.
+
+            candidate_intervals = []
+
+            if cli_interval != default_interval:
+                candidate_intervals.append(cli_interval)
+
+            if config_interval != default_interval:
+                candidate_intervals.append(config_interval)
+
+            if not candidate_intervals:
+                candidate_intervals.append(default_interval)
+
+            # Tend towards renewal, so select the longest interval,
+            # meaning that which will renew the soonest.
+            interval = get_longest_time_interval(candidate_intervals)
+
             expiry = crypto_util.notAfter(self.version(
                 "cert", self.latest_common_version()))
             now = pytz.UTC.fromutc(datetime.datetime.utcnow())

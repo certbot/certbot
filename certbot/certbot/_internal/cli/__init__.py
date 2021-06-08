@@ -187,6 +187,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         version="%(prog)s {0}".format(certbot.__version__),
         help="show program's version number and exit")
     helpful.add(
+        ["automation", "renew"], "--renew-before-expiry",
+        metavar="EXPIRY_TIME_INTERVAL", type=str, dest="renew_before_expiry",
+        default=flag_default("renew_before_expiry"),
+        help="If a certificate "
+             "already exists for the requested domains, renew it if "
+             "it is within the specified time period. (Provide "
+             "a value such as '40 days', or '3 weeks').")
+    helpful.add(
         ["automation", "renew"],
         "--force-renewal", "--renew-by-default", dest="renew_by_default",
         action="store_true", default=flag_default("renew_by_default"),

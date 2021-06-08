@@ -143,6 +143,11 @@ automation:
                         requested names, always expand and replace it with the
                         additional names. (default: Ask)
   --version             show program's version number and exit
+  --renew-before-expiry EXPIRY_TIME_INTERVAL
+                        If a certificate already exists for the requested
+                        domains, renew it if it is within the specified time
+                        period. (Provide a value such as '40 days', or '3
+                        weeks'). (default: 30 days)
   --force-renewal, --renew-by-default
                         If a certificate already exists for the requested
                         domains, renew it now, regardless of whether it is
