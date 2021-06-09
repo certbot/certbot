@@ -57,7 +57,7 @@ class RawNginxParser:
     block_innards = Group(ZeroOrMore(contents) + space).leaveWhitespace()
     block << block_begin + left_bracket + block_innards + right_bracket
 
-    script = OneOrMore(contents) + space + stringEnd
+    script = ZeroOrMore(contents) + space + stringEnd
     script.parseWithTabs().leaveWhitespace()
 
     def __init__(self, source):
