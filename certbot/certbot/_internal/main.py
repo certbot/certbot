@@ -202,7 +202,7 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
         "--duplicate option.{br}{br}"
         "For example:{br}{br}{1} --duplicate {2}".format(
             existing,
-            sys.argv[0], " ".join(sys.argv[1:]),
+            cli.cli_command, " ".join(sys.argv[1:]),
             br=os.linesep
         ))
     raise errors.Error(USER_CANCELLED)
@@ -1052,7 +1052,7 @@ def enhance(config, plugins):
     if not enhancements.are_requested(config) and not oldstyle_enh:
         msg = ("Please specify one or more enhancement types to configure. To list "
                "the available enhancement types, run:\n\n%s --help enhance\n")
-        logger.error(msg, sys.argv[0])
+        logger.error(msg, cli.cli_command)
         raise errors.MisconfigurationError("No enhancements requested, exiting.")
 
     try:
