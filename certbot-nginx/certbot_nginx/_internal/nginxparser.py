@@ -9,7 +9,6 @@ from pyparsing import Combine
 from pyparsing import Forward
 from pyparsing import Group
 from pyparsing import Literal
-from pyparsing import OneOrMore
 from pyparsing import Optional
 from pyparsing import QuotedString
 from pyparsing import Regex
