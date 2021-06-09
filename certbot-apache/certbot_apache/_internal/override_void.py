@@ -1,4 +1,4 @@
-""" Distribution specific override class for Arch Linux """
+""" Distribution specific override class for Void Linux """
 import zope.interface
 
 from certbot import interfaces
