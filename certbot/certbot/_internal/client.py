@@ -614,8 +614,7 @@ class Client:
 
         """
         enh_label = options if enhancement == "ensure-http-header" else enhancement
-        msg = f"Reverted the configuration after failing to apply the {enh_label} enhancement."
-        with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
+        with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
             for dom in domains:
                 try:
                     self.installer.enhance(dom, enhancement, options)
@@ -627,14 +626,15 @@ class Client:
 
             self.installer.save(f"Add enhancement {enh_label}")
 
-    def _recovery_routine_with_msg(self, success_msg):
+    def _recovery_routine_with_msg(self, success_msg: Optional[str]) -> None:
         """Calls the installer's recovery routine and prints success_msg
 
         :param str success_msg: message to show on successful recovery
 
         """
         self.installer.recovery_routine()
-        display_util.notify(success_msg)
+        if success_msg:
+            display_util.notify(success_msg)
 
     def _rollback_and_restart(self, success_msg):
         """Rollback the most recent checkpoint and restart the webserver
