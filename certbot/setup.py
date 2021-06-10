@@ -94,6 +94,13 @@ test_extras = [
     'pytest',
     'pytest-cov',
     'pytest-xdist',
+    'types-mock',
+    'types-openssl-python',
+    'types-pkg_resources',
+    'types-pyRFC3339',
+    'types-python-dateutil',
+    'types-pytz',
+    'types-requests',
     # typing-extensions is required to import typing.Protocol and make the mypy checks
     # pass (along with pylint about non-existent objects) on Python 3.6 & 3.7
     'typing-extensions',
