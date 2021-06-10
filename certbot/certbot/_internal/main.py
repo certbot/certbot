@@ -1398,7 +1398,7 @@ def certonly(config, plugins):
     if config.csr:
         cert_path, chain_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
         _csr_report_new_cert(config, cert_path, chain_path, fullchain_path)
-        _report_next_steps(config, None, None)
+        _report_next_steps(config, None, None, new_or_renewed_cert=not config.dry_run)
         _suggest_donation_if_appropriate(config)
         eff.handle_subscription(config, le_client.account)
         return
@@ -1417,7 +1417,8 @@ def certonly(config, plugins):
     fullchain_path = lineage.fullchain_path if lineage else None
     key_path = lineage.key_path if lineage else None
     _report_new_cert(config, cert_path, fullchain_path, key_path)
-    _report_next_steps(config, None, lineage, new_or_renewed_cert=should_get_cert)
+    _report_next_steps(config, None, lineage,
+                       new_or_renewed_cert=should_get_cert and not config.dry_run)
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)
 
