@@ -658,7 +658,10 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
-        for url in body.authorizations:
+        # pylint has trouble understanding our josepy based objects which use
+        # things like custom metaclass logic. body.authorizations should be a
+        # list of strings containing URLs so let's disable this check here.
+        for url in body.authorizations:  # pylint: disable=not-an-iterable
             authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
