@@ -23,6 +23,7 @@ CLI_DEFAULTS = dict(
 
     # Main parser
     verbose_count=-int(logging.WARNING / 10),
+    verbose_level=None,
     text_mode=False,
     max_log_backups=1000,
     preconfigured_renewal=False,
