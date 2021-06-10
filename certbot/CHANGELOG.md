@@ -19,7 +19,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* When we increased the logging level on our nginx "Could not parse file" message,
+  it caused a previously-existing inability to parse empty files to become more
+  visible. We have now added the ability to correctly parse empty files, so that
+  message should only show for more significant errors.
 
 More details about these changes can be found on our GitHub repo.
 
