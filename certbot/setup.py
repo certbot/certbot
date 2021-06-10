@@ -70,9 +70,10 @@ dev_extras = [
     'azure-devops',
     'ipdb',
     'PyGithub',
-    # 1.1.0+ is required for poetry to use the poetry-core library for the
-    # build system declared in tools/pinning/pyproject.toml.
-    'poetry>=1.1.0',
+    'pip',
+    # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
+    # https://github.com/python-poetry/poetry/issues/1584.
+    'poetry>=1.2.0a1',
     'tox',
     'twine',
     'wheel',
