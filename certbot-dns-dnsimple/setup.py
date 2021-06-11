@@ -7,6 +7,9 @@ from setuptools import setup
 version = '1.17.0.dev0'
 
 install_requires = [
+    # This version of lexicon is required to address the problem described in
+    # https://github.com/AnalogJ/lexicon/issues/387.
+    'dns-lexicon>=3.2.1',
     'setuptools>=39.0.1',
     'zope.interface',
 ]
@@ -24,18 +27,6 @@ elif 'bdist_wheel' in sys.argv[1:]:
                        'to include certbot dependencies.')
 if os.environ.get('SNAP_BUILD'):
     install_requires.append('packaging')
-
-# This package normally depends on dns-lexicon>=3.2.1 to address the
-# problem described in https://github.com/AnalogJ/lexicon/issues/387,
-# however, the fix there has been backported to older versions of
-# lexicon found in various Linux distros. This conditional helps us test
-# that we've maintained compatibility with these versions of lexicon
-# which allows us to potentially upgrade our packages in these distros
-# as necessary.
-if os.environ.get('CERTBOT_OLDEST') == '1':
-    install_requires.append('dns-lexicon>=3.1.0')  # Changed parameter name
-else:
-    install_requires.append('dns-lexicon>=3.2.1')
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags

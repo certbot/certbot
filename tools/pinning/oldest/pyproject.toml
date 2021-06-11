@@ -110,7 +110,7 @@ parsedatetime = "2.4"
 # Tracking at https://github.com/certbot/certbot/issues/6473
 boto3 = "1.4.7"
 botocore = "1.7.41"
-dns-lexicon = "3.1.0"
+dns-lexicon = "3.2.1"
 
 # Other dependencies
 # We add any dependencies that must be specified in this file for any another
