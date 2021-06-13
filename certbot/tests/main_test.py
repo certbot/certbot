@@ -271,6 +271,21 @@ class CertonlyTest(unittest.TestCase):
         self._call(('certonly --webroot --cert-name example.com').split())
         self.assertIs(mock_choose_names.called, True)
 
+    @mock.patch('certbot._internal.main._report_next_steps')
+    @mock.patch('certbot._internal.main._get_and_save_cert')
+    @mock.patch('certbot._internal.main._csr_get_and_save_cert')
+    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
+    def test_dryrun_next_steps_no_cert_saved(self, mock_lineage, mock_csr_get_cert,
+                                             unused_mock_get_cert, mock_report_next_steps):
+        """certonly --dry-run shouldn't report creation of a certificate in NEXT STEPS."""
+        mock_lineage.return_value = None
+        mock_csr_get_cert.return_value = ("/cert", "/chain", "/fullchain")
+        for flag in (f"--csr {CSR}", "-d example.com"):
+            self._call(f"certonly {flag} --webroot --cert-name example.com --dry-run".split())
+            mock_report_next_steps.assert_called_once_with(
+                mock.ANY, mock.ANY, mock.ANY, new_or_renewed_cert=False)
+            mock_report_next_steps.reset_mock()
+
 
 class FindDomainsOrCertnameTest(unittest.TestCase):
     """Tests for certbot._internal.main._find_domains_or_certname."""
