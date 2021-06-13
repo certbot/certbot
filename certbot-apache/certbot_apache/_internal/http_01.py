@@ -172,8 +172,8 @@ class ApacheHttp01(common.ChallengePerformer):
         return relevant_vhosts
 
     def _unnamed_vhosts(self) -> List[VirtualHost]:
-        """Return all VirtualHost objects with no ServerName or ServerAlias"""
-        return [vh for vh in self.configurator.vhosts if not vh.get_names()]
+        """Return all VirtualHost objects with no ServerName"""
+        return [vh for vh in self.configurator.vhosts if vh.name is None]
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
