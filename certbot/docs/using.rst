@@ -286,6 +286,9 @@ dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
 dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
 dns-azure_         Y    N    DNS Authentication using Azure DNS
 dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
+njalla_            Y    N    DNS Authentication for njalla
+DuckDNS_           Y    N    DNS Authentication for DuckDNS
+Porkbun_           Y    N    DNS Authentication for Porkbun
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -302,6 +305,9 @@ dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
 .. _dns-azure: https://github.com/binkhq/certbot-dns-azure
 .. _dns-godaddy: https://github.com/miigotu/certbot-dns-godaddy
+.. _njalla: https://github.com/chaptergy/certbot-dns-njalla
+.. _DuckDNS: https://github.com/infinityofspace/certbot_dns_duckdns
+.. _Porkbun: https://github.com/infinityofspace/certbot_dns_porkbun
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
