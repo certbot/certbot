@@ -2510,6 +2510,23 @@ class ApacheConfigurator(common.Installer):
                 "changes made by Certbot. Ensure that the listed domains point to this Apache "
                 "server and that it is accessible from the internet.")
 
+    def find_deployed_certificate(self, cert_path: str, key_path: str, chain_path: str,
+                                  fullchain_path: str) -> List[str]:
+        locs = set()
+
+        dir_combos = (
+            ("SSLCertificateFile", fullchain_path),
+            ("SSLCertificateKeyFile", key_path),
+            ("SSLCertificateFile", cert_path),
+            ("SSLCertificateChainFile", chain_path),
+        )
+        for vh in self.vhosts:
+            if any(self.parser.find_dir(*c, vh.path) for c in dir_combos):
+                locs.add(vh.filep)
+
+        return list(locs)
+
+
     ###########################################################################
     # Challenges Section
     ###########################################################################

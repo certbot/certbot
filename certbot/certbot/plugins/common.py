@@ -4,6 +4,7 @@ import re
 import shutil
 import tempfile
 from typing import List
+from typing import Tuple
 
 from josepy import util as jose_util
 import pkg_resources
@@ -226,6 +227,24 @@ class Installer(Plugin):
             self.updated_ssl_dhparams_digest,
             constants.SSL_DHPARAMS_SRC,
             constants.ALL_SSL_DHPARAMS_HASHES)
+
+    def find_deployed_certificate(self, cert_path: str, key_path: str, chain_path: str,
+                                  fullchain_path: str) -> List[str]:
+        """Returns locations where a certificate is deployed in the installer.
+
+        :param str cert_path: The certificate path.
+        :param str key_path: The certificate path.
+        :param str chain_path: The certificate path.
+        :param str fullchain_path: The certificate path.
+
+        :returns: list of human-understandable locations (e.g. `file:line_no`) where the
+                  certificate is deployed.
+        :rtype: `List` of `str`
+
+        :raises NotImplementedError: if the installer doesn't implement this functionality.
+
+        """
+        raise NotImplementedError()
 
 
 class Addr:

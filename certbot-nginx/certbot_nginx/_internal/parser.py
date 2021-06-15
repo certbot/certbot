@@ -286,6 +286,25 @@ class NginxParser:
 
         return False
 
+    def has_directive(self, vhost: obj.VirtualHost, dir_needle: List[str]) -> bool:
+        """Does this vhost has a directive that begins with or matches dir_needle?
+
+        :param vhost: The vhost to look within
+        :type vhost: obj.VirtualHost
+
+        :param dir_needle: The directive to look for. Must contain at least 1 item.
+        :type dir_needle: List[str]
+
+        :returns: True if vhost contains any directive matching the dir_needle.
+        :rtype: bool
+
+        """
+        def _match_func(haystack: List[str]) -> bool:
+            if len(haystack) < len(dir_needle):
+                return False
+            return haystack[1:len(dir_needle)] == dir_needle[1:]
+        return _find_location(vhost.raw, dir_needle[0], _match_func) is not None
+
     def add_server_directives(self, vhost, directives, insert_at_top=False):
         """Add directives to the server block identified by vhost.
 

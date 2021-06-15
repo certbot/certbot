@@ -3,6 +3,7 @@ import datetime
 import logging
 import re
 import traceback
+from typing import Dict
 from typing import List
 
 import pytz
@@ -14,6 +15,8 @@ from certbot import interfaces
 from certbot import ocsp
 from certbot import util
 from certbot._internal import storage
+from certbot._internal.plugins import disco as plugins_disco
+from certbot._internal.plugins import selection as plug_sel
 from certbot.compat import os
 from certbot.display import util as display_util
 
@@ -89,13 +92,45 @@ def certificates(config):
     _describe_certs(config, parsed_certs, parse_failures)
 
 
-def delete(config):
+def delete(config: interfaces.IConfig, plugins: plugins_disco.PluginsRegistry):
     """Delete Certbot files associated with a certificate lineage."""
     certnames = get_certnames(config, "delete", allow_multiple=True)
     disp = zope.component.getUtility(interfaces.IDisplay)
+
+    # Gather up any certificates which are still deployed to their respective installers.
+    installed_certs: Dict[str, List[str]] = {}
+    for name in certnames:
+        try:
+            loc = _get_cert_install_locations(config, plugins, name)
+            if loc:
+                installed_certs[name] = loc
+        except Exception: # pylint: disable=broad-except
+            logger.debug("Couldn't check install status for certificate %s",
+                         name, exc_info=True)
+
+    # Final confirmation and warning about any certificate still deployed to the installers
     msg = ["The following certificate(s) are selected for deletion:\n"]
     for certname in certnames:
-        msg.append("  * " + certname)
+        msg.append("* " + certname)
+        if certname in installed_certs:
+            for loc in installed_certs[certname]:
+                msg.append(f"  - Installed at: {loc}")
+
+    if installed_certs:
+        msg.append(
+            "\nWARNING: Some of the above certificate(s) are still installed on your webserver. "
+            "It is HIGHLY advised to uninstall these certificates from your webserver, before "
+            "deleting them. Not doing so may result in a broken webserver configuration. "
+            "See https://certbot.org/deleting-certs for more information."
+        )
+
+        # msg.append(
+        #     "\nWARNING: Some of the selected certificate(s) are still in-use by the webserver. "
+        #     "It is HIGHLY advised to remove all references to these certificate(s) from any "
+        #     "webserver configuration, before deleting them. Failing to do so may result in a "
+        #     "broken webserver. See https://certbot.org/deleting-certs "
+        #     "for more info.")
+
     msg.append("\nAre you sure you want to delete the above certificate(s)?")
     if not disp.yesno("\n".join(msg), default=True):
         logger.info("Deletion of certificate(s) canceled.")
@@ -412,3 +447,51 @@ def _search_lineages(cli_config, func, initial_rv, *args):
             continue
         rv = func(candidate_lineage, rv, *args)
     return rv
+
+
+def _get_cert_install_locations(config: interfaces.IConfig, plugins: plugins_disco.PluginsRegistry,
+                                cert_name: str) -> List[str]:
+    """Return installation locations (e.g. webserver vhosts), if any, of the certificate.
+
+    Requires the certificate to have an installer set and for the installer to support
+    this operation.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: plugins_disco.PluginsRegistry
+
+    :param str cert_name: The name of the certificate
+
+    :returns: The list of installation locations, if any.
+    :rtype: List[str]
+
+    """
+    orig_installer = config.installer
+    try:
+        lineage = storage.RenewableCert(
+            storage.renewal_file_for_certname(config, cert_name), config)
+        renewalparams = lineage.configuration.get("renewalparams", default={})
+
+        # Skip if there's no installer set on the certificate
+        installer = renewalparams.get("installer")
+        if installer is None:
+            return []
+
+        # FIXME(alexzorin): choosing the installer plugin every time might be too expensive,
+        # because it always re-initializes it, even if it's the same as the previous iteration.
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # ~~~~!!! Don't merge this without fixing it !!!~~~~
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        config.install = installer
+        installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "install")
+
+        try:
+            return installer.find_deployed_certificate(
+                lineage.cert, lineage.privkey, lineage.chain, lineage.fullchain)
+        except NotImplementedError:
+            return []
+    finally:
+        # Restore the original installer value
+        config.installer = orig_installer

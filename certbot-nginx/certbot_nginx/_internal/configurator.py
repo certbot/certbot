@@ -1088,6 +1088,22 @@ class NginxConfigurator(common.Installer):
             "accessible from the internet."
         )
 
+    def find_deployed_certificate(self, cert_path: str, key_path: str, chain_path: str,
+                                  fullchain_path: str) -> List[str]:
+        locs: Set[str] = set()
+
+        combos = [
+            ["ssl_certificate", fullchain_path],
+            ["ssl_certificate", cert_path],
+            ["ssl_certificate_key", key_path],
+            ["ssl_trusted_certificate", chain_path],
+        ]
+        for vh in self.parser.get_vhosts():
+            if any(self.parser.has_directive(vh, combo) for combo in combos):
+                locs.add(vh.filep)
+
+        return list(locs)
+
     ###################################################
     # Wrapper functions for Reverter class (IInstaller)
     ###################################################

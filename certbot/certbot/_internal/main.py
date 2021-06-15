@@ -5,6 +5,7 @@ import functools
 import logging.handlers
 import sys
 from contextlib import contextmanager
+from typing import Dict
 from typing import Generator
 from typing import IO
 from typing import Iterable
@@ -668,12 +669,15 @@ def _determine_account(config):
     return acc, acme
 
 
-def _delete_if_appropriate(config):
+def _delete_if_appropriate(config: interfaces.IConfig, plugins: plugins_disco.PluginsRegistry):
     """Does the user want to delete their now-revoked certs? If run in non-interactive mode,
     deleting happens automatically.
 
     :param config: parsed command line arguments
     :type config: interfaces.IConfig
+
+    :param plugins: loaded plugins
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
@@ -719,7 +723,7 @@ def _delete_if_appropriate(config):
         msg = msg.format(config.default_archive_dir, config.live_dir, archive_dir, e)
         raise errors.Error(msg)
 
-    cert_manager.delete(config)
+    cert_manager.delete(config, plugins)
 
 
 def _init_le_client(config, authenticator, installer):
@@ -1143,7 +1147,7 @@ def rename(config, unused_plugins):
     """
     cert_manager.rename_lineage(config)
 
-def delete(config, unused_plugins):
+def delete(config, plugins):
     """Delete a certificate
 
     Use the information in the config file to delete an existing
@@ -1159,8 +1163,7 @@ def delete(config, unused_plugins):
     :rtype: None
 
     """
-    cert_manager.delete(config)
-
+    cert_manager.delete(config, plugins)
 
 def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
@@ -1178,14 +1181,14 @@ def certificates(config, unused_plugins):
     cert_manager.certificates(config)
 
 
-def revoke(config, unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
+def revoke(config, plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
     """Revoke a previously obtained certificate.
 
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: plugins_disco.PluginsRegistry
+    :param plugins: List of plugins (deprecated)
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None` or string indicating error in case of error
     :rtype: None or str
@@ -1224,7 +1227,7 @@ def revoke(config, unused_plugins: plugins_disco.PluginsRegistry) -> Optional[st
     logger.debug("Reason code for revocation: %s", config.reason)
     try:
         acme.revoke(jose.ComparableX509(cert), config.reason)
-        _delete_if_appropriate(config)
+        _delete_if_appropriate(config, plugins)
     except acme_errors.ClientError as e:
         return str(e)
 
