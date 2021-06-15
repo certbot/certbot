@@ -516,6 +516,50 @@ revocation from any ACME account::
 
   certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem --key-path /etc/letsencrypt/live/example.com/privkey.pem
 
+.. _deleting:
+
+Deleting certificates
+---------------------
+
+If you need to delete a certificate, use the ``delete`` subcommand.
+
+.. note:: Do not manually delete certificate files from inside ``/etc/letsencrypt/``. Always use the ``delete`` subcommand.
+
+A certificate may be deleted by providing its name with ``--cert-name``. \
+You may find its name using ``certbot certificates``.
+
+Otherwise, you will be prompted to choose one or more
+certificates to delete::
+
+  certbot delete --cert-name example.com
+  # or to choose from a list:
+  certbot delete
+
+**Safely deleting certificates**
+
+*Before* deleting a certificate, make sure to remove all references to that certificate from the configuration
+of any installed server software (Apache, nginx, Postfix, etc). Otherwise, you may end up with a non-functioning
+server.
+
+When installing a certificate, Certbot will configure Apache and nginx's configuration with references to files within the
+certificate's ``live`` directory. Before deleting a certificate, it is necessary to remove each of those references::
+
+  # To find references to a certificate named "example.com":
+  sudo bash -c 'grep -R live/example.com /etc/{nginx,httpd,apache2}'
+
+To safely remove those references, you may delete the entire virtual host from the configuration, or replace the certificate
+references with a self-signed certificate::
+
+  # Generate a self-signed certificate
+  sudo openssl req -nodes -batch -x509 -newkey rsa:2048 -keyout /etc/letsencrypt/self-signed-privkey.pem -out /etc/letsencrypt/self-signed-cert.pem -days 356
+  # and substitute it in your configuration. e.g. Before:
+  #   SSLCertificateFile /etc/letsencrypt/live/example.com/fullchain.pem
+  #   SSLCertificateKeyFile /etc/letsencrypt/live/example.com/privkey.pem
+  # After:
+  #   SSLCertificateFile /etc/letsencrypt/self-signed-cert.pem
+  #   SSLCertificateKeyFile /etc/letsencrypt/self-signed-privkey.pem
+
+
 .. _renewal:
 
 Renewing certificates
@@ -716,7 +760,7 @@ Setting up automated renewal
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you think you may need to set up automated renewal, follow these instructions to set up a
-scheduled task to automatically renew your certificates in the background. If you are unsure 
+scheduled task to automatically renew your certificates in the background. If you are unsure
 whether your system has a pre-installed scheduled task for Certbot, it is safe to follow these
 instructions to create one.
 
