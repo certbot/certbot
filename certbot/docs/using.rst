@@ -229,11 +229,14 @@ For example, for the domain ``example.com``, a zone file entry would look like:
 
         _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
+**Renewal with the manual plugin**
 
-Additionally you can specify scripts to prepare for validation and
-perform the authentication procedure and/or clean up after it by using
-the ``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is
-described in more depth in the hooks_ section.
+Certificates created using ``--manual`` **do not** support automatic renewal unless
+combined with an `authentication hook script <#hooks>`_  via ``--manual-auth-hook``
+to automatically set up the required HTTP and/or TXT challenges.
+
+To renew a certificate using ``--manual`` without hooks, repeat the same ``certbot --manual``
+command you used to create the certificate originally.
 
 .. _combination:
 
