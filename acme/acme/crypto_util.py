@@ -238,7 +238,6 @@ def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
 
 
 def _pyopenssl_cert_or_req_san(cert_or_req):
-    #for some reason this always return nothing
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
 
     .. todo:: Implement directly in PyOpenSSL!
@@ -353,11 +352,18 @@ def gen_ss_cert(key, domains, not_before=None,
     # TODO: what to put into cert.get_subject()?
     cert.set_issuer(cert.get_subject())
 
+    sanlist = []
+    for address in domains:
+        if _is_ip(address):
+            sanlist.append('IP:' + address)
+        else:
+            sanlist.append('DNS:' + address)
+    san_string = ', '.join(sanlist).encode('ascii')
     if force_san or len(domains) > 1:
         extensions.append(crypto.X509Extension(
             b"subjectAltName",
             critical=False,
-            value=b", ".join(b"DNS:" + d.encode() for d in domains)
+            value=san_string
         ))
 
     cert.add_extensions(extensions)

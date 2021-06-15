@@ -332,7 +332,7 @@ class NginxConfigurator(common.Installer):
 
         """
         if util.is_ipaddress(target_name):
-            # ip address is currently doesn't work
+            # ip address currently doesn't work for this plugin
             raise errors.MisconfigurationError(
                 "Current plugin doesn't support installing cert for ip address %s" % target_name)
 
@@ -663,7 +663,7 @@ class NginxConfigurator(common.Installer):
             for addr in vhost.addrs:
                 host = addr.get_addr()
                 if common.hostname_regex.match(host):
-                    # If it's a hostname, add it to the names.get_all_names
+                    # If it's a hostname, add it to the names.
                     all_names.add(host)
                 elif not common.private_ips_regex.match(host):
                     # If it isn't a private IP, do a reverse DNS lookup

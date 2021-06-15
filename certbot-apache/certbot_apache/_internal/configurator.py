@@ -708,7 +708,7 @@ class ApacheConfigurator(common.Installer):
         """
 
         if util.is_ipaddress(target_name):
-            # ip address is currently doesn't work
+            # ip address currently doesn't work for install
             logger.error(
                 "Currently plugin doesn't support installing cert for ip address %s",
                 target_name)
