@@ -541,8 +541,9 @@ certificates to delete::
 of any installed server software (Apache, nginx, Postfix, etc). Otherwise, you may end up with a non-functioning
 server.
 
-When installing a certificate, Certbot will configure Apache and nginx's configuration with references to files within the
-certificate's ``live`` directory. Before deleting a certificate, it is necessary to remove each of those references::
+When installing a certificate, Certbot modifies Apache's and nginx's configuration to load the certificate and its
+private key from the ``/etc/letsencrypt/live/`` directory. Before deleting a certificate, it is necessary to undo that
+modification, by removing any references to the certificate in question::
 
   # To find references to a certificate named "example.com":
   sudo bash -c 'grep -R live/example.com /etc/{nginx,httpd,apache2}'
