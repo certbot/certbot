@@ -228,7 +228,7 @@ class RandomSnTest(unittest.TestCase):
         from acme.crypto_util import gen_ss_cert
 
         for _ in range(self.cert_count):
-            cert = gen_ss_cert(self.key, ['dummy'], force_san=True)
+            cert = gen_ss_cert(self.key, ['dummy', '127.0.0.1'], force_san=True)
             self.serial_num.append(cert.get_serial_number())
         self.assertGreater(len(set(self.serial_num)), 1)
 
