@@ -124,13 +124,6 @@ def delete(config: interfaces.IConfig, plugins: plugins_disco.PluginsRegistry):
             "See https://certbot.org/deleting-certs for more information."
         )
 
-        # msg.append(
-        #     "\nWARNING: Some of the selected certificate(s) are still in-use by the webserver. "
-        #     "It is HIGHLY advised to remove all references to these certificate(s) from any "
-        #     "webserver configuration, before deleting them. Failing to do so may result in a "
-        #     "broken webserver. See https://certbot.org/deleting-certs "
-        #     "for more info.")
-
     msg.append("\nAre you sure you want to delete the above certificate(s)?")
     if not disp.yesno("\n".join(msg), default=True):
         logger.info("Deletion of certificate(s) canceled.")
@@ -484,7 +477,7 @@ def _get_cert_install_locations(config: interfaces.IConfig, plugins: plugins_dis
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # ~~~~!!! Don't merge this without fixing it !!!~~~~
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        config.install = installer
+        config.installer = installer
         installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "install")
 
         try:
