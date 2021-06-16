@@ -235,8 +235,10 @@ Certificates created using ``--manual`` **do not** support automatic renewal unl
 combined with an `authentication hook script <#hooks>`_  via ``--manual-auth-hook``
 to automatically set up the required HTTP and/or TXT challenges.
 
-To renew a certificate using ``--manual`` without hooks, repeat the same ``certbot --manual``
-command you used to create the certificate originally.
+To manually renew a certificate using ``--manual`` without hooks, repeat the same
+``certbot --manual`` command you used to create the certificate originally. As this
+will require you to copy and paste a new HTTP file or DNS TXT record, the command
+cannot be automated with a cron job.
 
 .. _combination:
 
