@@ -127,7 +127,7 @@ class ApacheHttp01Test(util.ApacheTest):
 
     def test_configure_name_and_blank(self):
         domain = "certbot.demo"
-        vhosts = [v for v in self.config.vhosts if v.name == domain or not v.get_names()]
+        vhosts = [v for v in self.config.vhosts if v.name == domain or v.name is None]
         achalls = [
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.chall_to_challb(
