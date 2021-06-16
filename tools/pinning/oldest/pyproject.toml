@@ -112,17 +112,23 @@ boto3 = "1.4.7"
 botocore = "1.7.41"
 dns-lexicon = "3.2.1"
 
+# Build dependencies
+# Since there doesn't appear to
+# doesn't appear to be a good way to automatically track down and pin build
+# dependencies in Python (see
+# https://discuss.python.org/t/how-to-pin-build-dependencies/8238), we list any
+# build dependencies here to ensure they're pinned for extra stability.
+
+# cython is a build dependency of pyyaml
+cython = "*"
+# wheel is a common build dependency and wheel 0.34.1+ does not support the
+# version of setuptools pinned above (and wheel 0.34.0 is buggy).
+wheel = "<0.34.0"
+
 # Other dependencies
 # We add any dependencies that must be specified in this file for any another
 # reason below.
 
-# As of writing this, cython is a build dependency of pyyaml. Since there
-# doesn't appear to be a good way to automatically track down and pin build
-# dependencies in Python (see
-# https://discuss.python.org/t/how-to-pin-build-dependencies/8238), we list it
-# as a dependency here to ensure a version of cython is pinned for extra
-# stability.
-cython = "*"
 # pip's new dependency resolver fails on local packages that depend on each
 # other when those packages are requested with extras such as 'certbot[dev]' so
 # let's pin it back for now. See https://github.com/pypa/pip/issues/9204.
