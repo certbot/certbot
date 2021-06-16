@@ -229,6 +229,8 @@ For example, for the domain ``example.com``, a zone file entry would look like:
 
         _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
+.. _manual-renewal:
+
 **Renewal with the manual plugin**
 
 Certificates created using ``--manual`` **do not** support automatic renewal unless
@@ -533,6 +535,10 @@ Renewing certificates
 .. seealso:: Most Certbot installations come with automatic
    renewal out of the box. See `Automated Renewals`_ for more details.
 
+.. seealso:: Users of the `Manual`_ plugin should note that ``--manual`` certificates
+   will not renew automatically, unless combined with authentication hook scripts.
+   See `Renewal with the manual plugin <#manual-renewal>`_.
+
 As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
 them. The simplest form is simply
@@ -721,7 +727,7 @@ Setting up automated renewal
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you think you may need to set up automated renewal, follow these instructions to set up a
-scheduled task to automatically renew your certificates in the background. If you are unsure 
+scheduled task to automatically renew your certificates in the background. If you are unsure
 whether your system has a pre-installed scheduled task for Certbot, it is safe to follow these
 instructions to create one.
 
