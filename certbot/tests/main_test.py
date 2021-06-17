@@ -1958,7 +1958,7 @@ class ReportNextStepsTest(unittest.TestCase):
         """--manual without a hook requires manual renewal"""
         self.config.authenticator = "manual"
         self._call(self.config, None, None)
-        self.assertIn("--manual plugin requires", self._output())
+        self.assertIn("--manual certificates requires", self._output())
 
     def test_no_preconfigured_renewal(self):
         """No --preconfigured-renewal needs manual cron setup"""
