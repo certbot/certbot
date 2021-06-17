@@ -507,6 +507,13 @@ def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[error
                 "Certificates created using --csr will not be renewed automatically by Certbot. "
                 "You will need to renew the certificate before it expires, by running the same "
                 "Certbot command again.")
+        elif _is_interactive_only_auth(config):
+            steps.append(
+                "This certificate will not be renewed automatically by Certbot. The --manual "
+                "plugin requires the use of an authentication hook script (--manual-auth-hook) "
+                "in order to support autorenewal. To renew this certificate, repeat this same "
+                f"{cli.cli_command} command, before the certificate's expiry date."
+            )
         elif not config.preconfigured_renewal:
             steps.append(
                 "The certificate will need to be renewed before it expires. Certbot can "
@@ -556,6 +563,11 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
 
     assert cert_path and fullchain_path, "No certificates saved to report."
 
+    renewal_msg = ""
+    if config.preconfigured_renewal and not _is_interactive_only_auth(config):
+        renewal_msg = ("\nCertbot has set up a scheduled task to automatically renew this "
+                       "certificate in the background.")
+
     display_util.notify(
         ("\nSuccessfully received certificate.\n"
         "Certificate is saved at: {cert_path}\n{key_msg}"
@@ -564,11 +576,20 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
             cert_path=fullchain_path,
             expiry=crypto_util.notAfter(cert_path).date(),
             key_msg="Key is saved at:         {}\n".format(key_path) if key_path else "",
-            renewal_msg="\nCertbot has set up a scheduled task to automatically renew this "
-                        "certificate in the background." if config.preconfigured_renewal else "",
+            renewal_msg=renewal_msg,
             nl="\n" if config.verb == "run" else "" # Normalize spacing across verbs
         )
     )
+
+
+def _is_interactive_only_auth(config: interfaces.IConfig) -> bool:
+    """ Whether the current authenticator params only support interactive renewal.
+    """
+    # --manual without --manual-auth-hook can never autorenew
+    if config.authenticator == "manual" and config.manual_auth_hook is None:
+        return True
+
+    return False
 
 
 def _csr_report_new_cert(config: interfaces.IConfig, cert_path: Optional[str],
