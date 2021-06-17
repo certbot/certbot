@@ -509,10 +509,10 @@ def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[error
                 "Certbot command again.")
         elif _is_interactive_only_auth(config):
             steps.append(
-                "This certificate will not be renewed automatically by Certbot. The --manual "
-                "plugin requires the use of an authentication hook script (--manual-auth-hook) "
-                "in order to support autorenewal. To renew this certificate, repeat this same "
-                f"{cli.cli_command} command before the certificate's expiry date."
+                "This certificate will not be renewed automatically. Autorenewal of "
+                "--manual certificates requires the use of an authentication hook script "
+                "(--manual-auth-hook) but one was not provided. To renew this certificate, repeat "
+                f"this same {cli.cli_command} command before the certificate's expiry date."
             )
         elif not config.preconfigured_renewal:
             steps.append(
