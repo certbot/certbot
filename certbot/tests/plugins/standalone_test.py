@@ -177,6 +177,13 @@ class AuthenticatorTest(unittest.TestCase):
             "server1": set(), "server2": set()})
         self.auth.servers.stop.assert_called_with(2)
 
+    def test_auth_hint(self):
+        self.config.http01_port = "80"
+        self.config.http01_address = None
+        self.assertIn("on port 80", self.auth.auth_hint([]))
+        self.config.http01_address = "127.0.0.1"
+        self.assertIn("on 127.0.0.1:80", self.auth.auth_hint([]))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
