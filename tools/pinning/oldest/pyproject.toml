@@ -132,6 +132,10 @@ wheel = "<0.34.0"
 # pip's new dependency resolver fails on local packages that depend on each
 # other when those packages are requested with extras such as 'certbot[dev]' so
 # let's pin it back for now. See https://github.com/pypa/pip/issues/9204.
+#
+# If pip no longer needs to be pinned to a specific version, this line should
+# be changed to something like `pip = "*"` to ensure pip is pinned in the
+# constraints file.
 pip = "20.2.4"
 
 [tool.poetry.dev-dependencies]
