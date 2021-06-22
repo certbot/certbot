@@ -70,13 +70,11 @@ dev_extras = [
     'azure-devops',
     'ipdb',
     'PyGithub',
-    'pip',
     # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
     # https://github.com/python-poetry/poetry/issues/1584.
     'poetry>=1.2.0a1',
     'tox',
     'twine',
-    'wheel',
 ]
 
 docs_extras = [
@@ -85,6 +83,12 @@ docs_extras = [
     'repoze.sphinx.autointerface',
     'Sphinx>=1.2', # Annotation support
     'sphinx_rtd_theme',
+]
+
+pipstrap_extras = [
+    'pip',
+    'setuptools',
+    'wheel',
 ]
 
 test_extras = [
@@ -100,7 +104,7 @@ test_extras = [
 ]
 
 
-all_extras = dev_extras + docs_extras + test_extras
+all_extras = dev_extras + docs_extras + pipstrap_extras + test_extras
 
 setup(
     name='certbot',
@@ -141,6 +145,7 @@ setup(
         'all': all_extras,
         'dev': dev_extras,
         'docs': docs_extras,
+        'pipstrap': pipstrap_extras,
         'test': test_extras,
     },
 
