@@ -60,8 +60,8 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.  
 manual_     Y    N    | Obtain a certificate by manually following instructions to    http-01_ (80) or
                       | perform domain validation yourself. Certificates created this dns-01_ (53)
                       | way do not support autorenewal.
-                      | Autorenewal may be enabled by specifying scripts to automate
-                      | the domain validation steps.
+                      | Autorenewal may be enabled by providing an authentication
+                      | hook script to automate the domain validation steps.
 =========== ==== ==== =============================================================== =============================
 
 .. |dns_plugs| replace:: :ref:`DNS plugins <dns_plugins>`
