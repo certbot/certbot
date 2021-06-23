@@ -31,7 +31,7 @@ certbot-dns-route53 = {path = "../../../certbot-dns-route53"}
 certbot-dns-sakuracloud = {path = "../../../certbot-dns-sakuracloud"}
 certbot-nginx = {path = "../../../certbot-nginx"}
 certbot-apache = {path = "../../../certbot-apache", extras = ["dev"]}
-certbot = {path = "../../../certbot", extras = ["pipstrap", "test"]}
+certbot = {path = "../../../certbot", extras = ["test"]}
 acme = {path = "../../../acme", extras = ["test"]}
 
 # Oldest dependencies
@@ -131,8 +131,8 @@ cython = "*"
 # let's pin it back for now. See https://github.com/pypa/pip/issues/9204.
 pip = "20.2.4"
 
-# wheel is pinned as part of pipstrap and wheel 0.34.1+ does not support the
-# version of setuptools pinned above (and wheel 0.34.0 is buggy).
+# wheel 0.34.1+ does not support the version of setuptools pinned above (and
+# wheel 0.34.0 is buggy).
 wheel = "<0.34.0"
 
 [tool.poetry.dev-dependencies]
