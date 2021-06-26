@@ -95,10 +95,10 @@ class ApacheHttp01(common.ChallengePerformer):
     def _mod_config(self):
         selected_vhosts: List[VirtualHost] = []
         http_port = str(self.configurator.config.http01_port)
+
+        # Search for VirtualHosts matching by name
         for chall in self.achalls:
-            # Search for matching VirtualHosts
-            for vh in self._matching_vhosts(chall.domain):
-                selected_vhosts.append(vh)
+            selected_vhosts += self._matching_vhosts(chall.domain)
 
         # Ensure that we have one or more VirtualHosts that we can continue
         # with. (one that listens to port configured with --http-01-port)
@@ -107,9 +107,13 @@ class ApacheHttp01(common.ChallengePerformer):
             if any(a.is_wildcard() or a.get_port() == http_port for a in vhost.addrs):
                 found = True
 
-        if not found:
-            for vh in self._relevant_vhosts():
-                selected_vhosts.append(vh)
+        # If there's at least one elgible VirtualHost, also add all unnamed VirtualHosts
+        # because they might match at runtime (#8890)
+        if found:
+            selected_vhosts += self._unnamed_vhosts()
+        # Otherwise, add every Virtualhost which listens on the right port
+        else:
+            selected_vhosts += self._relevant_vhosts()
 
         # Add the challenge configuration
         for vh in selected_vhosts:
@@ -166,6 +170,10 @@ class ApacheHttp01(common.ChallengePerformer):
                 " {0}.".format(http01_port))
 
         return relevant_vhosts
+
+    def _unnamed_vhosts(self) -> List[VirtualHost]:
+        """Return all VirtualHost objects with no ServerName"""
+        return [vh for vh in self.configurator.vhosts if vh.name is None]
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):

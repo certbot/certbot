@@ -190,12 +190,18 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
 
     @mock.patch("socket.socket.bind")
     def test_fail_to_bind(self, mock_bind):
-        mock_bind.side_effect = socket.error
+        from errno import EADDRINUSE
         from acme.standalone import BaseDualNetworkedServers
-        self.assertRaises(socket.error, BaseDualNetworkedServers,
-                          BaseDualNetworkedServersTest.SingleProtocolServer,
-                          ('', 0),
-                          socketserver.BaseRequestHandler)
+
+        mock_bind.side_effect = socket.error(EADDRINUSE, "Fake addr in use error")
+
+        with self.assertRaises(socket.error) as em:
+            BaseDualNetworkedServers(
+                BaseDualNetworkedServersTest.SingleProtocolServer,
+                ('', 0), socketserver.BaseRequestHandler)
+
+        self.assertEqual(em.exception.errno, EADDRINUSE)
+
 
     def test_ports_equal(self):
         from acme.standalone import BaseDualNetworkedServers

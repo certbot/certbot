@@ -22,7 +22,8 @@ CLI_DEFAULTS = dict(
     ],
 
     # Main parser
-    verbose_count=-int(logging.WARNING / 10),
+    verbose_count=0,
+    verbose_level=None,
     text_mode=False,
     max_log_backups=1000,
     preconfigured_renewal=False,
@@ -141,6 +142,9 @@ REVOCATION_REASONS = {
 
 QUIET_LOGGING_LEVEL = logging.ERROR
 """Logging level to use in quiet mode."""
+
+DEFAULT_LOGGING_LEVEL = logging.WARNING
+"""Default logging level to use when not in quiet mode."""
 
 RENEWER_DEFAULTS = dict(
     renewer_enabled="yes",
