@@ -10,6 +10,7 @@ from certbot_apache._internal import override_debian
 from certbot_apache._internal import override_fedora
 from certbot_apache._internal import override_gentoo
 from certbot_apache._internal import override_suse
+from certbot_apache._internal import override_void
 
 OVERRIDE_CLASSES = {
     "arch": override_arch.ArchConfigurator,
@@ -35,6 +36,7 @@ OVERRIDE_CLASSES = {
     "sles": override_suse.OpenSUSEConfigurator,
     "scientific": override_centos.CentOSConfigurator,
     "scientific linux": override_centos.CentOSConfigurator,
+    "void": override_void.VoidConfigurator,
 }
 
 

@@ -2,7 +2,7 @@
 import datetime
 import logging
 import platform
-from typing import Optional
+from typing import List, Optional, Union
 
 from cryptography.hazmat.backends import default_backend
 # See https://github.com/pyca/cryptography/issues/4275
@@ -610,7 +610,8 @@ class Client:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
-    def apply_enhancement(self, domains, enhancement, options=None):
+    def apply_enhancement(self, domains: List[str], enhancement: str,
+                          options: Optional[Union[List[str], str]] = None) -> None:
         """Applies an enhancement on all domains.
 
         :param list domains: list of ssl_vhosts (as strings)
@@ -624,33 +625,28 @@ class Client:
 
 
         """
-        msg = f"Could not set up {enhancement} enhancement"
-        with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
+        enh_label = options if enhancement == "ensure-http-header" else enhancement
+        with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
             for dom in domains:
                 try:
                     self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
-                    if enhancement == "ensure-http-header":
-                        logger.info("Enhancement %s was already set.",
-                                options)
-                    else:
-                        logger.info("Enhancement %s was already set.",
-                                enhancement)
+                    logger.info("Enhancement %s was already set.", enh_label)
                 except errors.PluginError:
-                    logger.error("Unable to set enhancement %s for %s",
-                            enhancement, dom)
+                    logger.error("Unable to set the %s enhancement for %s.", enh_label, dom)
                     raise
 
-            self.installer.save("Add enhancement %s" % (enhancement))
+            self.installer.save(f"Add enhancement {enh_label}")
 
-    def _recovery_routine_with_msg(self, success_msg):
+    def _recovery_routine_with_msg(self, success_msg: Optional[str]) -> None:
         """Calls the installer's recovery routine and prints success_msg
 
         :param str success_msg: message to show on successful recovery
 
         """
         self.installer.recovery_routine()
-        display_util.notify(success_msg)
+        if success_msg:
+            display_util.notify(success_msg)
 
     def _rollback_and_restart(self, success_msg):
         """Rollback the most recent checkpoint and restart the webserver

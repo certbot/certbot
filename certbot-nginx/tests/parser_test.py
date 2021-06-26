@@ -50,7 +50,7 @@ class NginxParserTest(util.NginxTest):
         nparser = parser.NginxParser(self.config_path)
         nparser.load()
         self.assertEqual({nparser.abs_path(x) for x in
-                          ['foo.conf', 'nginx.conf', 'server.conf',
+                          ['foo.conf', 'nginx.conf', 'server.conf', 'mime.types',
                            'sites-enabled/default',
                            'sites-enabled/both.com',
                            'sites-enabled/example.com',
@@ -89,7 +89,7 @@ class NginxParserTest(util.NginxTest):
         # pylint: disable=protected-access
         parsed = nparser._parse_files(nparser.abs_path(
             'sites-enabled/example.com.test'))
-        self.assertEqual(3, len(glob.glob(nparser.abs_path('*.test'))))
+        self.assertEqual(4, len(glob.glob(nparser.abs_path('*.test'))))
         self.assertEqual(10, len(
             glob.glob(nparser.abs_path('sites-enabled/*.test'))))
         self.assertEqual([[['server'], [['listen', '69.50.225.155:9000'],

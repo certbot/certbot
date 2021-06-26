@@ -8,6 +8,7 @@ import socket
 import socketserver
 import threading
 from typing import List
+from typing import Optional
 
 from acme import challenges
 from acme import crypto_util
@@ -66,6 +67,9 @@ class BaseDualNetworkedServers:
         self.threads: List[threading.Thread] = []
         self.servers: List[socketserver.BaseServer] = []
 
+        # Preserve socket error for re-raising, if no servers can be started
+        last_socket_err: Optional[socket.error] = None
+
         # Must try True first.
         # Ubuntu, for example, will fail to bind to IPv4 if we've already bound
         # to IPv6. But that's ok, since it will accept IPv4 connections on the IPv6
@@ -82,7 +86,8 @@ class BaseDualNetworkedServers:
                 logger.debug(
                     "Successfully bound to %s:%s using %s", new_address[0],
                     new_address[1], "IPv6" if ip_version else "IPv4")
-            except socket.error:
+            except socket.error as e:
+                last_socket_err = e
                 if self.servers:
                     # Already bound using IPv6.
                     logger.debug(
@@ -101,7 +106,10 @@ class BaseDualNetworkedServers:
                 # bind to the same port for both servers.
                 port = server.socket.getsockname()[1]
         if not self.servers:
-            raise socket.error("Could not bind to IPv4 or IPv6.")
+            if last_socket_err:
+                raise last_socket_err
+            else: # pragma: no cover
+                raise socket.error("Could not bind to IPv4 or IPv6.")
 
     def serve_forever(self):
         """Wraps socketserver.TCPServer.serve_forever"""
