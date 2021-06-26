@@ -45,7 +45,7 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-tools/venv.py -e acme[dev] -e certbot[dev,docs] -e certbot-apache -e certbot-ci
+tools/venv.py -e acme -e certbot -e certbot-apache -e certbot-ci tox
 PEBBLE_LOGS="acme_server.log"
 PEBBLE_URL="https://localhost:14000/dir"
 # We configure Pebble to use port 80 for http-01 validation rather than an
