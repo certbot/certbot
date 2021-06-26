@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Add Void Linux overrides for certbot-apache.
 
 ### Changed
 
@@ -16,9 +16,16 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   of the Certbot package will now always require acme>=X and version Y of a
   plugin package will always require acme>=Y and certbot=>Y. Specifying
   dependencies in this way simplifies testing and development.
+* The Apache authenticator now always configures virtual hosts which do not have
+  an explicit `ServerName`. This should make it work more reliably with the
+  default Apache configuration in Debian-based environments.
 
 ### Fixed
 
+* When we increased the logging level on our nginx "Could not parse file" message,
+  it caused a previously-existing inability to parse empty files to become more
+  visible. We have now added the ability to correctly parse empty files, so that
+  message should only show for more significant errors.
 * Fixed bug where `--allow-subset-of-names` would remove wildcard hostnames from a certificate 
   even if the wildcard had a valid authorization.
 

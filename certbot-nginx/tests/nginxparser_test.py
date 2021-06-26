@@ -350,6 +350,10 @@ class TestRawNginxParser(unittest.TestCase):
         self.assertEqual(loads("blag${dfgdfg};"), [['blag${dfgdfg}']])
         self.assertRaises(ParseException, loads, "blag${dfgdf{g};")
 
+        # empty file
+        parsed = loads("")
+        self.assertEqual(parsed, [])
+
 
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""

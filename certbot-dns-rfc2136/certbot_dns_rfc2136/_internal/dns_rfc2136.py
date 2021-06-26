@@ -27,7 +27,7 @@ DEFAULT_NETWORK_TIMEOUT = 45
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator using RFC 2136 Dynamic Updates
 
-    This Authenticator uses RFC 2136 Dynamic Updates to fulfull a dns-01 challenge.
+    This Authenticator uses RFC 2136 Dynamic Updates to fulfill a dns-01 challenge.
     """
 
     ALGORITHMS = {
