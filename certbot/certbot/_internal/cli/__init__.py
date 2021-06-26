@@ -71,6 +71,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         default=flag_default("verbose_count"), help="This flag can be used "
         "multiple times to incrementally increase the verbosity of output, "
         "e.g. -vvv.")
+    # This is for developers to set the level in the cli.ini, and overrides
+    # the --verbose flag
+    helpful.add(
+        None, "--verbose-level", dest="verbose_level",
+        default=flag_default("verbose_level"), help=argparse.SUPPRESS)
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
         default=flag_default("text_mode"), help=argparse.SUPPRESS)
@@ -449,6 +454,7 @@ def set_by_cli(var):
         plugins = plugins_disco.PluginsRegistry.find_all()
         # reconstructed_args == sys.argv[1:], or whatever was passed to main()
         reconstructed_args = helpful_parser.args + [helpful_parser.verb]
+
         detector = set_by_cli.detector = prepare_and_parse_args(  # type: ignore
             plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator

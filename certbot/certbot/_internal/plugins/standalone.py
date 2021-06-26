@@ -5,6 +5,7 @@ import logging
 import socket
 from typing import DefaultDict
 from typing import Dict
+from typing import List
 from typing import Set
 from typing import Tuple
 from typing import TYPE_CHECKING
@@ -183,6 +184,14 @@ class Authenticator(common.Plugin):
         for port, servers in self.servers.running().items():
             if not self.served[servers]:
                 self.servers.stop(port)
+
+    def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
+        port, addr = self.config.http01_port, self.config.http01_address
+        neat_addr = f"{addr}:{port}" if addr else f"port {port}"
+        return ("The Certificate Authority failed to download the challenge files from "
+                f"the temporary standalone webserver started by Certbot on {neat_addr}. "
+                "Ensure that the listed domains point to this machine and that it can "
+                "accept inbound connections from the internet.")
 
 
 def _handle_perform_error(error):

@@ -71,6 +71,7 @@ parso==0.7.0
 pathlib2==2.3.5
 pexpect==4.7.0
 pickleshare==0.7.5
+pip==20.2.4
 pkginfo==1.4.2
 pluggy==0.13.0
 ply==3.4
@@ -125,5 +126,6 @@ uritemplate==3.0.0
 virtualenv==16.6.2
 wcwidth==0.1.8
 websocket-client==0.56.0
+wheel==0.35.1
 wrapt==1.11.2
 zipp==0.6.0
