@@ -622,3 +622,6 @@ def atexit_register(func, *args, **kwargs):
 def _atexit_call(func, *args, **kwargs):
     if _INITIAL_PID == os.getpid():
         func(*args, **kwargs)
+
+def escape_char_conv(strng):
+    return strng.replace('\\','/')
