@@ -9,7 +9,8 @@ from typing import Optional
 from googleapiclient import discovery
 from googleapiclient import errors as googleapiclient_errors
 import httplib2
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import Credentials
+import zope.interface
 
 from certbot import errors
 from certbot.plugins import dns_common
@@ -84,7 +85,7 @@ class _GoogleClient:
         scopes = ['https://www.googleapis.com/auth/ndev.clouddns.readwrite']
         if account_json is not None:
             try:
-                credentials = ServiceAccountCredentials.from_json_keyfile_name(account_json, scopes)
+                credentials = Credentials.from_json_keyfile_name(account_json, scopes)
                 with open(account_json) as account:
                     self.project_id = json.load(account)['project_id']
             except Exception as e:
