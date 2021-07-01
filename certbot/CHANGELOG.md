@@ -1041,7 +1041,7 @@ More details about these changes can be found on our GitHub repo.
 * `--dry-run` now requests fresh authorizations every time, fixing the issue
   where it was prone to falsely reporting success.
 * Updated certbot-dns-google to depend on newer versions of
-  google-api-python-client and oauth2client.
+  google-api-python-client and google-auth.
 * The OS detection logic again uses distro library for Linux OSes
 * certbot.plugins.common.TLSSNI01 has been deprecated and will be removed in a
   future release.
