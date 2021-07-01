@@ -153,13 +153,10 @@ def parse_defines(apachectl):
         return {}
 
     for match in matches:
-        if match.count("=") > 1:
-            logger.error("Unexpected number of equal signs in "
-                         "runtime config dump.")
-            raise errors.PluginError(
-                "Error parsing Apache runtime variables")
-        parts = match.partition("=")
-        variables[parts[0]] = parts[2]
+        # Value could also contain = so split only once
+        parts = match.split('=', 1)
+        value = parts[1] if len(parts) == 2 else ''
+        variables[parts[0]] = value
 
     return variables
 

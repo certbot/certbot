@@ -26,6 +26,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   it caused a previously-existing inability to parse empty files to become more
   visible. We have now added the ability to correctly parse empty files, so that
   message should only show for more significant errors.
+* Fixed parsing of `Define`d values the apache component to allow for `=` in the value.
 
 More details about these changes can be found on our GitHub repo.
 
