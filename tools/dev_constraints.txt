@@ -63,7 +63,7 @@ msrest==0.6.18
 mypy==0.812
 mypy-extensions==0.4.3
 ndg-httpsclient==0.3.2
-oauth2client==4.0.0
+google-auth==1.32.1
 oauthlib==3.1.0
 packaging==19.2
 paramiko==2.4.2
