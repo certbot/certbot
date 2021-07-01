@@ -249,6 +249,7 @@ Authors
 * [Shaun Cummiskey](https://github.com/ampersign)
 * [Shiloh Heurich](https://github.com/sheurich)
 * [silverwind](https://github.com/silverwind)
+* [Soham Banerjee](https://github.com/soham4abc)
 * [Sorvani](https://github.com/sorvani)
 * [Spencer Bliven](https://github.com/sbliven)
 * [Stacey Sheldon](https://github.com/solidgoldbomb)
