@@ -3,6 +3,7 @@ import datetime
 import logging
 import platform
 from typing import List, Optional, Union
+import warnings
 
 from cryptography.hazmat.backends import default_backend
 # See https://github.com/pyca/cryptography/issues/4275
@@ -32,13 +33,23 @@ from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
-
 def acme_from_config_key(config, key, regr=None):
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
-                                    user_agent=determine_user_agent(config))
-    return acme_client.BackwardsCompatibleClientV2(net, key, config.server)
+                                user_agent=determine_user_agent(config))
+
+    with warnings.catch_warnings():
+        # TODO: full removal of ACMEv1 support: https://github.com/certbot/certbot/issues/6844
+        warnings.simplefilter("ignore", PendingDeprecationWarning)
+
+        client = acme_client.BackwardsCompatibleClientV2(net, key, config.server)
+        if client.acme_version == 1:
+            logger.warning(
+                "Certbot is configured to use an ACMEv1 server (%s). ACMEv1 support is deprecated"
+                " and will soon be removed. See https://community.letsencrypt.org/t/143839 for "
+                "more information.", config.server)
+        return client
 
 
 def determine_user_agent(config):

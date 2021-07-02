@@ -19,6 +19,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The Apache authenticator now always configures virtual hosts which do not have
   an explicit `ServerName`. This should make it work more reliably with the
   default Apache configuration in Debian-based environments.
+* `acme`: the `.client.Client` and `.client.BackwardsCompatibleClientV2` classes
+  are now deprecated in favor of `.client.ClientV2`.
 
 ### Fixed
 
