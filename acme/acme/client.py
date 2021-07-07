@@ -225,7 +225,7 @@ class ClientBase:
 class Client(ClientBase):
     """ACME client for a v1 API.
 
-    .. deprecated:: 1.17.0
+    .. deprecated:: 1.18.0
        Use :class:`ClientV2` instead.
 
     .. todo::
@@ -811,7 +811,7 @@ class BackwardsCompatibleClientV2:
     """ACME client wrapper that tends towards V2-style calls, but
     supports V1 servers.
 
-    .. deprecated:: 1.17.0
+    .. deprecated:: 1.18.0
        Use :class:`ClientV2` instead.
 
     .. note:: While this class handles the majority of the differences
