@@ -85,7 +85,7 @@ class _GoogleClient:
         scopes = ['https://www.googleapis.com/auth/ndev.clouddns.readwrite']
         if account_json is not None:
             try:
-                credentials = Credentials.from_service_account_file('service-account.json',scopes)
+                credentials = Credentials.from_service_account_file(account_json, scopes)
                 with open(account_json) as account:
                     self.project_id = json.load(account)['project_id']
             except Exception as e:
