@@ -542,7 +542,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Changed
 
-certbot-dns-google now depends on google-auth rather than oauth2client
+*certbot-dns-google now depends on google-auth rather than oauth2client
 
 ### Changed
 
