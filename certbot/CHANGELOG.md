@@ -542,6 +542,10 @@ More details about these changes can be found on our GitHub repo.
 
 ### Changed
 
+certbot-dns-google now depends on google-auth rather than oauth2client
+
+### Changed
+
 * We changed how dependencies are specified between Certbot packages. For this
   and future releases, higher level Certbot components will require that lower
   level components are the same version or newer. More specifically, version X
@@ -1041,7 +1045,7 @@ More details about these changes can be found on our GitHub repo.
 * `--dry-run` now requests fresh authorizations every time, fixing the issue
   where it was prone to falsely reporting success.
 * Updated certbot-dns-google to depend on newer versions of
-  google-api-python-client and google-auth.
+  google-api-python-client and oauth2client.
 * The OS detection logic again uses distro library for Linux OSes
 * certbot.plugins.common.TLSSNI01 has been deprecated and will be removed in a
   future release.
