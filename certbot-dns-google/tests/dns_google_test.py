@@ -133,8 +133,8 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('certbot_dns_google._internal.dns_google._GoogleClient.get_project_id')
     def test_add_txt_record(self, get_project_id_mock, credential_mock):
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
-        credential_mock.assert_called_once_with('/not/a/real/path.json', mock.ANY)
-        assert not get_project_id_mock.called
+        credential_mock.assert_called_once_with('/not/a/real/path.json', scopes=mock.ANY)
+        self.assertFalse(get_project_id_mock.called)
 
         client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
