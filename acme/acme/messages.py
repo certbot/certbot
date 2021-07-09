@@ -114,7 +114,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         :rtype: unicode
 
         """
-        code = str(self.typ).split(':')[-1]
+        code = str(self.typ).rsplit(':', maxsplit=-1)[-1]
         if code in ERROR_CODES:
             return code
         return None
