@@ -542,10 +542,6 @@ More details about these changes can be found on our GitHub repo.
 
 ### Changed
 
-*certbot-dns-google now depends on google-auth rather than oauth2client
-
-### Changed
-
 * We changed how dependencies are specified between Certbot packages. For this
   and future releases, higher level Certbot components will require that lower
   level components are the same version or newer. More specifically, version X
