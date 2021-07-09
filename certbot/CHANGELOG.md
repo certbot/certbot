@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* certbot-dns-google now depends on google-auth rather than oauth2client
 
 ### Fixed
 
