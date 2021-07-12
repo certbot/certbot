@@ -939,13 +939,34 @@ def get_aug_path(file_path):
     return "/files%s" % file_path
 
 
+import functools
+import traceback
+
+
+def function_wrapper(aug, name, *args, **kwargs):
+    #if aug.match('//error'):
+        #import ipdb; ipdb.set_trace()
+    #traceback.print_stack()
+    print('Called', name, 'with', *args, **kwargs)
+    return getattr(aug, name)(*args, **kwargs)
+
+
+class AugeasWrapper():
+    def __init__(self, aug):
+        self._aug = aug
+
+    def __getattr__(self, name):
+        p = functools.partial(function_wrapper, self._aug, name)
+        return p
+
+
 def init_augeas() -> Augeas:
     """ Initialize the actual Augeas instance """
 
     if not Augeas:  # pragma: no cover
         raise errors.NoInstallationError("Problem in Augeas installation")
 
-    return Augeas(
+    a = Augeas(
         # specify a directory to load our preferred lens from
         loadpath=constants.AUGEAS_LENS_DIR,
         # Do not save backup (we do it ourselves), do not load
@@ -953,3 +974,4 @@ def init_augeas() -> Augeas:
         flags=(Augeas.NONE |
                Augeas.NO_MODL_AUTOLOAD |
                Augeas.ENABLE_SPAN))
+    return AugeasWrapper(a)
