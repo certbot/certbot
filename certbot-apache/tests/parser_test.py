@@ -90,7 +90,7 @@ class BasicParserTest(util.ParserTest):
 
     def test_add_dir_beginning(self):
         aug_default = "/files" + self.parser.loc["default"]
-        import ipdb; ipdb.set_trace()
+        #import ipdb; ipdb.set_trace()
         self.parser.add_dir_beginning(aug_default,
                                       "AddDirectiveBeginning",
                                       "testBegin")

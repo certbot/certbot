@@ -944,10 +944,14 @@ import traceback
 
 
 def function_wrapper(aug, name, *args, **kwargs):
-    #if aug.match('//error'):
-        #import ipdb; ipdb.set_trace()
+    if aug.match('//error'):
+        import ipdb; ipdb.set_trace()
     #traceback.print_stack()
-    print('Called', name, 'with', *args, **kwargs)
+    if name == 'remove':
+        augtool_name = 'rm'
+    else:
+        augtool_name = name
+    print(augtool_name, *args, **kwargs)
     return getattr(aug, name)(*args, **kwargs)
 
 
@@ -968,7 +972,7 @@ def init_augeas() -> Augeas:
 
     a = Augeas(
         # specify a directory to load our preferred lens from
-        loadpath=constants.AUGEAS_LENS_DIR,
+        #loadpath=constants.AUGEAS_LENS_DIR,
         # Do not save backup (we do it ourselves), do not load
         # anything by default
         flags=(Augeas.NONE |
