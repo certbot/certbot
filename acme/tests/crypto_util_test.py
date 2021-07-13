@@ -265,8 +265,8 @@ class MakeCSRTest(unittest.TestCase):
 
     def test_make_csr_ip(self):
         csr_pem = self._call_with_key(["a.example", "127.0.0.1", "::1"])
-        self.assertTrue(b'--BEGIN CERTIFICATE REQUEST--' in csr_pem)
-        self.assertTrue(b'--END CERTIFICATE REQUEST--' in csr_pem)
+        self.assertIn(b'--BEGIN CERTIFICATE REQUEST--' , csr_pem)
+        self.assertIn(b'--END CERTIFICATE REQUEST--' , csr_pem)
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, csr_pem)
         # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't

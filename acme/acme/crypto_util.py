@@ -199,14 +199,14 @@ def make_csr(private_key_pem, domains, must_staple=False):
     private_key = crypto.load_privatekey(
         crypto.FILETYPE_PEM, private_key_pem)
     csr = crypto.X509Req()
-    #as our 'domains' are no longer strictly domains, so check for ip address
+    # as our 'domains' are no longer strictly domains, so check for ip address
     sanlist = []
     for address in domains:
         if _is_ip(address):
             sanlist.append('IP:' + address)
         else:
             sanlist.append('DNS:' + address)
-# strict type check for debug
+    # make sure its ascii encoded
     san_string = ', '.join(sanlist).encode('ascii')
     extensions = [
         crypto.X509Extension(
