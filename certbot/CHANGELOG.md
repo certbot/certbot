@@ -10,7 +10,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* When self-validating HTTP-01 challenges using
+  acme.challenges.HTTP01Response.simple_verify, we now assume that the response
+  is composed of only ASCII characters. Previously we were relying on the
+  default behavior of the requests library which tries to guess the encoding of
+  the response which was error prone.
 
 ### Fixed
 
