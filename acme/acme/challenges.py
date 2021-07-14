@@ -316,11 +316,11 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
             return False
         # By default, http_response.text will try to guess the encoding to use
         # when decoding the response to Python unicode strings. This guesswork
-        # is error prone and since RFC 8555 specifies that key authorizations
-        # (which is the expected response for HTTP-01 challenges) are composed
-        # entirely of the base64 alphabet plus ".", we tell requests that the
-        # response should be ASCII. See
-        # https://datatracker.ietf.org/doc/html/rfc8555#section-8.1 for more
+        # is error prone. RFC 8555 specifies that HTTP-01 responses should be
+        # key authorizations with possible trailing whitespace. Since key
+        # authorizations must be composed entirely of the base64url alphabet
+        # plus ".", we tell requests that the response should be ASCII. See
+        # https://datatracker.ietf.org/doc/html/rfc8555#section-8.3 for more
         # info.
         http_response.encoding = "ascii"
         logger.debug("Received %s: %s. Headers: %s", http_response,
