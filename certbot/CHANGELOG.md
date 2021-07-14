@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* The Apache authenticator no longer crashes with "Unable to insert label"
+  when encountering a completely empty vhost. This issue affected Certbot 1.17.0.
 
 More details about these changes can be found on our GitHub repo.
 
