@@ -37,7 +37,7 @@ def acme_from_config_key(config, key, regr=None):
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
-                                user_agent=determine_user_agent(config))
+                                    user_agent=determine_user_agent(config))
 
     with warnings.catch_warnings():
         # TODO: full removal of ACMEv1 support: https://github.com/certbot/certbot/issues/6844
