@@ -15,6 +15,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   is composed of only ASCII characters. Previously we were relying on the
   default behavior of the requests library which tries to guess the encoding of
   the response which was error prone.
+* `acme`: the `.client.Client` and `.client.BackwardsCompatibleClientV2` classes
+  are now deprecated in favor of `.client.ClientV2`.
 
 ### Fixed
 
