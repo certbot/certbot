@@ -35,7 +35,7 @@ platforms.
 
 Two other things have helped reduce the problems caused by sdists and are
 relevant here. The first is the usage of [environment
-markers](https://www.python.org/dev/peps/pep-0496/) which allows packages to
+markers](https://www.python.org/dev/peps/pep-0496/) which allows a package to
 consistently declare its conditional dependencies with a static string
 specifying the conditions where a dependency is required instead of dynamically
 generating the list of required dependencies at runtime. This static string
