@@ -55,7 +55,7 @@ than setuptools which becomes relevant in the next section of this doc.
 
 ### Overview
 
-The files under this directory are used to generate Certbot's pinning files.
+The files inside `tools/pinning` are used to generate Certbot's pinning files.
 The files under `oldest` are used to generate the constraints file used for our
 "oldest" tests while `normal` is used to generate the constraints used
 everywhere else. `common` includes shared files that are used for both sets of
