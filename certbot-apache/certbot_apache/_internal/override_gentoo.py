@@ -53,8 +53,8 @@ class GentooParser(parser.ApacheParser):
         """ Parses Apache CLI options from Gentoo configuration file """
         defines = apache_util.parse_define_file(self.apacheconfig_filep,
                                                 "APACHE2_OPTS")
-        for k in defines:
-            self.variables[k] = defines[k]
+        for k, v in defines.items():
+            self.variables[k] = v
 
     def update_modules(self):
         """Get loaded modules from httpd process, and add them to DOM"""
