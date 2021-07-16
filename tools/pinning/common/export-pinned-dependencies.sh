@@ -3,8 +3,14 @@
 # for use with poetry and generates and prints the pinned dependencies of that
 # file. Any dependencies on acme or those referencing certbot will be removed
 # from the output. The exported requirements are printed to stdout.
+#
+# For example, if a directory containing a pyproject.toml file for poetry is at
+# ../current, you could activate Certbot's developer environment and then run a
+# command like the following to generate requirements.txt for that environment:
+#   ./export-pinned-dependencies.sh ../current > requirements.txt
 set -euo pipefail
 
+# If this script wasn't given a command line argument, print usage and exit.
 if [ -z ${1+x} ]; then
     echo "Usage:" >&2
     echo "$0 PYPROJECT_TOML_DIRECTORY" >&2

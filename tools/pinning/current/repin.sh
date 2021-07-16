@@ -1,7 +1,8 @@
 #!/bin/bash
 # This script accepts no arguments and automates the process of updating
-# Certbot's dependencies. Dependencies can be pinned to older versions by
-# modifying pyproject.toml in the same directory as this file.
+# Certbot's dependencies including automatically updating the correct file.
+# Dependencies can be pinned to older versions by modifying pyproject.toml in
+# the same directory as this file.
 set -euo pipefail
 
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
