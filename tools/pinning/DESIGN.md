@@ -72,9 +72,10 @@ declare additional dependencies.
 The reason we use Poetry is that it is somewhat unique among Python packaging
 tools in that when locking dependencies, it makes a best effort approach to do
 this for all environments rather than just the current environment. This
-includes scanning the dependencies for all wheels and sdists of the package and
-recursively resolving dependencies declared through environment markers that
-are not relevant for the current platform. You can see this in action through
+includes recursively resolving dependencies declared through environment
+markers that are not relevant for the current platform. It also includes
+checking all wheels and sdists of a package for dependencies when picking a
+specific version of a package from PyPI. You can see this in action through
 the inclusion of dependencies like pywin32 which we only have a dependency on
 for Windows.
 
