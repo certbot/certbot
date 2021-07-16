@@ -599,13 +599,13 @@ Updating dependency versions
 ``tools/requirements.txt`` and ``tools/oldest_constraints.txt`` can be updated
 using ``tools/pinning/current/repin.sh`` and ``tools/pinning/oldest/repin.sh``
 respectively. This works by using ``poetry`` to generate pinnings based on a
-dummy Poetry project defined by the ``pyproject.toml`` file in the same
-directory as the script. In many cases, you can just run the script to generate
-updated dependencies, however, if you need to pin back packages or unpin
-packages that were previously restricted to an older version, you will need to
-modify the ``pyproject.toml`` file. The syntax used by this file is described
-at https://python-poetry.org/docs/pyproject/ and how dependencies are specified
-in this file is further described at
+Poetry project defined by the ``pyproject.toml`` file in the same directory as
+the script. In many cases, you can just run the script to generate updated
+dependencies, however, if you need to pin back packages or unpin packages that
+were previously restricted to an older version, you will need to modify the
+``pyproject.toml`` file. The syntax used by this file is described at
+https://python-poetry.org/docs/pyproject/ and how dependencies are specified in
+this file is further described at
 https://python-poetry.org/docs/dependency-specification/.
 
 If you want to learn more about the design used here, see

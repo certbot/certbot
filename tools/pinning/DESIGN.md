@@ -64,10 +64,10 @@ pinnings.
 Under `current` and `oldest`, there are two files as of writing this. One is a
 pyproject.toml file for use with [Poetry](https://python-poetry.org/) while
 the other is a script that can be run to regenerate pinnings. The
-pyproject.toml file defines a dummy Python package that depends on everything
-we want to pin. This file largely just depends on our own local packages,
-however, extra dependencies can be declared to further constrain package
-versions or to declare additional dependencies.
+pyproject.toml file defines a Python package that depends on everything we want
+to pin. This file largely just depends on our own local packages, however,
+extra dependencies can be declared to further constrain package versions or to
+declare additional dependencies.
 
 The reason we use Poetry is that it is somewhat unique among Python packaging
 tools in that when locking dependencies, it makes a best effort approach to do
