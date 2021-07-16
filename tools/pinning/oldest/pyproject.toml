@@ -45,7 +45,10 @@ acme = {path = "../../../acme", extras = ["test"]}
 # to the oldest version of the dependency that is found in a non-EOL'd version
 # of CentOS, Debian, or Ubuntu that has Certbot packages in their OS
 # repositories using a version of Python we support. If the distro is EOL'd or
-# using a version of Python we don't support, it can be ignored.
+# using a version of Python we don't support, it can be ignored. If the
+# dependency being updated is a direct dependency of one of our own packages,
+# the minimum required version of that dependency should be updated in our
+# setup.py files as well to communicate this information to our users.
 
 # CentOS/RHEL 7 EPEL dependencies
 # Some of these dependencies may be stricter than necessary because they

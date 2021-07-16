@@ -578,11 +578,15 @@ In most cases, the file where dependency versions are specified is
 ``tools/requirements.txt``. There are two exceptions to this. The first is our
 "oldest" tests where ``tools/oldest_constraints.txt`` is used instead. The
 purpose of the "oldest" tests is to ensure Certbot continues to work with the
-oldest versions of our dependencies which we claim to support. The second
-exception to using ``tools/requirements.txt`` is in our unpinned tests. As of
-writing this, there is one test we run nightly in CI where we leave Certbot's
-dependencies unpinned. The thinking behind this test is to help us learn about
-breaking changes in our dependencies so that we can respond accordingly.
+oldest versions of our dependencies which we claim to support. The oldest
+versions of the dependencies we support should also be declared in our setup.py
+files to communicate this information to our users.
+
+The second exception to using ``tools/requirements.txt`` is in our unpinned
+tests. As of writing this, there is one test we run nightly in CI where we
+leave Certbot's dependencies unpinned. The thinking behind this test is to help
+us learn about breaking changes in our dependencies so that we can respond
+accordingly.
 
 The choices of whether Certbot's dependencies are pinned and what file is used
 if they are should be automatically handled for you most of the time by
