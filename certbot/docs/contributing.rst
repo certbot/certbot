@@ -597,7 +597,7 @@ Updating dependency versions
 ----------------------------
 
 ``tools/requirements.txt`` and ``tools/oldest_constraints.txt`` can be updated
-using ``tools/pinning/normal/repin.sh`` and ``tools/pinning/oldest/repin.sh``
+using ``tools/pinning/current/repin.sh`` and ``tools/pinning/oldest/repin.sh``
 respectively. This works by using ``poetry`` to generate pinnings based on a
 dummy Poetry project defined by the ``pyproject.toml`` file in the same
 directory as the script. In many cases, you can just run the script to generate

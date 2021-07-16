@@ -57,11 +57,11 @@ than setuptools which becomes relevant in the next section of this doc.
 
 The files inside `tools/pinning` are used to generate Certbot's pinning files.
 The files under `oldest` are used to generate the constraints file used for our
-"oldest" tests while `normal` is used to generate the constraints used
+"oldest" tests while `current` is used to generate the constraints used
 everywhere else. `common` includes shared files that are used for both sets of
 pinnings.
 
-Under `normal` and `oldest`, there are two files as of writing this. One is a
+Under `current` and `oldest`, there are two files as of writing this. One is a
 pyproject.toml file for use with [Poetry](https://python-poetry.org/) while
 the other is a script that can be run to regenerate pinnings. The
 pyproject.toml file defines a dummy Python package that depends on everything
