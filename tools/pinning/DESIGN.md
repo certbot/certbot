@@ -46,7 +46,7 @@ The other relatively recent change in Python packaging is the adoption of
 [pyproject.toml files](https://www.python.org/dev/peps/pep-0518/) which allows
 sdists to define their packages using a static file instead of a setup.py
 file, which has historically been the norm.
-writing this. Using a static file instead of arbitrary Python code makes it
+Using a static file instead of arbitrary Python code makes it
 much easier for package declarations to be reliably interpreted. The
 introduction of pyproject.toml also allows for the use of build systems other
 than setuptools which becomes relevant in the next section of this doc.
