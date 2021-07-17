@@ -202,7 +202,7 @@ def patch_display_util_with_stdout(stdout=None):
 
 
 def patch_get_utility(target='zope.component.getUtility'):  # pylint: disable=unused-argument
-    """Deprecated, use patch_display_service instead.
+    """Deprecated, patch certbot.display.util directly or use patch_display_util instead.
 
     :param str target: path to patch (warning, value is ignored due to deprecation)
 
@@ -210,14 +210,16 @@ def patch_get_utility(target='zope.component.getUtility'):  # pylint: disable=un
     :rtype: mock.MagicMock
 
     """
-    warnings.warn('Decorator certbot.tests.util.patch_display_service is deprecated, '
-                  'use certbot.tests.util.patch_display_service instead.')
+    warnings.warn('Decorator certbot.tests.util.patch_get_utility is deprecated. You should now '
+                  'patch certbot.display.util yourself directly or use '
+                  'certbot.tests.util.patch_display_util as a temporary workaround.')
     return patch_display_util()
 
 
 def patch_get_utility_with_stdout(target='zope.component.getUtility',  # pylint: disable=unused-argument
                                   stdout=None):
-    """Deprecated, use patch_display_service_with_stdout instead.
+    """Deprecated, patch certbot.display.util directly
+    or use patch_display_util_with_stdout instead.
 
     :param str target: path to patch (warning, value is ignored due to deprecation)
     :param object stdout: object to write standard output to; it is
@@ -227,8 +229,10 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',  # pylint:
     :rtype: mock.MagicMock
 
     """
-    warnings.warn('Decorator certbot.tests.util.patch_display_service_with_stdout is deprecated, '
-                  'use certbot.tests.util.patch_display_service_with_stdout instead.')
+    warnings.warn('Decorator certbot.tests.util.patch_get_utility_with_stdout is deprecated. You '
+                  'should now patch certbot.display.util yourself directly or use '
+                  'use certbot.tests.util.patch_display_util_with_stdout as a temporary '
+                  'workaround.')
     return patch_display_util_with_stdout(stdout)
 
 
