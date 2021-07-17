@@ -10,11 +10,18 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* certbot-dns-google now depends on google-auth rather than oauth2client
+* When self-validating HTTP-01 challenges using
+  acme.challenges.HTTP01Response.simple_verify, we now assume that the response
+  is composed of only ASCII characters. Previously we were relying on the
+  default behavior of the requests library which tries to guess the encoding of
+  the response which was error prone.
+* `acme`: the `.client.Client` and `.client.BackwardsCompatibleClientV2` classes
+  are now deprecated in favor of `.client.ClientV2`.
 
 ### Fixed
 
-*
+* The Apache authenticator no longer crashes with "Unable to insert label"
+  when encountering a completely empty vhost. This issue affected Certbot 1.17.0.
 
 More details about these changes can be found on our GitHub repo.
 
