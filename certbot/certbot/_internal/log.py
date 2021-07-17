@@ -120,8 +120,11 @@ def post_arg_parse_setup(config):
 
     if config.quiet:
         level = constants.QUIET_LOGGING_LEVEL
+    elif config.verbose_level is not None:
+        level = constants.DEFAULT_LOGGING_LEVEL - int(config.verbose_level) * 10
     else:
-        level = -config.verbose_count * 10
+        level = constants.DEFAULT_LOGGING_LEVEL - config.verbose_count * 10
+
     stderr_handler.setLevel(level)
     logger.debug('Root logging level set at %d', level)
 

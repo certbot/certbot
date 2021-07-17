@@ -16,7 +16,6 @@ import tempfile
 
 import merge_requirements as merge_module
 import readlink
-import strip_hashes
 
 
 # Once this code doesn't need to support Python 2, we can simply use

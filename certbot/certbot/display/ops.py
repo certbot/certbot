@@ -211,9 +211,9 @@ def _choose_names_manually(prompt_prefix=""):
             retry_message = (
                 "One or more of the entered domain names was not valid:"
                 "{0}{0}").format(os.linesep)
-            for domain in invalid_domains:
+            for invalid_domain, err in invalid_domains.items():
                 retry_message = retry_message + "{1}: {2}{0}".format(
-                    os.linesep, domain, invalid_domains[domain])
+                    os.linesep, invalid_domain, err)
             retry_message = retry_message + (
                 "{0}Would you like to re-enter the names?{0}").format(
                     os.linesep)

@@ -200,7 +200,7 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
         "--duplicate option.{br}{br}"
         "For example:{br}{br}{1} --duplicate {2}".format(
             existing,
-            sys.argv[0], " ".join(sys.argv[1:]),
+            cli.cli_command, " ".join(sys.argv[1:]),
             br=os.linesep
         ))
     raise errors.Error(USER_CANCELLED)
@@ -503,6 +503,13 @@ def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[error
                 "Certificates created using --csr will not be renewed automatically by Certbot. "
                 "You will need to renew the certificate before it expires, by running the same "
                 "Certbot command again.")
+        elif _is_interactive_only_auth(config):
+            steps.append(
+                "This certificate will not be renewed automatically. Autorenewal of "
+                "--manual certificates requires the use of an authentication hook script "
+                "(--manual-auth-hook) but one was not provided. To renew this certificate, repeat "
+                f"this same {cli.cli_command} command before the certificate's expiry date."
+            )
         elif not config.preconfigured_renewal:
             steps.append(
                 "The certificate will need to be renewed before it expires. Certbot can "
@@ -552,6 +559,11 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
 
     assert cert_path and fullchain_path, "No certificates saved to report."
 
+    renewal_msg = ""
+    if config.preconfigured_renewal and not _is_interactive_only_auth(config):
+        renewal_msg = ("\nCertbot has set up a scheduled task to automatically renew this "
+                       "certificate in the background.")
+
     display_util.notify(
         ("\nSuccessfully received certificate.\n"
         "Certificate is saved at: {cert_path}\n{key_msg}"
@@ -560,11 +572,20 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
             cert_path=fullchain_path,
             expiry=crypto_util.notAfter(cert_path).date(),
             key_msg="Key is saved at:         {}\n".format(key_path) if key_path else "",
-            renewal_msg="\nCertbot has set up a scheduled task to automatically renew this "
-                        "certificate in the background." if config.preconfigured_renewal else "",
+            renewal_msg=renewal_msg,
             nl="\n" if config.verb == "run" else "" # Normalize spacing across verbs
         )
     )
+
+
+def _is_interactive_only_auth(config: interfaces.IConfig) -> bool:
+    """ Whether the current authenticator params only support interactive renewal.
+    """
+    # --manual without --manual-auth-hook can never autorenew
+    if config.authenticator == "manual" and config.manual_auth_hook is None:
+        return True
+
+    return False
 
 
 def _csr_report_new_cert(config: interfaces.IConfig, cert_path: Optional[str],
@@ -1043,7 +1064,7 @@ def enhance(config, plugins):
     if not enhancements.are_requested(config) and not oldstyle_enh:
         msg = ("Please specify one or more enhancement types to configure. To list "
                "the available enhancement types, run:\n\n%s --help enhance\n")
-        logger.error(msg, sys.argv[0])
+        logger.error(msg, cli.cli_command)
         raise errors.MisconfigurationError("No enhancements requested, exiting.")
 
     try:
@@ -1389,7 +1410,7 @@ def certonly(config, plugins):
     if config.csr:
         cert_path, chain_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
         _csr_report_new_cert(config, cert_path, chain_path, fullchain_path)
-        _report_next_steps(config, None, None)
+        _report_next_steps(config, None, None, new_or_renewed_cert=not config.dry_run)
         _suggest_donation_if_appropriate(config)
         eff.handle_subscription(config, le_client.account)
         return
@@ -1408,7 +1429,8 @@ def certonly(config, plugins):
     fullchain_path = lineage.fullchain_path if lineage else None
     key_path = lineage.key_path if lineage else None
     _report_new_cert(config, cert_path, fullchain_path, key_path)
-    _report_next_steps(config, None, lineage, new_or_renewed_cert=should_get_cert)
+    _report_next_steps(config, None, lineage,
+                       new_or_renewed_cert=should_get_cert and not config.dry_run)
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)
 

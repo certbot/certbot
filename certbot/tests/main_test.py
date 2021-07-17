@@ -270,6 +270,21 @@ class CertonlyTest(unittest.TestCase):
         self._call(('certonly --webroot --cert-name example.com').split())
         self.assertIs(mock_choose_names.called, True)
 
+    @mock.patch('certbot._internal.main._report_next_steps')
+    @mock.patch('certbot._internal.main._get_and_save_cert')
+    @mock.patch('certbot._internal.main._csr_get_and_save_cert')
+    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
+    def test_dryrun_next_steps_no_cert_saved(self, mock_lineage, mock_csr_get_cert,
+                                             unused_mock_get_cert, mock_report_next_steps):
+        """certonly --dry-run shouldn't report creation of a certificate in NEXT STEPS."""
+        mock_lineage.return_value = None
+        mock_csr_get_cert.return_value = ("/cert", "/chain", "/fullchain")
+        for flag in (f"--csr {CSR}", "-d example.com"):
+            self._call(f"certonly {flag} --webroot --cert-name example.com --dry-run".split())
+            mock_report_next_steps.assert_called_once_with(
+                mock.ANY, mock.ANY, mock.ANY, new_or_renewed_cert=False)
+            mock_report_next_steps.reset_mock()
+
 
 class FindDomainsOrCertnameTest(unittest.TestCase):
     """Tests for certbot._internal.main._find_domains_or_certname."""
@@ -1877,6 +1892,71 @@ class ReportNewCertTest(unittest.TestCase):
             'Full certificate chain is saved at: /path/to/fullchain.pem\n'
             'This certificate expires on 1970-01-01.'
         )
+
+    def test_manual_no_hooks_report(self):
+        """Shouldn't get a message about autorenewal if no --manual-auth-hook"""
+        self._call(mock.Mock(dry_run=False, authenticator='manual', manual_auth_hook=None),
+                  '/path/to/cert.pem', '/path/to/fullchain.pem',
+                  '/path/to/privkey.pem')
+
+        self.mock_notify.assert_called_with(
+            '\nSuccessfully received certificate.\n'
+            'Certificate is saved at: /path/to/fullchain.pem\n'
+            'Key is saved at:         /path/to/privkey.pem\n'
+            'This certificate expires on 1970-01-01.\n'
+            'These files will be updated when the certificate renews.'
+        )
+
+
+class ReportNextStepsTest(unittest.TestCase):
+    """Tests for certbot._internal.main._report_next_steps"""
+
+    def setUp(self):
+        self.config = mock.MagicMock(
+            cert_name="example.com", preconfigured_renewal=True,
+            csr=None, authenticator="nginx", manual_auth_hook=None)
+        notify_patch = mock.patch('certbot._internal.main.display_util.notify')
+        self.mock_notify = notify_patch.start()
+        self.addCleanup(notify_patch.stop)
+        self.old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+
+    def tearDown(self):
+        sys.stdout = self.old_stdout
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot._internal.main import _report_next_steps
+        _report_next_steps(*args, **kwargs)
+
+    def _output(self) -> str:
+        self.mock_notify.assert_called_once()
+        return self.mock_notify.call_args_list[0][0][0]
+
+    def test_report(self):
+        """No steps for a normal renewal"""
+        self.config.authenticator = "manual"
+        self.config.manual_auth_hook = "/bin/true"
+        self._call(self.config, None, None)
+        self.mock_notify.assert_not_called()
+
+    def test_csr_report(self):
+        """--csr requires manual renewal"""
+        self.config.csr = "foo.csr"
+        self._call(self.config, None, None)
+        self.assertIn("--csr will not be renewed", self._output())
+
+    def test_manual_no_hook_renewal(self):
+        """--manual without a hook requires manual renewal"""
+        self.config.authenticator = "manual"
+        self._call(self.config, None, None)
+        self.assertIn("--manual certificates requires", self._output())
+
+    def test_no_preconfigured_renewal(self):
+        """No --preconfigured-renewal needs manual cron setup"""
+        self.config.preconfigured_renewal = False
+        self._call(self.config, None, None)
+        self.assertIn("https://certbot.org/renewal-setup", self._output())
 
 
 class UpdateAccountTest(test_util.ConfigTestCase):

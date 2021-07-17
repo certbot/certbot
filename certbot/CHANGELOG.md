@@ -2,11 +2,34 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.17.0 - master
+## 1.18.0 - master
 
 ### Added
 
 *
+
+### Changed
+
+* When self-validating HTTP-01 challenges using
+  acme.challenges.HTTP01Response.simple_verify, we now assume that the response
+  is composed of only ASCII characters. Previously we were relying on the
+  default behavior of the requests library which tries to guess the encoding of
+  the response which was error prone.
+* `acme`: the `.client.Client` and `.client.BackwardsCompatibleClientV2` classes
+  are now deprecated in favor of `.client.ClientV2`.
+
+### Fixed
+
+* The Apache authenticator no longer crashes with "Unable to insert label"
+  when encountering a completely empty vhost. This issue affected Certbot 1.17.0.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.17.0 - 2021-07-06
+
+### Added
+
+* Add Void Linux overrides for certbot-apache.
 
 ### Changed
 
@@ -16,10 +39,16 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   of the Certbot package will now always require acme>=X and version Y of a
   plugin package will always require acme>=Y and certbot=>Y. Specifying
   dependencies in this way simplifies testing and development.
+* The Apache authenticator now always configures virtual hosts which do not have
+  an explicit `ServerName`. This should make it work more reliably with the
+  default Apache configuration in Debian-based environments.
 
 ### Fixed
 
-*
+* When we increased the logging level on our nginx "Could not parse file" message,
+  it caused a previously-existing inability to parse empty files to become more
+  visible. We have now added the ability to correctly parse empty files, so that
+  message should only show for more significant errors.
 
 More details about these changes can be found on our GitHub repo.
 

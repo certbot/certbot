@@ -122,7 +122,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         if self.config.quiet:
             self.assertEqual(level, constants.QUIET_LOGGING_LEVEL)
         else:
-            self.assertEqual(level, -self.config.verbose_count * 10)
+            self.assertEqual(level, constants.DEFAULT_LOGGING_LEVEL)
 
     def test_debug(self):
         self.config.debug = True

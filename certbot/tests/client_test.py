@@ -718,7 +718,7 @@ class EnhanceConfigTest(ClientTestCommon):
 
         if enhance_error:
             self.assertEqual(mock_logger.error.call_count, 1)
-            self.assertIn('Unable to set enhancement', mock_logger.error.call_args_list[0][0][0])
+            self.assertEqual('Unable to set the %s enhancement for %s.', mock_logger.error.call_args_list[0][0][0])
         if restart_error:
             mock_logger.critical.assert_called_with(
                 'Rolling back to previous server configuration...')

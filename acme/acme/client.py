@@ -14,6 +14,7 @@ from typing import List
 from typing import Set
 from typing import Text
 from typing import Union
+import warnings
 
 import josepy as jose
 import OpenSSL
@@ -224,6 +225,9 @@ class ClientBase:
 class Client(ClientBase):
     """ACME client for a v1 API.
 
+    .. deprecated:: 1.18.0
+       Use :class:`ClientV2` instead.
+
     .. todo::
        Clean up raised error types hierarchy, document, and handle (wrap)
        instances of `.DeserializationError` raised in `from_json()`.
@@ -246,6 +250,8 @@ class Client(ClientBase):
             URI from which the resource will be downloaded.
 
         """
+        warnings.warn("acme.client.Client (ACMEv1) is deprecated, "
+                      "use acme.client.ClientV2 instead.", PendingDeprecationWarning)
         self.key = key
         if net is None:
             net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl)
@@ -658,7 +664,10 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
-        for url in body.authorizations:
+        # pylint has trouble understanding our josepy based objects which use
+        # things like custom metaclass logic. body.authorizations should be a
+        # list of strings containing URLs so let's disable this check here.
+        for url in body.authorizations:  # pylint: disable=not-an-iterable
             authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
@@ -802,6 +811,9 @@ class BackwardsCompatibleClientV2:
     """ACME client wrapper that tends towards V2-style calls, but
     supports V1 servers.
 
+    .. deprecated:: 1.18.0
+       Use :class:`ClientV2` instead.
+
     .. note:: While this class handles the majority of the differences
         between versions of the ACME protocol, if you need to support an
         ACME server based on version 3 or older of the IETF ACME draft
@@ -818,6 +830,8 @@ class BackwardsCompatibleClientV2:
     """
 
     def __init__(self, net, key, server):
+        warnings.warn("acme.client.BackwardsCompatibleClientV2 is deprecated, use "
+                      "acme.client.ClientV2 instead.", PendingDeprecationWarning)
         directory = messages.Directory.from_json(net.get(server).json())
         self.acme_version = self._acme_version_from_directory(directory)
         self.client: Union[Client, ClientV2]
