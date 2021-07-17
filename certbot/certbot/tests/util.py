@@ -148,34 +148,51 @@ def make_lineage(config_dir, testfile, ec=False):
     return conf_path
 
 
-def patch_display_service():
-    """Patch CertbotService display property to use a special mock IDisplay.
+def patch_display_util():
+    """Patch certbot.display.util to use a special mock IDisplay.
 
     The mock IDisplay works like a regular mock object, except it also
     also asserts that methods are called with valid arguments.
 
-    :returns: mock certbot._internal.display.obj.get_display
-    :rtype: mock.MagicMock
+    The mock created by this patch mocks out Certbot internals so this can be
+    used like the old patch_get_utility function. That is, the mock object will
+    be called by the certbot.display.util functions and the mock returned by
+    that call will be used as the IDisplay object. This was done to simplify
+    the transition from zope.component and mocking certbot.display.util
+    functions directly in test code should be preferred over using this
+    function in the future.
+
+    :returns: patch on the function used internally by certbot.display.util to
+        get an IDisplay object
+    :rtype: unittest.mock._patch
 
     """
     return mock.patch('certbot._internal.display.obj.get_display',
                       new_callable=_create_display_service_mock)
 
 
-def patch_display_service_with_stdout(stdout=None):
-    """Patch CertbotService display property to use a special mock IDisplay.
+def patch_display_util_with_stdout(stdout=None):
+    """Patch certbot.display.util to use a special mock IDisplay.
 
     The mock IDisplay works like a regular mock object, except it also
     also asserts that methods are called with valid arguments.
+
+    The mock created by this patch mocks out Certbot internals so this can be
+    used like the old patch_get_utility function. That is, the mock object will
+    be called by the certbot.display.util functions and the mock returned by
+    that call will be used as the IDisplay object. This was done to simplify
+    the transition from zope.component and mocking certbot.display.util
+    functions directly in test code should be preferred over using this
+    function in the future.
 
     The `message` argument passed to the IDisplay methods is passed to
     stdout's write method.
 
     :param object stdout: object to write standard output to; it is
         expected to have a `write` method
-
-    :returns: mock certbot._internal.display.obj.get_display
-    :rtype: mock.MagicMock
+    :returns: patch on the function used internally by certbot.display.util to
+        get an IDisplay object
+    :rtype: unittest.mock._patch
 
     """
     stdout = stdout if stdout else io.StringIO()
@@ -195,7 +212,7 @@ def patch_get_utility(target='zope.component.getUtility'):  # pylint: disable=un
     """
     warnings.warn('Decorator certbot.tests.util.patch_display_service is deprecated, '
                   'use certbot.tests.util.patch_display_service instead.')
-    return patch_display_service()
+    return patch_display_util()
 
 
 def patch_get_utility_with_stdout(target='zope.component.getUtility',  # pylint: disable=unused-argument
@@ -212,7 +229,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',  # pylint:
     """
     warnings.warn('Decorator certbot.tests.util.patch_display_service_with_stdout is deprecated, '
                   'use certbot.tests.util.patch_display_service_with_stdout instead.')
-    return patch_display_service_with_stdout(stdout)
+    return patch_display_util_with_stdout(stdout)
 
 
 class FreezableMock:

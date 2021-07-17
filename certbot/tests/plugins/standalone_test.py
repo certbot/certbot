@@ -105,7 +105,7 @@ class AuthenticatorTest(unittest.TestCase):
         expected = [achall.response(achall.account_key) for achall in achalls]
         self.assertEqual(response, expected)
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_perform_eaddrinuse_retry(self, mock_get_utility):
         mock_utility = mock_get_utility()
         encountered_errno = errno.EADDRINUSE
@@ -117,7 +117,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.test_perform()
         self._assert_correct_yesno_call(mock_yesno)
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_perform_eaddrinuse_no_retry(self, mock_get_utility):
         mock_utility = mock_get_utility()
         mock_yesno = mock_utility.yesno

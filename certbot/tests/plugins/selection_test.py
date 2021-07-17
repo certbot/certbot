@@ -135,14 +135,14 @@ class ChoosePluginTest(unittest.TestCase):
         from certbot._internal.plugins.selection import choose_plugin
         return choose_plugin(self.plugins, "Question?")
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_selection(self, mock_util):
         mock_util().menu.side_effect = [(display_util.OK, 0),
                                         (display_util.OK, 1)]
         self.assertEqual(self.mock_stand, self._call())
         self.assertEqual(mock_util().notification.call_count, 1)
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_more_info(self, mock_util):
         mock_util().menu.side_effect = [
             (display_util.OK, 1),
@@ -150,7 +150,7 @@ class ChoosePluginTest(unittest.TestCase):
 
         self.assertEqual(self.mock_stand, self._call())
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
         self.assertIsNone(self._call())

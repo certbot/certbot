@@ -306,7 +306,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         mock_order = mock.MagicMock(authorizations=authzrs)
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
-        with test_util.patch_display_service():
+        with test_util.patch_display_util():
             with self.assertRaises(errors.AuthorizationError) as error:
                 self.handler.handle_authorizations(mock_order, self.mock_config, False)
         self.assertIn('Some challenges have failed.', str(error.exception))
@@ -341,7 +341,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
-        with test_util.patch_display_service():
+        with test_util.patch_display_util():
             with self.assertRaises(errors.AuthorizationError) as error:
                 self.handler.handle_authorizations(mock_order, self.mock_config, True)
 
