@@ -170,7 +170,7 @@ permitted by DNS standards.)
         allowed_challs = (['dns-01'] if util.is_wildcard_domain(domain)
                                      else ['http-01', 'dns-01'])
         if self.config.pref_challs:
-            selected_challs = set(allowed_challs).intersection(self.config.pref_challs)
+            selected_challs = [x for x in allowed_challs if x in self.config.pref_challs]
         else:
             selected_challs = allowed_challs
         return [challenges.Challenge.TYPES[chall] for chall in selected_challs]
