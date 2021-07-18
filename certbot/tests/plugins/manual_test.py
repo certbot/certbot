@@ -42,7 +42,8 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             backup_dir=os.path.join(self.tempdir, "backup_dir"),
             temp_checkpoint_dir=os.path.join(
                                         self.tempdir, "temp_checkpoint_dir"),
-            in_progress_dir=os.path.join(self.tempdir, "in_progess"))
+            in_progress_dir=os.path.join(self.tempdir, "in_progess"),
+            pref_challs=[])
 
         from certbot._internal.plugins.manual import Authenticator
         self.auth = Authenticator(self.config, name='manual')
@@ -62,6 +63,16 @@ class AuthenticatorTest(test_util.TempDirTestCase):
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref('example.org'),
                          [challenges.HTTP01, challenges.DNS01])
+        self.assertEqual(self.auth.get_chall_pref('*.example.org'),
+                         [challenges.DNS01])
+        self.config.pref_challs = ['http-01']
+        self.assertEqual(self.auth.get_chall_pref('example.org'),
+                         [challenges.HTTP01])
+        self.config.pref_challs = ['dns-01']
+        self.assertEqual(self.auth.get_chall_pref('example.org'),
+                         [challenges.DNS01])
+        self.config.pref_challs = ['http-01']
+        self.assertEqual(self.auth.get_chall_pref('*.example.org'), [])
 
     def test_script_perform(self):
         self.config.manual_auth_hook = (
