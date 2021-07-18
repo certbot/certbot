@@ -167,9 +167,12 @@ permitted by DNS standards.)
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-function-docstring
-        allowed_challs = ({'dns-01'} if util.is_wildcard_domain(domain)
-                                     else {'http-01', 'dns-01'})
-        selected_challs = allowed_challs.intersection(self.config.pref_challs)
+        allowed_challs = (['dns-01'] if util.is_wildcard_domain(domain)
+                                     else ['http-01', 'dns-01'])
+        if self.config.pref_challs:
+            selected_challs = set(allowed_challs).intersection(self.config.pref_challs)
+        else:
+            selected_challs = allowed_challs
         return [challenges.Challenge.TYPES[chall] for chall in selected_challs]
 
     def perform(self, achalls):  # pylint: disable=missing-function-docstring

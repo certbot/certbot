@@ -204,7 +204,8 @@ class AuthHandler:
 
             path = gen_challenge_path(
                 authzr_challenges,
-                self._get_chall_pref(authzr.body.identifier.value),
+                self._get_chall_pref('*.' + authzr.body.identifier.value if authzr.body.wildcard
+                                     else authzr.body.identifier.value),
                 combinations)
 
             achalls.extend(self._challenge_factory(authzr, path))
