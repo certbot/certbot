@@ -168,7 +168,7 @@ def patch_display_util():
 
     """
     return mock.patch('certbot._internal.display.obj.get_display',
-                      new_callable=_create_display_service_mock)
+                      new_callable=_create_display_util_mock)
 
 
 def patch_display_util_with_stdout(stdout=None):
