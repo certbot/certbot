@@ -162,6 +162,8 @@ def patch_display_util():
     functions directly in test code should be preferred over using this
     function in the future.
 
+    See https://github.com/certbot/certbot/issues/8948
+
     :returns: patch on the function used internally by certbot.display.util to
         get an IDisplay object
     :rtype: unittest.mock._patch
@@ -184,6 +186,8 @@ def patch_display_util_with_stdout(stdout=None):
     the transition from zope.component and mocking certbot.display.util
     functions directly in test code should be preferred over using this
     function in the future.
+
+    See https://github.com/certbot/certbot/issues/8948
 
     The `message` argument passed to the IDisplay methods is passed to
     stdout's write method.
