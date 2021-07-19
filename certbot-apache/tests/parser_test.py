@@ -183,6 +183,8 @@ class BasicParserTest(util.ParserTest):
             'Define: DUMP_RUN_CFG\n'
             'Define: U_MICH\n'
             'Define: TLS=443\n'
+            'Define: WITH_ASSIGNMENT=URL=http://example.com\n'
+            'Define: EMPTY=\n'
             'Define: example_path=Documents/path\n'
             'User: name="www-data" id=33 not_used\n'
             'Group: name="www-data" id=33 not_used\n'
@@ -261,7 +263,10 @@ class BasicParserTest(util.ParserTest):
         mock_cfg.side_effect = mock_get_vars
 
         expected_vars = {"TEST": "", "U_MICH": "", "TLS": "443",
-                         "example_path": "Documents/path"}
+                         "example_path": "Documents/path",
+                         "WITH_ASSIGNMENT": "URL=http://example.com",
+                         "EMPTY": "",
+                         }
 
         self.parser.modules = {}
         with mock.patch(
