@@ -315,7 +315,7 @@ def _create_display_util_mock():
     return FreezableMock(frozen=True, return_value=display)
 
 
-def _create_display_service_mock_with_stdout(stdout):
+def _create_display_util_mock_with_stdout(stdout):
     def _write_msg(message, *unused_args, **unused_kwargs):
         """Write to message to stdout.
         """
