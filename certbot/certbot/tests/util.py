@@ -198,7 +198,7 @@ def patch_display_util_with_stdout(stdout=None):
     stdout = stdout if stdout else io.StringIO()
 
     return mock.patch('certbot._internal.display.obj.get_display',
-                      new=_create_display_service_mock_with_stdout(stdout))
+                      new=_create_display_util_mock_with_stdout(stdout))
 
 
 def patch_get_utility(target='zope.component.getUtility'):  # pylint: disable=unused-argument
