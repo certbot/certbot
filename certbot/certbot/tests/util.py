@@ -170,7 +170,7 @@ def patch_display_util():
 
     """
     return mock.patch('certbot._internal.display.obj.get_display',
-                      new_callable=_create_display_service_mock)
+                      new_callable=_create_display_util_mock)
 
 
 def patch_display_util_with_stdout(stdout=None):
@@ -202,7 +202,7 @@ def patch_display_util_with_stdout(stdout=None):
     stdout = stdout if stdout else io.StringIO()
 
     return mock.patch('certbot._internal.display.obj.get_display',
-                      new=_create_display_service_mock_with_stdout(stdout))
+                      new=_create_display_util_mock_with_stdout(stdout))
 
 
 def patch_get_utility(target='zope.component.getUtility'):  # pylint: disable=unused-argument
@@ -308,7 +308,7 @@ class FreezableMock:
         return object.__setattr__(self, name, value)
 
 
-def _create_display_service_mock():
+def _create_display_util_mock():
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
     for name in interfaces.IDisplay.names():
@@ -319,7 +319,7 @@ def _create_display_service_mock():
     return FreezableMock(frozen=True, return_value=display)
 
 
-def _create_display_service_mock_with_stdout(stdout):
+def _create_display_util_mock_with_stdout(stdout):
     def _write_msg(message, *unused_args, **unused_kwargs):
         """Write to message to stdout.
         """
