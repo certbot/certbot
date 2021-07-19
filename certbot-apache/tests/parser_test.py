@@ -296,15 +296,6 @@ class BasicParserTest(util.ParserTest):
             # path derived from root configuration Include statements
             self.assertEqual(mock_parse.call_count, 1)
 
-    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
-    def test_update_runtime_vars_bad_output(self, mock_cfg):
-        mock_cfg.return_value = "Define: TLS=443=24"
-        self.parser.update_runtime_variables()
-
-        mock_cfg.return_value = "Define: DUMP_RUN_CFG\nDefine: TLS=443=24"
-        self.assertRaises(
-            errors.PluginError, self.parser.update_runtime_variables)
-
     @mock.patch("certbot_apache._internal.apache_util.subprocess.run")
     def test_update_runtime_vars_bad_ctl(self, mock_run):
         mock_run.side_effect = OSError
