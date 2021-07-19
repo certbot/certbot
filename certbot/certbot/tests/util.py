@@ -304,7 +304,7 @@ class FreezableMock:
         return object.__setattr__(self, name, value)
 
 
-def _create_display_service_mock():
+def _create_display_util_mock():
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
     for name in interfaces.IDisplay.names():
