@@ -148,6 +148,43 @@ def make_lineage(config_dir, testfile, ec=False):
     return conf_path
 
 
+def patch_get_utility(target='zope.component.getUtility'):
+    """Deprecated, patch certbot.display.util directly or use patch_display_util instead.
+
+    :param str target: path to patch
+
+    :returns: mock zope.component.getUtility
+    :rtype: mock.MagicMock
+
+    """
+    warnings.warn('Decorator certbot.tests.util.patch_get_utility is deprecated. You should now '
+                  'patch certbot.display.util yourself directly or use '
+                  'certbot.tests.util.patch_display_util as a temporary workaround.')
+    return mock.patch(target, new_callable=_create_display_util_mock)
+
+
+def patch_get_utility_with_stdout(target='zope.component.getUtility',
+                                  stdout=None):
+    """Deprecated, patch certbot.display.util directly
+    or use patch_display_util_with_stdout instead.
+
+    :param str target: path to patch (warning, value is ignored due to deprecation)
+    :param object stdout: object to write standard output to; it is
+        expected to have a `write` method
+
+    :returns: mock zope.component.getUtility
+    :rtype: mock.MagicMock
+
+    """
+    warnings.warn('Decorator certbot.tests.util.patch_get_utility_with_stdout is deprecated. You '
+                  'should now patch certbot.display.util yourself directly or use '
+                  'use certbot.tests.util.patch_display_util_with_stdout as a temporary '
+                  'workaround.')
+    stdout = stdout if stdout else io.StringIO()
+    freezable_mock = _create_display_util_mock_with_stdout(stdout)
+    return mock.patch(target, new=freezable_mock)
+
+
 def patch_display_util():
     """Patch certbot.display.util to use a special mock IDisplay.
 
@@ -203,43 +240,6 @@ def patch_display_util_with_stdout(stdout=None):
 
     return mock.patch('certbot._internal.display.obj.get_display',
                       new=_create_display_util_mock_with_stdout(stdout))
-
-
-def patch_get_utility(target='zope.component.getUtility'):
-    """Deprecated, patch certbot.display.util directly or use patch_display_util instead.
-
-    :param str target: path to patch
-
-    :returns: mock zope.component.getUtility
-    :rtype: mock.MagicMock
-
-    """
-    warnings.warn('Decorator certbot.tests.util.patch_get_utility is deprecated. You should now '
-                  'patch certbot.display.util yourself directly or use '
-                  'certbot.tests.util.patch_display_util as a temporary workaround.')
-    return mock.patch(target, new_callable=_create_display_util_mock)
-
-
-def patch_get_utility_with_stdout(target='zope.component.getUtility',
-                                  stdout=None):
-    """Deprecated, patch certbot.display.util directly
-    or use patch_display_util_with_stdout instead.
-
-    :param str target: path to patch (warning, value is ignored due to deprecation)
-    :param object stdout: object to write standard output to; it is
-        expected to have a `write` method
-
-    :returns: mock zope.component.getUtility
-    :rtype: mock.MagicMock
-
-    """
-    warnings.warn('Decorator certbot.tests.util.patch_get_utility_with_stdout is deprecated. You '
-                  'should now patch certbot.display.util yourself directly or use '
-                  'use certbot.tests.util.patch_display_util_with_stdout as a temporary '
-                  'workaround.')
-    stdout = stdout if stdout else io.StringIO()
-    freezable_mock = _create_display_util_mock_with_stdout(stdout)
-    return mock.patch(target, new=freezable_mock)
 
 
 class FreezableMock:
