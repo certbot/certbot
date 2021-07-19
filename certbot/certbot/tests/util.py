@@ -177,7 +177,7 @@ def patch_display_util_with_stdout(stdout=None):
     """Patch certbot.display.util to use a special mock IDisplay.
 
     The mock IDisplay works like a regular mock object, except it also
-    also asserts that methods are called with valid arguments.
+    asserts that methods are called with valid arguments.
 
     The mock created by this patch mocks out Certbot internals so this can be
     used like the old patch_get_utility function. That is, the mock object will
@@ -205,22 +205,22 @@ def patch_display_util_with_stdout(stdout=None):
                       new=_create_display_util_mock_with_stdout(stdout))
 
 
-def patch_get_utility(target='zope.component.getUtility'):  # pylint: disable=unused-argument
+def patch_get_utility(target='zope.component.getUtility'):
     """Deprecated, patch certbot.display.util directly or use patch_display_util instead.
 
-    :param str target: path to patch (warning, value is ignored due to deprecation)
+    :param str target: path to patch
 
-    :returns: mock certbot._internal.display.obj.get_display
+    :returns: mock zope.component.getUtility
     :rtype: mock.MagicMock
 
     """
     warnings.warn('Decorator certbot.tests.util.patch_get_utility is deprecated. You should now '
                   'patch certbot.display.util yourself directly or use '
                   'certbot.tests.util.patch_display_util as a temporary workaround.')
-    return patch_display_util()
+    return mock.patch(target, new_callable=_create_display_util_mock)
 
 
-def patch_get_utility_with_stdout(target='zope.component.getUtility',  # pylint: disable=unused-argument
+def patch_get_utility_with_stdout(target='zope.component.getUtility',
                                   stdout=None):
     """Deprecated, patch certbot.display.util directly
     or use patch_display_util_with_stdout instead.
@@ -229,7 +229,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',  # pylint:
     :param object stdout: object to write standard output to; it is
         expected to have a `write` method
 
-    :returns: mock certbot._internal.display.obj.get_display
+    :returns: mock zope.component.getUtility
     :rtype: mock.MagicMock
 
     """
@@ -237,7 +237,9 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',  # pylint:
                   'should now patch certbot.display.util yourself directly or use '
                   'use certbot.tests.util.patch_display_util_with_stdout as a temporary '
                   'workaround.')
-    return patch_display_util_with_stdout(stdout)
+    stdout = stdout if stdout else io.StringIO()
+    freezable_mock = _create_display_util_mock_with_stdout(stdout)
+    return mock.patch(target, new=freezable_mock)
 
 
 class FreezableMock:
