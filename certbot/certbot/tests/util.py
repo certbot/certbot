@@ -168,7 +168,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
     """Deprecated, patch certbot.display.util directly
     or use patch_display_util_with_stdout instead.
 
-    :param str target: path to patch (warning, value is ignored due to deprecation)
+    :param str target: path to patch
     :param object stdout: object to write standard output to; it is
         expected to have a `write` method
 
