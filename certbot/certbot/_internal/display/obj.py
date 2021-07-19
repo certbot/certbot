@@ -18,8 +18,12 @@ from certbot.display import util
 logger = logging.getLogger(__name__)
 
 
-# This class holds the global state of the display service to store, in a more
-# consistent way than the "global" keyword.
+# This class holds the global state of the display service. Using this class
+# eliminates potential gotchas that exist if self.display was just a global
+# variable. In particular, in functions `_DISPLAY = <value>` would create a
+# local variable unless the programmer remembered to use the `global` keyword.
+# Adding a level of indirection causes the lookup of the global _DisplayService
+# object to happen first avoiding this potential bug.
 class _DisplayService:
     def __init__(self):
         self.display: Optional[interfaces.IDisplay] = None
