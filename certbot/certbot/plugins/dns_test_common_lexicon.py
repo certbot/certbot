@@ -67,7 +67,7 @@ class _LexiconAwareTestCase(Protocol):
 
 class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_perform(self: _AuthenticatorCallableLexiconTestCase, unused_mock_get_utility):
         self.auth.perform([self.achall])
 

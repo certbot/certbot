@@ -1,9 +1,8 @@
 """Decide which plugins to use for authentication & installation"""
 
 import logging
-
-from typing import Optional, Tuple
-import zope.component
+from typing import Optional
+from typing import Tuple
 
 from certbot import errors
 from certbot import interfaces
@@ -12,7 +11,7 @@ from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
-z_util = zope.component.getUtility
+
 
 def pick_configurator(
         config, default, plugins,
@@ -138,13 +137,12 @@ def choose_plugin(prepared, question):
             for plugin_ep in prepared]
 
     while True:
-        disp = z_util(interfaces.IDisplay)
-        code, index = disp.menu(question, opts, force_interactive=True)
+        code, index = display_util.menu(question, opts, force_interactive=True)
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
             if plugin_ep.misconfigured:
-                z_util(interfaces.IDisplay).notification(
+                display_util.notification(
                     "The selected plugin encountered an error while parsing "
                     "your server configuration and cannot be used. The error "
                     "was:\n\n{0}".format(plugin_ep.prepare()), pause=False)

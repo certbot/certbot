@@ -429,8 +429,7 @@ def handle_renewal_request(config):
     apply_random_sleep = not sys.stdin.isatty() and config.random_sleep_on_renew
 
     for renewal_file in conf_files:
-        disp = zope.component.getUtility(interfaces.IDisplay)
-        disp.notification("Processing " + renewal_file, pause=False)
+        display_util.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
         lineagename = storage.lineagename_for_filename(renewal_file)
 

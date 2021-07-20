@@ -6,8 +6,8 @@ import tempfile
 import josepy as jose
 try:
     import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
+except ImportError:  # pragma: no cover
+    from unittest import mock  # type: ignore
 import pkg_resources
 
 from certbot import util
