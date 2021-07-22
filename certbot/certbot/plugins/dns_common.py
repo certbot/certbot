@@ -27,7 +27,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
         self._attempt_cleanup = False
 
     @classmethod
-    def add_parser_arguments(cls, add, default_propagation_seconds=10):
+    def add_parser_arguments(cls, add, default_propagation_seconds=10):  # pylint: disable=arguments-differ
         add('propagation-seconds',
             default=default_propagation_seconds,
             type=int,
