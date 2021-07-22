@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.ABCMeta):
-    """Base class for DNS  Authenticators"""
+    """Base class for DNS Authenticators"""
 
     def __init__(self, config, name):
         super().__init__(config, name)
@@ -27,7 +27,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
         self._attempt_cleanup = False
 
     @classmethod
-    def add_parser_arguments(cls, add, default_propagation_seconds=10):  # pylint: disable=arguments-differ
+    def add_parser_arguments(cls, add, default_propagation_seconds=10):
         add('propagation-seconds',
             default=default_propagation_seconds,
             type=int,
@@ -35,6 +35,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
                  'to verify the DNS record.')
 
     def auth_hint(self, failed_achalls):
+        """See certbot.plugins.common.Plugin.auth_hint."""
         delay = self.conf('propagation-seconds')
         return (
             'The Certificate Authority failed to verify the DNS TXT records created by --{name}. '

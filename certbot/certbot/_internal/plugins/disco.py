@@ -375,7 +375,7 @@ def _verify(target_instance: interfaces.Plugin, target_class: Type[interfaces.Pl
     if issubclass(target_class, iface):
         # No need to trigger some verify logic for ABCs: when the object is instantiated,
         # an error would be raised if implementation is not done properly.
-        # So effectively the checks have been done when the plugin has been initialized.
+        # So the checks have been done effectively when the plugin has been initialized.
         return True
 
     zope_iface: Optional[Type[zope.interface.Interface]] = None

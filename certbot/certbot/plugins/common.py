@@ -103,7 +103,7 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):  # pylint: disable=abstract-met
         Should describe, in simple language, what the authenticator tried to do, what went
         wrong and what the user should try as their "next steps".
 
-        TODO: auth_hint belongs in IAuthenticator but can't be added until the next major
+        TODO: auth_hint belongs in Authenticator but can't be added until the next major
         version of Certbot. For now, it lives in .Plugin and auth_handler will only call it
         on authenticators that subclass .Plugin. For now, inherit from `.Plugin` to implement
         and/or override the method.
