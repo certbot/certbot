@@ -270,7 +270,6 @@ class MakeCSRTest(unittest.TestCase):
         self.assertIn(b'--END CERTIFICATE REQUEST--' , csr_pem)
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        self.assertEqual(f'{csr_pem}', 1)
         # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
         # have a get_extensions() method, so we skip this test if the method
         # isn't available.

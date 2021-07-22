@@ -356,7 +356,7 @@ def gen_ss_cert(key, domains=[], not_before=None,
             b"basicConstraints", True, b"CA:TRUE, pathlen:0"),
     )
 
-    if len(domain) > 0:
+    if len(domains) > 0:
         cert.get_subject().CN = domains[0]
     else:
         cert.get_subject().CN = ""
