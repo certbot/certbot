@@ -86,7 +86,7 @@ class ParseTest(unittest.TestCase):
     @staticmethod
     def parse(*args, **kwargs):
         """Mocks zope.component.getUtility and calls _unmocked_parse."""
-        with test_util.patch_get_utility():
+        with test_util.patch_display_util():
             return ParseTest._unmocked_parse(*args, **kwargs)
 
     def _help_output(self, args):
@@ -98,7 +98,7 @@ class ParseTest(unittest.TestCase):
             output.write(message)
 
         with mock.patch('certbot._internal.main.sys.stdout', new=output):
-            with test_util.patch_get_utility() as mock_get_utility:
+            with test_util.patch_display_util() as mock_get_utility:
                 mock_get_utility().notification.side_effect = write_msg
                 with mock.patch('certbot._internal.main.sys.stderr'):
                     self.assertRaises(SystemExit, self._unmocked_parse, args, output)
@@ -519,7 +519,7 @@ class SetByCliTest(unittest.TestCase):
 
 def _call_set_by_cli(var, args, verb):
     with mock.patch('certbot._internal.cli.helpful_parser') as mock_parser:
-        with test_util.patch_get_utility():
+        with test_util.patch_display_util():
             mock_parser.args = args
             mock_parser.verb = verb
             return cli.set_by_cli(var)

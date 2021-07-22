@@ -1,10 +1,10 @@
 """Certbot main entry point."""
 # pylint: disable=too-many-lines
 
+from contextlib import contextmanager
 import functools
 import logging.handlers
 import sys
-from contextlib import contextmanager
 from typing import Generator
 from typing import IO
 from typing import Iterable
@@ -37,6 +37,7 @@ from certbot._internal import reporter
 from certbot._internal import snap_config
 from certbot._internal import storage
 from certbot._internal import updater
+from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins import disco as plugins_disco
 from certbot._internal.plugins import selection as plug_sel
 from certbot.compat import filesystem
@@ -67,9 +68,8 @@ def _suggest_donation_if_appropriate(config):
     if config.staging:
         # --dry-run implies --staging
         return
-    disp = zope.component.getUtility(interfaces.IDisplay)
     util.atexit_register(
-        disp.notification,
+        display_util.notification,
         "If you like Certbot, please consider supporting our work by:\n"
         " * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
         " * Donating to EFF:                    https://eff.org/donate-le",
@@ -191,10 +191,8 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
              existing,
              ", ".join(domains),
              br=os.linesep)
-    if config.expand or config.renew_by_default or zope.component.getUtility(
-            interfaces.IDisplay).yesno(question, "Expand", "Cancel",
-                                       cli_flag="--expand",
-                                       force_interactive=True):
+    if config.expand or config.renew_by_default or display_util.yesno(
+        question, "Expand", "Cancel", cli_flag="--expand", force_interactive=True):
         return "renew", cert
     display_util.notify(
         "To obtain a new certificate that contains these names without "
@@ -247,9 +245,8 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     choices = [keep_opt,
                "Renew & replace the certificate (may be subject to CA rate limits)"]
 
-    display = zope.component.getUtility(interfaces.IDisplay)
-    response = display.menu(question, choices,
-                            default=0, force_interactive=True)
+    response = display_util.menu(question, choices,
+                                    default=0, force_interactive=True)
     if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
@@ -423,8 +420,7 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
                _format_list("+", added),
                _format_list("-", removed),
                br=os.linesep))
-    obj = zope.component.getUtility(interfaces.IDisplay)
-    if not obj.yesno(msg, "Update certificate", "Cancel", default=True):
+    if not display_util.yesno(msg, "Update certificate", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched certificate name and domains.")
 
 
@@ -507,6 +503,13 @@ def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[error
                 "Certificates created using --csr will not be renewed automatically by Certbot. "
                 "You will need to renew the certificate before it expires, by running the same "
                 "Certbot command again.")
+        elif _is_interactive_only_auth(config):
+            steps.append(
+                "This certificate will not be renewed automatically. Autorenewal of "
+                "--manual certificates requires the use of an authentication hook script "
+                "(--manual-auth-hook) but one was not provided. To renew this certificate, repeat "
+                f"this same {cli.cli_command} command before the certificate's expiry date."
+            )
         elif not config.preconfigured_renewal:
             steps.append(
                 "The certificate will need to be renewed before it expires. Certbot can "
@@ -556,6 +559,11 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
 
     assert cert_path and fullchain_path, "No certificates saved to report."
 
+    renewal_msg = ""
+    if config.preconfigured_renewal and not _is_interactive_only_auth(config):
+        renewal_msg = ("\nCertbot has set up a scheduled task to automatically renew this "
+                       "certificate in the background.")
+
     display_util.notify(
         ("\nSuccessfully received certificate.\n"
         "Certificate is saved at: {cert_path}\n{key_msg}"
@@ -564,11 +572,20 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
             cert_path=fullchain_path,
             expiry=crypto_util.notAfter(cert_path).date(),
             key_msg="Key is saved at:         {}\n".format(key_path) if key_path else "",
-            renewal_msg="\nCertbot has set up a scheduled task to automatically renew this "
-                        "certificate in the background." if config.preconfigured_renewal else "",
+            renewal_msg=renewal_msg,
             nl="\n" if config.verb == "run" else "" # Normalize spacing across verbs
         )
     )
+
+
+def _is_interactive_only_auth(config: interfaces.IConfig) -> bool:
+    """ Whether the current authenticator params only support interactive renewal.
+    """
+    # --manual without --manual-auth-hook can never autorenew
+    if config.authenticator == "manual" and config.manual_auth_hook is None:
+        return True
+
+    return False
 
 
 def _csr_report_new_cert(config: interfaces.IConfig, cert_path: Optional[str],
@@ -631,8 +648,7 @@ def _determine_account(config):
         msg = ("Please read the Terms of Service at {0}. You "
                "must agree in order to register with the ACME "
                "server. Do you agree?".format(terms_of_service))
-        obj = zope.component.getUtility(interfaces.IDisplay)
-        result = obj.yesno(msg, cli_flag="--agree-tos", force_interactive=True)
+        result = display_util.yesno(msg, cli_flag="--agree-tos", force_interactive=True)
         if not result:
             raise errors.Error(
                 "Registration cannot proceed without accepting "
@@ -681,14 +697,12 @@ def _delete_if_appropriate(config):
     :raises errors.Error: If anything goes wrong, including bad user input, if an overlapping
         archive dir is found for the specified lineage, etc ...
     """
-    display = zope.component.getUtility(interfaces.IDisplay)
-
     attempt_deletion = config.delete_after_revoke
     if attempt_deletion is None:
         msg = ("Would you like to delete the certificate(s) you just revoked, "
                "along with all earlier and later versions of the certificate?")
-        attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
-                force_interactive=True, default=True)
+        attempt_deletion = display_util.yesno(msg, yes_label="Yes (recommended)", no_label="No",
+                                              force_interactive=True, default=True)
 
     if not attempt_deletion:
         return
@@ -767,11 +781,10 @@ def unregister(config, unused_plugins):
 
     if not accounts:
         return "Could not find existing account to deactivate."
-    yesno = zope.component.getUtility(interfaces.IDisplay).yesno
     prompt = ("Are you sure you would like to irrevocably deactivate "
               "your account?")
-    wants_deactivate = yesno(prompt, yes_label='Deactivate', no_label='Abort',
-                             default=True)
+    wants_deactivate = display_util.yesno(prompt, yes_label='Deactivate', no_label='Abort',
+                                          default=True)
 
     if not wants_deactivate:
         return "Deactivation aborted."
@@ -1013,8 +1026,7 @@ def plugins_cmd(config, plugins):
     filtered = plugins.visible().ifaces(ifaces)
     logger.debug("Filtered plugins: %r", filtered)
 
-    notify = functools.partial(zope.component.getUtility(
-        interfaces.IDisplay).notification, pause=False)
+    notify = functools.partial(display_util.notification, pause=False)
     if not config.init and not config.prepare:
         notify(str(filtered))
         return
@@ -1407,8 +1419,8 @@ def certonly(config, plugins):
     should_get_cert, lineage = _find_cert(config, domains, certname)
 
     if not should_get_cert:
-        notify = zope.component.getUtility(interfaces.IDisplay).notification
-        notify("Certificate not yet due for renewal; no action taken.", pause=False)
+        display_util.notification("Certificate not yet due for renewal; no action taken.",
+                                     pause=False)
         return
 
     lineage = _get_and_save_cert(le_client, config, domains, certname, lineage)
@@ -1542,12 +1554,13 @@ def main(cli_args=None):
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
 
-    # Reporter
+    # These calls are done only for retro-compatibility purposes.
+    # TODO: Remove these calls once zope dependencies are removed from Certbot.
     report = reporter.Reporter(config)
     zope.component.provideUtility(report)
     util.atexit_register(report.print_messages)
 
     with make_displayer(config) as displayer:
-        zope.component.provideUtility(displayer)
+        display_obj.set_display(displayer)
 
         return config.func(config, plugins)

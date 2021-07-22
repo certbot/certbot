@@ -57,10 +57,11 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.  
                       | domain. Doing domain validation in this way is
                       | the only way to obtain wildcard certificates from Let's
                       | Encrypt.
-manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80) or
-                      | perform domain validation yourself. Additionally allows you   dns-01_ (53)
-                      | to specify scripts to automate the validation task in a
-                      | customized way.
+manual_     Y    N    | Obtain a certificate by manually following instructions to    http-01_ (80) or
+                      | perform domain validation yourself. Certificates created this dns-01_ (53)
+                      | way do not support autorenewal.
+                      | Autorenewal may be enabled by providing an authentication
+                      | hook script to automate the domain validation steps.
 =========== ==== ==== =============================================================== =============================
 
 .. |dns_plugs| replace:: :ref:`DNS plugins <dns_plugins>`
@@ -229,11 +230,21 @@ For example, for the domain ``example.com``, a zone file entry would look like:
 
         _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
+.. _manual-renewal:
 
-Additionally you can specify scripts to prepare for validation and
-perform the authentication procedure and/or clean up after it by using
-the ``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is
-described in more depth in the hooks_ section.
+**Renewal with the manual plugin**
+
+Certificates created using ``--manual`` **do not** support automatic renewal unless
+combined with an `authentication hook script <#hooks>`_  via ``--manual-auth-hook``
+to automatically set up the required HTTP and/or TXT challenges.
+
+If you can use one of the other plugins_ which support autorenewal to create
+your certificate, doing so is highly recommended.
+
+To manually renew a certificate using ``--manual`` without hooks, repeat the same
+``certbot --manual`` command you used to create the certificate originally. As this
+will require you to copy and paste new HTTP files or DNS TXT records, the command
+cannot be automated with a cron job.
 
 .. _combination:
 
@@ -289,6 +300,7 @@ dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
 njalla_            Y    N    DNS Authentication for njalla
 DuckDNS_           Y    N    DNS Authentication for DuckDNS
 Porkbun_           Y    N    DNS Authentication for Porkbun
+Infomaniak_        Y    N    DNS Authentication using Infomaniak Domains API
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -308,6 +320,7 @@ Porkbun_           Y    N    DNS Authentication for Porkbun
 .. _njalla: https://github.com/chaptergy/certbot-dns-njalla
 .. _DuckDNS: https://github.com/infinityofspace/certbot_dns_duckdns
 .. _Porkbun: https://github.com/infinityofspace/certbot_dns_porkbun
+.. _Infomaniak: https://github.com/Infomaniak/certbot-dns-infomaniak
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -577,6 +590,10 @@ Renewing certificates
 
 .. seealso:: Most Certbot installations come with automatic
    renewal out of the box. See `Automated Renewals`_ for more details.
+
+.. seealso:: Users of the `Manual`_ plugin should note that ``--manual`` certificates
+   will not renew automatically, unless combined with authentication hook scripts.
+   See `Renewal with the manual plugin <#manual-renewal>`_.
 
 As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
