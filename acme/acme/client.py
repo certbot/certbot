@@ -5,7 +5,6 @@ import datetime
 from email.utils import parsedate_tz
 import heapq
 import http.client as http_client
-import ipaddress
 import logging
 import re
 import time
@@ -27,7 +26,6 @@ from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-from acme import util
 from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)

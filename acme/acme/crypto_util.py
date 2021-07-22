@@ -14,7 +14,6 @@ from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 
 from acme import errors
-from acme import util
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +187,7 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
     return client_ssl.get_peer_certificate()
 
 
-def make_csr(private_key_pem, domains=[], must_staple=False, ipaddrs=[]):
+def make_csr(private_key_pem, domains=None, must_staple=False, ipaddrs=None):
     """Generate a CSR containing a list of domains as subjectAltNames.
 
     :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
@@ -206,15 +205,21 @@ def make_csr(private_key_pem, domains=[], must_staple=False, ipaddrs=[]):
     # as our 'domains' are no longer strictly domains, so check for ip address
     #if addresses
     sanlist = []
-    if not domains and not ipaddrs:
-        raise errors.ConfigurationError("At least one of domains or ipaddrs parameter need to be not empty")
+    # if domain or ip list not supplyed make it empty list so it's easier to iterrate
+    if domains is None:
+        domains = []
+    if ipaddrs is None:
+        ipaddrs = []
+    if len(domains)+len(ipaddrs) == 0:
+        raise ValueError("At least one of domains or ipaddrs parameter need to be not empty")
     for address in domains:
         sanlist.append('DNS:' + address)
     for ips in ipaddrs:
         sanlist.append('IP:' + ips.exploded)
     # make sure its ascii encoded
     san_string = ', '.join(sanlist).encode('ascii')
-    # for IP san it's actually need to be octet-string, but somewhere downsteam thankfully handle it for us
+    # for IP san it's actually need to be octet-string,
+    # but somewhere downsteam thankfully handle it for us
     extensions = [
         crypto.X509Extension(
             b'subjectAltName',
@@ -326,8 +331,8 @@ def _pyopenssl_cert_or_req_san_ip(cert_or_req):
     return [part[11:] for part in sans_parts if part.startswith(prefix)]
 
 
-def gen_ss_cert(key, domains=[], not_before=None,
-                validity=(7 * 24 * 60 * 60), force_san=True, extensions=None, ipaddrs=[]):
+def gen_ss_cert(key, domains=None, not_before=None,
+                validity=(7 * 24 * 60 * 60), force_san=True, extensions=None, ips=None):
     """Generate new self-signed certificate.
 
     :type domains: `list` of `unicode`
@@ -343,14 +348,18 @@ def gen_ss_cert(key, domains=[], not_before=None,
     extension is used, unless `force_san` is ``True``.
 
     """
-    assert domains or ipaddrs, "Must provide one or more hostnames or IPs for the cert."
+    assert domains or ips, "Must provide one or more hostnames or IPs for the cert."
+
     cert = crypto.X509()
     cert.set_serial_number(int(binascii.hexlify(os.urandom(16)), 16))
     cert.set_version(2)
 
     if extensions is None:
         extensions = []
-
+    if domains is None:
+        domains = []
+    if ips is None:
+        ips = []
     extensions.append(
         crypto.X509Extension(
             b"basicConstraints", True, b"CA:TRUE, pathlen:0"),
@@ -358,18 +367,16 @@ def gen_ss_cert(key, domains=[], not_before=None,
 
     if len(domains) > 0:
         cert.get_subject().CN = domains[0]
-    else:
-        cert.get_subject().CN = ""
     # TODO: what to put into cert.get_subject()?
     cert.set_issuer(cert.get_subject())
 
     sanlist = []
     for address in domains:
         sanlist.append('DNS:' + address)
-    for ip in ipaddrs:
-        sanlist.append('IP:' + ip.explode)
+    for ip in ips:
+        sanlist.append('IP:' + ip.exploded)
     san_string = ', '.join(sanlist).encode('ascii')
-    if force_san or len(domains) > 1 or len(ipaddrs) > 0:
+    if force_san or len(domains) > 1 or len(ips) > 0:
         extensions.append(crypto.X509Extension(
             b"subjectAltName",
             critical=False,
@@ -407,4 +414,3 @@ def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
     return b"".join(_dump_cert(cert) for cert in chain)
-

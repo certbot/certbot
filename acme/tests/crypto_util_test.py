@@ -219,6 +219,7 @@ class PyOpenSSLCertOrReqSANIPTest(unittest.TestCase):
 class RandomSnTest(unittest.TestCase):
     """Test for random certificate serial numbers."""
 
+
     def setUp(self):
         self.cert_count = 5
         self.serial_num: List[int] = []
@@ -227,11 +228,18 @@ class RandomSnTest(unittest.TestCase):
 
     def test_sn_collisions(self):
         from acme.crypto_util import gen_ss_cert
-
         for _ in range(self.cert_count):
-            cert = gen_ss_cert(self.key, ['dummy'], force_san=True)
+            cert = gen_ss_cert(self.key, ['dummy'], force_san=True,
+                               ips=[ipaddress.ip_address("10.10.10.10")])
             self.serial_num.append(cert.get_serial_number())
-        self.assertGreater(len(set(self.serial_num)), 1)
+        self.assertGreaterEqual(len(set(self.serial_num)), self.cert_count)
+
+
+    def test_no_name(self):
+        from acme.crypto_util import gen_ss_cert
+        with self.assertRaises(AssertionError):
+            gen_ss_cert(self.key, ips=[ipaddress.ip_address("1.1.1.1")])
+            gen_ss_cert(self.key)
 
 
 class MakeCSRTest(unittest.TestCase):
@@ -302,6 +310,9 @@ class MakeCSRTest(unittest.TestCase):
                 if e.get_data() == b"0\x03\x02\x01\x05"]
             self.assertEqual(len(must_staple_exts), 1,
                 "Expected exactly one Must Staple extension")
+
+    def test_make_csr_without_hostname(self):
+        self.assertRaises(ValueError, self._call_with_key)
 
 
 class DumpPyopensslChainTest(unittest.TestCase):

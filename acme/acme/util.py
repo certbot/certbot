@@ -1,5 +1,5 @@
 """ACME utilities."""
-
+import ipaddress
 
 def map_keys(dikt, func):
     """Map dictionary keys."""
@@ -8,13 +8,8 @@ def map_keys(dikt, func):
 def is_ip(address):
     """ check if this is an IP address"""
     try:
-        socket.inet_pton(socket.AF_INET, address)
-        # If this line runs it was ip address (ipv4)
+        ipaddress.ip_address(address)
         return True
-    except socket.error:
-        # It wasn't an IPv4 address
-        try:
-            socket.inet_pton(socket.AF_INET6, address)
-            return True
-        except socket.error:
-            return False
+    except ValueError:
+        # It wasn't ip
+        return False

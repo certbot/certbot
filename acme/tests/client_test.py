@@ -3,6 +3,7 @@
 import copy
 import datetime
 import http.client as http_client
+import ipaddress
 import json
 import unittest
 from typing import Dict
@@ -442,6 +443,12 @@ class ClientTest(ClientTestBase):
         self.assertEqual(
             self.client.request_challenges(self.identifier),
             self.client.request_domain_challenges('example.com'))
+
+    def test_request_ip_challenges(self):
+        self.client.request_challenges = mock.MagicMock()
+        self.assertEqual(
+            self.client.request_challenges(self.identifier),
+            self.client.request_ip_challenges(ipaddress.IPv4Interface("1.2.3.4")))
 
     def test_answer_challenge(self):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
