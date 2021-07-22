@@ -7,7 +7,7 @@ from setuptools import setup
 version = '1.18.0.dev0'
 
 install_requires = [
-    'dns-lexicon>=3.1.0',  # Changed `rtype` parameter name
+    'dns-lexicon>=3.2.1',
     'setuptools>=39.0.1',
     'zope.interface',
 ]
