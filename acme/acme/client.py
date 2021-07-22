@@ -5,6 +5,7 @@ import datetime
 from email.utils import parsedate_tz
 import heapq
 import http.client as http_client
+import ipaddress
 import logging
 import re
 import time
@@ -26,6 +27,7 @@ from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
+from acem import util
 from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
@@ -343,6 +345,25 @@ class Client(ClientBase):
         return self.request_challenges(messages.Identifier(
             typ=messages.IDENTIFIER_FQDN, value=domain), new_authzr_uri)
 
+    def request_ip_challenges(self, ip):
+        """Request challenges for a ip address.
+
+        This is simply a convenience function that wraps around
+        `request_challenges`, but works with ip addresses instead of
+        generic identifiers. See ``request_challenges`` for more
+        documentation.
+
+        :param ipaddress ip: IP address to be challenged.
+
+        :returns: Authorization Resource.
+        :rtype: `.AuthorizationResource`
+
+        :raises errors.WildcardUnsupportedError: if a wildcard is requested
+
+        """
+        return self.request_challenges(messages.Identifier(
+            typ=messages.IDENTIFIER_IP, value=ip.exploded), None)
+
     def request_issuance(self, csr, authzrs):
         """Request issuance.
 
@@ -650,6 +671,7 @@ class ClientV2(ClientBase):
         # pylint: disable=protected-access
         dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
         ipNames = crypto_util._pyopenssl_cert_or_req_san_ip(csr)
+        # ipNames is now []string
         identifiers = []
         for name in dnsNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,

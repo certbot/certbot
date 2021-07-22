@@ -481,6 +481,11 @@ def enforce_le_validity(domain):
                                 Encrypt currently will not issue certificates
 
     """
+    # this ip address check : while certbot can process ipaddress, ACME server it talks to may not.
+    # but have to try anyway to know if server support it or not
+    if is_ipaddress(domain)
+        raise errors.ConfigurationError(f"IP address {domain} need to be sent as --ip parameter")
+
     domain = enforce_domain_sanity(domain)
     if not re.match("^[A-Za-z0-9.-]*$", domain):
         raise errors.ConfigurationError(
@@ -538,10 +543,6 @@ def enforce_domain_sanity(domain):
                     domain, scheme
                 )
             )
-
-# there was ip address check : removed for support ip address
-    # Explain separately that IP addresses aren't allowed (apart from not
-    # being FQDNs) because hope springs eternal concerning this point
 
 
     # FQDN checks according to RFC 2181: domain name should be less than 255

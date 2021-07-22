@@ -1,5 +1,6 @@
 """Tests for acme.crypto_util."""
 import itertools
+import ipaddress
 import socket
 import socketserver
 import threading
@@ -228,7 +229,7 @@ class RandomSnTest(unittest.TestCase):
         from acme.crypto_util import gen_ss_cert
 
         for _ in range(self.cert_count):
-            cert = gen_ss_cert(self.key, ['dummy', '127.0.0.1'], force_san=True)
+            cert = gen_ss_cert(self.key, ['dummy'], force_san=True)
             self.serial_num.append(cert.get_serial_number())
         self.assertGreater(len(set(self.serial_num)), 1)
 
@@ -264,11 +265,12 @@ class MakeCSRTest(unittest.TestCase):
             )
 
     def test_make_csr_ip(self):
-        csr_pem = self._call_with_key(["a.example", "127.0.0.1", "::1"])
+        csr_pem = self._call_with_key(["a.example"], False, [ipaddress.ip_address('127.0.0.1'), ipaddress.ip_address('::1')])
         self.assertIn(b'--BEGIN CERTIFICATE REQUEST--' , csr_pem)
         self.assertIn(b'--END CERTIFICATE REQUEST--' , csr_pem)
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        self.assertEqual(f'{csr_pem}', 1)
         # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
         # have a get_extensions() method, so we skip this test if the method
         # isn't available.
@@ -281,6 +283,8 @@ class MakeCSRTest(unittest.TestCase):
                                  value=b'DNS:a.example, IP:127.0.0.1, IP:::1',
                              ).get_data(),
                              )
+            # for IP san it's actually need to be octet-string,
+            # but somewhere downstream thankfully handle it for us
 
     def test_make_csr_must_staple(self):
         csr_pem = self._call_with_key(["a.example"], must_staple=True)
