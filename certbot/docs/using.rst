@@ -523,6 +523,9 @@ Deleting certificates
 
 If you need to delete a certificate, use the ``delete`` subcommand.
 
+.. note:: Read this and the `Safely deleting certificates`_ sections carefully. This is an irreversible operation and must
+          be done with care.
+
 .. note:: Do not manually delete certificate files from inside ``/etc/letsencrypt/``. Always use the ``delete`` subcommand.
 
 A certificate may be deleted by providing its name with ``--cert-name``. \
@@ -535,7 +538,8 @@ certificates to delete::
   # or to choose from a list:
   certbot delete
 
-**Safely deleting certificates**
+Safely deleting certificates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 *Before* deleting a certificate, make sure to remove all references to that certificate from the configuration
 of any installed server software (Apache, nginx, Postfix, etc). Otherwise, you may end up with a non-functioning
