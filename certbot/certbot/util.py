@@ -483,7 +483,7 @@ def enforce_le_validity(domain):
     """
     # this ip address check : while certbot can process ipaddress, ACME server it talks to may not.
     # but have to try anyway to know if server support it or not
-    if is_ipaddress(domain)
+    if is_ipaddress(domain):
         raise errors.ConfigurationError(f"IP address {domain} need to be sent as --ip parameter")
 
     domain = enforce_domain_sanity(domain)
