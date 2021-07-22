@@ -101,7 +101,7 @@ declare a dependency on them in pyproject.toml. If a build dependency isn't
 included in the constraints file, pip will use the latest version available on
 PyPI.
 
-## Possible future improvements
+## Theoretical future work
 
 I think the system described above should work pretty well and I think it's
 much better than the system we had before where how to update things like our
