@@ -6,13 +6,14 @@ import unittest
 
 from certbot import errors
 from certbot import interfaces
+from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins.disco import PluginsRegistry
 from certbot.display import util as display_util
 from certbot.tests import util as test_util
 
 try:
     import mock
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     from unittest import mock
 
 
@@ -117,7 +118,7 @@ class ChoosePluginTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.selection.choose_plugin."""
 
     def setUp(self):
-        display_util.set_display(display_util.FileDisplay(sys.stdout, False))
+        display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))
 
         self.mock_apache = mock.Mock(
             description_with_name="a", misconfigured=True)
@@ -134,14 +135,14 @@ class ChoosePluginTest(unittest.TestCase):
         from certbot._internal.plugins.selection import choose_plugin
         return choose_plugin(self.plugins, "Question?")
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_selection(self, mock_util):
         mock_util().menu.side_effect = [(display_util.OK, 0),
                                         (display_util.OK, 1)]
         self.assertEqual(self.mock_stand, self._call())
         self.assertEqual(mock_util().notification.call_count, 1)
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_more_info(self, mock_util):
         mock_util().menu.side_effect = [
             (display_util.OK, 1),
@@ -149,7 +150,7 @@ class ChoosePluginTest(unittest.TestCase):
 
         self.assertEqual(self.mock_stand, self._call())
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
         self.assertIsNone(self._call())

@@ -41,7 +41,10 @@ version = meta['version']
 # here to avoid masking the more specific request requirements in acme. See
 # https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
-    'acme>=1.8.0',
+    # We specify the minimum acme version as the current Certbot version for
+    # simplicity. See https://github.com/certbot/certbot/issues/8761 for more
+    # info.
+    f'acme>={version}',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
@@ -64,22 +67,13 @@ install_requires = [
 ]
 
 dev_extras = [
-    'astroid',
     'azure-devops',
-    'coverage',
     'ipdb',
-    'mypy',
     'PyGithub',
-    # 1.1.0+ is required for poetry to use the poetry-core library for the
-    # build system declared in tools/pinning/pyproject.toml.
-    'poetry>=1.1.0',
-    'pylint',
-    'pytest',
-    'pytest-cov',
-    'pytest-xdist',
-    # typing-extensions is required to import typing.Protocol and make the mypy checks
-    # pass (along with pylint about non-existent objects) on Python 3.6 & 3.7
-    'typing-extensions',
+    'pip',
+    # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
+    # https://github.com/python-poetry/poetry/issues/1584.
+    'poetry>=1.2.0a1',
     'tox',
     'twine',
     'wheel',
@@ -92,6 +86,21 @@ docs_extras = [
     'Sphinx>=1.2', # Annotation support
     'sphinx_rtd_theme',
 ]
+
+test_extras = [
+    'coverage',
+    'mypy',
+    'pylint',
+    'pytest',
+    'pytest-cov',
+    'pytest-xdist',
+    # typing-extensions is required to import typing.Protocol and make the mypy checks
+    # pass (along with pylint about non-existent objects) on Python 3.6 & 3.7
+    'typing-extensions',
+]
+
+
+all_extras = dev_extras + docs_extras + test_extras
 
 setup(
     name='certbot',
@@ -129,8 +138,10 @@ setup(
 
     install_requires=install_requires,
     extras_require={
+        'all': all_extras,
         'dev': dev_extras,
         'docs': docs_extras,
+        'test': test_extras,
     },
 
     entry_points={

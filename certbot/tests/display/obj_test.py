@@ -1,11 +1,11 @@
-"""Test :mod:`certbot.display.obj`."""
+"""Test :mod:`certbot._internal.display.obj`."""
 import inspect
 import unittest
 from unittest import mock
 
 from certbot import errors, interfaces
+from certbot._internal.display import obj as display_obj
 from certbot.display import util as display_util
-from certbot.display import obj as display_obj
 
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
@@ -21,9 +21,9 @@ class FileOutputDisplayTest(unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.mock_stdout = mock.MagicMock()
-        self.displayer = display_util.FileDisplay(self.mock_stdout, False)
+        self.displayer = display_obj.FileDisplay(self.mock_stdout, False)
 
-    @mock.patch("certbot.display.obj.logger")
+    @mock.patch("certbot._internal.display.obj.logger")
     def test_notification_no_pause(self, mock_logger):
         self.displayer.notification("message", False)
         string = self.mock_stdout.write.call_args[0][0]
@@ -216,7 +216,7 @@ class FileOutputDisplayTest(unittest.TestCase):
 
         with mock.patch("certbot.display.util.sys.stdin") as mock_stdin:
             mock_stdin.isatty.return_value = False
-            with mock.patch("certbot.display.obj.logger") as mock_logger:
+            with mock.patch("certbot._internal.display.obj.logger") as mock_logger:
                 result = func(*args, **kwargs)
 
         if skipped_interaction:
@@ -295,7 +295,7 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         self.mock_stdout = mock.MagicMock()
         self.displayer = display_util.NoninteractiveDisplay(self.mock_stdout)
 
-    @mock.patch("certbot.display.obj.logger")
+    @mock.patch("certbot._internal.display.obj.logger")
     def test_notification_no_pause(self, mock_logger):
         self.displayer.notification("message", 10)
         string = self.mock_stdout.write.call_args[0][0]
@@ -362,7 +362,7 @@ class NoninteractiveDisplayTest(unittest.TestCase):
 class PlaceParensTest(unittest.TestCase):
     @classmethod
     def _call(cls, label):  # pylint: disable=protected-access
-        from certbot.display.obj import _parens_around_char
+        from certbot._internal.display.obj import _parens_around_char
         return _parens_around_char(label)
 
     def test_single_letter(self):

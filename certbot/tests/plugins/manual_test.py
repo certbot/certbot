@@ -21,7 +21,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
     def setUp(self):
         super().setUp()
-        get_display_patch = test_util.patch_display_service()
+        get_display_patch = test_util.patch_display_util()
         self.mock_get_display = get_display_patch.start()
         self.addCleanup(get_display_patch.stop)
 

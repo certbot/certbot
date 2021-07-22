@@ -45,6 +45,7 @@ class DNSServer:
 
         # Unfortunately the BIND9 image forces everything to stderr with -g and we can't
         # modify the verbosity.
+        # pylint: disable=consider-using-with
         self._output = sys.stderr if show_output else open(os.devnull, "w")
 
     def start(self):

@@ -28,8 +28,8 @@ from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
 from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
+from certbot._internal.display import obj as display_obj
 from certbot.compat import os
-from certbot.display import util as display_util
 
 
 class HelpfulArgumentParser:
@@ -62,10 +62,7 @@ class HelpfulArgumentParser:
         }
 
         # Get notification function for printing
-        try:
-            self.notify = display_util.get_display().notification
-        except ValueError:
-            self.notify = display_util.NoninteractiveDisplay(sys.stdout).notification
+        self.notify = display_obj.NoninteractiveDisplay(sys.stdout).notification
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]

@@ -16,14 +16,12 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-import zope.component
-import zope.interface
 
-from certbot import interfaces
 from certbot.compat import misc
 # These imports are done to not break the public API of the module.
-from certbot.display.obj import FileDisplay  # pylint: disable=unused-import
-from certbot.display.obj import NoninteractiveDisplay  # pylint: disable=unused-import
+from certbot._internal.display.obj import FileDisplay  # pylint: disable=unused-import
+from certbot._internal.display.obj import NoninteractiveDisplay  # pylint: disable=unused-import
+from certbot._internal.display import obj
 
 logger = logging.getLogger(__name__)
 
@@ -48,21 +46,13 @@ SIDE_FRAME = ("- " * 39) + "-"
 it as a heading)"""
 
 
-class _DisplayService:
-    def __init__(self):
-        self.display: Optional[interfaces.Display] = None
-
-
-_SERVICE = _DisplayService()
-
-
 def notify(msg: str) -> None:
     """Display a basic status message.
 
     :param str msg: message to display
 
     """
-    get_display().notification(msg, pause=False, decorate=False, wrap=False)
+    obj.get_display().notification(msg, pause=False, decorate=False, wrap=False)
 
 
 def notification(message: str, pause: bool = True, wrap: bool = True,
@@ -79,8 +69,8 @@ def notification(message: str, pause: bool = True, wrap: bool = True,
         decorated frame
 
     """
-    get_display().notification(message, pause=pause, wrap=wrap,
-                               force_interactive=force_interactive, decorate=decorate)
+    obj.get_display().notification(message, pause=pause, wrap=wrap,
+                                   force_interactive=force_interactive, decorate=decorate)
 
 
 def menu(message: str, choices: Union[List[str], Tuple[str, str]],
@@ -107,8 +97,8 @@ def menu(message: str, choices: Union[List[str], Tuple[str, str]],
     :rtype: tuple
 
     """
-    return get_display().menu(message, choices, default=default, cli_flag=cli_flag,
-                              force_interactive=force_interactive)
+    return obj.get_display().menu(message, choices, default=default, cli_flag=cli_flag,
+                                  force_interactive=force_interactive)
 
 
 def input_text(message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
@@ -127,8 +117,8 @@ def input_text(message: str, default: Optional[str] = None, cli_flag: Optional[s
     :rtype: tuple
 
     """
-    return get_display().input(message, default=default, cli_flag=cli_flag,
-                               force_interactive=force_interactive)
+    return obj.get_display().input(message, default=default, cli_flag=cli_flag,
+                                   force_interactive=force_interactive)
 
 
 def yesno(message: str, yes_label: str = "Yes", no_label: str = "No",
@@ -151,8 +141,8 @@ def yesno(message: str, yes_label: str = "Yes", no_label: str = "No",
     :rtype: bool
 
     """
-    return get_display().yesno(message, yes_label=yes_label, no_label=no_label, default=default,
-                               cli_flag=cli_flag, force_interactive=force_interactive)
+    return obj.get_display().yesno(message, yes_label=yes_label, no_label=no_label, default=default,
+                                   cli_flag=cli_flag, force_interactive=force_interactive)
 
 
 def checklist(message: str, tags: List[str], default: Optional[str] = None,
@@ -173,8 +163,8 @@ def checklist(message: str, tags: List[str], default: Optional[str] = None,
     :rtype: tuple
 
     """
-    return get_display().checklist(message, tags, default=default, cli_flag=cli_flag,
-                                   force_interactive=force_interactive)
+    return obj.get_display().checklist(message, tags, default=default, cli_flag=cli_flag,
+                                       force_interactive=force_interactive)
 
 
 def directory_select(message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
@@ -192,35 +182,8 @@ def directory_select(message: str, default: Optional[str] = None, cli_flag: Opti
         `string` - input entered by the user
 
     """
-    return get_display().directory_select(message, default=default, cli_flag=cli_flag,
-                                          force_interactive=force_interactive)
-
-
-def get_display() -> interfaces.Display:
-    """Get the display utility.
-
-    :return: the display utility
-    :rtype: interfaces.Display
-    :raise: ValueError if the display utility is not set
-
-    """
-    if not _SERVICE.display:
-        raise ValueError("Display service not set, please call "
-                         "certbot.display.util.set_display() first to set it.")
-    return _SERVICE.display
-
-
-def set_display(display: interfaces.Display) -> None:
-    """Set the display service.
-
-    :param interfaces.Display display: the display service
-
-    """
-    # This call is done only for retro-compatibility purposes.
-    # TODO: Remove this call once zope dependencies are removed from Certbot.
-    zope.component.provideUtility(display)
-
-    _SERVICE.display = display
+    return obj.get_display().directory_select(message, default=default, cli_flag=cli_flag,
+                                              force_interactive=force_interactive)
 
 
 def input_with_timeout(prompt=None, timeout=36000.0):

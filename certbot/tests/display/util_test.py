@@ -16,7 +16,7 @@ except ImportError:  # pragma: no cover
 class NotifyTest(unittest.TestCase):
     """Tests for certbot.display.util.notify"""
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_notify(self, mock_util):
         from certbot.display.util import notify
         notify("Hello World")
@@ -28,7 +28,7 @@ class NotifyTest(unittest.TestCase):
 class NotificationTest(unittest.TestCase):
     """Tests for certbot.display.util.notification"""
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_notification(self, mock_util):
         from certbot.display.util import notification
         notification("Hello World")
@@ -40,7 +40,7 @@ class NotificationTest(unittest.TestCase):
 class MenuTest(unittest.TestCase):
     """Tests for certbot.display.util.menu"""
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_menu(self, mock_util):
         from certbot.display.util import menu
         menu("Hello World", ["one", "two"], default=0)
@@ -52,7 +52,7 @@ class MenuTest(unittest.TestCase):
 class InputTextTest(unittest.TestCase):
     """Tests for certbot.display.util.input_text"""
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_input_text(self, mock_util):
         from certbot.display.util import input_text
         input_text("Hello World", default="something")
@@ -64,7 +64,7 @@ class InputTextTest(unittest.TestCase):
 class YesNoTest(unittest.TestCase):
     """Tests for certbot.display.util.yesno"""
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_yesno(self, mock_util):
         from certbot.display.util import yesno
         yesno("Hello World", default=True)
@@ -77,7 +77,7 @@ class YesNoTest(unittest.TestCase):
 class ChecklistTest(unittest.TestCase):
     """Tests for certbot.display.util.checklist"""
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_checklist(self, mock_util):
         from certbot.display.util import checklist
         checklist("Hello World", ["one", "two"], default="one")
@@ -89,7 +89,7 @@ class ChecklistTest(unittest.TestCase):
 class DirectorySelectTest(unittest.TestCase):
     """Tests for certbot.display.util.directory_select"""
 
-    @test_util.patch_display_service()
+    @test_util.patch_display_util()
     def test_directory_select(self, mock_util):
         from certbot.display.util import directory_select
         directory_select("Hello World", default="something")

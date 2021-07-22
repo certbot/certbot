@@ -173,8 +173,8 @@ class CentOSParser(parser.ApacheParser):
     def parse_sysconfig_var(self):
         """ Parses Apache CLI options from CentOS configuration file """
         defines = apache_util.parse_define_file(self.sysconfig_filep, "OPTIONS")
-        for k in defines:
-            self.variables[k] = defines[k]
+        for k, v in defines.items():
+            self.variables[k] = v
 
     def not_modssl_ifmodule(self, path):
         """Checks if the provided Augeas path has argument !mod_ssl"""

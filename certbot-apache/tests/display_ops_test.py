@@ -25,7 +25,7 @@ class SelectVhostMultiTest(unittest.TestCase):
     def test_select_no_input(self):
         self.assertFalse(select_vhost_multiple([]))
 
-    @certbot_util.patch_display_service()
+    @certbot_util.patch_display_util()
     def test_select_correct(self, mock_util):
         mock_util().checklist.return_value = (
             display_util.OK, [self.vhosts[3].display_repr(),
@@ -37,7 +37,7 @@ class SelectVhostMultiTest(unittest.TestCase):
         self.assertTrue(self.vhosts[3] in vhs)
         self.assertFalse(self.vhosts[1] in vhs)
 
-    @certbot_util.patch_display_service()
+    @certbot_util.patch_display_util()
     def test_select_cancel(self, mock_util):
         mock_util().checklist.return_value = (display_util.CANCEL, "whatever")
         vhs = select_vhost_multiple([self.vhosts[2], self.vhosts[3]])
@@ -57,12 +57,12 @@ class SelectVhostTest(unittest.TestCase):
         from certbot_apache._internal.display_ops import select_vhost
         return select_vhost("example.com", vhosts)
 
-    @certbot_util.patch_display_service()
+    @certbot_util.patch_display_util()
     def test_successful_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 3)
         self.assertEqual(self.vhosts[3], self._call(self.vhosts))
 
-    @certbot_util.patch_display_service()
+    @certbot_util.patch_display_util()
     def test_noninteractive(self, mock_util):
         mock_util().menu.side_effect = errors.MissingCommandlineFlag("no vhost default")
         try:
@@ -70,7 +70,7 @@ class SelectVhostTest(unittest.TestCase):
         except errors.MissingCommandlineFlag as e:
             self.assertTrue("vhost ambiguity" in str(e))
 
-    @certbot_util.patch_display_service()
+    @certbot_util.patch_display_util()
     def test_more_info_cancel(self, mock_util):
         mock_util().menu.side_effect = [
             (display_util.CANCEL, -1),
@@ -90,7 +90,7 @@ class SelectVhostTest(unittest.TestCase):
 
         self.assertEqual(mock_logger.debug.call_count, 1)
 
-    @certbot_util.patch_display_service()
+    @certbot_util.patch_display_util()
     def test_multiple_names(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 5)
 

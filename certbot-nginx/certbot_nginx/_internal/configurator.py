@@ -766,9 +766,6 @@ class NginxConfigurator(common.Installer, interfaces.Authenticator):
         except (KeyError, ValueError):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
-        except errors.PluginError:
-            logger.error("Failed %s for %s", enhancement, domain)
-            raise
 
     def _has_certbot_redirect(self, vhost, domain):
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
@@ -788,6 +785,10 @@ class NginxConfigurator(common.Installer, interfaces.Authenticator):
         :raises .errors.PluginError: If no viable HTTPS host can be created or
             set with header header_substring.
         """
+        if not header_substring in constants.HEADER_ARGS:
+            raise errors.NotSupportedError(
+                f"{header_substring} is not supported by the nginx plugin.")
+
         vhosts = self.choose_vhosts(domain)
         if not vhosts:
             raise errors.PluginError(

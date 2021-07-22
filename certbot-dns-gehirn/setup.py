@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.16.0.dev0'
+version = '1.18.0.dev0'
 
 install_requires = [
     'dns-lexicon>=3.1.0',  # Changed `rtype` parameter name
@@ -14,8 +14,11 @@ install_requires = [
 
 if not os.environ.get('SNAP_BUILD'):
     install_requires.extend([
-        'acme>=0.31.0',
-        'certbot>=1.16.0.dev0',
+        # We specify the minimum acme and certbot version as the current plugin
+        # version for simplicity. See
+        # https://github.com/certbot/certbot/issues/8761 for more info.
+        f'acme>={version}',
+        f'certbot>={version}',
     ])
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Unset SNAP_BUILD when building wheels '
