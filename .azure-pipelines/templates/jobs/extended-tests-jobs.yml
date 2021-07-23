@@ -79,6 +79,9 @@ jobs:
           TOXENV: integration-dns-rfc2136
         docker-dev:
           TOXENV: docker_dev
+        le-modification:
+          IMAGE_NAME: ubuntu-18.04
+          TOXENV: modification
         macos-farmtest-apache2:
           # We run one of these test farm tests on macOS to help ensure the
           # tests continue to work on the platform.

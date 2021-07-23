@@ -6,7 +6,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* New functions that Certbot plugins can use to interact with the user have
+  been added to `certbot.display.util`. We plan to deprecate using `IDisplay`
+  with `zope` in favor of these new functions in the future.
 
 ### Changed
 
@@ -17,6 +19,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   the response which was error prone.
 * `acme`: the `.client.Client` and `.client.BackwardsCompatibleClientV2` classes
   are now deprecated in favor of `.client.ClientV2`.
+* The `certbot.tests.patch_get_utility*` functions have been deprecated.
+  Plugins should now patch `certbot.display.util` themselves in their tests or
+  use `certbot.tests.util.patch_display_util` as a temporary workaround.
 
 ### Fixed
 

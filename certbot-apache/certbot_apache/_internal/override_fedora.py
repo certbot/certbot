@@ -87,5 +87,5 @@ class FedoraParser(parser.ApacheParser):
     def _parse_sysconfig_var(self):
         """ Parses Apache CLI options from Fedora configuration file """
         defines = apache_util.parse_define_file(self.sysconfig_filep, "OPTIONS")
-        for k in defines:
-            self.variables[k] = defines[k]
+        for k, v in defines.items():
+            self.variables[k] = v

@@ -10,7 +10,6 @@ import tempfile
 import time
 from typing import List
 from typing import Tuple
-import zope.component
 
 import OpenSSL
 from urllib3.util import connection
@@ -21,6 +20,7 @@ from acme import messages
 from certbot import achallenges
 from certbot import errors as le_errors
 from certbot.display import util as display_util
+from certbot._internal.display import obj as display_obj
 from certbot.tests import acme_util
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
@@ -332,7 +332,7 @@ def setup_logging(args):
 def setup_display():
     """"Prepares IDisplay for the Certbot plugins """
     displayer = display_util.NoninteractiveDisplay(sys.stdout)
-    zope.component.provideUtility(displayer)
+    display_obj.set_display(displayer)
 
 
 def main():

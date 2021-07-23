@@ -8,7 +8,6 @@ from typing import Dict
 from typing import List
 from typing import Set
 
-import zope.component
 import zope.interface
 
 from acme import challenges
@@ -126,11 +125,10 @@ to serve all files under specified web root ({0})."""
         return webroot
 
     def _prompt_with_webroot_list(self, domain, known_webroots):
-        display = zope.component.getUtility(interfaces.IDisplay)
         path_flag = "--" + self.option_name("path")
 
         while True:
-            code, index = display.menu(
+            code, index = display_util.menu(
                 "Select the webroot for {0}:".format(domain),
                 ["Enter a new webroot"] + known_webroots,
                 cli_flag=path_flag, force_interactive=True)

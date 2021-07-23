@@ -169,7 +169,7 @@ class DNSAuthenticator(common.Plugin):
             indicate any issue.
         """
 
-        def __validator(filename):
+        def __validator(filename): # pylint: disable=unused-private-member
             configuration = CredentialsConfiguration(filename, self.dest)
 
             if required_variables:
@@ -199,7 +199,7 @@ class DNSAuthenticator(common.Plugin):
         :rtype: str
         """
 
-        def __validator(i):
+        def __validator(i): # pylint: disable=unused-private-member
             if not i:
                 raise errors.PluginError('Please enter your {0}.'.format(label))
 
@@ -225,7 +225,7 @@ class DNSAuthenticator(common.Plugin):
         :rtype: str
         """
 
-        def __validator(filename):
+        def __validator(filename): # pylint: disable=unused-private-member
             if not filename:
                 raise errors.PluginError('Please enter a valid path to your {0}.'.format(label))
 

@@ -18,6 +18,7 @@ from acme import standalone as acme_standalone
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
+from certbot.display import util as display_util
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
         acme_standalone.BaseDualNetworkedServers,
         Set[achallenges.KeyAuthorizationAnnotatedChallenge]
     ]
+
 
 class ServerManager:
     """Standalone servers manager.
@@ -202,14 +204,12 @@ def _handle_perform_error(error):
             "aren't running this program as "
             "root).".format(error.port))
     if error.socket_error.errno == errno.EADDRINUSE:
-        display = zope.component.getUtility(interfaces.IDisplay)
         msg = (
             "Could not bind TCP port {0} because it is already in "
             "use by another process on this system (such as a web "
             "server). Please stop the program in question and "
             "then try again.".format(error.port))
-        should_retry = display.yesno(msg, "Retry",
-                                     "Cancel", default=False)
+        should_retry = display_util.yesno(msg, "Retry", "Cancel", default=False)
         if not should_retry:
             raise errors.PluginError(msg)
     else:
