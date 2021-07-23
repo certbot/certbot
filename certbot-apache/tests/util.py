@@ -5,16 +5,16 @@ import unittest
 
 import augeas
 import josepy as jose
+
 try:
     import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
-import zope.component
+except ImportError:  # pragma: no cover
+    from unittest import mock  # type: ignore
 
 from certbot.compat import os
-from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.tests import util as test_util
+from certbot.display import util as display_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import entrypoint
 from certbot_apache._internal import obj
@@ -67,10 +67,7 @@ class ParserTest(ApacheTest):
     def setUp(self, test_dir="debian_apache_2_4/multiple_vhosts",
               config_root="debian_apache_2_4/multiple_vhosts/apache2",
               vhost_root="debian_apache_2_4/multiple_vhosts/apache2/sites-available"):
-        super(ParserTest, self).setUp(test_dir, config_root, vhost_root)
-
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
-                                                               False))
+        super().setUp(test_dir, config_root, vhost_root)
 
         from certbot_apache._internal.parser import ApacheParser
         self.aug = augeas.Augeas(
@@ -123,11 +120,11 @@ def get_apache_configurator(
                                           version=version, use_parsernode=use_parsernode,
                                           openssl_version=openssl_version)
                     if not conf_vhost_path:
-                        config_class.OS_DEFAULTS["vhost_root"] = vhost_path
+                        config_class.OS_DEFAULTS.vhost_root = vhost_path
                     else:
                         # Custom virtualhost path was requested
                         config.config.apache_vhost_root = conf_vhost_path
-                    config.config.apache_ctl = config_class.OS_DEFAULTS["ctl"]
+                    config.config.apache_ctl = config_class.OS_DEFAULTS.ctl
                     config.prepare()
     return config
 

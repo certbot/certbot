@@ -1,19 +1,20 @@
 """Tests for letsencrypt.plugins.selection"""
 import sys
+from typing import List
 import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-import zope.component
 
 from certbot import errors
 from certbot import interfaces
+from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins.disco import PluginsRegistry
-from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.tests import util as test_util
+
+try:
+    import mock
+except ImportError:  # pragma: no cover
+    from unittest import mock
 
 
 class ConveniencePickPluginTest(unittest.TestCase):
@@ -69,7 +70,7 @@ class PickPluginTest(unittest.TestCase):
         self.assertEqual(1, self.reg.visible().ifaces.call_count)
 
     def test_no_candidate(self):
-        self.assertTrue(self._call() is None)
+        self.assertIsNone(self._call())
 
     def test_single(self):
         plugin_ep = mock.MagicMock()
@@ -87,7 +88,7 @@ class PickPluginTest(unittest.TestCase):
 
         self.reg.visible().ifaces().verify().available.return_value = {
             "bar": plugin_ep}
-        self.assertTrue(self._call() is None)
+        self.assertIsNone(self._call())
 
     def test_multiple(self):
         plugin_ep = mock.MagicMock()
@@ -110,15 +111,15 @@ class PickPluginTest(unittest.TestCase):
 
         with mock.patch("certbot._internal.plugins.selection.choose_plugin") as mock_choose:
             mock_choose.return_value = None
-            self.assertTrue(self._call() is None)
+            self.assertIsNone(self._call())
 
 
 class ChoosePluginTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.selection.choose_plugin."""
 
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
-                                                               False))
+        display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))
+
         self.mock_apache = mock.Mock(
             description_with_name="a", misconfigured=True)
         self.mock_apache.name = "apache"
@@ -134,14 +135,14 @@ class ChoosePluginTest(unittest.TestCase):
         from certbot._internal.plugins.selection import choose_plugin
         return choose_plugin(self.plugins, "Question?")
 
-    @test_util.patch_get_utility("certbot._internal.plugins.selection.z_util")
+    @test_util.patch_display_util()
     def test_selection(self, mock_util):
         mock_util().menu.side_effect = [(display_util.OK, 0),
                                         (display_util.OK, 1)]
         self.assertEqual(self.mock_stand, self._call())
         self.assertEqual(mock_util().notification.call_count, 1)
 
-    @test_util.patch_get_utility("certbot._internal.plugins.selection.z_util")
+    @test_util.patch_display_util()
     def test_more_info(self, mock_util):
         mock_util().menu.side_effect = [
             (display_util.OK, 1),
@@ -149,37 +150,17 @@ class ChoosePluginTest(unittest.TestCase):
 
         self.assertEqual(self.mock_stand, self._call())
 
-    @test_util.patch_get_utility("certbot._internal.plugins.selection.z_util")
+    @test_util.patch_display_util()
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
-        self.assertTrue(self._call() is None)
-
-    @test_util.patch_get_utility("certbot._internal.plugins.selection.z_util")
-    def test_new_interaction_avoidance(self, mock_util):
-        mock_nginx = mock.Mock(
-            description_with_name="n", misconfigured=False)
-        mock_nginx.init().more_info.return_value = "nginx plugin"
-        mock_nginx.name = "nginx"
-        self.plugins[1] = mock_nginx
-        mock_util().menu.return_value = (display_util.CANCEL, 0)
-
-        unset_cb_auto = os.environ.get("CERTBOT_AUTO") is None
-        if unset_cb_auto:
-            os.environ["CERTBOT_AUTO"] = "foo"
-        try:
-            self._call()
-        finally:
-            if unset_cb_auto:
-                del os.environ["CERTBOT_AUTO"]
-
-        self.assertTrue("default" in mock_util().menu.call_args[1])
+        self.assertIsNone(self._call())
 
 
 class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.plugins.selection.get_unprepared_installer."""
 
     def setUp(self):
-        super(GetUnpreparedInstallerTest, self).setUp()
+        super().setUp()
         self.mock_apache_fail_ep = mock.Mock(
             description_with_name="afail")
         self.mock_apache_fail_ep.check_name = lambda name: name == "afail"
@@ -199,7 +180,7 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
 
     def test_no_installer_defined(self):
         self.config.configurator = None
-        self.assertEqual(self._call(), None)
+        self.assertIsNone(self._call())
 
     def test_no_available_installers(self):
         self.config.configurator = "apache"
@@ -209,7 +190,7 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
     def test_get_plugin(self):
         self.config.configurator = "apache"
         installer = self._call()
-        self.assertTrue(installer is self.mock_apache_plugin)
+        self.assertIs(installer, self.mock_apache_plugin)
 
     def test_multiple_installers_returned(self):
         self.config.configurator = "apache"

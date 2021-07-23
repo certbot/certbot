@@ -37,7 +37,7 @@ class NginxHttp01(common.ChallengePerformer):
     """
 
     def __init__(self, configurator):
-        super(NginxHttp01, self).__init__(configurator)
+        super().__init__(configurator)
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
 
@@ -128,12 +128,12 @@ class NginxHttp01(common.ChallengePerformer):
                 ipv6_addr = ipv6_addr + " ipv6only=on"
             addresses = [obj.Addr.fromstring(default_addr),
                          obj.Addr.fromstring(ipv6_addr)]
-            logger.info(("Using default addresses %s and %s for authentication."),
+            logger.debug(("Using default addresses %s and %s for authentication."),
                         default_addr,
                         ipv6_addr)
         else:
             addresses = [obj.Addr.fromstring(default_addr)]
-            logger.info("Using default address %s for authentication.",
+            logger.debug("Using default address %s for authentication.",
                         default_addr)
         return addresses
 

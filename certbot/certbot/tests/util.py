@@ -27,6 +27,9 @@ from certbot.compat import os
 from certbot.display import util as display_util
 
 try:
+    # When we remove this deprecated import, we should also remove the
+    # "external-mock" test environment and the mock dependency listed in
+    # tools/pinning/pyproject.toml.
     import mock
     warnings.warn(
         "The external mock module is being used for backwards compatibility "
@@ -34,9 +37,8 @@ try:
         "use unittest.mock. Be sure to update your code accordingly.",
         PendingDeprecationWarning
     )
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
-
+except ImportError:  # pragma: no cover
+    from unittest import mock  # type: ignore
 
 
 def vector_path(*names):
@@ -147,10 +149,7 @@ def make_lineage(config_dir, testfile, ec=False):
 
 
 def patch_get_utility(target='zope.component.getUtility'):
-    """Patch zope.component.getUtility to use a special mock IDisplay.
-
-    The mock IDisplay works like a regular mock object, except it also
-    also asserts that methods are called with valid arguments.
+    """Deprecated, patch certbot.display.util directly or use patch_display_util instead.
 
     :param str target: path to patch
 
@@ -158,18 +157,16 @@ def patch_get_utility(target='zope.component.getUtility'):
     :rtype: mock.MagicMock
 
     """
-    return mock.patch(target, new_callable=_create_get_utility_mock)
+    warnings.warn('Decorator certbot.tests.util.patch_get_utility is deprecated. You should now '
+                  'patch certbot.display.util yourself directly or use '
+                  'certbot.tests.util.patch_display_util as a temporary workaround.')
+    return mock.patch(target, new_callable=_create_display_util_mock)
 
 
 def patch_get_utility_with_stdout(target='zope.component.getUtility',
                                   stdout=None):
-    """Patch zope.component.getUtility to use a special mock IDisplay.
-
-    The mock IDisplay works like a regular mock object, except it also
-    also asserts that methods are called with valid arguments.
-
-    The `message` argument passed to the IDisplay methods is passed to
-    stdout's write method.
+    """Deprecated, patch certbot.display.util directly
+    or use patch_display_util_with_stdout instead.
 
     :param str target: path to patch
     :param object stdout: object to write standard output to; it is
@@ -179,10 +176,70 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
     :rtype: mock.MagicMock
 
     """
+    warnings.warn('Decorator certbot.tests.util.patch_get_utility_with_stdout is deprecated. You '
+                  'should now patch certbot.display.util yourself directly or use '
+                  'use certbot.tests.util.patch_display_util_with_stdout as a temporary '
+                  'workaround.')
+    stdout = stdout if stdout else io.StringIO()
+    freezable_mock = _create_display_util_mock_with_stdout(stdout)
+    return mock.patch(target, new=freezable_mock)
+
+
+def patch_display_util():
+    """Patch certbot.display.util to use a special mock IDisplay.
+
+    The mock IDisplay works like a regular mock object, except it also
+    also asserts that methods are called with valid arguments.
+
+    The mock created by this patch mocks out Certbot internals so this can be
+    used like the old patch_get_utility function. That is, the mock object will
+    be called by the certbot.display.util functions and the mock returned by
+    that call will be used as the IDisplay object. This was done to simplify
+    the transition from zope.component and mocking certbot.display.util
+    functions directly in test code should be preferred over using this
+    function in the future.
+
+    See https://github.com/certbot/certbot/issues/8948
+
+    :returns: patch on the function used internally by certbot.display.util to
+        get an IDisplay object
+    :rtype: unittest.mock._patch
+
+    """
+    return mock.patch('certbot._internal.display.obj.get_display',
+                      new_callable=_create_display_util_mock)
+
+
+def patch_display_util_with_stdout(stdout=None):
+    """Patch certbot.display.util to use a special mock IDisplay.
+
+    The mock IDisplay works like a regular mock object, except it also
+    asserts that methods are called with valid arguments.
+
+    The mock created by this patch mocks out Certbot internals so this can be
+    used like the old patch_get_utility function. That is, the mock object will
+    be called by the certbot.display.util functions and the mock returned by
+    that call will be used as the IDisplay object. This was done to simplify
+    the transition from zope.component and mocking certbot.display.util
+    functions directly in test code should be preferred over using this
+    function in the future.
+
+    See https://github.com/certbot/certbot/issues/8948
+
+    The `message` argument passed to the IDisplay methods is passed to
+    stdout's write method.
+
+    :param object stdout: object to write standard output to; it is
+        expected to have a `write` method
+    :returns: patch on the function used internally by certbot.display.util to
+        get an IDisplay object
+    :rtype: unittest.mock._patch
+
+    """
     stdout = stdout if stdout else io.StringIO()
 
-    freezable_mock = _create_get_utility_mock_with_stdout(stdout)
-    return mock.patch(target, new=freezable_mock)
+    return mock.patch('certbot._internal.display.obj.get_display',
+                      new=_create_display_util_mock_with_stdout(stdout))
 
 
 class FreezableMock:
@@ -253,10 +310,10 @@ class FreezableMock:
         return object.__setattr__(self, name, value)
 
 
-def _create_get_utility_mock():
+def _create_display_util_mock():
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():  # pylint: E1120
+    for name in interfaces.IDisplay.names():
         if name != 'notification':
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
@@ -264,7 +321,7 @@ def _create_get_utility_mock():
     return FreezableMock(frozen=True, return_value=display)
 
 
-def _create_get_utility_mock_with_stdout(stdout):
+def _create_display_util_mock_with_stdout(stdout):
     def _write_msg(message, *unused_args, **unused_kwargs):
         """Write to message to stdout.
         """
@@ -278,20 +335,17 @@ def _create_get_utility_mock_with_stdout(stdout):
         _assert_valid_call(args, kwargs)
         _write_msg(*args, **kwargs)
 
-
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():  # pylint: E1120
+    for name in interfaces.IDisplay.names():
         if name == 'notification':
             frozen_mock = FreezableMock(frozen=True,
                                         func=_write_msg)
-            setattr(display, name, frozen_mock)
         else:
             frozen_mock = FreezableMock(frozen=True,
                                         func=mock_method)
-            setattr(display, name, frozen_mock)
+        setattr(display, name, frozen_mock)
     display.freeze()
-
     return FreezableMock(frozen=True, return_value=display)
 
 
@@ -331,7 +385,7 @@ class TempDirTestCase(unittest.TestCase):
 class ConfigTestCase(TempDirTestCase):
     """Test class which sets up a NamespaceConfig object."""
     def setUp(self):
-        super(ConfigTestCase, self).setUp()
+        super().setUp()
         self.config = configuration.NamespaceConfig(
             mock.MagicMock(**constants.CLI_DEFAULTS)
         )

@@ -4,37 +4,29 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.14.0.dev0'
+version = '1.18.0.dev0'
 
-# Remember to update local-oldest-requirements.txt when changing the minimum
-# acme/certbot version.
 install_requires = [
+    # This version of lexicon is required to address the problem described in
+    # https://github.com/AnalogJ/lexicon/issues/387.
+    'dns-lexicon>=3.2.1',
     'setuptools>=39.0.1',
     'zope.interface',
 ]
 
 if not os.environ.get('SNAP_BUILD'):
     install_requires.extend([
-        'acme>=0.31.0',
-        'certbot>=1.1.0',
+        # We specify the minimum acme and certbot version as the current plugin
+        # version for simplicity. See
+        # https://github.com/certbot/certbot/issues/8761 for more info.
+        f'acme>={version}',
+        f'certbot>={version}',
     ])
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Unset SNAP_BUILD when building wheels '
                        'to include certbot dependencies.')
 if os.environ.get('SNAP_BUILD'):
     install_requires.append('packaging')
-
-# This package normally depends on dns-lexicon>=3.2.1 to address the
-# problem described in https://github.com/AnalogJ/lexicon/issues/387,
-# however, the fix there has been backported to older versions of
-# lexicon found in various Linux distros. This conditional helps us test
-# that we've maintained compatibility with these versions of lexicon
-# which allows us to potentially upgrade our packages in these distros
-# as necessary.
-if os.environ.get('CERTBOT_OLDEST') == '1':
-    install_requires.append('dns-lexicon>=2.2.1')
-else:
-    install_requires.append('dns-lexicon>=3.2.1')
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
@@ -47,7 +39,7 @@ setup(
     description="DNSimple DNS Authenticator plugin for Certbot",
     url='https://github.com/certbot/certbot',
     author="Certbot Project",
-    author_email='client-dev@letsencrypt.org',
+    author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
     python_requires='>=3.6',
     classifiers=[

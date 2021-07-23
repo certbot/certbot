@@ -9,6 +9,7 @@ except ImportError: # pragma: no cover
 
 from certbot import errors
 from certbot.compat import os
+from certbot.tests import util as certbot_util
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import obj
 import util
@@ -20,7 +21,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
     _multiprocess_can_split_ = True
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(MultipleVhostsTestDebian, self).setUp()
+        super().setUp()
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
             os_info="debian")
@@ -49,10 +50,11 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
-    @mock.patch("certbot_apache._internal.apache_util.subprocess.Popen")
-    def test_enable_mod(self, mock_popen, mock_exe_exists, mock_run_script):
-        mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
-        mock_popen().returncode = 0
+    @mock.patch("certbot_apache._internal.apache_util.subprocess.run")
+    def test_enable_mod(self, mock_run, mock_exe_exists, mock_run_script):
+        mock_run.return_value.stdout = "Define: DUMP_RUN_CFG"
+        mock_run.return_value.stderr = ""
+        mock_run.return_value.returncode = 0
         mock_exe_exists.return_value = True
 
         self.config.enable_mod("ssl")
@@ -67,17 +69,18 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         self.config.parser.modules["ssl_module"] = None
         self.config.parser.modules["mod_ssl.c"] = None
         self.assertFalse(ssl_vhost.enabled)
-        self.config.deploy_cert(
-            "encryption-example.demo", "example/cert.pem", "example/key.pem",
-            "example/cert_chain.pem", "example/fullchain.pem")
-        self.assertTrue(ssl_vhost.enabled)
-        # Make sure that we don't error out if symlink already exists
-        ssl_vhost.enabled = False
-        self.assertFalse(ssl_vhost.enabled)
-        self.config.deploy_cert(
-            "encryption-example.demo", "example/cert.pem", "example/key.pem",
-            "example/cert_chain.pem", "example/fullchain.pem")
-        self.assertTrue(ssl_vhost.enabled)
+        with certbot_util.patch_display_util():
+            self.config.deploy_cert(
+                "encryption-example.demo", "example/cert.pem", "example/key.pem",
+                "example/cert_chain.pem", "example/fullchain.pem")
+            self.assertTrue(ssl_vhost.enabled)
+            # Make sure that we don't error out if symlink already exists
+            ssl_vhost.enabled = False
+            self.assertFalse(ssl_vhost.enabled)
+            self.config.deploy_cert(
+                "encryption-example.demo", "example/cert.pem", "example/key.pem",
+                "example/cert_chain.pem", "example/fullchain.pem")
+            self.assertTrue(ssl_vhost.enabled)
 
     def test_enable_site_failure(self):
         self.config.parser.root = "/tmp/nonexistent"
@@ -100,9 +103,10 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
-        self.config.deploy_cert(
-            "random.demo", "example/cert.pem", "example/key.pem",
-            "example/cert_chain.pem", "example/fullchain.pem")
+        with certbot_util.patch_display_util():
+            self.config.deploy_cert(
+                "random.demo", "example/cert.pem", "example/key.pem",
+                "example/cert_chain.pem", "example/fullchain.pem")
         self.config.save()
 
         # Verify ssl_module was enabled.

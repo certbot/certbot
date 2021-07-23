@@ -3,9 +3,8 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.14.0.dev0'
+version = '1.18.0.dev0'
 
-# Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'cryptography>=2.1.4',
     # formerly known as acme.jose:
@@ -15,20 +14,19 @@ install_requires = [
     'PyOpenSSL>=17.3.0',
     'pyrfc3339',
     'pytz',
-    'requests>=2.6.0',
+    'requests>=2.14.2',
     'requests-toolbelt>=0.3.0',
     'setuptools>=39.0.1',
-]
-
-dev_extras = [
-    'pytest',
-    'pytest-xdist',
-    'tox',
 ]
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
+]
+
+test_extras = [
+    'pytest',
+    'pytest-xdist',
 ]
 
 setup(
@@ -37,7 +35,7 @@ setup(
     description='ACME protocol implementation in Python',
     url='https://github.com/letsencrypt/letsencrypt',
     author="Certbot Project",
-    author_email='client-dev@letsencrypt.org',
+    author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
     python_requires='>=3.6',
     classifiers=[
@@ -58,7 +56,7 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
-        'dev': dev_extras,
         'docs': docs_extras,
+        'test': test_extras,
     },
 )

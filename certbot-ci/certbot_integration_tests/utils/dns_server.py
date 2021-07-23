@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from typing import Optional
 
 from pkg_resources import resource_filename
 
@@ -38,12 +39,13 @@ class DNSServer:
 
         self.bind_root = tempfile.mkdtemp()
 
-        self.process: subprocess.Popen = None
+        self.process: Optional[subprocess.Popen] = None
 
         self.dns_xdist = {"address": BIND_BIND_ADDRESS[0], "port": BIND_BIND_ADDRESS[1]}
 
         # Unfortunately the BIND9 image forces everything to stderr with -g and we can't
         # modify the verbosity.
+        # pylint: disable=consider-using-with
         self._output = sys.stderr if show_output else open(os.devnull, "w")
 
     def start(self):
@@ -82,6 +84,7 @@ class DNSServer:
     def _start_bind(self):
         """Launch the BIND9 server as a Docker container"""
         addr_str = "{}:{}".format(BIND_BIND_ADDRESS[0], BIND_BIND_ADDRESS[1])
+        # pylint: disable=consider-using-with
         self.process = subprocess.Popen(
             [
                 "docker",
@@ -119,6 +122,9 @@ class DNSServer:
         but otherwise the contents are ignored.
         :param int attempts: The number of attempts to make.
         """
+        if not self.process:
+            raise ValueError("DNS server has not been started. Please run start() first.")
+
         for _ in range(attempts):
             if self.process.poll():
                 raise ValueError("BIND9 server stopped unexpectedly")

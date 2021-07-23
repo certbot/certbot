@@ -14,7 +14,7 @@ obtaining, renewing, or revoking certificates. The most important
 and commonly-used commands will be discussed throughout this
 document; an exhaustive list also appears near the end of the document.
 
-The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used an alternate installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
+The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used a now-deprecated installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
 
 .. _plugins:
 
@@ -57,10 +57,11 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.  
                       | domain. Doing domain validation in this way is
                       | the only way to obtain wildcard certificates from Let's
                       | Encrypt.
-manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80) or
-                      | perform domain validation yourself. Additionally allows you   dns-01_ (53)
-                      | to specify scripts to automate the validation task in a
-                      | customized way.
+manual_     Y    N    | Obtain a certificate by manually following instructions to    http-01_ (80) or
+                      | perform domain validation yourself. Certificates created this dns-01_ (53)
+                      | way do not support autorenewal.
+                      | Autorenewal may be enabled by providing an authentication
+                      | hook script to automate the domain validation steps.
 =========== ==== ==== =============================================================== =============================
 
 .. |dns_plugs| replace:: :ref:`DNS plugins <dns_plugins>`
@@ -84,7 +85,7 @@ Apache
 
 The Apache plugin currently `supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/entrypoint.py>`_
-modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
+modern OSes based on Debian, Fedora, SUSE, Gentoo, CentOS and Darwin.
 This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include
 ``--apache``.
@@ -229,11 +230,21 @@ For example, for the domain ``example.com``, a zone file entry would look like:
 
         _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
+.. _manual-renewal:
 
-Additionally you can specify scripts to prepare for validation and
-perform the authentication procedure and/or clean up after it by using
-the ``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is
-described in more depth in the hooks_ section.
+**Renewal with the manual plugin**
+
+Certificates created using ``--manual`` **do not** support automatic renewal unless
+combined with an `authentication hook script <#hooks>`_  via ``--manual-auth-hook``
+to automatically set up the required HTTP and/or TXT challenges.
+
+If you can use one of the other plugins_ which support autorenewal to create
+your certificate, doing so is highly recommended.
+
+To manually renew a certificate using ``--manual`` without hooks, repeat the same
+``certbot --manual`` command you used to create the certificate originally. As this
+will require you to copy and paste new HTTP files or DNS TXT records, the command
+cannot be automated with a cron job.
 
 .. _combination:
 
@@ -284,6 +295,12 @@ dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
 dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
+dns-azure_         Y    N    DNS Authentication using Azure DNS
+dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
+njalla_            Y    N    DNS Authentication for njalla
+DuckDNS_           Y    N    DNS Authentication for DuckDNS
+Porkbun_           Y    N    DNS Authentication for Porkbun
+Infomaniak_        Y    N    DNS Authentication using Infomaniak Domains API
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -298,6 +315,12 @@ dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 .. _dns-lightsail: https://github.com/noi/certbot-dns-lightsail
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
+.. _dns-azure: https://github.com/binkhq/certbot-dns-azure
+.. _dns-godaddy: https://github.com/miigotu/certbot-dns-godaddy
+.. _njalla: https://github.com/chaptergy/certbot-dns-njalla
+.. _DuckDNS: https://github.com/infinityofspace/certbot_dns_duckdns
+.. _Porkbun: https://github.com/infinityofspace/certbot_dns_porkbun
+.. _Infomaniak: https://github.com/Infomaniak/certbot-dns-infomaniak
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -420,7 +443,7 @@ option to control the curve used in ECDSA certificates.
 .. warning:: If you obtain certificates using ECDSA keys, you should be careful
    not to downgrade your Certbot installation since ECDSA keys are not
    supported by older versions of Certbot. Downgrades like this are possible if
-   you switch from something like the snaps or certbot-auto to packages
+   you switch from something like the snaps or pip to packages
    provided by your operating system which often lag behind.
 
 Changing existing certificates from RSA to ECDSA
@@ -517,6 +540,10 @@ Renewing certificates
 
 .. seealso:: Most Certbot installations come with automatic
    renewal out of the box. See `Automated Renewals`_ for more details.
+
+.. seealso:: Users of the `Manual`_ plugin should note that ``--manual`` certificates
+   will not renew automatically, unless combined with authentication hook scripts.
+   See `Renewal with the manual plugin <#manual-renewal>`_.
 
 As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
@@ -691,10 +718,50 @@ is done by means of a scheduled task which runs ``certbot renew`` periodically.
 
 If you are unsure whether you need to configure automated renewal:
 
-1. Review the instructions for your system at https://certbot.eff.org/instructions.
-   They will describe how to set up a scheduled task, if necessary.
-2. (Linux/BSD): Check your system's crontab (typically `/etc/crontab` and
-   `/etc/cron.*/*`) and systemd timers (``systemctl list-timers``).
+1. Review the instructions for your system and installation method at
+   https://certbot.eff.org/instructions. They will describe how to set up a scheduled task,
+   if necessary. If no step is listed, your system comes with automated renewal pre-installed,
+   and you should not need to take any additional actions.
+2. On Linux and BSD, you can check to see if your installation method has pre-installed a timer
+   for you. To do so, look for the ``certbot renew`` command in either your system's crontab
+   (typically `/etc/crontab` or `/etc/cron.*/*`) or systemd timers (``systemctl list-timers``).
+3. If you're still not sure, you can configure automated renewal manually by following the steps
+   in the next section. Certbot has been carefully engineered to handle the case where both manual
+   automated renewal and pre-installed automated renewal are set up.
+
+Setting up automated renewal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you think you may need to set up automated renewal, follow these instructions to set up a
+scheduled task to automatically renew your certificates in the background. If you are unsure
+whether your system has a pre-installed scheduled task for Certbot, it is safe to follow these
+instructions to create one.
+
+If you're using Windows, these instructions are not neccessary as Certbot on Windows comes with
+a scheduled task for automated renewal pre-installed.
+
+Run the following line, which will add a cron job to `/etc/crontab`:
+
+.. code-block:: shell
+
+  SLEEPTIME=$(awk 'BEGIN{srand(); print int(rand()*(3600+1))}'); echo "0 0,12 * * * root sleep $SLEEPTIME && certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
+
+If you needed to stop your webserver to run Certbot, you'll want to
+add ``pre`` and ``post`` hooks to stop and start your webserver automatically.
+For example, if your webserver is HAProxy, run the following commands to create the hook files
+in the appropriate directory:
+
+.. code-block:: shell
+
+  sudo sh -c 'printf "#!/bin/sh\nservice haproxy stop\n" > /etc/letsencrypt/renewal-hooks/pre/haproxy.sh'
+  sudo sh -c 'printf "#!/bin/sh\nservice haproxy start\n" > /etc/letsencrypt/renewal-hooks/post/haproxy.sh'
+  sudo chmod 755 /etc/letsencrypt/renewal-hooks/pre/haproxy.sh
+  sudo chmod 755 /etc/letsencrypt/renewal-hooks/post/haproxy.sh
+
+Congratulations, Certbot will now automatically renew your certificates in the background.
+
+If you are interested in learning more about how Certbot renews your certificates, see the
+`Renewing certificates`_ section above.
 
 .. _where-certs:
 

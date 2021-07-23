@@ -7,6 +7,8 @@
 import hashlib
 import logging
 import re
+from typing import List
+from typing import Set
 import warnings
 
 # See https://github.com/pyca/cryptography/issues/4275
@@ -37,15 +39,66 @@ logger = logging.getLogger(__name__)
 
 
 # High level functions
-def init_save_key(
-        key_size, key_dir, key_type="rsa", elliptic_curve="secp256r1", keyname="key-certbot.pem"
-):
+
+def generate_key(key_size: int, key_dir: str, key_type: str = "rsa",
+                 elliptic_curve: str = "secp256r1", keyname: str = "key-certbot.pem",
+                 strict_permissions: bool = True) -> util.Key:
     """Initializes and saves a privkey.
 
     Inits key and saves it in PEM format on the filesystem.
 
     .. note:: keyname is the attempted filename, it may be different if a file
         already exists at the path.
+
+    :param int key_size: key size in bits if key size is rsa.
+    :param str key_dir: Key save directory.
+    :param str key_type: Key Type [rsa, ecdsa]
+    :param str elliptic_curve: Name of the elliptic curve if key type is ecdsa.
+    :param str keyname: Filename of key
+    :param bool strict_permissions: If true and key_dir exists, an exception is raised if
+        the directory doesn't have 0700 permissions or isn't owned by the current user.
+
+    :returns: Key
+    :rtype: :class:`certbot.util.Key`
+
+    :raises ValueError: If unable to generate the key given key_size.
+
+    """
+    try:
+        key_pem = make_key(
+            bits=key_size, elliptic_curve=elliptic_curve or "secp256r1", key_type=key_type,
+        )
+    except ValueError as err:
+        logger.debug("", exc_info=True)
+        logger.error("Encountered error while making key: %s", str(err))
+        raise err
+
+    # Save file
+    util.make_or_verify_dir(key_dir, 0o700, strict_permissions)
+    key_f, key_path = util.unique_file(
+        os.path.join(key_dir, keyname), 0o600, "wb")
+    with key_f:
+        key_f.write(key_pem)
+    if key_type == 'rsa':
+        logger.debug("Generating RSA key (%d bits): %s", key_size, key_path)
+    else:
+        logger.debug("Generating ECDSA key (%d bits): %s", key_size, key_path)
+
+    return util.Key(key_path, key_pem)
+
+
+# TODO: Remove this call once zope dependencies are removed from Certbot.
+def init_save_key(key_size, key_dir, key_type="rsa", elliptic_curve="secp256r1",
+                  keyname="key-certbot.pem"):
+    """Initializes and saves a privkey.
+
+    Inits key and saves it in PEM format on the filesystem.
+
+    .. note:: keyname is the attempted filename, it may be different if a file
+        already exists at the path.
+
+    .. deprecated:: 1.16.0
+       Use :func:`generate_key` instead.
 
     :param int key_size: key size in bits if key size is rsa.
     :param str key_dir: Key save directory.
@@ -59,31 +112,51 @@ def init_save_key(
     :raises ValueError: If unable to generate the key given key_size.
 
     """
-    try:
-        key_pem = make_key(
-            bits=key_size, elliptic_curve=elliptic_curve or "secp256r1", key_type=key_type,
-        )
-    except ValueError as err:
-        logger.error("", exc_info=True)
-        raise err
+    warnings.warn("certbot.crypto_util.init_save_key is deprecated, please use "
+                  "certbot.crypto_util.generate_key instead.", DeprecationWarning)
 
     config = zope.component.getUtility(interfaces.IConfig)
-    # Save file
-    util.make_or_verify_dir(key_dir, 0o700, config.strict_permissions)
-    key_f, key_path = util.unique_file(
-        os.path.join(key_dir, keyname), 0o600, "wb")
-    with key_f:
-        key_f.write(key_pem)
-    if key_type == 'rsa':
-        logger.debug("Generating RSA key (%d bits): %s", key_size, key_path)
-    else:
-        logger.debug("Generating ECDSA key (%d bits): %s", key_size, key_path)
 
-    return util.Key(key_path, key_pem)
+    return generate_key(key_size, key_dir, key_type=key_type, elliptic_curve=elliptic_curve,
+                        keyname=keyname, strict_permissions=config.strict_permissions)
 
 
+def generate_csr(privkey: util.Key, names: Set[str], path: str,
+                 must_staple: bool = False, strict_permissions: bool = True) -> util.CSR:
+    """Initialize a CSR with the given private key.
+
+    :param privkey: Key to include in the CSR
+    :type privkey: :class:`certbot.util.Key`
+    :param set names: `str` names to include in the CSR
+    :param str path: Certificate save directory.
+    :param bool must_staple: If true, include the TLS Feature extension "OCSP Must Staple"
+    :param bool strict_permissions: If true and path exists, an exception is raised if
+        the directory doesn't have 0755 permissions or isn't owned by the current user.
+
+    :returns: CSR
+    :rtype: :class:`certbot.util.CSR`
+
+    """
+    csr_pem = acme_crypto_util.make_csr(
+        privkey.pem, names, must_staple=must_staple)
+
+    # Save CSR
+    util.make_or_verify_dir(path, 0o755, strict_permissions)
+    csr_f, csr_filename = util.unique_file(
+        os.path.join(path, "csr-certbot.pem"), 0o644, "wb")
+    with csr_f:
+        csr_f.write(csr_pem)
+    logger.debug("Creating CSR: %s", csr_filename)
+
+    return util.CSR(csr_filename, csr_pem, "pem")
+
+
+# TODO: Remove this call once zope dependencies are removed from Certbot.
 def init_save_csr(privkey, names, path):
     """Initialize a CSR with the given private key.
+
+    .. deprecated:: 1.16.0
+       Use :func:`generate_csr` instead.
 
     :param privkey: Key to include in the CSR
     :type privkey: :class:`certbot.util.Key`
@@ -96,20 +169,13 @@ def init_save_csr(privkey, names, path):
     :rtype: :class:`certbot.util.CSR`
 
     """
+    warnings.warn("certbot.crypto_util.init_save_csr is deprecated, please use "
+                  "certbot.crypto_util.generate_csr instead.", DeprecationWarning)
+
     config = zope.component.getUtility(interfaces.IConfig)
 
-    csr_pem = acme_crypto_util.make_csr(
-        privkey.pem, names, must_staple=config.must_staple)
-
-    # Save CSR
-    util.make_or_verify_dir(path, 0o755, config.strict_permissions)
-    csr_f, csr_filename = util.unique_file(
-        os.path.join(path, "csr-certbot.pem"), 0o644, "wb")
-    with csr_f:
-        csr_f.write(csr_pem)
-    logger.debug("Creating CSR: %s", csr_filename)
-
-    return util.CSR(csr_filename, csr_pem, "pem")
+    return generate_csr(privkey, names, path, must_staple=config.must_staple,
+                        strict_permissions=config.strict_permissions)
 
 
 # WARNING: the csr and private key file are possible attack vectors for TOCTOU
@@ -301,8 +367,7 @@ def verify_signed_payload(public_key, signature, payload, signature_hash_algorit
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if isinstance(public_key, RSAPublicKey):
-            # https://github.com/python/typeshed/blob/master/third_party/2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
-            verifier = public_key.verifier(  # type: ignore
+            verifier = public_key.verifier(
                 signature, PKCS1v15(), signature_hash_algorithm
             )
             verifier.update(payload)
@@ -388,8 +453,9 @@ def _load_cert_or_req(cert_or_req_str, load_func,
                       typ=crypto.FILETYPE_PEM):
     try:
         return load_func(typ, cert_or_req_str)
-    except crypto.Error:
-        logger.error("", exc_info=True)
+    except crypto.Error as err:
+        logger.debug("", exc_info=True)
+        logger.error("Encountered error while loading certificate or csr: %s", str(err))
         raise
 
 
@@ -436,6 +502,18 @@ def get_names_from_cert(csr, typ=crypto.FILETYPE_PEM):
     """
     return _get_names_from_cert_or_req(
         csr, crypto.load_certificate, typ)
+
+
+def get_names_from_req(csr: str, typ: int = crypto.FILETYPE_PEM) -> List[str]:
+    """Get a list of domains from a CSR, including the CN if it is set.
+
+    :param str cert: CSR (encoded).
+    :param typ: `crypto.FILETYPE_PEM` or `crypto.FILETYPE_ASN1`
+    :returns: A list of domain names.
+    :rtype: list
+
+    """
+    return _get_names_from_cert_or_req(csr, crypto.load_certificate_request, typ)
 
 
 def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
@@ -590,7 +668,7 @@ def find_chain_with_issuer(fullchains, issuer_cn, warn_on_no_match=False):
 
     # Nothing matched, return whatever was first in the list.
     if warn_on_no_match:
-        logger.info("Certbot has been configured to prefer certificate chains with "
+        logger.warning("Certbot has been configured to prefer certificate chains with "
                     "issuer '%s', but no chain from the CA matched this issuer. Using "
                     "the default certificate chain instead.", issuer_cn)
     return fullchains[0]

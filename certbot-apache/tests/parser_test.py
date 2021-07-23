@@ -16,7 +16,7 @@ class BasicParserTest(util.ParserTest):
     """Apache Parser Test."""
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(BasicParserTest, self).setUp()
+        super().setUp()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -104,6 +104,11 @@ class BasicParserTest(util.ParserTest):
         matches = self.parser.find_dir("AddList", None, aug_default)
         for i, match in enumerate(matches):
             self.assertEqual(self.parser.aug.get(match), str(i + 1))
+
+        for name in ("empty.conf", "no-directives.conf"):
+            conf = "/files" + os.path.join(self.parser.root, "sites-available", name)
+            self.parser.add_dir_beginning(conf, "AddDirectiveBeginning", "testBegin")
+            self.assertTrue(self.parser.find_dir("AddDirectiveBeginning", "testBegin", conf))
 
     def test_empty_arg(self):
         self.assertEqual(None,
@@ -305,19 +310,19 @@ class BasicParserTest(util.ParserTest):
         self.assertRaises(
             errors.PluginError, self.parser.update_runtime_variables)
 
-    @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.option")
-    @mock.patch("certbot_apache._internal.apache_util.subprocess.Popen")
-    def test_update_runtime_vars_bad_ctl(self, mock_popen, mock_opt):
-        mock_popen.side_effect = OSError
-        mock_opt.return_value = "nonexistent"
+    @mock.patch("certbot_apache._internal.apache_util.subprocess.run")
+    def test_update_runtime_vars_bad_ctl(self, mock_run):
+        mock_run.side_effect = OSError
         self.assertRaises(
             errors.MisconfigurationError,
             self.parser.update_runtime_variables)
 
-    @mock.patch("certbot_apache._internal.apache_util.subprocess.Popen")
-    def test_update_runtime_vars_bad_exit(self, mock_popen):
-        mock_popen().communicate.return_value = ("", "")
-        mock_popen.returncode = -1
+    @mock.patch("certbot_apache._internal.apache_util.subprocess.run")
+    def test_update_runtime_vars_bad_exit(self, mock_run):
+        mock_proc = mock_run.return_value
+        mock_proc.stdout = ""
+        mock_proc.stderr = ""
+        mock_proc.returncode = -1
         self.assertRaises(
             errors.MisconfigurationError,
             self.parser.update_runtime_variables)
@@ -332,14 +337,14 @@ class BasicParserTest(util.ParserTest):
 
 class ParserInitTest(util.ApacheTest):
     def setUp(self):  # pylint: disable=arguments-differ
-        super(ParserInitTest, self).setUp()
+        super().setUp()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    @mock.patch("certbot_apache._internal.parser.ApacheParser.init_augeas")
+    @mock.patch("certbot_apache._internal.parser.init_augeas")
     def test_prepare_no_augeas(self, mock_init_augeas):
         from certbot_apache._internal.parser import ApacheParser
         mock_init_augeas.side_effect = errors.NoInstallationError

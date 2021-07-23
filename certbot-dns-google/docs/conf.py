@@ -35,8 +35,7 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
-    'sphinx.ext.viewcode',
-    'jsonlexer']
+    'sphinx.ext.viewcode']
 
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['show-inheritance']

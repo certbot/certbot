@@ -19,6 +19,8 @@ from acme import crypto_util
 from acme import messages
 from certbot import achallenges
 from certbot import errors as le_errors
+from certbot.display import util as display_util
+from certbot._internal.display import obj as display_obj
 from certbot.tests import acme_util
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
@@ -327,10 +329,17 @@ def setup_logging(args):
     root_logger.addHandler(handler)
 
 
+def setup_display():
+    """"Prepares IDisplay for the Certbot plugins """
+    displayer = display_util.NoninteractiveDisplay(sys.stdout)
+    display_obj.set_display(displayer)
+
+
 def main():
     """Main test script execution."""
     args = get_args()
     setup_logging(args)
+    setup_display()
 
     if args.plugin not in PLUGINS:
         raise errors.Error("Unknown plugin {0}".format(args.plugin))

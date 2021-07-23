@@ -14,9 +14,6 @@ from certbot._internal.cli.cli_constants import COMMAND_OVERVIEW
 from certbot._internal.cli.cli_constants import DEPRECATED_OPTIONS
 from certbot._internal.cli.cli_constants import EXIT_ACTIONS
 from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
-from certbot._internal.cli.cli_constants import LEAUTO
-from certbot._internal.cli.cli_constants import new_path_prefix
-from certbot._internal.cli.cli_constants import old_path_fragment
 from certbot._internal.cli.cli_constants import SHORT_USAGE
 from certbot._internal.cli.cli_constants import VAR_MODIFIERS
 from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
@@ -43,10 +40,9 @@ from certbot._internal.cli.plugins_parsing import _plugins_parsing
 from certbot._internal.cli.subparsers import _create_subparsers
 from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
+from certbot.plugins import enhancements
 from certbot._internal.plugins import disco as plugins_disco
 import certbot._internal.plugins.selection as plugin_selection
-import certbot.plugins.enhancements as enhancements
-
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +71,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         default=flag_default("verbose_count"), help="This flag can be used "
         "multiple times to incrementally increase the verbosity of output, "
         "e.g. -vvv.")
+    # This is for developers to set the level in the cli.ini, and overrides
+    # the --verbose flag
+    helpful.add(
+        None, "--verbose-level", dest="verbose_level",
+        default=flag_default("verbose_level"), help=argparse.SUPPRESS)
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
         default=flag_default("text_mode"), help=argparse.SUPPRESS)
@@ -247,8 +248,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              " to --server " + constants.STAGING_URI)
     helpful.add(
         "testing", "--debug", action="store_true", default=flag_default("debug"),
-        help="Show tracebacks in case of errors, and allow certbot-auto "
-             "execution on experimental platforms")
+        help="Show tracebacks in case of errors")
     helpful.add(
         [None, "certonly", "run"], "--debug-challenges", action="store_true",
         default=flag_default("debug_challenges"),
@@ -454,6 +454,7 @@ def set_by_cli(var):
         plugins = plugins_disco.PluginsRegistry.find_all()
         # reconstructed_args == sys.argv[1:], or whatever was passed to main()
         reconstructed_args = helpful_parser.args + [helpful_parser.verb]
+
         detector = set_by_cli.detector = prepare_and_parse_args(  # type: ignore
             plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator

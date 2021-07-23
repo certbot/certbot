@@ -1,5 +1,6 @@
 """Certbot client interfaces."""
 import abc
+from typing import Optional
 
 import zope.interface
 
@@ -327,7 +328,7 @@ class IInstaller(IPlugin):
 
         """
 
-    def save(title=None, temporary=False):
+    def save(title: Optional[str] = None, temporary: bool = False):
         """Saves all changes to the configuration files.
 
         Both title and temporary are needed because a save may be
@@ -349,7 +350,7 @@ class IInstaller(IPlugin):
 
         """
 
-    def rollback_checkpoints(rollback=1):
+    def rollback_checkpoints(rollback: int = 1):
         """Revert `rollback` number of configuration checkpoints.
 
         :raises .PluginError: when configuration cannot be fully reverted
@@ -548,7 +549,8 @@ class IReporter(zope.interface.Interface):
 class RenewableCert(object, metaclass=abc.ABCMeta):
     """Interface to a certificate lineage."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def cert_path(self):
         """Path to the certificate file.
 
@@ -556,7 +558,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def key_path(self):
         """Path to the private key file.
 
@@ -564,7 +567,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def chain_path(self):
         """Path to the certificate chain file.
 
@@ -572,7 +576,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def fullchain_path(self):
         """Path to the full chain file.
 
@@ -582,7 +587,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def lineagename(self):
         """Name given to the certificate lineage.
 

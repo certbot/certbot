@@ -48,7 +48,7 @@ class JWSTest(unittest.TestCase):
         self.assertEqual(jws.signature.combined.nonce, self.nonce)
         self.assertEqual(jws.signature.combined.url, self.url)
         self.assertEqual(jws.signature.combined.kid, self.kid)
-        self.assertEqual(jws.signature.combined.jwk, None)
+        self.assertIsNone(jws.signature.combined.jwk)
         # TODO: check that nonce is in protected header
 
         self.assertEqual(jws, JWS.from_json(jws.to_json()))
@@ -58,7 +58,7 @@ class JWSTest(unittest.TestCase):
         jws = JWS.sign(payload=b'foo', key=self.privkey,
                        alg=jose.RS256, nonce=self.nonce,
                        url=self.url)
-        self.assertEqual(jws.signature.combined.kid, None)
+        self.assertIsNone(jws.signature.combined.kid)
         self.assertEqual(jws.signature.combined.jwk, self.pubkey)
 
 

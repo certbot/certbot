@@ -3,9 +3,7 @@ import logging
 from typing import Optional
 
 import requests
-import zope.component
 
-from certbot import interfaces
 from certbot._internal import constants
 from certbot._internal.account import Account
 from certbot._internal.account import AccountFileStorage
@@ -75,8 +73,7 @@ def _want_subscription() -> bool:
         "founding partner of the Let's Encrypt project and the non-profit organization "
         "that develops Certbot? We'd like to send you email about our work encrypting "
         "the web, EFF news, campaigns, and ways to support digital freedom. ")
-    display = zope.component.getUtility(interfaces.IDisplay)
-    return display.yesno(prompt, default=False)
+    return display_util.yesno(prompt, default=False)
 
 
 def subscribe(email: str) -> None:

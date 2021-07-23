@@ -11,10 +11,10 @@ import time
 from typing import DefaultDict
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Set
 from typing import Union
 
-import zope.component
 import zope.interface
 
 from acme import challenges
@@ -24,6 +24,7 @@ from certbot import util
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.compat import filesystem
 from certbot.compat import os
+from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 from certbot.plugins.util import path_surgery
@@ -35,6 +36,9 @@ from certbot_apache._internal import dualparser
 from certbot_apache._internal import http_01
 from certbot_apache._internal import obj
 from certbot_apache._internal import parser
+from certbot_apache._internal.dualparser import DualBlockNode
+from certbot_apache._internal.obj import VirtualHost
+from certbot_apache._internal.parser import ApacheParser
 
 try:
     import apacheconfig
@@ -44,6 +48,47 @@ except ImportError:  # pragma: no cover
 
 
 logger = logging.getLogger(__name__)
+
+
+class OsOptions:
+    """
+    Dedicated class to describe the OS specificities (eg. paths, binary names)
+    that the Apache configurator needs to be aware to operate properly.
+    """
+    def __init__(self,
+                 server_root="/etc/apache2",
+                 vhost_root="/etc/apache2/sites-available",
+                 vhost_files="*",
+                 logs_root="/var/log/apache2",
+                 ctl="apache2ctl",
+                 version_cmd: Optional[List[str]] = None,
+                 restart_cmd: Optional[List[str]] = None,
+                 restart_cmd_alt: Optional[List[str]] = None,
+                 conftest_cmd: Optional[List[str]] = None,
+                 enmod: Optional[str] = None,
+                 dismod: Optional[str] = None,
+                 le_vhost_ext="-le-ssl.conf",
+                 handle_modules=False,
+                 handle_sites=False,
+                 challenge_location="/etc/apache2",
+                 apache_bin: Optional[str] = None,
+                 ):
+        self.server_root = server_root
+        self.vhost_root = vhost_root
+        self.vhost_files = vhost_files
+        self.logs_root = logs_root
+        self.ctl = ctl
+        self.version_cmd = ['apache2ctl', '-v'] if not version_cmd else version_cmd
+        self.restart_cmd = ['apache2ctl', 'graceful'] if not restart_cmd else restart_cmd
+        self.restart_cmd_alt = restart_cmd_alt
+        self.conftest_cmd = ['apache2ctl', 'configtest'] if not conftest_cmd else conftest_cmd
+        self.enmod = enmod
+        self.dismod = dismod
+        self.le_vhost_ext = le_vhost_ext
+        self.handle_modules = handle_modules
+        self.handle_sites = handle_sites
+        self.challenge_location = challenge_location
+        self.bin = apache_bin
 
 
 # TODO: Augeas sections ie. <VirtualHost>, <IfModule> beginning and closing
@@ -101,27 +146,7 @@ class ApacheConfigurator(common.Installer):
             " change depending on the operating system Certbot is run on.)"
         )
 
-    OS_DEFAULTS = dict(
-        server_root="/etc/apache2",
-        vhost_root="/etc/apache2/sites-available",
-        vhost_files="*",
-        logs_root="/var/log/apache2",
-        ctl="apache2ctl",
-        version_cmd=['apache2ctl', '-v'],
-        restart_cmd=['apache2ctl', 'graceful'],
-        conftest_cmd=['apache2ctl', 'configtest'],
-        enmod=None,
-        dismod=None,
-        le_vhost_ext="-le-ssl.conf",
-        handle_modules=False,
-        handle_sites=False,
-        challenge_location="/etc/apache2",
-        bin=None
-    )
-
-    def option(self, key):
-        """Get a value from options"""
-        return self.options.get(key)
+    OS_DEFAULTS = OsOptions()
 
     def pick_apache_config(self, warn_on_no_mod_ssl=True):
         """
@@ -151,14 +176,14 @@ class ApacheConfigurator(common.Installer):
         for o in opts:
             # Config options use dashes instead of underscores
             if self.conf(o.replace("_", "-")) is not None:
-                self.options[o] = self.conf(o.replace("_", "-"))
+                setattr(self.options, o, self.conf(o.replace("_", "-")))
             else:
-                self.options[o] = self.OS_DEFAULTS[o]
+                setattr(self.options, o, getattr(self.OS_DEFAULTS, o))
 
         # Special cases
-        self.options["version_cmd"][0] = self.option("ctl")
-        self.options["restart_cmd"][0] = self.option("ctl")
-        self.options["conftest_cmd"][0] = self.option("ctl")
+        self.options.version_cmd[0] = self.options.ctl
+        self.options.restart_cmd[0] = self.options.ctl
+        self.options.conftest_cmd[0] = self.options.ctl
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -173,30 +198,30 @@ class ApacheConfigurator(common.Installer):
         else:
             # cls.OS_DEFAULTS can be distribution specific, see override classes
             DEFAULTS = cls.OS_DEFAULTS
-        add("enmod", default=DEFAULTS["enmod"],
+        add("enmod", default=DEFAULTS.enmod,
             help="Path to the Apache 'a2enmod' binary")
-        add("dismod", default=DEFAULTS["dismod"],
+        add("dismod", default=DEFAULTS.dismod,
             help="Path to the Apache 'a2dismod' binary")
-        add("le-vhost-ext", default=DEFAULTS["le_vhost_ext"],
+        add("le-vhost-ext", default=DEFAULTS.le_vhost_ext,
             help="SSL vhost configuration extension")
-        add("server-root", default=DEFAULTS["server_root"],
+        add("server-root", default=DEFAULTS.server_root,
             help="Apache server root directory")
         add("vhost-root", default=None,
             help="Apache server VirtualHost configuration root")
-        add("logs-root", default=DEFAULTS["logs_root"],
+        add("logs-root", default=DEFAULTS.logs_root,
             help="Apache server logs directory")
         add("challenge-location",
-            default=DEFAULTS["challenge_location"],
+            default=DEFAULTS.challenge_location,
             help="Directory path for challenge configuration")
-        add("handle-modules", default=DEFAULTS["handle_modules"],
+        add("handle-modules", default=DEFAULTS.handle_modules,
             help="Let installer handle enabling required modules for you " +
                  "(Only Ubuntu/Debian currently)")
-        add("handle-sites", default=DEFAULTS["handle_sites"],
+        add("handle-sites", default=DEFAULTS.handle_sites,
             help="Let installer handle enabling sites for you " +
                  "(Only Ubuntu/Debian currently)")
-        add("ctl", default=DEFAULTS["ctl"],
+        add("ctl", default=DEFAULTS.ctl,
             help="Full path to Apache control script")
-        add("bin", default=DEFAULTS["bin"],
+        add("bin", default=DEFAULTS.bin,
             help="Full path to apache2/httpd binary")
 
     def __init__(self, *args, **kwargs):
@@ -209,7 +234,7 @@ class ApacheConfigurator(common.Installer):
         version = kwargs.pop("version", None)
         use_parsernode = kwargs.pop("use_parsernode", False)
         openssl_version = kwargs.pop("openssl_version", None)
-        super(ApacheConfigurator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Add name_server association dict
         self.assoc: Dict[str, obj.VirtualHost] = {}
@@ -231,11 +256,11 @@ class ApacheConfigurator(common.Installer):
         self.parsed_paths: List[str] = []
         # These will be set in the prepare function
         self._prepared = False
-        self.parser = None
-        self.parser_root = None
+        self.parser: ApacheParser
+        self.parser_root: Optional[DualBlockNode] = None
         self.version = version
         self._openssl_version = openssl_version
-        self.vhosts = None
+        self.vhosts: List[VirtualHost]
         self.options = copy.deepcopy(self.OS_DEFAULTS)
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
@@ -285,8 +310,8 @@ class ApacheConfigurator(common.Installer):
             ssl_module_location = self.parser.standard_path_from_server_root(ssl_module_location)
         else:
             # Possibility B: ssl_module is statically linked into Apache
-            if self.option("bin"):
-                ssl_module_location = self.option("bin")
+            if self.options.bin:
+                ssl_module_location = self.options.bin
             else:
                 logger.warning("ssl_module is statically linked but --apache-bin is "
                                "missing; not disabling session tickets.")
@@ -316,7 +341,7 @@ class ApacheConfigurator(common.Installer):
         self._prepare_options()
 
         # Verify Apache is installed
-        self._verify_exe_availability(self.option("ctl"))
+        self._verify_exe_availability(self.options.ctl)
 
         # Make sure configuration is valid
         self.config_test()
@@ -344,8 +369,9 @@ class ApacheConfigurator(common.Installer):
                    "augeaspath": self.parser.get_root_augpath(),
                    "ac_ast": None}
         if self.USE_PARSERNODE:
-            self.parser_root = self.get_parsernode_root(pn_meta)
-            self.parsed_paths = self.parser_root.parsed_paths()
+            parser_root = self.get_parsernode_root(pn_meta)
+            self.parser_root = parser_root
+            self.parsed_paths = parser_root.parsed_paths()
 
         # Check for errors in parsing files with Augeas
         self.parser.check_parsing_errors("httpd.aug")
@@ -355,20 +381,20 @@ class ApacheConfigurator(common.Installer):
 
         # We may try to enable mod_ssl later. If so, we shouldn't warn if we can't find it now.
         # This is currently only true for debian/ubuntu.
-        warn_on_no_mod_ssl = not self.option("handle_modules")
+        warn_on_no_mod_ssl = not self.options.handle_modules
         self.install_ssl_options_conf(self.mod_ssl_conf,
                                       self.updated_mod_ssl_conf_digest,
                                       warn_on_no_mod_ssl)
 
         # Prevent two Apache plugins from modifying a config at once
         try:
-            util.lock_dir_until_exit(self.option("server_root"))
+            util.lock_dir_until_exit(self.options.server_root)
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(
                 "Unable to create a lock file in {0}. Are you running"
                 " Certbot with sufficient privileges to modify your"
-                " Apache configuration?".format(self.option("server_root")))
+                " Apache configuration?".format(self.options.server_root))
         self._prepared = True
 
     def save(self, title=None, temporary=False):
@@ -404,10 +430,10 @@ class ApacheConfigurator(common.Installer):
         :raises .errors.PluginError: If unable to recover the configuration
 
         """
-        super(ApacheConfigurator, self).recovery_routine()
+        super().recovery_routine()
         # Reload configuration after these changes take effect if needed
         # ie. ApacheParser has been initialized.
-        if self.parser:
+        if hasattr(self, "parser"):
             # TODO: wrap into non-implementation specific  parser interface
             self.parser.aug.load()
 
@@ -429,7 +455,7 @@ class ApacheConfigurator(common.Installer):
             the function is unable to correctly revert the configuration
 
         """
-        super(ApacheConfigurator, self).rollback_checkpoints(rollback)
+        super().rollback_checkpoints(rollback)
         self.parser.aug.load()
 
     def _verify_exe_availability(self, exe):
@@ -443,7 +469,7 @@ class ApacheConfigurator(common.Installer):
         """Initializes the ApacheParser"""
         # If user provided vhost_root value in command line, use it
         return parser.ApacheParser(
-            self.option("server_root"), self.conf("vhost-root"),
+            self.options.server_root, self.conf("vhost-root"),
             self.version, configurator=self)
 
     def get_parsernode_root(self, metadata):
@@ -451,9 +477,9 @@ class ApacheConfigurator(common.Installer):
 
         if HAS_APACHECONFIG:
             apache_vars = {}
-            apache_vars["defines"] = apache_util.parse_defines(self.option("ctl"))
-            apache_vars["includes"] = apache_util.parse_includes(self.option("ctl"))
-            apache_vars["modules"] = apache_util.parse_modules(self.option("ctl"))
+            apache_vars["defines"] = apache_util.parse_defines(self.options.ctl)
+            apache_vars["includes"] = apache_util.parse_includes(self.options.ctl)
+            apache_vars["modules"] = apache_util.parse_modules(self.options.ctl)
             metadata["apache_vars"] = apache_vars
 
             with open(self.parser.loc["root"]) as f:
@@ -489,6 +515,8 @@ class ApacheConfigurator(common.Installer):
         vhosts = self.choose_vhosts(domain)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
+            display_util.notify("Successfully deployed certificate for {} to {}"
+                                .format(domain, vhost.filep))
 
     def choose_vhosts(self, domain, create_if_no_ssl=True):
         """
@@ -527,6 +555,19 @@ class ApacheConfigurator(common.Installer):
 
         return list(matched)
 
+    def _raise_no_suitable_vhost_error(self, target_name: str):
+        """
+        Notifies the user that Certbot could not find a vhost to secure
+        and raises an error.
+        :param str target_name: The server name that could not be mapped
+        :raises errors.PluginError: Raised unconditionally
+        """
+        raise errors.PluginError(
+            "Certbot could not find a VirtualHost for {0} in the Apache "
+            "configuration. Please create a VirtualHost with a ServerName "
+            "matching {0} and try again.".format(target_name)
+        )
+
     def _in_wildcard_scope(self, name, domain):
         """
         Helper method for _vhosts_for_wildcard() that makes sure that the domain
@@ -564,12 +605,7 @@ class ApacheConfigurator(common.Installer):
         dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
 
         if not dialog_output:
-            logger.error(
-                "No vhost exists with servername or alias for domain %s. "
-                "No vhost was selected. Please specify ServerName or ServerAlias "
-                "in the Apache config.",
-                domain)
-            raise errors.PluginError("No vhost selected")
+            self._raise_no_suitable_vhost_error(domain)
 
         # Make sure we create SSL vhosts for the ones that are HTTP only
         # if requested.
@@ -693,12 +729,7 @@ class ApacheConfigurator(common.Installer):
         # Select a vhost from a list
         vhost = display_ops.select_vhost(target_name, self.vhosts)
         if vhost is None:
-            logger.error(
-                "No vhost exists with servername or alias of %s. "
-                "No vhost was selected. Please specify ServerName or ServerAlias "
-                "in the Apache config.",
-                target_name)
-            raise errors.PluginError("No vhost selected")
+            self._raise_no_suitable_vhost_error(target_name)
         if temp:
             return vhost
         if not vhost.ssl:
@@ -852,7 +883,7 @@ class ApacheConfigurator(common.Installer):
                         all_names.add(name)
 
         if vhost_macro:
-            zope.component.getUtility(interfaces.IDisplay).notification(
+            display_util.notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
                     "\n  ".join(vhost_macro)), force_interactive=True)
@@ -1050,6 +1081,9 @@ class ApacheConfigurator(common.Installer):
         :rtype: list
         """
 
+        if not self.parser_root:
+            raise errors.Error("This ApacheConfigurator instance is not"  # pragma: no cover
+                               " configured to use a node parser.")
         vhs = []
         vhosts = self.parser_root.find_blocks("VirtualHost", exclude=False)
         for vhblock in vhosts:
@@ -1302,7 +1336,7 @@ class ApacheConfigurator(common.Installer):
         :param boolean temp: If the change is temporary
         """
 
-        if self.option("handle_modules"):
+        if self.options.handle_modules:
             if self.version >= (2, 4) and ("socache_shmcb_module" not in
                                            self.parser.modules):
                 self.enable_mod("socache_shmcb", temp=temp)
@@ -1322,7 +1356,7 @@ class ApacheConfigurator(common.Installer):
 
         Duplicates vhost and adds default ssl options
         New vhost will reside as (nonssl_vhost.path) +
-        ``self.option("le_vhost_ext")``
+        ``self.options.le_vhost_ext``
 
         .. note:: This function saves the configuration
 
@@ -1421,15 +1455,15 @@ class ApacheConfigurator(common.Installer):
         """
 
         if self.conf("vhost-root") and os.path.exists(self.conf("vhost-root")):
-            fp = os.path.join(filesystem.realpath(self.option("vhost_root")),
+            fp = os.path.join(filesystem.realpath(self.options.vhost_root),
                               os.path.basename(non_ssl_vh_fp))
         else:
             # Use non-ssl filepath
             fp = filesystem.realpath(non_ssl_vh_fp)
 
         if fp.endswith(".conf"):
-            return fp[:-(len(".conf"))] + self.option("le_vhost_ext")
-        return fp + self.option("le_vhost_ext")
+            return fp[:-(len(".conf"))] + self.options.le_vhost_ext
+        return fp + self.options.le_vhost_ext
 
     def _sift_rewrite_rule(self, line):
         """Decides whether a line should be copied to a SSL vhost.
@@ -1503,12 +1537,11 @@ class ApacheConfigurator(common.Installer):
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 
         if sift:
-            reporter = zope.component.getUtility(interfaces.IReporter)
-            reporter.add_message(
-                "Some rewrite rules copied from {0} were disabled in the "
-                "vhost for your HTTPS site located at {1} because they have "
-                "the potential to create redirection loops.".format(
-                    vhost.filep, ssl_fp), reporter.MEDIUM_PRIORITY)
+            display_util.notify(
+                f"Some rewrite rules copied from {vhost.filep} were disabled in the "
+                f"vhost for your HTTPS site located at {ssl_fp} because they have "
+                "the potential to create redirection loops."
+            )
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")
 
@@ -1837,13 +1870,13 @@ class ApacheConfigurator(common.Installer):
             if options:
                 msg_enhancement += ": " + options
             msg = msg_tmpl.format(domain, msg_enhancement)
-            logger.warning(msg)
+            logger.error(msg)
             raise errors.PluginError(msg)
         try:
             for vhost in vhosts:
                 func(vhost, options)
         except errors.PluginError:
-            logger.warning("Failed %s for %s", enhancement, domain)
+            logger.error("Failed %s for %s", enhancement, domain)
             raise
 
     def _autohsts_increase(self, vhost, id_str, nextstep):
@@ -2273,7 +2306,7 @@ class ApacheConfigurator(common.Installer):
                             addr in self._get_proposed_addrs(ssl_vhost)),
                    servername, serveralias,
                    " ".join(rewrite_rule_args),
-                   self.option("logs_root")))
+                   self.options.logs_root))
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
@@ -2285,7 +2318,7 @@ class ApacheConfigurator(common.Installer):
             if len(ssl_vhost.name) < (255 - (len(redirect_filename) + 1)):
                 redirect_filename = "le-redirect-%s.conf" % ssl_vhost.name
 
-        redirect_filepath = os.path.join(self.option("vhost_root"),
+        redirect_filepath = os.path.join(self.options.vhost_root,
                                          redirect_filename)
 
         # Register the new file that will be created
@@ -2367,7 +2400,7 @@ class ApacheConfigurator(common.Installer):
             vhost.enabled = True
         return
 
-    def enable_mod(self, mod_name, temp=False):
+    def enable_mod(self, mod_name, temp=False):  # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -2405,19 +2438,18 @@ class ApacheConfigurator(common.Installer):
 
         """
         try:
-            util.run_script(self.option("restart_cmd"))
+            util.run_script(self.options.restart_cmd)
         except errors.SubprocessError as err:
-            logger.info("Unable to restart apache using %s",
-                        self.option("restart_cmd"))
-            alt_restart = self.option("restart_cmd_alt")
+            logger.warning("Unable to restart apache using %s",
+                        self.options.restart_cmd)
+            alt_restart = self.options.restart_cmd_alt
             if alt_restart:
                 logger.debug("Trying alternative restart command: %s",
                              alt_restart)
                 # There is an alternative restart command available
                 # This usually is "restart" verb while original is "graceful"
                 try:
-                    util.run_script(self.option(
-                        "restart_cmd_alt"))
+                    util.run_script(self.options.restart_cmd_alt)
                     return
                 except errors.SubprocessError as secerr:
                     error = str(secerr)
@@ -2432,7 +2464,7 @@ class ApacheConfigurator(common.Installer):
 
         """
         try:
-            util.run_script(self.option("conftest_cmd"))
+            util.run_script(self.options.conftest_cmd)
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -2448,11 +2480,11 @@ class ApacheConfigurator(common.Installer):
 
         """
         try:
-            stdout, _ = util.run_script(self.option("version_cmd"))
+            stdout, _ = util.run_script(self.options.version_cmd)
         except errors.SubprocessError:
             raise errors.PluginError(
                 "Unable to run %s -v" %
-                self.option("version_cmd"))
+                self.options.version_cmd)
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(stdout)
@@ -2471,6 +2503,11 @@ class ApacheConfigurator(common.Installer):
                 os.linesep, root=self.parser.loc["root"],
                 version=".".join(str(i) for i in self.version))
         )
+
+    def auth_hint(self, failed_achalls): # pragma: no cover
+        return ("The Certificate Authority failed to verify the temporary Apache configuration "
+                "changes made by Certbot. Ensure that the listed domains point to this Apache "
+                "server and that it is accessible from the internet.")
 
     ###########################################################################
     # Challenges Section
@@ -2565,7 +2602,7 @@ class ApacheConfigurator(common.Installer):
                 msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
                             "domain {0} for enabling AutoHSTS enhancement.")
                 msg = msg_tmpl.format(d)
-                logger.warning(msg)
+                logger.error(msg)
                 raise errors.PluginError(msg)
             for vh in vhosts:
                 try:
@@ -2651,7 +2688,7 @@ class ApacheConfigurator(common.Installer):
                 except errors.PluginError:
                     msg = ("Could not find VirtualHost with ID {0}, disabling "
                            "AutoHSTS for this VirtualHost").format(id_str)
-                    logger.warning(msg)
+                    logger.error(msg)
                     # Remove the orphaned AutoHSTS entry from pluginstorage
                     self._autohsts.pop(id_str)
                     continue
@@ -2691,7 +2728,7 @@ class ApacheConfigurator(common.Installer):
                 except errors.PluginError:
                     msg = ("VirtualHost with id {} was not found, unable to "
                            "make HSTS max-age permanent.").format(id_str)
-                    logger.warning(msg)
+                    logger.error(msg)
                     self._autohsts.pop(id_str)
                     continue
                 if self._autohsts_vhost_in_lineage(vhost, lineage):

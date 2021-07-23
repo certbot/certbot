@@ -24,8 +24,8 @@ import sys
 import time
 
 REQUIREMENTS = [
-    '-e acme[dev]',
-    '-e certbot[dev,docs]',
+    '-e acme[test]',
+    '-e certbot[all]',
     '-e certbot-apache',
     '-e certbot-dns-cloudflare',
     '-e certbot-dns-cloudxns',
@@ -44,7 +44,11 @@ REQUIREMENTS = [
     '-e certbot-nginx',
     '-e certbot-compatibility-test',
     '-e certbot-ci',
+    '-e letstest',
 ]
+
+if sys.platform == 'win32':
+    REQUIREMENTS.append('-e windows-installer')
 
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
 

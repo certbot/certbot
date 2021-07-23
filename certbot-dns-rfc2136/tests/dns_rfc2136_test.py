@@ -28,7 +28,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
     def setUp(self):
         from certbot_dns_rfc2136._internal.dns_rfc2136 import Authenticator
 
-        super(AuthenticatorTest, self).setUp()
+        super().setUp()
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write(VALID_CONFIG, path)
@@ -42,7 +42,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         # _get_rfc2136_client | pylint: disable=protected-access
         self.auth._get_rfc2136_client = mock.MagicMock(return_value=self.mock_client)
 
-    def test_perform(self):
+    @test_util.patch_display_util()
+    def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record('_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
@@ -65,7 +66,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
                           self.auth.perform,
                           [self.achall])
 
-    def test_valid_algorithm_passes(self):
+    @test_util.patch_display_util()
+    def test_valid_algorithm_passes(self, unused_mock_get_utility):
         config = VALID_CONFIG.copy()
         config["rfc2136_algorithm"] = "HMAC-sha512"
         dns_test_common.write(config, self.config.rfc2136_credentials)

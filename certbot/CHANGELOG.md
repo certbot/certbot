@@ -2,7 +2,108 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.14.0 - master
+## 1.18.0 - master
+
+### Added
+
+* New functions that Certbot plugins can use to interact with the user have
+  been added to `certbot.display.util`. We plan to deprecate using `IDisplay`
+  with `zope` in favor of these new functions in the future.
+
+### Changed
+
+* When self-validating HTTP-01 challenges using
+  acme.challenges.HTTP01Response.simple_verify, we now assume that the response
+  is composed of only ASCII characters. Previously we were relying on the
+  default behavior of the requests library which tries to guess the encoding of
+  the response which was error prone.
+* `acme`: the `.client.Client` and `.client.BackwardsCompatibleClientV2` classes
+  are now deprecated in favor of `.client.ClientV2`.
+* The `certbot.tests.patch_get_utility*` functions have been deprecated.
+  Plugins should now patch `certbot.display.util` themselves in their tests or
+  use `certbot.tests.util.patch_display_util` as a temporary workaround.
+
+### Fixed
+
+* The Apache authenticator no longer crashes with "Unable to insert label"
+  when encountering a completely empty vhost. This issue affected Certbot 1.17.0.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.17.0 - 2021-07-06
+
+### Added
+
+* Add Void Linux overrides for certbot-apache.
+
+### Changed
+
+* We changed how dependencies are specified between Certbot packages. For this
+  and future releases, higher level Certbot components will require that lower
+  level components are the same version or newer. More specifically, version X
+  of the Certbot package will now always require acme>=X and version Y of a
+  plugin package will always require acme>=Y and certbot=>Y. Specifying
+  dependencies in this way simplifies testing and development.
+* The Apache authenticator now always configures virtual hosts which do not have
+  an explicit `ServerName`. This should make it work more reliably with the
+  default Apache configuration in Debian-based environments.
+
+### Fixed
+
+* When we increased the logging level on our nginx "Could not parse file" message,
+  it caused a previously-existing inability to parse empty files to become more
+  visible. We have now added the ability to correctly parse empty files, so that
+  message should only show for more significant errors.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.16.0 - 2021-06-01
+
+### Added
+
+*
+
+### Changed
+
+* DNS plugins based on lexicon now require dns-lexicon >= v3.1.0
+* Use UTF-8 encoding for renewal configuration files
+* Windows installer now cleans up old Certbot dependency packages
+  before installing the new ones to avoid version conflicts.
+* This release contains a substantial command-line UX overhaul,
+  based on previous user research. The main goal was to streamline
+  and clarify output. If you would like to see more verbose output, use
+  the -v or -vv flags. UX improvements are an iterative process and
+  the Certbot team welcomes constructive feedback.
+* Functions `certbot.crypto_util.init_save_key` and `certbot.crypto_util.init_save_csr`,
+  whose behaviors rely on the global Certbot `config` singleton, are deprecated and will
+  be removed in a future release. Please use `certbot.crypto_util.generate_key` and
+  `certbot.crypto_util.generate_csr` instead.
+
+### Fixed
+
+* Fix TypeError due to incompatibility with lexicon >= v3.6.0
+* Installers (e.g. nginx, Apache) were being restarted unnecessarily after dry-run renewals.
+* Colors and bold text should properly render in all supported versions of Windows.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.15.0 - 2021-05-04
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.14.0 - 2021-04-06
 
 ### Added
 

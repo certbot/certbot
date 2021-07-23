@@ -4,7 +4,7 @@ import logging
 from certbot import errors
 from certbot import interfaces
 from certbot._internal.plugins import selection as plug_sel
-import certbot.plugins.enhancements as enhancements
+from certbot.plugins import enhancements
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def run_generic_updaters(config, lineage, plugins):
     try:
         installer = plug_sel.get_unprepared_installer(config, plugins)
     except errors.Error as e:
-        logger.warning("Could not choose appropriate plugin for updaters: %s", e)
+        logger.error("Could not choose appropriate plugin for updaters: %s", e)
         return
     if installer:
         _run_updaters(lineage, installer, config)

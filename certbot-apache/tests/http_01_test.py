@@ -1,6 +1,7 @@
 """Test for certbot_apache._internal.http_01."""
 import unittest
 import errno
+from typing import List
 
 try:
     import mock
@@ -23,7 +24,7 @@ class ApacheHttp01Test(util.ApacheTest):
     """Test for certbot_apache._internal.http_01.ApacheHttp01."""
 
     def setUp(self, *args, **kwargs):  # pylint: disable=arguments-differ
-        super(ApacheHttp01Test, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         self.account_key = self.rsa512jwk
         self.achalls: List[achallenges.KeyAuthorizationAnnotatedChallenge] = []
@@ -122,6 +123,18 @@ class ApacheHttp01Test(util.ApacheTest):
                     challenges.HTTP01(token=((b'a' * 16))),
                     "pending"),
                 domain="duplicate.example.com", account_key=self.account_key)]
+        self.common_perform_test(achalls, vhosts)
+
+    def test_configure_name_and_blank(self):
+        domain = "certbot.demo"
+        vhosts = [v for v in self.config.vhosts if v.name == domain or v.name is None]
+        achalls = [
+            achallenges.KeyAuthorizationAnnotatedChallenge(
+                challb=acme_util.chall_to_challb(
+                    challenges.HTTP01(token=((b'a' * 16))),
+                    "pending"),
+                domain=domain, account_key=self.account_key),
+        ]
         self.common_perform_test(achalls, vhosts)
 
     def test_no_vhost(self):

@@ -1,14 +1,12 @@
 """Tests for certbot._internal.plugins.standalone."""
-# https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
+import errno
 import socket
-from socket import errno as socket_errors  # type: ignore
+from typing import Dict
+from typing import Set
+from typing import Tuple
 import unittest
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 import OpenSSL.crypto  # pylint: disable=unused-import
 
 from acme import challenges
@@ -17,6 +15,12 @@ from certbot import achallenges
 from certbot import errors
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 
 class ServerManagerTest(unittest.TestCase):
@@ -29,9 +33,8 @@ class ServerManagerTest(unittest.TestCase):
         self.mgr = ServerManager(self.certs, self.http_01_resources)
 
     def test_init(self):
-        self.assertTrue(self.mgr.certs is self.certs)
-        self.assertTrue(
-            self.mgr.http_01_resources is self.http_01_resources)
+        self.assertIs(self.mgr.certs, self.certs)
+        self.assertIs(self.mgr.http_01_resources, self.http_01_resources)
 
     def _test_run_stop(self, challenge_type):
         server = self.mgr.run(port=0, challenge_type=challenge_type)
@@ -48,7 +51,7 @@ class ServerManagerTest(unittest.TestCase):
         port = server.getsocknames()[0][1]
         server2 = self.mgr.run(port=port, challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {port: server})
-        self.assertTrue(server is server2)
+        self.assertIs(server, server2)
         self.mgr.stop(port)
         self.assertEqual(self.mgr.running(), {})
 
@@ -89,7 +92,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.servers = mock.MagicMock()
 
     def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), str))
+        self.assertIsInstance(self.auth.more_info(), str)
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref(domain=None),
@@ -102,11 +105,11 @@ class AuthenticatorTest(unittest.TestCase):
         expected = [achall.response(achall.account_key) for achall in achalls]
         self.assertEqual(response, expected)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_perform_eaddrinuse_retry(self, mock_get_utility):
         mock_utility = mock_get_utility()
-        errno = socket_errors.EADDRINUSE
-        error = errors.StandaloneBindError(mock.MagicMock(errno=errno), -1)
+        encountered_errno = errno.EADDRINUSE
+        error = errors.StandaloneBindError(mock.MagicMock(errno=encountered_errno), -1)
         self.auth.servers.run.side_effect = [error] + 2 * [mock.MagicMock()]
         mock_yesno = mock_utility.yesno
         mock_yesno.return_value = True
@@ -114,32 +117,32 @@ class AuthenticatorTest(unittest.TestCase):
         self.test_perform()
         self._assert_correct_yesno_call(mock_yesno)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_perform_eaddrinuse_no_retry(self, mock_get_utility):
         mock_utility = mock_get_utility()
         mock_yesno = mock_utility.yesno
         mock_yesno.return_value = False
 
-        errno = socket_errors.EADDRINUSE
-        self.assertRaises(errors.PluginError, self._fail_perform, errno)
+        encountered_errno = errno.EADDRINUSE
+        self.assertRaises(errors.PluginError, self._fail_perform, encountered_errno)
         self._assert_correct_yesno_call(mock_yesno)
 
     def _assert_correct_yesno_call(self, mock_yesno):
         yesno_args, yesno_kwargs = mock_yesno.call_args
-        self.assertTrue("in use" in yesno_args[0])
+        self.assertIn("in use", yesno_args[0])
         self.assertFalse(yesno_kwargs.get("default", True))
 
     def test_perform_eacces(self):
-        errno = socket_errors.EACCES
-        self.assertRaises(errors.PluginError, self._fail_perform, errno)
+        encountered_errno = errno.EACCES
+        self.assertRaises(errors.PluginError, self._fail_perform, encountered_errno)
 
     def test_perform_unexpected_socket_error(self):
-        errno = socket_errors.ENOTCONN
+        encountered_errno = errno.ENOTCONN
         self.assertRaises(
-            errors.StandaloneBindError, self._fail_perform, errno)
+            errors.StandaloneBindError, self._fail_perform, encountered_errno)
 
-    def _fail_perform(self, errno):
-        error = errors.StandaloneBindError(mock.MagicMock(errno=errno), -1)
+    def _fail_perform(self, encountered_errno):
+        error = errors.StandaloneBindError(mock.MagicMock(errno=encountered_errno), -1)
         self.auth.servers.run.side_effect = error
         self.auth.perform(self._get_achalls())
 
@@ -177,6 +180,13 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(self.auth.served, {
             "server1": set(), "server2": set()})
         self.auth.servers.stop.assert_called_with(2)
+
+    def test_auth_hint(self):
+        self.config.http01_port = "80"
+        self.config.http01_address = None
+        self.assertIn("on port 80", self.auth.auth_hint([]))
+        self.config.http01_address = "127.0.0.1"
+        self.assertIn("on 127.0.0.1:80", self.auth.auth_hint([]))
 
 
 if __name__ == "__main__":

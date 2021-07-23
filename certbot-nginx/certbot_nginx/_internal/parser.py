@@ -18,6 +18,7 @@ from certbot import errors
 from certbot.compat import os
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
+from certbot_nginx._internal.nginxparser import UnspacedList
 
 logger = logging.getLogger(__name__)
 
@@ -95,8 +96,8 @@ class NginxParser:
         servers = self._get_raw_servers()
 
         addr_to_ssl: Dict[Tuple[str, str], bool] = {}
-        for filename in servers:
-            for server, _ in servers[filename]:
+        for server_list in servers.values():
+            for server, _ in server_list:
                 # Parse the server block to save addr info
                 parsed_server = _parse_server_raw(server)
                 for addr in parsed_server['addrs']:
@@ -111,8 +112,7 @@ class NginxParser:
         """Get a map of unparsed all server blocks
         """
         servers: Dict[str, Union[List, nginxparser.UnspacedList]] = {}
-        for filename in self.parsed:
-            tree = self.parsed[filename]
+        for filename, tree in self.parsed.items():
             servers[filename] = []
             srv = servers[filename]  # workaround undefined loop var in lambdas
 
@@ -140,8 +140,8 @@ class NginxParser:
         servers = self._get_raw_servers()
 
         vhosts = []
-        for filename in servers:
-            for server, path in servers[filename]:
+        for filename, server_list in servers.items():
+            for server, path in server_list:
                 # Parse the server block into a VirtualHost object
 
                 parsed_server = _parse_server_raw(server)
@@ -216,7 +216,7 @@ class NginxParser:
                                "character. Only UTF-8 encoding is "
                                "supported.", item)
             except pyparsing.ParseException as err:
-                logger.debug("Could not parse file: %s due to %s", item, err)
+                logger.warning("Could not parse file: %s due to %s", item, err)
         return trees
 
     def _find_config_root(self):
@@ -239,10 +239,11 @@ class NginxParser:
 
         """
         # Best-effort atomicity is enforced above us by reverter.py
-        for filename in self.parsed:
-            tree = self.parsed[filename]
+        for filename, tree in self.parsed.items():
             if ext:
                 filename = filename + os.path.extsep + ext
+            if not isinstance(tree, UnspacedList):
+                raise ValueError(f"Error tree {tree} is not an UnspacedList")
             try:
                 if lazy and not tree.is_dirty():
                     continue
@@ -427,7 +428,7 @@ def _parse_ssl_options(ssl_options):
             logger.warning("Could not read file: %s due to invalid character. "
                            "Only UTF-8 encoding is supported.", ssl_options)
         except pyparsing.ParseBaseException as err:
-            logger.debug("Could not parse file: %s due to %s", ssl_options, err)
+            logger.warning("Could not parse file: %s due to %s", ssl_options, err)
     return []
 
 def _do_for_subarray(entry, condition, func, path=None):

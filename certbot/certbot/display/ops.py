@@ -1,18 +1,13 @@
 """Contains UI methods for LE user operations."""
 import logging
-
-import zope.component
+from textwrap import indent
 
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
-
-# Define a helper function to avoid verbose code
-z_util = zope.component.getUtility
 
 
 def get_email(invalid=False, optional=True):
@@ -47,9 +42,8 @@ def get_email(invalid=False, optional=True):
 
     while True:
         try:
-            code, email = z_util(interfaces.IDisplay).input(
-                invalid_prefix + msg if invalid else msg,
-                force_interactive=True)
+            code, email = display_util.input_text(invalid_prefix + msg if invalid else msg,
+                                                  force_interactive=True)
         except errors.MissingCommandlineFlag:
             msg = ("You should register before running non-interactively, "
                    "or provide --agree-tos and --email <email_address> flags.")
@@ -80,11 +74,11 @@ def choose_account(accounts):
     # Note this will get more complicated once we start recording authorizations
     labels = [acc.slug for acc in accounts]
 
-    code, index = z_util(interfaces.IDisplay).menu(
-        "Please choose an account", labels, force_interactive=True)
+    code, index = display_util.menu("Please choose an account", labels, force_interactive=True)
     if code == display_util.OK:
         return accounts[index]
     return None
+
 
 def choose_values(values, question=None):
     """Display screen to let user pick one or multiple values from the provided
@@ -95,11 +89,11 @@ def choose_values(values, question=None):
     :returns: List of selected values
     :rtype: list
     """
-    code, items = z_util(interfaces.IDisplay).checklist(
-        question, tags=values, force_interactive=True)
+    code, items = display_util.checklist(question, tags=values, force_interactive=True)
     if code == display_util.OK and items:
         return items
     return []
+
 
 def choose_names(installer, question=None):
     """Display screen to select domains to validate.
@@ -122,8 +116,7 @@ def choose_names(installer, question=None):
     names = get_valid_domains(domains)
 
     if not names:
-        return _choose_names_manually(
-            "No names were found in your configuration files. ")
+        return _choose_names_manually()
 
     code, names = _filter_names(names, question)
     if code == display_util.OK and names:
@@ -147,6 +140,7 @@ def get_valid_domains(domains):
             continue
     return valid_domains
 
+
 def _sort_names(FQDNs):
     """Sort FQDNs by SLD (and if many, by their subdomains)
 
@@ -169,13 +163,13 @@ def _filter_names(names, override_question=None):
     :rtype: tuple
 
     """
-    #Sort by domain first, and then by subdomain
+    # Sort by domain first, and then by subdomain
     sorted_names = _sort_names(names)
     if override_question:
         question = override_question
     else:
         question = "Which names would you like to activate HTTPS for?"
-    code, names = z_util(interfaces.IDisplay).checklist(
+    code, names = display_util.checklist(
         question, tags=sorted_names, cli_flag="--domains", force_interactive=True)
     return code, [str(s) for s in names]
 
@@ -189,9 +183,10 @@ def _choose_names_manually(prompt_prefix=""):
     :rtype: `list` of `str`
 
     """
-    code, input_ = z_util(interfaces.IDisplay).input(
+    code, input_ = display_util.input_text(
         prompt_prefix +
-        "Please enter in your domain name(s) (comma and/or space separated) ",
+        "Please enter the domain name(s) you would like on your certificate "
+        "(comma and/or space separated)",
         cli_flag="--domains", force_interactive=True)
 
     if code == display_util.OK:
@@ -216,17 +211,16 @@ def _choose_names_manually(prompt_prefix=""):
             retry_message = (
                 "One or more of the entered domain names was not valid:"
                 "{0}{0}").format(os.linesep)
-            for domain in invalid_domains:
+            for invalid_domain, err in invalid_domains.items():
                 retry_message = retry_message + "{1}: {2}{0}".format(
-                    os.linesep, domain, invalid_domains[domain])
+                    os.linesep, invalid_domain, err)
             retry_message = retry_message + (
                 "{0}Would you like to re-enter the names?{0}").format(
                     os.linesep)
 
         if retry_message:
             # We had error in input
-            retry = z_util(interfaces.IDisplay).yesno(retry_message,
-                                                      force_interactive=True)
+            retry = display_util.yesno(retry_message, force_interactive=True)
             if retry:
                 return _choose_names_manually()
         else:
@@ -240,25 +234,22 @@ def success_installation(domains):
     :param list domains: domain names which were enabled
 
     """
-    z_util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully enabled {0}".format(
-            _gen_https_names(domains)),
-        pause=False)
+    display_util.notify(
+        "Congratulations! You have successfully enabled HTTPS on {0}"
+        .format(_gen_https_names(domains))
+    )
 
 
-def success_renewal(domains):
+def success_renewal(unused_domains):
     """Display a box confirming the renewal of an existing certificate.
 
     :param list domains: domain names which were renewed
 
     """
-    z_util(interfaces.IDisplay).notification(
+    display_util.notify(
         "Your existing certificate has been successfully renewed, and the "
-        "new certificate has been installed.{1}{1}"
-        "The new certificate covers the following domains: {0}".format(
-            _gen_https_names(domains),
-            os.linesep),
-        pause=False)
+        "new certificate has been installed."
+    )
 
 
 def success_revocation(cert_path):
@@ -271,6 +262,24 @@ def success_revocation(cert_path):
         "Congratulations! You have successfully revoked the certificate "
         "that was located at {0}.".format(cert_path)
     )
+
+
+def report_executed_command(command_name: str, returncode: int, stdout: str, stderr: str) -> None:
+    """Display a message describing the success or failure of an executed process (e.g. hook).
+
+    :param str command_name: Human-readable description of the executed command
+    :param int returncode: The exit code of the executed command
+    :param str stdout: The stdout output of the executed command
+    :param str stderr: The stderr output of the executed command
+
+    """
+    out_s, err_s = stdout.strip(), stderr.strip()
+    if returncode != 0:
+        logger.warning("%s reported error code %d", command_name, returncode)
+    if out_s:
+        display_util.notify(f"{command_name} ran with output:\n{indent(out_s, ' ')}")
+    if err_s:
+        logger.warning("%s ran with error output:\n%s", command_name, indent(err_s, ' '))
 
 
 def _gen_https_names(domains):
@@ -316,7 +325,7 @@ def _get_validated(method, validator, message, default=None, **kwargs):
                              raw,
                              message,
                              exc_info=True)
-                zope.component.getUtility(interfaces.IDisplay).notification(str(error), pause=False)
+                display_util.notification(str(error), pause=False)
         else:
             return code, raw
 
@@ -332,8 +341,7 @@ def validated_input(validator, *args, **kwargs):
     :return: as `~certbot.interfaces.IDisplay.input`
     :rtype: tuple
     """
-    return _get_validated(zope.component.getUtility(interfaces.IDisplay).input,
-                          validator, *args, **kwargs)
+    return _get_validated(display_util.input_text, validator, *args, **kwargs)
 
 
 def validated_directory(validator, *args, **kwargs):
@@ -348,5 +356,4 @@ def validated_directory(validator, *args, **kwargs):
     :return: as `~certbot.interfaces.IDisplay.directory_select`
     :rtype: tuple
     """
-    return _get_validated(zope.component.getUtility(interfaces.IDisplay).directory_select,
-                          validator, *args, **kwargs)
+    return _get_validated(display_util.directory_select, validator, *args, **kwargs)

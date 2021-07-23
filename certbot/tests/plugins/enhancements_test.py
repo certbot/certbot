@@ -15,11 +15,11 @@ class EnhancementTest(test_util.ConfigTestCase):
     """Tests for new style enhancements in certbot.plugins.enhancements"""
 
     def setUp(self):
-        super(EnhancementTest, self).setUp()
+        super().setUp()
         self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
 
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_enhancement_enabled_enhancements(self, _):
         FAKEINDEX = [
             {

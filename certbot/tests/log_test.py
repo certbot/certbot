@@ -5,7 +5,7 @@ import logging.handlers
 import sys
 import time
 import unittest
-
+from typing import Optional
 
 from acme import messages
 from certbot import errors
@@ -30,6 +30,12 @@ class PreArgParseSetupTest(unittest.TestCase):
         from certbot._internal.log import pre_arg_parse_setup
         return pre_arg_parse_setup()
 
+    def tearDown(self):
+        # We need to call logging.shutdown() at the end of this test to
+        # properly clean up any resources created by pre_arg_parse_setup.
+        logging.shutdown()
+        super().tearDown()
+
     @mock.patch('certbot._internal.log.sys')
     @mock.patch('certbot._internal.log.pre_arg_parse_except_hook')
     @mock.patch('certbot._internal.log.logging.getLogger')
@@ -50,14 +56,13 @@ class PreArgParseSetupTest(unittest.TestCase):
                 memory_handler = handler
                 target = memory_handler.target  # type: ignore
             else:
-                self.assertTrue(isinstance(handler, logging.StreamHandler))
-        self.assertTrue(
-            isinstance(target, logging.StreamHandler))
+                self.assertIsInstance(handler, logging.StreamHandler)
+        self.assertIsInstance(target, logging.StreamHandler)
 
         mock_register.assert_called_once_with(logging.shutdown)
         mock_sys.excepthook(1, 2, 3)
         mock_except_hook.assert_called_once_with(
-            memory_handler, 1, 2, 3, debug=True, log_path=mock.ANY)
+            memory_handler, 1, 2, 3, debug=True, quiet=False, log_path=mock.ANY)
 
 
 class PostArgParseSetupTest(test_util.ConfigTestCase):
@@ -69,7 +74,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         return post_arg_parse_setup(*args, **kwargs)
 
     def setUp(self):
-        super(PostArgParseSetupTest, self).setUp()
+        super().setUp()
         self.config.debug = False
         self.config.max_log_backups = 1000
         self.config.quiet = False
@@ -90,7 +95,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         self.stream_handler.close()
         self.temp_handler.close()
         self.devnull.close()
-        super(PostArgParseSetupTest, self).tearDown()
+        super().tearDown()
 
     def test_common(self):
         with mock.patch('certbot._internal.log.logging.getLogger') as mock_get_logger:
@@ -101,21 +106,23 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
                     mock_sys.version_info = sys.version_info
                     self._call(self.config)
 
+        log_path = os.path.join(self.config.logs_dir, 'letsencrypt.log')
+
         self.root_logger.removeHandler.assert_called_once_with(
             self.memory_handler)
         self.assertTrue(self.root_logger.addHandler.called)
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.logs_dir, 'letsencrypt.log')))
+        self.assertTrue(os.path.exists(log_path))
         self.assertFalse(os.path.exists(self.temp_path))
         mock_sys.excepthook(1, 2, 3)
         mock_except_hook.assert_called_once_with(
-            1, 2, 3, debug=self.config.debug, log_path=self.config.logs_dir)
+            1, 2, 3, debug=self.config.debug,
+            quiet=self.config.quiet, log_path=log_path)
 
         level = self.stream_handler.level
         if self.config.quiet:
             self.assertEqual(level, constants.QUIET_LOGGING_LEVEL)
         else:
-            self.assertEqual(level, -self.config.verbose_count * 10)
+            self.assertEqual(level, constants.DEFAULT_LOGGING_LEVEL)
 
     def test_debug(self):
         self.config.debug = True
@@ -135,7 +142,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         return setup_log_file_handler(*args, **kwargs)
 
     def setUp(self):
-        super(SetupLogFileHandlerTest, self).setUp()
+        super().setUp()
         self.config.max_log_backups = 42
 
     @mock.patch('certbot._internal.main.logging.handlers.RotatingFileHandler')
@@ -145,7 +152,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         try:
             self._call(self.config, 'test.log', '%(message)s')
         except errors.Error as err:
-            self.assertTrue('--logs-dir' in str(err))
+            self.assertIn('--logs-dir', str(err))
         else:  # pragma: no cover
             self.fail('Error not raised.')
 
@@ -319,6 +326,12 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         self._assert_exception_logged(mock_logger.error, exc_type)
         self._assert_logfile_output(output)
 
+    def test_quiet(self):
+        exc_type = ValueError
+        mock_logger, output = self._test_common(exc_type, debug=True, quiet=True)
+        self._assert_exception_logged(mock_logger.error, exc_type)
+        self.assertNotIn('See the logfile', output)
+
     def test_custom_error(self):
         exc_type = errors.PluginError
         mock_logger, output = self._test_common(exc_type, debug=False)
@@ -336,7 +349,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         mock_logger, output = self._test_common(get_acme_error, debug=False)
         self._assert_exception_logged(mock_logger.debug, messages.Error)
         self._assert_quiet_output(mock_logger, output)
-        self.assertFalse(messages.ERROR_PREFIX in output)
+        self.assertNotIn(messages.ERROR_PREFIX, output)
 
     def test_other_error(self):
         exc_type = ValueError
@@ -349,7 +362,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         mock_logger, output = self._test_common(exc_type, debug=False)
         mock_logger.error.assert_called_once_with('Exiting due to user request.')
 
-    def _test_common(self, error_type, debug):
+    def _test_common(self, error_type, debug, quiet=False):
         """Returns the mocked logger and stderr output."""
         mock_err = io.StringIO()
 
@@ -366,7 +379,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
                 with mock.patch('certbot._internal.log.sys.stderr', mock_err):
                     try:
                         self._call(
-                            *exc_info, debug=debug, log_path=self.log_path)
+                            *exc_info, debug=debug, quiet=quiet, log_path=self.log_path)
                     except SystemExit as exit_err:
                         mock_err.write(str(exit_err))
                     else:  # pragma: no cover
@@ -378,41 +391,41 @@ class PostArgParseExceptHookTest(unittest.TestCase):
     def _assert_exception_logged(self, log_func, exc_type):
         self.assertTrue(log_func.called)
         call_kwargs = log_func.call_args[1]
-        self.assertTrue('exc_info' in call_kwargs)
+        self.assertIn('exc_info', call_kwargs)
 
         actual_exc_info = call_kwargs['exc_info']
         expected_exc_info = (exc_type, mock.ANY, mock.ANY)
         self.assertEqual(actual_exc_info, expected_exc_info)
 
     def _assert_logfile_output(self, output):
-        self.assertTrue('Please see the logfile' in output)
-        self.assertTrue(self.log_path in output)
+        self.assertIn('See the logfile', output)
+        self.assertIn(self.log_path, output)
 
     def _assert_quiet_output(self, mock_logger, output):
-        self.assertFalse(mock_logger.exception.called)
+        self.assertIs(mock_logger.exception.called, False)
         self.assertTrue(mock_logger.debug.called)
-        self.assertTrue(self.error_msg in output)
+        self.assertIn(self.error_msg, output)
 
 
-class ExitWithLogPathTest(test_util.TempDirTestCase):
-    """Tests for certbot._internal.log.exit_with_log_path."""
+class ExitWithAdviceTest(test_util.TempDirTestCase):
+    """Tests for certbot._internal.log.exit_with_advice."""
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot._internal.log import exit_with_log_path
-        return exit_with_log_path(*args, **kwargs)
+        from certbot._internal.log import exit_with_advice
+        return exit_with_advice(*args, **kwargs)
 
     def test_log_file(self):
         log_file = os.path.join(self.tempdir, 'test.log')
         open(log_file, 'w').close()
 
         err_str = self._test_common(log_file)
-        self.assertTrue('logfiles' not in err_str)
-        self.assertTrue(log_file in err_str)
+        self.assertNotIn('logfiles', err_str)
+        self.assertIn(log_file, err_str)
 
     def test_log_dir(self):
         err_str = self._test_common(self.tempdir)
-        self.assertTrue('logfiles' in err_str)
-        self.assertTrue(self.tempdir in err_str)
+        self.assertIn('logfiles', err_str)
+        self.assertIn(self.tempdir, err_str)
 
     # pylint: disable=inconsistent-return-statements
     def _test_common(self, *args, **kwargs):

@@ -23,7 +23,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
     def setUp(self):
         from certbot_dns_digitalocean._internal.dns_digitalocean import Authenticator
 
-        super(AuthenticatorTest, self).setUp()
+        super().setUp()
 
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"digitalocean_token": TOKEN}, path)
@@ -37,7 +37,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         # _get_digitalocean_client | pylint: disable=protected-access
         self.auth._get_digitalocean_client = mock.MagicMock(return_value=self.mock_client)
 
-    def test_perform(self):
+    @test_util.patch_display_util()
+    def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, 30)]

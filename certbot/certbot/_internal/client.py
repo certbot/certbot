@@ -2,15 +2,14 @@
 import datetime
 import logging
 import platform
-from typing import List
-from typing import Optional
+from typing import List, Optional, Union
+import warnings
 
 from cryptography.hazmat.backends import default_backend
 # See https://github.com/pyca/cryptography/issues/4275
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
 import josepy as jose
 import OpenSSL
-import zope.component
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -19,7 +18,6 @@ from acme import messages
 import certbot
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot._internal import account
 from certbot._internal import auth_handler
@@ -31,16 +29,27 @@ from certbot._internal import storage
 from certbot._internal.plugins import selection as plugin_selection
 from certbot.compat import os
 from certbot.display import ops as display_ops
+from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
-
 
 def acme_from_config_key(config, key, regr=None):
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
-    return acme_client.BackwardsCompatibleClientV2(net, key, config.server)
+
+    with warnings.catch_warnings():
+        # TODO: full removal of ACMEv1 support: https://github.com/certbot/certbot/issues/6844
+        warnings.simplefilter("ignore", PendingDeprecationWarning)
+
+        client = acme_client.BackwardsCompatibleClientV2(net, key, config.server)
+        if client.acme_version == 1:
+            logger.warning(
+                "Certbot is configured to use an ACMEv1 server (%s). ACMEv1 support is deprecated"
+                " and will soon be removed. See https://community.letsencrypt.org/t/143839 for "
+                "more information.", config.server)
+        return client
 
 
 def determine_user_agent(config):
@@ -59,7 +68,7 @@ def determine_user_agent(config):
         ua = ("CertbotACMEClient/{0} ({1}; {2}{8}) Authenticator/{3} Installer/{4} "
               "({5}; flags: {6}) Py/{7}")
         if os.environ.get("CERTBOT_DOCS") == "1":
-            cli_command = "certbot(-auto)"
+            cli_command = "certbot"
             os_info = "OS_NAME OS_VERSION"
             python_version = "major.minor.patchlevel"
         else:
@@ -155,7 +164,7 @@ def register(config, account_storage, tos_cb=None):
         if not config.register_unsafely_without_email:
             msg = ("No email was provided and "
                    "--register-unsafely-without-email was not present.")
-            logger.warning(msg)
+            logger.error(msg)
             raise errors.Error(msg)
         if not config.dry_run:
             logger.debug("Registering without email!")
@@ -255,6 +264,7 @@ class Client:
             acme = acme_from_config_key(config, self.account.key, self.account.regr)
         self.acme = acme
 
+        self.auth_handler: Optional[auth_handler.AuthHandler]
         if auth is not None:
             self.auth_handler = auth_handler.AuthHandler(
                 auth, self.acme, self.account, self.config.pref_challs)
@@ -276,7 +286,7 @@ class Client:
         if self.auth_handler is None:
             msg = ("Unable to obtain certificate because authenticator is "
                    "not set.")
-            logger.warning(msg)
+            logger.error(msg)
             raise errors.Error(msg)
         if self.account.regr is None:
             raise errors.Error("Please register with the ACME server first.")
@@ -335,7 +345,7 @@ class Client:
             key = None
 
         key_size = self.config.rsa_key_size
-        elliptic_curve = None
+        elliptic_curve = "secp256r1"
 
         # key-type defaults to a list, but we are only handling 1 currently
         if isinstance(self.config.key_type, list):
@@ -363,13 +373,15 @@ class Client:
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            key = key or crypto_util.init_save_key(
+            key = key or crypto_util.generate_key(
                 key_size=key_size,
                 key_dir=self.config.key_dir,
                 key_type=self.config.key_type,
                 elliptic_curve=elliptic_curve,
+                strict_permissions=self.config.strict_permissions,
             )
-            csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
+            csr = crypto_util.generate_csr(key, domains, self.config.csr_dir,
+                                           self.config.must_staple, self.config.strict_permissions)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
         authzr = orderr.authorizations
@@ -391,7 +403,7 @@ class Client:
             return cert, chain, key, csr
 
     def _get_order_and_authorizations(self, csr_pem: str,
-                                      best_effort: bool) -> List[messages.OrderResource]:
+                                      best_effort: bool) -> messages.OrderResource:
         """Request a new order and complete its authorizations.
 
         :param str csr_pem: A CSR in PEM format.
@@ -408,6 +420,9 @@ class Client:
             raise errors.Error("The currently selected ACME CA endpoint does"
                                " not support issuing wildcard certificates.")
 
+        if not self.auth_handler:
+            raise errors.Error("No authorization handler has been set.")
+
         # For a dry run, ensure we have an order with fresh authorizations
         if orderr and self.config.dry_run:
             deactivated, failed = self.auth_handler.deactivate_valid_authorizations(orderr)
@@ -418,7 +433,7 @@ class Client:
                 logger.warning("Certbot was unable to obtain fresh authorizations for every domain"
                                ". The dry run will continue, but results may not be accurate.")
 
-        authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
+        authzr = self.auth_handler.handle_authorizations(orderr, self.config, best_effort)
         return orderr.update(authorizations=authzr)
 
     def obtain_and_enroll_certificate(self, domains, certname):
@@ -503,8 +518,6 @@ class Client:
             cert_file.write(cert_pem)
         finally:
             cert_file.close()
-        logger.info("Server issued certificate; certificate written to %s",
-                    abs_cert_path)
 
         chain_file, abs_chain_path =\
                 _open_pem_file('chain_path', chain_path)
@@ -516,8 +529,7 @@ class Client:
 
         return abs_cert_path, abs_chain_path, abs_fullchain_path
 
-    def deploy_certificate(self, domains, privkey_path,
-                           cert_path, chain_path, fullchain_path):
+    def deploy_certificate(self, domains, privkey_path, cert_path, chain_path, fullchain_path):
         """Install certificate
 
         :param list domains: list of domains to install the certificate
@@ -527,13 +539,15 @@ class Client:
 
         """
         if self.installer is None:
-            logger.warning("No installer specified, client is unable to deploy"
+            logger.error("No installer specified, client is unable to deploy"
                            "the certificate")
             raise errors.Error("No installer available")
 
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
-        msg = ("Unable to install the certificate")
+        display_util.notify("Deploying certificate")
+
+        msg = "Could not install certificate"
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 self.installer.deploy_cert(
@@ -565,7 +579,7 @@ class Client:
 
         """
         if self.installer is None:
-            logger.warning("No installer is specified, there isn't any "
+            logger.error("No installer is specified, there isn't any "
                            "configuration to enhance.")
             raise errors.Error("No installer available")
 
@@ -586,7 +600,7 @@ class Client:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True
             elif config_value:
-                logger.warning(
+                logger.error(
                     "Option %s is not supported by the selected installer. "
                     "Skipping enhancement.", config_name)
 
@@ -595,7 +609,8 @@ class Client:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
-    def apply_enhancement(self, domains, enhancement, options=None):
+    def apply_enhancement(self, domains: List[str], enhancement: str,
+                          options: Optional[Union[List[str], str]] = None) -> None:
         """Applies an enhancement on all domains.
 
         :param list domains: list of ssl_vhosts (as strings)
@@ -609,36 +624,28 @@ class Client:
 
 
         """
-        msg = ("We were unable to set up enhancement %s for your server, "
-               "however, we successfully installed your certificate."
-               % (enhancement))
-        with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
+        enh_label = options if enhancement == "ensure-http-header" else enhancement
+        with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
             for dom in domains:
                 try:
                     self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
-                    if enhancement == "ensure-http-header":
-                        logger.warning("Enhancement %s was already set.",
-                                options)
-                    else:
-                        logger.warning("Enhancement %s was already set.",
-                                enhancement)
+                    logger.info("Enhancement %s was already set.", enh_label)
                 except errors.PluginError:
-                    logger.warning("Unable to set enhancement %s for %s",
-                            enhancement, dom)
+                    logger.error("Unable to set the %s enhancement for %s.", enh_label, dom)
                     raise
 
-            self.installer.save("Add enhancement %s" % (enhancement))
+            self.installer.save(f"Add enhancement {enh_label}")
 
-    def _recovery_routine_with_msg(self, success_msg):
+    def _recovery_routine_with_msg(self, success_msg: Optional[str]) -> None:
         """Calls the installer's recovery routine and prints success_msg
 
         :param str success_msg: message to show on successful recovery
 
         """
         self.installer.recovery_routine()
-        reporter = zope.component.getUtility(interfaces.IReporter)
-        reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
+        if success_msg:
+            display_util.notify(success_msg)
 
     def _rollback_and_restart(self, success_msg):
         """Rollback the most recent checkpoint and restart the webserver
@@ -646,20 +653,19 @@ class Client:
         :param str success_msg: message to show on successful rollback
 
         """
-        logger.critical("Rolling back to previous server configuration...")
-        reporter = zope.component.getUtility(interfaces.IReporter)
+        logger.info("Rolling back to previous server configuration...")
         try:
             self.installer.rollback_checkpoints()
             self.installer.restart()
         except:
-            reporter.add_message(
+            logger.error(
                 "An error occurred and we failed to restore your config and "
                 "restart your server. Please post to "
                 "https://community.letsencrypt.org/c/help "
-                "with details about your configuration and this error you received.",
-                reporter.HIGH_PRIORITY)
+                "with details about your configuration and this error you received."
+            )
             raise
-        reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
+        display_util.notify(success_msg)
 
 
 def validate_key_csr(privkey, csr=None):
@@ -758,5 +764,3 @@ def _save_chain(chain_pem, chain_file):
         chain_file.write(chain_pem)
     finally:
         chain_file.close()
-
-    logger.info("Cert chain written to %s", chain_file.name)

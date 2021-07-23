@@ -18,10 +18,10 @@ class TestScanningFlags(unittest.TestCase):
         arg_parser = HelpfulArgumentParser(['run'], {})
         detected_flag = arg_parser.prescan_for_flag('--help',
                                                         ['all', 'certonly'])
-        self.assertFalse(detected_flag)
+        self.assertIs(detected_flag, False)
         detected_flag = arg_parser.prescan_for_flag('-h',
                                                         ['all, certonly'])
-        self.assertFalse(detected_flag)
+        self.assertIs(detected_flag, False)
 
     def test_prescan_unvalid_topic(self):
         arg_parser = HelpfulArgumentParser(['--help', 'all'], {})
@@ -30,7 +30,7 @@ class TestScanningFlags(unittest.TestCase):
         self.assertIs(detected_flag, True)
         detected_flag = arg_parser.prescan_for_flag('-h',
                                                     arg_parser.help_topics)
-        self.assertFalse(detected_flag)
+        self.assertIs(detected_flag, False)
 
     def test_prescan_valid_topic(self):
         arg_parser = HelpfulArgumentParser(['-h', 'all'], {})
@@ -39,7 +39,7 @@ class TestScanningFlags(unittest.TestCase):
         self.assertEqual(detected_flag, 'all')
         detected_flag = arg_parser.prescan_for_flag('--help',
                                                     arg_parser.help_topics)
-        self.assertFalse(detected_flag)
+        self.assertIs(detected_flag, False)
 
 class TestDetermineVerbs(unittest.TestCase):
     '''Tests for determine_verb methods of HelpfulArgumentParser'''
@@ -90,7 +90,7 @@ class TestAdd(unittest.TestCase):
                 metavar="EAB_KID",
                 help="Key Identifier for External Account Binding")
         parsed_args = arg_parser.parser.parse_args(["--eab-kid", None])
-        self.assertIs(parsed_args.eab_kid, None)
+        self.assertIsNone(parsed_args.eab_kid)
         self.assertTrue(hasattr(parsed_args, 'eab_kid'))
 
 
@@ -115,7 +115,7 @@ class TestAddGroup(unittest.TestCase):
         self.assertTrue(arg_parser.groups["run"])
         arg_parser.add_group("certonly", description="description of certonly")
         with self.assertRaises(KeyError):
-            self.assertFalse(arg_parser.groups["certonly"])
+            self.assertIs(arg_parser.groups["certonly"], False)
 
 
 class TestParseArgsErrors(unittest.TestCase):

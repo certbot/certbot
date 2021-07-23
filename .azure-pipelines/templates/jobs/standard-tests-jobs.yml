@@ -40,13 +40,13 @@ jobs:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.9
           TOXENV: py39-cover
-        linux-py37-lint:
+        linux-py39-lint:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.9
           TOXENV: lint
-        linux-py36-mypy:
+        linux-py39-mypy:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
+          PYTHON_VERSION: 3.9
           TOXENV: mypy
         linux-integration:
           IMAGE_NAME: ubuntu-18.04
@@ -56,9 +56,6 @@ jobs:
         apache-compat:
           IMAGE_NAME: ubuntu-18.04
           TOXENV: apache_compat
-        le-modification:
-          IMAGE_NAME: ubuntu-18.04
-          TOXENV: modification
         apacheconftest:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.6

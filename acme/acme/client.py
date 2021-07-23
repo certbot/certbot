@@ -8,10 +8,13 @@ import http.client as http_client
 import logging
 import re
 import time
+from typing import cast
 from typing import Dict
 from typing import List
 from typing import Set
 from typing import Text
+from typing import Union
+import warnings
 
 import josepy as jose
 import OpenSSL
@@ -222,6 +225,9 @@ class ClientBase:
 class Client(ClientBase):
     """ACME client for a v1 API.
 
+    .. deprecated:: 1.18.0
+       Use :class:`ClientV2` instead.
+
     .. todo::
        Clean up raised error types hierarchy, document, and handle (wrap)
        instances of `.DeserializationError` raised in `from_json()`.
@@ -244,6 +250,8 @@ class Client(ClientBase):
             URI from which the resource will be downloaded.
 
         """
+        warnings.warn("acme.client.Client (ACMEv1) is deprecated, "
+                      "use acme.client.ClientV2 instead.", PendingDeprecationWarning)
         self.key = key
         if net is None:
             net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl)
@@ -251,7 +259,7 @@ class Client(ClientBase):
         if isinstance(directory, str):
             directory = messages.Directory.from_json(
                 net.get(directory).json())
-        super(Client, self).__init__(directory=directory,
+        super().__init__(directory=directory,
             net=net, acme_version=1)
 
     def register(self, new_reg=None):
@@ -575,7 +583,7 @@ class ClientV2(ClientBase):
         :param .messages.Directory directory: Directory Resource
         :param .ClientNetwork net: Client network.
         """
-        super(ClientV2, self).__init__(directory=directory,
+        super().__init__(directory=directory,
             net=net, acme_version=2)
 
     def new_account(self, new_account):
@@ -625,7 +633,7 @@ class ClientV2(ClientBase):
         """
         # https://github.com/certbot/certbot/issues/6155
         new_regr = self._get_v2_account(regr)
-        return super(ClientV2, self).update_registration(new_regr, update)
+        return super().update_registration(new_regr, update)
 
     def _get_v2_account(self, regr):
         self.net.account = None
@@ -656,7 +664,10 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
-        for url in body.authorizations:
+        # pylint has trouble understanding our josepy based objects which use
+        # things like custom metaclass logic. body.authorizations should be a
+        # list of strings containing URLs so let's disable this check here.
+        for url in body.authorizations:  # pylint: disable=not-an-iterable
             authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
@@ -800,6 +811,9 @@ class BackwardsCompatibleClientV2:
     """ACME client wrapper that tends towards V2-style calls, but
     supports V1 servers.
 
+    .. deprecated:: 1.18.0
+       Use :class:`ClientV2` instead.
+
     .. note:: While this class handles the majority of the differences
         between versions of the ACME protocol, if you need to support an
         ACME server based on version 3 or older of the IETF ACME draft
@@ -816,8 +830,11 @@ class BackwardsCompatibleClientV2:
     """
 
     def __init__(self, net, key, server):
+        warnings.warn("acme.client.BackwardsCompatibleClientV2 is deprecated, use "
+                      "acme.client.ClientV2 instead.", PendingDeprecationWarning)
         directory = messages.Directory.from_json(net.get(server).json())
         self.acme_version = self._acme_version_from_directory(directory)
+        self.client: Union[Client, ClientV2]
         if self.acme_version == 1:
             self.client = Client(directory, key=key, net=net)
         else:
@@ -837,16 +854,18 @@ class BackwardsCompatibleClientV2:
             if check_tos_cb is not None:
                 check_tos_cb(tos)
         if self.acme_version == 1:
-            regr = self.client.register(regr)
+            client_v1 = cast(Client, self.client)
+            regr = client_v1.register(regr)
             if regr.terms_of_service is not None:
                 _assess_tos(regr.terms_of_service)
-                return self.client.agree_to_tos(regr)
+                return client_v1.agree_to_tos(regr)
             return regr
         else:
-            if "terms_of_service" in self.client.directory.meta:
-                _assess_tos(self.client.directory.meta.terms_of_service)
+            client_v2 = cast(ClientV2, self.client)
+            if "terms_of_service" in client_v2.directory.meta:
+                _assess_tos(client_v2.directory.meta.terms_of_service)
                 regr = regr.update(terms_of_service_agreed=True)
-            return self.client.new_account(regr)
+            return client_v2.new_account(regr)
 
     def new_order(self, csr_pem):
         """Request a new Order object from the server.
@@ -864,14 +883,15 @@ class BackwardsCompatibleClientV2:
 
         """
         if self.acme_version == 1:
+            client_v1 = cast(Client, self.client)
             csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
             # pylint: disable=protected-access
             dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
             authorizations = []
             for domain in dnsNames:
-                authorizations.append(self.client.request_domain_challenges(domain))
+                authorizations.append(client_v1.request_domain_challenges(domain))
             return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem)
-        return self.client.new_order(csr_pem)
+        return cast(ClientV2, self.client).new_order(csr_pem)
 
     def finalize_order(self, orderr, deadline, fetch_alternative_chains=False):
         """Finalize an order and obtain a certificate.
@@ -886,8 +906,9 @@ class BackwardsCompatibleClientV2:
 
         """
         if self.acme_version == 1:
+            client_v1 = cast(Client, self.client)
             csr_pem = orderr.csr_pem
-            certr = self.client.request_issuance(
+            certr = client_v1.request_issuance(
                 jose.ComparableX509(
                     OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)),
                     orderr.authorizations)
@@ -895,7 +916,7 @@ class BackwardsCompatibleClientV2:
             chain = None
             while datetime.datetime.now() < deadline:
                 try:
-                    chain = self.client.fetch_chain(certr)
+                    chain = client_v1.fetch_chain(certr)
                     break
                 except errors.Error:
                     time.sleep(1)
@@ -910,7 +931,8 @@ class BackwardsCompatibleClientV2:
             chain = crypto_util.dump_pyopenssl_chain(chain).decode()
 
             return orderr.update(fullchain_pem=(cert + chain))
-        return self.client.finalize_order(orderr, deadline, fetch_alternative_chains)
+        return cast(ClientV2, self.client).finalize_order(
+            orderr, deadline, fetch_alternative_chains)
 
     def revoke(self, cert, rsn):
         """Revoke certificate.
@@ -936,7 +958,7 @@ class BackwardsCompatibleClientV2:
         Always return False for ACMEv1 servers, as it doesn't use External Account Binding."""
         if self.acme_version == 1:
             return False
-        return self.client.external_account_required()
+        return cast(ClientV2, self.client).external_account_required()
 
 
 class ClientNetwork:
@@ -1129,6 +1151,7 @@ class ClientNetwork:
 
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
+        debug_content: Union[bytes, str]
         if response.headers.get("Content-Type") == DER_CONTENT_TYPE:
             debug_content = base64.b64encode(response.content)
         else:

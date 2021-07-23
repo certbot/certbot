@@ -3,8 +3,8 @@ from datetime import datetime
 from datetime import timedelta
 import logging
 import re
+import subprocess
 from subprocess import PIPE
-from subprocess import Popen
 from typing import Optional
 from typing import Tuple
 
@@ -50,11 +50,10 @@ class RevocationChecker:
                 return
 
             # New versions of openssl want -header var=val, old ones want -header var val
-            test_host_format = Popen(["openssl", "ocsp", "-header", "var", "val"],
+            test_host_format = subprocess.run(["openssl", "ocsp", "-header", "var", "val"],
                                      stdout=PIPE, stderr=PIPE, universal_newlines=True,
-                                     env=util.env_no_snap_for_external_calls())
-            _out, err = test_host_format.communicate()
-            if "Missing =" in err:
+                                     check=False, env=util.env_no_snap_for_external_calls())
+            if "Missing =" in test_host_format.stderr:
                 self.host_args = lambda host: ["Host=" + host]
             else:
                 self.host_args = lambda host: ["Host", host]
@@ -193,7 +192,7 @@ def _check_ocsp_cryptography(cert_path: str, chain_path: str, url: str, timeout:
 
     # Check OCSP response validity
     if response_ocsp.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
-        logger.error("Invalid OCSP response status for %s: %s",
+        logger.warning("Invalid OCSP response status for %s: %s",
                      cert_path, response_ocsp.response_status)
         return False
 
@@ -201,13 +200,13 @@ def _check_ocsp_cryptography(cert_path: str, chain_path: str, url: str, timeout:
     try:
         _check_ocsp_response(response_ocsp, request, issuer, cert_path)
     except UnsupportedAlgorithm as e:
-        logger.error(str(e))
+        logger.warning(str(e))
     except errors.Error as e:
-        logger.error(str(e))
+        logger.warning(str(e))
     except InvalidSignature:
-        logger.error('Invalid signature on OCSP response for %s', cert_path)
+        logger.warning('Invalid signature on OCSP response for %s', cert_path)
     except AssertionError as error:
-        logger.error('Invalid OCSP response for %s: %s.', cert_path, str(error))
+        logger.warning('Invalid OCSP response for %s: %s.', cert_path, str(error))
     else:
         # Check OCSP certificate status
         logger.debug("OCSP certificate status for %s is: %s",
