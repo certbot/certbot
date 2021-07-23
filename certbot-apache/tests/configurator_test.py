@@ -136,7 +136,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue("debian_apache_2_4/multiple_vhosts/apache" in
                         self.config.options.server_root)
 
-    @certbot_util.patch_get_utility()
+    @certbot_util.patch_display_util()
     def test_get_all_names(self, mock_getutility):
         mock_utility = mock_getutility()
         mock_utility.notification = mock.MagicMock(return_value=True)
@@ -145,7 +145,7 @@ class MultipleVhostsTest(util.ApacheTest):
              "nonsym.link", "vhost.in.rootconf", "www.certbot.demo",
              "duplicate.example.com"})
 
-    @certbot_util.patch_get_utility()
+    @certbot_util.patch_display_util()
     @mock.patch("certbot_apache._internal.configurator.socket.gethostbyaddr")
     def test_get_all_names_addrs(self, mock_gethost, mock_getutility):
         mock_gethost.side_effect = [("google.com", "", ""), socket.error]

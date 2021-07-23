@@ -7,9 +7,10 @@
 import hashlib
 import logging
 import re
+from typing import List
+from typing import Set
 import warnings
 
-from typing import List, Set
 # See https://github.com/pyca/cryptography/issues/4275
 from cryptography import x509  # type: ignore
 from cryptography.exceptions import InvalidSignature

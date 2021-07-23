@@ -311,8 +311,8 @@ class AccountFileStorage(interfaces.AccountStorage):
 
         # does an appropriate directory link to me? if so, make sure that's gone
         reused_servers = {}
-        for k in constants.LE_REUSE_SERVERS:
-            reused_servers[constants.LE_REUSE_SERVERS[k]] = k
+        for k, v in constants.LE_REUSE_SERVERS.items():
+            reused_servers[v] = k
 
         # is there a next one up?
         possible_next_link = True

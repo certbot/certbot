@@ -56,11 +56,6 @@ jobs:
         apache-compat:
           IMAGE_NAME: ubuntu-18.04
           TOXENV: apache_compat
-        # le-modification can be moved to the extended test suite once
-        # https://github.com/certbot/certbot/issues/8742 is resolved.
-        le-modification:
-          IMAGE_NAME: ubuntu-18.04
-          TOXENV: modification
         apacheconftest:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.6

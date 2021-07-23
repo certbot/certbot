@@ -15,7 +15,6 @@ from typing import Optional
 from typing import Set
 from typing import Union
 
-import zope.component
 import zope.interface
 
 from acme import challenges
@@ -884,7 +883,7 @@ class ApacheConfigurator(common.Installer):
                         all_names.add(name)
 
         if vhost_macro:
-            zope.component.getUtility(interfaces.IDisplay).notification(
+            display_util.notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
                     "\n  ".join(vhost_macro)), force_interactive=True)

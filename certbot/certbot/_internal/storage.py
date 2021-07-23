@@ -144,7 +144,8 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     logger.debug("Writing new config %s.", n_filename)
 
     # Ensure that the file exists
-    open(n_filename, 'a').close()
+    with open(n_filename, 'a'):
+        pass
 
     # Copy permissions from the old version of the file, if it exists.
     if os.path.exists(o_filename):

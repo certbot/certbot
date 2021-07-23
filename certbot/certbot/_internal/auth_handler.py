@@ -6,14 +6,11 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 
-import zope.component
-
 from acme import challenges
 from acme import errors as acme_errors
 from acme import messages
 from certbot import achallenges
 from certbot import errors
-from certbot import interfaces
 from certbot._internal import error_handler
 from certbot.display import util as display_util
 from certbot.plugins import common as plugin_common
@@ -74,9 +71,9 @@ class AuthHandler:
 
                 # If debug is on, wait for user input before starting the verification process.
                 if config.debug_challenges:
-                    notify = zope.component.getUtility(interfaces.IDisplay).notification
-                    notify('Challenges loaded. Press continue to submit to CA. '
-                           'Pass "-v" for more info about challenges.', pause=True)
+                    display_util.notification(
+                        'Challenges loaded. Press continue to submit to CA. '
+                        'Pass "-v" for more info about challenges.', pause=True)
             except errors.AuthorizationError as error:
                 logger.critical('Failure in setting up challenges.')
                 logger.info('Attempting to clean up outstanding challenges...')
