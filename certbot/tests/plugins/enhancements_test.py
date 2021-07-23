@@ -19,7 +19,7 @@ class EnhancementTest(test_util.ConfigTestCase):
         self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
 
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_enhancement_enabled_enhancements(self, _):
         FAKEINDEX = [
             {

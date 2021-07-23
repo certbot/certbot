@@ -42,7 +42,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         # _get_rfc2136_client | pylint: disable=protected-access
         self.auth._get_rfc2136_client = mock.MagicMock(return_value=self.mock_client)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
@@ -66,7 +66,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
                           self.auth.perform,
                           [self.achall])
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_valid_algorithm_passes(self, unused_mock_get_utility):
         config = VALID_CONFIG.copy()
         config["rfc2136_algorithm"] = "HMAC-sha512"

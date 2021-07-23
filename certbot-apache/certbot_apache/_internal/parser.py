@@ -440,7 +440,11 @@ class ApacheParser:
         :type args: list or str
         """
         first_dir = aug_conf_path + "/directive[1]"
-        self.aug.insert(first_dir, "directive", True)
+        if self.aug.get(first_dir):
+            self.aug.insert(first_dir, "directive", True)
+        else:
+            self.aug.set(first_dir, "directive")
+
         self.aug.set(first_dir, dirname)
         if isinstance(args, list):
             for i, value in enumerate(args, 1):
