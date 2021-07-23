@@ -94,10 +94,6 @@ class NamespaceConfig(Config):
         return self.namespace.work_dir
 
     @property
-    def account_dir(self) -> str:
-        return self.namespace.account_dir
-
-    @property
     def backup_dir(self):  # pylint: disable=missing-function-docstring
         return os.path.join(self.namespace.work_dir, constants.BACKUP_DIR)
 
@@ -154,6 +150,10 @@ class NamespaceConfig(Config):
     def preferred_chain(self) -> Optional[str]:
         return self.namespace.preferred_chain
 
+    @property
+    def accounts_dir(self):  # pylint: disable=missing-function-docstring
+        return self.accounts_dir_for_server_path(self.server_path)
+
     # Other properties, not part of the abstract class contract
 
     @property
@@ -161,10 +161,6 @@ class NamespaceConfig(Config):
         """File path based on ``server``."""
         parsed = parse.urlparse(self.namespace.server)
         return (parsed.netloc + parsed.path).replace('/', os.path.sep)
-
-    @property
-    def accounts_dir(self):  # pylint: disable=missing-function-docstring
-        return self.accounts_dir_for_server_path(self.server_path)
 
     def accounts_dir_for_server_path(self, server_path):
         """Path to accounts directory based on server_path"""

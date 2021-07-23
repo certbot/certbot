@@ -117,7 +117,7 @@ class Config(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def account_dir(self) -> str:
+    def accounts_dir(self) -> str:
         """Directory where all account information is stored."""
 
     @property
