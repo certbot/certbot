@@ -7,8 +7,8 @@ from setuptools import setup
 version = '1.18.0.dev0'
 
 install_requires = [
-    'google-api-python-client>=1.5.5',
-    'google-auth>=1.32.1',
+    'google-api-python-client>=1.6.7',
+    'google-auth>=1.1.1',
     'setuptools>=39.0.1',
     'zope.interface',
     # already a dependency of google-api-python-client, but added for consistency
