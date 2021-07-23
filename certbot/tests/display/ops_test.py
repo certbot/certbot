@@ -189,7 +189,7 @@ class ChooseNamesTest(unittest.TestCase):
         from certbot.display.ops import choose_names
         return choose_names(installer, authenticator, question)
 
-    @test_util.patch_get_utility("certbot.display.ops.z_util")
+    @test_util.patch_display_util()
     def test_wildcard_authenticator_filter(self, mock_util):
         mock_util().checklist.return_value = (display_util.OK, [])
         domains = ["example.com", "*.example.com"]
@@ -197,10 +197,10 @@ class ChooseNamesTest(unittest.TestCase):
         mock_auth = mock.MagicMock(name="Authenticator")
         mock_auth.get_chall_pref.return_value = [challenges.HTTP01]
         self._call(self.mock_install, mock_auth)
-        self.assertEqual(mock_util().checklist.call_args[1]['tags'], [domains[0]])
+        self.assertEqual(mock_util().checklist.call_args[0][1], [domains[0]])
         mock_auth.get_chall_pref.return_value = [challenges.DNS01]
         self._call(self.mock_install, mock_auth)
-        self.assertEqual(mock_util().checklist.call_args[1]['tags'], domains)
+        self.assertEqual(mock_util().checklist.call_args[0][1], domains)
 
     @mock.patch("certbot.display.ops._choose_names_manually")
     def test_no_installer(self, mock_manual):
