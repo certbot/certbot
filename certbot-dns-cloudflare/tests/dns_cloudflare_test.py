@@ -41,7 +41,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         # _get_cloudflare_client | pylint: disable=protected-access
         self.auth._get_cloudflare_client = mock.MagicMock(return_value=self.mock_client)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
@@ -56,7 +56,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_api_token(self, unused_mock_get_utility):
         dns_test_common.write({"cloudflare_api_token": API_TOKEN},
                               self.config.cloudflare_credentials)

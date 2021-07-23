@@ -43,7 +43,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         # _get_google_client | pylint: disable=protected-access
         self.auth._get_google_client = mock.MagicMock(return_value=self.mock_client)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
@@ -59,7 +59,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.assertEqual(expected, self.mock_client.mock_calls)
 
     @mock.patch('httplib2.Http.request', side_effect=ServerNotFoundError)
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_without_auth(self, unused_mock_get_utility, unused_mock):
         self.config.google_credentials = None
         self.assertRaises(PluginError, self.auth.perform, [self.achall])

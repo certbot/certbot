@@ -1,8 +1,8 @@
 """Utilities for plugins discovery and selection."""
+from collections.abc import Mapping
 import itertools
 import logging
 import sys
-from collections.abc import Mapping
 from typing import Dict
 from typing import Optional
 from typing import Union
@@ -10,6 +10,7 @@ from typing import Union
 import pkg_resources
 import zope.interface
 import zope.interface.verify
+
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants

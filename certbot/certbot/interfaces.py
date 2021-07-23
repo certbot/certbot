@@ -549,7 +549,8 @@ class IReporter(zope.interface.Interface):
 class RenewableCert(object, metaclass=abc.ABCMeta):
     """Interface to a certificate lineage."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def cert_path(self):
         """Path to the certificate file.
 
@@ -557,7 +558,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def key_path(self):
         """Path to the private key file.
 
@@ -565,7 +567,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def chain_path(self):
         """Path to the certificate chain file.
 
@@ -573,7 +576,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def fullchain_path(self):
         """Path to the full chain file.
 
@@ -583,7 +587,8 @@ class RenewableCert(object, metaclass=abc.ABCMeta):
 
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def lineagename(self):
         """Name given to the certificate lineage.
 
