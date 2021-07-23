@@ -9,10 +9,9 @@ from certbot import util
 from certbot._internal import constants
 from certbot.compat import misc
 from certbot.compat import os
-from certbot.interfaces import Config
 
 
-class NamespaceConfig(Config):
+class NamespaceConfig:
     """Configuration wrapper around :class:`argparse.Namespace`.
 
     For more documentation, including available attributes, please see
@@ -49,7 +48,7 @@ class NamespaceConfig(Config):
         self.namespace.logs_dir = os.path.abspath(self.namespace.logs_dir)
 
         # Check command line parameters sanity, and error out in case of problem.
-        check_config_sanity(self)
+        _check_config_sanity(self)
 
     # Delegate any attribute not explicitly defined to the underlying namespace object.
 
@@ -59,102 +58,166 @@ class NamespaceConfig(Config):
     def __setattr__(self, name, value):
         setattr(self.namespace, name, value)
 
-    # Properties that are part of the abstract Config class contract
-
     @property
     def server(self) -> str:
+        """ACME Directory Resource URI."""
         return self.namespace.server
 
     @property
     def email(self) -> Optional[str]:
+        """Email used for registration and recovery contact.
+
+        Use comma to register multiple emails,
+        ex: u1@example.com,u2@example.com. (default: Ask).
+        """
         return self.namespace.email
 
     @property
     def rsa_key_size(self) -> int:
+        """Size of the RSA key."""
         return self.namespace.rsa_key_size
 
     @property
     def elliptic_curve(self) -> str:
+        """The SECG elliptic curve name to use.
+
+        Please see RFC 8446 for supported values.
+        """
         return self.namespace.elliptic_curve
 
     @property
     def key_type(self) -> str:
+        """Type of generated private key.
+
+        Only *ONE* per invocation can be provided at this time.
+        """
         return self.namespace.key_type
 
     @property
     def must_staple(self) -> bool:
+        """Adds the OCSP Must Staple extension to the certificate.
+
+        Autoconfigures OCSP Stapling for supported setups
+        (Apache version >= 2.3.3 ).
+        """
         return self.namespace.must_staple
 
     @property
     def config_dir(self) -> str:
+        """Configuration directory."""
         return self.namespace.config_dir
 
     @property
     def work_dir(self) -> str:
+        """Working directory."""
         return self.namespace.work_dir
 
     @property
-    def backup_dir(self):  # pylint: disable=missing-function-docstring
+    def accounts_dir(self):
+        """Directory where all account information is stored."""
+        return self.accounts_dir_for_server_path(self.server_path)
+
+    @property
+    def backup_dir(self):
+        """Configuration backups directory."""
         return os.path.join(self.namespace.work_dir, constants.BACKUP_DIR)
 
     @property
-    def csr_dir(self):  # pylint: disable=missing-function-docstring
+    def csr_dir(self):
+        """Directory where new Certificate Signing Requests (CSRs) are saved."""
         return os.path.join(self.namespace.config_dir, constants.CSR_DIR)
 
     @property
-    def in_progress_dir(self):  # pylint: disable=missing-function-docstring
+    def in_progress_dir(self):
+        """Directory used before a permanent checkpoint is finalized."""
         return os.path.join(self.namespace.work_dir, constants.IN_PROGRESS_DIR)
 
     @property
-    def key_dir(self):  # pylint: disable=missing-function-docstring
+    def key_dir(self):
+        """Keys storage."""
         return os.path.join(self.namespace.config_dir, constants.KEY_DIR)
 
     @property
-    def temp_checkpoint_dir(self):  # pylint: disable=missing-function-docstring
+    def temp_checkpoint_dir(self):
+        """Temporary checkpoint directory."""
         return os.path.join(
             self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
 
     @property
     def no_verify_ssl(self) -> bool:
+        """Disable verification of the ACME server's certificate."""
         return self.namespace.no_verify_ssl
 
     @property
     def http01_port(self) -> int:
+        """Port used in the http-01 challenge.
+
+        This only affects the port Certbot listens on.
+        A conforming ACME server will still attempt to connect on port 80.
+        """
         return self.namespace.http01_port
 
     @property
     def http01_address(self) -> str:
+        """The address the server listens to during http-01 challenge."""
         return self.namespace.http01_address
 
     @property
     def https_port(self) -> int:
+        """Port used to serve HTTPS.
+
+        This affects which port Nginx will listen on after a LE certificate
+        is installed.
+        """
         return self.namespace.https_port
 
     @property
     def pref_challs(self) -> List[str]:
+        """List of user specified preferred challenges.
+
+        Sorted with the most preferred challenge listed first.
+        """
         return self.namespace.pref_challs
 
     @property
     def allow_subset_of_names(self) -> bool:
+        """Allow only a subset of names to be authorized to perform validations.
+
+        When performing domain validation, do not consider it a failure
+        if authorizations can not be obtained for a strict subset of
+        the requested domains. This may be useful for allowing renewals for
+        multiple domains to succeed even if some domains no longer point
+        at this system.
+        """
         return self.namespace.allow_subset_of_names
 
     @property
     def strict_permissions(self) -> bool:
+        """Enable strict permissions checks.
+
+        Require that all configuration files are owned by the current
+        user; only needed if your config is somewhere unsafe like /tmp/.
+        """
         return self.namespace.strict_permissions
 
     @property
     def disable_renew_updates(self) -> bool:
+        """Disable renewal updates.
+
+        If updates provided by installer enhancements when Certbot is being run
+        with \"renew\" verb should be disabled.
+        """
         return self.namespace.disable_renew_updates
 
     @property
     def preferred_chain(self) -> Optional[str]:
+        """Set the preferred certificate chain to issue a certificate.
+
+        If the CA offers multiple certificate chains, prefer the chain whose
+        topmost certificate was issued from this Subject Common Name.
+        If no match, the default offered chain will be used.
+        """
         return self.namespace.preferred_chain
-
-    @property
-    def accounts_dir(self):  # pylint: disable=missing-function-docstring
-        return self.accounts_dir_for_server_path(self.server_path)
-
-    # Other properties, not part of the abstract class contract
 
     @property
     def server_path(self):
@@ -214,7 +277,7 @@ class NamespaceConfig(Config):
         return type(self)(new_ns)
 
 
-def check_config_sanity(config):
+def _check_config_sanity(config):
     """Validate command line options and display error message if
     requirements are not met.
 

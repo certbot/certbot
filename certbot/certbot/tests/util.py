@@ -19,9 +19,8 @@ import josepy as jose
 import OpenSSL
 import pkg_resources
 
-from certbot import interfaces
+from certbot import interfaces, configuration
 from certbot import util
-from certbot._internal import configuration
 from certbot._internal import constants
 from certbot._internal import lock
 from certbot._internal import storage

@@ -16,13 +16,12 @@ import unittest
 import josepy as jose
 import pytz
 
-from certbot import crypto_util
+from certbot import crypto_util, configuration
 from certbot import errors
 from certbot import interfaces  # pylint: disable=unused-import
 from certbot import util
 from certbot._internal import account
 from certbot._internal import cli
-from certbot._internal import configuration
 from certbot._internal import constants
 from certbot._internal import main
 from certbot._internal import updater

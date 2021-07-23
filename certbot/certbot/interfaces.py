@@ -13,6 +13,7 @@ import zope.interface
 from acme.challenges import Challenge
 from acme.challenges import ChallengeResponse
 from certbot.achallenges import AnnotatedChallenge
+from certbot import configuration
 
 
 class AccountStorage(metaclass=ABCMeta):
@@ -49,177 +50,7 @@ class AccountStorage(metaclass=ABCMeta):
 
 
 class IConfig(zope.interface.Interface):  # pylint: disable=inherit-non-class
-    """Deprecated, use certbot.interfaces.Config as ABC instead."""
-
-
-@zope.interface.implementer(IConfig)
-class Config(metaclass=ABCMeta):
-    """Certbot user-supplied configuration.
-
-    .. warning:: The values stored in the configuration have not been
-        filtered, stripped or sanitized.
-
-    """
-
-    @property
-    @abstractmethod
-    def server(self) -> str:
-        """ACME Directory Resource URI."""
-
-    @property
-    @abstractmethod
-    def email(self) -> str:
-        """Email used for registration and recovery contact.
-
-        Use comma to register multiple emails,
-        ex: u1@example.com,u2@example.com. (default: Ask).
-        """
-
-    @property
-    @abstractmethod
-    def rsa_key_size(self) -> int:
-        """Size of the RSA key."""
-
-    @property
-    @abstractmethod
-    def elliptic_curve(self) -> str:
-        """The SECG elliptic curve name to use.
-
-        Please see RFC 8446 for supported values.
-        """
-
-    @property
-    @abstractmethod
-    def key_type(self) -> str:
-        """Type of generated private key.
-
-        Only *ONE* per invocation can be provided at this time.
-        """
-
-    @property
-    @abstractmethod
-    def must_staple(self) -> bool:
-        """Adds the OCSP Must Staple extension to the certificate.
-
-        Autoconfigures OCSP Stapling for supported setups
-        (Apache version >= 2.3.3 ).
-        """
-
-    @property
-    @abstractmethod
-    def config_dir(self) -> str:
-        """Configuration directory."""
-
-    @property
-    @abstractmethod
-    def work_dir(self) -> str:
-        """Working directory."""
-
-    @property
-    @abstractmethod
-    def accounts_dir(self) -> str:
-        """Directory where all account information is stored."""
-
-    @property
-    @abstractmethod
-    def backup_dir(self) -> str:
-        """Configuration backups directory."""
-
-    @property
-    @abstractmethod
-    def csr_dir(self) -> str:
-        """Directory where new Certificate Signing Requests (CSRs) are saved."""
-
-    @property
-    @abstractmethod
-    def in_progress_dir(self) -> str:
-        """Directory used before a permanent checkpoint is finalized."""
-
-    @property
-    @abstractmethod
-    def key_dir(self) -> str:
-        """Keys storage."""
-
-    @property
-    @abstractmethod
-    def temp_checkpoint_dir(self) -> str:
-        """Temporary checkpoint directory."""
-
-    @property
-    @abstractmethod
-    def no_verify_ssl(self) -> bool:
-        """Disable verification of the ACME server's certificate."""
-
-    @property
-    @abstractmethod
-    def http01_port(self) -> int:
-        """Port used in the http-01 challenge.
-
-        This only affects the port Certbot listens on.
-        A conforming ACME server will still attempt to connect on port 80.
-        """
-
-    @property
-    @abstractmethod
-    def http01_address(self) -> str:
-        """The address the server listens to during http-01 challenge."""
-
-    @property
-    @abstractmethod
-    def https_port(self) -> int:
-        """Port used to serve HTTPS.
-
-        This affects which port Nginx will listen on after a LE certificate
-        is installed.
-        """
-
-    @property
-    @abstractmethod
-    def pref_challs(self) -> List[str]:
-        """List of user specified preferred challenges.
-
-        Sorted with the most preferred challenge listed first.
-        """
-
-    @property
-    @abstractmethod
-    def allow_subset_of_names(self) -> bool:
-        """Allow only a subset of names to be authorized to perform validations.
-
-        When performing domain validation, do not consider it a failure
-        if authorizations can not be obtained for a strict subset of
-        the requested domains. This may be useful for allowing renewals for
-        multiple domains to succeed even if some domains no longer point
-        at this system.
-        """
-
-    @property
-    @abstractmethod
-    def strict_permissions(self) -> bool:
-        """Enable strict permissions checks.
-
-        Require that all configuration files are owned by the current
-        user; only needed if your config is somewhere unsafe like /tmp/.
-        """
-
-    @property
-    @abstractmethod
-    def disable_renew_updates(self) -> bool:
-        """Disable renewal updates.
-
-        If updates provided by installer enhancements when Certbot is being run
-        with \"renew\" verb should be disabled.
-        """
-
-    @property
-    @abstractmethod
-    def preferred_chain(self) -> str:
-        """Set the preferred certificate chain to issue a certificate.
-
-        If the CA offers multiple certificate chains, prefer the chain whose
-        topmost certificate was issued from this Subject Common Name.
-        If no match, the default offered chain will be used.
-        """
+    """Deprecated, use certbot.configuration.NamespaceConfig instead."""
 
 
 class IPluginFactory(zope.interface.Interface):  # pylint: disable=inherit-non-class
@@ -266,7 +97,7 @@ class Plugin(metaclass=ABCMeta):
     """Short plugin description"""
 
     @abstractmethod
-    def __init__(self, config: Config, name: str):
+    def __init__(self, config: configuration.NamespaceConfig, name: str):
         """Create new `Plugin`.
 
         :param Config config: Configuration.
@@ -680,7 +511,7 @@ class Display(metaclass=ABCMeta):
 
 
 class IReporter(zope.interface.Interface):  # pylint: disable=inherit-non-class
-    """Deprecated, use certbot.interfaces.Reporter as ABC instead."""
+    """Deprecated, use your own Reporter implementation instead."""
 
 
 class RenewableCert(metaclass=ABCMeta):

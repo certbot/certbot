@@ -543,7 +543,7 @@ def set_display(display: Any) -> None:
     """
     # This call is done only for retro-compatibility purposes.
     # TODO: Remove this call once zope dependencies are removed from Certbot.
-    zope.component.provideUtility(display)
+    zope.component.provideUtility(display, interfaces.IDisplay)
 
     _SERVICE.display = display
 

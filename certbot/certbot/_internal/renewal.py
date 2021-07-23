@@ -451,7 +451,7 @@ def handle_renewal_request(config):
             else:
                 # This call is done only for retro-compatibility purposes.
                 # TODO: Remove this call once zope dependencies are removed from Certbot.
-                zope.component.provideUtility(lineage_config)
+                zope.component.provideUtility(lineage_config, interfaces.IConfig)
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main
                 plugins = plugins_disco.PluginsRegistry.find_all()
