@@ -49,6 +49,7 @@ REQUIREMENTS = [
 
 if sys.platform == 'win32':
     REQUIREMENTS.append('-e windows-installer')
+    REQUIREMENTS.remove('-e certbot-apache')
 
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
 
