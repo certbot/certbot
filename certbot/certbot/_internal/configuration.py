@@ -65,7 +65,7 @@ class NamespaceConfig(Config):
         return self.namespace.server
 
     @property
-    def email(self) -> str:
+    def email(self) -> Optional[str]:
         return self.namespace.email
 
     @property
