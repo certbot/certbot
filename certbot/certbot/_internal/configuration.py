@@ -150,7 +150,7 @@ class NamespaceConfig(Config):
         return self.namespace.disable_renew_updates
 
     @property
-    def preferred_chain(self) -> str:
+    def preferred_chain(self) -> Optional[str]:
         return self.namespace.preferred_chain
 
     # Other properties, not part of the abstract class contract
