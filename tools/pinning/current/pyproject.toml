@@ -73,12 +73,6 @@ pip = "20.2.4"
 # here in addition to certbot/setup.py because otherwise the pre-release
 # version of poetry will not be installed.
 poetry = ">=1.2.0a1"
-# We were originally pinning back python-augeas for certbot-auto because we
-# found the way older versions of the library linked to Augeas were more
-# reliable. That's no longer a concern, however, we continue to pin back the
-# library for now because it causes Certbot tests on Windows to fail. See
-# https://github.com/certbot/certbot/issues/8732.
-python-augeas = "0.5.0"
 # Because some parts of Certbot documentation are generated from zope.interfaces,
 # we need the Sphinx plugin repoze.sphinx.autointerface. This plugin is not
 # currently compatible with Sphinx>=4 though so we're pinning an older version
