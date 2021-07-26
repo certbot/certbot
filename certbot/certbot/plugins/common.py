@@ -43,8 +43,9 @@ hostname_regex = re.compile(
 class Plugin(AbstractPlugin, metaclass=ABCMeta):  # pylint: disable=abstract-method
     """Generic plugin."""
 
-    def __init__(self, config, name):  # pylint: disable=useless-super-delegation
-        super().__init__(config, name)
+    def __init__(self, config, name):  # pylint: disable=super-init-not-called
+        self.config = config
+        self.name = name
 
     @jose_util.abstractclassmethod
     def add_parser_arguments(cls, add):
