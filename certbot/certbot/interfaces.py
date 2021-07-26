@@ -5,8 +5,6 @@ from argparse import ArgumentParser
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Union
 
 import zope.interface
 
