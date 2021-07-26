@@ -59,8 +59,6 @@ class IPlugin(zope.interface.Interface):  # pylint: disable=inherit-non-class
     """Deprecated, use certbot.interfaces.Plugin as ABC instead."""
 
 
-@zope.interface.implementer(IPlugin)
-@zope.interface.provider(IPluginFactory)
 class Plugin(metaclass=ABCMeta):
     """Certbot plugin.
 
@@ -157,7 +155,6 @@ class IAuthenticator(IPlugin):  # pylint: disable=inherit-non-class
     """Deprecated, use certbot.interfaces.Authenticator as ABC instead."""
 
 
-@zope.interface.implementer(IAuthenticator)
 class Authenticator(Plugin):
     """Generic Certbot Authenticator.
 
@@ -221,7 +218,6 @@ class IInstaller(IPlugin):  # pylint: disable=inherit-non-class
     """Deprecated, use certbot.interfaces.Installer as ABC instead."""
 
 
-@zope.interface.implementer(IInstaller)
 class Installer(Plugin):
     """Generic Certbot Installer Interface.
 
