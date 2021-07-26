@@ -24,6 +24,7 @@ from certbot import util
 from certbot._internal import constants
 from certbot._internal import lock
 from certbot._internal import storage
+from certbot._internal.display import obj as display_obj
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -351,8 +352,9 @@ class FreezableMock:
 def _create_display_util_mock():
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    method_list = [func for func in dir(interfaces.Display)
-                   if callable(getattr(interfaces.Display, func)) and not func.startswith("__")]
+    method_list = [func for func in dir(display_obj.FileDisplay)
+                   if callable(getattr(display_obj.FileDisplay, func))
+                   and not func.startswith("__")]
     for method in method_list:
         if method != 'notification':
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
@@ -377,8 +379,9 @@ def _create_display_util_mock_with_stdout(stdout):
 
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    method_list = [func for func in dir(interfaces.Display)
-                   if callable(getattr(interfaces.Display, func)) and not func.startswith("__")]
+    method_list = [func for func in dir(display_obj.FileDisplay)
+                   if callable(getattr(display_obj.FileDisplay, func))
+                   and not func.startswith("__")]
     for method in method_list:
         if method == 'notification':
             frozen_mock = FreezableMock(frozen=True,
