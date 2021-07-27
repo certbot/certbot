@@ -9,6 +9,14 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * New functions that Certbot plugins can use to interact with the user have
   been added to `certbot.display.util`. We plan to deprecate using `IDisplay`
   with `zope` in favor of these new functions in the future.
+* The `Plugin`, `Authenticator` and `Installer` classes are added to
+  `certbot.interfaces` module as alternatives to Certbot's current `zope` based
+  plugin interfaces. The API of these interfaces is identical, but they are
+  based on Python's `abc` module instead of `zope`. Certbot will continue to
+  detect plugins that implement either interface, but we plan to drop support
+  for `zope` based interfaces in a future version of Certbot.
+* The class `certbot.configuration.NamespaceConfig` is added to the Certbot's
+  public API.
 
 ### Changed
 
@@ -22,6 +30,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The `certbot.tests.patch_get_utility*` functions have been deprecated.
   Plugins should now patch `certbot.display.util` themselves in their tests or
   use `certbot.tests.util.patch_display_util` as a temporary workaround.
+* In order to simplify the transition to Certbot's new plugin interfaces, the
+  classes `Plugin` and `Installer` in `certbot.plugins.common` module and
+  `certbot.plugins.dns_common.DNSAuthenticator` now implement Certbot's new
+  plugin interfaces. The Certbot plugins based on these classes are now
+  automatically detected as implementing these interfaces.
 
 ### Fixed
 
