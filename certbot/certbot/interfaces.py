@@ -96,7 +96,7 @@ class Plugin(metaclass=ABCMeta):
     def __init__(self, config: configuration.NamespaceConfig, name: str):
         """Create a new `Plugin`.
 
-        :param Config config: Configuration.
+        :param configuration.NamespaceConfig config: Configuration.
         :param str name: Unique plugin name.
 
         """
