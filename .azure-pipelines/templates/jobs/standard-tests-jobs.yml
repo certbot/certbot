@@ -43,11 +43,11 @@ jobs:
         linux-py39-lint:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.9
-          TOXENV: lint
+          TOXENV: lint-posix
         linux-py39-mypy:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.9
-          TOXENV: mypy
+          TOXENV: mypy-posix
         linux-integration:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.8
