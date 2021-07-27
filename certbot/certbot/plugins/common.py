@@ -40,10 +40,11 @@ hostname_regex = re.compile(
     r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$", re.IGNORECASE)
 
 
-class Plugin(AbstractPlugin, metaclass=ABCMeta):  # pylint: disable=abstract-method
+class Plugin(AbstractPlugin, metaclass=ABCMeta):
     """Generic plugin."""
 
-    def __init__(self, config, name):  # pylint: disable=super-init-not-called
+    def __init__(self, config, name):
+        super().__init__(config, name)
         self.config = config
         self.name = name
 
@@ -123,7 +124,7 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):  # pylint: disable=abstract-met
                 .format(name=self.name, challs=challs))
 
 
-class Installer(AbstractInstaller, Plugin, metaclass=ABCMeta):  # pylint: disable=abstract-method
+class Installer(AbstractInstaller, Plugin, metaclass=ABCMeta):
     """An installer base class with reverter and ssl_dhparam methods defined.
 
     Installer plugins do not have to inherit from this class.

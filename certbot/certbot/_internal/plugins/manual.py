@@ -113,7 +113,7 @@ permitted by DNS standards.)
         self._validate_hooks()
 
     def _validate_hooks(self):
-        if getattr(self.config, 'validate_hooks', False):
+        if self.config.validate_hooks:
             for name in ('auth-hook', 'cleanup-hook'):
                 hook = self.conf(name)
                 if hook is not None:

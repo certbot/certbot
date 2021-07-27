@@ -4,6 +4,7 @@ import sys
 import textwrap
 from typing import Any
 from typing import Optional
+from typing import Union
 
 import zope.component
 import zope.interface
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 # object to happen first avoiding this potential bug.
 class _DisplayService:
     def __init__(self):
-        self.display: Optional[Any] = None
+        self.display: Optional[Union[FileDisplay, NoninteractiveDisplay]] = None
 
 
 _SERVICE = _DisplayService()
