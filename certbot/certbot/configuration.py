@@ -211,7 +211,7 @@ class NamespaceConfig:
 
     @property
     def preferred_chain(self) -> Optional[str]:
-        """Set the preferred certificate chain to issue a certificate.
+        """Set the preferred certificate chain.
 
         If the CA offers multiple certificate chains, prefer the chain whose
         topmost certificate was issued from this Subject Common Name.
