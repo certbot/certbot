@@ -192,7 +192,7 @@ def patch_get_utility(target='zope.component.getUtility'):
 
     :param str target: path to patch
 
-    :returns: mock certbot.display.util.get_display
+    :returns: mock zope.component.getUtility
     :rtype: mock.MagicMock
 
     """
