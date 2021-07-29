@@ -342,7 +342,7 @@ def _provides(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
 
     if iface == interfaces.Plugin and interfaces.IPluginFactory.providedBy(target_class):
         warnings.warn("Zope interface certbot.interfaces.IPluginFactory is deprecated, "
-                      "use ABC certbot.interface.Plugin instead.")
+                      "use ABC certbot.interface.Plugin instead.", DeprecationWarning)
         return True
 
     return False
