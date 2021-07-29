@@ -341,8 +341,10 @@ def _provides(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
         return True
 
     if iface == interfaces.Plugin and interfaces.IPluginFactory.providedBy(target_class):
-        warnings.warn("Zope interface certbot.interfaces.IPluginFactory is deprecated, "
-                      "use ABC certbot.interface.Plugin instead.", DeprecationWarning)
+        message = ("Zope interface certbot.interfaces.IPluginFactory is deprecated, "
+                   "use ABC certbot.interface.Plugin instead.")
+        logging.warning(message)
+        warnings.warn(message, DeprecationWarning)
         return True
 
     return False
@@ -353,18 +355,24 @@ def _implements(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
         return True
 
     if iface == interfaces.Plugin and interfaces.IPlugin.implementedBy(target_class):
-        warnings.warn("Zope interface certbot.interfaces.IPlugin is deprecated, "
-                      "use ABC certbot.interface.Plugin instead.", DeprecationWarning)
+        message = ("Zope interface certbot.interfaces.IPlugin is deprecated, "
+                   "use ABC certbot.interface.Plugin instead.")
+        logging.warning(message)
+        warnings.warn(message, DeprecationWarning)
         return True
 
     if iface == interfaces.Authenticator and interfaces.IAuthenticator.implementedBy(target_class):
-        warnings.warn("Zope interface certbot.interfaces.IAuthenticator is deprecated, "
-                      "use ABC certbot.interface.Authenticator instead.", DeprecationWarning)
+        message = ("Zope interface certbot.interfaces.IAuthenticator is deprecated, "
+                   "use ABC certbot.interface.Authenticator instead.")
+        logging.warning(message)
+        warnings.warn(message, DeprecationWarning)
         return True
 
     if iface == interfaces.Installer and interfaces.IInstaller.implementedBy(target_class):
-        warnings.warn("Zope interface certbot.interfaces.IInstaller is deprecated, "
-                      "use ABC certbot.interface.Installer instead.", DeprecationWarning)
+        message = ("Zope interface certbot.interfaces.IInstaller is deprecated, "
+                   "use ABC certbot.interface.Installer instead.")
+        logging.warning(message)
+        warnings.warn(message, DeprecationWarning)
         return True
 
     return False
