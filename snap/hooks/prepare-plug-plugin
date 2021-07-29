@@ -4,11 +4,13 @@
 # Prefer an up-to-date snapctl from the core or snapd snaps, if they exist. We ask users to install
 # the core snap in the Certbot installation instructions.
 # See https://github.com/certbot/certbot/issues/8922, https://bugs.launchpad.net/snapd/+bug/1933392
+SNAPCTL_CORE="/snap/core/current/usr/bin/snapctl"
+SNAPCTL_SNAPD="/snap/snapd/current/usr/bin/snapctl"
 SNAPCTL="snapctl"
-if [ -x "/snap/core/current/usr/bin/snapctl" ]; then
-    SNAPCTL="/snap/core/current/usr/bin/snapctl"
-elif [ -x "/snap/snapd/current/usr/bin/snapctl" ]; then
-    SNAPCTL="/snap/snapd/current/usr/bin/snapctl"
+if $SNAPCTL_CORE get x 2>/dev/null; then
+    SNAPCTL=$SNAPCTL_CORE
+elif $SNAPCTL_SNAPD get x 2>/dev/null; then
+    SNAPCTL=$SNAPCTL_SNAPD
 fi
 
 if [ "$($SNAPCTL get trust-plugin-with-root)" = "ok" ]; then
