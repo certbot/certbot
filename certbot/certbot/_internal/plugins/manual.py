@@ -105,7 +105,7 @@ permitted by DNS standards.)
         util.add_deprecated_argument(add, 'public-ip-logging-ok', 0)
 
     def prepare(self):  # pylint: disable=missing-function-docstring
-        if getattr(self.config, 'noninteractive_mode', False) and not self.conf('auth-hook'):
+        if self.config.noninteractive_mode and not self.conf('auth-hook'):
             raise errors.PluginError(
                 'An authentication script must be provided with --{0} when '
                 'using the manual plugin non-interactively.'.format(
