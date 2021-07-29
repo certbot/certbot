@@ -100,6 +100,7 @@ class Plugin(metaclass=ABCMeta):
         :param str name: Unique plugin name.
 
         """
+        super().__init__()
 
     @abstractmethod
     def prepare(self) -> None:
