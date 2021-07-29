@@ -61,8 +61,8 @@ def _create_subparsers(helpful):
     helpful.add("plugins",
                 "--authenticators", action="append_const", dest="ifaces",
                 default=flag_default("ifaces"),
-                const=interfaces.IAuthenticator, help="Limit to authenticator plugins only.")
+                const=interfaces.Authenticator, help="Limit to authenticator plugins only.")
     helpful.add("plugins",
                 "--installers", action="append_const", dest="ifaces",
                 default=flag_default("ifaces"),
-                const=interfaces.IInstaller, help="Limit to installer plugins only.")
+                const=interfaces.Installer, help="Limit to installer plugins only.")
