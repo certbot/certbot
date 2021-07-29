@@ -549,7 +549,6 @@ def enforce_domain_sanity(domain):
             "Requested name {0} is an IP address. The Let's Encrypt "
             "certificate authority will not issue certificates for a "
             "bare IP address.".format(domain))
-    
 
     # FQDN checks according to RFC 2181: domain name should be less than 255
     # octets (inclusive). And each label is 1 - 63 octets (inclusive).
