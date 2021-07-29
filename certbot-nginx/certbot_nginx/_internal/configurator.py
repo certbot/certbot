@@ -16,7 +16,6 @@ from typing import Tuple
 
 import OpenSSL
 import pkg_resources
-import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
@@ -44,9 +43,7 @@ NO_SSL_MODIFIER = 4
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
-@zope.interface.provider(interfaces.IPluginFactory)
-class NginxConfigurator(common.Installer):
+class NginxConfigurator(common.Installer, interfaces.Authenticator):
     """Nginx configurator.
 
     .. todo:: Add proper support for comments in the config. Currently,

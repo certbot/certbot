@@ -6,7 +6,7 @@ from typing import Set
 
 import zope.interface
 
-from certbot._internal import configuration
+from certbot import configuration
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util

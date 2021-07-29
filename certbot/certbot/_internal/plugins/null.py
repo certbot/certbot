@@ -1,21 +1,21 @@
 """Null plugin."""
 import logging
 
-import zope.interface
-
 from certbot import interfaces
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IInstaller)
-@zope.interface.provider(interfaces.IPluginFactory)
-class Installer(common.Plugin):
+class Installer(common.Plugin, interfaces.Installer):
     """Null installer."""
 
     description = "Null Installer"
     hidden = True
+
+    @classmethod
+    def add_parser_arguments(cls, add):
+        pass
 
     # pylint: disable=missing-function-docstring
 

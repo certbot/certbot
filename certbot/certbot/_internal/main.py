@@ -16,10 +16,11 @@ from typing import Union
 import configobj
 import josepy as jose
 import zope.component
+import zope.interface
 
 from acme import errors as acme_errors
 import certbot
-from certbot import crypto_util
+from certbot import crypto_util, configuration
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -27,7 +28,6 @@ from certbot._internal import account
 from certbot._internal import cert_manager
 from certbot._internal import cli
 from certbot._internal import client
-from certbot._internal import configuration
 from certbot._internal import constants
 from certbot._internal import eff
 from certbot._internal import hooks
@@ -1540,7 +1540,7 @@ def main(cli_args=None):
 
     # This call is done only for retro-compatibility purposes.
     # TODO: Remove this call once zope dependencies are removed from Certbot.
-    zope.component.provideUtility(config)
+    zope.component.provideUtility(config, interfaces.IConfig)
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
@@ -1557,7 +1557,7 @@ def main(cli_args=None):
     # These calls are done only for retro-compatibility purposes.
     # TODO: Remove these calls once zope dependencies are removed from Certbot.
     report = reporter.Reporter(config)
-    zope.component.provideUtility(report)
+    zope.component.provideUtility(report, interfaces.IReporter)
     util.atexit_register(report.print_messages)
 
     with make_displayer(config) as displayer:

@@ -5,10 +5,8 @@ from typing import Optional
 
 from lexicon.providers import linode
 from lexicon.providers import linode4
-import zope.interface
 
 from certbot import errors
-from certbot import interfaces
 from certbot.plugins import dns_common
 from certbot.plugins import dns_common_lexicon
 from certbot.plugins.dns_common import CredentialsConfiguration
@@ -18,8 +16,7 @@ logger = logging.getLogger(__name__)
 API_KEY_URL = 'https://manager.linode.com/profile/api'
 API_KEY_URL_V4 = 'https://cloud.linode.com/profile/tokens'
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
+
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator for Linode
 

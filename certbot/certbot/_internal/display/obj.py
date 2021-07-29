@@ -4,6 +4,7 @@ import sys
 import textwrap
 from typing import Any
 from typing import Optional
+from typing import Union
 
 import zope.component
 import zope.interface
@@ -26,13 +27,12 @@ logger = logging.getLogger(__name__)
 # object to happen first avoiding this potential bug.
 class _DisplayService:
     def __init__(self):
-        self.display: Optional[interfaces.IDisplay] = None
+        self.display: Optional[Union[FileDisplay, NoninteractiveDisplay]] = None
 
 
 _SERVICE = _DisplayService()
 
 
-@zope.interface.implementer(interfaces.IDisplay)
 class FileDisplay:
     """File-based display."""
     # see https://github.com/certbot/certbot/issues/3915
@@ -381,7 +381,6 @@ class FileDisplay:
         return util.OK, selection
 
 
-@zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay:
     """An iDisplay implementation that never asks for interactive user input"""
 
@@ -390,7 +389,7 @@ class NoninteractiveDisplay:
         self.outfile = outfile
 
     def _interaction_fail(self, message, cli_flag, extra=""):
-        "Error out in case of an attempt to interact in noninteractive mode"
+        """Error out in case of an attempt to interact in noninteractive mode"""
         msg = "Missing command line flag or config entry for this setting:\n"
         msg += message
         if extra:
@@ -543,7 +542,7 @@ def set_display(display: Any) -> None:
     """
     # This call is done only for retro-compatibility purposes.
     # TODO: Remove this call once zope dependencies are removed from Certbot.
-    zope.component.provideUtility(display)
+    zope.component.provideUtility(display, interfaces.IDisplay)
 
     _SERVICE.display = display
 

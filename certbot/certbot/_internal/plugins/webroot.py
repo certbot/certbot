@@ -8,8 +8,6 @@ from typing import Dict
 from typing import List
 from typing import Set
 
-import zope.interface
-
 from acme import challenges
 from certbot import errors
 from certbot import interfaces
@@ -26,9 +24,7 @@ from certbot.util import safe_open
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
-class Authenticator(common.Plugin):
+class Authenticator(common.Plugin, interfaces.Authenticator):
     """Webroot Authenticator."""
 
     description = "Place files in webroot directory"

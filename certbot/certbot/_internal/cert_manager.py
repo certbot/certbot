@@ -307,8 +307,7 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
 
 
 def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
-    """Get certname from flag, interactively, or error out.
-    """
+    """Get certname from flag, interactively, or error out."""
     certname = config.certname
     if certname:
         certnames = [certname]

@@ -7,6 +7,9 @@ from multiprocessing import Process
 import shutil
 import sys
 import tempfile
+from typing import Iterable
+from typing import List
+from typing import Optional
 import unittest
 import warnings
 
@@ -16,15 +19,16 @@ import josepy as jose
 import OpenSSL
 import pkg_resources
 
-from certbot import interfaces
+from certbot import configuration
 from certbot import util
-from certbot._internal import configuration
 from certbot._internal import constants
 from certbot._internal import lock
 from certbot._internal import storage
+from certbot._internal.display import obj as display_obj
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
+from certbot.plugins import common
 
 try:
     # When we remove this deprecated import, we should also remove the
@@ -39,6 +43,41 @@ try:
     )
 except ImportError:  # pragma: no cover
     from unittest import mock  # type: ignore
+
+
+class DummyInstaller(common.Installer):
+    """Dummy installer plugin for test purpose."""
+    def get_all_names(self) -> Iterable[str]:
+        pass
+
+    def deploy_cert(self, domain: str, cert_path: str, key_path: str, chain_path: str,
+                    fullchain_path: str) -> None:
+        pass
+
+    def enhance(self, domain: str, enhancement: str, options: Optional[List[str]] = None) -> None:
+        pass
+
+    def supported_enhancements(self) -> List[str]:
+        pass
+
+    def save(self, title: Optional[str] = None, temporary: bool = False) -> None:
+        pass
+
+    def config_test(self) -> None:
+        pass
+
+    def restart(self) -> None:
+        pass
+
+    @classmethod
+    def add_parser_arguments(cls, add):
+        pass
+
+    def prepare(self) -> None:
+        pass
+
+    def more_info(self) -> str:
+        pass
 
 
 def vector_path(*names):
@@ -313,10 +352,13 @@ class FreezableMock:
 def _create_display_util_mock():
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():
-        if name != 'notification':
+    method_list = [func for func in dir(display_obj.FileDisplay)
+                   if callable(getattr(display_obj.FileDisplay, func))
+                   and not func.startswith("__")]
+    for method in method_list:
+        if method != 'notification':
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
-            setattr(display, name, frozen_mock)
+            setattr(display, method, frozen_mock)
     display.freeze()
     return FreezableMock(frozen=True, return_value=display)
 
@@ -337,14 +379,17 @@ def _create_display_util_mock_with_stdout(stdout):
 
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
-    for name in interfaces.IDisplay.names():
-        if name == 'notification':
+    method_list = [func for func in dir(display_obj.FileDisplay)
+                   if callable(getattr(display_obj.FileDisplay, func))
+                   and not func.startswith("__")]
+    for method in method_list:
+        if method == 'notification':
             frozen_mock = FreezableMock(frozen=True,
                                         func=_write_msg)
         else:
             frozen_mock = FreezableMock(frozen=True,
                                         func=mock_method)
-        setattr(display, name, frozen_mock)
+        setattr(display, method, frozen_mock)
     display.freeze()
     return FreezableMock(frozen=True, return_value=display)
 
@@ -389,14 +434,14 @@ class ConfigTestCase(TempDirTestCase):
         self.config = configuration.NamespaceConfig(
             mock.MagicMock(**constants.CLI_DEFAULTS)
         )
-        self.config.verb = "certonly"
-        self.config.config_dir = os.path.join(self.tempdir, 'config')
-        self.config.work_dir = os.path.join(self.tempdir, 'work')
-        self.config.logs_dir = os.path.join(self.tempdir, 'logs')
-        self.config.cert_path = constants.CLI_DEFAULTS['auth_cert_path']
-        self.config.fullchain_path = constants.CLI_DEFAULTS['auth_chain_path']
-        self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
-        self.config.server = "https://example.com"
+        self.config.namespace.verb = "certonly"
+        self.config.namespace.config_dir = os.path.join(self.tempdir, 'config')
+        self.config.namespace.work_dir = os.path.join(self.tempdir, 'work')
+        self.config.namespace.logs_dir = os.path.join(self.tempdir, 'logs')
+        self.config.namespace.cert_path = constants.CLI_DEFAULTS['auth_cert_path']
+        self.config.namespace.fullchain_path = constants.CLI_DEFAULTS['auth_chain_path']
+        self.config.namespace.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
+        self.config.namespace.server = "https://example.com"
 
 
 def _handle_lock(event_in, event_out, path):

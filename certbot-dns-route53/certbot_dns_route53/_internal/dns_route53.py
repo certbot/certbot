@@ -9,10 +9,8 @@ from typing import List
 import boto3
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
-import zope.interface
 
 from certbot import errors
-from certbot import interfaces
 from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
@@ -23,8 +21,6 @@ INSTRUCTIONS = (
     "and add the necessary permissions for Route53 access.")
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
     """Route53 Authenticator
 

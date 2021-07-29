@@ -2,8 +2,6 @@
 import logging
 from typing import Dict
 
-import zope.interface
-
 from acme import challenges
 from certbot import achallenges
 from certbot import errors
@@ -21,9 +19,7 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
-class Authenticator(common.Plugin):
+class Authenticator(common.Plugin, interfaces.Authenticator):
     """Manual authenticator
 
     This plugin allows the user to perform the domain validation
