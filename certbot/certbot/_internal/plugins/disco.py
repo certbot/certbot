@@ -336,15 +336,26 @@ class PluginsRegistry(Mapping):
         return "\n\n".join(str(p_ep) for p_ep in self._plugins.values())
 
 
+_DEPRECATION_PLUGIN = ("Zope interface certbot.interfaces.IPlugin is deprecated, "
+                       "use ABC certbot.interface.Plugin instead.")
+
+_DEPRECATION_AUTHENTICATOR = ("Zope interface certbot.interfaces.IAuthenticator is deprecated, "
+                              "use ABC certbot.interface.Authenticator instead.")
+
+_DEPRECATION_INSTALLER = ("Zope interface certbot.interfaces.IInstaller is deprecated, "
+                          "use ABC certbot.interface.Installer instead.")
+
+_DEPRECATION_FACTORY = ("Zope interface certbot.interfaces.IPluginFactory is deprecated, "
+                        "use ABC certbot.interface.Plugin instead.")
+
+
 def _provides(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
     if issubclass(target_class, iface):
         return True
 
     if iface == interfaces.Plugin and interfaces.IPluginFactory.providedBy(target_class):
-        message = ("Zope interface certbot.interfaces.IPluginFactory is deprecated, "
-                   "use ABC certbot.interface.Plugin instead.")
-        logging.warning(message)
-        warnings.warn(message, DeprecationWarning)
+        logging.warning(_DEPRECATION_FACTORY)
+        warnings.warn(_DEPRECATION_FACTORY, DeprecationWarning)
         return True
 
     return False
@@ -355,24 +366,18 @@ def _implements(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
         return True
 
     if iface == interfaces.Plugin and interfaces.IPlugin.implementedBy(target_class):
-        message = ("Zope interface certbot.interfaces.IPlugin is deprecated, "
-                   "use ABC certbot.interface.Plugin instead.")
-        logging.warning(message)
-        warnings.warn(message, DeprecationWarning)
+        logging.warning(_DEPRECATION_PLUGIN)
+        warnings.warn(_DEPRECATION_PLUGIN, DeprecationWarning)
         return True
 
     if iface == interfaces.Authenticator and interfaces.IAuthenticator.implementedBy(target_class):
-        message = ("Zope interface certbot.interfaces.IAuthenticator is deprecated, "
-                   "use ABC certbot.interface.Authenticator instead.")
-        logging.warning(message)
-        warnings.warn(message, DeprecationWarning)
+        logging.warning(_DEPRECATION_AUTHENTICATOR)
+        warnings.warn(_DEPRECATION_AUTHENTICATOR, DeprecationWarning)
         return True
 
     if iface == interfaces.Installer and interfaces.IInstaller.implementedBy(target_class):
-        message = ("Zope interface certbot.interfaces.IInstaller is deprecated, "
-                   "use ABC certbot.interface.Installer instead.")
-        logging.warning(message)
-        warnings.warn(message, DeprecationWarning)
+        logging.warning(_DEPRECATION_INSTALLER)
+        warnings.warn(_DEPRECATION_INSTALLER, DeprecationWarning)
         return True
 
     return False
@@ -387,19 +392,25 @@ def _verify(target_instance: interfaces.Plugin, target_class: Type[interfaces.Pl
         return True
 
     zope_iface: Optional[Type[zope.interface.Interface]] = None
+    message = ""
 
     if iface == interfaces.Plugin:
         zope_iface = interfaces.IPlugin
+        message = _DEPRECATION_PLUGIN
     if iface == interfaces.Authenticator:
         zope_iface = interfaces.IAuthenticator
+        message = _DEPRECATION_AUTHENTICATOR
     if iface == interfaces.Installer:
         zope_iface = interfaces.IInstaller
+        message = _DEPRECATION_INSTALLER
 
     if not zope_iface:
         raise ValueError(f"Unexpected type: {iface.__name__}")
 
     try:
         zope.interface.verify.verifyObject(zope_iface, target_instance)
+        logging.warning(message)
+        warnings.warn(message, DeprecationWarning)
         return True
     except zope.interface.exceptions.BrokenImplementation as error:
         if zope_iface.implementedBy(target_class):
