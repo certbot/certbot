@@ -559,25 +559,39 @@ of any installed server software (Apache, nginx, Postfix, etc). Otherwise, you m
 server.
 
 When installing a certificate, Certbot modifies Apache or nginx's configuration to load the certificate and its
-private key from the ``/etc/letsencrypt/live/`` directory. Before deleting a certificate, it is necessary to undo that
-modification, by removing any references to the certificate from the webserver's configuration files. The following
-command will find these references::
+private key from the ``/etc/letsencrypt/live/`` directory.
 
-  # To find references to a certificate named "example.com":
-  sudo bash -c 'grep -R live/example.com /etc/{nginx,httpd,apache2}'
+Before deleting a certificate, it is necessary to undo that modification, by removing any references to the certificate
+from the webserver's configuration files:
 
-To safely remove those references, you may delete the entire virtual host from the configuration, or replace the certificate
-references with a self-signed certificate::
+1. Find all references to the certificate (substitute ``example.com`` in the command for the name of the certificate
+   you wish to delete)::
 
-  # Generate a self-signed certificate
-  sudo openssl req -nodes -batch -x509 -newkey rsa:2048 -keyout /etc/letsencrypt/self-signed-privkey.pem -out /etc/letsencrypt/self-signed-cert.pem -days 356
-  # and substitute it in your configuration. e.g. Before:
-  #   SSLCertificateFile /etc/letsencrypt/live/example.com/fullchain.pem
-  #   SSLCertificateKeyFile /etc/letsencrypt/live/example.com/privkey.pem
-  # After:
-  #   SSLCertificateFile /etc/letsencrypt/self-signed-cert.pem
-  #   SSLCertificateKeyFile /etc/letsencrypt/self-signed-privkey.pem
+     sudo bash -c 'grep -R live/example.com /etc/{nginx,httpd,apache2}'
 
+   If there are no references found, skip directly to Step 4.
+
+   If some references are found, they will look something like::
+
+     /etc/apache2/sites-available/000-default-le-ssl.conf:SSLCertificateFile /etc/letsencrypt/live/example.com/fullchain.pem
+     /etc/apache2/sites-available/000-default-le-ssl.conf:SSLCertificateKeyFile /etc/letsencrypt/live/example.com/privkey.pem
+
+2. Generate a self-signed certificate to use as a substitute::
+
+     sudo openssl req -nodes -batch -x509 -newkey rsa:2048 -keyout /etc/letsencrypt/self-signed-privkey.pem -out /etc/letsencrypt/self-signed-cert.pem -days 356
+
+3. For each reference found in Step 1, open the file in a text editor and replace the reference to the existing
+   certificate with a reference to the self-signed certificate.
+
+   Continuing from the previous example, you would open ``/etc/apache2/sites-available/000-default-le-ssl.conf`` in a text editor
+   and modify the two matching lines of text to instead say::
+
+     SSLCertificateFile /etc/letsencrypt/self-signed-cert.pem
+     SSLCertificateKeyFile /etc/letsencrypt/self-signed-privkey.pem
+
+4. It is now safe to delete the certificate. Do so by running::
+
+     sudo certbot delete --cert-name example.com
 
 .. _renewal:
 
