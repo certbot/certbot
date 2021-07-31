@@ -390,13 +390,13 @@ def get_python_os_info(pretty=False):
     os_type, os_ver, _ = info
     os_type = os_type.lower()
     if os_type.startswith('linux') and _USE_DISTRO:
-        info = distro.linux_distribution(pretty)
+        distro_name, distro_version = distro.name() if pretty else distro.id(), distro.version()
         # On arch, distro.linux_distribution() is reportedly ('','',''),
         # so handle it defensively
-        if info[0]:
-            os_type = info[0]
-        if info[1]:
-            os_ver = info[1]
+        if distro_name:
+            os_type = distro_name
+        if distro_version:
+            os_ver = distro_version
     elif os_type.startswith('darwin'):
         try:
             proc = subprocess.run(
