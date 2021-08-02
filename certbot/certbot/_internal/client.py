@@ -306,6 +306,7 @@ class Client:
                                                            orderr.alternative_fullchains_pem,
                                                            self.config.preferred_chain,
                                                            not self.config.dry_run)
+        logger.info("orderr.fullchain_pem: %s, fullchain: %s", orderr.fullchain_pem, fullchain)
         cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 

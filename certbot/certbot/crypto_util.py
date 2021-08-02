@@ -619,6 +619,7 @@ def cert_and_chain_from_fullchain(fullchain_pem):
     # TODO: This will silently skip over any "explanatory text" in between boundaries,
     # which is prohibited by RFC8555.
     certs = CERT_PEM_REGEX.findall(fullchain_pem.encode())
+    logger.info("regex match: %s", certs)
     if len(certs) < 2:
         raise errors.Error("failed to parse fullchain into cert and chain: " +
                            "less than 2 certificates in chain")
