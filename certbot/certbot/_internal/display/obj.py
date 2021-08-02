@@ -33,6 +33,9 @@ class _DisplayService:
 _SERVICE = _DisplayService()
 
 
+# This use of IDisplay can be removed when this class is no longer accessible
+# through the public API in certbot.display.util.
+@zope.interface.implementer(interfaces.IDisplay)
 class FileDisplay:
     """File-based display."""
     # see https://github.com/certbot/certbot/issues/3915
@@ -381,6 +384,9 @@ class FileDisplay:
         return util.OK, selection
 
 
+# This use of IDisplay can be removed when this class is no longer accessible
+# through the public API in certbot.display.util.
+@zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay:
     """An iDisplay implementation that never asks for interactive user input"""
 
