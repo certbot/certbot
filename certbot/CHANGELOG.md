@@ -40,6 +40,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * The Apache authenticator no longer crashes with "Unable to insert label"
   when encountering a completely empty vhost. This issue affected Certbot 1.17.0.
+* Users of the Certbot snap on Debian 9 (Stretch) should no longer encounter an
+  "access denied" error when installing DNS plugins.
 
 More details about these changes can be found on our GitHub repo.
 
