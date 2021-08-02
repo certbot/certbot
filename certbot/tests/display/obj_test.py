@@ -245,16 +245,6 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.displayer._print_menu("msg", CHOICES)
         self.displayer._print_menu("msg", TAGS)
 
-    def test_wrap_lines(self):
-        # pylint: disable=protected-access
-        msg = ("This is just a weak test{0}"
-               "This function is only meant to be for easy viewing{0}"
-               "Test a really really really really really really really really "
-               "really really really really long line...".format('\n'))
-        text = display_obj._wrap_lines(msg)
-
-        self.assertEqual(text.count('\n'), 3)
-
     def test_get_valid_int_ans_valid(self):
         # pylint: disable=protected-access
         input_with_timeout = "certbot.display.util.input_with_timeout"
@@ -359,15 +349,3 @@ class NoninteractiveDisplayTest(unittest.TestCase):
             self.assertIsNotNone(result)
 
 
-class PlaceParensTest(unittest.TestCase):
-    @classmethod
-    def _call(cls, label):  # pylint: disable=protected-access
-        from certbot._internal.display.obj import _parens_around_char
-        return _parens_around_char(label)
-
-    def test_single_letter(self):
-        self.assertEqual("(a)", self._call("a"))
-
-    def test_multiple(self):
-        self.assertEqual("(L)abel", self._call("Label"))
-        self.assertEqual("(y)es please", self._call("yes please"))
