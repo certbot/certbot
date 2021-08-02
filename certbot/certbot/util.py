@@ -391,7 +391,8 @@ def get_python_os_info(pretty=False):
     os_type = os_type.lower()
     if os_type.startswith('linux') and _USE_DISTRO:
         distro_name, distro_version = distro.name() if pretty else distro.id(), distro.version()
-        # On arch, distro.linux_distribution() is reportedly ('','',''),
+        # On arch, these values are reportedly empty strings so handle it
+        # defensively
         # so handle it defensively
         if distro_name:
             os_type = distro_name
