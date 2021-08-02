@@ -18,6 +18,17 @@ from certbot.display import util
 
 logger = logging.getLogger(__name__)
 
+# Display exit codes
+OK = "ok"
+"""Display exit code indicating user acceptance."""
+
+CANCEL = "cancel"
+"""Display exit code for a user canceling the display."""
+
+# Display constants
+SIDE_FRAME = ("- " * 39) + "-"
+"""Display boundary (alternates spaces, so when copy-pasted, markdown doesn't interpret
+it as a heading)"""
 
 # This class holds the global state of the display service. Using this class
 # eliminates potential gotchas that exist if self.display was just a global
@@ -70,7 +81,7 @@ class FileDisplay:
             (("{line}{frame}{line}" if decorate else "") +
              "{msg}{line}" +
              ("{frame}{line}" if decorate else ""))
-                .format(line=os.linesep, frame=util.SIDE_FRAME, msg=message)
+                .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
         )
         self.outfile.flush()
 
@@ -105,7 +116,7 @@ class FileDisplay:
 
         """
         if self._return_default(message, default, cli_flag, force_interactive):
-            return util.OK, default
+            return OK, default
 
         self._print_menu(message, choices)
 
@@ -130,7 +141,7 @@ class FileDisplay:
 
         """
         if self._return_default(message, default, cli_flag, force_interactive):
-            return util.OK, default
+            return OK, default
 
         # Trailing space must be added outside of internal_util.wrap_lines to
         # be preserved
@@ -138,8 +149,8 @@ class FileDisplay:
         ans = util.input_with_timeout(message)
 
         if ans in ("c", "C"):
-            return util.CANCEL, "-1"
-        return util.OK, ans
+            return CANCEL, "-1"
+        return OK, ans
 
     def yesno(self, message, yes_label="Yes", no_label="No", default=None,
               cli_flag=None, force_interactive=False, **unused_kwargs):
@@ -166,7 +177,7 @@ class FileDisplay:
         message = internal_util.wrap_lines(message)
 
         self.outfile.write("{0}{frame}{msg}{0}{frame}".format(
-            os.linesep, frame=util.SIDE_FRAME + os.linesep, msg=message))
+            os.linesep, frame=SIDE_FRAME + os.linesep, msg=message))
         self.outfile.flush()
 
         while True:
@@ -201,7 +212,7 @@ class FileDisplay:
 
         """
         if self._return_default(message, default, cli_flag, force_interactive):
-            return util.OK, default
+            return OK, default
 
         while True:
             self._print_menu(message, tags)
@@ -211,7 +222,7 @@ class FileDisplay:
                                    "blank to select all options shown",
                                    force_interactive=True)
 
-            if code == util.OK:
+            if code == OK:
                 if not ans.strip():
                     ans = " ".join(str(x) for x in range(1, len(tags)+1))
                 indices = util.separate_list_input(ans)
@@ -335,7 +346,7 @@ class FileDisplay:
         # Write out the message to the user
         self.outfile.write(
             "{new}{msg}{new}".format(new=os.linesep, msg=message))
-        self.outfile.write(util.SIDE_FRAME + os.linesep)
+        self.outfile.write(SIDE_FRAME + os.linesep)
 
         # Write out the menu choices
         for i, desc in enumerate(choices, 1):
@@ -345,7 +356,7 @@ class FileDisplay:
             # Keep this outside of the textwrap
             self.outfile.write(os.linesep)
 
-        self.outfile.write(util.SIDE_FRAME + os.linesep)
+        self.outfile.write(SIDE_FRAME + os.linesep)
         self.outfile.flush()
 
     def _get_valid_int_ans(self, max_):
@@ -370,7 +381,7 @@ class FileDisplay:
         while selection < 1:
             ans = util.input_with_timeout(input_msg)
             if ans.startswith("c") or ans.startswith("C"):
-                return util.CANCEL, -1
+                return CANCEL, -1
             try:
                 selection = int(ans)
                 if selection < 1 or selection > max_:
@@ -382,7 +393,7 @@ class FileDisplay:
                     "{0}** Invalid input **{0}".format(os.linesep))
                 self.outfile.flush()
 
-        return util.OK, selection
+        return OK, selection
 
 
 # This use of IDisplay can be removed when this class is no longer accessible
@@ -423,7 +434,7 @@ class NoninteractiveDisplay:
             (("{line}{frame}{line}" if decorate else "") +
              "{msg}{line}" +
              ("{frame}{line}" if decorate else ""))
-                .format(line=os.linesep, frame=util.SIDE_FRAME, msg=message)
+                .format(line=os.linesep, frame=SIDE_FRAME, msg=message)
         )
         self.outfile.flush()
 
@@ -449,7 +460,7 @@ class NoninteractiveDisplay:
         if default is None:
             self._interaction_fail(message, cli_flag, "Choices: " + repr(choices))
 
-        return util.OK, default
+        return OK, default
 
     def input(self, message, default=None, cli_flag=None, **unused_kwargs):
         """Accept input from the user.
@@ -465,7 +476,7 @@ class NoninteractiveDisplay:
         """
         if default is None:
             self._interaction_fail(message, cli_flag)
-        return util.OK, default
+        return OK, default
 
     def yesno(self, message, yes_label=None, no_label=None,  # pylint: disable=unused-argument
               default=None, cli_flag=None, **unused_kwargs):
@@ -499,7 +510,7 @@ class NoninteractiveDisplay:
         """
         if default is None:
             self._interaction_fail(message, cli_flag, "? ".join(tags))
-        return util.OK, default
+        return OK, default
 
     def directory_select(self, message, default=None,
                          cli_flag=None, **unused_kwargs):

@@ -9,7 +9,6 @@ should be used whenever:
 Other messages can use the `logging` module. See `log.py`.
 
 """
-import logging
 import sys
 from typing import List
 from typing import Optional
@@ -19,31 +18,23 @@ from typing import Union
 
 from certbot.compat import misc
 # These imports are done to not break the public API of the module.
+from certbot._internal.display.obj import CANCEL  # pylint: disable=unused-import
 from certbot._internal.display.obj import FileDisplay  # pylint: disable=unused-import
 from certbot._internal.display.obj import NoninteractiveDisplay  # pylint: disable=unused-import
+from certbot._internal.display.obj import OK  # pylint: disable=unused-import
+from certbot._internal.display.obj import SIDE_FRAME  # pylint: disable=unused-import
 from certbot._internal.display import obj
 
-logger = logging.getLogger(__name__)
 
+# These constants are unused and should be removed in a major release of
+# Certbot.
 WIDTH = 72
-
-# Display exit codes
-OK = "ok"
-"""Display exit code indicating user acceptance."""
-
-CANCEL = "cancel"
-"""Display exit code for a user canceling the display."""
 
 HELP = "help"
 """Display exit code when for when the user requests more help. (UNUSED)"""
 
 ESC = "esc"
 """Display exit code when the user hits Escape (UNUSED)"""
-
-# Display constants
-SIDE_FRAME = ("- " * 39) + "-"
-"""Display boundary (alternates spaces, so when copy-pasted, markdown doesn't interpret
-it as a heading)"""
 
 
 def notify(msg: str) -> None:
