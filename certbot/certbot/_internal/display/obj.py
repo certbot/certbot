@@ -12,9 +12,8 @@ from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
 from certbot._internal.display import completer
-from certbot._internal.display import util as internal_util
+from certbot._internal.display import util
 from certbot.compat import os
-from certbot.display import util
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +72,7 @@ class FileDisplay:
 
         """
         if wrap:
-            message = internal_util.wrap_lines(message)
+            message = util.wrap_lines(message)
 
         logger.debug("Notifying user: %s", message)
 
@@ -143,9 +142,9 @@ class FileDisplay:
         if self._return_default(message, default, cli_flag, force_interactive):
             return OK, default
 
-        # Trailing space must be added outside of internal_util.wrap_lines to
+        # Trailing space must be added outside of util.wrap_lines to
         # be preserved
-        message = internal_util.wrap_lines("%s (Enter 'c' to cancel):" % message) + " "
+        message = util.wrap_lines("%s (Enter 'c' to cancel):" % message) + " "
         ans = util.input_with_timeout(message)
 
         if ans in ("c", "C"):
@@ -174,7 +173,7 @@ class FileDisplay:
         if self._return_default(message, default, cli_flag, force_interactive):
             return default
 
-        message = internal_util.wrap_lines(message)
+        message = util.wrap_lines(message)
 
         self.outfile.write("{0}{frame}{msg}{0}{frame}".format(
             os.linesep, frame=SIDE_FRAME + os.linesep, msg=message))
@@ -182,8 +181,8 @@ class FileDisplay:
 
         while True:
             ans = util.input_with_timeout("{yes}/{no}: ".format(
-                yes=internal_util.parens_around_char(yes_label),
-                no=internal_util.parens_around_char(no_label)))
+                yes=util.parens_around_char(yes_label),
+                no=util.parens_around_char(no_label)))
 
             # Couldn't get pylint indentation right with elif
             # elif doesn't matter in this situation
@@ -351,7 +350,7 @@ class FileDisplay:
         # Write out the menu choices
         for i, desc in enumerate(choices, 1):
             msg = "{num}: {desc}".format(num=i, desc=desc)
-            self.outfile.write(internal_util.wrap_lines(msg))
+            self.outfile.write(util.wrap_lines(msg))
 
             # Keep this outside of the textwrap
             self.outfile.write(os.linesep)
@@ -426,7 +425,7 @@ class NoninteractiveDisplay:
 
         """
         if wrap:
-            message = internal_util.wrap_lines(message)
+            message = util.wrap_lines(message)
 
         logger.debug("Notifying user: %s", message)
 
