@@ -18,16 +18,22 @@ from typing import Union
 # These specific imports from certbot._internal.display.obj and
 # certbot._internal.display.util are done to not break the public API of this
 # module.
-from certbot._internal.display.obj import CANCEL  # pylint: disable=unused-import
 from certbot._internal.display.obj import FileDisplay  # pylint: disable=unused-import
 from certbot._internal.display.obj import NoninteractiveDisplay  # pylint: disable=unused-import
-from certbot._internal.display.obj import OK  # pylint: disable=unused-import
 from certbot._internal.display.obj import SIDE_FRAME  # pylint: disable=unused-import
 from certbot._internal.display.util import input_with_timeout  # pylint: disable=unused-import
 from certbot._internal.display.util import separate_list_input  # pylint: disable=unused-import
 from certbot._internal.display.util import summarize_domain_list  # pylint: disable=unused-import
 from certbot._internal.display import obj
 
+
+# These constants are defined this way to make them easier to document with
+# Sphinx and to not couple our public docstrings to our internal ones.
+OK = obj.OK
+"""Display exit code indicating user acceptance."""
+
+CANCEL = obj.CANCEL
+"""Display exit code for a user canceling the display."""
 
 # These constants are unused and should be removed in a major release of
 # Certbot.
