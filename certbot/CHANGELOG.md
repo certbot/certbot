@@ -35,6 +35,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `certbot.plugins.dns_common.DNSAuthenticator` now implement Certbot's new
   plugin interfaces. The Certbot plugins based on these classes are now
   automatically detected as implementing these interfaces.
+* We added a dependency on `chardet` to our acme library so that it will be
+  used over `charset_normalizer` in newer versions of `requests`.
 
 ### Fixed
 

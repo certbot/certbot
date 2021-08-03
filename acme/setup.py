@@ -6,6 +6,10 @@ from setuptools import setup
 version = '1.18.0.dev0'
 
 install_requires = [
+    # This dependency just exists to ensure that chardet is installed along
+    # with requests so it will use it instead of charset_normalizer. See
+    # https://github.com/certbot/certbot/issues/8964 for more info.
+    'chardet',
     'cryptography>=2.1.4',
     # formerly known as acme.jose:
     # 1.1.0+ is required to avoid the warnings described at
