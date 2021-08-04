@@ -576,7 +576,9 @@ from the webserver's configuration files:
      /etc/apache2/sites-available/000-default-le-ssl.conf:SSLCertificateFile /etc/letsencrypt/live/example.com/fullchain.pem
      /etc/apache2/sites-available/000-default-le-ssl.conf:SSLCertificateKeyFile /etc/letsencrypt/live/example.com/privkey.pem
 
-2. Generate a self-signed certificate to use as a substitute::
+2. You will need a self-signed certificate to replace the certificate you are deleting. The following command will generate one
+   for you, saving the certificate at ``/etc/letsencrypt/self-signed-cert.pem`` and its private key at
+   ``/etc/letsencrypt/self-signed-privkey.pem``::
 
      sudo openssl req -nodes -batch -x509 -newkey rsa:2048 -keyout /etc/letsencrypt/self-signed-privkey.pem -out /etc/letsencrypt/self-signed-cert.pem -days 356
 
