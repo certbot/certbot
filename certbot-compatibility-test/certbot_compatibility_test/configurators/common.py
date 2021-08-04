@@ -4,8 +4,10 @@ import logging
 import os
 import shutil
 import tempfile
+from typing import Optional
 
 from certbot._internal import constants
+from certbot.interfaces import Plugin
 from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
@@ -22,6 +24,7 @@ class Proxy(interfaces.ConfiguratorProxy):
 
     def __init__(self, args):
         """Initializes the plugin with the given command line args"""
+        super().__init__(args)
         self._temp_dir = tempfile.mkdtemp()
         # tempfile.mkdtemp() creates folders with too restrictive permissions to be accessible
         # to an Apache worker, leading to HTTP challenge failures. Let's fix that.
@@ -35,7 +38,7 @@ class Proxy(interfaces.ConfiguratorProxy):
         self.args = args
         self.http_port = 80
         self.https_port = 443
-        self._configurator = None
+        self._configurator: interfaces.Configurator
         self._all_names = None
         self._test_names = None
 
