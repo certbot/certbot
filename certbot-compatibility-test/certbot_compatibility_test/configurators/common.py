@@ -4,10 +4,8 @@ import logging
 import os
 import shutil
 import tempfile
-from typing import Optional
 
 from certbot._internal import constants
-from certbot.interfaces import Plugin
 from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util

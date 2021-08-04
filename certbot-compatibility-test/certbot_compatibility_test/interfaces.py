@@ -2,17 +2,17 @@
 from abc import ABCMeta
 from abc import abstractmethod
 
-import certbot.interfaces
+from certbot import interfaces
 
 
-class PluginProxy(metaclass=ABCMeta):
+class PluginProxy(interfaces.Plugin, metaclass=ABCMeta):
     """Wraps a Certbot plugin"""
 
     http_port: int = NotImplemented
-    "The port to connect to on localhost for HTTP traffic"
+    """The port to connect to on localhost for HTTP traffic"""
 
     https_port: int = NotImplemented
-    "The port to connect to on localhost for HTTPS traffic"
+    """The port to connect to on localhost for HTTPS traffic"""
 
     @classmethod
     @abstractmethod
@@ -22,7 +22,7 @@ class PluginProxy(metaclass=ABCMeta):
     @abstractmethod
     def __init__(self, args):
         """Initializes the plugin with the given command line args"""
-        super().__init__()
+        super().__init__(args, 'proxy')
 
     @abstractmethod
     def cleanup_from_tests(self):  # type: ignore
@@ -45,11 +45,11 @@ class PluginProxy(metaclass=ABCMeta):
         """Returns the domain names that can be used in testing"""
 
 
-class AuthenticatorProxy(PluginProxy, certbot.interfaces.Authenticator, metaclass=ABCMeta):
+class AuthenticatorProxy(PluginProxy, interfaces.Authenticator, metaclass=ABCMeta):
     """Wraps a Certbot authenticator"""
 
 
-class InstallerProxy(PluginProxy, certbot.interfaces.Installer, metaclass=ABCMeta):
+class InstallerProxy(PluginProxy, interfaces.Installer, metaclass=ABCMeta):
     """Wraps a Certbot installer"""
 
     @abstractmethod
@@ -61,5 +61,5 @@ class ConfiguratorProxy(AuthenticatorProxy, InstallerProxy, metaclass=ABCMeta):
     """Wraps a Certbot configurator"""
 
 
-class Configurator(certbot.interfaces.Installer, certbot.interfaces.Authenticator):
+class Configurator(interfaces.Installer, interfaces.Authenticator, metaclass=ABCMeta):
     """Represents a plugin that has both Installer and Authenticator capabilities"""
