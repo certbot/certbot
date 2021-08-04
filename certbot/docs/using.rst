@@ -554,15 +554,15 @@ certificates to delete::
 Safely deleting certificates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-*Before* deleting a certificate, make sure to remove all references to that certificate from the configuration
-of any installed server software (Apache, nginx, Postfix, etc). Otherwise, you may end up with a non-functioning
-server.
+Deleting a certificate without following the proper steps can result in a non-functioning server. To safely delete a
+certificate, follow all the steps below to make sure that references to a certificate are removed from the configuration
+of any installed server software (Apache, nginx, Postfix, etc) *before* deleting the certificate.
 
-When installing a certificate, Certbot modifies Apache or nginx's configuration to load the certificate and its
-private key from the ``/etc/letsencrypt/live/`` directory.
+To explain further, when installing a certificate, Certbot modifies Apache or nginx's configuration to load the certificate
+and its private key from the ``/etc/letsencrypt/live/`` directory. Before deleting a certificate, it is necessary to undo
+that modification, by removing any references to the certificate from the webserver's configuration files.
 
-Before deleting a certificate, it is necessary to undo that modification, by removing any references to the certificate
-from the webserver's configuration files:
+Follow these steps to safely delete a certificate:
 
 1. Find all references to the certificate (substitute ``example.com`` in the command for the name of the certificate
    you wish to delete)::
