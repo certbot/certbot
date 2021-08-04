@@ -3,6 +3,8 @@ from abc import ABCMeta
 from abc import abstractmethod
 from argparse import ArgumentParser
 import sys
+from types import ModuleType
+from typing import cast
 from typing import Iterable
 from typing import List
 from typing import Optional
@@ -514,4 +516,4 @@ class _ZopeInterfacesDeprecationModule:
 
 
 # Patching ourselves to warn about Zope interfaces deprecation and planned removal.
-sys.modules[__name__] = _ZopeInterfacesDeprecationModule(sys.modules[__name__])
+sys.modules[__name__] = cast(ModuleType, _ZopeInterfacesDeprecationModule(sys.modules[__name__]))
