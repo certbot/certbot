@@ -4,8 +4,6 @@ import shutil
 import subprocess
 from typing import Set
 
-import zope.interface
-
 from certbot import configuration
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
@@ -15,7 +13,6 @@ from certbot_nginx._internal import configurator
 from certbot_nginx._internal import constants
 
 
-@zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(configurators_common.Proxy):
     """A common base for Nginx test configurators"""
 

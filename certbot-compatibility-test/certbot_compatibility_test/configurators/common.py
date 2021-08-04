@@ -1,17 +1,19 @@
 """Provides a common base for configurator proxies"""
+from abc import abstractmethod
 import logging
 import os
 import shutil
 import tempfile
 
 from certbot._internal import constants
+from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 
 logger = logging.getLogger(__name__)
 
 
-class Proxy:
+class Proxy(interfaces.ConfiguratorProxy):
     """A common base for compatibility test configurators"""
 
     @classmethod
@@ -37,20 +39,11 @@ class Proxy:
         self._all_names = None
         self._test_names = None
 
-    def __getattr__(self, name):
-        """Wraps the configurator methods"""
-        if self._configurator is None:
-            raise AttributeError()
-
-        method = getattr(self._configurator, name, None)
-        if callable(method):
-            return method
-        raise AttributeError()
-
     def has_more_configs(self):
         """Returns true if there are more configs to test"""
         return bool(self._configs)
 
+    @abstractmethod
     def cleanup_from_tests(self):
         """Performs any necessary cleanup from running plugin tests"""
 
@@ -99,3 +92,47 @@ class Proxy:
             raise ValueError("Configurator plugin is not set.")
         self._configurator.deploy_cert(
             domain, cert_path, key_path, chain_path, fullchain_path)
+
+
+    def cleanup(self, achalls):
+        self._configurator.cleanup(achalls)
+
+    def config_test(self):
+        self._configurator.config_test()
+
+    def enhance(self, domain, enhancement, options = None):
+        self._configurator.enhance(domain, enhancement, options)
+
+    def get_all_names(self):
+        return self._configurator.get_all_names()
+
+    def get_chall_pref(self, domain):
+        return self._configurator.get_chall_pref(domain)
+
+    @classmethod
+    def inject_parser_options(cls, parser, name):
+        pass
+
+    def more_info(self):
+        return self._configurator.more_info()
+
+    def perform(self, achalls):
+        return self._configurator.perform(achalls)
+
+    def prepare(self):
+        self._configurator.prepare()
+
+    def recovery_routine(self):
+        self._configurator.recovery_routine()
+
+    def restart(self):
+        self._configurator.restart()
+
+    def rollback_checkpoints(self, rollback = 1):
+        self._configurator.rollback_checkpoints(rollback)
+
+    def save(self, title = None, temporary = False):
+        self._configurator.save(title, temporary)
+
+    def supported_enhancements(self):
+        return self._configurator.supported_enhancements()
