@@ -498,7 +498,8 @@ class _ZopeInterfacesDeprecationModule:
     def __getattr__(self, attr):
         if attr in ('IConfig', 'IPlugin', 'IPluginFactory', 'IAuthenticator',
                     'IInstaller', 'IDisplay', 'IReporter'):
-            warnings.warn('{0} attribute is deprecated, and will be removed soon.'.format(attr),
+            warnings.warn('{0} attribute in certbot.interfaces module is deprecated '
+                          'and will be removed soon.'.format(attr),
                           DeprecationWarning, stacklevel=2)
         return getattr(self._module, attr)
 
