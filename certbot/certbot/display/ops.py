@@ -4,6 +4,7 @@ from textwrap import indent
 
 from certbot import errors
 from certbot import util
+from certbot._internal.display import util as internal_display_util
 from certbot.compat import os
 from certbot.display import util as display_util
 
@@ -193,7 +194,7 @@ def _choose_names_manually(prompt_prefix=""):
         invalid_domains = {}
         retry_message = ""
         try:
-            domain_list = display_util.separate_list_input(input_)
+            domain_list = internal_display_util.separate_list_input(input_)
         except UnicodeEncodeError:
             domain_list = []
             retry_message = (

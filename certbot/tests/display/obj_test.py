@@ -32,7 +32,7 @@ class FileOutputDisplayTest(unittest.TestCase):
         mock_logger.debug.assert_called_with("Notifying user: %s", "message")
 
     def test_notification_pause(self):
-        input_with_timeout = "certbot.display.util.input_with_timeout"
+        input_with_timeout = "certbot._internal.display.util.input_with_timeout"
         with mock.patch(input_with_timeout, return_value="enter"):
             self.displayer.notification("message", force_interactive=True)
 
@@ -67,7 +67,7 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertIn("- - - ", string)
         self.assertIn("message2" + os.linesep, string)
 
-    @mock.patch("certbot.display.util."
+    @mock.patch("certbot._internal.display.obj."
                 "FileDisplay._get_valid_int_ans")
     def test_menu(self, mock_ans):
         mock_ans.return_value = (display_util.OK, 1)
@@ -81,14 +81,14 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertEqual(result, (display_util.OK, default))
 
     def test_input_cancel(self):
-        input_with_timeout = "certbot.display.util.input_with_timeout"
+        input_with_timeout = "certbot._internal.display.util.input_with_timeout"
         with mock.patch(input_with_timeout, return_value="c"):
             code, _ = self.displayer.input("message", force_interactive=True)
 
         self.assertTrue(code, display_util.CANCEL)
 
     def test_input_normal(self):
-        input_with_timeout = "certbot.display.util.input_with_timeout"
+        input_with_timeout = "certbot._internal.display.util.input_with_timeout"
         with mock.patch(input_with_timeout, return_value="domain.com"):
             code, input_ = self.displayer.input("message", force_interactive=True)
 
@@ -115,7 +115,7 @@ class FileOutputDisplayTest(unittest.TestCase):
                               self.displayer.input, "msg", cli_flag="--flag")
 
     def test_yesno(self):
-        input_with_timeout = "certbot.display.util.input_with_timeout"
+        input_with_timeout = "certbot._internal.display.util.input_with_timeout"
         with mock.patch(input_with_timeout, return_value="Yes"):
             self.assertTrue(self.displayer.yesno(
                 "message", force_interactive=True))
@@ -140,7 +140,7 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertTrue(self._force_noninteractive(
             self.displayer.yesno, "message", default=True))
 
-    @mock.patch("certbot.display.util.input_with_timeout")
+    @mock.patch("certbot._internal.display.util.input_with_timeout")
     def test_checklist_valid(self, mock_input):
         mock_input.return_value = "2 1"
         code, tag_list = self.displayer.checklist(
@@ -148,21 +148,21 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertEqual(
             (code, set(tag_list)), (display_util.OK, {"tag1", "tag2"}))
 
-    @mock.patch("certbot.display.util.input_with_timeout")
+    @mock.patch("certbot._internal.display.util.input_with_timeout")
     def test_checklist_empty(self, mock_input):
         mock_input.return_value = ""
         code, tag_list = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(
             (code, set(tag_list)), (display_util.OK, {"tag1", "tag2", "tag3"}))
 
-    @mock.patch("certbot.display.util.input_with_timeout")
+    @mock.patch("certbot._internal.display.util.input_with_timeout")
     def test_checklist_miss_valid(self, mock_input):
         mock_input.side_effect = ["10", "tag1 please", "1"]
 
         ret = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(ret, (display_util.OK, ["tag1"]))
 
-    @mock.patch("certbot.display.util.input_with_timeout")
+    @mock.patch("certbot._internal.display.util.input_with_timeout")
     def test_checklist_miss_quit(self, mock_input):
         mock_input.side_effect = ["10", "c"]
 
@@ -194,7 +194,7 @@ class FileOutputDisplayTest(unittest.TestCase):
                 self.displayer._scrub_checklist_input(list_, TAGS))
             self.assertEqual(set_tags, exp[i])
 
-    @mock.patch("certbot.display.util.input_with_timeout")
+    @mock.patch("certbot._internal.display.util.input_with_timeout")
     def test_directory_select(self, mock_input):
         args = ["msg", "/var/www/html", "--flag", True]
         user_input = "/var/www/html"
@@ -214,7 +214,7 @@ class FileOutputDisplayTest(unittest.TestCase):
     def _force_noninteractive(self, func, *args, **kwargs):
         skipped_interaction = self.displayer.skipped_interaction
 
-        with mock.patch("certbot.display.util.sys.stdin") as mock_stdin:
+        with mock.patch("certbot._internal.display.obj.sys.stdin") as mock_stdin:
             mock_stdin.isatty.return_value = False
             with mock.patch("certbot._internal.display.obj.logger") as mock_logger:
                 result = func(*args, **kwargs)
@@ -245,19 +245,9 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.displayer._print_menu("msg", CHOICES)
         self.displayer._print_menu("msg", TAGS)
 
-    def test_wrap_lines(self):
-        # pylint: disable=protected-access
-        msg = ("This is just a weak test{0}"
-               "This function is only meant to be for easy viewing{0}"
-               "Test a really really really really really really really really "
-               "really really really really long line...".format('\n'))
-        text = display_obj._wrap_lines(msg)
-
-        self.assertEqual(text.count('\n'), 3)
-
     def test_get_valid_int_ans_valid(self):
         # pylint: disable=protected-access
-        input_with_timeout = "certbot.display.util.input_with_timeout"
+        input_with_timeout = "certbot._internal.display.util.input_with_timeout"
         with mock.patch(input_with_timeout, return_value="1"):
             self.assertEqual(
                 self.displayer._get_valid_int_ans(1), (display_util.OK, 1))
@@ -274,7 +264,7 @@ class FileOutputDisplayTest(unittest.TestCase):
             ["4", "one", "C"],
             ["c"],
         ]
-        input_with_timeout = "certbot.display.util.input_with_timeout"
+        input_with_timeout = "certbot._internal.display.util.input_with_timeout"
         for ans in answers:
             with mock.patch(input_with_timeout, side_effect=ans):
                 self.assertEqual(
@@ -359,15 +349,5 @@ class NoninteractiveDisplayTest(unittest.TestCase):
             self.assertIsNotNone(result)
 
 
-class PlaceParensTest(unittest.TestCase):
-    @classmethod
-    def _call(cls, label):  # pylint: disable=protected-access
-        from certbot._internal.display.obj import _parens_around_char
-        return _parens_around_char(label)
-
-    def test_single_letter(self):
-        self.assertEqual("(a)", self._call("a"))
-
-    def test_multiple(self):
-        self.assertEqual("(L)abel", self._call("Label"))
-        self.assertEqual("(y)es please", self._call("yes please"))
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover
