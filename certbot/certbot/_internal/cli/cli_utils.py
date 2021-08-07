@@ -213,6 +213,13 @@ class _RenewHookAction(argparse.Action):
         namespace.renew_hook = values
 
 
+class _CertFilterAction(argparse.Action):
+    """Action class for parsing certificate filters."""
+
+    def __call__(self, parser, namespace, filters, option_string=None):
+        namespace.certfilter = filters.casefold().split(",")
+
+
 def nonnegative_int(value):
     """Converts value to an int and checks that it is not negative.
 

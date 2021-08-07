@@ -76,7 +76,14 @@ def certificates(config):
         try:
             renewal_candidate = storage.RenewableCert(renewal_file, config)
             crypto_util.verify_renewable_cert(renewal_candidate)
-            parsed_certs.append(renewal_candidate)
+            key_type = renewal_candidate.private_key_type.lower()
+            if not ((("staging" in config.certfilter and not renewal_candidate.is_test_cert) or
+                     ("nostaging" in config.certfilter and renewal_candidate.is_test_cert)) or
+                    (("rsa" in config.certfilter and key_type != "rsa") or
+                     ("norsa" in config.certfilter and key_type == "rsa")) or
+                    (("ecdsa" in config.certfilter and key_type != "ecdsa") or
+                     ("noecdsa" in config.certfilter and key_type == "ecdsa"))):
+                        parsed_certs.append(renewal_candidate)
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Renewal configuration file %s produced an "
                            "unexpected error: %s. Skipping.", renewal_file, e)
