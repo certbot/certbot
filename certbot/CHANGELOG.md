@@ -6,7 +6,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* With the `--cert-filter` option you can now filter the output of
+  `certbot certificates`. Currently, this is limited to filtering out
+  or only showing staging certificates and filtering out or only showing
+  certain key types (RSA or ECDSA).
 
 ### Changed
 
