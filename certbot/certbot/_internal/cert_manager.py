@@ -83,7 +83,7 @@ def certificates(config):
                      ("norsa" in config.certfilter and key_type == "rsa")) or
                     (("ecdsa" in config.certfilter and key_type != "ecdsa") or
                      ("noecdsa" in config.certfilter and key_type == "ecdsa"))):
-                        parsed_certs.append(renewal_candidate)
+                parsed_certs.append(renewal_candidate)
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Renewal configuration file %s produced an "
                            "unexpected error: %s. Skipping.", renewal_file, e)
