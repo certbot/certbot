@@ -20,7 +20,6 @@ install_requires = [
     'pytz',
     'requests>=2.14.2',
     'requests-toolbelt>=0.3.0',
-    'setuptools>=39.0.1',
 ]
 
 docs_extras = [
@@ -63,4 +62,5 @@ setup(
         'docs': docs_extras,
         'test': test_extras,
     },
+    setup_requires=['setuptools>=39.0.1'],
 )
