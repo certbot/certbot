@@ -42,7 +42,7 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
 
         self.auth = DNSAuthenticatorTest._FakeDNSAuthenticator(self.config, "fake")
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
@@ -55,7 +55,7 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
 
         self.auth._cleanup.assert_called_once_with(dns_test_common.DOMAIN, mock.ANY, mock.ANY)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_prompt(self, mock_get_utility):
         mock_display = mock_get_utility()
         mock_display.input.side_effect = ((display_util.OK, "",),
@@ -64,14 +64,14 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
         self.auth._configure("other_key", "")
         self.assertEqual(self.auth.config.fake_other_key, "value")
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_prompt_canceled(self, mock_get_utility):
         mock_display = mock_get_utility()
         mock_display.input.side_effect = ((display_util.CANCEL, "c",),)
 
         self.assertRaises(errors.PluginError, self.auth._configure, "other_key", "")
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_prompt_file(self, mock_get_utility):
         path = os.path.join(self.tempdir, 'file.ini')
         open(path, "wb").close()
@@ -85,7 +85,7 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
         self.auth._configure_file("file_path", "")
         self.assertEqual(self.auth.config.fake_file_path, path)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_prompt_file_canceled(self, mock_get_utility):
         mock_display = mock_get_utility()
         mock_display.directory_select.side_effect = ((display_util.CANCEL, "c",),)
@@ -101,7 +101,7 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
 
         self.assertEqual(credentials.conf("test"), "value")
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_prompt_credentials(self, mock_get_utility):
         bad_path = os.path.join(self.tempdir, 'bad-file.ini')
         dns_test_common.write({"fake_other": "other_value"}, bad_path)

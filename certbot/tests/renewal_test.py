@@ -1,18 +1,17 @@
 """Tests for certbot._internal.renewal"""
 import copy
-
 import unittest
+
+from acme import challenges
+from certbot import errors, configuration
+from certbot._internal import storage
+import certbot.tests.util as test_util
 
 try:
     import mock
 except ImportError:  # pragma: no cover
     from unittest import mock
 
-from acme import challenges
-from certbot import errors
-from certbot._internal import configuration
-from certbot._internal import storage
-import certbot.tests.util as test_util
 
 
 class RenewalTest(test_util.ConfigTestCase):
@@ -100,7 +99,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         assert self.config.elliptic_curve == 'secp256r1'
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_remove_deprecated_config_elements(self, mock_set_by_cli, unused_mock_get_utility):
         mock_set_by_cli.return_value = False

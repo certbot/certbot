@@ -5,15 +5,11 @@ import queue
 import sys
 import textwrap
 
-import zope.interface
-
-from certbot import interfaces
 from certbot import util
 
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IReporter)
 class Reporter:
     """Collects and displays information to the user.
 

@@ -15,11 +15,11 @@ jobs:
         windows-py36:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.6
-          TOXENV: py36
+          TOXENV: py36-win
         windows-py38-cover:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.8
-          TOXENV: py38-cover
+          TOXENV: py38-cover-win
         windows-integration-certbot:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.8
@@ -43,11 +43,11 @@ jobs:
         linux-py39-lint:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.9
-          TOXENV: lint
+          TOXENV: lint-posix
         linux-py39-mypy:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.9
-          TOXENV: mypy
+          TOXENV: mypy-posix
         linux-integration:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.8
@@ -56,11 +56,6 @@ jobs:
         apache-compat:
           IMAGE_NAME: ubuntu-18.04
           TOXENV: apache_compat
-        # le-modification can be moved to the extended test suite once
-        # https://github.com/certbot/certbot/issues/8742 is resolved.
-        le-modification:
-          IMAGE_NAME: ubuntu-18.04
-          TOXENV: modification
         apacheconftest:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.6

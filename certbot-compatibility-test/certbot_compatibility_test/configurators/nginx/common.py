@@ -6,7 +6,7 @@ from typing import Set
 
 import zope.interface
 
-from certbot._internal import configuration
+from certbot import configuration
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util
@@ -79,11 +79,12 @@ def _get_names(config):
 def _get_server_names(root, filename):
     """Returns all names in a config file path"""
     all_names = set()
-    for line in open(os.path.join(root, filename)):
-        if line.strip().startswith("server_name"):
-            names = line.partition("server_name")[2].rpartition(";")[0]
-            for n in names.split():
-                # Filter out wildcards in both all_names and test_names
-                if not n.startswith("*."):
-                    all_names.add(n)
+    with open(os.path.join(root, filename)) as f:
+        for line in f:
+            if line.strip().startswith("server_name"):
+                names = line.partition("server_name")[2].rpartition(";")[0]
+                for n in names.split():
+                    # Filter out wildcards in both all_names and test_names
+                    if not n.startswith("*."):
+                        all_names.add(n)
     return all_names

@@ -2,27 +2,24 @@
 import logging
 from typing import Dict
 
-import zope.component
-import zope.interface
-
 from acme import challenges
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter
 from certbot import util
-from certbot._internal.cli import cli_constants
 from certbot._internal import hooks
+from certbot._internal.cli import cli_constants
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import ops as display_ops
+from certbot.display import util as display_util
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
-class Authenticator(common.Plugin):
+
+class Authenticator(common.Plugin, interfaces.Authenticator):
     """Manual authenticator
 
     This plugin allows the user to perform the domain validation
@@ -225,8 +222,7 @@ permitted by DNS standards.)
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
             msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
-        display = zope.component.getUtility(interfaces.IDisplay)
-        display.notification(msg, wrap=False, force_interactive=True)
+        display_util.notification(msg, wrap=False, force_interactive=True)
         self.subsequent_any_challenge = True
 
     def cleanup(self, achalls):  # pylint: disable=missing-function-docstring

@@ -3,10 +3,7 @@ import logging
 from typing import cast
 from typing import List
 
-import zope.interface
-
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot.errors import MisconfigurationError
 from certbot_apache._internal import apache_util
@@ -17,7 +14,6 @@ from certbot_apache._internal.configurator import OsOptions
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.provider(interfaces.IPluginFactory)
 class CentOSConfigurator(configurator.ApacheConfigurator):
     """CentOS specific ApacheConfigurator override class"""
 
@@ -177,8 +173,8 @@ class CentOSParser(parser.ApacheParser):
     def parse_sysconfig_var(self):
         """ Parses Apache CLI options from CentOS configuration file """
         defines = apache_util.parse_define_file(self.sysconfig_filep, "OPTIONS")
-        for k in defines:
-            self.variables[k] = defines[k]
+        for k, v in defines.items():
+            self.variables[k] = v
 
     def not_modssl_ifmodule(self, path):
         """Checks if the provided Augeas path has argument !mod_ssl"""

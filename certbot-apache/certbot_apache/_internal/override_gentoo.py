@@ -1,14 +1,10 @@
 """ Distribution specific override class for Gentoo Linux """
-import zope.interface
-
-from certbot import interfaces
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
 from certbot_apache._internal.configurator import OsOptions
 
 
-@zope.interface.provider(interfaces.IPluginFactory)
 class GentooConfigurator(configurator.ApacheConfigurator):
     """Gentoo specific ApacheConfigurator override class"""
 
@@ -53,8 +49,8 @@ class GentooParser(parser.ApacheParser):
         """ Parses Apache CLI options from Gentoo configuration file """
         defines = apache_util.parse_define_file(self.apacheconfig_filep,
                                                 "APACHE2_OPTS")
-        for k in defines:
-            self.variables[k] = defines[k]
+        for k, v in defines.items():
+            self.variables[k] = v
 
     def update_modules(self):
         """Get loaded modules from httpd process, and add them to DOM"""

@@ -3,24 +3,28 @@ import platform
 import shutil
 import tempfile
 import unittest
+from unittest.mock import MagicMock
 
 from josepy import interfaces
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 
 from certbot import errors
 from certbot import util
+from certbot._internal.display import obj as display_obj
 from certbot._internal import account
 from certbot.compat import os
 import certbot.tests.util as test_util
+
+try:
+    import mock
+except ImportError:  # pragma: no cover
+    from unittest import mock
 
 
 KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")
 
 # pylint: disable=line-too-long
+
 
 class DetermineUserAgentTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.client.determine_user_agent."""
@@ -62,6 +66,8 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.register_unsafely_without_email = False
         self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
+        with mock.patch("zope.component.provideUtility"):
+            display_obj.set_display(MagicMock())
 
     def _call(self):
         from certbot._internal.client import register
@@ -99,7 +105,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 self._call()
                 self.assertIs(mock_prepare.called, True)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_it(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
@@ -160,7 +166,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 # check Certbot created an account with no email. Contact should return empty
                 self.assertFalse(mock_client().new_account_and_tos.call_args[0][0].contact)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_with_eab_arguments(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().client.directory.__getitem__ = mock.Mock(
@@ -176,7 +182,7 @@ class RegisterTest(test_util.ConfigTestCase):
 
                     self.assertIs(mock_eab_from_data.called, True)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_without_eab_arguments(self, unused_mock_get_utility):
         with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
@@ -409,7 +415,7 @@ class ClientTest(ClientTestCommon):
         # Certificate should get issued despite one failed deactivation
         self.eg_order.authorizations = authzrs
         self.client.auth_handler.handle_authorizations.return_value = authzrs
-        with test_util.patch_get_utility():
+        with test_util.patch_display_util():
             result = self.client.obtain_certificate(self.eg_domains)
         self.assertEqual(result, (mock.sentinel.cert, mock.sentinel.chain, key, csr))
         self._check_obtain_certificate(1)
@@ -453,7 +459,7 @@ class ClientTest(ClientTestCommon):
         self.eg_order.authorizations = authzr
         self.client.auth_handler.handle_authorizations.return_value = authzr
 
-        with test_util.patch_get_utility():
+        with test_util.patch_display_util():
             result = self.client.obtain_certificate(self.eg_domains)
 
         self.assertEqual(
@@ -519,7 +525,7 @@ class ClientTest(ClientTestCommon):
 
         shutil.rmtree(tmp_path)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_deploy_certificate_success(self, mock_util):
         self.assertRaises(errors.Error, self.client.deploy_certificate,
                           ["foo.bar"], "key", "cert", "chain", "fullchain")
@@ -538,7 +544,7 @@ class ClientTest(ClientTestCommon):
         installer.restart.assert_called_once_with()
 
     @mock.patch('certbot._internal.client.display_util.notify')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_deploy_certificate_failure(self, mock_util, mock_notify):
         installer = mock.MagicMock()
         self.client.installer = installer
@@ -552,7 +558,7 @@ class ClientTest(ClientTestCommon):
         mock_notify.assert_any_call('Deploying certificate')
 
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_deploy_certificate_save_failure(self, mock_util):
         installer = mock.MagicMock()
         self.client.installer = installer
@@ -563,7 +569,7 @@ class ClientTest(ClientTestCommon):
         installer.recovery_routine.assert_called_once_with()
 
     @mock.patch('certbot._internal.client.display_util.notify')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_deploy_certificate_restart_failure(self, mock_get_utility, mock_notify):
         installer = mock.MagicMock()
         installer.restart.side_effect = [errors.PluginError, None]
@@ -578,7 +584,7 @@ class ClientTest(ClientTestCommon):
         self.assertEqual(installer.restart.call_count, 2)
 
     @mock.patch('certbot._internal.client.logger')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_deploy_certificate_restart_failure2(self, mock_get_utility, mock_logger):
         installer = mock.MagicMock()
         installer.restart.side_effect = errors.PluginError
@@ -706,7 +712,7 @@ class EnhanceConfigTest(ClientTestCommon):
     def _test_error(self, enhance_error=False, restart_error=False):
         self.config.redirect = True
         with mock.patch('certbot._internal.client.logger') as mock_logger, \
-             test_util.patch_get_utility() as mock_gu:
+             test_util.patch_display_util() as mock_gu:
             self.assertRaises(
                 errors.PluginError, self._test_with_all_supported)
 

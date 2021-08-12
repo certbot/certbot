@@ -42,7 +42,7 @@ class PrepareSubscriptionTest(SubscriptionTest):
         from certbot._internal.eff import prepare_subscription
         prepare_subscription(self.config, self.account)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch("certbot._internal.eff.display_util.notify")
     def test_failure(self, mock_notify, mock_get_utility):
         self.config.email = None
@@ -53,21 +53,21 @@ class PrepareSubscriptionTest(SubscriptionTest):
         self.assertIn(expected_part, actual)
         self.assertIsNone(self.account.meta.register_to_eff)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_will_not_subscribe_with_no_prompt(self, mock_get_utility):
         self.config.eff_email = False
         self._call()
         self._assert_no_get_utility_calls(mock_get_utility)
         self.assertIsNone(self.account.meta.register_to_eff)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_will_subscribe_with_no_prompt(self, mock_get_utility):
         self.config.eff_email = True
         self._call()
         self._assert_no_get_utility_calls(mock_get_utility)
         self.assertEqual(self.account.meta.register_to_eff, self.config.email)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_will_not_subscribe_with_prompt(self, mock_get_utility):
         mock_get_utility().yesno.return_value = False
         self._call()
@@ -75,7 +75,7 @@ class PrepareSubscriptionTest(SubscriptionTest):
         self._assert_correct_yesno_call(mock_get_utility)
         self.assertIsNone(self.account.meta.register_to_eff)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_will_subscribe_with_prompt(self, mock_get_utility):
         mock_get_utility().yesno.return_value = True
         self._call()
@@ -176,7 +176,7 @@ class SubscribeTest(unittest.TestCase):
         self.assertTrue(self.mock_notify.called)
         return self.mock_notify.call_args[0][0]
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_subscribe(self, mock_get_utility):
         self._call()
         self.assertIs(mock_get_utility.called, False)

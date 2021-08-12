@@ -70,13 +70,10 @@ dev_extras = [
     'azure-devops',
     'ipdb',
     'PyGithub',
-    'pip',
     # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
     # https://github.com/python-poetry/poetry/issues/1584.
     'poetry>=1.2.0a1',
-    'tox',
     'twine',
-    'wheel',
 ]
 
 docs_extras = [
@@ -87,16 +84,22 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
+# Tools like pip, wheel, and tox are listed here to ensure they are properly
+# pinned and installed during automated testing.
 test_extras = [
     'coverage',
     'mypy',
+    'pip',
     'pylint',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
+    'setuptools',
+    'tox',
     # typing-extensions is required to import typing.Protocol and make the mypy checks
     # pass (along with pylint about non-existent objects) on Python 3.6 & 3.7
     'typing-extensions',
+    'wheel',
 ]
 
 

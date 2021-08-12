@@ -1,14 +1,12 @@
 """Tests for certbot._internal.plugins.standalone."""
 import errno
 import socket
+from typing import Dict
+from typing import Set
+from typing import Tuple
 import unittest
-from typing import Dict, Set, Tuple
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 import OpenSSL.crypto  # pylint: disable=unused-import
 
 from acme import challenges
@@ -17,6 +15,12 @@ from certbot import achallenges
 from certbot import errors
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 
 class ServerManagerTest(unittest.TestCase):
@@ -101,7 +105,7 @@ class AuthenticatorTest(unittest.TestCase):
         expected = [achall.response(achall.account_key) for achall in achalls]
         self.assertEqual(response, expected)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_perform_eaddrinuse_retry(self, mock_get_utility):
         mock_utility = mock_get_utility()
         encountered_errno = errno.EADDRINUSE
@@ -113,7 +117,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.test_perform()
         self._assert_correct_yesno_call(mock_yesno)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_perform_eaddrinuse_no_retry(self, mock_get_utility):
         mock_utility = mock_get_utility()
         mock_yesno = mock_utility.yesno

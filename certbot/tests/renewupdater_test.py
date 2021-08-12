@@ -26,7 +26,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main._get_and_save_cert')
     @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
     @mock.patch('certbot._internal.plugins.selection.get_unprepared_installer')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_server_updates(self, _, mock_geti, mock_select, mock_getsave):
         mock_getsave.return_value = mock.MagicMock()
         mock_generic_updater = self.generic_updater

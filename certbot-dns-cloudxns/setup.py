@@ -4,10 +4,10 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.17.0.dev0'
+version = '1.19.0.dev0'
 
 install_requires = [
-    'dns-lexicon>=3.1.0',  # Changed `rtype` parameter name
+    'dns-lexicon>=3.2.1',
     'setuptools>=39.0.1',
     'zope.interface',
 ]

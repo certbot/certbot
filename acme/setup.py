@@ -3,9 +3,13 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.17.0.dev0'
+version = '1.19.0.dev0'
 
 install_requires = [
+    # This dependency just exists to ensure that chardet is installed along
+    # with requests so it will use it instead of charset_normalizer. See
+    # https://github.com/certbot/certbot/issues/8964 for more info.
+    'chardet',
     'cryptography>=2.1.4',
     # formerly known as acme.jose:
     # 1.1.0+ is required to avoid the warnings described at
@@ -14,7 +18,7 @@ install_requires = [
     'PyOpenSSL>=17.3.0',
     'pyrfc3339',
     'pytz',
-    'requests>=2.6.0',
+    'requests>=2.14.2',
     'requests-toolbelt>=0.3.0',
     'setuptools>=39.0.1',
 ]
