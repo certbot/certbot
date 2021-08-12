@@ -188,6 +188,8 @@ class BasicParserTest(util.ParserTest):
             'Define: DUMP_RUN_CFG\n'
             'Define: U_MICH\n'
             'Define: TLS=443\n'
+            'Define: WITH_ASSIGNMENT=URL=http://example.com\n'
+            'Define: EMPTY=\n'
             'Define: example_path=Documents/path\n'
             'User: name="www-data" id=33 not_used\n'
             'Group: name="www-data" id=33 not_used\n'
@@ -266,7 +268,10 @@ class BasicParserTest(util.ParserTest):
         mock_cfg.side_effect = mock_get_vars
 
         expected_vars = {"TEST": "", "U_MICH": "", "TLS": "443",
-                         "example_path": "Documents/path"}
+                         "example_path": "Documents/path",
+                         "WITH_ASSIGNMENT": "URL=http://example.com",
+                         "EMPTY": "",
+                         }
 
         self.parser.modules = {}
         with mock.patch(
@@ -300,15 +305,6 @@ class BasicParserTest(util.ParserTest):
             # Only one of the three includes do not exist in already parsed
             # path derived from root configuration Include statements
             self.assertEqual(mock_parse.call_count, 1)
-
-    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
-    def test_update_runtime_vars_bad_output(self, mock_cfg):
-        mock_cfg.return_value = "Define: TLS=443=24"
-        self.parser.update_runtime_variables()
-
-        mock_cfg.return_value = "Define: DUMP_RUN_CFG\nDefine: TLS=443=24"
-        self.assertRaises(
-            errors.PluginError, self.parser.update_runtime_variables)
 
     @mock.patch("certbot_apache._internal.apache_util.subprocess.run")
     def test_update_runtime_vars_bad_ctl(self, mock_run):

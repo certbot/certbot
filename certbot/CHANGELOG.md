@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed parsing of `Define`d values in the Apache plugin to allow for `=` in the value.
 
 More details about these changes can be found on our GitHub repo.
 
