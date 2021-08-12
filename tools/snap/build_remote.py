@@ -59,7 +59,7 @@ def _execute_build(
     # This random string was chosen because snapcraft uses a MD5 hash
     # represented as a 32 character hex string by default, so we use the same
     # length but from a larger character set just because we can.
-    random_string = ''.join(random.choice(string.ascii_letters + string.digits)
+    random_string = ''.join(random.choice(string.ascii_lowercase + string.digits)
                             for _ in range(32))
     build_id = f'snapcraft-{target}-{random_string}'
 
