@@ -482,7 +482,7 @@ Those imports should look like this:
 .. code-block:: python
 
   from OpenSSL import crypto
-  from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
+  from OpenSSL import SSL
 
 .. _mypy: https://mypy.readthedocs.io
 .. _added in comments: https://mypy.readthedocs.io/en/latest/cheat_sheet.html
