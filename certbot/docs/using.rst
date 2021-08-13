@@ -529,6 +529,72 @@ revocation from any ACME account::
 
   certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem --key-path /etc/letsencrypt/live/example.com/privkey.pem
 
+.. _deleting:
+
+Deleting certificates
+---------------------
+
+If you need to delete a certificate, use the ``delete`` subcommand.
+
+.. note:: Read this and the `Safely deleting certificates`_ sections carefully. This is an irreversible operation and must
+          be done with care.
+
+.. note:: Do not manually delete certificate files from inside ``/etc/letsencrypt/``. Always use the ``delete`` subcommand.
+
+A certificate may be deleted by providing its name with ``--cert-name``. \
+You may find its name using ``certbot certificates``.
+
+Otherwise, you will be prompted to choose one or more
+certificates to delete::
+
+  certbot delete --cert-name example.com
+  # or to choose from a list:
+  certbot delete
+
+Safely deleting certificates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Deleting a certificate without following the proper steps can result in a non-functioning server. To safely delete a
+certificate, follow all the steps below to make sure that references to a certificate are removed from the configuration
+of any installed server software (Apache, nginx, Postfix, etc) *before* deleting the certificate.
+
+To explain further, when installing a certificate, Certbot modifies Apache or nginx's configuration to load the certificate
+and its private key from the ``/etc/letsencrypt/live/`` directory. Before deleting a certificate, it is necessary to undo
+that modification, by removing any references to the certificate from the webserver's configuration files.
+
+Follow these steps to safely delete a certificate:
+
+1. Find all references to the certificate (substitute ``example.com`` in the command for the name of the certificate
+   you wish to delete)::
+
+     sudo bash -c 'grep -R live/example.com /etc/{nginx,httpd,apache2}'
+
+   If there are no references found, skip directly to Step 4.
+
+   If some references are found, they will look something like::
+
+     /etc/apache2/sites-available/000-default-le-ssl.conf:SSLCertificateFile /etc/letsencrypt/live/example.com/fullchain.pem
+     /etc/apache2/sites-available/000-default-le-ssl.conf:SSLCertificateKeyFile /etc/letsencrypt/live/example.com/privkey.pem
+
+2. You will need a self-signed certificate to replace the certificate you are deleting. The following command will generate one
+   for you, saving the certificate at ``/etc/letsencrypt/self-signed-cert.pem`` and its private key at
+   ``/etc/letsencrypt/self-signed-privkey.pem``::
+
+     sudo openssl req -nodes -batch -x509 -newkey rsa:2048 -keyout /etc/letsencrypt/self-signed-privkey.pem -out /etc/letsencrypt/self-signed-cert.pem -days 356
+
+3. For each reference found in Step 1, open the file in a text editor and replace the reference to the existing
+   certificate with a reference to the self-signed certificate.
+
+   Continuing from the previous example, you would open ``/etc/apache2/sites-available/000-default-le-ssl.conf`` in a text editor
+   and modify the two matching lines of text to instead say::
+
+     SSLCertificateFile /etc/letsencrypt/self-signed-cert.pem
+     SSLCertificateKeyFile /etc/letsencrypt/self-signed-privkey.pem
+
+4. It is now safe to delete the certificate. Do so by running::
+
+     sudo certbot delete --cert-name example.com
+
 .. _renewal:
 
 Renewing certificates
