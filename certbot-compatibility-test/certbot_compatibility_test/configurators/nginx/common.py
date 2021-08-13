@@ -2,9 +2,8 @@
 import os
 import shutil
 import subprocess
+from typing import cast
 from typing import Set
-
-import zope.interface
 
 from certbot import configuration
 from certbot_compatibility_test import errors
@@ -15,7 +14,6 @@ from certbot_nginx._internal import configurator
 from certbot_nginx._internal import constants
 
 
-@zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(configurators_common.Proxy):
     """A common base for Nginx test configurators"""
 
@@ -48,9 +46,12 @@ class Proxy(configurators_common.Proxy):
             setattr(self.le_config, "nginx_" + k, constants.os_constant(k))
 
         conf = configuration.NamespaceConfig(self.le_config)
-        self._configurator = configurator.NginxConfigurator(
-            config=conf, name="nginx")
+        self._configurator = cast(interfaces.Configurator, configurator.NginxConfigurator(
+            config=conf, name="nginx"))
         self._configurator.prepare()
+
+    def cleanup_from_tests(self):
+        """Performs any necessary cleanup from running plugin tests"""
 
 
 def _get_server_root(config):
