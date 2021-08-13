@@ -26,7 +26,7 @@ Certbot helps you achieve two tasks:
 1. Obtaining a certificate: automatically performing the required authentication steps to prove that you control the domain(s),
    saving the certificate to ``/etc/letsencrypt/live/`` and renewing it on a regular schedule.
 2. Optionally, installing that certificate to supported web servers (like Apache or nginx) and other kinds of servers. This is
-   done by automatically modifying the confguration of your server in order to use the certificate.
+   done by automatically modifying the configuration of your server in order to use the certificate.
 
 To obtain a certificate and also install it, use the ``certbot run`` command (or ``certbot``, which is the same).
 
