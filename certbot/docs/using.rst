@@ -21,25 +21,40 @@ The ``certbot`` script on your web server might be named ``letsencrypt`` if your
 Getting certificates (and choosing plugins)
 ===========================================
 
-The Certbot client supports two types of plugins for
-obtaining and installing certificates: authenticators and installers.
+Certbot helps you achieve two tasks:
 
-Authenticators are plugins used with the ``certonly`` command to obtain a certificate.
-The authenticator validates that you
-control the domain(s) you are requesting a certificate for, obtains a certificate for the specified
-domain(s), and places the certificate in the ``/etc/letsencrypt`` directory on your
-machine. The authenticator does not install the certificate (it does not edit any of your server's configuration files to serve the
-obtained certificate). If you specify multiple domains to authenticate, they will
-all be listed in a single certificate. To obtain multiple separate certificates
-you will need to run Certbot multiple times.
+1. Obtaining a certificate: automatically performing the required authentication steps to prove that you control the domain(s),
+   saving the certificate to ``/etc/letsencrypt/live/`` and renewing it on a regular schedule.
+2. Optionally, installing that certificate to supported web servers (like Apache or nginx) and other kinds of servers. This is
+   done by automatically modifying the configuration of your server in order to use the certificate.
 
-Installers are Plugins used with the ``install`` command to install a certificate.
-These plugins can modify your webserver's configuration to
-serve your website over HTTPS using certificates obtained by certbot.
+To obtain a certificate and also install it, use the ``certbot run`` command (or ``certbot``, which is the same).
 
-Plugins that do both can be used with the ``certbot run`` command, which is the default
-when no command is specified. The ``run`` subcommand can also be used to specify
-a combination_ of distinct authenticator and installer plugins.
+To just obtain the certificate without installing it anywhere, the ``certbot certonly`` ("certificate only") command can be used.
+
+Some example ways to use Certbot::
+
+    # Obtain and install a certificate:
+    certbot
+
+    # Obtain a certificate but don't install it:
+    certbot certonly
+
+    # You may specify multiple domains with -d and obtain and
+    # install different certificates by running Certbot multiple times:
+    certbot certonly -d example.com -d www.example.com
+    certbot certonly -d app.example.com -d api.example.com
+
+To perform these tasks, Certbot will ask you to choose from a selection of authenticator and installer plugins. The appropriate
+choice of plugins will depend on what kind of server software you are running and plan to use your certificates with.
+
+**Authenticators** are plugins which automatically perform the required steps to prove that you control the domain names you're trying
+to request a certificate for. An authenticator is always required to obtain a certificate.
+
+**Installers** are plugins which can automatically modify your web server's configuration to serve your website over HTTPS, using the
+certificates obtained by Certbot. An installer is only required if you want Certbot to install the certificate to your web server.
+
+Some plugins are both authenticators and installers and it is possible to specify a distinct combination_ of authenticator and plugin.
 
 =========== ==== ==== =============================================================== =============================
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
