@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import zope.component
 
+from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -316,8 +317,8 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                     "unless you use the --break-my-certs flag!".format(names))
 
 
-def renew_cert(config: interfaces.IConfig, domains: Optional[List[str]], le_client: client.Client,
-               lineage: storage.RenewableCert) -> None:
+def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str]],
+               le_client: client.Client, lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
@@ -349,13 +350,13 @@ def report(msgs, category):
     return "  " + "\n  ".join(lines)
 
 
-def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[str],
+def _renew_describe_results(config: configuration.NamespaceConfig, renew_successes: List[str],
                             renew_failures: List[str], renew_skipped: List[str],
                             parse_failures: List[str]) -> None:
     """
     Print a report to the terminal about the results of the renewal process.
 
-    :param interfaces.IConfig config: Configuration
+    :param configuration.NamespaceConfiguration config: Configuration
     :param list renew_successes: list of fullchain paths which were renewed
     :param list renew_failures: list of fullchain paths which failed to be renewed
     :param list renew_skipped: list of messages to print about skipped certificates
@@ -504,7 +505,7 @@ def handle_renewal_request(config):
     logger.debug("no renewal failures")
 
 
-def _update_renewal_params_from_key(key_path: str, config: interfaces.IConfig) -> None:
+def _update_renewal_params_from_key(key_path: str, config: configuration.NamespaceConfig) -> None:
     with open(key_path, 'rb') as file_h:
         key = load_pem_private_key(file_h.read(), password=None, backend=default_backend())
     if isinstance(key, rsa.RSAPrivateKey):

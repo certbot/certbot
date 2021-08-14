@@ -22,7 +22,7 @@ def enabled_enhancements(config):
     Generator to yield the enabled new style enhancements.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
     """
     for enh in _INDEX:
         if getattr(config, enh["cli_dest"]):
@@ -34,7 +34,7 @@ def are_requested(config):
     enhancement interfaces.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
     """
     return any(enabled_enhancements(config))
 
@@ -44,7 +44,7 @@ def are_supported(config, installer):
     installer.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
 
     :param installer: Installer object
     :type installer: interfaces.Installer
@@ -71,7 +71,7 @@ def enable(lineage, domains, installer, config):
     :type installer: interfaces.Installer
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
     """
     for enh in enabled_enhancements(config):
         getattr(installer, enh["enable_function"])(lineage, domains)

@@ -50,7 +50,7 @@ class NginxConfigurator(common.Installer, interfaces.Authenticator):
         config files modified by the configurator will lose all their comments.
 
     :ivar config: Configuration.
-    :type config: :class:`~certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
 
     :ivar parser: Handles low level parsing
     :type parser: :class:`~certbot_nginx._internal.parser`

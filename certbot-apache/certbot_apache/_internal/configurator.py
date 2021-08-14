@@ -121,7 +121,7 @@ class ApacheConfigurator(common.Installer, interfaces.Authenticator):
     """Apache configurator.
 
     :ivar config: Configuration.
-    :type config: :class:`~certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
 
     :ivar parser: Handles low level parsing
     :type parser: :class:`~certbot_apache._internal.parser`

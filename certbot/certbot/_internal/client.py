@@ -720,7 +720,7 @@ def rollback(default_installer, checkpoints, config, plugins):
     :param int checkpoints: Number of checkpoints to revert.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: :class:`certbot.configuration.NamespaceConfiguration`
 
     """
     # Misconfigurations are only a slight problems... allow the user to rollback

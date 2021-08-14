@@ -12,7 +12,7 @@ def run_generic_updaters(config, lineage, plugins):
     """Run updaters that the plugin supports
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: certbot.configuration.NamespaceConfig
 
     :param lineage: Certificate lineage object
     :type lineage: storage.RenewableCert
@@ -40,7 +40,7 @@ def run_renewal_deployer(config, lineage, installer):
     installer plugin.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: certbot.configuration.NamespaceConfig
 
     :param lineage: Certificate lineage object
     :type lineage: storage.RenewableCert
@@ -89,7 +89,7 @@ def _run_enhancement_updaters(lineage, installer, config):
     :type installer: interfaces.Installer
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: certbot.configuration.NamespaceConfig
     """
 
     if config.disable_renew_updates:
@@ -111,7 +111,7 @@ def _run_enhancement_deployers(lineage, installer, config):
     :type installer: interfaces.Installer
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: certbot.configuration.NamespaceConfig
     """
 
     if config.disable_renew_updates:

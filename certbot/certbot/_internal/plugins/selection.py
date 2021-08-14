@@ -4,6 +4,7 @@ import logging
 from typing import Optional
 from typing import Tuple
 
+from certbot import configuration
 from certbot import errors
 from certbot import interfaces
 from certbot._internal.plugins import disco
@@ -42,7 +43,7 @@ def get_unprepared_installer(config, plugins):
     """
     Get an unprepared interfaces.IInstaller object.
 
-    :param certbot.interfaces.IConfig config: Configuration
+    :param certbot.configuration.NamespaceConfig config: Configuration
     :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
 
@@ -71,7 +72,7 @@ def get_unprepared_installer(config, plugins):
 def pick_plugin(config, default, plugins, question, ifaces):
     """Pick plugin.
 
-    :param certbot.interfaces.IConfig: Configuration
+    :param certbot.configuration.NamespaceConfig: Configuration
     :param str default: Plugin name supplied by user or ``None``.
     :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
@@ -164,7 +165,8 @@ def record_chosen_plugins(config, plugins, auth, inst):
          config.authenticator, config.installer)
 
 
-def choose_configurator_plugins(config: interfaces.IConfig, plugins: disco.PluginsRegistry,
+def choose_configurator_plugins(config: configuration.NamespaceConfig,
+                                plugins: disco.PluginsRegistry,
                                 verb: str) -> Tuple[Optional[interfaces.IInstaller],
                                                     Optional[interfaces.IAuthenticator]]:
     """

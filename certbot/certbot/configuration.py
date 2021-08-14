@@ -14,10 +14,8 @@ from certbot.compat import os
 class NamespaceConfig:
     """Configuration wrapper around :class:`argparse.Namespace`.
 
-    For more documentation, including available attributes, please see
-    :class:`certbot.interfaces.IConfig`. However, note that
-    the following attributes are dynamically resolved using
-    :attr:`~certbot.interfaces.IConfig.work_dir` and relative
+    Please note that the following attributes are dynamically resolved using
+    :attr:`~certbot.configuration.NamespaceConfig.work_dir` and relative
     paths defined in :py:mod:`certbot._internal.constants`:
 
       - `accounts_dir`
@@ -27,7 +25,7 @@ class NamespaceConfig:
       - `temp_checkpoint_dir`
 
     And the following paths are dynamically resolved using
-    :attr:`~certbot.interfaces.IConfig.config_dir` and relative
+    :attr:`~certbot.configuration.NamespaceConfig.config_dir` and relative
     paths defined in :py:mod:`certbot._internal.constants`:
 
       - `default_archive_dir`
@@ -281,8 +279,8 @@ def _check_config_sanity(config):
     """Validate command line options and display error message if
     requirements are not met.
 
-    :param config: IConfig instance holding user configuration
-    :type args: :class:`certbot.interfaces.IConfig`
+    :param config: NamespaceConfig instance holding user configuration
+    :type args: :class:`certbot.configuration.NamespaceConfig`
 
     """
     # Port check

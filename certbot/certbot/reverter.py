@@ -54,7 +54,7 @@ class Reverter:
     .. note:: Consider moving everything over to CSV format.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: :class:`certbot.configuration.NamespaceConfig`
 
     """
     def __init__(self, config):
