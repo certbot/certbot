@@ -10,7 +10,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* `zope` based interfaces in `certbot.interfaces` module are deprecated and will
+  be removed in a future release of Certbot. Any import of these interfaces will
+  emit a warning to prepare the transition for developers.
 
 ### Fixed
 
