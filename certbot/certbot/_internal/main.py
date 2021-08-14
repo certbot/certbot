@@ -432,7 +432,7 @@ def _find_domains_or_certname(config, installer, question=None):
     :type config: interfaces.IConfig
 
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :param `str` question: Overriding default question to ask the user if asked
         to choose from domain names.
@@ -746,7 +746,7 @@ def _init_le_client(config, authenticator, installer):
     :param authenticator: Acme authentication handler
     :type authenticator: Optional[interfaces.IAuthenticator]
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :returns: client: Client object
     :rtype: client.Client

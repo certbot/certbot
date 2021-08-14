@@ -47,7 +47,7 @@ def are_supported(config, installer):
     :type config: :class:`certbot.interfaces.IConfig`
 
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :returns: If all the requested enhancements are supported by the installer
     :rtype: bool
@@ -68,7 +68,7 @@ def enable(lineage, domains, installer, config):
     :type domains: str
 
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :param config: Configuration.
     :type config: :class:`certbot.interfaces.IConfig`

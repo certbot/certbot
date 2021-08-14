@@ -46,7 +46,7 @@ def run_renewal_deployer(config, lineage, installer):
     :type lineage: storage.RenewableCert
 
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :returns: `None`
     :rtype: None
@@ -68,7 +68,7 @@ def _run_updaters(lineage, installer, config):
     :type lineage: storage.RenewableCert
 
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :returns: `None`
     :rtype: None
@@ -86,7 +86,7 @@ def _run_enhancement_updaters(lineage, installer, config):
     :type lineage: storage.RenewableCert
 
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :param config: Configuration object
     :type config: interfaces.IConfig
@@ -108,7 +108,7 @@ def _run_enhancement_deployers(lineage, installer, config):
     :type lineage: storage.RenewableCert
 
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :param config: Configuration object
     :type config: interfaces.IConfig
