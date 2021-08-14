@@ -38,6 +38,7 @@ from certbot._internal import snap_config
 from certbot._internal import storage
 from certbot._internal import updater
 from certbot._internal.display import obj as display_obj
+from certbot._internal.display import util as internal_display_util
 from certbot._internal.plugins import disco as plugins_disco
 from certbot._internal.plugins import selection as plug_sel
 from certbot.compat import filesystem
@@ -111,7 +112,7 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
                 "{action} for {domains}".format(
                     action="Simulating renewal of an existing certificate"
                             if config.dry_run else "Renewing an existing certificate",
-                    domains=display_util.summarize_domain_list(domains or lineage.names())
+                    domains=internal_display_util.summarize_domain_list(domains or lineage.names())
                 )
             )
             renewal.renew_cert(config, domains, le_client, lineage)
@@ -122,7 +123,7 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
                 "{action} for {domains}".format(
                     action="Simulating a certificate request" if config.dry_run else
                            "Requesting a certificate",
-                    domains=display_util.summarize_domain_list(domains)
+                    domains=internal_display_util.summarize_domain_list(domains)
                 )
             )
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
@@ -1339,7 +1340,7 @@ def _csr_get_and_save_cert(config, le_client):
         "{action} for {domains}".format(
             action="Simulating a certificate request" if config.dry_run else
                     "Requesting a certificate",
-            domains=display_util.summarize_domain_list(csr_names)
+            domains=internal_display_util.summarize_domain_list(csr_names)
         )
     )
     cert, chain = le_client.obtain_certificate_from_csr(csr)

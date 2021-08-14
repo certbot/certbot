@@ -9,41 +9,41 @@ should be used whenever:
 Other messages can use the `logging` module. See `log.py`.
 
 """
-import logging
-import sys
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
 
-from certbot.compat import misc
-# These imports are done to not break the public API of the module.
+# These specific imports from certbot._internal.display.obj and
+# certbot._internal.display.util are done to not break the public API of this
+# module.
 from certbot._internal.display.obj import FileDisplay  # pylint: disable=unused-import
 from certbot._internal.display.obj import NoninteractiveDisplay  # pylint: disable=unused-import
+from certbot._internal.display.obj import SIDE_FRAME  # pylint: disable=unused-import
+from certbot._internal.display.util import input_with_timeout  # pylint: disable=unused-import
+from certbot._internal.display.util import separate_list_input  # pylint: disable=unused-import
+from certbot._internal.display.util import summarize_domain_list  # pylint: disable=unused-import
 from certbot._internal.display import obj
 
-logger = logging.getLogger(__name__)
 
-WIDTH = 72
-
-# Display exit codes
-OK = "ok"
+# These constants are defined this way to make them easier to document with
+# Sphinx and to not couple our public docstrings to our internal ones.
+OK = obj.OK
 """Display exit code indicating user acceptance."""
 
-CANCEL = "cancel"
+CANCEL = obj.CANCEL
 """Display exit code for a user canceling the display."""
+
+# These constants are unused and should be removed in a major release of
+# Certbot.
+WIDTH = 72
 
 HELP = "help"
 """Display exit code when for when the user requests more help. (UNUSED)"""
 
 ESC = "esc"
 """Display exit code when the user hits Escape (UNUSED)"""
-
-# Display constants
-SIDE_FRAME = ("- " * 39) + "-"
-"""Display boundary (alternates spaces, so when copy-pasted, markdown doesn't interpret
-it as a heading)"""
 
 
 def notify(msg: str) -> None:
@@ -186,36 +186,6 @@ def directory_select(message: str, default: Optional[str] = None, cli_flag: Opti
                                               force_interactive=force_interactive)
 
 
-def input_with_timeout(prompt=None, timeout=36000.0):
-    """Get user input with a timeout.
-
-    Behaves the same as the builtin input, however, an error is raised if
-    a user doesn't answer after timeout seconds. The default timeout
-    value was chosen to place it just under 12 hours for users following
-    our advice and running Certbot twice a day.
-
-    :param str prompt: prompt to provide for input
-    :param float timeout: maximum number of seconds to wait for input
-
-    :returns: user response
-    :rtype: str
-
-    :raises errors.Error if no answer is given before the timeout
-
-    """
-    # use of sys.stdin and sys.stdout to mimic the builtin input based on
-    # https://github.com/python/cpython/blob/baf7bb30a02aabde260143136bdf5b3738a1d409/Lib/getpass.py#L129
-    if prompt:
-        sys.stdout.write(prompt)
-        sys.stdout.flush()
-
-    line = misc.readline_with_timeout(timeout, prompt)
-
-    if not line:
-        raise EOFError
-    return line.rstrip('\n')
-
-
 def assert_valid_call(prompt, default, cli_flag, force_interactive):
     """Verify that provided arguments is a valid IDisplay call.
 
@@ -232,42 +202,3 @@ def assert_valid_call(prompt, default, cli_flag, force_interactive):
         msg += ("\nYou can set an answer to "
                 "this prompt with the {0} flag".format(cli_flag))
     assert default is not None or force_interactive, msg
-
-
-def separate_list_input(input_):
-    """Separate a comma or space separated list.
-
-    :param str input_: input from the user
-
-    :returns: strings
-    :rtype: list
-
-    """
-    no_commas = input_.replace(",", " ")
-    # Each string is naturally unicode, this causes problems with M2Crypto SANs
-    # TODO: check if above is still true when M2Crypto is gone ^
-    return [str(string) for string in no_commas.split()]
-
-
-def summarize_domain_list(domains: List[str]) -> str:
-    """Summarizes a list of domains in the format of:
-        example.com.com and N more domains
-    or if there is are only two domains:
-        example.com and www.example.com
-    or if there is only one domain:
-        example.com
-
-    :param list domains: `str` list of domains
-    :returns: the domain list summary
-    :rtype: str
-    """
-    if not domains:
-        return ""
-
-    l = len(domains)
-    if l == 1:
-        return domains[0]
-    elif l == 2:
-        return " and ".join(domains)
-    else:
-        return "{0} and {1} more domains".format(domains[0], l-1)

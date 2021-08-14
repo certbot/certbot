@@ -26,6 +26,7 @@ from certbot._internal import constants
 from certbot._internal import hooks
 from certbot._internal import storage
 from certbot._internal import updater
+from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -363,7 +364,7 @@ def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[st
     notify = display_util.notify
     notify_error = logger.error
 
-    notify('\n{}'.format(display_util.SIDE_FRAME))
+    notify('\n{}'.format(display_obj.SIDE_FRAME))
 
     renewal_noun = "simulated renewal" if config.dry_run else "renewal"
 
@@ -393,7 +394,7 @@ def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[st
                "were invalid: ")
         notify(report(parse_failures, "parsefail"))
 
-    notify(display_util.SIDE_FRAME)
+    notify(display_obj.SIDE_FRAME)
 
 
 def handle_renewal_request(config):
