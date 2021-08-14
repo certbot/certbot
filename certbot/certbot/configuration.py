@@ -75,6 +75,11 @@ class NamespaceConfig:
         """Size of the RSA key."""
         return self.namespace.rsa_key_size
 
+    @rsa_key_size.setter
+    def rsa_key_size(self, ksize: int) -> None:
+        """Set the rsa_key_size property"""
+        self.namespace.rsa_key_size = ksize
+
     @property
     def elliptic_curve(self) -> str:
         """The SECG elliptic curve name to use.
@@ -83,6 +88,11 @@ class NamespaceConfig:
         """
         return self.namespace.elliptic_curve
 
+    @elliptic_curve.setter
+    def elliptic_curve(self, ecurve: str) -> None:
+        """Set the elliptic_curve property"""
+        self.namespace.elliptic_curve = ecurve
+
     @property
     def key_type(self) -> str:
         """Type of generated private key.
@@ -90,6 +100,11 @@ class NamespaceConfig:
         Only *ONE* per invocation can be provided at this time.
         """
         return self.namespace.key_type
+
+    @key_type.setter
+    def key_type(self, ktype: str) -> None:
+        """Set the key_type property"""
+        self.namespace.key_type = ktype
 
     @property
     def must_staple(self) -> bool:

@@ -23,7 +23,7 @@ class AuthHandler:
 
     :ivar auth: Authenticator capable of solving
         :class:`~acme.challenges.Challenge` types
-    :type auth: :class:`certbot.interfaces.IAuthenticator`
+    :type auth: certbot.interfaces.Authenticator
 
     :ivar acme.client.BackwardsCompatibleClientV2 acme_client: ACME client API.
 

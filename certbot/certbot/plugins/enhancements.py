@@ -7,7 +7,7 @@ from typing import List
 from certbot._internal import constants
 
 ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]
-"""List of possible :class:`certbot.interfaces.IInstaller`
+"""List of possible :class:`certbot.interfaces.Installer`
 enhancements.
 
 List of expected options parameters:
@@ -124,7 +124,7 @@ class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
         :param lineage: Certificate lineage object
         :type lineage: certbot.interfaces.RenewableCert
 
-        .. note:: prepare() method inherited from `interfaces.IPlugin` might need
+        .. note:: prepare() method inherited from `interfaces.Plugin` might need
             to be called manually within implementation of this interface method
             to finalize the plugin initialization.
         """

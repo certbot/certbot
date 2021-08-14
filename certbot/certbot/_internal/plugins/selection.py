@@ -41,7 +41,7 @@ def pick_authenticator(
 
 def get_unprepared_installer(config, plugins):
     """
-    Get an unprepared interfaces.IInstaller object.
+    Get an unprepared interfaces.Installer object.
 
     :param certbot.configuration.NamespaceConfig config: Configuration
     :param certbot._internal.plugins.disco.PluginsRegistry plugins:
@@ -167,8 +167,8 @@ def record_chosen_plugins(config, plugins, auth, inst):
 
 def choose_configurator_plugins(config: configuration.NamespaceConfig,
                                 plugins: disco.PluginsRegistry,
-                                verb: str) -> Tuple[Optional[interfaces.IInstaller],
-                                                    Optional[interfaces.IAuthenticator]]:
+                                verb: str) -> Tuple[Optional[interfaces.Installer],
+                                                    Optional[interfaces.Authenticator]]:
     """
     Figure out which configurator we're going to use, modifies
     config.authenticator and config.installer strings to reflect that choice if

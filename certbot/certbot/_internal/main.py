@@ -745,7 +745,7 @@ def _init_le_client(config, authenticator, installer):
     :type config: configuration.NamespaceConfig
 
     :param authenticator: Acme authentication handler
-    :type authenticator: Optional[interfaces.IAuthenticator]
+    :type authenticator: Optional[interfaces.Authenticator]
     :param installer: Installer object
     :type installer: interfaces.Installer
 
@@ -1484,7 +1484,7 @@ def make_displayer(config: configuration.NamespaceConfig
 
     :param config: Configuration object
 
-    :returns: Display object implementing :class:`certbot.interfaces.IDisplay`
+    :returns: Display object implementing :class:`certbot.interfaces.Display`
 
     """
     displayer: Union[None, display_util.NoninteractiveDisplay,
