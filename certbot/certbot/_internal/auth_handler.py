@@ -415,8 +415,7 @@ def _report_no_chall_path(challbs):
     raise errors.AuthorizationError(msg)
 
 
-def _generate_failed_chall_msg(failed_achalls):
-    # type: (List[achallenges.AnnotatedChallenge]) -> str
+def _generate_failed_chall_msg(failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
     """Creates a user friendly error message about failed challenges.
 
     :param list failed_achalls: A list of failed

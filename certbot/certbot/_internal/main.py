@@ -535,8 +535,8 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
         print()
 
 
-def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
-    # type: (configuration.NamespaceConfig, Optional[str], Optional[str], Optional[str]) -> None
+def _report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[str],
+                     fullchain_path: Optional[str], key_path: Optional[str] = None) -> None:
     """Reports the creation of a new certificate to the user.
 
     :param config: Configuration object
@@ -1316,8 +1316,9 @@ def run(config, plugins):
     return None
 
 
-def _csr_get_and_save_cert(config, le_client):
-    # type: (configuration.NamespaceConfig, client.Client) -> Tuple[Optional[str], Optional[str], Optional[str]] # pylint: disable=line-too-long
+def _csr_get_and_save_cert(config: configuration.NamespaceConfig,
+                           le_client: client.Client) -> Tuple[
+                           Optional[str], Optional[str], Optional[str]]:
     """Obtain a cert using a user-supplied CSR
 
     This works differently in the CSR case (for now) because we don't
@@ -1542,7 +1543,7 @@ def main(cli_args=None):
 
     # This call is done only for retro-compatibility purposes.
     # TODO: Remove this call once zope dependencies are removed from Certbot.
-    zope.component.provideUtility(config, configuration.NamespaceConfig)
+    zope.component.provideUtility(config, interfaces.IConfig)
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
