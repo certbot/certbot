@@ -212,6 +212,9 @@ class _RFC2136Client:
         try:
             try:
                 response = dns.query.tcp(request, self.server, self._default_timeout, self.port)
+            except ValueError:
+                raise errors.PluginError('Please enter an IP address for the `dns_rfc2136_server` '
+                                         'option instead of a hostname.')
             except (OSError, dns.exception.Timeout) as e:
                 logger.debug('TCP query failed, fallback to UDP: %s', e)
                 response = dns.query.udp(request, self.server, self._default_timeout, self.port)
