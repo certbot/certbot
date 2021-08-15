@@ -33,7 +33,7 @@ different to HMAC-MD5.
    :name: credentials.ini
    :caption: Example credentials file:
 
-   # Target DNS server
+   # Target DNS server (IPv4 or IPv6 address, not a hostname)
    dns_rfc2136_server = 192.0.2.1
    # Target DNS port
    dns_rfc2136_port = 53
