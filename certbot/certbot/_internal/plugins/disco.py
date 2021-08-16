@@ -148,9 +148,7 @@ class PluginEntryPoint:
             raise ValueError("Plugin is not initialized.")
         if self._prepared is None:
             try:
-                # TODO: remove type ignore once the interface becomes a proper
-                #  abstract class (using abc) that mypy understands.
-                self._initialized.prepare()  # type: ignore
+                self._initialized.prepare()
             except errors.MisconfigurationError as error:
                 logger.debug("Misconfigured %r: %s", self, error, exc_info=True)
                 self._prepared = error

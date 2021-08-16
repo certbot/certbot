@@ -126,7 +126,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             if part is not None).decode()
 
 
-class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
+class _Constant(jose.JSONDeSerializable, Hashable):
     """ACME constant."""
     __slots__ = ('name',)
     POSSIBLE_NAMES: Dict[str, '_Constant'] = NotImplemented

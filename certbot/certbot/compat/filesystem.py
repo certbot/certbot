@@ -166,10 +166,7 @@ def check_owner(file_path: str) -> bool:
     :return: True if given file is owned by current user, False otherwise.
     """
     if POSIX_MODE:
-        # On Windows, os.getuid does not exist. This is checked through POSIX_MODE value,
-        # but MyPy/PyLint does not know it and raises an error here on Windows.
-        # We disable specifically the check to fix the issue.
-        return os.stat(file_path).st_uid == os.getuid()  # type: ignore
+        return os.stat(file_path).st_uid == os.getuid()
 
     # Get owner sid of the file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
