@@ -6,8 +6,7 @@ from typing import List, Optional, Union
 import warnings
 
 from cryptography.hazmat.backends import default_backend
-# See https://github.com/pyca/cryptography/issues/4275
-from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 import josepy as jose
 import OpenSSL
 
