@@ -279,7 +279,8 @@ class TempHandler(logging.StreamHandler):
         try:
             # StreamHandler.close() doesn't close the stream to allow a
             # stream like stderr to be used
-            self.stream.close()
+            if hasattr(self.stream, 'close'):
+                self.stream.close()  # type: ignore
             if self._delete:
                 shutil.rmtree(self._workdir)
             self._delete = False

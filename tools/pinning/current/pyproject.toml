@@ -51,12 +51,6 @@ awscli = ">=1.19.62"
 # as a dependency here to ensure a version of cython is pinned for extra
 # stability.
 cython = "*"
-# mypy 0.900 stopped including stubs containing type information for 3rd party
-# libraries by default. This breaks our tests so let's continue to pin it back
-# for now. See
-# https://mypy-lang.blogspot.com/2021/05/the-upcoming-switch-to-modular-typeshed.html
-# for more info.
-mypy = "<0.900"
 # We install mock in our "external-mock" tox environment to test that we didn't
 # break Certbot's test API which used to always use mock objects from the 3rd
 # party mock library. We list the mock dependency here so that is pinned, but

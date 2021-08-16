@@ -1,5 +1,4 @@
 from distutils.version import LooseVersion
-import sys
 
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
@@ -30,6 +29,7 @@ install_requires = [
     'pywin32>=300 ; sys_platform == "win32"',
     'pyyaml',
     'requests',
+    'types-python-dateutil'
 ]
 
 setup(
