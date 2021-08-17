@@ -45,7 +45,6 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
-    'repoze.sphinx.autointerface',
 ]
 
 if sphinx.version_info >= (1, 6):
