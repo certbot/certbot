@@ -29,7 +29,7 @@ import sys
 import tempfile
 import traceback
 from types import TracebackType
-from typing import TextIO
+from typing import IO
 
 from acme import messages
 from certbot import errors
@@ -259,8 +259,10 @@ class TempHandler(logging.StreamHandler):
         self.path = os.path.join(self._workdir, 'log')
         stream = util.safe_open(self.path, mode='w', chmod=0o600)
         super().__init__(stream)
+        # Super constructor assigns the provided stream object to self.stream.
+        # Let's help mypy be aware of this by giving a type hint.
+        self.stream: IO[str]
         self._delete = True
-        self.stream: TextIO
 
     def emit(self, record):
         """Log the specified logging record.
