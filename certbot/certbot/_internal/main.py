@@ -1485,7 +1485,7 @@ def make_displayer(config: configuration.NamespaceConfig
 
     :param config: Configuration object
 
-    :returns: Display object implementing :class:`certbot.interfaces.Display`
+    :returns: Display object
 
     """
     displayer: Union[None, display_util.NoninteractiveDisplay,
