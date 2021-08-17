@@ -9,10 +9,14 @@ should be used whenever:
 Other messages can use the `logging` module. See `log.py`.
 
 """
+import sys
+from types import ModuleType
+from typing import cast
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import warnings
 
 
 # These specific imports from certbot._internal.display.obj and
@@ -202,3 +206,36 @@ def assert_valid_call(prompt, default, cli_flag, force_interactive):
         msg += ("\nYou can set an answer to "
                 "this prompt with the {0} flag".format(cli_flag))
     assert default is not None or force_interactive, msg
+
+
+# This class takes a similar approach to the cryptography project to deprecate attributes
+# in public modules. See the _ModuleWithDeprecation class here:
+# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
+class _DisplayUtilDeprecationModule:
+    """
+    Internal class delegating to a module, and displaying warnings when attributes
+    related to deprecated attributes in the certbot.display.util module.
+    """
+    def __init__(self, module):
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr):
+        if attr in ('FileDisplay', 'NoninteractiveDisplay', 'SIDE_FRAME', 'input_with_timeout',
+                    'separate_list_input', 'summarize_domain_list', 'WIDTH', 'HELP', 'ESC'):
+            warnings.warn('{0} attribute in certbot.display.util module is deprecated '
+                          'and will be removed soon.'.format(attr),
+                          DeprecationWarning, stacklevel=2)
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr, value):  # pragma: no cover
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr):  # pragma: no cover
+        delattr(self._module, attr)
+
+    def __dir__(self):  # pragma: no cover
+        return ['_module'] + dir(self._module)
+
+
+# Patching ourselves to warn about deprecation and planned removal of some elements in the module.
+sys.modules[__name__] = cast(ModuleType, _DisplayUtilDeprecationModule(sys.modules[__name__]))
