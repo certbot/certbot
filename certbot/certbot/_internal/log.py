@@ -29,6 +29,7 @@ import sys
 import tempfile
 import traceback
 from types import TracebackType
+from typing import TextIO
 
 from acme import messages
 from certbot import errors
@@ -259,6 +260,7 @@ class TempHandler(logging.StreamHandler):
         stream = util.safe_open(self.path, mode='w', chmod=0o600)
         super().__init__(stream)
         self._delete = True
+        self.stream: TextIO
 
     def emit(self, record):
         """Log the specified logging record.
@@ -279,8 +281,7 @@ class TempHandler(logging.StreamHandler):
         try:
             # StreamHandler.close() doesn't close the stream to allow a
             # stream like stderr to be used
-            if hasattr(self.stream, 'close'):
-                self.stream.close()  # type: ignore
+            self.stream.close()
             if self._delete:
                 shutil.rmtree(self._workdir)
             self._delete = False
