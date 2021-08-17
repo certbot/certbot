@@ -48,7 +48,7 @@ def get_unprepared_installer(config, plugins):
         All plugins registered as entry points.
 
     :returns: Unprepared installer plugin or None
-    :rtype: IPlugin or None
+    :rtype: Plugin or None
     """
 
     _, req_inst = cli_plugin_requests(config)
@@ -81,7 +81,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
     :param list ifaces: Interfaces that plugins must provide.
 
     :returns: Initialized plugin.
-    :rtype: IPlugin
+    :rtype: Plugin
 
     """
     if default is not None:

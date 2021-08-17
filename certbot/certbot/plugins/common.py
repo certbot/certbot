@@ -62,7 +62,7 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):
     def inject_parser_options(cls, parser, name):
         """Inject parser options.
 
-        See `~.IPlugin.inject_parser_options` for docs.
+        See `~.certbot.interfaces.Plugin.inject_parser_options` for docs.
 
         """
         # dummy function, doesn't check if dest.startswith(self.dest_namespace)
