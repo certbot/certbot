@@ -530,11 +530,11 @@ class NoninteractiveDisplay:
         return self.input(message, default, cli_flag)
 
 
-def get_display() -> Any:
+def get_display() -> Union[FileDisplay, NoninteractiveDisplay]:
     """Get the display utility.
 
     :return: the display utility
-    :rtype: Any
+    :rtype: Union[FileDisplay, NoninteractiveDisplay]
     :raise: ValueError if the display utility is not configured yet.
 
     """
@@ -544,10 +544,10 @@ def get_display() -> Any:
     return _SERVICE.display
 
 
-def set_display(display: Any) -> None:
+def set_display(display: Union[FileDisplay, NoninteractiveDisplay]) -> None:
     """Set the display service.
 
-    :param Any display: the display service
+    :param Union[FileDisplay, NoninteractiveDisplay] display: the display service
 
     """
     # This call is done only for retro-compatibility purposes.
