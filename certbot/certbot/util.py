@@ -13,6 +13,7 @@ import socket
 import subprocess
 import sys
 from typing import Dict
+from typing import IO
 from typing import Text
 from typing import Tuple
 from typing import Union
@@ -207,7 +208,7 @@ def make_or_verify_dir(directory, mode=0o755, strict=False):
             raise
 
 
-def safe_open(path, mode="w", chmod=None):
+def safe_open(path: str, mode: str = "w", chmod=None) -> IO:
     """Safely open a file.
 
     :param str path: Path to a file.

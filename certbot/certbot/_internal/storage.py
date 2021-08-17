@@ -1038,21 +1038,21 @@ class RenewableCert(interfaces.RenewableCert):
         archive_target = {kind: os.path.join(archive, kind + "1.pem") for kind in ALL_FOUR}
         for kind in ALL_FOUR:
             os.symlink(_relpath_from_file(archive_target[kind], target[kind]), target[kind])
-        with open(target["cert"], "wb") as f:
+        with open(target["cert"], "wb") as f_b:
             logger.debug("Writing certificate to %s.", target["cert"])
-            f.write(cert)
-        with util.safe_open(archive_target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
+            f_b.write(cert)
+        with util.safe_open(archive_target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f_a:
             logger.debug("Writing private key to %s.", target["privkey"])
-            f.write(privkey)
+            f_a.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
-        with open(target["chain"], "wb") as f:
+        with open(target["chain"], "wb") as f_b:
             logger.debug("Writing chain to %s.", target["chain"])
-            f.write(chain)
-        with open(target["fullchain"], "wb") as f:
+            f_b.write(chain)
+        with open(target["fullchain"], "wb") as f_b:
             # assumes that OpenSSL.crypto.dump_certificate includes
             # ending newline character
             logger.debug("Writing full chain to %s.", target["fullchain"])
-            f.write(cert + chain)
+            f_b.write(cert + chain)
 
         # Write a README file to the live directory
         readme_path = os.path.join(live_dir, README)
