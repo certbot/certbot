@@ -4,16 +4,16 @@ from typing import Optional
 
 import requests
 
+from certbot import configuration
 from certbot._internal import constants
 from certbot._internal.account import Account
 from certbot._internal.account import AccountFileStorage
 from certbot.display import util as display_util
-from certbot.interfaces import IConfig
 
 logger = logging.getLogger(__name__)
 
 
-def prepare_subscription(config: IConfig, acc: Account) -> None:
+def prepare_subscription(config: configuration.NamespaceConfig, acc: Account) -> None:
     """High level function to store potential EFF newsletter subscriptions.
 
     The user may be asked if they want to sign up for the newsletter if
@@ -22,7 +22,7 @@ def prepare_subscription(config: IConfig, acc: Account) -> None:
 
     Decision about EFF subscription will be stored in the account metadata.
 
-    :param IConfig config: Client configuration.
+    :param configuration.NamespaceConfig config: Client configuration.
     :param Account acc: Current client account.
 
     """
@@ -41,12 +41,12 @@ def prepare_subscription(config: IConfig, acc: Account) -> None:
         storage.update_meta(acc)
 
 
-def handle_subscription(config: IConfig, acc: Account) -> None:
+def handle_subscription(config: configuration.NamespaceConfig, acc: Account) -> None:
     """High level function to take care of EFF newsletter subscriptions.
 
     Once subscription is handled, it will not be handled again.
 
-    :param IConfig config: Client configuration.
+    :param configuration.NamespaceConfig config: Client configuration.
     :param Account acc: Current client account.
 
     """
