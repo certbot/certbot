@@ -127,7 +127,7 @@ class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
 class AccountFileStorage(interfaces.AccountStorage):
     """Accounts file storage.
 
-    :ivar .IConfig config: Client configuration
+    :ivar certbot.configuration.NamespaceConfig config: Client configuration
 
     """
     def __init__(self, config):

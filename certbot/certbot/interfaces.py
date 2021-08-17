@@ -438,7 +438,7 @@ class GenericUpdater(metaclass=ABCMeta):
 
     The plugins implementing this enhancement are responsible of handling
     the saving of configuration checkpoints as well as other calls to
-    interface methods of `interfaces.IInstaller` such as prepare() and restart()
+    interface methods of `interfaces.Installer` such as prepare() and restart()
     """
 
     @abstractmethod

@@ -50,7 +50,7 @@ class NginxConfigurator(common.Installer, interfaces.Authenticator):
         config files modified by the configurator will lose all their comments.
 
     :ivar config: Configuration.
-    :type config: :class:`~certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
 
     :ivar parser: Handles low level parsing
     :type parser: :class:`~certbot_nginx._internal.parser`
@@ -744,7 +744,7 @@ class NginxConfigurator(common.Installer, interfaces.Authenticator):
             vhost, ssl_block)
 
     ##################################
-    # enhancement methods (IInstaller)
+    # enhancement methods (Installer)
     ##################################
     def supported_enhancements(self):
         """Returns currently supported enhancements."""
@@ -956,7 +956,7 @@ class NginxConfigurator(common.Installer, interfaces.Authenticator):
         self.save_notes += "\tssl_stapling_verify on\n"
 
     ######################################
-    # Nginx server management (IInstaller)
+    # Nginx server management (Installer)
     ######################################
     def restart(self):
         """Restarts nginx server.
@@ -1086,7 +1086,7 @@ class NginxConfigurator(common.Installer, interfaces.Authenticator):
         )
 
     ###################################################
-    # Wrapper functions for Reverter class (IInstaller)
+    # Wrapper functions for Reverter class (Installer)
     ###################################################
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
@@ -1148,7 +1148,7 @@ class NginxConfigurator(common.Installer, interfaces.Authenticator):
         self.parser.load()
 
     ###########################################################################
-    # Challenges Section for IAuthenticator
+    # Challenges Section for Authenticator
     ###########################################################################
     def get_chall_pref(self, unused_domain):
         """Return list of challenge preferences."""

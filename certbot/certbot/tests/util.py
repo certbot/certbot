@@ -225,15 +225,15 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
 
 
 def patch_display_util():
-    """Patch certbot.display.util to use a special mock IDisplay.
+    """Patch certbot.display.util to use a special mock display utility.
 
-    The mock IDisplay works like a regular mock object, except it also
+    The mock display utility works like a regular mock object, except it also
     also asserts that methods are called with valid arguments.
 
     The mock created by this patch mocks out Certbot internals so this can be
     used like the old patch_get_utility function. That is, the mock object will
     be called by the certbot.display.util functions and the mock returned by
-    that call will be used as the IDisplay object. This was done to simplify
+    that call will be used as the display utility. This was done to simplify
     the transition from zope.component and mocking certbot.display.util
     functions directly in test code should be preferred over using this
     function in the future.
@@ -241,7 +241,7 @@ def patch_display_util():
     See https://github.com/certbot/certbot/issues/8948
 
     :returns: patch on the function used internally by certbot.display.util to
-        get an IDisplay object
+        get a display utility instance
     :rtype: unittest.mock._patch
 
     """
@@ -250,28 +250,28 @@ def patch_display_util():
 
 
 def patch_display_util_with_stdout(stdout=None):
-    """Patch certbot.display.util to use a special mock IDisplay.
+    """Patch certbot.display.util to use a special mock display utility.
 
-    The mock IDisplay works like a regular mock object, except it also
+    The mock display utility works like a regular mock object, except it also
     asserts that methods are called with valid arguments.
 
     The mock created by this patch mocks out Certbot internals so this can be
     used like the old patch_get_utility function. That is, the mock object will
     be called by the certbot.display.util functions and the mock returned by
-    that call will be used as the IDisplay object. This was done to simplify
+    that call will be used as the display utility. This was done to simplify
     the transition from zope.component and mocking certbot.display.util
     functions directly in test code should be preferred over using this
     function in the future.
 
     See https://github.com/certbot/certbot/issues/8948
 
-    The `message` argument passed to the IDisplay methods is passed to
+    The `message` argument passed to the display utility methods is passed to
     stdout's write method.
 
     :param object stdout: object to write standard output to; it is
         expected to have a `write` method
     :returns: patch on the function used internally by certbot.display.util to
-        get an IDisplay object
+        get a display utility instance
     :rtype: unittest.mock._patch
 
     """
@@ -372,7 +372,7 @@ def _create_display_util_mock_with_stdout(stdout):
 
     def mock_method(*args, **kwargs):
         """
-        Mock function for IDisplay methods.
+        Mock function for display utility methods.
         """
         _assert_valid_call(args, kwargs)
         _write_msg(*args, **kwargs)

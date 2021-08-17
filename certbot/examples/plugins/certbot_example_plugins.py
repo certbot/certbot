@@ -12,7 +12,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
 
     description = "Example Authenticator plugin"
 
-    # Implement all methods from IAuthenticator, remembering to add
+    # Implement all methods from Authenticator, remembering to add
     # "self" as first argument, e.g. def prepare(self)...
 
 
@@ -21,5 +21,5 @@ class Installer(common.Plugin, interfaces.Installer):
 
     description = "Example Installer plugin"
 
-    # Implement all methods from IInstaller, remembering to add
+    # Implement all methods from Installer, remembering to add
     # "self" as first argument, e.g. def get_all_names(self)...

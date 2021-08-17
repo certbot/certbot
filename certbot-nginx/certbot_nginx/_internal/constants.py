@@ -23,10 +23,12 @@ CLI_DEFAULTS: Dict[str, Any] = dict(
 
 
 MOD_SSL_CONF_DEST = "options-ssl-nginx.conf"
-"""Name of the mod_ssl config file as saved in `IConfig.config_dir`."""
+"""Name of the mod_ssl config file as saved
+in `certbot.configuration.NamespaceConfig.config_dir`."""
 
 UPDATED_MOD_SSL_CONF_DIGEST = ".updated-options-ssl-nginx-conf-digest.txt"
-"""Name of the hash of the updated or informed mod_ssl_conf as saved in `IConfig.config_dir`."""
+"""Name of the hash of the updated or informed mod_ssl_conf as saved
+in `certbot.configuration.NamespaceConfig.config_dir`."""
 
 ALL_SSL_OPTIONS_HASHES = [
     '0f81093a1465e3d4eaa8b0c14e77b2a2e93568b0fc1351c2b87893a95f0de87c',

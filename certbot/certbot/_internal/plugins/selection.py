@@ -4,6 +4,7 @@ import logging
 from typing import Optional
 from typing import Tuple
 
+from certbot import configuration
 from certbot import errors
 from certbot import interfaces
 from certbot._internal.plugins import disco
@@ -40,14 +41,14 @@ def pick_authenticator(
 
 def get_unprepared_installer(config, plugins):
     """
-    Get an unprepared interfaces.IInstaller object.
+    Get an unprepared interfaces.Installer object.
 
-    :param certbot.interfaces.IConfig config: Configuration
+    :param certbot.configuration.NamespaceConfig config: Configuration
     :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
 
     :returns: Unprepared installer plugin or None
-    :rtype: IPlugin or None
+    :rtype: Plugin or None
     """
 
     _, req_inst = cli_plugin_requests(config)
@@ -71,7 +72,7 @@ def get_unprepared_installer(config, plugins):
 def pick_plugin(config, default, plugins, question, ifaces):
     """Pick plugin.
 
-    :param certbot.interfaces.IConfig: Configuration
+    :param certbot.configuration.NamespaceConfig: Configuration
     :param str default: Plugin name supplied by user or ``None``.
     :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
@@ -80,7 +81,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
     :param list ifaces: Interfaces that plugins must provide.
 
     :returns: Initialized plugin.
-    :rtype: IPlugin
+    :rtype: Plugin
 
     """
     if default is not None:
@@ -164,9 +165,10 @@ def record_chosen_plugins(config, plugins, auth, inst):
          config.authenticator, config.installer)
 
 
-def choose_configurator_plugins(config: interfaces.IConfig, plugins: disco.PluginsRegistry,
-                                verb: str) -> Tuple[Optional[interfaces.IInstaller],
-                                                    Optional[interfaces.IAuthenticator]]:
+def choose_configurator_plugins(config: configuration.NamespaceConfig,
+                                plugins: disco.PluginsRegistry,
+                                verb: str) -> Tuple[Optional[interfaces.Installer],
+                                                    Optional[interfaces.Authenticator]]:
     """
     Figure out which configurator we're going to use, modifies
     config.authenticator and config.installer strings to reflect that choice if
@@ -174,7 +176,7 @@ def choose_configurator_plugins(config: interfaces.IConfig, plugins: disco.Plugi
 
     :raises errors.PluginSelectionError if there was a problem
 
-    :returns: tuple of (`IInstaller` or None, `IAuthenticator` or None)
+    :returns: tuple of (`Installer` or None, `Authenticator` or None)
     :rtype: tuple
     """
 

@@ -127,7 +127,7 @@ def register(config, account_storage, tos_cb=None):
     and finally saving the account. It should be called prior to
     initialization of `Client`, unless account has already been created.
 
-    :param .IConfig config: Client configuration.
+    :param certbot.configuration.NamespaceConfig config: Client configuration.
 
     :param .AccountStorage account_storage: Account storage where newly
         registered account will be saved to. Save happens only after TOS
@@ -196,7 +196,7 @@ def perform_registration(acme, config, tos_cb):
     problems
 
     :param acme.client.Client client: ACME client object.
-    :param .IConfig config: Client configuration.
+    :param certbot.configuration.NamespaceConfig config: Client configuration.
     :param Callable tos_cb: a callback to handle Term of Service agreement.
 
     :returns: Registration Resource.
@@ -238,14 +238,14 @@ def perform_registration(acme, config, tos_cb):
 class Client:
     """Certbot's client.
 
-    :ivar .IConfig config: Client configuration.
+    :ivar certbot.configuration.NamespaceConfig config: Client configuration.
     :ivar .Account account: Account registered with `register`.
     :ivar .AuthHandler auth_handler: Authorizations handler that will
         dispatch DV challenges to appropriate authenticators
-        (providing `.IAuthenticator` interface).
-    :ivar .IAuthenticator auth: Prepared (`.IAuthenticator.prepare`)
+        (providing `.Authenticator` interface).
+    :ivar .Authenticator auth: Prepared (`.Authenticator.prepare`)
         authenticator that can solve ACME challenges.
-    :ivar .IInstaller installer: Installer.
+    :ivar .Installer installer: Installer.
     :ivar acme.client.BackwardsCompatibleClientV2 acme: Optional ACME
         client API handle. You might already have one from `register`.
 
@@ -719,7 +719,7 @@ def rollback(default_installer, checkpoints, config, plugins):
     :param int checkpoints: Number of checkpoints to revert.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: :class:`certbot.configuration.NamespaceConfiguration`
 
     """
     # Misconfigurations are only a slight problems... allow the user to rollback

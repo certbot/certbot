@@ -62,7 +62,7 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):
     def inject_parser_options(cls, parser, name):
         """Inject parser options.
 
-        See `~.IPlugin.inject_parser_options` for docs.
+        See `~.certbot.interfaces.Plugin.inject_parser_options` for docs.
 
         """
         # dummy function, doesn't check if dest.startswith(self.dest_namespace)
@@ -96,8 +96,7 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
 
-    def auth_hint(self, failed_achalls):
-        # type: (List[achallenges.AnnotatedChallenge]) -> str
+    def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
         """Human-readable string to help the user troubleshoot the authenticator.
 
         Shown to the user if one or more of the attempted challenges were not a success.

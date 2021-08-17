@@ -304,11 +304,9 @@ class PluginsRegistry(Mapping):
     def find_init(self, plugin):
         """Find an initialized plugin.
 
-        This is particularly useful for finding a name for the plugin
-        (although `.IPluginFactory.__call__` takes ``name`` as one of
-        the arguments, ``IPlugin.name`` is not part of the interface)::
+        This is particularly useful for finding a name for the plugin::
 
-          # plugin is an instance providing IPlugin, initialized
+          # plugin is an instance providing Plugin, initialized
           # somewhere else in the code
           plugin_registry.find_init(plugin).name
 

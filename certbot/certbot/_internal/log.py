@@ -94,7 +94,7 @@ def post_arg_parse_setup(config):
     sent to that handler. Terminal logging output is set to the level
     requested by the user.
 
-    :param certbot.interface.IConfig config: Configuration object
+    :param certbot.configuration.NamespaceConfig config: Configuration object
 
     """
     file_handler, file_path = setup_log_file_handler(
@@ -140,7 +140,7 @@ def post_arg_parse_setup(config):
 def setup_log_file_handler(config, logfile, fmt):
     """Setup file debug logging.
 
-    :param certbot.interface.IConfig config: Configuration object
+    :param certbot.configuration.NamespaceConfig config: Configuration object
     :param str logfile: basename for the log file
     :param str fmt: logging format string
 

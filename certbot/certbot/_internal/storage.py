@@ -15,6 +15,7 @@ import parsedatetime
 import pytz
 
 import certbot
+from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -36,10 +37,10 @@ CURRENT_VERSION = util.get_strict_version(certbot.__version__)
 BASE_PRIVKEY_MODE = 0o600
 
 
-def renewal_conf_files(config):
+def renewal_conf_files(config: configuration.NamespaceConfig):
     """Build a list of all renewal configuration files.
 
-    :param certbot.interfaces.IConfig config: Configuration object
+    :param configuration.NamespaceConfig config: Configuration object
 
     :returns: list of renewal configuration files
     :rtype: `list` of `str`
@@ -59,10 +60,10 @@ def renewal_file_for_certname(config, certname):
     return path
 
 
-def cert_path_for_cert_name(config: interfaces.IConfig, cert_name: str) -> str:
+def cert_path_for_cert_name(config: configuration.NamespaceConfig, cert_name: str) -> str:
     """ If `--cert-name` was specified, but you need a value for `--cert-path`.
 
-    :param `configuration.NamespaceConfig` config: parsed command line arguments
+    :param configuration.NamespaceConfig config: parsed command line arguments
     :param str cert_name: cert name.
 
     """

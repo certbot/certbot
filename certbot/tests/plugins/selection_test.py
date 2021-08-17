@@ -53,7 +53,7 @@ class PickPluginTest(unittest.TestCase):
         self.default = None
         self.reg = mock.MagicMock()
         self.question = "Question?"
-        self.ifaces: List[interfaces.IPlugin] = []
+        self.ifaces: List[interfaces.Plugin] = []
 
     def _call(self):
         from certbot._internal.plugins.selection import pick_plugin

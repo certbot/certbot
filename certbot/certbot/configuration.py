@@ -14,10 +14,8 @@ from certbot.compat import os
 class NamespaceConfig:
     """Configuration wrapper around :class:`argparse.Namespace`.
 
-    For more documentation, including available attributes, please see
-    :class:`certbot.interfaces.IConfig`. However, note that
-    the following attributes are dynamically resolved using
-    :attr:`~certbot.interfaces.IConfig.work_dir` and relative
+    Please note that the following attributes are dynamically resolved using
+    :attr:`~certbot.configuration.NamespaceConfig.work_dir` and relative
     paths defined in :py:mod:`certbot._internal.constants`:
 
       - `accounts_dir`
@@ -27,7 +25,7 @@ class NamespaceConfig:
       - `temp_checkpoint_dir`
 
     And the following paths are dynamically resolved using
-    :attr:`~certbot.interfaces.IConfig.config_dir` and relative
+    :attr:`~certbot.configuration.NamespaceConfig.config_dir` and relative
     paths defined in :py:mod:`certbot._internal.constants`:
 
       - `default_archive_dir`
@@ -77,6 +75,11 @@ class NamespaceConfig:
         """Size of the RSA key."""
         return self.namespace.rsa_key_size
 
+    @rsa_key_size.setter
+    def rsa_key_size(self, ksize: int) -> None:
+        """Set the rsa_key_size property"""
+        self.namespace.rsa_key_size = ksize
+
     @property
     def elliptic_curve(self) -> str:
         """The SECG elliptic curve name to use.
@@ -85,6 +88,11 @@ class NamespaceConfig:
         """
         return self.namespace.elliptic_curve
 
+    @elliptic_curve.setter
+    def elliptic_curve(self, ecurve: str) -> None:
+        """Set the elliptic_curve property"""
+        self.namespace.elliptic_curve = ecurve
+
     @property
     def key_type(self) -> str:
         """Type of generated private key.
@@ -92,6 +100,11 @@ class NamespaceConfig:
         Only *ONE* per invocation can be provided at this time.
         """
         return self.namespace.key_type
+
+    @key_type.setter
+    def key_type(self, ktype: str) -> None:
+        """Set the key_type property"""
+        self.namespace.key_type = ktype
 
     @property
     def must_staple(self) -> bool:
@@ -281,8 +294,8 @@ def _check_config_sanity(config):
     """Validate command line options and display error message if
     requirements are not met.
 
-    :param config: IConfig instance holding user configuration
-    :type args: :class:`certbot.interfaces.IConfig`
+    :param config: NamespaceConfig instance holding user configuration
+    :type args: :class:`certbot.configuration.NamespaceConfig`
 
     """
     # Port check
