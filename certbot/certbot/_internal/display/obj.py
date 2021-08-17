@@ -1,7 +1,6 @@
 """This modules define the actual display implementations used in Certbot"""
 import logging
 import sys
-from typing import Any
 from typing import Optional
 from typing import Union
 
