@@ -7,10 +7,10 @@ import logging
 import socket
 from typing import Type
 
-from cryptography.hazmat.primitives import hashes  # type: ignore
+from cryptography.hazmat.primitives import hashes
 import josepy as jose
 from OpenSSL import crypto
-from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
+from OpenSSL import SSL
 import requests
 
 from acme import crypto_util

@@ -6,7 +6,7 @@ available. This code is being kept for now for backwards compatibility.
 """
 import warnings
 from typing import *  # pylint: disable=wildcard-import, unused-wildcard-import
-from typing import Collection, IO  # type: ignore
+from typing import Collection, IO
 
 warnings.warn("acme.magic_typing is deprecated and will be removed in a future release.",
               DeprecationWarning)

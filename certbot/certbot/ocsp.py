@@ -12,8 +12,7 @@ from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
-# See https://github.com/pyca/cryptography/issues/4275
-from cryptography.hazmat.primitives import hashes  # type: ignore
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 import pytz
 import requests
