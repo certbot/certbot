@@ -25,7 +25,7 @@ class PluginProxy(interfaces.Plugin, metaclass=ABCMeta):
         super().__init__(args, 'proxy')
 
     @abstractmethod
-    def cleanup_from_tests(self):  # type: ignore
+    def cleanup_from_tests(self):
         """Performs any necessary cleanup from running plugin tests.
 
         This is guaranteed to be called before the program exits.
@@ -33,15 +33,15 @@ class PluginProxy(interfaces.Plugin, metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def has_more_configs(self):  # type: ignore
+    def has_more_configs(self):
         """Returns True if there are more configs to test"""
 
     @abstractmethod
-    def load_config(self):  # type: ignore
+    def load_config(self):
         """Loads the next config and returns its name"""
 
     @abstractmethod
-    def get_testable_domain_names(self):  # type: ignore
+    def get_testable_domain_names(self):
         """Returns the domain names that can be used in testing"""
 
 
@@ -53,7 +53,7 @@ class InstallerProxy(PluginProxy, interfaces.Installer, metaclass=ABCMeta):
     """Wraps a Certbot installer"""
 
     @abstractmethod
-    def get_all_names_answer(self):  # type: ignore
+    def get_all_names_answer(self):
         """Returns all names that should be found by the installer"""
 
 

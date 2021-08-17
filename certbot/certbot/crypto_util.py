@@ -11,8 +11,7 @@ from typing import List
 from typing import Set
 import warnings
 
-# See https://github.com/pyca/cryptography/issues/4275
-from cryptography import x509  # type: ignore
+from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
@@ -25,7 +24,7 @@ from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
 from OpenSSL import crypto
-from OpenSSL import SSL  # type: ignore
+from OpenSSL import SSL
 import pyrfc3339
 import zope.component
 
