@@ -242,10 +242,10 @@ class Client:
     :ivar .Account account: Account registered with `register`.
     :ivar .AuthHandler auth_handler: Authorizations handler that will
         dispatch DV challenges to appropriate authenticators
-        (providing `.IAuthenticator` interface).
-    :ivar .IAuthenticator auth: Prepared (`.IAuthenticator.prepare`)
+        (providing `.Authenticator` interface).
+    :ivar .Authenticator auth: Prepared (`.Authenticator.prepare`)
         authenticator that can solve ACME challenges.
-    :ivar .IInstaller installer: Installer.
+    :ivar .Installer installer: Installer.
     :ivar acme.client.BackwardsCompatibleClientV2 acme: Optional ACME
         client API handle. You might already have one from `register`.
 

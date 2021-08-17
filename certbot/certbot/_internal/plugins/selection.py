@@ -176,7 +176,7 @@ def choose_configurator_plugins(config: configuration.NamespaceConfig,
 
     :raises errors.PluginSelectionError if there was a problem
 
-    :returns: tuple of (`IInstaller` or None, `IAuthenticator` or None)
+    :returns: tuple of (`Installer` or None, `Authenticator` or None)
     :rtype: tuple
     """
 

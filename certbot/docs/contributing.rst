@@ -269,7 +269,7 @@ Installers plugins exist to actually setup the certificate in a server,
 possibly tweak the security configuration to make it more correct and secure
 (Fix some mixed content problems, turn on HSTS, redirect to HTTPS, etc).
 Installer plugins tell the main client about their abilities to do the latter
-via the :meth:`~.IInstaller.supported_enhancements` call. We currently
+via the :meth:`~.Installer.supported_enhancements` call. We currently
 have two Installers in the tree, the `~.ApacheConfigurator`. and the
 `~.NginxConfigurator`.  External projects have made some progress toward
 support for IIS, Icecast and Plesk.

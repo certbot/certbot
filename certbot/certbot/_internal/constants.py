@@ -211,7 +211,7 @@ RENEWAL_POST_HOOKS_DIR = "post"
 """Basename of directory containing post-hooks to run with the renew command."""
 
 FORCE_INTERACTIVE_FLAG = "--force-interactive"
-"""Flag to disable TTY checking in IDisplay."""
+"""Flag to disable TTY checking in certbot.display.util."""
 
 EFF_SUBSCRIBE_URI = "https://supporters.eff.org/subscribe/certbot"
 """EFF URI used to submit the e-mail address of users who opt-in."""

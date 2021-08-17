@@ -187,17 +187,16 @@ def directory_select(message: str, default: Optional[str] = None, cli_flag: Opti
 
 
 def assert_valid_call(prompt, default, cli_flag, force_interactive):
-    """Verify that provided arguments is a valid IDisplay call.
+    """Verify that provided arguments is a valid display call.
 
     :param str prompt: prompt for the user
     :param default: default answer to prompt
     :param str cli_flag: command line option for setting an answer
         to this question
-    :param bool force_interactive: if interactivity is forced by the
-        IDisplay call
+    :param bool force_interactive: if interactivity is forced
 
     """
-    msg = "Invalid IDisplay call for this prompt:\n{0}".format(prompt)
+    msg = "Invalid display call for this prompt:\n{0}".format(prompt)
     if cli_flag:
         msg += ("\nYou can set an answer to "
                 "this prompt with the {0} flag".format(cli_flag))

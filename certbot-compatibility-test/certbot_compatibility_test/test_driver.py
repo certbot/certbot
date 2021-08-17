@@ -330,7 +330,7 @@ def setup_logging(args):
 
 
 def setup_display():
-    """"Prepares IDisplay for the Certbot plugins """
+    """"Prepares a display utility instace for the Certbot plugins """
     displayer = display_util.NoninteractiveDisplay(sys.stdout)
     display_obj.set_display(displayer)
 

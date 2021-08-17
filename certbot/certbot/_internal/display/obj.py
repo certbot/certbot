@@ -241,8 +241,7 @@ class FileDisplay:
         :param default: default answer to prompt
         :param str cli_flag: command line option for setting an answer
             to this question
-        :param bool force_interactive: if interactivity is forced by the
-            IDisplay call
+        :param bool force_interactive: if interactivity is forced
 
         :returns: True if we should return the default without prompting
         :rtype: bool
@@ -266,8 +265,7 @@ class FileDisplay:
     def _can_interact(self, force_interactive):
         """Can we safely interact with the user?
 
-        :param bool force_interactive: if interactivity is forced by the
-            IDisplay call
+        :param bool force_interactive: if interactivity is forced
 
         :returns: True if the display can interact with the user
         :rtype: bool
@@ -399,7 +397,7 @@ class FileDisplay:
 # through the public API in certbot.display.util.
 @zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay:
-    """An iDisplay implementation that never asks for interactive user input"""
+    """An diplay utility implementation that never asks for interactive user input"""
 
     def __init__(self, outfile, *unused_args, **unused_kwargs):
         super().__init__()
@@ -532,16 +530,11 @@ class NoninteractiveDisplay:
         return self.input(message, default, cli_flag)
 
 
-# The two following functions use "Any" for their parameter/output types. Normally interfaces from
-# certbot.interfaces would be used, but MyPy will not understand their semantic. These interfaces
-# will be removed soon and replaced by ABC classes that will be used also here for type checking.
-# TODO: replace Any by actual ABC classes once available
-
 def get_display() -> Any:
     """Get the display utility.
 
     :return: the display utility
-    :rtype: IDisplay
+    :rtype: Any
     :raise: ValueError if the display utility is not configured yet.
 
     """
@@ -554,7 +547,7 @@ def get_display() -> Any:
 def set_display(display: Any) -> None:
     """Set the display service.
 
-    :param IDisplay display: the display service
+    :param Any display: the display service
 
     """
     # This call is done only for retro-compatibility purposes.
