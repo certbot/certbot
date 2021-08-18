@@ -11,8 +11,6 @@ install_requires = [
     f'certbot>={version}',
     'python-augeas',
     'setuptools>=39.0.1',
-    'zope.component',
-    'zope.interface',
 ]
 
 dev_extras = [

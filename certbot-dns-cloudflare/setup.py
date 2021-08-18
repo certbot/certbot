@@ -9,7 +9,6 @@ version = '1.19.0.dev0'
 install_requires = [
     'cloudflare>=1.5.1',
     'setuptools>=39.0.1',
-    'zope.interface',
 ]
 
 if not os.environ.get('SNAP_BUILD'):

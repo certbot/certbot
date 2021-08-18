@@ -12,7 +12,6 @@ install_requires = [
     'PyOpenSSL>=17.3.0',
     'pyparsing>=2.2.0',
     'setuptools>=39.0.1',
-    'zope.interface',
 ]
 
 setup(

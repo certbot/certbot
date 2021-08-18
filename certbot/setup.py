@@ -79,8 +79,7 @@ dev_extras = [
 docs_extras = [
     # If you have Sphinx<1.5.1, you need docutils<0.13.1
     # https://github.com/sphinx-doc/sphinx/issues/3212
-    'repoze.sphinx.autointerface',
-    'Sphinx>=1.2', # Annotation support
+    'Sphinx>=1.2',  # Annotation support
     'sphinx_rtd_theme',
 ]
 

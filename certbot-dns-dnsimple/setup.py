@@ -11,7 +11,6 @@ install_requires = [
     # https://github.com/AnalogJ/lexicon/issues/387.
     'dns-lexicon>=3.2.1',
     'setuptools>=39.0.1',
-    'zope.interface',
 ]
 
 if not os.environ.get('SNAP_BUILD'):
