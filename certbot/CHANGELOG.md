@@ -6,7 +6,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* The certbot-dns-rfc2136 plugin always assumed the use of an IP address as the
+  target server, but this was never checked. Until now. The plugin raises an error
+  if the configured target server is not a valid IPv4 or IPv6 address.
 
 ### Changed
 
