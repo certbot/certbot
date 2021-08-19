@@ -129,11 +129,6 @@ cython = "*"
 # We add any dependencies that must be specified in this file for any another
 # reason below.
 
-# pip's new dependency resolver fails on local packages that depend on each
-# other when those packages are requested with extras such as 'certbot[dev]' so
-# let's pin it back for now. See https://github.com/pypa/pip/issues/9204.
-pip = "20.2.4"
-
 # wheel 0.34.1+ does not support the version of setuptools pinned above (and
 # wheel 0.34.0 is buggy).
 wheel = "<0.34.0"
