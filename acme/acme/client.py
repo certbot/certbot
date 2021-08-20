@@ -1160,6 +1160,9 @@ class ClientNetwork:
                 "Accept" in kwargs["headers"]):
             debug_content = base64.b64encode(response.content)
         else:
+            # We set response.encoding so requests.text knows the response is
+            # UTF-8 encoded instead of trying to guess the encoding that was
+            # used which is error prone.
             response.encoding = "utf-8"
             debug_content = response.text
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
