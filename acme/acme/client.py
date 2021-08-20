@@ -1149,13 +1149,19 @@ class ClientNetwork:
             host, path, _err_no, err_msg = m.groups()
             raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
 
-        # If content is DER, log the base64 of it instead of raw bytes, to keep
-        # binary data out of the logs.
+        # If the Content-Type is DER or an Accept header was sent in the
+        # request, the response may not be UTF-8 encoded. In this case, we
+        # don't set response.encoding and log the base64 response instead of
+        # raw bytes to keep binary data out of the logs. This code can be
+        # simplified to only check for an Accept header in the request when
+        # ACMEv1 support is dropped.
         debug_content: Union[bytes, str]
-        if response.headers.get("Content-Type") == DER_CONTENT_TYPE:
+        if (response.headers.get("Content-Type") == DER_CONTENT_TYPE or
+                "Accept" in kwargs["headers"]):
             debug_content = base64.b64encode(response.content)
         else:
-            debug_content = response.content.decode("utf-8")
+            response.encoding = "utf-8"
+            debug_content = response.text
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
                      "\n".join("{0}: {1}".format(k, v)
