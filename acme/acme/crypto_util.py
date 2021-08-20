@@ -202,10 +202,8 @@ def make_csr(private_key_pem, domains=None, must_staple=False, ipaddrs=None):
     private_key = crypto.load_privatekey(
         crypto.FILETYPE_PEM, private_key_pem)
     csr = crypto.X509Req()
-    # as our 'domains' are no longer strictly domains, so check for ip address
-    #if addresses
     sanlist = []
-    # if domain or ip list not supplyed make it empty list so it's easier to iterrate
+    # if domain or ip list not supplied make it empty list so it's easier to iterate
     if domains is None:
         domains = []
     if ipaddrs is None:
@@ -294,8 +292,6 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
 def _pyopenssl_cert_or_req_san_ip(cert_or_req):
     """Get Subject Alternative Names IPs from certificate or CSR using pyOpenSSL.
 
-    .. note:: Although this is `acme` internal API, it is used by
-        `letsencrypt`.
 
     :param cert_or_req: Certificate or CSR.
     :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
