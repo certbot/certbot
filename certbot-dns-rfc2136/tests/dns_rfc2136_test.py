@@ -74,6 +74,27 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
         self.auth.perform([self.achall])
 
+    def test_invalid_server_raises(self):
+        config = VALID_CONFIG.copy()
+        config["rfc2136_server"] = "example.com"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+    @test_util.patch_display_util()
+    def test_valid_server_passes(self, unused_mock_get_utility):
+        config = VALID_CONFIG.copy()
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
+
+        config["rfc2136_server"] = "2001:db8:3333:4444:cccc:dddd:eeee:ffff"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
+
 
 class RFC2136ClientTest(unittest.TestCase):
 

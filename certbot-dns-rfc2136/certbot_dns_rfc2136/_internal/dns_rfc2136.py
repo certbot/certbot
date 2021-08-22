@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 
 import dns.flags
+from dns.inet import is_address
 import dns.message
 import dns.name
 import dns.query
@@ -54,7 +55,11 @@ class Authenticator(dns_common.DNSAuthenticator):
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'RFC 2136 Dynamic Updates.'
 
-    def _validate_algorithm(self, credentials):
+    def _validate_credentials(self, credentials):
+        server = credentials.conf('server')
+        if not is_address(server):
+            raise errors.PluginError("The configured target DNS server ({0}) is not a valid IPv4 "
+                                     "or IPv6 address. A hostname is not allowed.".format(server))
         algorithm = credentials.conf('algorithm')
         if algorithm:
             if not self.ALGORITHMS.get(algorithm.upper()):
@@ -69,7 +74,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                 'secret': 'TSIG key secret',
                 'server': 'The target DNS server'
             },
-            self._validate_algorithm
+            self._validate_credentials
         )
 
     def _perform(self, _domain, validation_name, validation):
