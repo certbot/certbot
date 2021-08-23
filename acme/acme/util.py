@@ -1,5 +1,4 @@
 """ACME utilities."""
-import ipaddress
 
 def map_keys(dikt, func):
     """Map dictionary keys."""
