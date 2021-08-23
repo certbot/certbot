@@ -343,25 +343,6 @@ class Client(ClientBase):
         return self.request_challenges(messages.Identifier(
             typ=messages.IDENTIFIER_FQDN, value=domain), new_authzr_uri)
 
-    def request_ip_challenges(self, ip):
-        """Request challenges for a ip address.
-
-        This is simply a convenience function that wraps around
-        `request_challenges`, but works with ip addresses instead of
-        generic identifiers. See ``request_challenges`` for more
-        documentation.
-
-        :param ipaddress ip: IP address to be challenged.
-
-        :returns: Authorization Resource.
-        :rtype: `.AuthorizationResource`
-
-        :raises errors.WildcardUnsupportedError: if a wildcard is requested
-
-        """
-        return self.request_challenges(messages.Identifier(
-            typ=messages.IDENTIFIER_IP, value=ip.exploded), None)
-
     def request_issuance(self, csr, authzrs):
         """Request issuance.
 

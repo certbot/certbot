@@ -188,7 +188,7 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
 
 
 def make_csr(private_key_pem, domains=None, must_staple=False, ipaddrs=None):
-    """Generate a CSR containing a list of domains as subjectAltNames.
+    """Generate a CSR containing domains or IPs as subjectAltNames.
 
     :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
     :param list domains: List of DNS names to include in subjectAltNames of CSR.

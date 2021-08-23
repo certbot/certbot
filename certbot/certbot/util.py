@@ -481,10 +481,6 @@ def enforce_le_validity(domain):
                                 Encrypt currently will not issue certificates
 
     """
-    # this ip address check : while certbot can process ipaddress, ACME server it talks to may not.
-    # but have to try anyway to know if server support it or not
-    if is_ipaddress(domain):
-        raise errors.ConfigurationError(f"IP address {domain} need to be sent as --ip parameter")
 
     domain = enforce_domain_sanity(domain)
     if not re.match("^[A-Za-z0-9.-]*$", domain):
@@ -567,7 +563,15 @@ def enforce_domain_sanity(domain):
 
 
 def is_ipaddress(address):
-    """this function check if input name is actually an IP(v4 or v6) address"""
+    """Is given address string form of IP(v4 or v6) address?
+
+    :param address: address to check
+    :type address: `str` or `unicode`
+
+    :returns: True if address is valid IP address, otherwise return False.
+    :rtype: bool
+
+    """
     try:
         socket.inet_pton(socket.AF_INET, address)
         # If this line runs it was ip address (ipv4)

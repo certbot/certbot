@@ -14,10 +14,3 @@ class MapKeysTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
-
-class IpCheckTest(unittest.TestCase):
-    def test_is_ip(self):
-        from acme.util import is_ip
-        self.assertTrue(is_ip("127.0.0.1"))
-        self.assertFalse(is_ip("baa.foo.exemple"))
-        self.assertTrue(is_ip("fe23:23bd::daaf"))

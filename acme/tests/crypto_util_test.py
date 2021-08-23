@@ -216,8 +216,8 @@ class PyOpenSSLCertOrReqSANIPTest(unittest.TestCase):
                          ['0:0:0:0:0:0:0:1', 'A3BE:32F3:206E:C75D:956:CEE:9858:5EC5'])
 
 
-class RandomSnTest(unittest.TestCase):
-    """Test for random certificate serial numbers."""
+class GenSsCertTest(unittest.TestCase):
+    """Test for gen_ss_cert (generation of self-signed cert)."""
 
 
     def setUp(self):
