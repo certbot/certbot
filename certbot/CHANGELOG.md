@@ -18,6 +18,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * `zope` based interfaces in `certbot.interfaces` module are deprecated and will
   be removed in a future release of Certbot. Any import of these interfaces will
   emit a warning to prepare the transition for developers.
+* We removed the dependency on `chardet` from our acme library. Except for when
+  downloading a certificate in an alternate format, our acme library now
+  assumes all server responses are UTF-8 encoded which is required by RFC 8555.
 
 ### Fixed
 
