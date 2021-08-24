@@ -239,6 +239,7 @@ def make_csr(private_key_pem, domains=None, must_staple=False, ipaddrs=None):
 
 
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
+    # unlike its name this only outputs DNS names, other type of idents will ignored
     common_name = loaded_cert_or_req.get_subject().CN
     sans = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
 
@@ -258,36 +259,21 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     :param cert_or_req: Certificate or CSR.
     :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
 
-    :returns: A list of Subject Alternative Names.
+    :returns: A list of Subject Alternative Names that is DNS.
     :rtype: `list` of `unicode`
 
     """
-    # This function finds SANs by dumping the certificate/CSR to text and
-    # searching for "X509v3 Subject Alternative Name" in the text. This method
-    # is used to support PyOpenSSL version 0.13 where the
-    # `_subjectAltNameString` and `get_extensions` methods are not available
-    # for CSRs.
+    # This function finds SANs with dns name
 
     # constants based on PyOpenSSL certificate/CSR text dump
     part_separator = ":"
-    parts_separator = ", "
     prefix = "DNS" + part_separator
 
-    if isinstance(cert_or_req, crypto.X509):
-        # pylint: disable=line-too-long
-        func: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]] = crypto.dump_certificate
-    else:
-        func = crypto.dump_certificate_request
-    text = func(crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
-    # WARNING: this function does not support multiple SANs extensions.
-    # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
-    match = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)
-    # WARNING: this function assumes that no SAN can include
-    # parts_separator, hence the split!
-    sans_parts = [] if match is None else match.group(1).split(parts_separator)
+    sans_parts = _pyopenssl_extract_san_list_raw(cert_or_req)
 
     return [part.split(part_separator)[1]
             for part in sans_parts if part.startswith(prefix)]
+
 
 def _pyopenssl_cert_or_req_san_ip(cert_or_req):
     """Get Subject Alternative Names IPs from certificate or CSR using pyOpenSSL.
@@ -296,20 +282,34 @@ def _pyopenssl_cert_or_req_san_ip(cert_or_req):
     :param cert_or_req: Certificate or CSR.
     :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
 
-    :returns: A list of Subject Alternative Names.
-    :rtype: `list` of `unicode` note that this returns as string, not IPaddress object
+    :returns: A list of Subject Alternative Names that is IP Address.
+    :rtype: `list` of `unicode`. note that this returns as string, not IPaddress object
+
+    """
+
+    # constants based on PyOpenSSL certificate/CSR text dump
+    part_separator = ":"
+    prefix = "IP Address" + part_separator
+
+    sans_parts = _pyopenssl_extract_san_list_raw(cert_or_req)
+
+    return [part[len(prefix):] for part in sans_parts if part.startswith(prefix)]
+
+
+def _pyopenssl_extract_san_list_raw(cert_or_req):
+    """Get raw SAN string from cert or csr, parse it as UTF-8 and retruns.
+
+    :param cert_or_req: Certificate or CSR.
+    :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
+
+    :returns: raw san string, parsed byte as utf-8
+    :rtype: `list` of `unicode`
 
     """
     # This function finds SANs by dumping the certificate/CSR to text and
     # searching for "X509v3 Subject Alternative Name" in the text. This method
-    # is used to support PyOpenSSL version 0.13 where the
-    # `_subjectAltNameString` and `get_extensions` methods are not available
-    # for CSRs.
-
-    # constants based on PyOpenSSL certificate/CSR text dump
-    part_separator = ":"
-    parts_separator = ", "
-    prefix = "IP Address" + part_separator
+    # is used to because in PyOpenSSL version <0.17 `_subjectAltNameString` methods are
+    # not able to Parse IP Addresses in subjectAltName string.
 
     if isinstance(cert_or_req, crypto.X509):
         # pylint: disable=line-too-long
@@ -319,12 +319,13 @@ def _pyopenssl_cert_or_req_san_ip(cert_or_req):
     text = func(crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
     # WARNING: this function does not support multiple SANs extensions.
     # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
-    match = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)
+    raw_san = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)
+
+    parts_separator = ", "
     # WARNING: this function assumes that no SAN can include
     # parts_separator, hence the split!
-    sans_parts = [] if match is None else match.group(1).split(parts_separator)
-    # "IP Address:" is 11 letters so remove first 11 letters from part
-    return [part[11:] for part in sans_parts if part.startswith(prefix)]
+    sans_parts = [] if raw_san is None else raw_san.group(1).split(parts_separator)
+    return sans_parts
 
 
 def gen_ss_cert(key, domains=None, not_before=None,
@@ -336,7 +337,7 @@ def gen_ss_cert(key, domains=None, not_before=None,
     :param bool force_san:
     :param extensions: List of additional extensions to include in the cert.
     :type extensions: `list` of `OpenSSL.crypto.X509Extension`
-    :type ipaddrs: `list` of (`ipaddress.IPv4Address` or `ipaddress.IPv6Address`)
+    :type ips: `list` of (`ipaddress.IPv4Address` or `ipaddress.IPv6Address`)
 
     If more than one domain is provided, all of the domains are put into
     ``subjectAltName`` X.509 extension and first domain is set as the
