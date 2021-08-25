@@ -114,7 +114,6 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
     :raises errors.Error: if certificate could not be obtained
 
     """
-    hooks.pre_hook(config)
     renewed_domains: List[str] = []
 
     try:
@@ -827,6 +826,7 @@ def _init_le_client(config: configuration.NamespaceConfig,
     :rtype: client.Client
 
     """
+    hooks.pre_hook(config)
     acc: Optional[account.Account]
     if authenticator is not None:
         # if authenticator was given, then we will need account...

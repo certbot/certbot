@@ -169,7 +169,10 @@ class _UnixLockMechanism(_BaseLockMechanism):
         # process B: delete file
         # process C: open and lock a different file at the same path
         try:
-            os.remove(self._path)
+            path = self._path
+            if os.path.islink(path):
+                path = os.readlink(path)
+            os.remove(path)
         finally:
             # Following check is done to make mypy happy: it ensure that self._fd, marked
             # as Optional[int] is effectively int to make it compatible with os.close signature.
