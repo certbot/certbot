@@ -984,10 +984,19 @@ class MainTest(test_util.ConfigTestCase):
                           self._call,
                           ['-d', (('a' * 50) + '.') * 10])
 
+        # Bare IP address (this is actually a different error message now)
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', '204.11.231.35'])
+        # Bare IPv6 address
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', '2001:db8:ac69:3ff:b1cb:c8c6:5a84:a31b'])
+
     def test_csr_with_besteffort(self):
-        self.assertRaises(
-            errors.Error, self._call,
-            'certonly --csr {0} --allow-subset-of-names'.format(CSR).split())
+            self.assertRaises(
+                errors.Error, self._call,
+                'certonly --csr {0} --allow-subset-of-names'.format(CSR).split())
 
     def test_run_with_csr(self):
         # This is an error because you can only use --csr with certonly

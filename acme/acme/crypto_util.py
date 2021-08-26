@@ -312,7 +312,7 @@ def _pyopenssl_extract_san_list_raw(cert_or_req):
 
     if isinstance(cert_or_req, crypto.X509):
         # pylint: disable=line-too-long
-    func: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]] = crypto.dump_certificate
+        func: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]] = crypto.dump_certificate
     else:
         func = crypto.dump_certificate_request
     text = func(crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")

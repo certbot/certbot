@@ -707,14 +707,6 @@ class ApacheConfigurator(common.Installer):
 
         """
 
-        if util.is_ipaddress(target_name):
-            # ip address currently doesn't work for install
-            logger.error(
-                "Currently plugin doesn't support installing cert for ip address %s",
-                target_name)
-            raise errors.PluginError(
-                "Currently plugin doesn't support installing cert for ip address")
-
         # Allows for domain names to be associated with a virtual host
         if target_name in self.assoc:
             return self.assoc[target_name]
