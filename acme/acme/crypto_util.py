@@ -278,11 +278,10 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
 def _pyopenssl_cert_or_req_san_ip(cert_or_req):
     """Get Subject Alternative Names IPs from certificate or CSR using pyOpenSSL.
 
-
     :param cert_or_req: Certificate or CSR.
     :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
 
-    :returns: A list of Subject Alternative Names that is IP Address.
+    :returns: A list of Subject Alternative Names that are IP Addresses.
     :rtype: `list` of `unicode`. note that this returns as string, not IPaddress object
 
     """
@@ -297,12 +296,12 @@ def _pyopenssl_cert_or_req_san_ip(cert_or_req):
 
 
 def _pyopenssl_extract_san_list_raw(cert_or_req):
-    """Get raw SAN string from cert or csr, parse it as UTF-8 and retruns.
+    """Get raw SAN string from cert or csr, parse it as UTF-8 and return.
 
     :param cert_or_req: Certificate or CSR.
     :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
 
-    :returns: raw san string, parsed byte as utf-8
+    :returns: raw san strings, parsed byte as utf-8
     :rtype: `list` of `unicode`
 
     """
@@ -313,7 +312,7 @@ def _pyopenssl_extract_san_list_raw(cert_or_req):
 
     if isinstance(cert_or_req, crypto.X509):
         # pylint: disable=line-too-long
-        func = crypto.dump_certificate # type: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]]
+    func: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]] = crypto.dump_certificate
     else:
         func = crypto.dump_certificate_request
     text = func(crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
