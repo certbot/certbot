@@ -331,7 +331,6 @@ class NginxConfigurator(common.Installer):
         :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
 
         """
-
         if util.is_wildcard_domain(target_name):
             # Ask user which VHosts to support.
             vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)

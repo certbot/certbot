@@ -706,7 +706,6 @@ class ApacheConfigurator(common.Installer):
         :raises .errors.PluginError: If no vhost is available or chosen
 
         """
-
         # Allows for domain names to be associated with a virtual host
         if target_name in self.assoc:
             return self.assoc[target_name]
