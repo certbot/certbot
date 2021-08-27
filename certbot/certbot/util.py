@@ -483,6 +483,7 @@ def enforce_le_validity(domain):
                                 Encrypt currently will not issue certificates
 
     """
+
     domain = enforce_domain_sanity(domain)
     if not re.match("^[A-Za-z0-9.-]*$", domain):
         raise errors.ConfigurationError(
@@ -541,17 +542,11 @@ def enforce_domain_sanity(domain):
                 )
             )
 
-    # Explain separately that IP addresses aren't allowed (apart from not
-    # being FQDNs) because hope springs eternal concerning this point
-    try:
-        socket.inet_aton(domain)
+    if is_ipaddress(domain):
         raise errors.ConfigurationError(
             "Requested name {0} is an IP address. The Let's Encrypt "
             "certificate authority will not issue certificates for a "
             "bare IP address.".format(domain))
-    except socket.error:
-        # It wasn't an IP address, so that's good
-        pass
 
     # FQDN checks according to RFC 2181: domain name should be less than 255
     # octets (inclusive). And each label is 1 - 63 octets (inclusive).
@@ -567,6 +562,29 @@ def enforce_domain_sanity(domain):
             raise errors.ConfigurationError("{0} label {1} is too long.".format(msg, l))
 
     return domain
+
+
+def is_ipaddress(address):
+    """Is given address string form of IP(v4 or v6) address?
+
+    :param address: address to check
+    :type address: `str` or `unicode`
+
+    :returns: True if address is valid IP address, otherwise return False.
+    :rtype: bool
+
+    """
+    try:
+        socket.inet_pton(socket.AF_INET, address)
+        # If this line runs it was ip address (ipv4)
+        return True
+    except socket.error:
+        # It wasn't an IPv4 address, so try ipv6
+        try:
+            socket.inet_pton(socket.AF_INET6, address)
+            return True
+        except socket.error:
+            return False
 
 
 def is_wildcard_domain(domain):

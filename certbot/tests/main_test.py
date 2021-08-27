@@ -1000,6 +1000,10 @@ class MainTest(test_util.ConfigTestCase):
         self.assertRaises(errors.ConfigurationError,
                           self._call,
                           ['-d', '204.11.231.35'])
+        # Bare IPv6 address
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', '2001:db8:ac69:3ff:b1cb:c8c6:5a84:a31b'])
 
     def test_csr_with_besteffort(self):
         self.assertRaises(
