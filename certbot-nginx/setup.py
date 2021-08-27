@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.17.0.dev0'
+version = '1.19.0.dev0'
 
 install_requires = [
     # We specify the minimum acme and certbot version as the current plugin
@@ -12,7 +12,6 @@ install_requires = [
     'PyOpenSSL>=17.3.0',
     'pyparsing>=2.2.0',
     'setuptools>=39.0.1',
-    'zope.interface',
 ]
 
 setup(

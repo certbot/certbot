@@ -21,25 +21,40 @@ The ``certbot`` script on your web server might be named ``letsencrypt`` if your
 Getting certificates (and choosing plugins)
 ===========================================
 
-The Certbot client supports two types of plugins for
-obtaining and installing certificates: authenticators and installers.
+Certbot helps you achieve two tasks:
 
-Authenticators are plugins used with the ``certonly`` command to obtain a certificate.
-The authenticator validates that you
-control the domain(s) you are requesting a certificate for, obtains a certificate for the specified
-domain(s), and places the certificate in the ``/etc/letsencrypt`` directory on your
-machine. The authenticator does not install the certificate (it does not edit any of your server's configuration files to serve the
-obtained certificate). If you specify multiple domains to authenticate, they will
-all be listed in a single certificate. To obtain multiple separate certificates
-you will need to run Certbot multiple times.
+1. Obtaining a certificate: automatically performing the required authentication steps to prove that you control the domain(s),
+   saving the certificate to ``/etc/letsencrypt/live/`` and renewing it on a regular schedule.
+2. Optionally, installing that certificate to supported web servers (like Apache or nginx) and other kinds of servers. This is
+   done by automatically modifying the configuration of your server in order to use the certificate.
 
-Installers are Plugins used with the ``install`` command to install a certificate.
-These plugins can modify your webserver's configuration to
-serve your website over HTTPS using certificates obtained by certbot.
+To obtain a certificate and also install it, use the ``certbot run`` command (or ``certbot``, which is the same).
 
-Plugins that do both can be used with the ``certbot run`` command, which is the default
-when no command is specified. The ``run`` subcommand can also be used to specify
-a combination_ of distinct authenticator and installer plugins.
+To just obtain the certificate without installing it anywhere, the ``certbot certonly`` ("certificate only") command can be used.
+
+Some example ways to use Certbot::
+
+    # Obtain and install a certificate:
+    certbot
+
+    # Obtain a certificate but don't install it:
+    certbot certonly
+
+    # You may specify multiple domains with -d and obtain and
+    # install different certificates by running Certbot multiple times:
+    certbot certonly -d example.com -d www.example.com
+    certbot certonly -d app.example.com -d api.example.com
+
+To perform these tasks, Certbot will ask you to choose from a selection of authenticator and installer plugins. The appropriate
+choice of plugins will depend on what kind of server software you are running and plan to use your certificates with.
+
+**Authenticators** are plugins which automatically perform the required steps to prove that you control the domain names you're trying
+to request a certificate for. An authenticator is always required to obtain a certificate.
+
+**Installers** are plugins which can automatically modify your web server's configuration to serve your website over HTTPS, using the
+certificates obtained by Certbot. An installer is only required if you want Certbot to install the certificate to your web server.
+
+Some plugins are both authenticators and installers and it is possible to specify a distinct combination_ of authenticator and plugin.
 
 =========== ==== ==== =============================================================== =============================
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
@@ -57,10 +72,11 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.  
                       | domain. Doing domain validation in this way is
                       | the only way to obtain wildcard certificates from Let's
                       | Encrypt.
-manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80) or
-                      | perform domain validation yourself. Additionally allows you   dns-01_ (53)
-                      | to specify scripts to automate the validation task in a
-                      | customized way.
+manual_     Y    N    | Obtain a certificate by manually following instructions to    http-01_ (80) or
+                      | perform domain validation yourself. Certificates created this dns-01_ (53)
+                      | way do not support autorenewal.
+                      | Autorenewal may be enabled by providing an authentication
+                      | hook script to automate the domain validation steps.
 =========== ==== ==== =============================================================== =============================
 
 .. |dns_plugs| replace:: :ref:`DNS plugins <dns_plugins>`
@@ -229,11 +245,21 @@ For example, for the domain ``example.com``, a zone file entry would look like:
 
         _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
+.. _manual-renewal:
 
-Additionally you can specify scripts to prepare for validation and
-perform the authentication procedure and/or clean up after it by using
-the ``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is
-described in more depth in the hooks_ section.
+**Renewal with the manual plugin**
+
+Certificates created using ``--manual`` **do not** support automatic renewal unless
+combined with an `authentication hook script <#hooks>`_  via ``--manual-auth-hook``
+to automatically set up the required HTTP and/or TXT challenges.
+
+If you can use one of the other plugins_ which support autorenewal to create
+your certificate, doing so is highly recommended.
+
+To manually renew a certificate using ``--manual`` without hooks, repeat the same
+``certbot --manual`` command you used to create the certificate originally. As this
+will require you to copy and paste new HTTP files or DNS TXT records, the command
+cannot be automated with a cron job.
 
 .. _combination:
 
@@ -286,6 +312,10 @@ dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
 dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
 dns-azure_         Y    N    DNS Authentication using Azure DNS
 dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
+njalla_            Y    N    DNS Authentication for njalla
+DuckDNS_           Y    N    DNS Authentication for DuckDNS
+Porkbun_           Y    N    DNS Authentication for Porkbun
+Infomaniak_        Y    N    DNS Authentication using Infomaniak Domains API
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -302,6 +332,10 @@ dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
 .. _dns-azure: https://github.com/binkhq/certbot-dns-azure
 .. _dns-godaddy: https://github.com/miigotu/certbot-dns-godaddy
+.. _njalla: https://github.com/chaptergy/certbot-dns-njalla
+.. _DuckDNS: https://github.com/infinityofspace/certbot_dns_duckdns
+.. _Porkbun: https://github.com/infinityofspace/certbot_dns_porkbun
+.. _Infomaniak: https://github.com/Infomaniak/certbot-dns-infomaniak
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -510,6 +544,72 @@ revocation from any ACME account::
 
   certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem --key-path /etc/letsencrypt/live/example.com/privkey.pem
 
+.. _deleting:
+
+Deleting certificates
+---------------------
+
+If you need to delete a certificate, use the ``delete`` subcommand.
+
+.. note:: Read this and the `Safely deleting certificates`_ sections carefully. This is an irreversible operation and must
+          be done with care.
+
+.. note:: Do not manually delete certificate files from inside ``/etc/letsencrypt/``. Always use the ``delete`` subcommand.
+
+A certificate may be deleted by providing its name with ``--cert-name``. \
+You may find its name using ``certbot certificates``.
+
+Otherwise, you will be prompted to choose one or more
+certificates to delete::
+
+  certbot delete --cert-name example.com
+  # or to choose from a list:
+  certbot delete
+
+Safely deleting certificates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Deleting a certificate without following the proper steps can result in a non-functioning server. To safely delete a
+certificate, follow all the steps below to make sure that references to a certificate are removed from the configuration
+of any installed server software (Apache, nginx, Postfix, etc) *before* deleting the certificate.
+
+To explain further, when installing a certificate, Certbot modifies Apache or nginx's configuration to load the certificate
+and its private key from the ``/etc/letsencrypt/live/`` directory. Before deleting a certificate, it is necessary to undo
+that modification, by removing any references to the certificate from the webserver's configuration files.
+
+Follow these steps to safely delete a certificate:
+
+1. Find all references to the certificate (substitute ``example.com`` in the command for the name of the certificate
+   you wish to delete)::
+
+     sudo bash -c 'grep -R live/example.com /etc/{nginx,httpd,apache2}'
+
+   If there are no references found, skip directly to Step 4.
+
+   If some references are found, they will look something like::
+
+     /etc/apache2/sites-available/000-default-le-ssl.conf:SSLCertificateFile /etc/letsencrypt/live/example.com/fullchain.pem
+     /etc/apache2/sites-available/000-default-le-ssl.conf:SSLCertificateKeyFile /etc/letsencrypt/live/example.com/privkey.pem
+
+2. You will need a self-signed certificate to replace the certificate you are deleting. The following command will generate one
+   for you, saving the certificate at ``/etc/letsencrypt/self-signed-cert.pem`` and its private key at
+   ``/etc/letsencrypt/self-signed-privkey.pem``::
+
+     sudo openssl req -nodes -batch -x509 -newkey rsa:2048 -keyout /etc/letsencrypt/self-signed-privkey.pem -out /etc/letsencrypt/self-signed-cert.pem -days 356
+
+3. For each reference found in Step 1, open the file in a text editor and replace the reference to the existing
+   certificate with a reference to the self-signed certificate.
+
+   Continuing from the previous example, you would open ``/etc/apache2/sites-available/000-default-le-ssl.conf`` in a text editor
+   and modify the two matching lines of text to instead say::
+
+     SSLCertificateFile /etc/letsencrypt/self-signed-cert.pem
+     SSLCertificateKeyFile /etc/letsencrypt/self-signed-privkey.pem
+
+4. It is now safe to delete the certificate. Do so by running::
+
+     sudo certbot delete --cert-name example.com
+
 .. _renewal:
 
 Renewing certificates
@@ -521,6 +621,10 @@ Renewing certificates
 
 .. seealso:: Most Certbot installations come with automatic
    renewal out of the box. See `Automated Renewals`_ for more details.
+
+.. seealso:: Users of the `Manual`_ plugin should note that ``--manual`` certificates
+   will not renew automatically, unless combined with authentication hook scripts.
+   See `Renewal with the manual plugin <#manual-renewal>`_.
 
 As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
@@ -710,7 +814,7 @@ Setting up automated renewal
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you think you may need to set up automated renewal, follow these instructions to set up a
-scheduled task to automatically renew your certificates in the background. If you are unsure 
+scheduled task to automatically renew your certificates in the background. If you are unsure
 whether your system has a pre-installed scheduled task for Certbot, it is safe to follow these
 instructions to create one.
 

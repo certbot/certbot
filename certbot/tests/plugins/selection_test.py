@@ -1,20 +1,20 @@
 """Tests for letsencrypt.plugins.selection"""
 import sys
-import unittest
 from typing import List
+import unittest
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-import zope.component
 
 from certbot import errors
 from certbot import interfaces
+from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins.disco import PluginsRegistry
-from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.tests import util as test_util
+
+try:
+    import mock
+except ImportError:  # pragma: no cover
+    from unittest import mock
 
 
 class ConveniencePickPluginTest(unittest.TestCase):
@@ -33,16 +33,16 @@ class ConveniencePickPluginTest(unittest.TestCase):
 
     def test_authenticator(self):
         from certbot._internal.plugins.selection import pick_authenticator
-        self._test(pick_authenticator, (interfaces.IAuthenticator,))
+        self._test(pick_authenticator, (interfaces.Authenticator,))
 
     def test_installer(self):
         from certbot._internal.plugins.selection import pick_installer
-        self._test(pick_installer, (interfaces.IInstaller,))
+        self._test(pick_installer, (interfaces.Installer,))
 
     def test_configurator(self):
         from certbot._internal.plugins.selection import pick_configurator
         self._test(pick_configurator,
-            (interfaces.IAuthenticator, interfaces.IInstaller))
+            (interfaces.Authenticator, interfaces.Installer))
 
 
 class PickPluginTest(unittest.TestCase):
@@ -53,7 +53,7 @@ class PickPluginTest(unittest.TestCase):
         self.default = None
         self.reg = mock.MagicMock()
         self.question = "Question?"
-        self.ifaces: List[interfaces.IPlugin] = []
+        self.ifaces: List[interfaces.Plugin] = []
 
     def _call(self):
         from certbot._internal.plugins.selection import pick_plugin
@@ -118,8 +118,8 @@ class ChoosePluginTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.selection.choose_plugin."""
 
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
-                                                               False))
+        display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))
+
         self.mock_apache = mock.Mock(
             description_with_name="a", misconfigured=True)
         self.mock_apache.name = "apache"
@@ -135,14 +135,14 @@ class ChoosePluginTest(unittest.TestCase):
         from certbot._internal.plugins.selection import choose_plugin
         return choose_plugin(self.plugins, "Question?")
 
-    @test_util.patch_get_utility("certbot._internal.plugins.selection.z_util")
+    @test_util.patch_display_util()
     def test_selection(self, mock_util):
         mock_util().menu.side_effect = [(display_util.OK, 0),
                                         (display_util.OK, 1)]
         self.assertEqual(self.mock_stand, self._call())
         self.assertEqual(mock_util().notification.call_count, 1)
 
-    @test_util.patch_get_utility("certbot._internal.plugins.selection.z_util")
+    @test_util.patch_display_util()
     def test_more_info(self, mock_util):
         mock_util().menu.side_effect = [
             (display_util.OK, 1),
@@ -150,7 +150,7 @@ class ChoosePluginTest(unittest.TestCase):
 
         self.assertEqual(self.mock_stand, self._call())
 
-    @test_util.patch_get_utility("certbot._internal.plugins.selection.z_util")
+    @test_util.patch_display_util()
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
         self.assertIsNone(self._call())

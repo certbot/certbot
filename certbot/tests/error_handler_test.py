@@ -2,15 +2,18 @@
 import contextlib
 import signal
 import sys
+from typing import Callable
+from typing import Dict
+from typing import Union
 import unittest
-from typing import Callable, Dict, Union
+
+from certbot.compat import os
 
 try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
 
-from certbot.compat import os
 
 
 def get_signals(signums):

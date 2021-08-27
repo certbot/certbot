@@ -19,7 +19,7 @@ class SelectVhostMultiTest(util.NginxTest):
     def test_select_no_input(self):
         self.assertFalse(select_vhost_multiple([]))
 
-    @certbot_util.patch_get_utility()
+    @certbot_util.patch_display_util()
     def test_select_correct(self, mock_util):
         mock_util().checklist.return_value = (
             display_util.OK, [self.vhosts[3].display_repr(),
@@ -31,7 +31,7 @@ class SelectVhostMultiTest(util.NginxTest):
         self.assertTrue(self.vhosts[3] in vhs)
         self.assertFalse(self.vhosts[1] in vhs)
 
-    @certbot_util.patch_get_utility()
+    @certbot_util.patch_display_util()
     def test_select_cancel(self, mock_util):
         mock_util().checklist.return_value = (display_util.CANCEL, "whatever")
         vhs = select_vhost_multiple([self.vhosts[2], self.vhosts[3]])

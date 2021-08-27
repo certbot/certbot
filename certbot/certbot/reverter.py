@@ -54,7 +54,7 @@ class Reverter:
     .. note:: Consider moving everything over to CSV format.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: :class:`certbot.configuration.NamespaceConfig`
 
     """
     def __init__(self, config):
@@ -384,7 +384,7 @@ class Reverter:
         :raises .errors.ReverterError: If unable to recover the configuration
 
         """
-        # First, any changes found in IConfig.temp_checkpoint_dir are removed,
+        # First, any changes found in NamespaceConfig.temp_checkpoint_dir are removed,
         # then IN_PROGRESS changes are removed The order is important.
         # IN_PROGRESS is unable to add files that are already added by a TEMP
         # change.  Thus TEMP must be rolled back first because that will be the

@@ -1,8 +1,5 @@
 """ Distribution specific override class for Fedora 29+ """
-import zope.interface
-
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
@@ -10,7 +7,6 @@ from certbot_apache._internal import parser
 from certbot_apache._internal.configurator import OsOptions
 
 
-@zope.interface.provider(interfaces.IPluginFactory)
 class FedoraConfigurator(configurator.ApacheConfigurator):
     """Fedora 29+ specific ApacheConfigurator override class"""
 
@@ -87,5 +83,5 @@ class FedoraParser(parser.ApacheParser):
     def _parse_sysconfig_var(self):
         """ Parses Apache CLI options from Fedora configuration file """
         defines = apache_util.parse_define_file(self.sysconfig_filep, "OPTIONS")
-        for k in defines:
-            self.variables[k] = defines[k]
+        for k, v in defines.items():
+            self.variables[k] = v

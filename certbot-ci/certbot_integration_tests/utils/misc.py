@@ -232,10 +232,15 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
         with warnings.catch_warnings():
             # Ignore a warning on some old versions of cryptography
             warnings.simplefilter('ignore', category=PendingDeprecationWarning)
-            key = ec.generate_private_key(ec.SECP384R1(), default_backend())
-        key = key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.TraditionalOpenSSL,
-                                encryption_algorithm=NoEncryption())
-        key = crypto.load_privatekey(crypto.FILETYPE_PEM, key)
+            _key = ec.generate_private_key(ec.SECP384R1(), default_backend())
+        # This type ignore directive is required due to an outdated version of types-cryptography.
+        # It can be removed once package types-pyOpenSSL depends on cryptography instead of
+        # types-cryptography and so types-cryptography is not installed anymore.
+        # See https://github.com/python/typeshed/issues/5618
+        _bytes = _key.private_bytes(encoding=Encoding.PEM,  # type: ignore
+                                    format=PrivateFormat.TraditionalOpenSSL,
+                                    encryption_algorithm=NoEncryption())
+        key = crypto.load_privatekey(crypto.FILETYPE_PEM, _bytes)
     else:
         raise ValueError('Invalid key type: {0}'.format(key_type))
 

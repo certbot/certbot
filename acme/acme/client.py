@@ -14,6 +14,7 @@ from typing import List
 from typing import Set
 from typing import Text
 from typing import Union
+import warnings
 
 import josepy as jose
 import OpenSSL
@@ -224,6 +225,9 @@ class ClientBase:
 class Client(ClientBase):
     """ACME client for a v1 API.
 
+    .. deprecated:: 1.18.0
+       Use :class:`ClientV2` instead.
+
     .. todo::
        Clean up raised error types hierarchy, document, and handle (wrap)
        instances of `.DeserializationError` raised in `from_json()`.
@@ -246,6 +250,8 @@ class Client(ClientBase):
             URI from which the resource will be downloaded.
 
         """
+        warnings.warn("acme.client.Client (ACMEv1) is deprecated, "
+                      "use acme.client.ClientV2 instead.", PendingDeprecationWarning)
         self.key = key
         if net is None:
             net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl)
@@ -809,6 +815,9 @@ class BackwardsCompatibleClientV2:
     """ACME client wrapper that tends towards V2-style calls, but
     supports V1 servers.
 
+    .. deprecated:: 1.18.0
+       Use :class:`ClientV2` instead.
+
     .. note:: While this class handles the majority of the differences
         between versions of the ACME protocol, if you need to support an
         ACME server based on version 3 or older of the IETF ACME draft
@@ -825,6 +834,8 @@ class BackwardsCompatibleClientV2:
     """
 
     def __init__(self, net, key, server):
+        warnings.warn("acme.client.BackwardsCompatibleClientV2 is deprecated, use "
+                      "acme.client.ClientV2 instead.", PendingDeprecationWarning)
         directory = messages.Directory.from_json(net.get(server).json())
         self.acme_version = self._acme_version_from_directory(directory)
         self.client: Union[Client, ClientV2]
@@ -1142,13 +1153,23 @@ class ClientNetwork:
             host, path, _err_no, err_msg = m.groups()
             raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
 
-        # If content is DER, log the base64 of it instead of raw bytes, to keep
-        # binary data out of the logs.
+        # If the Content-Type is DER or an Accept header was sent in the
+        # request, the response may not be UTF-8 encoded. In this case, we
+        # don't set response.encoding and log the base64 response instead of
+        # raw bytes to keep binary data out of the logs. This code can be
+        # simplified to only check for an Accept header in the request when
+        # ACMEv1 support is dropped.
         debug_content: Union[bytes, str]
-        if response.headers.get("Content-Type") == DER_CONTENT_TYPE:
+        if (response.headers.get("Content-Type") == DER_CONTENT_TYPE or
+                "Accept" in kwargs["headers"]):
             debug_content = base64.b64encode(response.content)
         else:
-            debug_content = response.content.decode("utf-8")
+            # We set response.encoding so response.text knows the response is
+            # UTF-8 encoded instead of trying to guess the encoding that was
+            # used which is error prone. This setting affects all future
+            # accesses of .text made on the returned response object as well.
+            response.encoding = "utf-8"
+            debug_content = response.text
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
                      "\n".join("{0}: {1}".format(k, v)

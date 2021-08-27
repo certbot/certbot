@@ -40,9 +40,9 @@ from certbot._internal.cli.plugins_parsing import _plugins_parsing
 from certbot._internal.cli.subparsers import _create_subparsers
 from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
+from certbot.plugins import enhancements
 from certbot._internal.plugins import disco as plugins_disco
 import certbot._internal.plugins.selection as plugin_selection
-import certbot.plugins.enhancements as enhancements
 
 logger = logging.getLogger(__name__)
 
@@ -458,7 +458,7 @@ def set_by_cli(var):
         detector = set_by_cli.detector = prepare_and_parse_args(  # type: ignore
             plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
-        detector.authenticator, detector.installer = (  # type: ignore
+        detector.authenticator, detector.installer = (
             plugin_selection.cli_plugin_requests(detector))
 
     if not isinstance(getattr(detector, var), _Default):

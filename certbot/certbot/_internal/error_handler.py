@@ -139,8 +139,8 @@ class ErrorHandler:
 
     def _reset_signal_handlers(self):
         """Resets signal handlers for signals in _SIGNALS."""
-        for signum in self.prev_handlers:
-            signal.signal(signum, self.prev_handlers[signum])
+        for signum, handler in self.prev_handlers.items():
+            signal.signal(signum, handler)
         self.prev_handlers.clear()
 
     def _signal_handler(self, signum, unused_frame):

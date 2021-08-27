@@ -3,10 +3,10 @@ import datetime
 import logging
 import platform
 from typing import List, Optional, Union
+import warnings
 
 from cryptography.hazmat.backends import default_backend
-# See https://github.com/pyca/cryptography/issues/4275
-from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 import josepy as jose
 import OpenSSL
 
@@ -32,13 +32,23 @@ from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
-
 def acme_from_config_key(config, key, regr=None):
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
-    return acme_client.BackwardsCompatibleClientV2(net, key, config.server)
+
+    with warnings.catch_warnings():
+        # TODO: full removal of ACMEv1 support: https://github.com/certbot/certbot/issues/6844
+        warnings.simplefilter("ignore", PendingDeprecationWarning)
+
+        client = acme_client.BackwardsCompatibleClientV2(net, key, config.server)
+        if client.acme_version == 1:
+            logger.warning(
+                "Certbot is configured to use an ACMEv1 server (%s). ACMEv1 support is deprecated"
+                " and will soon be removed. See https://community.letsencrypt.org/t/143839 for "
+                "more information.", config.server)
+        return client
 
 
 def determine_user_agent(config):
@@ -117,7 +127,7 @@ def register(config, account_storage, tos_cb=None):
     and finally saving the account. It should be called prior to
     initialization of `Client`, unless account has already been created.
 
-    :param .IConfig config: Client configuration.
+    :param certbot.configuration.NamespaceConfig config: Client configuration.
 
     :param .AccountStorage account_storage: Account storage where newly
         registered account will be saved to. Save happens only after TOS
@@ -186,7 +196,7 @@ def perform_registration(acme, config, tos_cb):
     problems
 
     :param acme.client.Client client: ACME client object.
-    :param .IConfig config: Client configuration.
+    :param certbot.configuration.NamespaceConfig config: Client configuration.
     :param Callable tos_cb: a callback to handle Term of Service agreement.
 
     :returns: Registration Resource.
@@ -228,14 +238,14 @@ def perform_registration(acme, config, tos_cb):
 class Client:
     """Certbot's client.
 
-    :ivar .IConfig config: Client configuration.
+    :ivar certbot.configuration.NamespaceConfig config: Client configuration.
     :ivar .Account account: Account registered with `register`.
     :ivar .AuthHandler auth_handler: Authorizations handler that will
         dispatch DV challenges to appropriate authenticators
-        (providing `.IAuthenticator` interface).
-    :ivar .IAuthenticator auth: Prepared (`.IAuthenticator.prepare`)
+        (providing `.Authenticator` interface).
+    :ivar .Authenticator auth: Prepared (`.Authenticator.prepare`)
         authenticator that can solve ACME challenges.
-    :ivar .IInstaller installer: Installer.
+    :ivar .Installer installer: Installer.
     :ivar acme.client.BackwardsCompatibleClientV2 acme: Optional ACME
         client API handle. You might already have one from `register`.
 
@@ -709,7 +719,7 @@ def rollback(default_installer, checkpoints, config, plugins):
     :param int checkpoints: Number of checkpoints to revert.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: :class:`certbot.configuration.NamespaceConfiguration`
 
     """
     # Misconfigurations are only a slight problems... allow the user to rollback

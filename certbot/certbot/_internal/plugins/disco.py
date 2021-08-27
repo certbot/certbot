@@ -1,15 +1,18 @@
 """Utilities for plugins discovery and selection."""
+from collections.abc import Mapping
 import itertools
 import logging
 import sys
-from collections.abc import Mapping
 from typing import Dict
 from typing import Optional
+from typing import Type
 from typing import Union
+import warnings
 
 import pkg_resources
 import zope.interface
 import zope.interface.verify
+
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
@@ -48,10 +51,10 @@ class PluginEntryPoint:
 
     def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix=False):
         self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
-        self.plugin_cls: interfaces.IPluginFactory = entry_point.load()
+        self.plugin_cls: Type[interfaces.Plugin] = entry_point.load()
         self.entry_point = entry_point
         self.warning_message: Optional[str] = None
-        self._initialized: Optional[interfaces.IPlugin] = None
+        self._initialized: Optional[interfaces.Plugin] = None
         self._prepared: Optional[Union[bool, Error]] = None
         self._hidden = False
         self._long_description: Optional[str] = None
@@ -86,10 +89,7 @@ class PluginEntryPoint:
         """Long description of the plugin."""
         if self._long_description:
             return self._long_description
-        try:
-            return self.plugin_cls.long_description
-        except AttributeError:
-            return self.description
+        return getattr(self.plugin_cls, "long_description", self.description)
 
     @long_description.setter
     def long_description(self, description):
@@ -107,7 +107,7 @@ class PluginEntryPoint:
     def ifaces(self, *ifaces_groups):
         """Does plugin implements specified interface groups?"""
         return not ifaces_groups or any(
-            all(iface.implementedBy(self.plugin_cls)
+            all(_implements(self.plugin_cls, iface)
                 for iface in ifaces)
             for ifaces in ifaces_groups)
 
@@ -120,9 +120,9 @@ class PluginEntryPoint:
         """Memoized plugin initialization."""
         if not self.initialized:
             self.entry_point.require()  # fetch extras!
-            # TODO: remove type ignore once the interface becomes a proper
-            #  abstract class (using abc) that mypy understands.
-            self._initialized = self.plugin_cls(config, self.name)  # type: ignore
+            # For plugins implementing ABCs Plugin, Authenticator or Installer, the following
+            # line will raise an exception if some implementations of abstract methods are missing.
+            self._initialized = self.plugin_cls(config, self.name)
         return self._initialized
 
     def verify(self, ifaces):
@@ -130,14 +130,9 @@ class PluginEntryPoint:
         if not self.initialized:
             raise ValueError("Plugin is not initialized.")
         for iface in ifaces:  # zope.interface.providedBy(plugin)
-            try:
-                zope.interface.verify.verifyObject(iface, self.init())
-            except zope.interface.exceptions.BrokenImplementation as error:
-                if iface.implementedBy(self.plugin_cls):
-                    logger.debug(
-                        "%s implements %s but object does not verify: %s",
-                        self.plugin_cls, iface.__name__, error, exc_info=True)
+            if not _verify(self.init(), self.plugin_cls, iface):
                 return False
+
         return True
 
     @property
@@ -153,9 +148,7 @@ class PluginEntryPoint:
             raise ValueError("Plugin is not initialized.")
         if self._prepared is None:
             try:
-                # TODO: remove type ignore once the interface becomes a proper
-                #  abstract class (using abc) that mypy understands.
-                self._initialized.prepare()  # type: ignore
+                self._initialized.prepare()
             except errors.MisconfigurationError as error:
                 logger.debug("Misconfigured %r: %s", self, error, exc_info=True)
                 self._prepared = error
@@ -195,8 +188,9 @@ class PluginEntryPoint:
             "* {0}".format(self.name),
             "Description: {0}".format(self.plugin_cls.description),
             "Interfaces: {0}".format(", ".join(
-                iface.__name__ for iface in zope.interface.implementedBy(
-                    self.plugin_cls))),
+                cls.__name__ for cls in self.plugin_cls.mro()
+                if cls.__module__ == 'certbot.interfaces'
+            )),
             "Entry point: {0}".format(self.entry_point),
         ]
 
@@ -259,11 +253,11 @@ class PluginsRegistry(Mapping):
             plugin2 = other_ep.entry_point.dist.key if other_ep.entry_point.dist else "unknown"
             raise Exception("Duplicate plugin name {0} from {1} and {2}.".format(
                 plugin_ep.name, plugin1, plugin2))
-        if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
+        if _provides(plugin_ep.plugin_cls, interfaces.Plugin):
             plugins[plugin_ep.name] = plugin_ep
         else:  # pragma: no cover
             logger.warning(
-                "%r does not provide IPluginFactory, skipping", plugin_ep)
+                "%r does not inherit from Plugin, skipping", plugin_ep)
 
         return plugin_ep
 
@@ -310,11 +304,9 @@ class PluginsRegistry(Mapping):
     def find_init(self, plugin):
         """Find an initialized plugin.
 
-        This is particularly useful for finding a name for the plugin
-        (although `.IPluginFactory.__call__` takes ``name`` as one of
-        the arguments, ``IPlugin.name`` is not part of the interface)::
+        This is particularly useful for finding a name for the plugin::
 
-          # plugin is an instance providing IPlugin, initialized
+          # plugin is an instance providing Plugin, initialized
           # somewhere else in the code
           plugin_registry.find_init(plugin).name
 
@@ -338,3 +330,88 @@ class PluginsRegistry(Mapping):
         if not self._plugins:
             return "No plugins"
         return "\n\n".join(str(p_ep) for p_ep in self._plugins.values())
+
+
+_DEPRECATION_PLUGIN = ("Zope interface certbot.interfaces.IPlugin is deprecated, "
+                       "use ABC certbot.interface.Plugin instead.")
+
+_DEPRECATION_AUTHENTICATOR = ("Zope interface certbot.interfaces.IAuthenticator is deprecated, "
+                              "use ABC certbot.interface.Authenticator instead.")
+
+_DEPRECATION_INSTALLER = ("Zope interface certbot.interfaces.IInstaller is deprecated, "
+                          "use ABC certbot.interface.Installer instead.")
+
+_DEPRECATION_FACTORY = ("Zope interface certbot.interfaces.IPluginFactory is deprecated, "
+                        "use ABC certbot.interface.Plugin instead.")
+
+
+def _provides(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
+    if issubclass(target_class, iface):
+        return True
+
+    if iface == interfaces.Plugin and interfaces.IPluginFactory.providedBy(target_class):
+        logging.warning(_DEPRECATION_FACTORY)
+        warnings.warn(_DEPRECATION_FACTORY, DeprecationWarning)
+        return True
+
+    return False
+
+
+def _implements(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
+    if issubclass(target_class, iface):
+        return True
+
+    if iface == interfaces.Plugin and interfaces.IPlugin.implementedBy(target_class):
+        logging.warning(_DEPRECATION_PLUGIN)
+        warnings.warn(_DEPRECATION_PLUGIN, DeprecationWarning)
+        return True
+
+    if iface == interfaces.Authenticator and interfaces.IAuthenticator.implementedBy(target_class):
+        logging.warning(_DEPRECATION_AUTHENTICATOR)
+        warnings.warn(_DEPRECATION_AUTHENTICATOR, DeprecationWarning)
+        return True
+
+    if iface == interfaces.Installer and interfaces.IInstaller.implementedBy(target_class):
+        logging.warning(_DEPRECATION_INSTALLER)
+        warnings.warn(_DEPRECATION_INSTALLER, DeprecationWarning)
+        return True
+
+    return False
+
+
+def _verify(target_instance: interfaces.Plugin, target_class: Type[interfaces.Plugin],
+            iface: Type) -> bool:
+    if issubclass(target_class, iface):
+        # No need to trigger some verify logic for ABCs: when the object is instantiated,
+        # an error would be raised if implementation is not done properly.
+        # So the checks have been done effectively when the plugin has been initialized.
+        return True
+
+    zope_iface: Optional[Type[zope.interface.Interface]] = None
+    message = ""
+
+    if iface == interfaces.Plugin:
+        zope_iface = interfaces.IPlugin
+        message = _DEPRECATION_PLUGIN
+    if iface == interfaces.Authenticator:
+        zope_iface = interfaces.IAuthenticator
+        message = _DEPRECATION_AUTHENTICATOR
+    if iface == interfaces.Installer:
+        zope_iface = interfaces.IInstaller
+        message = _DEPRECATION_INSTALLER
+
+    if not zope_iface:
+        raise ValueError(f"Unexpected type: {iface.__name__}")
+
+    try:
+        zope.interface.verify.verifyObject(zope_iface, target_instance)
+        logging.warning(message)
+        warnings.warn(message, DeprecationWarning)
+        return True
+    except zope.interface.exceptions.BrokenImplementation as error:
+        if zope_iface.implementedBy(target_class):
+            logger.debug(
+                "%s implements %s but object does not verify: %s",
+                target_class, zope_iface.__name__, error, exc_info=True)
+
+    return False

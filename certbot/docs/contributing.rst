@@ -233,15 +233,12 @@ different webservers, other TLS servers, and operating systems.
 The interfaces available for plugins to implement are defined in
 `interfaces.py`_ and `plugins/common.py`_.
 
-The main two plugin interfaces are `~certbot.interfaces.IAuthenticator`, which
+The main two plugin interfaces are `~certbot.interfaces.Authenticator`, which
 implements various ways of proving domain control to a certificate authority,
-and `~certbot.interfaces.IInstaller`, which configures a server to use a
+and `~certbot.interfaces.Installer`, which configures a server to use a
 certificate once it is issued. Some plugins, like the built-in Apache and Nginx
 plugins, implement both interfaces and perform both tasks. Others, like the
 built-in Standalone authenticator, implement just one interface.
-
-There are also `~certbot.interfaces.IDisplay` plugins,
-which can change how prompts are displayed to a user.
 
 .. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/interfaces.py
 .. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/plugins/common.py#L45
@@ -272,7 +269,7 @@ Installers plugins exist to actually setup the certificate in a server,
 possibly tweak the security configuration to make it more correct and secure
 (Fix some mixed content problems, turn on HSTS, redirect to HTTPS, etc).
 Installer plugins tell the main client about their abilities to do the latter
-via the :meth:`~.IInstaller.supported_enhancements` call. We currently
+via the :meth:`~.Installer.supported_enhancements` call. We currently
 have two Installers in the tree, the `~.ApacheConfigurator`. and the
 `~.NginxConfigurator`.  External projects have made some progress toward
 support for IIS, Icecast and Plesk.
@@ -293,7 +290,7 @@ Installer Development
 ---------------------
 
 There are a few existing classes that may be beneficial while
-developing a new `~certbot.interfaces.IInstaller`.
+developing a new `~certbot.interfaces.Installer`.
 Installers aimed to reconfigure UNIX servers may use Augeas for
 configuration parsing and can inherit from `~.AugeasConfigurator` class
 to handle much of the interface. Installers that are unable to use
@@ -319,8 +316,8 @@ Writing your own plugin
 Certbot client supports dynamic discovery of plugins through the
 `setuptools entry points`_ using the `certbot.plugins` group. This
 way you can, for example, create a custom implementation of
-`~certbot.interfaces.IAuthenticator` or the
-`~certbot.interfaces.IInstaller` without having to merge it
+`~certbot.interfaces.Authenticator` or the
+`~certbot.interfaces.Installer` without having to merge it
 with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
 
@@ -482,7 +479,7 @@ Those imports should look like this:
 .. code-block:: python
 
   from OpenSSL import crypto
-  from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
+  from OpenSSL import SSL
 
 .. _mypy: https://mypy.readthedocs.io
 .. _added in comments: https://mypy.readthedocs.io/en/latest/cheat_sheet.html
@@ -565,6 +562,55 @@ and run the command:
 
 This would generate the HTML documentation in ``_build/html`` in your current
 ``docs/`` directory.
+
+Certbot's dependencies
+======================
+
+We attempt to pin all of Certbot's dependencies whenever we can for reliability
+and consistency. Some of the places we have Certbot's dependencies pinned
+include our snaps, Docker images, Windows installer, CI, and our development
+environments.
+
+In most cases, the file where dependency versions are specified is
+``tools/requirements.txt``. There are two exceptions to this. The first is our
+"oldest" tests where ``tools/oldest_constraints.txt`` is used instead. The
+purpose of the "oldest" tests is to ensure Certbot continues to work with the
+oldest versions of our dependencies which we claim to support. The oldest
+versions of the dependencies we support should also be declared in our setup.py
+files to communicate this information to our users.
+
+The second exception to using ``tools/requirements.txt`` is in our unpinned
+tests. As of writing this, there is one test we run nightly in CI where we
+leave Certbot's dependencies unpinned. The thinking behind this test is to help
+us learn about breaking changes in our dependencies so that we can respond
+accordingly.
+
+The choices of whether Certbot's dependencies are pinned and what file is used
+if they are should be automatically handled for you most of the time by
+Certbot's tooling. The way it works though is ``tools/pip_install.py`` (which
+many of our other tools build on) checks for the presence of environment
+variables. If ``CERTBOT_NO_PIN`` is set to 1, Certbot's dependencies will not
+be pinned. If that variable is not set and ``CERTBOT_OLDEST`` is set to 1,
+``tools/oldest_constraints.txt`` will be used as constraints for ``pip``.
+Otherwise, ``tools/requirements.txt`` is used as constraints.
+
+Updating dependency versions
+----------------------------
+
+``tools/requirements.txt`` and ``tools/oldest_constraints.txt`` can be updated
+using ``tools/pinning/current/repin.sh`` and ``tools/pinning/oldest/repin.sh``
+respectively. This works by using ``poetry`` to generate pinnings based on a
+Poetry project defined by the ``pyproject.toml`` file in the same directory as
+the script. In many cases, you can just run the script to generate updated
+dependencies, however, if you need to pin back packages or unpin packages that
+were previously restricted to an older version, you will need to modify the
+``pyproject.toml`` file. The syntax used by this file is described at
+https://python-poetry.org/docs/pyproject/ and how dependencies are specified in
+this file is further described at
+https://python-poetry.org/docs/dependency-specification/.
+
+If you want to learn more about the design used here, see
+``tools/pinning/DESIGN.md`` in the Certbot repo.
 
 .. _docker-dev:
 

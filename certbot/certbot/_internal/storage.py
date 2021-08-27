@@ -15,6 +15,7 @@ import parsedatetime
 import pytz
 
 import certbot
+from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -36,10 +37,10 @@ CURRENT_VERSION = util.get_strict_version(certbot.__version__)
 BASE_PRIVKEY_MODE = 0o600
 
 
-def renewal_conf_files(config):
+def renewal_conf_files(config: configuration.NamespaceConfig):
     """Build a list of all renewal configuration files.
 
-    :param certbot.interfaces.IConfig config: Configuration object
+    :param configuration.NamespaceConfig config: Configuration object
 
     :returns: list of renewal configuration files
     :rtype: `list` of `str`
@@ -59,10 +60,10 @@ def renewal_file_for_certname(config, certname):
     return path
 
 
-def cert_path_for_cert_name(config: interfaces.IConfig, cert_name: str) -> str:
+def cert_path_for_cert_name(config: configuration.NamespaceConfig, cert_name: str) -> str:
     """ If `--cert-name` was specified, but you need a value for `--cert-path`.
 
-    :param `configuration.NamespaceConfig` config: parsed command line arguments
+    :param configuration.NamespaceConfig config: parsed command line arguments
     :param str cert_name: cert name.
 
     """
@@ -144,7 +145,8 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     logger.debug("Writing new config %s.", n_filename)
 
     # Ensure that the file exists
-    open(n_filename, 'a').close()
+    with open(n_filename, 'a'):
+        pass
 
     # Copy permissions from the old version of the file, if it exists.
     if os.path.exists(o_filename):
@@ -1036,21 +1038,21 @@ class RenewableCert(interfaces.RenewableCert):
         archive_target = {kind: os.path.join(archive, kind + "1.pem") for kind in ALL_FOUR}
         for kind in ALL_FOUR:
             os.symlink(_relpath_from_file(archive_target[kind], target[kind]), target[kind])
-        with open(target["cert"], "wb") as f:
+        with open(target["cert"], "wb") as f_b:
             logger.debug("Writing certificate to %s.", target["cert"])
-            f.write(cert)
-        with util.safe_open(archive_target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
+            f_b.write(cert)
+        with util.safe_open(archive_target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f_a:
             logger.debug("Writing private key to %s.", target["privkey"])
-            f.write(privkey)
+            f_a.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
-        with open(target["chain"], "wb") as f:
+        with open(target["chain"], "wb") as f_b:
             logger.debug("Writing chain to %s.", target["chain"])
-            f.write(chain)
-        with open(target["fullchain"], "wb") as f:
+            f_b.write(chain)
+        with open(target["fullchain"], "wb") as f_b:
             # assumes that OpenSSL.crypto.dump_certificate includes
             # ending newline character
             logger.debug("Writing full chain to %s.", target["fullchain"])
-            f.write(cert + chain)
+            f_b.write(cert + chain)
 
         # Write a README file to the live directory
         readme_path = os.path.join(live_dir, README)

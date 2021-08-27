@@ -1,10 +1,7 @@
 """ Distribution specific override class for Debian family (Ubuntu/Debian) """
 import logging
 
-import zope.interface
-
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -15,7 +12,6 @@ from certbot_apache._internal.configurator import OsOptions
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.provider(interfaces.IPluginFactory)
 class DebianConfigurator(configurator.ApacheConfigurator):
     """Debian specific ApacheConfigurator override class"""
 

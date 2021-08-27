@@ -3,7 +3,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.17.0.dev0'
+version = '1.19.0.dev0'
 
 install_requires = [
     'cryptography>=2.1.4',
@@ -14,7 +14,7 @@ install_requires = [
     'PyOpenSSL>=17.3.0',
     'pyrfc3339',
     'pytz',
-    'requests>=2.6.0',
+    'requests>=2.14.2',
     'requests-toolbelt>=0.3.0',
     'setuptools>=39.0.1',
 ]

@@ -1,10 +1,10 @@
 """Decide which plugins to use for authentication & installation"""
 
 import logging
+from typing import Optional
+from typing import Tuple
 
-from typing import Optional, Tuple
-import zope.component
-
+from certbot import configuration
 from certbot import errors
 from certbot import interfaces
 from certbot._internal.plugins import disco
@@ -12,43 +12,43 @@ from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
-z_util = zope.component.getUtility
+
 
 def pick_configurator(
-        config, default, plugins,
-        question="How would you like to authenticate and install "
-                 "certificates?"):
+    config, default, plugins,
+    question="How would you like to authenticate and install "
+             "certificates?"):
     """Pick configurator plugin."""
     return pick_plugin(
         config, default, plugins, question,
-        (interfaces.IAuthenticator, interfaces.IInstaller))
+        (interfaces.Authenticator, interfaces.Installer))
 
 
 def pick_installer(config, default, plugins,
                    question="How would you like to install certificates?"):
     """Pick installer plugin."""
     return pick_plugin(
-        config, default, plugins, question, (interfaces.IInstaller,))
+        config, default, plugins, question, (interfaces.Installer,))
 
 
 def pick_authenticator(
-        config, default, plugins, question="How would you "
-        "like to authenticate with the ACME CA?"):
+    config, default, plugins, question="How would you "
+                                       "like to authenticate with the ACME CA?"):
     """Pick authentication plugin."""
     return pick_plugin(
-        config, default, plugins, question, (interfaces.IAuthenticator,))
+        config, default, plugins, question, (interfaces.Authenticator,))
 
 
 def get_unprepared_installer(config, plugins):
     """
-    Get an unprepared interfaces.IInstaller object.
+    Get an unprepared interfaces.Installer object.
 
-    :param certbot.interfaces.IConfig config: Configuration
+    :param certbot.configuration.NamespaceConfig config: Configuration
     :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
 
     :returns: Unprepared installer plugin or None
-    :rtype: IPlugin or None
+    :rtype: Plugin or None
     """
 
     _, req_inst = cli_plugin_requests(config)
@@ -56,7 +56,7 @@ def get_unprepared_installer(config, plugins):
         return None
     installers = plugins.filter(lambda p_ep: p_ep.check_name(req_inst))
     installers.init(config)
-    installers = installers.verify((interfaces.IInstaller,))
+    installers = installers.verify((interfaces.Installer,))
     if len(installers) > 1:
         raise errors.PluginSelectionError(
             "Found multiple installers with the name %s, Certbot is unable to "
@@ -72,7 +72,7 @@ def get_unprepared_installer(config, plugins):
 def pick_plugin(config, default, plugins, question, ifaces):
     """Pick plugin.
 
-    :param certbot.interfaces.IConfig: Configuration
+    :param certbot.configuration.NamespaceConfig: Configuration
     :param str default: Plugin name supplied by user or ``None``.
     :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
@@ -81,7 +81,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
     :param list ifaces: Interfaces that plugins must provide.
 
     :returns: Initialized plugin.
-    :rtype: IPlugin
+    :rtype: Plugin
 
     """
     if default is not None:
@@ -138,13 +138,12 @@ def choose_plugin(prepared, question):
             for plugin_ep in prepared]
 
     while True:
-        disp = z_util(interfaces.IDisplay)
-        code, index = disp.menu(question, opts, force_interactive=True)
+        code, index = display_util.menu(question, opts, force_interactive=True)
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
             if plugin_ep.misconfigured:
-                z_util(interfaces.IDisplay).notification(
+                display_util.notification(
                     "The selected plugin encountered an error while parsing "
                     "your server configuration and cannot be used. The error "
                     "was:\n\n{0}".format(plugin_ep.prepare()), pause=False)
@@ -166,9 +165,10 @@ def record_chosen_plugins(config, plugins, auth, inst):
          config.authenticator, config.installer)
 
 
-def choose_configurator_plugins(config: interfaces.IConfig, plugins: disco.PluginsRegistry,
-                                verb: str) -> Tuple[Optional[interfaces.IInstaller],
-                                                    Optional[interfaces.IAuthenticator]]:
+def choose_configurator_plugins(config: configuration.NamespaceConfig,
+                                plugins: disco.PluginsRegistry,
+                                verb: str) -> Tuple[Optional[interfaces.Installer],
+                                                    Optional[interfaces.Authenticator]]:
     """
     Figure out which configurator we're going to use, modifies
     config.authenticator and config.installer strings to reflect that choice if
@@ -176,7 +176,7 @@ def choose_configurator_plugins(config: interfaces.IConfig, plugins: disco.Plugi
 
     :raises errors.PluginSelectionError if there was a problem
 
-    :returns: tuple of (`IInstaller` or None, `IAuthenticator` or None)
+    :returns: tuple of (`Installer` or None, `Authenticator` or None)
     :rtype: tuple
     """
 

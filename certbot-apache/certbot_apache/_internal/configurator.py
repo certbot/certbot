@@ -15,9 +15,6 @@ from typing import Optional
 from typing import Set
 from typing import Union
 
-import zope.component
-import zope.interface
-
 from acme import challenges
 from certbot import errors
 from certbot import interfaces
@@ -120,14 +117,11 @@ class OsOptions:
 # TODO: Add directives to sites-enabled... not sites-available.
 #     sites-available doesn't allow immediate find_dir search even with save()
 #     and load()
-
-@zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
-@zope.interface.provider(interfaces.IPluginFactory)
-class ApacheConfigurator(common.Installer):
+class ApacheConfigurator(common.Installer, interfaces.Authenticator):
     """Apache configurator.
 
     :ivar config: Configuration.
-    :type config: :class:`~certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
 
     :ivar parser: Handles low level parsing
     :type parser: :class:`~certbot_apache._internal.parser`
@@ -884,7 +878,7 @@ class ApacheConfigurator(common.Installer):
                         all_names.add(name)
 
         if vhost_macro:
-            zope.component.getUtility(interfaces.IDisplay).notification(
+            display_util.notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
                     "\n  ".join(vhost_macro)), force_interactive=True)

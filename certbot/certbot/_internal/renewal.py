@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import zope.component
 
+from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -26,6 +27,7 @@ from certbot._internal import constants
 from certbot._internal import hooks
 from certbot._internal import storage
 from certbot._internal import updater
+from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -184,7 +186,7 @@ def restore_required_config_elements(config, renewalparams):
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])
-            setattr(config, item_name, value)
+            setattr(config.namespace, item_name, value)
 
 
 def _remove_deprecated_config_elements(renewalparams):
@@ -315,8 +317,8 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                     "unless you use the --break-my-certs flag!".format(names))
 
 
-def renew_cert(config: interfaces.IConfig, domains: Optional[List[str]], le_client: client.Client,
-               lineage: storage.RenewableCert) -> None:
+def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str]],
+               le_client: client.Client, lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
@@ -348,13 +350,13 @@ def report(msgs, category):
     return "  " + "\n  ".join(lines)
 
 
-def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[str],
+def _renew_describe_results(config: configuration.NamespaceConfig, renew_successes: List[str],
                             renew_failures: List[str], renew_skipped: List[str],
                             parse_failures: List[str]) -> None:
     """
     Print a report to the terminal about the results of the renewal process.
 
-    :param interfaces.IConfig config: Configuration
+    :param configuration.NamespaceConfiguration config: Configuration
     :param list renew_successes: list of fullchain paths which were renewed
     :param list renew_failures: list of fullchain paths which failed to be renewed
     :param list renew_skipped: list of messages to print about skipped certificates
@@ -363,7 +365,7 @@ def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[st
     notify = display_util.notify
     notify_error = logger.error
 
-    notify('\n{}'.format(display_util.SIDE_FRAME))
+    notify('\n{}'.format(display_obj.SIDE_FRAME))
 
     renewal_noun = "simulated renewal" if config.dry_run else "renewal"
 
@@ -393,7 +395,7 @@ def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[st
                "were invalid: ")
         notify(report(parse_failures, "parsefail"))
 
-    notify(display_util.SIDE_FRAME)
+    notify(display_obj.SIDE_FRAME)
 
 
 def handle_renewal_request(config):
@@ -429,8 +431,7 @@ def handle_renewal_request(config):
     apply_random_sleep = not sys.stdin.isatty() and config.random_sleep_on_renew
 
     for renewal_file in conf_files:
-        disp = zope.component.getUtility(interfaces.IDisplay)
-        disp.notification("Processing " + renewal_file, pause=False)
+        display_util.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
         lineagename = storage.lineagename_for_filename(renewal_file)
 
@@ -452,7 +453,7 @@ def handle_renewal_request(config):
             else:
                 # This call is done only for retro-compatibility purposes.
                 # TODO: Remove this call once zope dependencies are removed from Certbot.
-                zope.component.provideUtility(lineage_config)
+                zope.component.provideUtility(lineage_config, interfaces.IConfig)
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main
                 plugins = plugins_disco.PluginsRegistry.find_all()
@@ -504,7 +505,7 @@ def handle_renewal_request(config):
     logger.debug("no renewal failures")
 
 
-def _update_renewal_params_from_key(key_path: str, config: interfaces.IConfig) -> None:
+def _update_renewal_params_from_key(key_path: str, config: configuration.NamespaceConfig) -> None:
     with open(key_path, 'rb') as file_h:
         key = load_pem_private_key(file_h.read(), password=None, backend=default_backend())
     if isinstance(key, rsa.RSAPrivateKey):

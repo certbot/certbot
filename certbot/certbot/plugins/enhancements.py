@@ -7,7 +7,7 @@ from typing import List
 from certbot._internal import constants
 
 ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]
-"""List of possible :class:`certbot.interfaces.IInstaller`
+"""List of possible :class:`certbot.interfaces.Installer`
 enhancements.
 
 List of expected options parameters:
@@ -22,7 +22,7 @@ def enabled_enhancements(config):
     Generator to yield the enabled new style enhancements.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
     """
     for enh in _INDEX:
         if getattr(config, enh["cli_dest"]):
@@ -34,7 +34,7 @@ def are_requested(config):
     enhancement interfaces.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
     """
     return any(enabled_enhancements(config))
 
@@ -44,10 +44,10 @@ def are_supported(config, installer):
     installer.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
 
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :returns: If all the requested enhancements are supported by the installer
     :rtype: bool
@@ -68,10 +68,10 @@ def enable(lineage, domains, installer, config):
     :type domains: str
 
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
     """
     for enh in enabled_enhancements(config):
         getattr(installer, enh["enable_function"])(lineage, domains)
@@ -124,7 +124,7 @@ class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
         :param lineage: Certificate lineage object
         :type lineage: certbot.interfaces.RenewableCert
 
-        .. note:: prepare() method inherited from `interfaces.IPlugin` might need
+        .. note:: prepare() method inherited from `interfaces.Plugin` might need
             to be called manually within implementation of this interface method
             to finalize the plugin initialization.
         """

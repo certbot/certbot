@@ -4,19 +4,14 @@ import shutil
 import subprocess
 from unittest import mock
 
-import zope.interface
-
-from certbot import errors as le_errors
+from certbot import errors as le_errors, configuration
 from certbot import util as certbot_util
-from certbot._internal import configuration
 from certbot_apache._internal import entrypoint
 from certbot_compatibility_test import errors
-from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util
 from certbot_compatibility_test.configurators import common as configurators_common
 
 
-@zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(configurators_common.Proxy):
     """A common base for Apache test configurators"""
 

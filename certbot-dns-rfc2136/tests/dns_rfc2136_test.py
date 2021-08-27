@@ -42,7 +42,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         # _get_rfc2136_client | pylint: disable=protected-access
         self.auth._get_rfc2136_client = mock.MagicMock(return_value=self.mock_client)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
@@ -66,10 +66,31 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
                           self.auth.perform,
                           [self.achall])
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_valid_algorithm_passes(self, unused_mock_get_utility):
         config = VALID_CONFIG.copy()
         config["rfc2136_algorithm"] = "HMAC-sha512"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
+
+    def test_invalid_server_raises(self):
+        config = VALID_CONFIG.copy()
+        config["rfc2136_server"] = "example.com"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+    @test_util.patch_display_util()
+    def test_valid_server_passes(self, unused_mock_get_utility):
+        config = VALID_CONFIG.copy()
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
+
+        config["rfc2136_server"] = "2001:db8:3333:4444:cccc:dddd:eeee:ffff"
         dns_test_common.write(config, self.config.rfc2136_credentials)
 
         self.auth.perform([self.achall])

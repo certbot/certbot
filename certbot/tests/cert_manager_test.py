@@ -12,8 +12,7 @@ try:
 except ImportError: # pragma: no cover
     from unittest import mock
 
-from certbot import errors
-from certbot._internal import configuration
+from certbot import errors, configuration
 from certbot._internal.storage import ALL_FOUR
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -113,7 +112,7 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
         from certbot._internal import cert_manager
         cert_manager.delete(self.config)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch('certbot.display.util.notify')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
@@ -129,7 +128,7 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
             "Deleted all files relating to certificate example.org."
         )
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
     def test_delete_from_config_no(self, mock_delete_files, mock_lineage_for_certname,
@@ -141,7 +140,7 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
         self._call()
         self.assertEqual(mock_delete_files.call_count, 0)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
     def test_delete_interactive_single_yes(self, mock_delete_files, mock_lineage_for_certname,
@@ -153,7 +152,7 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
         self._call()
         mock_delete_files.assert_called_once_with(self.config, "example.org")
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
     def test_delete_interactive_single_no(self, mock_delete_files, mock_lineage_for_certname,
@@ -165,7 +164,7 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
         self._call()
         self.assertEqual(mock_delete_files.call_count, 0)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
     def test_delete_interactive_multiple_yes(self, mock_delete_files, mock_lineage_for_certname,
@@ -179,7 +178,7 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
         mock_delete_files.assert_any_call(self.config, "other.org")
         self.assertEqual(mock_delete_files.call_count, 2)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
     def test_delete_interactive_multiple_no(self, mock_delete_files, mock_lineage_for_certname,
@@ -200,14 +199,14 @@ class CertificatesTest(BaseCertManagerTest):
         return certificates(*args, **kwargs)
 
     @mock.patch('certbot._internal.cert_manager.logger')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_certificates_parse_fail(self, mock_utility, mock_logger):
         self._certificates(self.config)
         self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
         self.assertTrue(mock_utility.called)
 
     @mock.patch('certbot._internal.cert_manager.logger')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_certificates_quiet(self, mock_utility, mock_logger):
         self.config.quiet = True
         self._certificates(self.config)
@@ -216,7 +215,7 @@ class CertificatesTest(BaseCertManagerTest):
 
     @mock.patch('certbot.crypto_util.verify_renewable_cert')
     @mock.patch('certbot._internal.cert_manager.logger')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch("certbot._internal.storage.RenewableCert")
     @mock.patch('certbot._internal.cert_manager._report_human_readable')
     def test_certificates_parse_success(self, mock_report, mock_renewable_cert,
@@ -230,7 +229,7 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertTrue(mock_renewable_cert.called)
 
     @mock.patch('certbot._internal.cert_manager.logger')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_certificates_no_files(self, mock_utility, mock_logger):
         empty_tempdir = tempfile.mkdtemp()
         empty_config = configuration.NamespaceConfig(mock.MagicMock(
@@ -408,7 +407,7 @@ class RenameLineageTest(BaseCertManagerTest):
         return cert_manager.rename_lineage(*args, **kwargs)
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_no_certname(self, mock_get_utility, mock_renewal_conf_files):
         self.config.certname = None
         self.config.new_certname = "two"
@@ -425,7 +424,7 @@ class RenameLineageTest(BaseCertManagerTest):
         util_mock.menu.return_value = (display_util.OK, -1)
         self.assertRaises(errors.Error, self._call, self.config)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_no_new_certname(self, mock_get_utility):
         self.config.certname = "one"
         self.config.new_certname = None
@@ -437,7 +436,7 @@ class RenameLineageTest(BaseCertManagerTest):
         util_mock.input.return_value = (display_util.OK, None)
         self.assertRaises(errors.Error, self._call, self.config)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     def test_no_existing_certname(self, mock_lineage_for_certname, unused_get_utility):
         self.config.certname = "one"
@@ -446,7 +445,7 @@ class RenameLineageTest(BaseCertManagerTest):
         self.assertRaises(errors.ConfigurationError,
             self._call, self.config)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch("certbot._internal.storage.RenewableCert._check_symlinks")
     def test_rename_cert(self, mock_check, unused_get_utility):
         mock_check.return_value = True
@@ -456,7 +455,7 @@ class RenameLineageTest(BaseCertManagerTest):
         self.assertIsNotNone(updated_lineage)
         self.assertEqual(updated_lineage.lineagename, self.config.new_certname)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch("certbot._internal.storage.RenewableCert._check_symlinks")
     def test_rename_cert_interactive_certname(self, mock_check, mock_get_utility):
         mock_check.return_value = True
@@ -469,7 +468,7 @@ class RenameLineageTest(BaseCertManagerTest):
         self.assertIsNotNone(updated_lineage)
         self.assertEqual(updated_lineage.lineagename, self.config.new_certname)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     @mock.patch("certbot._internal.storage.RenewableCert._check_symlinks")
     def test_rename_cert_bad_new_certname(self, mock_check, unused_get_utility):
         mock_check.return_value = True
@@ -619,7 +618,7 @@ class GetCertnameTest(unittest.TestCase):
     """Tests for certbot._internal.cert_manager."""
 
     def setUp(self):
-        get_utility_patch = test_util.patch_get_utility()
+        get_utility_patch = test_util.patch_display_util()
         self.mock_get_utility = get_utility_patch.start()
         self.addCleanup(get_utility_patch.stop)
         self.config = mock.MagicMock()

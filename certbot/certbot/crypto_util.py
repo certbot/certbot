@@ -7,11 +7,11 @@
 import hashlib
 import logging
 import re
+from typing import List
+from typing import Set
 import warnings
 
-from typing import List, Set
-# See https://github.com/pyca/cryptography/issues/4275
-from cryptography import x509  # type: ignore
+from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
@@ -24,7 +24,7 @@ from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
 from OpenSSL import crypto
-from OpenSSL import SSL  # type: ignore
+from OpenSSL import SSL
 import pyrfc3339
 import zope.component
 
@@ -282,7 +282,11 @@ def make_key(bits=1024, key_type="rsa", elliptic_curve=None):
             raise errors.Error("Unsupported elliptic curve: {}".format(elliptic_curve))
         except UnsupportedAlgorithm as e:
             raise e from errors.Error(str(e))
-        _key_pem = _key.private_bytes(
+        # This type ignore directive is required due to an outdated version of types-cryptography.
+        # It can be removed once package types-pyOpenSSL depends on cryptography instead of
+        # types-cryptography and so types-cryptography is not installed anymore.
+        # See https://github.com/python/typeshed/issues/5618
+        _key_pem = _key.private_bytes(  # type: ignore
             encoding=Encoding.PEM,
             format=PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=NoEncryption()

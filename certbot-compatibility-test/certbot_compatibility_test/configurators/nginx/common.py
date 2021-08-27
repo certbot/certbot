@@ -2,11 +2,10 @@
 import os
 import shutil
 import subprocess
+from typing import cast
 from typing import Set
 
-import zope.interface
-
-from certbot._internal import configuration
+from certbot import configuration
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util
@@ -15,7 +14,6 @@ from certbot_nginx._internal import configurator
 from certbot_nginx._internal import constants
 
 
-@zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(configurators_common.Proxy):
     """A common base for Nginx test configurators"""
 
@@ -48,9 +46,12 @@ class Proxy(configurators_common.Proxy):
             setattr(self.le_config, "nginx_" + k, constants.os_constant(k))
 
         conf = configuration.NamespaceConfig(self.le_config)
-        self._configurator = configurator.NginxConfigurator(
-            config=conf, name="nginx")
+        self._configurator = cast(interfaces.Configurator, configurator.NginxConfigurator(
+            config=conf, name="nginx"))
         self._configurator.prepare()
+
+    def cleanup_from_tests(self):
+        """Performs any necessary cleanup from running plugin tests"""
 
 
 def _get_server_root(config):
@@ -79,11 +80,12 @@ def _get_names(config):
 def _get_server_names(root, filename):
     """Returns all names in a config file path"""
     all_names = set()
-    for line in open(os.path.join(root, filename)):
-        if line.strip().startswith("server_name"):
-            names = line.partition("server_name")[2].rpartition(";")[0]
-            for n in names.split():
-                # Filter out wildcards in both all_names and test_names
-                if not n.startswith("*."):
-                    all_names.add(n)
+    with open(os.path.join(root, filename)) as f:
+        for line in f:
+            if line.strip().startswith("server_name"):
+                names = line.partition("server_name")[2].rpartition(";")[0]
+                for n in names.split():
+                    # Filter out wildcards in both all_names and test_names
+                    if not n.startswith("*."):
+                        all_names.add(n)
     return all_names

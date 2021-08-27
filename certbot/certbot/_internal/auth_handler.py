@@ -6,14 +6,11 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 
-import zope.component
-
 from acme import challenges
 from acme import errors as acme_errors
 from acme import messages
 from certbot import achallenges
 from certbot import errors
-from certbot import interfaces
 from certbot._internal import error_handler
 from certbot.display import util as display_util
 from certbot.plugins import common as plugin_common
@@ -26,7 +23,7 @@ class AuthHandler:
 
     :ivar auth: Authenticator capable of solving
         :class:`~acme.challenges.Challenge` types
-    :type auth: :class:`certbot.interfaces.IAuthenticator`
+    :type auth: certbot.interfaces.Authenticator
 
     :ivar acme.client.BackwardsCompatibleClientV2 acme_client: ACME client API.
 
@@ -49,7 +46,7 @@ class AuthHandler:
         Retrieve all authorizations, perform all challenges required to validate
         these authorizations, then poll and wait for the authorization to be checked.
         :param acme.messages.OrderResource orderr: must have authorizations filled in
-        :param interfaces.IConfig config: current Certbot configuration
+        :param certbot.configuration.NamespaceConfig config: current Certbot configuration
         :param bool best_effort: if True, not all authorizations need to be validated (eg. renew)
         :param int max_retries: maximum number of retries to poll authorizations
         :returns: list of all validated authorizations
@@ -74,9 +71,9 @@ class AuthHandler:
 
                 # If debug is on, wait for user input before starting the verification process.
                 if config.debug_challenges:
-                    notify = zope.component.getUtility(interfaces.IDisplay).notification
-                    notify('Challenges loaded. Press continue to submit to CA. '
-                           'Pass "-v" for more info about challenges.', pause=True)
+                    display_util.notification(
+                        'Challenges loaded. Press continue to submit to CA. '
+                        'Pass "-v" for more info about challenges.', pause=True)
             except errors.AuthorizationError as error:
                 logger.critical('Failure in setting up challenges.')
                 logger.info('Attempting to clean up outstanding challenges...')
@@ -418,8 +415,7 @@ def _report_no_chall_path(challbs):
     raise errors.AuthorizationError(msg)
 
 
-def _generate_failed_chall_msg(failed_achalls):
-    # type: (List[achallenges.AnnotatedChallenge]) -> str
+def _generate_failed_chall_msg(failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
     """Creates a user friendly error message about failed challenges.
 
     :param list failed_achalls: A list of failed

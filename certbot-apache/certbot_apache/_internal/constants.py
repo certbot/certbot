@@ -4,11 +4,13 @@ import pkg_resources
 from certbot.compat import os
 
 MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
-"""Name of the mod_ssl config file as saved in `IConfig.config_dir`."""
+"""Name of the mod_ssl config file as saved
+in `certbot.configuration.NamespaceConfig.config_dir`."""
 
 
 UPDATED_MOD_SSL_CONF_DIGEST = ".updated-options-ssl-apache-conf-digest.txt"
-"""Name of the hash of the updated or informed mod_ssl_conf as saved in `IConfig.config_dir`."""
+"""Name of the hash of the updated or informed mod_ssl_conf as saved
+in `certbot.configuration.NamespaceConfig.config_dir`."""
 
 # NEVER REMOVE A SINGLE HASH FROM THIS LIST UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING!
 ALL_SSL_OPTIONS_HASHES = [

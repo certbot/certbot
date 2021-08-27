@@ -11,7 +11,7 @@ from typing import Union
 
 import josepy as jose
 from OpenSSL import crypto
-from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
+from OpenSSL import SSL
 
 from acme import errors
 
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # https://www.openssl.org/docs/ssl/SSLv23_method.html). _serve_sni
 # should be changed to use "set_options" to disable SSLv2 and SSLv3,
 # in case it's used for things other than probing/serving!
-_DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD  # type: ignore
+_DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD
 
 
 class _DefaultCertSelection:
@@ -169,7 +169,7 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
             ) if any(source_address) else ""
         )
         socket_tuple: Tuple[str, int] = (host, port)
-        sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore
+        sock = socket.create_connection(socket_tuple, **socket_kwargs)
     except socket.error as error:
         raise errors.Error(error)
 

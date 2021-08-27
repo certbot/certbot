@@ -37,7 +37,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         # _get_digitalocean_client | pylint: disable=protected-access
         self.auth._get_digitalocean_client = mock.MagicMock(return_value=self.mock_client)
 
-    @test_util.patch_get_utility()
+    @test_util.patch_display_util()
     def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 

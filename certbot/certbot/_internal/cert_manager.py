@@ -6,11 +6,9 @@ import traceback
 from typing import List
 
 import pytz
-import zope.component
 
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
 from certbot import ocsp
 from certbot import util
 from certbot._internal import storage
@@ -22,6 +20,7 @@ logger = logging.getLogger(__name__)
 ###################
 # Commands
 ###################
+
 
 def update_live_symlinks(config):
     """Update the certificate file family symlinks to use archive_dir.
@@ -38,6 +37,7 @@ def update_live_symlinks(config):
     for renewal_file in storage.renewal_conf_files(config):
         storage.RenewableCert(renewal_file, config, update_symlinks=True)
 
+
 def rename_lineage(config):
     """Rename the specified lineage to the new name.
 
@@ -45,15 +45,13 @@ def rename_lineage(config):
     :type config: :class:`certbot._internal.configuration.NamespaceConfig`
 
     """
-    disp = zope.component.getUtility(interfaces.IDisplay)
-
     certname = get_certnames(config, "rename")[0]
 
     new_certname = config.new_certname
     if not new_certname:
-        code, new_certname = disp.input(
+        code, new_certname = display_util.input_text(
             "Enter the new name for certificate {0}".format(certname),
-            flag="--updated-cert-name", force_interactive=True)
+            force_interactive=True)
         if code != display_util.OK or not new_certname:
             raise errors.Error("User ended interaction.")
 
@@ -62,8 +60,8 @@ def rename_lineage(config):
         raise errors.ConfigurationError("No existing certificate with name "
             "{0} found.".format(certname))
     storage.rename_renewal_config(certname, new_certname, config)
-    disp.notification("Successfully renamed {0} to {1}."
-        .format(certname, new_certname), pause=False)
+    display_util.notification("Successfully renamed {0} to {1}."
+                                 .format(certname, new_certname), pause=False)
 
 
 def certificates(config):
@@ -92,12 +90,11 @@ def certificates(config):
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
     certnames = get_certnames(config, "delete", allow_multiple=True)
-    disp = zope.component.getUtility(interfaces.IDisplay)
     msg = ["The following certificate(s) are selected for deletion:\n"]
     for certname in certnames:
         msg.append("  * " + certname)
     msg.append("\nAre you sure you want to delete the above certificate(s)?")
-    if not disp.yesno("\n".join(msg), default=True):
+    if not display_util.yesno("\n".join(msg), default=True):
         logger.info("Deletion of certificate(s) canceled.")
         return
     for certname in certnames:
@@ -310,13 +307,11 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
 
 
 def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
-    """Get certname from flag, interactively, or error out.
-    """
+    """Get certname from flag, interactively, or error out."""
     certname = config.certname
     if certname:
         certnames = [certname]
     else:
-        disp = zope.component.getUtility(interfaces.IDisplay)
         filenames = storage.renewal_conf_files(config)
         choices = [storage.lineagename_for_filename(name) for name in filenames]
         if not choices:
@@ -326,7 +321,7 @@ def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
                 prompt = "Which certificate(s) would you like to {0}?".format(verb)
             else:
                 prompt = custom_prompt
-            code, certnames = disp.checklist(
+            code, certnames = display_util.checklist(
                 prompt, choices, cli_flag="--cert-name", force_interactive=True)
             if code != display_util.OK:
                 raise errors.Error("User ended interaction.")
@@ -336,7 +331,7 @@ def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
             else:
                 prompt = custom_prompt
 
-            code, index = disp.menu(
+            code, index = display_util.menu(
                 prompt, choices, cli_flag="--cert-name", force_interactive=True)
 
             if code != display_util.OK or index not in range(0, len(choices)):
@@ -382,8 +377,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
                "were invalid:")
             notify(_report_lines(parse_failures))
 
-    disp = zope.component.getUtility(interfaces.IDisplay)
-    disp.notification("\n".join(out), pause=False, wrap=False)
+    display_util.notification("\n".join(out), pause=False, wrap=False)
 
 
 def _search_lineages(cli_config, func, initial_rv, *args):

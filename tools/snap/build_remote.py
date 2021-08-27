@@ -13,8 +13,10 @@ from os.path import dirname
 from os.path import exists
 from os.path import join
 from os.path import realpath
+import random
 import re
 import shutil
+import string
 import subprocess
 import sys
 import tempfile
@@ -48,50 +50,40 @@ def _execute_build(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         workspace: str) -> Tuple[int, List[str]]:
 
-    # Snapcraft remote-build has a recover feature, that will make it reconnect to an existing
-    # build on Launchpad if possible. However, the signature used to retrieve a potential
-    # build is not based on the content of the sources used to build a snap, but on a hash
-    # of the snapcraft current working directory (the path itself, not the content).
-    # It means that every build started from /my/path/to/certbot will always be considered
-    # as the same build, whatever the actual sources are.
-    # To circumvent this, we create a temporary folder and use it as a workspace to build
-    # the snap: this path is random, making the recover feature effectively noop.
-    with tempfile.TemporaryDirectory() as temp_workspace:
-        ignore = None
-        if target == 'certbot':
-            ignore = shutil.ignore_patterns(".git", "venv*", ".tox")
-        shutil.copytree(workspace, temp_workspace,
-                        dirs_exist_ok=True, symlinks=True, ignore=ignore)  # type:ignore
+    # snapcraft remote-build accepts a --build-id flag with snapcraft version
+    # 5.0+. We make use of this feature to set a unique build ID so a fresh
+    # build is started for each run instead of potentially reusing an old
+    # build. See https://github.com/certbot/certbot/pull/8719 and
+    # https://github.com/snapcore/snapcraft/pull/3554 for more info.
+    #
+    # This random string was chosen because snapcraft uses a MD5 hash
+    # represented as a 32 character hex string by default, so we use the same
+    # length but from a larger character set just because we can.
+    random_string = ''.join(random.choice(string.ascii_lowercase + string.digits)
+                            for _ in range(32))
+    build_id = f'snapcraft-{target}-{random_string}'
 
-        with tempfile.TemporaryDirectory() as tempdir:
-            environ = os.environ.copy()
-            environ['XDG_CACHE_HOME'] = tempdir
-            process = subprocess.Popen([
-                'snapcraft', 'remote-build', '--launchpad-accept-public-upload',
-                '--build-on', ','.join(archs)],
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                universal_newlines=True, env=environ, cwd=temp_workspace)
+    with tempfile.TemporaryDirectory() as tempdir:
+        environ = os.environ.copy()
+        environ['XDG_CACHE_HOME'] = tempdir
+        process = subprocess.Popen([
+            'snapcraft', 'remote-build', '--launchpad-accept-public-upload',
+            '--build-on', ','.join(archs), '--build-id', build_id],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            universal_newlines=True, env=environ, cwd=workspace)
 
-        process_output: List[str] = []
-        for line in process.stdout:
-            process_output.append(line)
-            _extract_state(target, line, status)
+    process_output: List[str] = []
+    for line in process.stdout:
+        process_output.append(line)
+        _extract_state(target, line, status)
 
-            if any(state for state in status[target].values() if state == 'Chroot problem'):
-                # On this error the snapcraft process stales. Let's finish it.
-                process.kill()
+        if any(state for state in status[target].values() if state == 'Chroot problem'):
+            # On this error the snapcraft process stales. Let's finish it.
+            process.kill()
 
-        process_state = process.wait()
+    process_state = process.wait()
 
-        for path in glob.glob(join(temp_workspace, '*.snap')):
-            shutil.copy(path, workspace)
-        for arch in archs:
-            log_name = _snap_log_name(target, arch)
-            log_path = join(temp_workspace, log_name)
-            if exists(log_path):
-                shutil.copy(log_path, workspace)
-
-        return process_state, process_output
+    return process_state, process_output
 
 
 def _build_snap(

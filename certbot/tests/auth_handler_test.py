@@ -5,9 +5,8 @@ import unittest
 
 try:
     import mock
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     from unittest import mock
-import zope.component
 
 from acme import challenges
 from acme import client as acme_client
@@ -15,8 +14,8 @@ from acme import errors as acme_errors
 from acme import messages
 from certbot import achallenges
 from certbot import errors
-from certbot import interfaces
 from certbot import util
+from certbot._internal.display import obj as display_obj
 from certbot.plugins import common as plugin_common
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -70,8 +69,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_display = mock.Mock()
         self.mock_config = mock.Mock(debug_challenges=False)
-        zope.component.provideUtility(
-            self.mock_display, interfaces.IDisplay)
+        with mock.patch("zope.component.provideUtility"):
+            display_obj.set_display(self.mock_display)
 
         self.mock_auth = mock.MagicMock(name="ApacheConfigurator")
 
@@ -307,7 +306,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         mock_order = mock.MagicMock(authorizations=authzrs)
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
-        with test_util.patch_get_utility():
+        with test_util.patch_display_util():
             with self.assertRaises(errors.AuthorizationError) as error:
                 self.handler.handle_authorizations(mock_order, self.mock_config, False)
         self.assertIn('Some challenges have failed.', str(error.exception))
@@ -342,7 +341,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
-        with test_util.patch_get_utility():
+        with test_util.patch_display_util():
             with self.assertRaises(errors.AuthorizationError) as error:
                 self.handler.handle_authorizations(mock_order, self.mock_config, True)
 

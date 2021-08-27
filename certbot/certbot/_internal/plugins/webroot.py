@@ -8,9 +8,6 @@ from typing import Dict
 from typing import List
 from typing import Set
 
-import zope.component
-import zope.interface
-
 from acme import challenges
 from certbot import errors
 from certbot import interfaces
@@ -27,9 +24,7 @@ from certbot.util import safe_open
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
-class Authenticator(common.Plugin):
+class Authenticator(common.Plugin, interfaces.Authenticator):
     """Webroot Authenticator."""
 
     description = "Place files in webroot directory"
@@ -126,11 +121,10 @@ to serve all files under specified web root ({0})."""
         return webroot
 
     def _prompt_with_webroot_list(self, domain, known_webroots):
-        display = zope.component.getUtility(interfaces.IDisplay)
         path_flag = "--" + self.option_name("path")
 
         while True:
-            code, index = display.menu(
+            code, index = display_util.menu(
                 "Select the webroot for {0}:".format(domain),
                 ["Enter a new webroot"] + known_webroots,
                 cli_flag=path_flag, force_interactive=True)
