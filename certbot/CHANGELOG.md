@@ -2,11 +2,82 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.17.0 - master
+## 1.19.0 - master
 
 ### Added
 
-*
+* The certbot-dns-rfc2136 plugin always assumed the use of an IP address as the
+  target server, but this was never checked. Until now. The plugin raises an error
+  if the configured target server is not a valid IPv4 or IPv6 address.
+
+### Changed
+
+* Several attributes in `certbot.display.util` module are deprecated and will
+  be removed in a future release of Certbot. Any import of these attributes will
+  emit a warning to prepare the transition for developers.
+* `zope` based interfaces in `certbot.interfaces` module are deprecated and will
+  be removed in a future release of Certbot. Any import of these interfaces will
+  emit a warning to prepare the transition for developers.
+* We removed the dependency on `chardet` from our acme library. Except for when
+  downloading a certificate in an alternate format, our acme library now
+  assumes all server responses are UTF-8 encoded which is required by RFC 8555.
+
+### Fixed
+
+* Fixed parsing of `Define`d values in the Apache plugin to allow for `=` in the value.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.18.0 - 2021-08-03
+
+### Added
+
+* New functions that Certbot plugins can use to interact with the user have
+  been added to `certbot.display.util`. We plan to deprecate using `IDisplay`
+  with `zope` in favor of these new functions in the future.
+* The `Plugin`, `Authenticator` and `Installer` classes are added to
+  `certbot.interfaces` module as alternatives to Certbot's current `zope` based
+  plugin interfaces. The API of these interfaces is identical, but they are
+  based on Python's `abc` module instead of `zope`. Certbot will continue to
+  detect plugins that implement either interface, but we plan to drop support
+  for `zope` based interfaces in a future version of Certbot.
+* The class `certbot.configuration.NamespaceConfig` is added to the Certbot's
+  public API.
+
+### Changed
+
+* When self-validating HTTP-01 challenges using
+  acme.challenges.HTTP01Response.simple_verify, we now assume that the response
+  is composed of only ASCII characters. Previously we were relying on the
+  default behavior of the requests library which tries to guess the encoding of
+  the response which was error prone.
+* `acme`: the `.client.Client` and `.client.BackwardsCompatibleClientV2` classes
+  are now deprecated in favor of `.client.ClientV2`.
+* The `certbot.tests.patch_get_utility*` functions have been deprecated.
+  Plugins should now patch `certbot.display.util` themselves in their tests or
+  use `certbot.tests.util.patch_display_util` as a temporary workaround.
+* In order to simplify the transition to Certbot's new plugin interfaces, the
+  classes `Plugin` and `Installer` in `certbot.plugins.common` module and
+  `certbot.plugins.dns_common.DNSAuthenticator` now implement Certbot's new
+  plugin interfaces. The Certbot plugins based on these classes are now
+  automatically detected as implementing these interfaces.
+* We added a dependency on `chardet` to our acme library so that it will be
+  used over `charset_normalizer` in newer versions of `requests`.
+
+### Fixed
+
+* The Apache authenticator no longer crashes with "Unable to insert label"
+  when encountering a completely empty vhost. This issue affected Certbot 1.17.0.
+* Users of the Certbot snap on Debian 9 (Stretch) should no longer encounter an
+  "access denied" error when installing DNS plugins.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.17.0 - 2021-07-06
+
+### Added
+
+* Add Void Linux overrides for certbot-apache.
 
 ### Changed
 
@@ -16,6 +87,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   of the Certbot package will now always require acme>=X and version Y of a
   plugin package will always require acme>=Y and certbot=>Y. Specifying
   dependencies in this way simplifies testing and development.
+* The Apache authenticator now always configures virtual hosts which do not have
+  an explicit `ServerName`. This should make it work more reliably with the
+  default Apache configuration in Debian-based environments.
 
 ### Fixed
 
