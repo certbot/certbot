@@ -743,53 +743,45 @@ commands into your individual environment.
   and when renewal is not necessary.
 
 .. _renewal-config-file:
+.. _Modifying the Renewal Configuration File:
 
+Modifying the Renewal Configuration of Existing Certificates
+------------------------------------------------------------
 
-Modifying the Renewal Configuration File
-----------------------------------------
+When creating a certificate, Certbot will keep track of all of the relevant options chosen by the user. At renewal
+time, Certbot will remember these options and apply them once again.
 
-When a certificate is issued, by default Certbot creates a renewal configuration file that
-tracks the options that were selected when Certbot was run. This allows Certbot
-to use those same options again when it comes time for renewal. These renewal
-configuration files are located at ``/etc/letsencrypt/renewal/CERTNAME``.
+Sometimes, you may encounter the need to change some of these options for future certificate renewals. To achieve this,
+you will need to perform the following steps:
 
-For advanced certificate management tasks, it is possible to manually modify the certificate's
-renewal configuration file, but this is discouraged since it can easily break Certbot's
-ability to renew your certificates. If you choose to modify the renewal configuration file
-we advise you to test its validity with the ``certbot renew --dry-run`` command.
+1. Perform a *dry run renewal* with the amended options on the command line. This allows you to confirm that the change
+   is valid and will result in successful future renewals.
+2. If the dry run is successful, perform a *live renewal* of the certificate. This will persist the change for future
+   renewals. If the certificate is not yet due to expire, you will need to force a renewal using ``--force-renewal``.
+
+.. note:: Rate limits from the certificate authority may prevent you from performing multiple renewals in a short
+   period of time. It is strongly recommended to only perform the second step only once, when you have decided on what
+   options should change.
+
+As a practical example, if you were using the ``webroot`` authenticator and had relocated your website to another directory,
+you would need to change the ``--webroot-path`` to the new directory. Following the above advice:
+
+1. Perform a *dry-run renewal* of the individual certificate with the amended options::
+
+     certbot renew --cert-name example.com --webroot-path /path/to/new/location --dry-run
+
+2. If the dry-run was successful, make the change permanent by performing a *live renewal* of the certificate with the
+   amended options, including ``--force-renewal``::
+
+     certbot renew --cert-name example.com --webroot-path /path/to/new/location --force-renewal
+
+For advanced certificate management tasks, it is also possible to manually modify the certificate's renewal configuration
+file, but this is discouraged since it can easily break Certbot's ability to renew your certificates. These renewal
+configuration files are located at ``/etc/letsencrypt/renewal/CERTNAME.conf``. If you choose to modify the renewal
+configuration file we advise you to test its validity with the ``certbot renew --dry-run`` command.
 
 .. warning:: Modifying any files in ``/etc/letsencrypt`` can damage them so Certbot can no longer properly manage its certificates, and we do not recommend doing so.
 
-For most tasks, it is safest to limit yourself to pointing symlinks at the files there, or using
-``--deploy-hook`` to copy / make new files based upon those files, if your operational situation requires it
-(for instance, combining certificates and keys in different way, or having copies of things with different
-specific permissions that are demanded by other programs).
-
-If the contents of ``/etc/letsencrypt/archive/CERTNAME`` are moved to a new folder, first specify
-the new folder's name in the renewal configuration file, then run ``certbot update_symlinks`` to
-point the symlinks in ``/etc/letsencrypt/live/CERTNAME`` to the new folder.
-
-If you would like the live certificate files whose symlink location Certbot updates on each run to
-reside in a different location, first move them to that location, then specify the full path of
-each of the four files in the renewal configuration file. Since the symlinks are relative links,
-you must follow this with an invocation of ``certbot update_symlinks``.
-
-For example, say that a certificate's renewal configuration file previously contained the following
-directives::
-
-  archive_dir = /etc/letsencrypt/archive/example.com
-  cert = /etc/letsencrypt/live/example.com/cert.pem
-  privkey = /etc/letsencrypt/live/example.com/privkey.pem
-  chain = /etc/letsencrypt/live/example.com/chain.pem
-  fullchain = /etc/letsencrypt/live/example.com/fullchain.pem
-
-The following commands could be used to specify where these files are located::
-
-  mv /etc/letsencrypt/archive/example.com /home/user/me/certbot/example_archive
-  sed -i 's,/etc/letsencrypt/archive/example.com,/home/user/me/certbot/example_archive,' /etc/letsencrypt/renewal/example.com.conf
-  mv /etc/letsencrypt/live/example.com/*.pem /home/user/me/certbot/
-  sed -i 's,/etc/letsencrypt/live/example.com,/home/user/me/certbot,g' /etc/letsencrypt/renewal/example.com.conf
-  certbot update_symlinks
 
 Automated Renewals
 ------------------
