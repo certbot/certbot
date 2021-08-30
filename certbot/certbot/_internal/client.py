@@ -1,6 +1,7 @@
 """Certbot client API."""
 import datetime
 import logging
+from ipaddress import ip_address
 import platform
 from typing import List, Optional, Union
 import warnings
@@ -308,12 +309,12 @@ class Client:
         cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 
-    def obtain_certificate(self, domains, old_keypath=None):
+    def obtain_certificate(self, names, old_keypath=None):
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
 
-        :param list domains: domains to get a certificate
+        :param list names: domains or IP addresses to get a certificate for
 
         :returns: certificate as PEM string, chain as PEM string,
             newly generated private key (`.util.Key`), and DER-encoded
@@ -357,6 +358,15 @@ class Client:
         elif self.config.rsa_key_size and self.config.key_type.lower() == 'rsa':
             key_size = self.config.rsa_key_size
 
+        dnsnames = []
+        ipnames = []
+
+        for name in names:
+            try:
+                ipnames.append(ip_address(name))
+            except ValueError:
+                dnsnames.append(name)
+
         # Create CSR from names
         if self.config.dry_run:
             key = key or util.Key(
@@ -370,7 +380,7 @@ class Client:
             )
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
-                               key.pem, domains, self.config.must_staple))
+                               key.pem, dnsnames, self.config.must_staple, ipnames))
         else:
             key = key or crypto_util.generate_key(
                 key_size=key_size,
@@ -379,20 +389,21 @@ class Client:
                 elliptic_curve=elliptic_curve,
                 strict_permissions=self.config.strict_permissions,
             )
-            csr = crypto_util.generate_csr(key, domains, self.config.csr_dir,
-                                           self.config.must_staple, self.config.strict_permissions)
+            csr = crypto_util.generate_csr(key, dnsnames, self.config.csr_dir,
+                                           self.config.must_staple, self.config.strict_permissions,
+                                           ipnames)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
         authzr = orderr.authorizations
         auth_domains = set(a.body.identifier.value for a in authzr)
-        successful_domains = [d for d in domains if d in auth_domains]
+        successful_domains = [d for d in dnsnames+[str(x) for x in ipnames] if d in auth_domains]
 
         # allow_subset_of_names is currently disabled for wildcard
         # certificates. The reason for this and checking allow_subset_of_names
         # below is because successful_domains == domains is never true if
         # domains contains a wildcard because the ACME spec forbids identifiers
         # in authzs from containing a wildcard character.
-        if self.config.allow_subset_of_names and successful_domains != domains:
+        if self.config.allow_subset_of_names and successful_domains != names:
             if not self.config.dry_run:
                 os.remove(key.file)
                 os.remove(csr.file)

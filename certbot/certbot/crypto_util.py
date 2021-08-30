@@ -120,8 +120,9 @@ def init_save_key(key_size, key_dir, key_type="rsa", elliptic_curve="secp256r1",
                         keyname=keyname, strict_permissions=config.strict_permissions)
 
 
-def generate_csr(privkey: util.Key, names: Set[str], path: str,
-                 must_staple: bool = False, strict_permissions: bool = True) -> util.CSR:
+def generate_csr(privkey: util.Key, dnsnames: Set[str] = None, path: str = None,
+                 must_staple: bool = False, strict_permissions: bool = True,
+                 ipnames: List[str] = None) -> util.CSR:
     """Initialize a CSR with the given private key.
 
     :param privkey: Key to include in the CSR
@@ -137,7 +138,7 @@ def generate_csr(privkey: util.Key, names: Set[str], path: str,
 
     """
     csr_pem = acme_crypto_util.make_csr(
-        privkey.pem, names, must_staple=must_staple)
+        privkey.pem, dnsnames, must_staple, ipnames)
 
     # Save CSR
     util.make_or_verify_dir(path, 0o755, strict_permissions)

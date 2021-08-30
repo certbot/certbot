@@ -239,9 +239,10 @@ def make_csr(private_key_pem, domains=None, must_staple=False, ipaddrs=None):
 
 
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
-    # unlike its name this only outputs DNS names, other type of idents will ignored
     common_name = loaded_cert_or_req.get_subject().CN
-    sans = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
+    dnsnames = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
+    ipnames = _pyopenssl_cert_or_req_san_ip(loaded_cert_or_req)
+    sans = dnsnames + ipnames
 
     if common_name is None:
         return sans
