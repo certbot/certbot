@@ -1,4 +1,7 @@
 """ACME client API."""
+# pylint: disable=too-many-lines
+# This pylint disable can be deleted once the deprecated ACMEv1 code is
+# removed.
 import base64
 import collections
 import datetime
@@ -7,7 +10,9 @@ import heapq
 import http.client as http_client
 import logging
 import re
+import sys
 import time
+from types import ModuleType
 from typing import cast
 from typing import Dict
 from typing import List
@@ -250,8 +255,6 @@ class Client(ClientBase):
             URI from which the resource will be downloaded.
 
         """
-        warnings.warn("acme.client.Client (ACMEv1) is deprecated, "
-                      "use acme.client.ClientV2 instead.", PendingDeprecationWarning)
         self.key = key
         if net is None:
             net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl)
@@ -834,8 +837,6 @@ class BackwardsCompatibleClientV2:
     """
 
     def __init__(self, net, key, server):
-        warnings.warn("acme.client.BackwardsCompatibleClientV2 is deprecated, use "
-                      "acme.client.ClientV2 instead.", PendingDeprecationWarning)
         directory = messages.Directory.from_json(net.get(server).json())
         self.acme_version = self._acme_version_from_directory(directory)
         self.client: Union[Client, ClientV2]
@@ -1239,3 +1240,35 @@ class ClientNetwork:
         response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
         return response
+
+
+# This class takes a similar approach to the cryptography project to deprecate attributes
+# in public modules. See the _ModuleWithDeprecation class here:
+# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
+class _ClientDeprecationModule:
+    """
+    Internal class delegating to a module, and displaying warnings when attributes
+    related to deprecated attributes in the acme.client module.
+    """
+    def __init__(self, module):
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr):
+        if attr in ('Client', 'BackwardsCompatibleClientV2'):
+            warnings.warn('The {0} attribute in acme.client is deprecated '
+                          'and will be removed soon.'.format(attr),
+                          DeprecationWarning, stacklevel=2)
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr, value):  # pragma: no cover
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr):  # pragma: no cover
+        delattr(self._module, attr)
+
+    def __dir__(self):  # pragma: no cover
+        return ['_module'] + dir(self._module)
+
+
+# Patching ourselves to warn about deprecation and planned removal of some elements in the module.
+sys.modules[__name__] = cast(ModuleType, _ClientDeprecationModule(sys.modules[__name__]))

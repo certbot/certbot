@@ -79,9 +79,9 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_auth.perform.side_effect = gen_auth_resp
 
         self.mock_account = mock.Mock(key=util.Key("file_path", "PEM"))
-        self.mock_net = mock.MagicMock(spec=acme_client.Client)
+        self.mock_net = mock.MagicMock(spec=acme_client.ClientV2)
         self.mock_net.acme_version = 1
-        self.mock_net.retry_after.side_effect = acme_client.Client.retry_after
+        self.mock_net.retry_after.side_effect = acme_client.ClientV2.retry_after
 
         self.handler = AuthHandler(
             self.mock_auth, self.mock_net, self.mock_account, [])
@@ -165,9 +165,6 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(len(authzr), 1)
 
     def _test_name3_http_01_3_common(self, combos):
-        self.mock_net.request_domain_challenges.side_effect = functools.partial(
-            gen_dom_authzr, challs=acme_util.CHALLENGES, combos=combos)
-
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES),
                    gen_dom_authzr(domain="1", challs=acme_util.CHALLENGES),
                    gen_dom_authzr(domain="2", challs=acme_util.CHALLENGES)]
