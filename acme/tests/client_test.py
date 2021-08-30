@@ -198,11 +198,11 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             mock_client().agree_to_tos.assert_not_called()
 
     @mock.patch('OpenSSL.crypto.load_certificate_request')
-    @mock.patch('acme.crypto_util._pyopenssl_cert_or_req_all_names')
-    def test_new_order_v1(self, mock__pyopenssl_cert_or_req_all_names,
+    @mock.patch('acme.crypto_util._pyopenssl_cert_or_req_san')
+    def test_new_order_v1(self, mock__pyopenssl_cert_or_req_san,
         unused_mock_load_certificate_request):
         self.response.json.return_value = DIRECTORY_V1.to_json()
-        mock__pyopenssl_cert_or_req_all_names.return_value = ['example.com', 'www.example.com']
+        mock__pyopenssl_cert_or_req_san.return_value = ['example.com', 'www.example.com']
         mock_csr_pem = mock.MagicMock()
         with mock.patch('acme.client.Client') as mock_client:
             mock_client().request_domain_challenges.return_value = mock.sentinel.auth

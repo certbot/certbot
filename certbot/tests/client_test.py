@@ -343,7 +343,7 @@ class ClientTest(ClientTestCommon):
             strict_permissions=True,
         )
         mock_crypto_util.generate_csr.assert_called_once_with(
-            mock.sentinel.key, self.eg_domains, self.config.csr_dir, False, True)
+            mock.sentinel.key, self.eg_domains, self.config.csr_dir, False, True, [])
         mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
             self.eg_order.fullchain_pem)
 
@@ -383,7 +383,7 @@ class ClientTest(ClientTestCommon):
             key_type=self.config.key_type,
         )
         mock_acme_crypto.make_csr.assert_called_once_with(
-            mock.sentinel.key_pem, self.eg_domains, self.config.must_staple)
+            mock.sentinel.key_pem, self.eg_domains, self.config.must_staple, [])
         mock_crypto.generate_key.assert_not_called()
         mock_crypto.generate_csr.assert_not_called()
         self.assertEqual(mock_crypto.cert_and_chain_from_fullchain.call_count, 1)
