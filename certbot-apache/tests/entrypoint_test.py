@@ -41,7 +41,7 @@ class EntryPointTest(unittest.TestCase):
         with mock.patch("certbot.util.get_os_info") as mock_info:
             mock_info.return_value = ("nonexistent", "irrelevant")
             with mock.patch("certbot.util.get_systemd_os_like") as mock_like:
-                mock_like.return_value = ["unknonwn"]
+                mock_like.return_value = ["unknown"]
                 self.assertEqual(entrypoint.get_configurator(),
                                  configurator.ApacheConfigurator)
 

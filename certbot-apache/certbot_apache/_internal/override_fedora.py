@@ -43,7 +43,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
 
     def _try_restart_fedora(self):
         """
-        Tries to restart httpd using systemctl to generate the self signed keypair.
+        Tries to restart httpd using systemctl to generate the self signed key pair.
         """
         try:
             util.run_script(['systemctl', 'restart', 'httpd'])

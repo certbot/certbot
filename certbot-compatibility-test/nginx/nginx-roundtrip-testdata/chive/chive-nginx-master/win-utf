@@ -30,7 +30,7 @@ charset_map  windows-1251  utf-8 {
 
     A4  C2A4 ;   # currency sign
     A5  D290 ;   # capital Ukrainian soft G
-    A6  C2A6 ;   # borken bar
+    A6  C2A6 ;   # broken bar
     A7  C2A7 ;   # section sign
     A8  D081 ;   # capital YO
     A9  C2A9 ;   # (C)

@@ -162,7 +162,7 @@ SuSudo() {
 }
 
 # Sets the environment variable SUDO to be the name of the program or function
-# to call to get root access. If this script already has root privleges, SUDO
+# to call to get root access. If this script already has root privileges, SUDO
 # is set to an empty string. The value in SUDO should be run with the command
 # to called with root privileges as arguments.
 SetRootAuthMechanism() {

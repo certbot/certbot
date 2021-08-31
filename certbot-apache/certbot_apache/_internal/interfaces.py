@@ -312,7 +312,7 @@ class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
         """
         Sets the sequence of parameters for this ParserNode object without
         whitespaces. While the whitespaces for parameters are discarded when using
-        this method, the whitespacing preceeding the ParserNode itself should be
+        this method, the whitespacing preceding the ParserNode itself should be
         kept intact.
 
         :param list parameters: sequence of parameters
@@ -364,7 +364,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
     def add_child_block(self, name, parameters=None, position=None):
         """
         Adds a new BlockNode child node with provided values and marks the callee
-        BlockNode dirty. This is used to add new children to the AST. The preceeding
+        BlockNode dirty. This is used to add new children to the AST. The preceding
         whitespaces should not be added based on the ancestor or siblings for the
         newly created object. This is to match the current behavior of the legacy
         parser implementation.
@@ -385,7 +385,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
         Adds a new DirectiveNode child node with provided values and marks the
         callee BlockNode dirty. This is used to add new children to the AST. The
-        preceeding whitespaces should not be added based on the ancestor or siblings
+        preceding whitespaces should not be added based on the ancestor or siblings
         for the newly created object. This is to match the current behavior of the
         legacy parser implementation.
 
@@ -406,7 +406,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
         Adds a new CommentNode child node with provided value and marks the
         callee BlockNode dirty. This is used to add new children to the AST. The
-        preceeding whitespaces should not be added based on the ancestor or siblings
+        preceding whitespaces should not be added based on the ancestor or siblings
         for the newly created object. This is to match the current behavior of the
         legacy parser implementation.
 

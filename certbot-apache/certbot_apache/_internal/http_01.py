@@ -107,7 +107,7 @@ class ApacheHttp01(common.ChallengePerformer):
             if any(a.is_wildcard() or a.get_port() == http_port for a in vhost.addrs):
                 found = True
 
-        # If there's at least one elgible VirtualHost, also add all unnamed VirtualHosts
+        # If there's at least one eligible VirtualHost, also add all unnamed VirtualHosts
         # because they might match at runtime (#8890)
         if found:
             selected_vhosts += self._unnamed_vhosts()

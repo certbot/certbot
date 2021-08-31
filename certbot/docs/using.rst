@@ -818,7 +818,7 @@ scheduled task to automatically renew your certificates in the background. If yo
 whether your system has a pre-installed scheduled task for Certbot, it is safe to follow these
 instructions to create one.
 
-If you're using Windows, these instructions are not neccessary as Certbot on Windows comes with
+If you're using Windows, these instructions are not necessary as Certbot on Windows comes with
 a scheduled task for automated renewal pre-installed.
 
 Run the following line, which will add a cron job to `/etc/crontab`:
