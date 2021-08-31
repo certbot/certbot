@@ -238,11 +238,15 @@ def make_csr(private_key_pem, domains=None, must_staple=False, ipaddrs=None):
         crypto.FILETYPE_PEM, csr)
 
 
-def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
-    common_name = loaded_cert_or_req.get_subject().CN
+def _pyopenssl_cert_or_req_san(loaded_cert_or_req):
     dnsnames = _pyopenssl_cert_or_req_san_dns(loaded_cert_or_req)
     ipnames = _pyopenssl_cert_or_req_san_ip(loaded_cert_or_req)
-    sans = dnsnames + ipnames
+    return dnsnames + ipnames
+
+
+def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
+    common_name = loaded_cert_or_req.get_subject().CN
+    sans = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
 
     if common_name is None:
         return sans
