@@ -654,7 +654,7 @@ class ClientV2(ClientBase):
         """
         csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
         # pylint: disable=protected-access
-        dnsNames = crypto_util._pyopenssl_cert_or_req_san(csr)
+        dnsNames = crypto_util._pyopenssl_cert_or_req_san_dns(csr)
         ipNames = crypto_util._pyopenssl_cert_or_req_san_ip(csr)
         # ipNames is now []string
         identifiers = []
@@ -890,7 +890,7 @@ class BackwardsCompatibleClientV2:
             client_v1 = cast(Client, self.client)
             csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
             # pylint: disable=protected-access
-            dnsNames = crypto_util._pyopenssl_cert_or_req_san(csr)
+            dnsNames = crypto_util._pyopenssl_cert_or_req_san_dns(csr)
             authorizations = []
             for domain in dnsNames:
                 authorizations.append(client_v1.request_domain_challenges(domain))

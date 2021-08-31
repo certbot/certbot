@@ -107,13 +107,13 @@ class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):
 
 
 class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
-    """Test for acme.crypto_util._pyopenssl_cert_or_req_san."""
+    """Test for acme.crypto_util._pyopenssl_cert_or_req_san_dns."""
 
     @classmethod
     def _call(cls, loader, name):
         # pylint: disable=protected-access
-        from acme.crypto_util import _pyopenssl_cert_or_req_san
-        return _pyopenssl_cert_or_req_san(loader(name))
+        from acme.crypto_util import _pyopenssl_cert_or_req_san_dns
+        return _pyopenssl_cert_or_req_san_dns(loader(name))
 
     @classmethod
     def _get_idn_names(cls):

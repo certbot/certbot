@@ -240,7 +240,7 @@ def make_csr(private_key_pem, domains=None, must_staple=False, ipaddrs=None):
 
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
     common_name = loaded_cert_or_req.get_subject().CN
-    dnsnames = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
+    dnsnames = _pyopenssl_cert_or_req_san_dns(loaded_cert_or_req)
     ipnames = _pyopenssl_cert_or_req_san_ip(loaded_cert_or_req)
     sans = dnsnames + ipnames
 
@@ -249,8 +249,8 @@ def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
     return [common_name] + [d for d in sans if d != common_name]
 
 
-def _pyopenssl_cert_or_req_san(cert_or_req):
-    """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
+def _pyopenssl_cert_or_req_san_dns(cert_or_req):
+    """Get Subject Alternative Names of DNS type from certificate or CSR using pyOpenSSL.
 
     .. todo:: Implement directly in PyOpenSSL!
 
