@@ -1,3 +1,5 @@
+# Security alerts about vulnerable packages in this file can be ignored since
+# they are only used during testing.
 [tool.poetry]
 name = "certbot-pinner"
 version = "0.1.0"
