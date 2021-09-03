@@ -90,7 +90,7 @@ recommended for your system at certbot.eff.org_, which enables you to use
 installer plugins that cover both of those hard topics.
 
 If you're still not convinced and have decided to use this method, from
-the server that the domain you're requesting a certficate for resolves
+the server that the domain you're requesting a certificate for resolves
 to, `install Docker`_, then issue a command like the one found below. If
 you are using Certbot with the :ref:`Standalone` plugin, you will need
 to make the port it uses accessible from outside of the container by

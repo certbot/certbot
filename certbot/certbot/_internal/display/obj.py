@@ -396,7 +396,7 @@ class FileDisplay:
 # through the public API in certbot.display.util.
 @zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay:
-    """An diplay utility implementation that never asks for interactive user input"""
+    """A display utility implementation that never asks for interactive user input"""
 
     def __init__(self, outfile, *unused_args, **unused_kwargs):
         super().__init__()

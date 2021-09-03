@@ -260,7 +260,7 @@ class Sentence(Parsable):
 
 
 class Block(Parsable):
-    """ Any sort of bloc, denoted by a block name and curly braces, like so:
+    """ Any sort of block, denoted by a block name and curly braces, like so:
     The parsed block:
         block name {
             content 1;
@@ -313,8 +313,8 @@ class Block(Parsable):
         """
         if not Block.should_parse(raw_list):
             raise errors.MisconfigurationError("Block parsing expects a list of length 2. "
-                "First element should be a list of string types (the bloc names), "
-                "and second should be another list of statements (the bloc content).")
+                "First element should be a list of string types (the block names), "
+                "and second should be another list of statements (the block content).")
         self.names = Sentence(self)
         if add_spaces:
             raw_list[0].append(" ")

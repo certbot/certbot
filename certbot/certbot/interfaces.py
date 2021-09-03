@@ -474,7 +474,7 @@ class RenewDeployer(metaclass=ABCMeta):
         """Perform updates defined by installer when a certificate has been renewed
 
         If an installer is a subclass of the class containing this method, this
-        function will always be called when a certficate has been renewed by
+        function will always be called when a certificate has been renewed by
         running "certbot renew". For example if a plugin needs to copy a
         certificate over, or change configuration based on the new certificate.
 
