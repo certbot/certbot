@@ -7,9 +7,9 @@
 SNAPCTL_CORE="/snap/core/current/usr/bin/snapctl"
 SNAPCTL_SNAPD="/snap/snapd/current/usr/bin/snapctl"
 SNAPCTL="snapctl"
-if $SNAPCTL_CORE get x 2>/dev/null; then
+if [ -x $SNAPCTL_CORE ]; then
     SNAPCTL=$SNAPCTL_CORE
-elif $SNAPCTL_SNAPD get x 2>/dev/null; then
+elif [ -x $SNAPCTL_SNAPD ]; then
     SNAPCTL=$SNAPCTL_SNAPD
 fi
 
