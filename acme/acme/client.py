@@ -19,6 +19,7 @@ from typing import List
 from typing import Set
 from typing import Text
 from typing import Union
+from urllib.parse import urljoin
 import warnings
 
 import josepy as jose
@@ -810,7 +811,7 @@ class ClientV2(ClientBase):
         if 'Link' not in response.headers:
             return []
         links = parse_header_links(response.headers['Link'])
-        return [l['url'] for l in links
+        return [urljoin(response.url, l['url']) for l in links
                 if 'rel' in l and 'url' in l and l['rel'] == relation_type]
 
 

@@ -23,6 +23,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * We removed the dependency on `chardet` from our acme library. Except for when
   downloading a certificate in an alternate format, our acme library now
   assumes all server responses are UTF-8 encoded which is required by RFC 8555.
+* Support for relative URLs in  Link` headers was added to the acme library.
 
 ### Fixed
 
