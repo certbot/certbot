@@ -854,6 +854,7 @@ class ClientV2Test(ClientTestBase):
                                                                         CERT_SAN_PEM,
                                                                         CERT_SAN_PEM,
                                                                         CERT_SAN_PEM,
+                                                                        CERT_SAN_PEM,
                                                                         CERT_SAN_PEM])
         self.response.json.return_value = updated_order.to_json()
         self.response.text = CERT_SAN_PEM
@@ -865,7 +866,8 @@ class ClientV2Test(ClientTestBase):
             '</acme/cert/4>;rel="alternate", ' + \
             '<./5>;rel="alternate", ' + \
             '</acme/./cert/6>;rel="alternate", ' + \
-            '</acme/../acme/cert/7>;rel="alternate"'
+            '</acme/../acme/cert/7>;rel="alternate", ' + \
+            '<https://example.net/acme/cert/8>;rel="alternate"'
 
         deadline = datetime.datetime(9999, 9, 9)
         resp = self.client.finalize_order(self.orderr, deadline, fetch_alternative_chains=True)
@@ -882,6 +884,8 @@ class ClientV2Test(ClientTestBase):
         self.net.post.assert_any_call('https://example.com/acme/cert/6',
                                       mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
         self.net.post.assert_any_call('https://example.com/acme/cert/7',
+                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+        self.net.post.assert_any_call('https://example.net/acme/cert/8',
                                       mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
         self.assertEqual(resp, updated_orderr)
 
