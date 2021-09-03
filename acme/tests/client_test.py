@@ -849,18 +849,39 @@ class ClientV2Test(ClientTestBase):
         updated_orderr = self.orderr.update(body=updated_order,
                                             fullchain_pem=CERT_SAN_PEM,
                                             alternative_fullchains_pem=[CERT_SAN_PEM,
+                                                                        CERT_SAN_PEM,
+                                                                        CERT_SAN_PEM,
+                                                                        CERT_SAN_PEM,
+                                                                        CERT_SAN_PEM,
+                                                                        CERT_SAN_PEM,
                                                                         CERT_SAN_PEM])
         self.response.json.return_value = updated_order.to_json()
         self.response.text = CERT_SAN_PEM
+        self.response.url = 'https://example.com/acme/cert/0'
         self.response.headers['Link'] ='<https://example.com/acme/cert/1>;rel="alternate", ' + \
             '<https://example.com/dir>;rel="index", ' + \
-            '<https://example.com/acme/cert/2>;title="foo";rel="alternate"'
+            '<https://example.com/acme/cert/2>;title="foo";rel="alternate", ' + \
+            '<3>;rel="alternate", ' + \
+            '</acme/cert/4>;rel="alternate", ' + \
+            '<./5>;rel="alternate", ' + \
+            '</acme/./cert/6>;rel="alternate", ' + \
+            '</acme/../acme/cert/7>;rel="alternate"'
 
         deadline = datetime.datetime(9999, 9, 9)
         resp = self.client.finalize_order(self.orderr, deadline, fetch_alternative_chains=True)
         self.net.post.assert_any_call('https://example.com/acme/cert/1',
                                       mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
         self.net.post.assert_any_call('https://example.com/acme/cert/2',
+                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+        self.net.post.assert_any_call('https://example.com/acme/cert/3',
+                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+        self.net.post.assert_any_call('https://example.com/acme/cert/4',
+                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+        self.net.post.assert_any_call('https://example.com/acme/cert/5',
+                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+        self.net.post.assert_any_call('https://example.com/acme/cert/6',
+                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+        self.net.post.assert_any_call('https://example.com/acme/cert/7',
                                       mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
         self.assertEqual(resp, updated_orderr)
 
