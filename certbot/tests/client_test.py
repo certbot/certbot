@@ -772,5 +772,23 @@ class RollbackTest(unittest.TestCase):
         self._call(1, None)  # Just make sure no exceptions are raised
 
 
+class ClientSourceAddress(test_util.ConfigTestCase):
+    def setUp(self):
+        super().setUp()
+
+    @mock.patch("certbot._internal.client.acme_client.ClientNetwork")
+    def test_source_address(self, mock_clientnetwork):
+        self.config.source_address = "192.0.2.1"
+
+        self.account = mock.MagicMock(**{"key.pem": KEY})
+
+        from certbot._internal.client import Client
+        self.client = Client(
+            config=self.config, account_=self.account,
+            auth=None, installer=None)
+
+        self.assertEqual(mock_clientnetwork.call_args[1]["source_address"], "192.0.2.1")
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

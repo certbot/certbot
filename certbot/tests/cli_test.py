@@ -479,6 +479,26 @@ class ParseTest(unittest.TestCase):
             for topic in ['all', 'plugins', 'dns-route53']:
                 self.assertNotIn('certbot-route53:auth', self._help_output([help_flag, topic]))
 
+    def test_source_address_flag_v4(self):
+        namespace = self.parse(["--source-address=192.0.2.1"])
+        self.assertEqual(namespace.source_address, "192.0.2.1")
+        namespace = self.parse(["--source-address", "192.0.2.2"])
+        self.assertEqual(namespace.source_address, "192.0.2.2")
+
+    def test_source_address_flag_v6(self):
+        namespace = self.parse(["--source-address=2001:db8::1"])
+        self.assertEqual(namespace.source_address, "2001:db8::1")
+        namespace = self.parse(["--source-address", "2001:db8::2"])
+        self.assertEqual(namespace.source_address, "2001:db8::2")
+
+    def test_source_address_flag_not_set(self):
+        namespace = self.parse([])
+        self.assertIsNone(namespace.source_address)
+
+    def test_source_address_invalid(self):
+        with self.assertRaises(SystemExit):
+            self.parse(["--source-address", "256.0.0.1"])
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot._internal.cli._Default."""

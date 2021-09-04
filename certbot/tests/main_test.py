@@ -736,7 +736,7 @@ class MainTest(test_util.ConfigTestCase):
             args += ["--user-agent", ua]
             self._call_no_clientmock(args)
             acme_net.assert_called_once_with(mock.ANY, account=mock.ANY, verify_ssl=True,
-                user_agent=ua)
+                user_agent=ua, source_address=None)
 
     @mock.patch('certbot._internal.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot._internal.main.plug_sel.pick_installer')
