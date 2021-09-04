@@ -1,5 +1,6 @@
 """Certbot command line util function"""
 import argparse
+from dns.inet import is_address
 import copy
 import inspect
 
@@ -211,6 +212,17 @@ class _RenewHookAction(argparse.Action):
             raise argparse.ArgumentError(
                 self, "conflicts with --deploy-hook value")
         namespace.renew_hook = values
+
+
+class _SourceAddressAction(argparse.Action):
+    """Action class for parsing preferred challenges."""
+
+    def __call__(self, parser, namespace, source_address, option_string=None):
+        if not is_address(source_address):
+            raise argparse.ArgumentError(self, "'{}' is not a valid source address, only "
+            "valid IPv4 or IPv6 addresses are allowed.".format(source_address))
+        else:
+            namespace.source_address = source_address
 
 
 def nonnegative_int(value):

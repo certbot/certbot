@@ -23,6 +23,7 @@ from certbot._internal.cli.cli_utils import _DomainsAction
 from certbot._internal.cli.cli_utils import _EncodeReasonAction
 from certbot._internal.cli.cli_utils import _PrefChallAction
 from certbot._internal.cli.cli_utils import _RenewHookAction
+from certbot._internal.cli.cli_utils import _SourceAddressAction
 from certbot._internal.cli.cli_utils import _user_agent_comment_type
 from certbot._internal.cli.cli_utils import add_domains
 from certbot._internal.cli.cli_utils import CaseInsensitiveList
@@ -414,6 +415,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "renew", "--no-autorenew", action="store_false",
         default=flag_default("autorenew"), dest="autorenew",
         help="Disable auto renewal of certificates.")
+    helpful.add(
+        None, "--source-address", type=str, action=_SourceAddressAction,
+        help="Source IP address to be used for outward connections.")
 
     # Deprecated arguments
     helpful.add_deprecated_argument("--os-packages-only", 0)
