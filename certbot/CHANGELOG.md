@@ -11,6 +11,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   if the configured target server is not a valid IPv4 or IPv6 address.
 * Our acme library now supports requesting certificates for IP addresses.
   This feature is still unsupported by Certbot and Let's Encrypt.
+* Setting the source address of outward connections is now possible using the 
+  `--source-address` command line option.
 
 ### Changed
 
