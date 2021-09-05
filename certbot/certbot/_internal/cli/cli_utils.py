@@ -224,11 +224,11 @@ class _SourceAddressAction(argparse.Action):
         try:
             inet_pton(AF_INET, source_address)
             invalid_address = False
-        except Exception:
+        except OSError:
             try:
                 inet_pton(AF_INET6, source_address)
                 invalid_address = False
-            except Exception:
+            except OSError:
                 invalid_address = True
 
         if invalid_address:
