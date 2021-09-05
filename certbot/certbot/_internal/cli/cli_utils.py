@@ -1,8 +1,10 @@
 """Certbot command line util function"""
 import argparse
-from dns.inet import is_address
 import copy
 import inspect
+from socket import AF_INET
+from socket import AF_INET6
+from socket import inet_pton
 
 from acme import challenges
 from certbot import configuration
@@ -218,7 +220,18 @@ class _SourceAddressAction(argparse.Action):
     """Action class for parsing preferred challenges."""
 
     def __call__(self, parser, namespace, source_address, option_string=None):
-        if not is_address(source_address):
+        invalid_address = True
+        try:
+            inet_pton(AF_INET, source_address)
+            invalid_address = False
+        except Exception:
+            try:
+                inet_pton(AF_INET6, source_address)
+                invalid_address = False
+            except Exception:
+                invalid_address = True
+
+        if invalid_address:
             raise argparse.ArgumentError(self, "'{}' is not a valid source address, only "
             "valid IPv4 or IPv6 addresses are allowed.".format(source_address))
         else:
