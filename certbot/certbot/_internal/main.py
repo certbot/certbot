@@ -66,9 +66,12 @@ def _suggest_donation_if_appropriate(config):
     :rtype: None
 
     """
+    # don't prompt for donation if:
+    # - renewing
+    # - using the staging server (--staging or --dry-run)
+    # - running with --quiet (display fd won't be available during atexit calls #8995)
     assert config.verb != "renew"
-    if config.staging:
-        # --dry-run implies --staging
+    if config.staging or config.quiet:
         return
     util.atexit_register(
         display_util.notification,
