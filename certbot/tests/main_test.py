@@ -1934,8 +1934,9 @@ class ReportNextStepsTest(unittest.TestCase):
         _report_next_steps(*args, **kwargs)
 
     def _output(self) -> str:
-        self.mock_notify.assert_called_once()
-        return self.mock_notify.call_args_list[0][0][0]
+        self.assertEqual(self.mock_notify.call_count, 2)
+        self.assertEqual(self.mock_notify.call_args_list[0][0][0], 'NEXT STEPS:')
+        return self.mock_notify.call_args_list[1][0][0]
 
     def test_report(self):
         """No steps for a normal renewal"""
