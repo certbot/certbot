@@ -1,8 +1,8 @@
 # Legacy letsencrypt-auto files
 
-certbot-auto and letsencrypt-auto were two names for the same self updating
+`certbot-auto` and `letsencrypt-auto` were two names for the same self-updating
 shell script that wrapped Certbot. Old versions of the script continue to rely
-on letsencrypt-auto and letsencrypt-auto.sig in this directory to download and
+on pulling `letsencrypt-auto` and `letsencrypt-auto.sig` from this directory hosted on Github to download and
 verify updates. We're keeping these files and the tests for them around to
 prevent these old scripts from breaking.
 
