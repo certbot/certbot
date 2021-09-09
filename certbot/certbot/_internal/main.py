@@ -526,10 +526,12 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
         return
 
     # TODO: refactor ANSI escapes during https://github.com/certbot/certbot/issues/8848
-    (bold_on, bold_off) = [c if sys.stdout.isatty() and not config.quiet else '' \
-                           for c in (util.ANSI_SGR_BOLD, util.ANSI_SGR_RESET)]
+    (bold_on, nl, bold_off) = [c if sys.stdout.isatty() and not config.quiet else '' \
+                               for c in (util.ANSI_SGR_BOLD, '\n', util.ANSI_SGR_RESET)]
+    print(bold_on, end=nl)
+    display_util.notify("NEXT STEPS:")
+    print(bold_off, end='')
 
-    print(bold_on, '\n', 'NEXT STEPS:', bold_off, sep='')
     for step in steps:
         display_util.notify(f"- {step}")
 
