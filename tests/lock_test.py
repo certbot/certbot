@@ -151,7 +151,7 @@ def setup_certificate(workspace):
         backend=default_backend()
     )
     subject = issuer = x509.Name([
-        x509.NameAttribute(x509.NameOID.COMMON_NAME, u'nginx.wtf')
+        x509.NameAttribute(x509.NameOID.COMMON_NAME, 'nginx.wtf')
     ])
     certificate = x509.CertificateBuilder().subject_name(
         subject

@@ -177,7 +177,7 @@ class _GoogleClient:
 
         try:
             zone_id = self._find_managed_zone_id(domain)
-        except errors.PluginError as e:
+        except errors.PluginError:
             logger.warning('Error finding zone. Skipping cleanup.')
             return
 

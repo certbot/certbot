@@ -308,7 +308,7 @@ def _get_validated(method, validator, message, default=None, **kwargs):
     if default is not None:
         try:
             validator(default)
-        except errors.Error as error:
+        except errors.Error:
             logger.debug('Encountered invalid default value "%s" when prompting for "%s"',
                          default,
                          message,
