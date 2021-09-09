@@ -41,8 +41,8 @@ acme = {path = "../../../acme", extras = ["test"]}
 # older packages makes it much easier for OS maintainers to update their
 # Certbot packages if needed or desired.
 #
-# When updating these dependencies, we should ideally try to only update them
-# to the oldest version of the dependency found in CentOS/RHEL 8 + EPEL (or
+# When updating these dependencies, we should try to update them no further
+# than the oldest version of the dependency found in CentOS/RHEL 8 + EPEL (or
 # newer versions of CentOS/RHEL + EPEL) as our Certbot packages there see
 # frequent updates. If the dependency being updated is a direct dependency of
 # one of our own packages, the minimum required version of that dependency
