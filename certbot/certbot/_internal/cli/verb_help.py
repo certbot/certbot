@@ -23,14 +23,14 @@ VERB_HELP = [
     }),
     ("renew", {
         "short": "Renew all certificates (or one specified with --cert-name)",
-        "opts": ("The 'renew' subcommand will attempt to renew all"
-                 " certificates (or more precisely, certificate lineages) you have"
+        "opts": ("The 'renew' subcommand will attempt to renew any certificates"
                  " previously obtained if they are close to expiry, and print a"
-                 " summary of the results. By default, 'renew' will reuse the options"
-                 " used to create obtain or most recently successfully renew each"
-                 " certificate lineage. You can try it with `--dry-run` first. For"
-                 " more fine-grained control, you can renew individual lineages with"
-                 " the `certonly` subcommand. Hooks are available to run commands"
+                 " summary of the results. By default, 'renew' will reuse the"
+                 " plugins and options used to obtain or most recently renew each"
+                 " certificate. You can test whether future renewals will succeed"
+                 " with `--dry-run`."
+                 " Individual certificates can be renewed with the `--cert-name`"
+                 " option. Hooks are available to run commands"
                  " before and after renewal; see"
                  " https://certbot.eff.org/docs/using.html#renewal for more"
                  " information on these."),
