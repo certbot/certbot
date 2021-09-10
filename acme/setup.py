@@ -7,10 +7,7 @@ version = '1.20.0.dev0'
 
 install_requires = [
     'cryptography>=2.1.4',
-    # formerly known as acme.jose:
-    # 1.1.0+ is required to avoid the warnings described at
-    # https://github.com/certbot/josepy/issues/13.
-    'josepy>=1.1.0',
+    'josepy>=1.9.0',
     'PyOpenSSL>=17.3.0',
     'pyrfc3339',
     'pytz',
