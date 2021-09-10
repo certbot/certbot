@@ -6,7 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added `--no-reuse-key`. This remains the default behavior, but the flag may be
+  useful to unset the `--reuse-key` option on existing certificates.
 
 ### Changed
 
