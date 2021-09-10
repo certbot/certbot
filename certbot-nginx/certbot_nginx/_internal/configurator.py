@@ -1232,7 +1232,7 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
 
     """
     try:
-        reload_output: Text = u""
+        reload_output: Text = ""
         with tempfile.TemporaryFile() as out:
             proc = subprocess.run([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
                                   env=util.env_no_snap_for_external_calls(),

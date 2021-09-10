@@ -67,7 +67,12 @@ extension-pkg-whitelist=pywintypes,win32api,win32file,win32security
 # 5) wrong-import-order generates false positives and a pylint developer
 #    suggests that people using isort should disable this check at
 #    https://github.com/PyCQA/pylint/issues/3817#issuecomment-687892090.
-disable=fixme,locally-disabled,locally-enabled,bad-continuation,no-self-use,invalid-name,cyclic-import,duplicate-code,design,import-outside-toplevel,useless-object-inheritance,unsubscriptable-object,no-value-for-parameter,no-else-return,no-else-raise,no-else-break,no-else-continue,raise-missing-from,wrong-import-order
+# 6) unspecified-encoding generates errors when encoding is not specified in
+#    in a call to the built-in open function. This relates more to a design decision
+#    (unspecified encoding makes the open function use the default encoding of the system)
+#    than a clear flaw on which a check should be enforced. Anyway the project does
+#    not need to enforce encoding on files so we disable this check.
+disable=fixme,locally-disabled,locally-enabled,bad-continuation,no-self-use,invalid-name,cyclic-import,duplicate-code,design,import-outside-toplevel,useless-object-inheritance,unsubscriptable-object,no-value-for-parameter,no-else-return,no-else-raise,no-else-break,no-else-continue,raise-missing-from,wrong-import-order,unspecified-encoding
 
 [REPORTS]
 
