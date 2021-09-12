@@ -3,7 +3,6 @@ import logging
 from typing import Optional
 
 import dns.flags
-from dns.inet import is_address
 import dns.message
 import dns.name
 import dns.query
@@ -16,6 +15,7 @@ import dns.update
 from certbot import errors
 from certbot.plugins import dns_common
 from certbot.plugins.dns_common import CredentialsConfiguration
+from certbot.util import is_ipaddress
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def _validate_credentials(self, credentials):
         server = credentials.conf('server')
-        if not is_address(server):
+        if not is_ipaddress(server):
             raise errors.PluginError("The configured target DNS server ({0}) is not a valid IPv4 "
                                      "or IPv6 address. A hostname is not allowed.".format(server))
         algorithm = credentials.conf('algorithm')
