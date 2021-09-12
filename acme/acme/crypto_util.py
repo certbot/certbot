@@ -6,6 +6,8 @@ import os
 import re
 import socket
 from typing import Callable
+from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -132,14 +134,14 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
         return ssl_sock, addr
 
 
-def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-arguments
-              method=_DEFAULT_SSL_METHOD, source_address=('', 0),
-              alpn_protocols=None):
+def probe_sni(name: Union[str, bytes], host: str, port: int = 443, timeout: int = 300,  # pylint: disable=too-many-arguments
+              method: int = _DEFAULT_SSL_METHOD, source_address: Tuple[str, int] = ('', 0),
+              alpn_protocols: Optional[List[str]] = None) -> crypto.X509:
     """Probe SNI server for SSL certificate.
 
-    :param bytes name: Byte string to send as the server name in the
+    :param str|bytes name: Byte string to send as the server name in the
         client hello message.
-    :param bytes host: Host to connect to.
+    :param str host: Host to connect to.
     :param int port: Port to connect to.
     :param int timeout: Timeout in seconds.
     :param method: See `OpenSSL.SSL.Context` for allowed values.
@@ -147,7 +149,7 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
         of source interface). See `socket.creation_connection` for more
         info. Available only in Python 2.7+.
     :param alpn_protocols: Protocols to request using ALPN.
-    :type alpn_protocols: `list` of `bytes`
+    :type alpn_protocols: `list` of `str`
 
     :raises acme.errors.Error: In case of any problems.
 
@@ -169,14 +171,15 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
             ) if any(source_address) else ""
         )
         socket_tuple: Tuple[str, int] = (host, port)
-        sock = socket.create_connection(socket_tuple, **socket_kwargs)
+        sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore[arg-type]
     except socket.error as error:
         raise errors.Error(error)
 
     with contextlib.closing(sock) as client:
         client_ssl = SSL.Connection(context, client)
         client_ssl.set_connect_state()
-        client_ssl.set_tlsext_host_name(name)  # pyOpenSSL>=0.13
+        name_b = name if isinstance(name, bytes) else name.encode()
+        client_ssl.set_tlsext_host_name(name_b)  # pyOpenSSL>=0.13
         if alpn_protocols is not None:
             client_ssl.set_alpn_protos(alpn_protocols)
         try:
