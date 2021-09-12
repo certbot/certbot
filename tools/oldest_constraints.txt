@@ -22,7 +22,7 @@ cython==0.29.24; (python_version >= "2.6" and python_full_version < "3.0.0") or 
 distlib==0.3.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
 distro==1.0.1
 dns-lexicon==3.2.1
-dnspython==2.1.0; python_version >= "3.6"
+dnspython==1.15.0
 docker-compose==1.24.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 docker-pycreds==0.4.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 docker==3.7.3; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
