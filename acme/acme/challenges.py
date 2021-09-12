@@ -5,6 +5,9 @@ import functools
 import hashlib
 import logging
 import socket
+from typing import Any
+from typing import Dict
+from typing import Tuple
 from typing import Type
 
 from cryptography.hazmat.primitives import hashes
@@ -13,6 +16,7 @@ from OpenSSL import crypto
 from OpenSSL import SSL
 import requests
 
+from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import fields
@@ -25,10 +29,10 @@ logger = logging.getLogger(__name__)
 class Challenge(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge."""
-    TYPES: dict = {}
+    TYPES: Dict[str, Type['Challenge']] = {}
 
     @classmethod
-    def from_json(cls, jobj):
+    def from_json(cls, jobj: Dict[str, Any]) -> 'Challenge':
         try:
             return super().from_json(jobj)
         except jose.UnrecognizedTypeError as error:
@@ -39,7 +43,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
 class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
-    TYPES: dict = {}
+    TYPES: Dict[str, Type['ChallengeResponse']] = {}
     resource_type = 'challenge'
     resource = fields.Resource(resource_type)
 
@@ -57,15 +61,15 @@ class UnrecognizedChallenge(Challenge):
 
     """
 
-    def __init__(self, jobj):
+    def __init__(self, jobj: Dict[str, Any]) -> None:
         super().__init__()
         object.__setattr__(self, "jobj", jobj)
 
-    def to_partial_json(self):
+    def to_partial_json(self) -> Dict[str, Any]:
         return self.jobj  # pylint: disable=no-member
 
     @classmethod
-    def from_json(cls, jobj):
+    def from_json(cls, jobj: Dict[str, Any]) -> 'UnrecognizedChallenge':
         return cls(jobj)
 
 
@@ -85,7 +89,7 @@ class _TokenChallenge(Challenge):
 
     # XXX: rename to ~token_good_for_url
     @property
-    def good_token(self):  # XXX: @token.decoder
+    def good_token(self) -> bool:  # XXX: @token.decoder
         """Is `token` good?
 
         .. todo:: acme-spec wants "It MUST NOT contain any non-ASCII
@@ -108,7 +112,8 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
     key_authorization = jose.Field("keyAuthorization")
     thumbprint_hash_function = hashes.SHA256
 
-    def verify(self, chall, account_public_key):
+    def verify(self, chall: challenges.KeyAuthorizationChallenge,
+               account_public_key: jose.JWK) -> bool:
         """Verify the key authorization.
 
         :param KeyAuthorization chall: Challenge that corresponds to
@@ -140,7 +145,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
 
         return True
 
-    def to_partial_json(self):
+    def to_partial_json(self) -> Dict[str, Any]:
         jobj = super().to_partial_json()
         jobj.pop('keyAuthorization', None)
         return jobj
@@ -158,7 +163,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
 
-    def key_authorization(self, account_key):
+    def key_authorization(self, account_key: jose.JWK) -> str:
         """Generate Key Authorization.
 
         :param JWK account_key:
@@ -169,7 +174,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
             account_key.thumbprint(
                 hash_function=self.thumbprint_hash_function)).decode()
 
-    def response(self, account_key):
+    def response(self, account_key: jose.JWK) -> challenges.KeyAuthorizationChallengeResponse:
         """Generate response to the challenge.
 
         :param JWK account_key:
@@ -182,7 +187,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
             key_authorization=self.key_authorization(account_key))
 
     @abc.abstractmethod
-    def validation(self, account_key, **kwargs):
+    def validation(self, account_key: jose.JWK, **kwargs: Any) -> Any:
         """Generate validation for the challenge.
 
         Subclasses must implement this method, but they are likely to
@@ -196,7 +201,8 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()  # pragma: no cover
 
-    def response_and_validation(self, account_key, *args, **kwargs):
+    def response_and_validation(self, account_key: jose.JWK, *args: Any, **kwargs: Any
+                                ) -> Tuple[challenges.KeyAuthorizationChallengeResponse, Any]:
         """Generate response and validation.
 
         Convenience function that return results of `response` and
