@@ -15,7 +15,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* The certbot-dns-rfc2136 plugin in Certbot 1.19.0 inadvertently had an implicit
+  dependency on `dnspython>=2.0`. This has been relaxed to `dnspython>=1.15.0`.
 
 More details about these changes can be found on our GitHub repo.
 
