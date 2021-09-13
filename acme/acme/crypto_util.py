@@ -36,7 +36,7 @@ class _DefaultCertSelection:
     def __init__(self, certs: Mapping[bytes, Tuple[crypto.PKey, crypto.X509]]):
         self.certs = certs
 
-    def __call__(self, connection: SSL.Connection):
+    def __call__(self, connection: SSL.Connection) -> Optional[Tuple[crypto.PKey, crypto.X509]]:
         server_name = connection.get_servername()
         return self.certs.get(server_name, None)
 
@@ -57,8 +57,9 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
     def __init__(self, sock: socket.socket,
                  certs: Optional[Mapping[bytes, Tuple[crypto.PKey, crypto.X509]]] = None,
                  method: int = _DEFAULT_SSL_METHOD,
-                 alpn_selection: Callable[[SSL.Connection, List[bytes]], bytes] = None,
-                 cert_selection: Callable[[SSL.Connection], Tuple[crypto.PKey, crypto.X509]] = None
+                 alpn_selection: Optional[Callable[[SSL.Connection, List[bytes]], bytes]] = None,
+                 cert_selection: Optional[Callable[[SSL.Connection],
+                                                   Tuple[crypto.PKey, crypto.X509]]] = None
                  ) -> None:
         self.sock = sock
         self.alpn_selection = alpn_selection
@@ -68,8 +69,8 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
         if cert_selection and certs:
             raise ValueError("Both cert_selection and certs specified.")
         if cert_selection is None:
-            cert_selection = _DefaultCertSelection(certs if certs else {})
-        self.cert_selection = cert_selection
+            cert_selection_obj = _DefaultCertSelection(certs if certs else {})
+        self.cert_selection = cert_selection_obj
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.sock, name)
@@ -339,8 +340,12 @@ def _pyopenssl_extract_san_list_raw(cert_or_req: Union[crypto.X509, crypto.X509R
     return sans_parts
 
 
-def gen_ss_cert(key, domains=None, not_before=None,
-                validity=(7 * 24 * 60 * 60), force_san=True, extensions=None, ips=None):
+def gen_ss_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
+                not_before: Optional[int] = None,
+                validity: int = (7 * 24 * 60 * 60), force_san: bool = True,
+                extensions: Optional[List[crypto.X509Extension]] = None,
+                ips: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv4Address]]] = None
+                ) -> crypto.X509:
     """Generate new self-signed certificate.
 
     :type domains: `list` of `unicode`
@@ -401,7 +406,7 @@ def gen_ss_cert(key, domains=None, not_before=None,
     return cert
 
 
-def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
+def dump_pyopenssl_chain(chain: List[crypto.X509], filetype: int = crypto.FILETYPE_PEM) -> bytes:
     """Dump certificate chain into a bundle.
 
     :param list chain: List of `OpenSSL.crypto.X509` (or wrapped in
@@ -414,7 +419,7 @@ def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
     # XXX: returns empty string when no chain is available, which
     # shuts up RenewableCert, but might not be the best solution...
 
-    def _dump_cert(cert):
+    def _dump_cert(cert: Union[jose.ComparableX509, crypto.X509]) -> bytes:
         if isinstance(cert, jose.ComparableX509):
             cert = cert.wrapped
         return crypto.dump_certificate(filetype, cert)

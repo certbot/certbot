@@ -598,7 +598,7 @@ class DNS(_TokenChallenge):
         return DNSResponse(validation=self.gen_validation(
             account_key, **kwargs))
 
-    def validation_domain_name(self, name: str):
+    def validation_domain_name(self, name: str) -> str:
         """Domain name for TXT validation record.
 
         :param unicode name: Domain name being validated.
