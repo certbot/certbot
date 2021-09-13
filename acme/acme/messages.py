@@ -99,16 +99,14 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         return cls(typ=typ, **kwargs)  # type: ignore
 
     @property
-    def description(self) -> str:
+    def description(self) -> Optional[str]:
         """Hardcoded error description based on its type.
 
         :returns: Description if standard ACME error or ``None``.
         :rtype: unicode
 
         """
-        # By construction of ERROR_TYPE, ERROR_TYPE_DESCRIPTIONS and the __init__ function,
-        # the 'typ' index always exists in ERROR_TYPE_DESCRIPTIONS
-        return ERROR_TYPE_DESCRIPTIONS[self.typ]
+        return ERROR_TYPE_DESCRIPTIONS.get(self.typ)
 
     @property
     def code(self) -> Optional[str]:

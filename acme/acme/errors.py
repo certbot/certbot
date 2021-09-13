@@ -1,4 +1,5 @@
 """ACME errors."""
+import typing
 from typing import Any
 from typing import List
 from typing import Mapping
@@ -7,7 +8,10 @@ from typing import Set
 from josepy import errors as jose_errors
 import requests
 
-from acme import messages
+# We import acme.messages only during type check to avoid circular dependencies. Type references
+# to acme.message.* must be quoted to be lazily initialized and avoid compilation errors.
+if typing.TYPE_CHECKING:
+    from acme import messages
 
 
 class Error(Exception):
@@ -77,8 +81,9 @@ class PollError(ClientError):
         to the most recently updated one
 
     """
-    def __init__(self, exhausted: Set[messages.AuthorizationResource],
-                 updated: Mapping[messages.AuthorizationResource, messages.AuthorizationResource]
+    def __init__(self, exhausted: Set['messages.AuthorizationResource'],
+                 updated: Mapping['messages.AuthorizationResource',
+                                  'messages.AuthorizationResource']
                  ) -> None:
         self.exhausted = exhausted
         self.updated = updated
@@ -98,7 +103,7 @@ class ValidationError(Error):
     """Error for authorization failures. Contains a list of authorization
     resources, each of which is invalid and should have an error field.
     """
-    def __init__(self, failed_authzrs: List[messages.AuthorizationResource]) -> None:
+    def __init__(self, failed_authzrs: List['messages.AuthorizationResource']) -> None:
         self.failed_authzrs = failed_authzrs
         super().__init__()
 
@@ -110,7 +115,7 @@ class TimeoutError(Error):  # pylint: disable=redefined-builtin
 class IssuanceError(Error):
     """Error sent by the server after requesting issuance of a certificate."""
 
-    def __init__(self, error: messages.Error) -> None:
+    def __init__(self, error: 'messages.Error') -> None:
         """Initialize.
 
         :param messages.Error error: The error provided by the server.
