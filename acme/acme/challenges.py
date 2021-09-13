@@ -5,6 +5,7 @@ import functools
 import hashlib
 import logging
 import socket
+from typing import cast
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -45,7 +46,7 @@ class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields
     """ACME challenge response."""
     TYPES: Dict[str, Type['ChallengeResponse']] = {}
     resource_type = 'challenge'
-    resource: str = fields.Resource(resource_type)
+    resource = fields.Resource(resource_type)
 
 
 class UnrecognizedChallenge(Challenge):
@@ -109,7 +110,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
     :param unicode key_authorization:
 
     """
-    key_authorization: str = jose.Field("keyAuthorization")
+    key_authorization = jose.Field("keyAuthorization")
     thumbprint_hash_function = hashes.SHA256
 
     def verify(self, chall: 'KeyAuthorizationChallenge', account_public_key: jose.JWK) -> bool:
@@ -615,7 +616,7 @@ class DNSResponse(ChallengeResponse):
     """
     typ = "dns"
 
-    validation: jose.JWS = jose.Field("validation", decoder=jose.JWS.from_json)
+    validation = jose.Field("validation", decoder=jose.JWS.from_json)
 
     def check_validation(self, chall: 'DNS', account_public_key: jose.JWK) -> bool:
         """Check validation.
@@ -626,4 +627,4 @@ class DNSResponse(ChallengeResponse):
         :rtype: bool
 
         """
-        return chall.check_validation(self.validation, account_public_key)
+        return chall.check_validation(cast(jose.JWS, self.validation), account_public_key)
