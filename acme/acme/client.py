@@ -33,7 +33,6 @@ from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
 from requests_toolbelt.adapters.source import SourceAddressAdapter
 
-from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import jws

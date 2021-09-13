@@ -45,7 +45,8 @@ class TLSServer(socketserver.TCPServer):
             alpn_selection=getattr(self, '_alpn_selection', None),
             method=self.method)
 
-    def _cert_selection(self, connection: SSL.Connection) -> Tuple[crypto.PKey, crypto.X509]:  # pragma: no cover
+    def _cert_selection(self, connection: SSL.Connection
+                        ) -> Tuple[crypto.PKey, crypto.X509]:  # pragma: no cover
         """Callback selecting certificate for connection."""
         server_name = connection.get_servername()
         return self.certs.get(server_name, None)

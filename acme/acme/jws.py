@@ -4,7 +4,6 @@ The JWS implementation in josepy only implements the base JOSE standard. In
 order to support the new header fields defined in ACME, this module defines some
 ACME-specific classes that layer on top of josepy.
 """
-from typing import Any
 from typing import Optional
 
 import josepy as jose
