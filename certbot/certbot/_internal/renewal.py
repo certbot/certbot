@@ -7,7 +7,7 @@ import random
 import sys
 import time
 import traceback
-from typing import List
+from typing import Any, List, Tuple
 from typing import Optional
 
 from cryptography.hazmat.backends import default_backend
@@ -177,6 +177,11 @@ def restore_required_config_elements(config, renewalparams):
         configuration file that defines this lineage
 
     """
+    # Prior to Certbot v1.10.0, all certificate private keys were RSA. Any
+    # certificate with an ECDSA private key will have key_type set to ecdsa,
+    # so all certificates without a value set should be assumed to be RSA.
+    if "key_type" not in renewalparams:
+        renewalparams["key_type"] = "rsa"
 
     required_items = itertools.chain(
         (("pref_challs", _restore_pref_challs),),
@@ -317,6 +322,57 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                     "unless you use the --break-my-certs flag!".format(names))
 
 
+def _is_new_key_requested(config: configuration.NamespaceConfig,
+                          cert: storage.RenewableCert) -> Tuple[bool, Optional[str], Any, Any]:
+    """Determines whether a new private key would be generated, based upon the requested key
+    options from the Certbot CLI and the key parameters of the existing certificate. This compares
+    key type, size, elliptic curve, as applicable. This does not compare the key material itself.
+
+    :returns: tuple of
+        - whether a new private key would be generated
+        - the first key option which differs
+        - the value of that key option in the existing certificate
+        - the value of that key option that is being requested
+    """
+    if cli.set_by_cli("key_type") and config.key_type.upper() != cert.private_key_type.upper():
+        return True, "--key-type", cert.private_key_type.upper(), config.key_type.upper()
+
+    with open(cert.key_path, 'rb') as file_h:
+        key = load_pem_private_key(file_h.read(), password=None, backend=default_backend())
+
+    if isinstance(key, rsa.RSAPrivateKey):
+        if cli.set_by_cli("rsa_key_size") and config.rsa_key_size != key.key_size:
+            return True, "--rsa-key-size", key.key_size, config.rsa_key_size
+    elif isinstance(key, ec.EllipticCurvePrivateKey):
+        if (cli.set_by_cli("elliptic_curve") and
+            config.elliptic_curve.upper() != key.curve.name.upper()):
+            return True, "--elliptic-curve", key.curve.name.upper(), config.elliptic_curve.upper()
+    else:
+        raise errors.Error(f'Key at {cert.key_path} is of an unsupported type: {type(key)}.')
+
+    return False, None, None, None
+
+
+def _handle_reuse_key_conflict(config: configuration.NamespaceConfig,
+                               cert: storage.RenewableCert) -> bool:
+    """Ask user to confirm changes to a certificate's key params if reuse_key is set and the
+       requested key parameters are conflicting with the existing key.
+
+    :returns: whether the key parameters are requested to change.
+    """
+    params_differ, param, old_val, new_val = _is_new_key_requested(config, cert)
+
+    if not params_differ or not config.reuse_key or cli.set_by_cli("certname"):
+        return params_differ
+
+    raise errors.Error(
+        f"Are you trying to change the {param} of the certificate named {cert.lineagename} "
+        f"from {old_val} to {new_val}? The certificate was configured with --reuse-key. To "
+        f"confirm this change to the certificate key, please provide both {param} and "
+        "--cert-name on the command line."
+    )
+
+
 def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str]],
                le_client: client.Client, lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
@@ -325,13 +381,26 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str
     _avoid_invalidating_lineage(config, lineage, original_server)
     if not domains:
         domains = lineage.names()
-    # The private key is the existing lineage private key if reuse_key is set.
-    # Otherwise, generate a fresh private key by passing None.
-    if config.reuse_key:
-        new_key = os.path.normpath(lineage.privkey)
-        _update_renewal_params_from_key(new_key, config)
+
+    # Determine private key action.
+    # - Key param change requested on the CLI?
+    #   - If reuse_key, make sure user confirms with --cert-name
+    #   - Otherwise, apply the change.
+    # - Key params on the CLI unchanged?
+    #   - If reuse_key, use the existing private key
+    #   - Otherwise, generate a new private key using key params of existing key.
+    is_key_change_requested = _handle_reuse_key_conflict(config, lineage)
+
+    existing_key = os.path.normpath(lineage.privkey)
+    new_key: Optional[str] = None
+
+    if is_key_change_requested:
+        _update_renewal_params_from_key_and_config(existing_key, config)
     else:
-        new_key = None
+        _update_renewal_params_from_key(existing_key, config)
+        if config.reuse_key:
+            new_key = existing_key
+
     new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s", os.path.dirname(lineage.cert))
@@ -516,3 +585,24 @@ def _update_renewal_params_from_key(key_path: str, config: configuration.Namespa
         config.elliptic_curve = key.curve.name
     else:
         raise errors.Error('Key at {0} is of an unsupported type: {1}.'.format(key_path, type(key)))
+
+
+def _update_renewal_params_from_key_and_config(key_path: str,
+                                               config: configuration.NamespaceConfig) -> None:
+    with open(key_path, 'rb') as file_h:
+        key = load_pem_private_key(file_h.read(), password=None, backend=default_backend())
+
+    if isinstance(key, rsa.RSAPrivateKey):
+        existing_key_type = 'rsa'
+    elif isinstance(key, ec.EllipticCurvePrivateKey):
+        existing_key_type = 'ecdsa'
+    else:
+        raise errors.Error(f'Key at {key_path} is of an unsupported type: {type(key)}.')
+
+    if not cli.set_by_cli("key_type"):
+        config.key_type = existing_key_type
+
+    if isinstance(key, rsa.RSAPrivateKey) and not cli.set_by_cli("rsa_key_size"):
+        config.rsa_key_size = key.key_size
+    elif isinstance(key, ec.EllipticCurvePrivateKey) and not cli.set_by_cli("elliptic_curve"):
+        config.elliptic_curve = key.curve.name
