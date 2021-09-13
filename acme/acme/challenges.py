@@ -443,7 +443,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         if port is None:
             port = self.PORT
 
-        return crypto_util.probe_sni(host=host, port=port, name=domain,
+        return crypto_util.probe_sni(host=host.encode(), port=port, name=domain.encode(),
                                      alpn_protocols=[self.ACME_TLS_1_PROTOCOL])
 
     def verify_cert(self, domain: str, cert: crypto.X509) -> bool:

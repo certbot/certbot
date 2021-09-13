@@ -29,7 +29,7 @@ class Validator:
             logger.exception(str(error))
             return False
 
-        return presented_cert.digest("sha256") == cert.digest("sha256")
+        return presented_cert.digest(b"sha256") == cert.digest("sha256")
 
     def redirect(self, name, port=80, headers=None):
         """Test whether webserver redirects to secure connection."""

@@ -61,7 +61,7 @@ ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
     (OLD_ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items()))
 
 
-def is_acme_error(err: Exception) -> bool:
+def is_acme_error(err: BaseException) -> bool:
     """Check if argument is an ACME error."""
     if isinstance(err, Error) and (err.typ is not None):
         return (ERROR_PREFIX in err.typ) or (OLD_ERROR_PREFIX in err.typ)
@@ -294,7 +294,7 @@ class ExternalAccountBinding:
 
     @classmethod
     def from_data(cls, account_public_key: jose.JWK, kid: str, hmac_key: str,
-                  directory: Directory) -> Dict[str, Any]:
+                  directory: Directory) -> 'ExternalAccountBinding':
         """Create External Account Binding Resource from contact details, kid and hmac."""
 
         key_json = json.dumps(account_public_key.to_partial_json()).encode()

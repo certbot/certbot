@@ -11,6 +11,7 @@ from typing import Callable
 from typing import List
 from typing import Mapping
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Union
 
@@ -141,14 +142,14 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
         return ssl_sock, addr
 
 
-def probe_sni(name: Union[str, bytes], host: str, port: int = 443, timeout: int = 300,  # pylint: disable=too-many-arguments
+def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # pylint: disable=too-many-arguments
               method: int = _DEFAULT_SSL_METHOD, source_address: Tuple[str, int] = ('', 0),
               alpn_protocols: Optional[List[str]] = None) -> crypto.X509:
     """Probe SNI server for SSL certificate.
 
-    :param str|bytes name: Byte string to send as the server name in the
+    :param bytes name: Byte string to send as the server name in the
         client hello message.
-    :param str host: Host to connect to.
+    :param bytes host: Host to connect to.
     :param int port: Port to connect to.
     :param int timeout: Timeout in seconds.
     :param method: See `OpenSSL.SSL.Context` for allowed values.
@@ -177,7 +178,7 @@ def probe_sni(name: Union[str, bytes], host: str, port: int = 443, timeout: int 
                 source_address[1]
             ) if any(source_address) else ""
         )
-        socket_tuple: Tuple[str, int] = (host, port)
+        socket_tuple: Tuple[bytes, int] = (host, port)
         sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore[arg-type]
     except socket.error as error:
         raise errors.Error(error)
@@ -185,8 +186,7 @@ def probe_sni(name: Union[str, bytes], host: str, port: int = 443, timeout: int 
     with contextlib.closing(sock) as client:
         client_ssl = SSL.Connection(context, client)
         client_ssl.set_connect_state()
-        name_b = name if isinstance(name, bytes) else name.encode()
-        client_ssl.set_tlsext_host_name(name_b)  # pyOpenSSL>=0.13
+        client_ssl.set_tlsext_host_name(name)  # pyOpenSSL>=0.13
         if alpn_protocols is not None:
             client_ssl.set_alpn_protos(alpn_protocols)
         try:
@@ -197,7 +197,7 @@ def probe_sni(name: Union[str, bytes], host: str, port: int = 443, timeout: int 
     return client_ssl.get_peer_certificate()
 
 
-def make_csr(private_key_pem: bytes, domains: Optional[List[str]] = None,
+def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]]] = None,
              must_staple: bool = False,
              ipaddrs: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None
              ) -> bytes:

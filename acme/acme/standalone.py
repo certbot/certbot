@@ -128,7 +128,7 @@ class BaseDualNetworkedServers:
             thread.start()
             self.threads.append(thread)
 
-    def getsocknames(self) -> List[str]:
+    def getsocknames(self) -> List[Tuple[str, int]]:
         """Wraps socketserver.TCPServer.socket.getsockname"""
         return [server.socket.getsockname() for server in self.servers]
 
