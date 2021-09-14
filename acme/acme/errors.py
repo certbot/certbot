@@ -11,7 +11,7 @@ import requests
 # We import acme.messages only during type check to avoid circular dependencies. Type references
 # to acme.message.* must be quoted to be lazily initialized and avoid compilation errors.
 if typing.TYPE_CHECKING:
-    from acme import messages
+    from acme import messages  # pragma: no cover
 
 
 class Error(Exception):
