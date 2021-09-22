@@ -505,7 +505,7 @@ class NoninteractiveDisplay:
 
         """
         if default is None:
-            self._interaction_fail(message, cli_flag, "? ".join(tags))
+            self._interaction_fail(message, cli_flag, "? ".join(tags) + "?")
         return OK, default
 
     def directory_select(self, message, default=None,
