@@ -8,6 +8,7 @@ import socket
 from typing import cast
 from typing import Any
 from typing import Dict
+from typing import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Type
@@ -33,7 +34,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
     TYPES: Dict[str, Type['Challenge']] = {}
 
     @classmethod
-    def from_json(cls, jobj: Dict[str, Any]) -> 'Challenge':
+    def from_json(cls, jobj: Mapping[str, Any]) -> 'Challenge':
         try:
             return super().from_json(jobj)
         except jose.UnrecognizedTypeError as error:
@@ -62,7 +63,7 @@ class UnrecognizedChallenge(Challenge):
 
     """
 
-    def __init__(self, jobj: Dict[str, Any]) -> None:
+    def __init__(self, jobj: Mapping[str, Any]) -> None:
         super().__init__()
         object.__setattr__(self, "jobj", jobj)
 
@@ -70,7 +71,7 @@ class UnrecognizedChallenge(Challenge):
         return self.jobj  # pylint: disable=no-member
 
     @classmethod
-    def from_json(cls, jobj: Dict[str, Any]) -> 'UnrecognizedChallenge':
+    def from_json(cls, jobj: Mapping[str, Any]) -> 'UnrecognizedChallenge':
         return cls(jobj)
 
 
