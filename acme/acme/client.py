@@ -629,7 +629,7 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newAccount'], new_account)
         # if account already exists
         if response.status_code == 200 and 'Location' in response.headers:
-            raise errors.ConflictError(response.headers.get('Location', 'UNKOWN-LOCATION'))
+            raise errors.ConflictError(response.headers['Location'])
         # "Instance of 'Field' has no key/contact member" bug:
         regr = self._regr_from_response(response)
         self.net.account = regr
