@@ -1115,7 +1115,7 @@ class ClientNetwork:
             jobj = None
 
         if response.status_code == 409:
-            raise errors.ConflictError(response.headers.get('Location', 'UNKOWN-LOCATION'))
+            raise errors.ConflictError(response.headers.get('Location', 'UNKNOWN-LOCATION'))
 
         if not response.ok:
             if jobj is not None:
