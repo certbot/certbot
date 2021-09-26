@@ -5,6 +5,7 @@ from typing import Any
 from typing import Dict
 from typing import Iterator
 from typing import List
+from typing import Mapping
 from typing import Tuple
 from typing import Type
 from typing import Optional
@@ -547,7 +548,7 @@ class Authorization(ResourceBody):
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that challenge is redefined. Let's ignore the type check here.
     @challenges.decoder  # type: ignore
-    def challenges(value: List[Any]) -> Tuple[ChallengeBody, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
+    def challenges(value: List[Mapping[str, Any]]) -> Tuple[ChallengeBody, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
     @property
@@ -648,8 +649,9 @@ class Order(ResourceBody):
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that identifiers is redefined. Let's ignore the type check here.
     @identifiers.decoder  # type: ignore
-    def identifiers(value: List[Any]) -> Tuple[Identifier, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
+    def identifiers(value: List[Mapping[str, Any]]) -> Tuple[Identifier, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(Identifier.from_json(identifier) for identifier in value)
+
 
 class OrderResource(ResourceWithURI):
     """Order Resource.
