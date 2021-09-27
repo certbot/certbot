@@ -78,7 +78,7 @@ class ClientBase:
             terms_of_service=terms_of_service)
 
     def _send_recv_regr(self, regr: messages.RegistrationResource,
-                        body: Any) -> messages.RegistrationResource:
+                        body: messages.Registration) -> messages.RegistrationResource:
         response = self._post(regr.uri, body)
 
         # TODO: Boulder returns httplib.ACCEPTED
