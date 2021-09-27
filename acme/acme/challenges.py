@@ -459,6 +459,8 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         """
         # pylint: disable=protected-access
         names = crypto_util._pyopenssl_cert_or_req_all_names(cert)
+        # Type ignore needed due to
+        # https://github.com/pyca/pyopenssl/issues/730.
         logger.debug('Certificate %s. SANs: %s',
                      cert.digest('sha256'), names)  # type: ignore[arg-type]
         if len(names) != 1 or names[0].lower() != domain.lower():
