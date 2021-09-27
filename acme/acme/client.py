@@ -159,7 +159,7 @@ class ClientBase:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def answer_challenge(self, challb: messages.ChallengeResource, response: requests.Response
+    def answer_challenge(self, challb: messages.ChallengeBody, response: requests.Response
                          ) -> messages.ChallengeResource:
         """Answer challenge.
 
