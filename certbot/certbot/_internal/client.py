@@ -2,6 +2,8 @@
 import datetime
 import logging
 import platform
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
@@ -205,7 +207,7 @@ def perform_registration(acme, config, tos_cb):
     """
 
     eab_credentials_supplied = config.eab_kid and config.eab_hmac_key
-    eab: Optional[messages.ExternalAccountBinding]
+    eab: Optional[Dict[str, Any]]
     if eab_credentials_supplied:
         account_public_key = acme.client.net.key.public_key()
         eab = messages.ExternalAccountBinding.from_data(account_public_key=account_public_key,
