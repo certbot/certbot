@@ -101,7 +101,7 @@ class ClientBase:
         return self.net.post(*args, **kwargs)
 
     def update_registration(self, regr: messages.RegistrationResource,
-                            update: Optional[Union[Dict[str, Any], messages.Registration]] = None
+                            update: Optional[messages.Registration] = None
                             ) -> messages.RegistrationResource:
         """Update registration.
 
@@ -130,7 +130,7 @@ class ClientBase:
         :rtype: `.RegistrationResource`
 
         """
-        return self.update_registration(regr, update={'status': 'deactivated'})
+        return self.update_registration(regr.update(body=regr.body.update(status="deactivated")))
 
     def deactivate_authorization(self,
                                  authzr: messages.AuthorizationResource
@@ -652,7 +652,7 @@ class ClientV2(ClientBase):
         return self.net.account
 
     def update_registration(self, regr: messages.RegistrationResource,
-                            update: Optional[Union[Dict[str, Any], messages.Registration]] = None
+                            update: Optional[messages.Registration] = None
                             ) -> messages.RegistrationResource:
         """Update registration.
 
