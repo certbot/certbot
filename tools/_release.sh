@@ -30,7 +30,23 @@ echo Releasing production version "$version"...
 nextversion="$2"
 RELEASE_BRANCH="candidate-$version"
 
-RELEASE_GPG_KEY=${RELEASE_GPG_KEY:-A2CFB51FA275A7286234E7B24D17C995CD9775F2}
+# If RELEASE_GPG_KEY isn't set, determine the key to use.
+if [ "$RELEASE_GPG_KEY" = "" ]; then
+    TRUSTED_KEYS="
+        A2CFB51FA275A7286234E7B24D17C995CD9775F2
+    "
+    for key in $TRUSTED_KEYS; do
+        if gpg2 --with-colons --card-status | grep -q "$key"; then
+            RELEASE_GPG_KEY="$key"
+            break
+        fi
+    done
+    if [ "$RELEASE_GPG_KEY" = "" ]; then
+        echo A trusted PGP key was not found on your PGP card.
+        exit 1
+    fi
+fi
+
 # Needed to fix problems with git signatures and pinentry
 export GPG_TTY=$(tty)
 
