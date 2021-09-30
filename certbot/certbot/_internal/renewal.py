@@ -360,9 +360,12 @@ def _handle_reuse_key_conflict(config: configuration.NamespaceConfig,
 
     :returns: whether the key parameters are requested to change.
     """
+    if not config.reuse_key:
+        return True
+
     params_differ, param, old_val, new_val = _is_new_key_requested(config, cert)
 
-    if not params_differ or not config.reuse_key or cli.set_by_cli("certname"):
+    if not params_differ or cli.set_by_cli("certname"):
         return params_differ
 
     raise errors.Error(
@@ -382,23 +385,16 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str
     if not domains:
         domains = lineage.names()
 
-    # Determine private key action.
-    # - Key param change requested on the CLI?
-    #   - If reuse_key, make sure user confirms with --cert-name
-    #   - Otherwise, apply the change.
-    # - Key params on the CLI unchanged?
-    #   - If reuse_key, use the existing private key
-    #   - Otherwise, generate a new private key using key params of existing key.
-    is_key_change_requested = _handle_reuse_key_conflict(config, lineage)
-
     existing_key = os.path.normpath(lineage.privkey)
     new_key: Optional[str] = None
 
-    if is_key_change_requested:
-        _update_renewal_params_from_key_and_config(existing_key, config)
-    else:
-        _update_renewal_params_from_key(existing_key, config)
-        if config.reuse_key:
+    # The private key is the existing lineage private key if reuse_key is set and no
+    # key options are changing. If key options are changing, generate a new key but
+    # keep reuse_key.
+    if config.reuse_key:
+        is_key_changing = _handle_reuse_key_conflict(config, lineage)
+        if not is_key_changing:
+            _update_renewal_params_from_key(existing_key, config)
             new_key = existing_key
 
     new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
@@ -586,23 +582,3 @@ def _update_renewal_params_from_key(key_path: str, config: configuration.Namespa
     else:
         raise errors.Error('Key at {0} is of an unsupported type: {1}.'.format(key_path, type(key)))
 
-
-def _update_renewal_params_from_key_and_config(key_path: str,
-                                               config: configuration.NamespaceConfig) -> None:
-    with open(key_path, 'rb') as file_h:
-        key = load_pem_private_key(file_h.read(), password=None, backend=default_backend())
-
-    if isinstance(key, rsa.RSAPrivateKey):
-        existing_key_type = 'rsa'
-    elif isinstance(key, ec.EllipticCurvePrivateKey):
-        existing_key_type = 'ecdsa'
-    else:
-        raise errors.Error(f'Key at {key_path} is of an unsupported type: {type(key)}.')
-
-    if not cli.set_by_cli("key_type"):
-        config.key_type = existing_key_type
-
-    if isinstance(key, rsa.RSAPrivateKey) and not cli.set_by_cli("rsa_key_size"):
-        config.rsa_key_size = key.key_size
-    elif isinstance(key, ec.EllipticCurvePrivateKey) and not cli.set_by_cli("elliptic_curve"):
-        config.elliptic_curve = key.curve.name
