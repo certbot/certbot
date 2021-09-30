@@ -1085,13 +1085,6 @@ class RenewableCert(interfaces.RenewableCert):
         else:
             return "ECDSA"
 
-    @property
-    def reuse_key(self) -> bool:
-        """
-        :returns: Whether the certificate is configured to reuse its key on renewal
-        :rtype: bool
-        """
-        return self.configuration["renewalparams"].get("reuse_key", None)
 
     def save_successor(self, prior_version, new_cert,
                        new_privkey, new_chain, cli_config):
