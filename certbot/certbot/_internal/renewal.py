@@ -384,18 +384,14 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str
     _avoid_invalidating_lineage(config, lineage, original_server)
     if not domains:
         domains = lineage.names()
-
-    existing_key = os.path.normpath(lineage.privkey)
-    new_key: Optional[str] = None
-
     # The private key is the existing lineage private key if reuse_key is set and no
     # key options are changing. If key options are changing, generate a new key but
-    # keep reuse_key.
+    # keep reuse_key on the lineage.
     if config.reuse_key:
         is_key_changing = _handle_reuse_key_conflict(config, lineage)
         if not is_key_changing:
-            _update_renewal_params_from_key(existing_key, config)
-            new_key = existing_key
+            new_key = os.path.normpath(lineage.privkey)
+            _update_renewal_params_from_key(new_key, config)
 
     new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
     if config.dry_run:
@@ -581,4 +577,3 @@ def _update_renewal_params_from_key(key_path: str, config: configuration.Namespa
         config.elliptic_curve = key.curve.name
     else:
         raise errors.Error('Key at {0} is of an unsupported type: {1}.'.format(key_path, type(key)))
-

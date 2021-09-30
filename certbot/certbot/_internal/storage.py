@@ -1085,7 +1085,6 @@ class RenewableCert(interfaces.RenewableCert):
         else:
             return "ECDSA"
 
-
     def save_successor(self, prior_version, new_cert,
                        new_privkey, new_chain, cli_config):
         """Save new cert and chain as a successor of a prior version.
