@@ -1,6 +1,7 @@
 """Webroot plugin."""
 import argparse
 import collections
+from genericpath import exists
 import json
 import logging
 from typing import DefaultDict
@@ -191,6 +192,24 @@ to serve all files under specified web root ({0})."""
                             "challenge responses: {1}".format(name, exception))
             finally:
                 filesystem.umask(old_umask)
+
+            # On Windows, generate a local web.config file that allows IIS to serve expose
+            # challenge files despite the fact they do not have a file extension.
+            if not filesystem.POSIX_MODE:
+                web_config_path = os.path.join(self.full_roots[name], "web.config")
+                if os.path.exists(web_config_path):
+                    os.remove(web_config_path)
+                with safe_open(web_config_path, mode="w", chmod=0o644) as web_config:
+                    web_config.write("""\
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+  <system.webServer>
+      <staticContent>
+          <mimeMap fileExtension="." mimeType="text/plain" />
+      </staticContent>
+  </system.webServer>
+</configuration>
+""")
 
     def _get_validation_path(self, root_path, achall):
         return os.path.join(root_path, achall.chall.encode("token"))
