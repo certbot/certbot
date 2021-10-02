@@ -1,12 +1,12 @@
 """Plugin common functions."""
 from abc import ABCMeta
+from abc import abstractmethod
 import logging
 import re
 import shutil
 import tempfile
 from typing import List
 
-from josepy import util as jose_util
 import pkg_resources
 
 from certbot import achallenges
@@ -48,7 +48,8 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):
         self.config = config
         self.name = name
 
-    @jose_util.abstractclassmethod
+    @classmethod
+    @abstractmethod
     def add_parser_arguments(cls, add):
         """Add plugin arguments to the CLI argument parser.
 

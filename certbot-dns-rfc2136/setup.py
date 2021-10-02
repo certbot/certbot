@@ -7,7 +7,7 @@ from setuptools import setup
 version = '1.20.0.dev0'
 
 install_requires = [
-    'dnspython',
+    'dnspython>=1.15.0',
     'setuptools>=39.0.1',
 ]
 

@@ -52,9 +52,7 @@ install_requires = [
     'configobj>=5.0.6',
     'cryptography>=2.1.4',
     'distro>=1.0.1',
-    # 1.1.0+ is required to avoid the warnings described at
-    # https://github.com/certbot/josepy/issues/13.
-    'josepy>=1.1.0',
+    'josepy>=1.9.0',
     'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz',
