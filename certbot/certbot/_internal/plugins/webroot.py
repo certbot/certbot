@@ -242,6 +242,11 @@ to serve all files under specified web root ({0})."""
                 os.remove(validation_path)
                 self.performed[root_path].remove(achall)
 
+                web_config_path = os.path.join(root_path, "web.config")
+                if os.path.exists(web_config_path):
+                    os.remove(web_config_path)
+
+
         not_removed: List[str] = []
         while self._created_dirs:
             path = self._created_dirs.pop()

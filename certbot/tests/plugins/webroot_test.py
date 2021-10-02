@@ -86,6 +86,16 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(self.config.webroot_map[self.achall.domain],
                          self.path)
 
+    @unittest.skipIf(filesystem.POSIX_MODE, reason='Test specific to Windows')
+    @test_util.patch_display_util()
+    def test_webroot_webconfig_file(self, mock_get_utility):
+        self.config.webroot_path = []
+        self.config.webroot_map = {"otherthing.com": self.path}
+        mock_display = mock_get_utility()
+        mock_display.menu.return_value = (display_util.OK, 1,)
+        self.auth.perform([self.achall])
+        self.assertTrue(os.path.exists(os.path.join(self.root_challenge_path, "web.config")))
+
     @test_util.patch_display_util()
     def test_webroot_from_list_help_and_cancel(self, mock_get_utility):
         self.config.webroot_path = []
