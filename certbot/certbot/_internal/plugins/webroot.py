@@ -1,7 +1,6 @@
 """Webroot plugin."""
 import argparse
 import collections
-from genericpath import exists
 import json
 import logging
 from typing import DefaultDict
