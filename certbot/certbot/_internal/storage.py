@@ -283,6 +283,10 @@ def relevant_values(all_values):
     # and behavioral consistency when versions of Certbot with different
     # server defaults are used.
     rv["server"] = all_values["server"]
+
+    # Always save the key type to maintain consistent behavior between versions
+    # of Certbot where the key type changed from RSA to ECDSA.
+    rv["key_type"] = all_values["key_type"]
     return rv
 
 def lineagename_for_filename(config_filename):
