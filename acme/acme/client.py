@@ -130,7 +130,8 @@ class ClientBase:
         :rtype: `.RegistrationResource`
 
         """
-        return self.update_registration(regr.update(body=regr.body.update(status="deactivated")))
+        return self.update_registration(regr, messages.Registration.from_json(
+            {"status": "deactivated"}))
 
     def deactivate_authorization(self,
                                  authzr: messages.AuthorizationResource
