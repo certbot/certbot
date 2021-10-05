@@ -4,66 +4,14 @@ jobs:
       PYTHON_VERSION: 3.9
     strategy:
       matrix:
-        macos-py36:
+        macos-py310:
           IMAGE_NAME: macOS-10.15
-          PYTHON_VERSION: 3.6
-          TOXENV: py36
-        macos-py39:
-          IMAGE_NAME: macOS-10.15
-          PYTHON_VERSION: 3.9
-          TOXENV: py39
-        windows-py36:
-          IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.6
-          TOXENV: py36-win
-        windows-py39-cover:
-          IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.9
-          TOXENV: py39-cover-win
-        windows-integration-certbot:
-          IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.9
-          TOXENV: integration-certbot
-        linux-oldest-tests-1:
+          PYTHON_VERSION: 3.10
+          TOXENV: py310
+        linux-py310-cover:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
-          TOXENV: '{acme,apache,apache-v2,certbot}-oldest'
-        linux-oldest-tests-2:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
-          TOXENV: '{dns,nginx}-oldest'
-        linux-py36:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
-          TOXENV: py36
-        linux-py39-cover:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.9
-          TOXENV: py39-cover
-        linux-py39-lint:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.9
-          TOXENV: lint-posix
-        linux-py39-mypy:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.9
-          TOXENV: mypy-posix
-        linux-integration:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.8
-          TOXENV: integration
-          ACME_SERVER: pebble
-        apache-compat:
-          IMAGE_NAME: ubuntu-18.04
-          TOXENV: apache_compat
-        apacheconftest:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
-          TOXENV: apacheconftest-with-pebble
-        nginxroundtrip:
-          IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
-          TOXENV: nginxroundtrip
+          PYTHON_VERSION: 3.10
+          TOXENV: py310-cover
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
