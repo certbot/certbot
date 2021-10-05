@@ -281,6 +281,11 @@ class NamespaceConfig:
         return os.path.join(self.renewal_hooks_dir,
                             constants.RENEWAL_POST_HOOKS_DIR)
 
+    @property
+    def timeout(self) -> int:
+        """Timeout value in seconds for the obtaining certificate."""
+        return self.namespace.timeout
+
     # Magic methods
 
     def __deepcopy__(self, _memo):

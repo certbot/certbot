@@ -294,7 +294,10 @@ class Client:
         if orderr is None:
             orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
 
-        deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
+        current_time = datetime.datetime.now()
+        deadline = current_time + datetime.timedelta(seconds=self.config.timeout)
+        logger.debug("current time: %s and deadline: %s", current_time, deadline)
+
         get_alt_chains = self.config.preferred_chain is not None
         orderr = self.acme.finalize_order(orderr, deadline,
                                           fetch_alternative_chains=get_alt_chains)
