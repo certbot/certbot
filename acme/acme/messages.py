@@ -6,6 +6,7 @@ from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Mapping
+from typing import MutableMapping
 from typing import Tuple
 from typing import Type
 from typing import Optional
@@ -239,7 +240,7 @@ class Directory(jose.JSONDeSerializable):
         cls._REGISTERED_TYPES[resource_type] = resource_body_cls
         return resource_body_cls
 
-    def __init__(self, jobj: Dict[str, Any]) -> None:
+    def __init__(self, jobj: Mapping[str, Any]) -> None:
         canon_jobj = util.map_keys(jobj, self._canon_key)
         # TODO: check that everything is an absolute URL; acme-spec is
         # not clear on that
@@ -261,7 +262,7 @@ class Directory(jose.JSONDeSerializable):
         return self._jobj
 
     @classmethod
-    def from_json(cls, jobj: Dict[str, Any]) -> 'Directory':
+    def from_json(cls, jobj: MutableMapping[str, Any]) -> 'Directory':
         jobj['meta'] = cls.Meta.from_json(jobj.pop('meta', {}))
         return cls(jobj)
 
@@ -483,7 +484,7 @@ class ChallengeBody(ResourceBody):
         return jobj
 
     @classmethod
-    def fields_from_json(cls, jobj: Dict[str, Any]) -> Dict[str, Any]:
+    def fields_from_json(cls, jobj: Mapping[str, Any]) -> Dict[str, Any]:
         jobj_fields = super().fields_from_json(jobj)
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
         return jobj_fields
