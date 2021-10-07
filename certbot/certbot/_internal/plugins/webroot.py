@@ -218,7 +218,7 @@ to serve all files under specified web root ({0})."""
                     logger.info("A web.config file has not been created in "
                                 "%s because another one already exists.", self.full_roots[name])
                     return
-                logger.info("Create a web.config file in %s to allow IIS "
+                logger.info("Creating a web.config file in %s to allow IIS "
                             "to serve challenge files.", self.full_roots[name])
                 with safe_open(web_config_path, mode="w", chmod=0o644) as web_config:
                     web_config.write(_WEB_CONFIG_CONTENT)
