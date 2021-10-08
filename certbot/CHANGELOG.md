@@ -6,7 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Add IP address SAN support. Note that SANs containing IP addresses are currently
+  not supported by Let's Encrypt.
 
 ### Changed
 
