@@ -360,7 +360,7 @@ def _renew_describe_results(config: configuration.NamespaceConfig, renew_success
     :param list renew_successes: list of fullchain paths which were renewed
     :param list renew_failures: list of fullchain paths which failed to be renewed
     :param list renew_skipped: list of messages to print about skipped certificates
-    :param list parse_failures: list of renewal parameter paths which had erorrs
+    :param list parse_failures: list of renewal parameter paths which had errors
     """
     notify = display_util.notify
     notify_error = logger.error

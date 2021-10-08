@@ -433,6 +433,21 @@ def test_reuse_key(context):
         privkey3 = file.read()
     assert privkey2 != privkey3
 
+    context.certbot(['--cert-name', certname, '--domains', certname,
+                     '--reuse-key','--force-renewal'])
+    context.certbot(['renew', '--cert-name', certname, '--no-reuse-key', '--force-renewal'])
+    context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
+
+    with open(join(context.config_dir, 'archive/{0}/privkey4.pem').format(certname), 'r') as file:
+        privkey4 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/privkey5.pem').format(certname), 'r') as file:
+        privkey5 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/privkey6.pem').format(certname), 'r') as file:
+        privkey6 = file.read()
+    assert privkey3 == privkey4
+    assert privkey4 != privkey5
+    assert privkey5 != privkey6
+
     with open(join(context.config_dir, 'archive/{0}/cert1.pem').format(certname), 'r') as file:
         cert1 = file.read()
     with open(join(context.config_dir, 'archive/{0}/cert2.pem').format(certname), 'r') as file:

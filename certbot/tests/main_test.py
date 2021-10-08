@@ -323,12 +323,12 @@ class RevokeTest(test_util.TempDirTestCase):
         self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir, 'cert_512.pem'))
 
         patches = [
-            mock.patch('acme.client.BackwardsCompatibleClientV2'),
+            mock.patch('certbot._internal.client.acme_client'),
             mock.patch('certbot._internal.client.Client'),
             mock.patch('certbot._internal.main._determine_account'),
             mock.patch('certbot._internal.main.display_ops.success_revocation')
         ]
-        self.mock_acme_client = patches[0].start()
+        self.mock_acme_client = patches[0].start().BackwardsCompatibleClientV2
         patches[1].start()
         self.mock_determine_account = patches[2].start()
         self.mock_success_revoke = patches[3].start()
@@ -708,11 +708,10 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.eff.handle_subscription')
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     @mock.patch('certbot._internal.main._report_new_cert')
-    @mock.patch('certbot._internal.main.client.acme_client.Client')
     @mock.patch('certbot._internal.main._determine_account')
     @mock.patch('certbot._internal.main.client.Client.obtain_and_enroll_certificate')
     @mock.patch('certbot._internal.main._get_and_save_cert')
-    def test_user_agent(self, gsc, _obt, det, _client, _, __, ___):
+    def test_user_agent(self, gsc, _obt, det, _, __, ___):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
         args = ["--standalone", "certonly", "-m", "none@none.com",
@@ -720,7 +719,8 @@ class MainTest(test_util.ConfigTestCase):
         det.return_value = mock.MagicMock(), None
         gsc.return_value = mock.MagicMock()
 
-        with mock.patch('certbot._internal.main.client.acme_client.ClientNetwork') as acme_net:
+        with mock.patch('certbot._internal.main.client.acme_client') as acme_client:
+            acme_net = acme_client.ClientNetwork
             self._call_no_clientmock(args)
             os_ver = util.get_os_info_ua()
             ua = acme_net.call_args[1]["user_agent"]
@@ -730,7 +730,8 @@ class MainTest(test_util.ConfigTestCase):
             if "linux" in plat.lower():
                 self.assertIn(util.get_os_info_ua(), ua)
 
-        with mock.patch('certbot._internal.main.client.acme_client.ClientNetwork') as acme_net:
+        with mock.patch('certbot._internal.main.client.acme_client') as acme_client:
+            acme_net = acme_client.ClientNetwork
             ua = "bandersnatch"
             args += ["--user-agent", ua]
             self._call_no_clientmock(args)
@@ -1925,8 +1926,9 @@ class ReportNextStepsTest(unittest.TestCase):
         _report_next_steps(*args, **kwargs)
 
     def _output(self) -> str:
-        self.mock_notify.assert_called_once()
-        return self.mock_notify.call_args_list[0][0][0]
+        self.assertEqual(self.mock_notify.call_count, 2)
+        self.assertEqual(self.mock_notify.call_args_list[0][0][0], 'NEXT STEPS:')
+        return self.mock_notify.call_args_list[1][0][0]
 
     def test_report(self):
         """No steps for a normal renewal"""

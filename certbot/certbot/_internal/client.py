@@ -40,8 +40,7 @@ def acme_from_config_key(config, key, regr=None):
                                     user_agent=determine_user_agent(config))
 
     with warnings.catch_warnings():
-        # TODO: full removal of ACMEv1 support: https://github.com/certbot/certbot/issues/6844
-        warnings.simplefilter("ignore", PendingDeprecationWarning)
+        warnings.simplefilter("ignore", DeprecationWarning)
 
         client = acme_client.BackwardsCompatibleClientV2(net, key, config.server)
         if client.acme_version == 1:

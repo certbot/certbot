@@ -1,4 +1,5 @@
 """Tests for certbot._internal.client."""
+import contextlib
 import platform
 import shutil
 import tempfile
@@ -92,8 +93,17 @@ class RegisterTest(test_util.ConfigTestCase):
     def _false_mock():
         return False
 
+    @staticmethod
+    @contextlib.contextmanager
+    def _patched_acme_client():
+        # This function is written this way to avoid deprecation warnings that
+        # are raised when BackwardsCompatibleClientV2 is accessed on the real
+        # acme.client module.
+        with mock.patch('certbot._internal.client.acme_client') as mock_acme_client:
+            yield mock_acme_client.BackwardsCompatibleClientV2
+
     def test_no_tos(self):
-        with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+        with self._patched_acme_client() as mock_client:
             mock_client.new_account_and_tos().terms_of_service = "http://tos"
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
@@ -107,7 +117,7 @@ class RegisterTest(test_util.ConfigTestCase):
 
     @test_util.patch_display_util()
     def test_it(self, unused_mock_get_utility):
-        with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+        with self._patched_acme_client() as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
                 self._call()
@@ -118,7 +128,7 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.noninteractive_mode = False
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
-        with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+        with self._patched_acme_client() as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
@@ -131,7 +141,7 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.noninteractive_mode = True
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
-        with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+        with self._patched_acme_client() as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
@@ -144,8 +154,8 @@ class RegisterTest(test_util.ConfigTestCase):
     @mock.patch("certbot._internal.client.logger")
     def test_without_email(self, mock_logger):
         with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
-            with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_clnt:
-                mock_clnt().external_account_required.side_effect = self._false_mock
+            with self._patched_acme_client() as mock_client:
+                mock_client().external_account_required.side_effect = self._false_mock
                 self.config.email = None
                 self.config.register_unsafely_without_email = True
                 self.config.dry_run = False
@@ -156,7 +166,7 @@ class RegisterTest(test_util.ConfigTestCase):
     @mock.patch("certbot._internal.client.display_ops.get_email")
     def test_dry_run_no_staging_account(self, mock_get_email):
         """Tests dry-run for no staging account, expect account created with no email"""
-        with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+        with self._patched_acme_client() as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
                 self.config.dry_run = True
@@ -168,7 +178,7 @@ class RegisterTest(test_util.ConfigTestCase):
 
     @test_util.patch_display_util()
     def test_with_eab_arguments(self, unused_mock_get_utility):
-        with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+        with self._patched_acme_client() as mock_client:
             mock_client().client.directory.__getitem__ = mock.Mock(
                 side_effect=self._new_acct_dir_mock
             )
@@ -184,7 +194,7 @@ class RegisterTest(test_util.ConfigTestCase):
 
     @test_util.patch_display_util()
     def test_without_eab_arguments(self, unused_mock_get_utility):
-        with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+        with self._patched_acme_client() as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
                 target = "certbot._internal.client.messages.ExternalAccountBinding.from_data"
@@ -196,7 +206,7 @@ class RegisterTest(test_util.ConfigTestCase):
                     self.assertIs(mock_eab_from_data.called, False)
 
     def test_external_account_required_without_eab_arguments(self):
-        with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+        with self._patched_acme_client() as mock_client:
             mock_client().client.net.key.public_key = mock.Mock(side_effect=self._public_key_mock)
             mock_client().external_account_required.side_effect = self._true_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
@@ -210,7 +220,7 @@ class RegisterTest(test_util.ConfigTestCase):
         from acme import messages
         msg = "Test"
         mx_err = messages.Error.with_code("malformed", detail=msg, title="title")
-        with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+        with self._patched_acme_client() as mock_client:
             mock_client().client.directory.__getitem__ = mock.Mock(
                 side_effect=self._new_acct_dir_mock
             )
@@ -232,9 +242,10 @@ class ClientTestCommon(test_util.ConfigTestCase):
         self.account = mock.MagicMock(**{"key.pem": KEY})
 
         from certbot._internal.client import Client
-        with mock.patch("certbot._internal.client.acme_client.BackwardsCompatibleClientV2") as acme:
-            self.acme_client = acme
-            self.acme = acme.return_value = mock.MagicMock()
+        with mock.patch("certbot._internal.client.acme_client") as acme:
+            self.acme_client = acme.BackwardsCompatibleClientV2
+            self.acme = self.acme_client.return_value = mock.MagicMock()
+            self.client_network = acme.ClientNetwork
             self.client = Client(
                 config=self.config, account_=self.account,
                 auth=None, installer=None)
@@ -255,8 +266,7 @@ class ClientTest(ClientTestCommon):
             csr_pem=mock.sentinel.csr_pem)
 
     def test_init_acme_verify_ssl(self):
-        net = self.acme_client.call_args[0][0]
-        self.assertIs(net.verify_ssl, True)
+        self.assertIs(self.client_network.call_args[1]['verify_ssl'], True)
 
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()

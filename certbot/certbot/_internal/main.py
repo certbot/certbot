@@ -66,9 +66,12 @@ def _suggest_donation_if_appropriate(config):
     :rtype: None
 
     """
+    # don't prompt for donation if:
+    # - renewing
+    # - using the staging server (--staging or --dry-run)
+    # - running with --quiet (display fd won't be available during atexit calls #8995)
     assert config.verb != "renew"
-    if config.staging:
-        # --dry-run implies --staging
+    if config.staging or config.quiet:
         return
     util.atexit_register(
         display_util.notification,
@@ -155,7 +158,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
         if new_key_type != cur_key_type:
             msg = ('Are you trying to change the key type of the certificate named {0} '
                    'from {1} to {2}? Please provide both --cert-name and --key-type on '
-                   'the command line confirm the change you are trying to make.')
+                   'the command line to confirm the change you are trying to make.')
             msg = msg.format(cert.lineagename, cur_key_type, new_key_type)
             raise errors.Error(msg)
 
@@ -523,10 +526,12 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
         return
 
     # TODO: refactor ANSI escapes during https://github.com/certbot/certbot/issues/8848
-    (bold_on, bold_off) = [c if sys.stdout.isatty() and not config.quiet else '' \
-                           for c in (util.ANSI_SGR_BOLD, util.ANSI_SGR_RESET)]
+    (bold_on, nl, bold_off) = [c if sys.stdout.isatty() and not config.quiet else '' \
+                               for c in (util.ANSI_SGR_BOLD, '\n', util.ANSI_SGR_RESET)]
+    print(bold_on, end=nl)
+    display_util.notify("NEXT STEPS:")
+    print(bold_off, end='')
 
-    print(bold_on, '\n', 'NEXT STEPS:', bold_off, sep='')
     for step in steps:
         display_util.notify(f"- {step}")
 

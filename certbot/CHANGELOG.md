@@ -2,7 +2,41 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.19.0 - master
+## 1.21.0 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.20.0 - 2021-10-05
+
+### Added
+
+* Added `--no-reuse-key`. This remains the default behavior, but the flag may be
+  useful to unset the `--reuse-key` option on existing certificates.
+
+### Changed
+
+*
+
+### Fixed
+
+* The certbot-dns-rfc2136 plugin in Certbot 1.19.0 inadvertently had an implicit
+  dependency on `dnspython>=2.0`. This has been relaxed to `dnspython>=1.15.0`.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.19.0 - 2021-09-07
 
 ### Added
 
@@ -27,6 +61,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Fixed parsing of `Define`d values in the Apache plugin to allow for `=` in the value.
+* Fixed a relatively harmless crash when issuing a certificate with `--quiet`/`-q`.
 
 More details about these changes can be found on our GitHub repo.
 

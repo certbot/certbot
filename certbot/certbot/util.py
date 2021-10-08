@@ -529,7 +529,7 @@ def enforce_domain_sanity(domain):
     domain = domain.lower()
 
     # Remove trailing dot
-    domain = domain[:-1] if domain.endswith(u'.') else domain
+    domain = domain[:-1] if domain.endswith('.') else domain
 
     # Separately check for odd "domains" like "http://example.com" to fail
     # fast and provide a clear error message
@@ -593,7 +593,7 @@ def is_wildcard_domain(domain):
     """
     wildcard_marker: Union[Text, bytes] = b"*."
     if isinstance(domain, str):
-        wildcard_marker = u"*."
+        wildcard_marker = "*."
     return domain.startswith(wildcard_marker)
 
 

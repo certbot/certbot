@@ -818,8 +818,13 @@ scheduled task to automatically renew your certificates in the background. If yo
 whether your system has a pre-installed scheduled task for Certbot, it is safe to follow these
 instructions to create one.
 
-If you're using Windows, these instructions are not neccessary as Certbot on Windows comes with
-a scheduled task for automated renewal pre-installed.
+.. note::
+   If you're using Windows, these instructions are not neccessary as Certbot on Windows comes with
+   a scheduled task for automated renewal pre-installed.
+
+   If you are using macOS and installed Certbot using Homebrew, follow the instructions at
+   https://certbot.eff.org/instructions to set up automated renewal. The instructions below
+   are not applicable on macOS.
 
 Run the following line, which will add a cron job to `/etc/crontab`:
 

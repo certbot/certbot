@@ -396,7 +396,7 @@ class FileDisplay:
 # through the public API in certbot.display.util.
 @zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay:
-    """An diplay utility implementation that never asks for interactive user input"""
+    """A display utility implementation that never asks for interactive user input"""
 
     def __init__(self, outfile, *unused_args, **unused_kwargs):
         super().__init__()
@@ -505,7 +505,7 @@ class NoninteractiveDisplay:
 
         """
         if default is None:
-            self._interaction_fail(message, cli_flag, "? ".join(tags))
+            self._interaction_fail(message, cli_flag, "? ".join(tags) + "?")
         return OK, default
 
     def directory_select(self, message, default=None,

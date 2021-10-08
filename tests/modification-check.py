@@ -10,12 +10,11 @@ import os
 # taken from our v1.14.0 tag which was the last release we intended to make
 # changes to certbot-auto.
 #
-# Deleting letsencrypt-auto-source/letsencrypt-auto and
-# letsencrypt-auto-source/letsencrypt-auto.sig can be done once we're
-# comfortable breaking any certbot-auto scripts that haven't already updated to
-# the last version. See
-# https://opensource.eff.org/eff-open-source/pl/65geri7c4tr6iqunc1rpb3mpna for
-# more info.
+# We can delete this script and the files under letsencrypt-auto-source when
+# we're comfortable breaking any old certbot-auto scripts that haven't updated
+# to the last version of the script yet.  See
+# https://opensource.eff.org/eff-open-source/pl/65geri7c4tr6iqunc1rpb3mpna and
+# letsencrypt-auto-source/README.md for more info.
 EXPECTED_FILES = {
     os.path.join('letsencrypt-auto-source', 'letsencrypt-auto'):
         'b997e3608526650a08e36e682fc3bf0c29903c06fa5ba4cc49308c43832450c2',
