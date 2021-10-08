@@ -120,9 +120,9 @@ def init_save_key(key_size, key_dir, key_type="rsa", elliptic_curve="secp256r1",
                         keyname=keyname, strict_permissions=config.strict_permissions)
 
 
-def generate_csr(privkey: util.Key, dnsnames: Set[str] = None, path: str = None,
+def generate_csr(privkey: util.Key, dnsnames: Set[str], path: str,
                  must_staple: bool = False, strict_permissions: bool = True,
-                 ipnames: List[str] = None) -> util.CSR:
+                 ipnames: Set[str] = None) -> util.CSR:
     """Initialize a CSR with the given private key.
 
     :param privkey: Key to include in the CSR
