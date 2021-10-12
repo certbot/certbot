@@ -367,7 +367,7 @@ class Registration(ResourceBody):
 
     def __init__(self, **kwargs: Any) -> None:
         """Note if the user provides a value for the `contact` member."""
-        if 'contact' in kwargs:
+        if 'contact' in kwargs and kwargs['contact'] is not None:
             # Avoid the __setattr__ used by jose.TypedJSONObjectWithFields
             object.__setattr__(self, '_add_contact', True)
         super().__init__(**kwargs)

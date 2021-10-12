@@ -131,7 +131,7 @@ class ClientBase:
 
         """
         return self.update_registration(regr, messages.Registration.from_json(
-            {"status": "deactivated"}))
+            {"status": "deactivated", "contact": None}))
 
     def deactivate_authorization(self,
                                  authzr: messages.AuthorizationResource
