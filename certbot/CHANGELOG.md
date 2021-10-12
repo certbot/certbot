@@ -8,6 +8,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Added `--no-reuse-key`. This remains the default behavior, but the flag may be
   useful to unset the `--reuse-key` option on existing certificates.
+* Certbot will generate a `web.config` file on Windows in the challenge path
+  when the `webroot` plugin is used. This `web.config` file let IIS serve
+  challenge files while they do not have an extension.
 
 ### Changed
 
