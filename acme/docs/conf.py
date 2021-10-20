@@ -14,6 +14,7 @@
 
 import os
 import sys
+from datetime import datetime
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -58,7 +59,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'acme-python'
-copyright = u'2015-2021, Let\'s Encrypt Project'
+copyright = f"2015-{datetime.now().year}, Let's Encrypt Project"
 author = u'Let\'s Encrypt Project'
 
 # The version info for the project you're documenting, acts as replacement for
