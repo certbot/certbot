@@ -14,7 +14,6 @@ from typing import IO
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Union
 import unittest
 import warnings
 
@@ -60,7 +59,7 @@ class DummyInstaller(common.Installer):
         pass
 
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[Union[List[str], str]] = None) -> None:
+                options: Optional[List[str]] = None) -> None:
         pass
 
     def supported_enhancements(self) -> List[str]:

@@ -10,7 +10,6 @@ from typing import IO
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 import warnings
 
 from cryptography.hazmat.backends import default_backend
@@ -649,7 +648,7 @@ class Client:
                 self.installer.restart()
 
     def apply_enhancement(self, domains: List[str], enhancement: str,
-                          options: Optional[Union[List[str], str]] = None) -> None:
+                          options: Optional[List[str]] = None) -> None:
         """Applies an enhancement on all domains.
 
         :param list domains: list of ssl_vhosts (as strings)

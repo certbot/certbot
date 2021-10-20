@@ -1,7 +1,12 @@
 """ParserNode utils"""
+from typing import Dict
+from typing import Any
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 
-def validate_kwargs(kwargs, required_names):
+def validate_kwargs(kwargs: Dict[str, Any], required_names: List[str]) -> Dict[str, Any]:
     """
     Ensures that the kwargs dict has all the expected values. This function modifies
     the kwargs dictionary, and hence the returned dictionary should be used instead
@@ -11,7 +16,7 @@ def validate_kwargs(kwargs, required_names):
     :param list required_names: List of required parameter names.
     """
 
-    validated_kwargs = {}
+    validated_kwargs: Dict[str, Any] = {}
     for name in required_names:
         try:
             validated_kwargs[name] = kwargs.pop(name)
@@ -25,7 +30,7 @@ def validate_kwargs(kwargs, required_names):
     return validated_kwargs
 
 
-def parsernode_kwargs(kwargs):
+def parsernode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Any, ...]:
     """
     Validates keyword arguments for ParserNode. This function modifies the kwargs
     dictionary, and hence the returned dictionary should be used instead in the
@@ -55,7 +60,7 @@ def parsernode_kwargs(kwargs):
     return kwargs["ancestor"], kwargs["dirty"], kwargs["filepath"], kwargs["metadata"]
 
 
-def commentnode_kwargs(kwargs):
+def commentnode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Optional[str], Dict[str, str]]:
     """
     Validates keyword arguments for CommentNode and sets the default values for
     optional kwargs. This function modifies the kwargs dictionary, and hence the
@@ -90,7 +95,7 @@ def commentnode_kwargs(kwargs):
     return comment, kwargs
 
 
-def directivenode_kwargs(kwargs):
+def directivenode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Any, Any, Any, Dict]:
     """
     Validates keyword arguments for DirectiveNode and BlockNode and sets the
     default values for optional kwargs. This function modifies the kwargs

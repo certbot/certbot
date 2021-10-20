@@ -12,7 +12,6 @@ from typing import overload
 from typing import Set
 from typing import Tuple
 from typing import Type
-from typing import Union
 
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
@@ -122,7 +121,7 @@ class Proxy(interfaces.ConfiguratorProxy):
         self._configurator.config_test()
 
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[Union[List[str], str]] = None) -> None:
+                options: Optional[List[str]] = None) -> None:
         self._configurator.enhance(domain, enhancement, options)
 
     def get_all_names(self) -> Iterable[str]:

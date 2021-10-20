@@ -11,7 +11,6 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import TYPE_CHECKING
-from typing import Union
 import warnings
 
 import zope.interface
@@ -276,7 +275,7 @@ class Installer(Plugin):
 
     @abstractmethod
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[Union[List[str], str]] = None) -> None:
+                options: Optional[List[str]] = None) -> None:
         """Perform a configuration enhancement.
 
         :param str domain: domain for which to provide enhancement

@@ -301,7 +301,7 @@ class Addr:
         """Return port."""
         return self.tup[1]
 
-    def get_addr_obj(self, port: str) -> 'Addr':
+    def get_addr_obj(self, port: str) -> "Addr":
         """Return new address object with same addr and new port."""
         return self.__class__((self.tup[0], port), self.ipv6)
 
