@@ -6,6 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+* Support for Python 3.10 was added to Certbot and all of its components.
 * Certbot will generate a `web.config` file on Windows in the challenge path
   when the `webroot` plugin is used, if one does not exist. This `web.config` file
   lets IIS serve challenge files while they do not have an extension.
