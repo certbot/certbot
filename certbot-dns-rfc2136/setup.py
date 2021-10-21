@@ -4,12 +4,11 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.18.0.dev0'
+version = '1.21.0.dev0'
 
 install_requires = [
-    'dnspython',
+    'dnspython>=1.15.0',
     'setuptools>=39.0.1',
-    'zope.interface',
 ]
 
 if not os.environ.get('SNAP_BUILD'):

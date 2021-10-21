@@ -16,9 +16,11 @@ from typing import Union
 import configobj
 import josepy as jose
 import zope.component
+import zope.interface
 
 from acme import errors as acme_errors
 import certbot
+from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -27,7 +29,6 @@ from certbot._internal import account
 from certbot._internal import cert_manager
 from certbot._internal import cli
 from certbot._internal import client
-from certbot._internal import configuration
 from certbot._internal import constants
 from certbot._internal import eff
 from certbot._internal import hooks
@@ -38,6 +39,7 @@ from certbot._internal import snap_config
 from certbot._internal import storage
 from certbot._internal import updater
 from certbot._internal.display import obj as display_obj
+from certbot._internal.display import util as internal_display_util
 from certbot._internal.plugins import disco as plugins_disco
 from certbot._internal.plugins import selection as plug_sel
 from certbot.compat import filesystem
@@ -58,15 +60,18 @@ def _suggest_donation_if_appropriate(config):
     """Potentially suggest a donation to support Certbot.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :returns: `None`
     :rtype: None
 
     """
+    # don't prompt for donation if:
+    # - renewing
+    # - using the staging server (--staging or --dry-run)
+    # - running with --quiet (display fd won't be available during atexit calls #8995)
     assert config.verb != "renew"
-    if config.staging:
-        # --dry-run implies --staging
+    if config.staging or config.quiet:
         return
     util.atexit_register(
         display_util.notification,
@@ -85,7 +90,7 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
     checks, and requests for user input.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param domains: List of domain names to get a certificate. Defaults to `None`
     :type domains: `list` of `str`
@@ -111,7 +116,7 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
                 "{action} for {domains}".format(
                     action="Simulating renewal of an existing certificate"
                             if config.dry_run else "Renewing an existing certificate",
-                    domains=display_util.summarize_domain_list(domains or lineage.names())
+                    domains=internal_display_util.summarize_domain_list(domains or lineage.names())
                 )
             )
             renewal.renew_cert(config, domains, le_client, lineage)
@@ -122,7 +127,7 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
                 "{action} for {domains}".format(
                     action="Simulating a certificate request" if config.dry_run else
                            "Requesting a certificate",
-                    domains=display_util.summarize_domain_list(domains)
+                    domains=internal_display_util.summarize_domain_list(domains)
                 )
             )
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
@@ -153,7 +158,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
         if new_key_type != cur_key_type:
             msg = ('Are you trying to change the key type of the certificate named {0} '
                    'from {1} to {2}? Please provide both --cert-name and --key-type on '
-                   'the command line confirm the change you are trying to make.')
+                   'the command line to confirm the change you are trying to make.')
             msg = msg.format(cert.lineagename, cur_key_type, new_key_type)
             raise errors.Error(msg)
 
@@ -165,7 +170,7 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
     """Figure out what to do if a previous cert had a subset of the names now requested
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param domains: List of domain names
     :type domains: `list` of `str`
@@ -212,7 +217,7 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     """Figure out what to do if a lineage has the same names as a previously obtained one
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param lineage: Certificate lineage object
     :type lineage: storage.RenewableCert
@@ -266,7 +271,7 @@ def _find_lineage_for_domains(config, domains):
     prompted).
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param domains: List of domain names
     :type domains: `list` of `str`
@@ -303,7 +308,7 @@ def _find_cert(config, domains, certname):
     """Finds an existing certificate object given domains and/or a certificate name.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param domains: List of domain names
     :type domains: `list` of `str`
@@ -330,7 +335,7 @@ def _find_lineage_for_domains_and_certname(config: configuration.NamespaceConfig
     """Find appropriate lineage based on given domains and/or certname.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param domains: List of domain names
     :type domains: `list` of `str`
@@ -391,7 +396,7 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     """Ask user to confirm update cert certname to contain new_domains.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param new_domains: List of new domain names
     :type new_domains: `list` of `str`
@@ -428,10 +433,10 @@ def _find_domains_or_certname(config, installer, question=None):
     """Retrieve domains and certname from config or user input.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :param `str` question: Overriding default question to ask the user if asked
         to choose from domain names.
@@ -465,7 +470,7 @@ def _find_domains_or_certname(config, installer, question=None):
     return domains, certname
 
 
-def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[errors.Error],
+def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Optional[errors.Error],
                        lineage: Optional[storage.RenewableCert],
                        new_or_renewed_cert: bool = True) -> None:
     """Displays post-run/certonly advice to the user about renewal and installation.
@@ -473,7 +478,7 @@ def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[error
     The output varies by runtime configuration and any errors encountered during installation.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param installer_err: The installer/enhancement error encountered, if any.
     :type error: Optional[errors.Error]
@@ -521,10 +526,12 @@ def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[error
         return
 
     # TODO: refactor ANSI escapes during https://github.com/certbot/certbot/issues/8848
-    (bold_on, bold_off) = [c if sys.stdout.isatty() and not config.quiet else '' \
-                           for c in (util.ANSI_SGR_BOLD, util.ANSI_SGR_RESET)]
+    (bold_on, nl, bold_off) = [c if sys.stdout.isatty() and not config.quiet else '' \
+                               for c in (util.ANSI_SGR_BOLD, '\n', util.ANSI_SGR_RESET)]
+    print(bold_on, end=nl)
+    display_util.notify("NEXT STEPS:")
+    print(bold_off, end='')
 
-    print(bold_on, '\n', 'NEXT STEPS:', bold_off, sep='')
     for step in steps:
         display_util.notify(f"- {step}")
 
@@ -533,12 +540,12 @@ def _report_next_steps(config: interfaces.IConfig, installer_err: Optional[error
         print()
 
 
-def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
-    # type: (interfaces.IConfig, Optional[str], Optional[str], Optional[str]) -> None
+def _report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[str],
+                     fullchain_path: Optional[str], key_path: Optional[str] = None) -> None:
     """Reports the creation of a new certificate to the user.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param cert_path: path to certificate
     :type cert_path: str
@@ -578,7 +585,7 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
     )
 
 
-def _is_interactive_only_auth(config: interfaces.IConfig) -> bool:
+def _is_interactive_only_auth(config: configuration.NamespaceConfig) -> bool:
     """ Whether the current authenticator params only support interactive renewal.
     """
     # --manual without --manual-auth-hook can never autorenew
@@ -588,7 +595,7 @@ def _is_interactive_only_auth(config: interfaces.IConfig) -> bool:
     return False
 
 
-def _csr_report_new_cert(config: interfaces.IConfig, cert_path: Optional[str],
+def _csr_report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[str],
                          chain_path: Optional[str], fullchain_path: Optional[str]):
     """ --csr variant of _report_new_cert.
 
@@ -597,7 +604,7 @@ def _csr_report_new_cert(config: interfaces.IConfig, cert_path: Optional[str],
     TODO: remove this function and just call _report_new_cert when --csr is overhauled.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param str cert_path: path to cert.pem
 
@@ -633,7 +640,7 @@ def _determine_account(config):
     user input. Same for ``config.email``.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :returns: Account and optionally ACME client API (biproduct of new
         registration).
@@ -689,7 +696,7 @@ def _delete_if_appropriate(config):
     deleting happens automatically.
 
     :param config: parsed command line arguments
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :returns: `None`
     :rtype: None
@@ -740,12 +747,12 @@ def _init_le_client(config, authenticator, installer):
     """Initialize Let's Encrypt Client
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param authenticator: Acme authentication handler
-    :type authenticator: Optional[interfaces.IAuthenticator]
+    :type authenticator: Optional[interfaces.Authenticator]
     :param installer: Installer object
-    :type installer: interfaces.IInstaller
+    :type installer: interfaces.Installer
 
     :returns: client: Client object
     :rtype: client.Client
@@ -767,7 +774,7 @@ def unregister(config, unused_plugins):
     """Deactivate account on server
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
@@ -806,7 +813,7 @@ def register(config, unused_plugins):
     """Create accounts on the server.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
@@ -836,7 +843,7 @@ def update_account(config, unused_plugins):
     """Modify accounts on the server.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
@@ -882,7 +889,7 @@ def update_account(config, unused_plugins):
     return None
 
 
-def _cert_name_from_config_or_lineage(config: interfaces.IConfig,
+def _cert_name_from_config_or_lineage(config: configuration.NamespaceConfig,
                                       lineage: Optional[storage.RenewableCert]) -> Optional[str]:
     if lineage:
         return lineage.lineagename
@@ -901,7 +908,7 @@ def _install_cert(config, le_client, domains, lineage=None):
     """Install a cert
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param le_client: Client object
     :type le_client: client.Client
@@ -928,7 +935,7 @@ def install(config, plugins):
     """Install a previously obtained cert in a server.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
@@ -1011,7 +1018,7 @@ def plugins_cmd(config, plugins):
     """List server software plugins.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
@@ -1049,7 +1056,7 @@ def enhance(config, plugins):
     """Add security enhancements to existing configuration
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
@@ -1108,7 +1115,7 @@ def rollback(config, plugins):
     """Rollback server configuration changes made during install.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
@@ -1126,7 +1133,7 @@ def update_symlinks(config, unused_plugins):
     the correct archive directory.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
@@ -1144,7 +1151,7 @@ def rename(config, unused_plugins):
     lineage.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
@@ -1162,7 +1169,7 @@ def delete(config, unused_plugins):
     lineage.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
@@ -1178,7 +1185,7 @@ def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
@@ -1194,7 +1201,7 @@ def revoke(config, unused_plugins: plugins_disco.PluginsRegistry) -> Optional[st
     """Revoke a previously obtained certificate.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
@@ -1248,7 +1255,7 @@ def run(config, plugins):
     """Obtain a certificate and install.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
@@ -1314,8 +1321,9 @@ def run(config, plugins):
     return None
 
 
-def _csr_get_and_save_cert(config, le_client):
-    # type: (interfaces.IConfig, client.Client) -> Tuple[Optional[str], Optional[str], Optional[str]] # pylint: disable=line-too-long
+def _csr_get_and_save_cert(config: configuration.NamespaceConfig,
+                           le_client: client.Client) -> Tuple[
+                           Optional[str], Optional[str], Optional[str]]:
     """Obtain a cert using a user-supplied CSR
 
     This works differently in the CSR case (for now) because we don't
@@ -1323,7 +1331,7 @@ def _csr_get_and_save_cert(config, le_client):
     So we just save the cert & chain to disk :/
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param client: Client object
     :type client: client.Client
@@ -1339,7 +1347,7 @@ def _csr_get_and_save_cert(config, le_client):
         "{action} for {domains}".format(
             action="Simulating a certificate request" if config.dry_run else
                     "Requesting a certificate",
-            domains=display_util.summarize_domain_list(csr_names)
+            domains=internal_display_util.summarize_domain_list(csr_names)
         )
     )
     cert, chain = le_client.obtain_certificate_from_csr(csr)
@@ -1357,7 +1365,7 @@ def renew_cert(config, plugins, lineage):
     """Renew & save an existing cert. Do not install it.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
@@ -1381,7 +1389,7 @@ def renew_cert(config, plugins, lineage):
         # In case of a renewal, reload server to pick up new certificate.
         updater.run_renewal_deployer(config, renewed_lineage, installer)
         display_util.notify(f"Reloading {config.installer} server after certificate renewal")
-        installer.restart() # type: ignore
+        installer.restart()
 
 
 def certonly(config, plugins):
@@ -1390,7 +1398,7 @@ def certonly(config, plugins):
     This implements the 'certonly' subcommand.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
@@ -1439,7 +1447,7 @@ def renew(config, unused_plugins):
     """Renew previously-obtained certificates.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
@@ -1458,7 +1466,7 @@ def make_or_verify_needed_dirs(config):
     """Create or verify existence of config, work, and hook directories.
 
     :param config: Configuration object
-    :type config: interfaces.IConfig
+    :type config: configuration.NamespaceConfig
 
     :returns: `None`
     :rtype: None
@@ -1482,7 +1490,7 @@ def make_displayer(config: configuration.NamespaceConfig
 
     :param config: Configuration object
 
-    :returns: Display object implementing :class:`certbot.interfaces.IDisplay`
+    :returns: Display object
 
     """
     displayer: Union[None, display_util.NoninteractiveDisplay,
@@ -1540,7 +1548,7 @@ def main(cli_args=None):
 
     # This call is done only for retro-compatibility purposes.
     # TODO: Remove this call once zope dependencies are removed from Certbot.
-    zope.component.provideUtility(config)
+    zope.component.provideUtility(config, interfaces.IConfig)
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
@@ -1557,7 +1565,7 @@ def main(cli_args=None):
     # These calls are done only for retro-compatibility purposes.
     # TODO: Remove these calls once zope dependencies are removed from Certbot.
     report = reporter.Reporter(config)
-    zope.component.provideUtility(report)
+    zope.component.provideUtility(report, interfaces.IReporter)
     util.atexit_register(report.print_messages)
 
     with make_displayer(config) as displayer:

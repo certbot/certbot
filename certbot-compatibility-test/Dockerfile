@@ -15,7 +15,7 @@ RUN tools/venv.py
 ENV PATH /opt/certbot/src/venv/bin:$PATH
 
 # install in editable mode (-e) to save space: it's not possible to
-# "rm -rf /opt/certbot/src" (it's stays in the underlaying image);
+# "rm -rf /opt/certbot/src" (it's stays in the underlying image);
 # this might also help in debugging: you can "docker run --entrypoint
 # bash" and investigate, apply patches, etc.
 

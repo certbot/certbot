@@ -6,10 +6,8 @@ from googleapiclient import discovery
 from googleapiclient import errors as googleapiclient_errors
 import httplib2
 from oauth2client.service_account import ServiceAccountCredentials
-import zope.interface
 
 from certbot import errors
-from certbot import interfaces
 from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
@@ -20,8 +18,6 @@ METADATA_URL = 'http://metadata.google.internal/computeMetadata/v1/'
 METADATA_HEADERS = {'Metadata-Flavor': 'Google'}
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator for Google Cloud DNS
 
@@ -181,7 +177,7 @@ class _GoogleClient:
 
         try:
             zone_id = self._find_managed_zone_id(domain)
-        except errors.PluginError as e:
+        except errors.PluginError:
             logger.warning('Error finding zone. Skipping cleanup.')
             return
 

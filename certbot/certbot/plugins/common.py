@@ -1,22 +1,23 @@
 """Plugin common functions."""
+from abc import ABCMeta
+from abc import abstractmethod
 import logging
 import re
 import shutil
 import tempfile
 from typing import List
 
-from josepy import util as jose_util
 import pkg_resources
-import zope.interface
 
 from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
 from certbot import reverter
 from certbot._internal import constants
 from certbot.compat import filesystem
 from certbot.compat import os
+from certbot.interfaces import Installer as AbstractInstaller
+from certbot.interfaces import Plugin as AbstractPlugin
 from certbot.plugins.storage import PluginStorage
 
 logger = logging.getLogger(__name__)
@@ -39,17 +40,16 @@ hostname_regex = re.compile(
     r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$", re.IGNORECASE)
 
 
-@zope.interface.implementer(interfaces.IPlugin)
-class Plugin:
+class Plugin(AbstractPlugin, metaclass=ABCMeta):
     """Generic plugin."""
-    # provider is not inherited, subclasses must define it on their own
-    # @zope.interface.provider(interfaces.IPluginFactory)
 
     def __init__(self, config, name):
+        super().__init__(config, name)
         self.config = config
         self.name = name
 
-    @jose_util.abstractclassmethod
+    @classmethod
+    @abstractmethod
     def add_parser_arguments(cls, add):
         """Add plugin arguments to the CLI argument parser.
 
@@ -63,7 +63,7 @@ class Plugin:
     def inject_parser_options(cls, parser, name):
         """Inject parser options.
 
-        See `~.IPlugin.inject_parser_options` for docs.
+        See `~.certbot.interfaces.Plugin.inject_parser_options` for docs.
 
         """
         # dummy function, doesn't check if dest.startswith(self.dest_namespace)
@@ -97,8 +97,7 @@ class Plugin:
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
 
-    def auth_hint(self, failed_achalls):
-        # type: (List[achallenges.AnnotatedChallenge]) -> str
+    def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
         """Human-readable string to help the user troubleshoot the authenticator.
 
         Shown to the user if one or more of the attempted challenges were not a success.
@@ -106,7 +105,7 @@ class Plugin:
         Should describe, in simple language, what the authenticator tried to do, what went
         wrong and what the user should try as their "next steps".
 
-        TODO: auth_hint belongs in IAuthenticator but can't be added until the next major
+        TODO: auth_hint belongs in Authenticator but can't be added until the next major
         version of Certbot. For now, it lives in .Plugin and auth_handler will only call it
         on authenticators that subclass .Plugin. For now, inherit from `.Plugin` to implement
         and/or override the method.
@@ -125,7 +124,7 @@ class Plugin:
                 .format(name=self.name, challs=challs))
 
 
-class Installer(Plugin):
+class Installer(AbstractInstaller, Plugin, metaclass=ABCMeta):
     """An installer base class with reverter and ssl_dhparam methods defined.
 
     Installer plugins do not have to inherit from this class.

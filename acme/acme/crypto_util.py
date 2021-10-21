@@ -11,7 +11,7 @@ from typing import Union
 
 import josepy as jose
 from OpenSSL import crypto
-from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
+from OpenSSL import SSL
 
 from acme import errors
 
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # https://www.openssl.org/docs/ssl/SSLv23_method.html). _serve_sni
 # should be changed to use "set_options" to disable SSLv2 and SSLv3,
 # in case it's used for things other than probing/serving!
-_DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD  # type: ignore
+_DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD
 
 
 class _DefaultCertSelection:
@@ -169,7 +169,7 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
             ) if any(source_address) else ""
         )
         socket_tuple: Tuple[str, int] = (host, port)
-        sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore
+        sock = socket.create_connection(socket_tuple, **socket_kwargs)
     except socket.error as error:
         raise errors.Error(error)
 
@@ -187,23 +187,42 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
     return client_ssl.get_peer_certificate()
 
 
-def make_csr(private_key_pem, domains, must_staple=False):
-    """Generate a CSR containing a list of domains as subjectAltNames.
+def make_csr(private_key_pem, domains=None, must_staple=False, ipaddrs=None):
+    """Generate a CSR containing domains or IPs as subjectAltNames.
 
     :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
     :param list domains: List of DNS names to include in subjectAltNames of CSR.
     :param bool must_staple: Whether to include the TLS Feature extension (aka
         OCSP Must Staple: https://tools.ietf.org/html/rfc7633).
+    :param list ipaddrs: List of IPaddress(type ipaddress.IPv4Address or ipaddress.IPv6Address)
+    names to include in subbjectAltNames of CSR.
+    params ordered this way for backward competablity when called by positional argument.
     :returns: buffer PEM-encoded Certificate Signing Request.
     """
     private_key = crypto.load_privatekey(
         crypto.FILETYPE_PEM, private_key_pem)
     csr = crypto.X509Req()
+    sanlist = []
+    # if domain or ip list not supplied make it empty list so it's easier to iterate
+    if domains is None:
+        domains = []
+    if ipaddrs is None:
+        ipaddrs = []
+    if len(domains)+len(ipaddrs) == 0:
+        raise ValueError("At least one of domains or ipaddrs parameter need to be not empty")
+    for address in domains:
+        sanlist.append('DNS:' + address)
+    for ips in ipaddrs:
+        sanlist.append('IP:' + ips.exploded)
+    # make sure its ascii encoded
+    san_string = ', '.join(sanlist).encode('ascii')
+    # for IP san it's actually need to be octet-string,
+    # but somewhere downsteam thankfully handle it for us
     extensions = [
         crypto.X509Extension(
             b'subjectAltName',
             critical=False,
-            value=', '.join('DNS:' + d for d in domains).encode('ascii')
+            value=san_string
         ),
     ]
     if must_staple:
@@ -220,6 +239,7 @@ def make_csr(private_key_pem, domains, must_staple=False):
 
 
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
+    # unlike its name this only outputs DNS names, other type of idents will ignored
     common_name = loaded_cert_or_req.get_subject().CN
     sans = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
 
@@ -239,20 +259,56 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     :param cert_or_req: Certificate or CSR.
     :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
 
-    :returns: A list of Subject Alternative Names.
+    :returns: A list of Subject Alternative Names that is DNS.
+    :rtype: `list` of `unicode`
+
+    """
+    # This function finds SANs with dns name
+
+    # constants based on PyOpenSSL certificate/CSR text dump
+    part_separator = ":"
+    prefix = "DNS" + part_separator
+
+    sans_parts = _pyopenssl_extract_san_list_raw(cert_or_req)
+
+    return [part.split(part_separator)[1]
+            for part in sans_parts if part.startswith(prefix)]
+
+
+def _pyopenssl_cert_or_req_san_ip(cert_or_req):
+    """Get Subject Alternative Names IPs from certificate or CSR using pyOpenSSL.
+
+    :param cert_or_req: Certificate or CSR.
+    :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
+
+    :returns: A list of Subject Alternative Names that are IP Addresses.
+    :rtype: `list` of `unicode`. note that this returns as string, not IPaddress object
+
+    """
+
+    # constants based on PyOpenSSL certificate/CSR text dump
+    part_separator = ":"
+    prefix = "IP Address" + part_separator
+
+    sans_parts = _pyopenssl_extract_san_list_raw(cert_or_req)
+
+    return [part[len(prefix):] for part in sans_parts if part.startswith(prefix)]
+
+
+def _pyopenssl_extract_san_list_raw(cert_or_req):
+    """Get raw SAN string from cert or csr, parse it as UTF-8 and return.
+
+    :param cert_or_req: Certificate or CSR.
+    :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
+
+    :returns: raw san strings, parsed byte as utf-8
     :rtype: `list` of `unicode`
 
     """
     # This function finds SANs by dumping the certificate/CSR to text and
     # searching for "X509v3 Subject Alternative Name" in the text. This method
-    # is used to support PyOpenSSL version 0.13 where the
-    # `_subjectAltNameString` and `get_extensions` methods are not available
-    # for CSRs.
-
-    # constants based on PyOpenSSL certificate/CSR text dump
-    part_separator = ":"
-    parts_separator = ", "
-    prefix = "DNS" + part_separator
+    # is used to because in PyOpenSSL version <0.17 `_subjectAltNameString` methods are
+    # not able to Parse IP Addresses in subjectAltName string.
 
     if isinstance(cert_or_req, crypto.X509):
         # pylint: disable=line-too-long
@@ -262,17 +318,17 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     text = func(crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
     # WARNING: this function does not support multiple SANs extensions.
     # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
-    match = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)
+    raw_san = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)
+
+    parts_separator = ", "
     # WARNING: this function assumes that no SAN can include
     # parts_separator, hence the split!
-    sans_parts = [] if match is None else match.group(1).split(parts_separator)
-
-    return [part.split(part_separator)[1]
-            for part in sans_parts if part.startswith(prefix)]
+    sans_parts = [] if raw_san is None else raw_san.group(1).split(parts_separator)
+    return sans_parts
 
 
-def gen_ss_cert(key, domains, not_before=None,
-                validity=(7 * 24 * 60 * 60), force_san=True, extensions=None):
+def gen_ss_cert(key, domains=None, not_before=None,
+                validity=(7 * 24 * 60 * 60), force_san=True, extensions=None, ips=None):
     """Generate new self-signed certificate.
 
     :type domains: `list` of `unicode`
@@ -280,6 +336,7 @@ def gen_ss_cert(key, domains, not_before=None,
     :param bool force_san:
     :param extensions: List of additional extensions to include in the cert.
     :type extensions: `list` of `OpenSSL.crypto.X509Extension`
+    :type ips: `list` of (`ipaddress.IPv4Address` or `ipaddress.IPv6Address`)
 
     If more than one domain is provided, all of the domains are put into
     ``subjectAltName`` X.509 extension and first domain is set as the
@@ -287,28 +344,39 @@ def gen_ss_cert(key, domains, not_before=None,
     extension is used, unless `force_san` is ``True``.
 
     """
-    assert domains, "Must provide one or more hostnames for the cert."
+    assert domains or ips, "Must provide one or more hostnames or IPs for the cert."
+
     cert = crypto.X509()
     cert.set_serial_number(int(binascii.hexlify(os.urandom(16)), 16))
     cert.set_version(2)
 
     if extensions is None:
         extensions = []
-
+    if domains is None:
+        domains = []
+    if ips is None:
+        ips = []
     extensions.append(
         crypto.X509Extension(
             b"basicConstraints", True, b"CA:TRUE, pathlen:0"),
     )
 
-    cert.get_subject().CN = domains[0]
+    if len(domains) > 0:
+        cert.get_subject().CN = domains[0]
     # TODO: what to put into cert.get_subject()?
     cert.set_issuer(cert.get_subject())
 
-    if force_san or len(domains) > 1:
+    sanlist = []
+    for address in domains:
+        sanlist.append('DNS:' + address)
+    for ip in ips:
+        sanlist.append('IP:' + ip.exploded)
+    san_string = ', '.join(sanlist).encode('ascii')
+    if force_san or len(domains) > 1 or len(ips) > 0:
         extensions.append(crypto.X509Extension(
             b"subjectAltName",
             critical=False,
-            value=b", ".join(b"DNS:" + d.encode() for d in domains)
+            value=san_string
         ))
 
     cert.add_extensions(extensions)

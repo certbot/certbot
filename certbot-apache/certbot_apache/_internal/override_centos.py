@@ -3,10 +3,7 @@ import logging
 from typing import cast
 from typing import List
 
-import zope.interface
-
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot.errors import MisconfigurationError
 from certbot_apache._internal import apache_util
@@ -17,7 +14,6 @@ from certbot_apache._internal.configurator import OsOptions
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.provider(interfaces.IPluginFactory)
 class CentOSConfigurator(configurator.ApacheConfigurator):
     """CentOS specific ApacheConfigurator override class"""
 
@@ -55,7 +51,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
     def _try_restart_fedora(self):
         """
-        Tries to restart httpd using systemctl to generate the self signed keypair.
+        Tries to restart httpd using systemctl to generate the self signed key pair.
         """
 
         try:

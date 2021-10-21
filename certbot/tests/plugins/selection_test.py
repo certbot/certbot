@@ -33,16 +33,16 @@ class ConveniencePickPluginTest(unittest.TestCase):
 
     def test_authenticator(self):
         from certbot._internal.plugins.selection import pick_authenticator
-        self._test(pick_authenticator, (interfaces.IAuthenticator,))
+        self._test(pick_authenticator, (interfaces.Authenticator,))
 
     def test_installer(self):
         from certbot._internal.plugins.selection import pick_installer
-        self._test(pick_installer, (interfaces.IInstaller,))
+        self._test(pick_installer, (interfaces.Installer,))
 
     def test_configurator(self):
         from certbot._internal.plugins.selection import pick_configurator
         self._test(pick_configurator,
-            (interfaces.IAuthenticator, interfaces.IInstaller))
+            (interfaces.Authenticator, interfaces.Installer))
 
 
 class PickPluginTest(unittest.TestCase):
@@ -53,7 +53,7 @@ class PickPluginTest(unittest.TestCase):
         self.default = None
         self.reg = mock.MagicMock()
         self.question = "Question?"
-        self.ifaces: List[interfaces.IPlugin] = []
+        self.ifaces: List[interfaces.Plugin] = []
 
     def _call(self):
         from certbot._internal.plugins.selection import pick_plugin

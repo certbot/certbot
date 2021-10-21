@@ -11,7 +11,6 @@ from typing import Tuple
 from typing import TYPE_CHECKING
 
 import OpenSSL
-import zope.interface
 
 from acme import challenges
 from acme import standalone as acme_standalone
@@ -108,9 +107,7 @@ class ServerManager:
         return self._instances.copy()
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
-class Authenticator(common.Plugin):
+class Authenticator(common.Plugin, interfaces.Authenticator):
     """Standalone Authenticator.
 
     This authenticator creates its own ephemeral TCP listener on the

@@ -4,14 +4,13 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.18.0.dev0'
+version = '1.21.0.dev0'
 
 install_requires = [
     # This version of lexicon is required to address the problem described in
     # https://github.com/AnalogJ/lexicon/issues/387.
     'dns-lexicon>=3.2.1',
     'setuptools>=39.0.1',
-    'zope.interface',
 ]
 
 if not os.environ.get('SNAP_BUILD'):

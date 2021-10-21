@@ -4,6 +4,7 @@ from textwrap import indent
 
 from certbot import errors
 from certbot import util
+from certbot._internal.display import util as internal_display_util
 from certbot.compat import os
 from certbot.display import util as display_util
 
@@ -99,7 +100,7 @@ def choose_names(installer, question=None):
     """Display screen to select domains to validate.
 
     :param installer: An installer object
-    :type installer: :class:`certbot.interfaces.IInstaller`
+    :type installer: :class:`certbot.interfaces.Installer`
 
     :param `str` question: Overriding default question to ask the user if asked
         to choose from domain names.
@@ -193,7 +194,7 @@ def _choose_names_manually(prompt_prefix=""):
         invalid_domains = {}
         retry_message = ""
         try:
-            domain_list = display_util.separate_list_input(input_)
+            domain_list = internal_display_util.separate_list_input(input_)
         except UnicodeEncodeError:
             domain_list = []
             retry_message = (
@@ -307,7 +308,7 @@ def _get_validated(method, validator, message, default=None, **kwargs):
     if default is not None:
         try:
             validator(default)
-        except errors.Error as error:
+        except errors.Error:
             logger.debug('Encountered invalid default value "%s" when prompting for "%s"',
                          default,
                          message,
@@ -331,29 +332,29 @@ def _get_validated(method, validator, message, default=None, **kwargs):
 
 
 def validated_input(validator, *args, **kwargs):
-    """Like `~certbot.interfaces.IDisplay.input`, but with validation.
+    """Like `~certbot.display.util.input_text`, but with validation.
 
     :param callable validator: A method which will be called on the
         supplied input. If the method raises an `errors.Error`, its
         text will be displayed and the user will be re-prompted.
-    :param list `*args`: Arguments to be passed to `~certbot.interfaces.IDisplay.input`.
-    :param dict `**kwargs`: Arguments to be passed to `~certbot.interfaces.IDisplay.input`.
-    :return: as `~certbot.interfaces.IDisplay.input`
+    :param list `*args`: Arguments to be passed to `~certbot.display.util.input_text`.
+    :param dict `**kwargs`: Arguments to be passed to `~certbot.display.util.input_text`.
+    :return: as `~certbot.display.util.input_text`
     :rtype: tuple
     """
     return _get_validated(display_util.input_text, validator, *args, **kwargs)
 
 
 def validated_directory(validator, *args, **kwargs):
-    """Like `~certbot.interfaces.IDisplay.directory_select`, but with validation.
+    """Like `~certbot.display.util.directory_select`, but with validation.
 
     :param callable validator: A method which will be called on the
         supplied input. If the method raises an `errors.Error`, its
         text will be displayed and the user will be re-prompted.
-    :param list `*args`: Arguments to be passed to `~certbot.interfaces.IDisplay.directory_select`.
+    :param list `*args`: Arguments to be passed to `~certbot.display.util.directory_select`.
     :param dict `**kwargs`: Arguments to be passed to
-        `~certbot.interfaces.IDisplay.directory_select`.
-    :return: as `~certbot.interfaces.IDisplay.directory_select`
+        `~certbot.display.util.directory_select`.
+    :return: as `~certbot.display.util.directory_select`
     :rtype: tuple
     """
     return _get_validated(display_util.directory_select, validator, *args, **kwargs)

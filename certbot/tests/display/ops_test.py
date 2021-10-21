@@ -304,7 +304,7 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(_choose_names_manually(), [])
         # IDN exception with previous mocks
         with mock.patch(
-                "certbot.display.ops.display_util.separate_list_input"
+                "certbot.display.ops.internal_display_util.separate_list_input"
         ) as mock_sli:
             unicode_error = UnicodeEncodeError('mock', u'', 0, 1, 'mock')
             mock_sli.side_effect = unicode_error

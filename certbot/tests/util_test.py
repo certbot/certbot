@@ -527,13 +527,13 @@ class OsInfoTest(unittest.TestCase):
         import certbot.util as cbutil
         with mock.patch('platform.system_alias',
                         return_value=('linux', '42', '42')):
-            m_distro.name.return_value = ""
-            m_distro.linux_distribution.return_value = ("something", "1.0", "codename")
-            cbutil.get_python_os_info(pretty=True)
+            m_distro.version.return_value = "1.0"
+            # empty value on first call for fallback to "get_python_os_info" in get_os_info_ua
+            m_distro.name.side_effect = ["", "something", "something"]
             self.assertEqual(cbutil.get_os_info_ua(),
                             " ".join(cbutil.get_python_os_info(pretty=True)))
 
-        m_distro.name.return_value = "whatever"
+        m_distro.name.side_effect = ["whatever"]
         self.assertEqual(cbutil.get_os_info_ua(), "whatever")
 
     @mock.patch("certbot.util.distro")
@@ -541,11 +541,13 @@ class OsInfoTest(unittest.TestCase):
     def test_get_os_info(self, m_distro):
         import certbot.util as cbutil
         with mock.patch("platform.system") as mock_platform:
-            m_distro.linux_distribution.return_value = ("name", "version", 'x')
+            m_distro.id.return_value = "name"
+            m_distro.version.return_value = "version"
             mock_platform.return_value = "linux"
             self.assertEqual(cbutil.get_os_info(), ("name", "version"))
 
-            m_distro.linux_distribution.return_value = ("something", "else")
+            m_distro.id.return_value = "something"
+            m_distro.version.return_value = "else"
             self.assertEqual(cbutil.get_os_info(), ("something", "else"))
 
     def test_non_systemd_os_info(self):
@@ -577,14 +579,16 @@ class OsInfoTest(unittest.TestCase):
     @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
     def test_python_os_info_notfound(self, m_distro):
         import certbot.util as cbutil
-        m_distro.linux_distribution.return_value = ('', '', '')
+        m_distro.id.return_value = ""
+        m_distro.version.return_value = ""
         self.assertEqual(cbutil.get_python_os_info()[0], "linux")
 
     @mock.patch("certbot.util.distro")
     @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
     def test_python_os_info_custom(self, m_distro):
         import certbot.util as cbutil
-        m_distro.linux_distribution.return_value = ('testdist', '42', '')
+        m_distro.id.return_value = "testdist"
+        m_distro.version.return_value = "42"
         self.assertEqual(cbutil.get_python_os_info(), ("testdist", "42"))
 
 

@@ -12,9 +12,7 @@ import tempfile
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-# TODO: once mypy has cryptography types bundled, type: ignore can be removed.
-# See https://github.com/pyca/cryptography/issues/4275
-from cryptography.hazmat.primitives import hashes  # type: ignore
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
@@ -153,7 +151,7 @@ def setup_certificate(workspace):
         backend=default_backend()
     )
     subject = issuer = x509.Name([
-        x509.NameAttribute(x509.NameOID.COMMON_NAME, u'nginx.wtf')
+        x509.NameAttribute(x509.NameOID.COMMON_NAME, 'nginx.wtf')
     ])
     certificate = x509.CertificateBuilder().subject_name(
         subject

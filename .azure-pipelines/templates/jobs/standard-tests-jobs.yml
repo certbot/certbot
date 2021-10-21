@@ -15,14 +15,14 @@ jobs:
         windows-py36:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.6
-          TOXENV: py36
-        windows-py38-cover:
+          TOXENV: py36-win
+        windows-py39-cover:
           IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.8
-          TOXENV: py38-cover
+          PYTHON_VERSION: 3.9
+          TOXENV: py39-cover-win
         windows-integration-certbot:
           IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.9
           TOXENV: integration-certbot
         linux-oldest-tests-1:
           IMAGE_NAME: ubuntu-18.04
@@ -43,11 +43,11 @@ jobs:
         linux-py39-lint:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.9
-          TOXENV: lint
+          TOXENV: lint-posix
         linux-py39-mypy:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.9
-          TOXENV: mypy
+          TOXENV: mypy-posix
         linux-integration:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.8

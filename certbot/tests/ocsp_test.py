@@ -9,15 +9,17 @@ from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes  # type: ignore
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+from cryptography.hazmat.primitives import hashes
 import pytz
 
 from certbot import errors
 from certbot.tests import util as test_util
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
+
 
 try:
     # Only cryptography>=2.5 has ocsp module

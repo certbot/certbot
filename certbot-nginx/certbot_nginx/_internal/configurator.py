@@ -16,7 +16,6 @@ from typing import Tuple
 
 import OpenSSL
 import pkg_resources
-import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
@@ -44,16 +43,14 @@ NO_SSL_MODIFIER = 4
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
-@zope.interface.provider(interfaces.IPluginFactory)
-class NginxConfigurator(common.Installer):
+class NginxConfigurator(common.Installer, interfaces.Authenticator):
     """Nginx configurator.
 
     .. todo:: Add proper support for comments in the config. Currently,
         config files modified by the configurator will lose all their comments.
 
     :ivar config: Configuration.
-    :type config: :class:`~certbot.interfaces.IConfig`
+    :type config: certbot.configuration.NamespaceConfig
 
     :ivar parser: Handles low level parsing
     :type parser: :class:`~certbot_nginx._internal.parser`
@@ -747,7 +744,7 @@ class NginxConfigurator(common.Installer):
             vhost, ssl_block)
 
     ##################################
-    # enhancement methods (IInstaller)
+    # enhancement methods (Installer)
     ##################################
     def supported_enhancements(self):
         """Returns currently supported enhancements."""
@@ -959,7 +956,7 @@ class NginxConfigurator(common.Installer):
         self.save_notes += "\tssl_stapling_verify on\n"
 
     ######################################
-    # Nginx server management (IInstaller)
+    # Nginx server management (Installer)
     ######################################
     def restart(self):
         """Restarts nginx server.
@@ -1089,7 +1086,7 @@ class NginxConfigurator(common.Installer):
         )
 
     ###################################################
-    # Wrapper functions for Reverter class (IInstaller)
+    # Wrapper functions for Reverter class (Installer)
     ###################################################
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
@@ -1151,7 +1148,7 @@ class NginxConfigurator(common.Installer):
         self.parser.load()
 
     ###########################################################################
-    # Challenges Section for IAuthenticator
+    # Challenges Section for Authenticator
     ###########################################################################
     def get_chall_pref(self, unused_domain):
         """Return list of challenge preferences."""
@@ -1235,7 +1232,7 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
 
     """
     try:
-        reload_output: Text = u""
+        reload_output: Text = ""
         with tempfile.TemporaryFile() as out:
             proc = subprocess.run([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
                                   env=util.env_no_snap_for_external_calls(),

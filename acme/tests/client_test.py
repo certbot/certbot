@@ -3,6 +3,7 @@
 import copy
 import datetime
 import http.client as http_client
+import ipaddress
 import json
 import unittest
 from typing import Dict
@@ -23,6 +24,7 @@ import test_util
 CERT_DER = test_util.load_vector('cert.der')
 CERT_SAN_PEM = test_util.load_vector('cert-san.pem')
 CSR_SAN_PEM = test_util.load_vector('csr-san.pem')
+CSR_MIXED_PEM = test_util.load_vector('csr-mixed.pem')
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 KEY2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
 
@@ -740,7 +742,7 @@ class ClientV2Test(ClientTestBase):
         self.orderr = messages.OrderResource(
             body=self.order,
             uri='https://www.letsencrypt-demo.org/acme/acct/1/order/1',
-            authorizations=[self.authzr, self.authzr2], csr_pem=CSR_SAN_PEM)
+            authorizations=[self.authzr, self.authzr2], csr_pem=CSR_MIXED_PEM)
 
     def test_new_account(self):
         self.response.status_code = http_client.CREATED
@@ -770,7 +772,7 @@ class ClientV2Test(ClientTestBase):
 
         with mock.patch('acme.client.ClientV2._post_as_get') as mock_post_as_get:
             mock_post_as_get.side_effect = (authz_response, authz_response2)
-            self.assertEqual(self.client.new_order(CSR_SAN_PEM), self.orderr)
+            self.assertEqual(self.client.new_order(CSR_MIXED_PEM), self.orderr)
 
     @mock.patch('acme.client.datetime')
     def test_poll_and_finalize(self, mock_datetime):

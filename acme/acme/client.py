@@ -1,4 +1,7 @@
 """ACME client API."""
+# pylint: disable=too-many-lines
+# This pylint disable can be deleted once the deprecated ACMEv1 code is
+# removed.
 import base64
 import collections
 import datetime
@@ -7,7 +10,9 @@ import heapq
 import http.client as http_client
 import logging
 import re
+import sys
 import time
+from types import ModuleType
 from typing import cast
 from typing import Dict
 from typing import List
@@ -250,8 +255,6 @@ class Client(ClientBase):
             URI from which the resource will be downloaded.
 
         """
-        warnings.warn("acme.client.Client (ACMEv1) is deprecated, "
-                      "use acme.client.ClientV2 instead.", PendingDeprecationWarning)
         self.key = key
         if net is None:
             net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl)
@@ -655,11 +658,15 @@ class ClientV2(ClientBase):
         csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
         # pylint: disable=protected-access
         dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
-
+        ipNames = crypto_util._pyopenssl_cert_or_req_san_ip(csr)
+        # ipNames is now []string
         identifiers = []
         for name in dnsNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
                 value=name))
+        for ips in ipNames:
+            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
+                value=ips))
         order = messages.NewOrder(identifiers=identifiers)
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
@@ -830,8 +837,6 @@ class BackwardsCompatibleClientV2:
     """
 
     def __init__(self, net, key, server):
-        warnings.warn("acme.client.BackwardsCompatibleClientV2 is deprecated, use "
-                      "acme.client.ClientV2 instead.", PendingDeprecationWarning)
         directory = messages.Directory.from_json(net.get(server).json())
         self.acme_version = self._acme_version_from_directory(directory)
         self.client: Union[Client, ClientV2]
@@ -1149,13 +1154,23 @@ class ClientNetwork:
             host, path, _err_no, err_msg = m.groups()
             raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
 
-        # If content is DER, log the base64 of it instead of raw bytes, to keep
-        # binary data out of the logs.
+        # If the Content-Type is DER or an Accept header was sent in the
+        # request, the response may not be UTF-8 encoded. In this case, we
+        # don't set response.encoding and log the base64 response instead of
+        # raw bytes to keep binary data out of the logs. This code can be
+        # simplified to only check for an Accept header in the request when
+        # ACMEv1 support is dropped.
         debug_content: Union[bytes, str]
-        if response.headers.get("Content-Type") == DER_CONTENT_TYPE:
+        if (response.headers.get("Content-Type") == DER_CONTENT_TYPE or
+                "Accept" in kwargs["headers"]):
             debug_content = base64.b64encode(response.content)
         else:
-            debug_content = response.content.decode("utf-8")
+            # We set response.encoding so response.text knows the response is
+            # UTF-8 encoded instead of trying to guess the encoding that was
+            # used which is error prone. This setting affects all future
+            # accesses of .text made on the returned response object as well.
+            response.encoding = "utf-8"
+            debug_content = response.text
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
                      "\n".join("{0}: {1}".format(k, v)
@@ -1225,3 +1240,35 @@ class ClientNetwork:
         response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
         return response
+
+
+# This class takes a similar approach to the cryptography project to deprecate attributes
+# in public modules. See the _ModuleWithDeprecation class here:
+# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
+class _ClientDeprecationModule:
+    """
+    Internal class delegating to a module, and displaying warnings when attributes
+    related to deprecated attributes in the acme.client module.
+    """
+    def __init__(self, module):
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr):
+        if attr in ('Client', 'BackwardsCompatibleClientV2'):
+            warnings.warn('The {0} attribute in acme.client is deprecated '
+                          'and will be removed soon.'.format(attr),
+                          DeprecationWarning, stacklevel=2)
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr, value):  # pragma: no cover
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr):  # pragma: no cover
+        delattr(self._module, attr)
+
+    def __dir__(self):  # pragma: no cover
+        return ['_module'] + dir(self._module)
+
+
+# Patching ourselves to warn about deprecation and planned removal of some elements in the module.
+sys.modules[__name__] = cast(ModuleType, _ClientDeprecationModule(sys.modules[__name__]))

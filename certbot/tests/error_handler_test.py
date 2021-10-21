@@ -2,15 +2,18 @@
 import contextlib
 import signal
 import sys
+from typing import Callable
+from typing import Dict
+from typing import Union
 import unittest
-from typing import Callable, Dict, Union
+
+from certbot.compat import os
 
 try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
 
-from certbot.compat import os
 
 
 def get_signals(signums):
@@ -77,7 +80,7 @@ class ErrorHandlerTest(unittest.TestCase):
                 send_signal(self.signals[0])
                 should_be_42 *= 10
 
-        # check execution stoped when the signal was sent
+        # check execution stopped when the signal was sent
         self.assertEqual(42, should_be_42)
         # assert signals were caught
         self.assertEqual([self.signals[0]], signals_received)

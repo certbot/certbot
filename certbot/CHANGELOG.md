@@ -2,13 +2,90 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.18.0 - master
+## 1.21.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* We changed the PGP key used to sign the packages we upload to PyPI. Going
+  forward, releases will be signed with one of three different keys. All of
+  these keys are available on major key servers and signed by our previous PGP
+  key. The fingerprints of these new keys are:
+    * BF6BCFC89E90747B9A680FD7B6029E8500F7DB16
+    * 86379B4F0AF371B50CD9E5FF3402831161D1D280
+    * 20F201346BF8F3F455A73F9A780CC99432A28621
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.20.0 - 2021-10-05
+
+### Added
+
+* Added `--no-reuse-key`. This remains the default behavior, but the flag may be
+  useful to unset the `--reuse-key` option on existing certificates.
+
+### Changed
+
+*
+
+### Fixed
+
+* The certbot-dns-rfc2136 plugin in Certbot 1.19.0 inadvertently had an implicit
+  dependency on `dnspython>=2.0`. This has been relaxed to `dnspython>=1.15.0`.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.19.0 - 2021-09-07
+
+### Added
+
+* The certbot-dns-rfc2136 plugin always assumed the use of an IP address as the
+  target server, but this was never checked. Until now. The plugin raises an error
+  if the configured target server is not a valid IPv4 or IPv6 address.
+* Our acme library now supports requesting certificates for IP addresses.
+  This feature is still unsupported by Certbot and Let's Encrypt.
+
+### Changed
+
+* Several attributes in `certbot.display.util` module are deprecated and will
+  be removed in a future release of Certbot. Any import of these attributes will
+  emit a warning to prepare the transition for developers.
+* `zope` based interfaces in `certbot.interfaces` module are deprecated and will
+  be removed in a future release of Certbot. Any import of these interfaces will
+  emit a warning to prepare the transition for developers.
+* We removed the dependency on `chardet` from our acme library. Except for when
+  downloading a certificate in an alternate format, our acme library now
+  assumes all server responses are UTF-8 encoded which is required by RFC 8555.
+
+### Fixed
+
+* Fixed parsing of `Define`d values in the Apache plugin to allow for `=` in the value.
+* Fixed a relatively harmless crash when issuing a certificate with `--quiet`/`-q`.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.18.0 - 2021-08-03
 
 ### Added
 
 * New functions that Certbot plugins can use to interact with the user have
   been added to `certbot.display.util`. We plan to deprecate using `IDisplay`
   with `zope` in favor of these new functions in the future.
+* The `Plugin`, `Authenticator` and `Installer` classes are added to
+  `certbot.interfaces` module as alternatives to Certbot's current `zope` based
+  plugin interfaces. The API of these interfaces is identical, but they are
+  based on Python's `abc` module instead of `zope`. Certbot will continue to
+  detect plugins that implement either interface, but we plan to drop support
+  for `zope` based interfaces in a future version of Certbot.
+* The class `certbot.configuration.NamespaceConfig` is added to the Certbot's
+  public API.
 
 ### Changed
 
@@ -22,11 +99,20 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The `certbot.tests.patch_get_utility*` functions have been deprecated.
   Plugins should now patch `certbot.display.util` themselves in their tests or
   use `certbot.tests.util.patch_display_util` as a temporary workaround.
+* In order to simplify the transition to Certbot's new plugin interfaces, the
+  classes `Plugin` and `Installer` in `certbot.plugins.common` module and
+  `certbot.plugins.dns_common.DNSAuthenticator` now implement Certbot's new
+  plugin interfaces. The Certbot plugins based on these classes are now
+  automatically detected as implementing these interfaces.
+* We added a dependency on `chardet` to our acme library so that it will be
+  used over `charset_normalizer` in newer versions of `requests`.
 
 ### Fixed
 
 * The Apache authenticator no longer crashes with "Unable to insert label"
   when encountering a completely empty vhost. This issue affected Certbot 1.17.0.
+* Users of the Certbot snap on Debian 9 (Stretch) should no longer encounter an
+  "access denied" error when installing DNS plugins.
 
 More details about these changes can be found on our GitHub repo.
 

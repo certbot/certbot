@@ -12,8 +12,7 @@ try:
 except ImportError: # pragma: no cover
     from unittest import mock
 
-from certbot import errors
-from certbot._internal import configuration
+from certbot import errors, configuration
 from certbot._internal.storage import ALL_FOUR
 from certbot.compat import filesystem
 from certbot.compat import os

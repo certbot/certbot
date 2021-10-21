@@ -23,7 +23,7 @@ class AuthHandler:
 
     :ivar auth: Authenticator capable of solving
         :class:`~acme.challenges.Challenge` types
-    :type auth: :class:`certbot.interfaces.IAuthenticator`
+    :type auth: certbot.interfaces.Authenticator
 
     :ivar acme.client.BackwardsCompatibleClientV2 acme_client: ACME client API.
 
@@ -46,7 +46,7 @@ class AuthHandler:
         Retrieve all authorizations, perform all challenges required to validate
         these authorizations, then poll and wait for the authorization to be checked.
         :param acme.messages.OrderResource orderr: must have authorizations filled in
-        :param interfaces.IConfig config: current Certbot configuration
+        :param certbot.configuration.NamespaceConfig config: current Certbot configuration
         :param bool best_effort: if True, not all authorizations need to be validated (eg. renew)
         :param int max_retries: maximum number of retries to poll authorizations
         :returns: list of all validated authorizations
@@ -415,8 +415,7 @@ def _report_no_chall_path(challbs):
     raise errors.AuthorizationError(msg)
 
 
-def _generate_failed_chall_msg(failed_achalls):
-    # type: (List[achallenges.AnnotatedChallenge]) -> str
+def _generate_failed_chall_msg(failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
     """Creates a user friendly error message about failed challenges.
 
     :param list failed_achalls: A list of failed

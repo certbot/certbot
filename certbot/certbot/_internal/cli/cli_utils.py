@@ -1,12 +1,11 @@
 """Certbot command line util function"""
 import argparse
 import copy
-
-import zope.interface.interface  # pylint: disable=unused-import
+import inspect
 
 from acme import challenges
+from certbot import configuration
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot._internal import constants
 from certbot.compat import os
@@ -59,11 +58,10 @@ def flag_default(name):
 
 
 def config_help(name, hidden=False):
-    """Extract the help message for an `.IConfig` attribute."""
+    """Extract the help message for a `configuration.NamespaceConfig` property docstring."""
     if hidden:
         return argparse.SUPPRESS
-    field: zope.interface.interface.Attribute = interfaces.IConfig.__getitem__(name)
-    return field.__doc__
+    return inspect.getdoc(getattr(configuration.NamespaceConfig, name))
 
 
 class HelpfulArgumentGroup:

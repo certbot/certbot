@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 
-PYTHON_VERSION = (3, 8, 9)
+PYTHON_VERSION = (3, 9, 7)
 PYTHON_BITNESS = 32
 NSIS_VERSION = '3.06.1'
 

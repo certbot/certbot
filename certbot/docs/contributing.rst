@@ -233,15 +233,12 @@ different webservers, other TLS servers, and operating systems.
 The interfaces available for plugins to implement are defined in
 `interfaces.py`_ and `plugins/common.py`_.
 
-The main two plugin interfaces are `~certbot.interfaces.IAuthenticator`, which
+The main two plugin interfaces are `~certbot.interfaces.Authenticator`, which
 implements various ways of proving domain control to a certificate authority,
-and `~certbot.interfaces.IInstaller`, which configures a server to use a
+and `~certbot.interfaces.Installer`, which configures a server to use a
 certificate once it is issued. Some plugins, like the built-in Apache and Nginx
 plugins, implement both interfaces and perform both tasks. Others, like the
 built-in Standalone authenticator, implement just one interface.
-
-There are also `~certbot.interfaces.IDisplay` plugins,
-which can change how prompts are displayed to a user.
 
 .. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/interfaces.py
 .. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/plugins/common.py#L45
@@ -272,7 +269,7 @@ Installers plugins exist to actually setup the certificate in a server,
 possibly tweak the security configuration to make it more correct and secure
 (Fix some mixed content problems, turn on HSTS, redirect to HTTPS, etc).
 Installer plugins tell the main client about their abilities to do the latter
-via the :meth:`~.IInstaller.supported_enhancements` call. We currently
+via the :meth:`~.Installer.supported_enhancements` call. We currently
 have two Installers in the tree, the `~.ApacheConfigurator`. and the
 `~.NginxConfigurator`.  External projects have made some progress toward
 support for IIS, Icecast and Plesk.
@@ -293,7 +290,7 @@ Installer Development
 ---------------------
 
 There are a few existing classes that may be beneficial while
-developing a new `~certbot.interfaces.IInstaller`.
+developing a new `~certbot.interfaces.Installer`.
 Installers aimed to reconfigure UNIX servers may use Augeas for
 configuration parsing and can inherit from `~.AugeasConfigurator` class
 to handle much of the interface. Installers that are unable to use
@@ -319,8 +316,8 @@ Writing your own plugin
 Certbot client supports dynamic discovery of plugins through the
 `setuptools entry points`_ using the `certbot.plugins` group. This
 way you can, for example, create a custom implementation of
-`~certbot.interfaces.IAuthenticator` or the
-`~certbot.interfaces.IInstaller` without having to merge it
+`~certbot.interfaces.Authenticator` or the
+`~certbot.interfaces.Installer` without having to merge it
 with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
 
@@ -482,7 +479,7 @@ Those imports should look like this:
 .. code-block:: python
 
   from OpenSSL import crypto
-  from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
+  from OpenSSL import SSL
 
 .. _mypy: https://mypy.readthedocs.io
 .. _added in comments: https://mypy.readthedocs.io/en/latest/cheat_sheet.html

@@ -5,7 +5,6 @@ import logging
 from time import sleep
 
 import configobj
-import zope.interface
 
 from acme import challenges
 from certbot import errors
@@ -19,10 +18,8 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
-class DNSAuthenticator(common.Plugin):
-    """Base class for DNS  Authenticators"""
+class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.ABCMeta):
+    """Base class for DNS Authenticators"""
 
     def __init__(self, config, name):
         super().__init__(config, name)
@@ -38,6 +35,7 @@ class DNSAuthenticator(common.Plugin):
                  'to verify the DNS record.')
 
     def auth_hint(self, failed_achalls):
+        """See certbot.plugins.common.Plugin.auth_hint."""
         delay = self.conf('propagation-seconds')
         return (
             'The Certificate Authority failed to verify the DNS TXT records created by --{name}. '

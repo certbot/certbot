@@ -1,18 +1,17 @@
 """Tests for certbot._internal.renewal"""
 import copy
-
 import unittest
+
+from acme import challenges
+from certbot import errors, configuration
+from certbot._internal import storage
+import certbot.tests.util as test_util
 
 try:
     import mock
 except ImportError:  # pragma: no cover
     from unittest import mock
 
-from acme import challenges
-from certbot import errors
-from certbot._internal import configuration
-from certbot._internal import storage
-import certbot.tests.util as test_util
 
 
 class RenewalTest(test_util.ConfigTestCase):

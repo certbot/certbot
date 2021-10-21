@@ -1,8 +1,5 @@
 """ Distribution specific override class for Fedora 29+ """
-import zope.interface
-
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
@@ -10,7 +7,6 @@ from certbot_apache._internal import parser
 from certbot_apache._internal.configurator import OsOptions
 
 
-@zope.interface.provider(interfaces.IPluginFactory)
 class FedoraConfigurator(configurator.ApacheConfigurator):
     """Fedora 29+ specific ApacheConfigurator override class"""
 
@@ -47,7 +43,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
 
     def _try_restart_fedora(self):
         """
-        Tries to restart httpd using systemctl to generate the self signed keypair.
+        Tries to restart httpd using systemctl to generate the self signed key pair.
         """
         try:
             util.run_script(['systemctl', 'restart', 'httpd'])

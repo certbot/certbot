@@ -4,8 +4,8 @@ import logging
 import logging.handlers
 import sys
 import time
-import unittest
 from typing import Optional
+import unittest
 
 from acme import messages
 from certbot import errors
@@ -54,7 +54,7 @@ class PreArgParseSetupTest(unittest.TestCase):
             handler = call[0][0]
             if memory_handler is None and isinstance(handler, logging.handlers.MemoryHandler):
                 memory_handler = handler
-                target = memory_handler.target  # type: ignore
+                target = memory_handler.target
             else:
                 self.assertIsInstance(handler, logging.StreamHandler)
         self.assertIsInstance(target, logging.StreamHandler)

@@ -10,19 +10,18 @@ import shutil
 import sys
 import tempfile
 import traceback
-import unittest
 from typing import List
+import unittest
 
 import josepy as jose
 import pytz
 
-from certbot import crypto_util
+from certbot import crypto_util, configuration
 from certbot import errors
 from certbot import interfaces  # pylint: disable=unused-import
 from certbot import util
 from certbot._internal import account
 from certbot._internal import cli
-from certbot._internal import configuration
 from certbot._internal import constants
 from certbot._internal import main
 from certbot._internal import updater
@@ -324,12 +323,12 @@ class RevokeTest(test_util.TempDirTestCase):
         self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir, 'cert_512.pem'))
 
         patches = [
-            mock.patch('acme.client.BackwardsCompatibleClientV2'),
+            mock.patch('certbot._internal.client.acme_client'),
             mock.patch('certbot._internal.client.Client'),
             mock.patch('certbot._internal.main._determine_account'),
             mock.patch('certbot._internal.main.display_ops.success_revocation')
         ]
-        self.mock_acme_client = patches[0].start()
+        self.mock_acme_client = patches[0].start().BackwardsCompatibleClientV2
         patches[1].start()
         self.mock_determine_account = patches[2].start()
         self.mock_success_revoke = patches[3].start()
@@ -709,11 +708,10 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.eff.handle_subscription')
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     @mock.patch('certbot._internal.main._report_new_cert')
-    @mock.patch('certbot._internal.main.client.acme_client.Client')
     @mock.patch('certbot._internal.main._determine_account')
     @mock.patch('certbot._internal.main.client.Client.obtain_and_enroll_certificate')
     @mock.patch('certbot._internal.main._get_and_save_cert')
-    def test_user_agent(self, gsc, _obt, det, _client, _, __, ___):
+    def test_user_agent(self, gsc, _obt, det, _, __, ___):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
         args = ["--standalone", "certonly", "-m", "none@none.com",
@@ -721,7 +719,8 @@ class MainTest(test_util.ConfigTestCase):
         det.return_value = mock.MagicMock(), None
         gsc.return_value = mock.MagicMock()
 
-        with mock.patch('certbot._internal.main.client.acme_client.ClientNetwork') as acme_net:
+        with mock.patch('certbot._internal.main.client.acme_client') as acme_client:
+            acme_net = acme_client.ClientNetwork
             self._call_no_clientmock(args)
             os_ver = util.get_os_info_ua()
             ua = acme_net.call_args[1]["user_agent"]
@@ -731,7 +730,8 @@ class MainTest(test_util.ConfigTestCase):
             if "linux" in plat.lower():
                 self.assertIn(util.get_os_info_ua(), ua)
 
-        with mock.patch('certbot._internal.main.client.acme_client.ClientNetwork') as acme_net:
+        with mock.patch('certbot._internal.main.client.acme_client') as acme_client:
+            acme_net = acme_client.ClientNetwork
             ua = "bandersnatch"
             args += ["--user-agent", ua]
             self._call_no_clientmock(args)
@@ -891,7 +891,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args(self, _det, mock_disco):
-        ifaces: List[interfaces.IPlugin] = []
+        ifaces: List[interfaces.Plugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()
@@ -906,7 +906,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args_unprivileged(self, _det, mock_disco):
-        ifaces: List[interfaces.IPlugin] = []
+        ifaces: List[interfaces.Plugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         def throw_error(directory, mode, strict):
@@ -928,7 +928,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_init(self, _det, mock_disco):
-        ifaces: List[interfaces.IPlugin] = []
+        ifaces: List[interfaces.Plugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()
@@ -946,7 +946,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_prepare(self, _det, mock_disco):
-        ifaces: List[interfaces.IPlugin] = []
+        ifaces: List[interfaces.Plugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()
@@ -1001,6 +1001,10 @@ class MainTest(test_util.ConfigTestCase):
         self.assertRaises(errors.ConfigurationError,
                           self._call,
                           ['-d', '204.11.231.35'])
+        # Bare IPv6 address
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', '2001:db8:ac69:3ff:b1cb:c8c6:5a84:a31b'])
 
     def test_csr_with_besteffort(self):
         self.assertRaises(
@@ -1930,8 +1934,9 @@ class ReportNextStepsTest(unittest.TestCase):
         _report_next_steps(*args, **kwargs)
 
     def _output(self) -> str:
-        self.mock_notify.assert_called_once()
-        return self.mock_notify.call_args_list[0][0][0]
+        self.assertEqual(self.mock_notify.call_count, 2)
+        self.assertEqual(self.mock_notify.call_args_list[0][0][0], 'NEXT STEPS:')
+        return self.mock_notify.call_args_list[1][0][0]
 
     def test_report(self):
         """No steps for a normal renewal"""

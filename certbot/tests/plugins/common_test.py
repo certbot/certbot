@@ -24,6 +24,7 @@ ACHALL = achallenges.KeyAuthorizationAnnotatedChallenge(
                                              "pending"),
             domain="encryption-example.demo", account_key=AUTH_KEY)
 
+
 class NamespaceFunctionsTest(unittest.TestCase):
     """Tests for certbot.plugins.common.*_namespace functions."""
 
@@ -47,6 +48,12 @@ class PluginTest(unittest.TestCase):
         from certbot.plugins.common import Plugin
 
         class MockPlugin(Plugin):  # pylint: disable=missing-docstring
+            def prepare(self) -> None:
+                pass
+
+            def more_info(self) -> str:
+                pass
+
             @classmethod
             def add_parser_arguments(cls, add):
                 add("foo-bar", dest="different_to_foo_bar", x=1, y=None)
@@ -97,9 +104,9 @@ class InstallerTest(test_util.ConfigTestCase):
     def setUp(self):
         super().setUp()
         filesystem.mkdir(self.config.config_dir)
-        from certbot.plugins.common import Installer
+        from certbot.tests.util import DummyInstaller
 
-        self.installer = Installer(config=self.config,
+        self.installer = DummyInstaller(config=self.config,
                                    name="Installer")
         self.reverter = self.installer.reverter
 

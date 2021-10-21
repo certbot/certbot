@@ -13,6 +13,7 @@ import socket
 import subprocess
 import sys
 from typing import Dict
+from typing import IO
 from typing import Text
 from typing import Tuple
 from typing import Union
@@ -207,7 +208,7 @@ def make_or_verify_dir(directory, mode=0o755, strict=False):
             raise
 
 
-def safe_open(path, mode="w", chmod=None):
+def safe_open(path: str, mode: str = "w", chmod=None) -> IO:
     """Safely open a file.
 
     :param str path: Path to a file.
@@ -390,13 +391,14 @@ def get_python_os_info(pretty=False):
     os_type, os_ver, _ = info
     os_type = os_type.lower()
     if os_type.startswith('linux') and _USE_DISTRO:
-        info = distro.linux_distribution(pretty)
-        # On arch, distro.linux_distribution() is reportedly ('','',''),
+        distro_name, distro_version = distro.name() if pretty else distro.id(), distro.version()
+        # On arch, these values are reportedly empty strings so handle it
+        # defensively
         # so handle it defensively
-        if info[0]:
-            os_type = info[0]
-        if info[1]:
-            os_ver = info[1]
+        if distro_name:
+            os_type = distro_name
+        if distro_version:
+            os_ver = distro_version
     elif os_type.startswith('darwin'):
         try:
             proc = subprocess.run(
@@ -481,6 +483,7 @@ def enforce_le_validity(domain):
                                 Encrypt currently will not issue certificates
 
     """
+
     domain = enforce_domain_sanity(domain)
     if not re.match("^[A-Za-z0-9.-]*$", domain):
         raise errors.ConfigurationError(
@@ -526,7 +529,7 @@ def enforce_domain_sanity(domain):
     domain = domain.lower()
 
     # Remove trailing dot
-    domain = domain[:-1] if domain.endswith(u'.') else domain
+    domain = domain[:-1] if domain.endswith('.') else domain
 
     # Separately check for odd "domains" like "http://example.com" to fail
     # fast and provide a clear error message
@@ -539,17 +542,11 @@ def enforce_domain_sanity(domain):
                 )
             )
 
-    # Explain separately that IP addresses aren't allowed (apart from not
-    # being FQDNs) because hope springs eternal concerning this point
-    try:
-        socket.inet_aton(domain)
+    if is_ipaddress(domain):
         raise errors.ConfigurationError(
             "Requested name {0} is an IP address. The Let's Encrypt "
             "certificate authority will not issue certificates for a "
             "bare IP address.".format(domain))
-    except socket.error:
-        # It wasn't an IP address, so that's good
-        pass
 
     # FQDN checks according to RFC 2181: domain name should be less than 255
     # octets (inclusive). And each label is 1 - 63 octets (inclusive).
@@ -567,6 +564,29 @@ def enforce_domain_sanity(domain):
     return domain
 
 
+def is_ipaddress(address):
+    """Is given address string form of IP(v4 or v6) address?
+
+    :param address: address to check
+    :type address: `str` or `unicode`
+
+    :returns: True if address is valid IP address, otherwise return False.
+    :rtype: bool
+
+    """
+    try:
+        socket.inet_pton(socket.AF_INET, address)
+        # If this line runs it was ip address (ipv4)
+        return True
+    except socket.error:
+        # It wasn't an IPv4 address, so try ipv6
+        try:
+            socket.inet_pton(socket.AF_INET6, address)
+            return True
+        except socket.error:
+            return False
+
+
 def is_wildcard_domain(domain):
     """"Is domain a wildcard domain?
 
@@ -579,7 +599,7 @@ def is_wildcard_domain(domain):
     """
     wildcard_marker: Union[Text, bytes] = b"*."
     if isinstance(domain, str):
-        wildcard_marker = u"*."
+        wildcard_marker = "*."
     return domain.startswith(wildcard_marker)
 
 

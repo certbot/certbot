@@ -52,9 +52,7 @@ install_requires = [
     'configobj>=5.0.6',
     'cryptography>=2.1.4',
     'distro>=1.0.1',
-    # 1.1.0+ is required to avoid the warnings described at
-    # https://github.com/certbot/josepy/issues/13.
-    'josepy>=1.1.0',
+    'josepy>=1.9.0',
     'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz',
@@ -79,8 +77,7 @@ dev_extras = [
 docs_extras = [
     # If you have Sphinx<1.5.1, you need docutils<0.13.1
     # https://github.com/sphinx-doc/sphinx/issues/3212
-    'repoze.sphinx.autointerface',
-    'Sphinx>=1.2', # Annotation support
+    'Sphinx>=1.2',  # Annotation support
     'sphinx_rtd_theme',
 ]
 
@@ -96,6 +93,13 @@ test_extras = [
     'pytest-xdist',
     'setuptools',
     'tox',
+    'types-mock',
+    'types-pyOpenSSL',
+    'types-pyRFC3339',
+    'types-pytz',
+    'types-requests',
+    'types-setuptools',
+    'types-six',
     # typing-extensions is required to import typing.Protocol and make the mypy checks
     # pass (along with pylint about non-existent objects) on Python 3.6 & 3.7
     'typing-extensions',
