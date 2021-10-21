@@ -5,6 +5,8 @@ import hashlib
 import logging
 import shutil
 import socket
+from typing import cast
+from typing import Mapping
 
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
@@ -63,7 +65,10 @@ class Account:
         try:
             hasher = hashlib.md5()
         except ValueError:
-            hasher = hashlib.new('md5', usedforsecurity=False)
+            # This cast + dictionnary expansion is made to make mypy happy without the need of a
+            # "type: ignore" directive that will also require to disable the check on useless
+            # "type: ignore" directives when mypy is run on Python 3.9+.
+            hasher = hashlib.new('md5', **cast(Mapping[str, str], {"usedforsecurity": False}))
 
         hasher.update(self.key.key.public_key().public_bytes(
             encoding=serialization.Encoding.PEM,
