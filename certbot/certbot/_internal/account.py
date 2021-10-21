@@ -63,7 +63,7 @@ class Account:
         try:
             hasher = hashlib.md5()
         except ValueError:
-            hasher = hashlib.new('md5', usedforsecurity=False)
+            hasher = hashlib.new('md5', usedforsecurity=False)  # type: ignore
 
         hasher.update(self.key.key.public_key().public_bytes(
             encoding=serialization.Encoding.PEM,
