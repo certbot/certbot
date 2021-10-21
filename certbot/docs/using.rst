@@ -147,8 +147,9 @@ your webserver configuration, you might need to modify the configuration
 to ensure that files inside ``/.well-known/acme-challenge`` are served by
 the webserver.
 
-Under Windows, Certbot will generate a ``web.config`` file in ``/.well-known/acme-challenge``
-in order to let IIS serve the challenge files even if they do not have an extension.
+Under Windows, Certbot will generate a ``web.config`` file, if one does not already exist,
+in ``/.well-known/acme-challenge`` in order to let IIS serve the challenge files even if they
+do not have an extension.
 
 Nginx
 -----
