@@ -10,7 +10,13 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* We changed the PGP key used to sign the packages we upload to PyPI. Going
+  forward, releases will be signed with one of three different keys. All of
+  these keys are available on major key servers and signed by our previous PGP
+  key. The fingerprints of these new keys are:
+    * BF6BCFC89E90747B9A680FD7B6029E8500F7DB16
+    * 86379B4F0AF371B50CD9E5FF3402831161D1D280
+    * 20F201346BF8F3F455A73F9A780CC99432A28621
 
 ### Fixed
 
