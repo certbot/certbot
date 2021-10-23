@@ -6,7 +6,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Certbot will generate a `web.config` file on Windows in the challenge path
+  when the `webroot` plugin is used, if one does not exist. This `web.config` file
+  lets IIS serve challenge files while they do not have an extension.
 
 ### Changed
 
