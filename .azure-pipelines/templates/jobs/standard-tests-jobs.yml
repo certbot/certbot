@@ -16,13 +16,13 @@ jobs:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.6
           TOXENV: py36-win
-        windows-py38-cover:
+        windows-py39-cover:
           IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.8
-          TOXENV: py38-cover-win
+          PYTHON_VERSION: 3.9
+          TOXENV: py39-cover-win
         windows-integration-certbot:
           IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.9
           TOXENV: integration-certbot
         linux-oldest-tests-1:
           IMAGE_NAME: ubuntu-18.04
