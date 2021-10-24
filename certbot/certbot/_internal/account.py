@@ -65,7 +65,7 @@ class Account:
         try:
             hasher = hashlib.md5()
         except ValueError:
-            # This cast + dictionnary expansion is made to make mypy happy without the need of a
+            # This cast + dictionary expansion is made to make mypy happy without the need of a
             # "type: ignore" directive that will also require to disable the check on useless
             # "type: ignore" directives when mypy is run on Python 3.9+.
             hasher = hashlib.new('md5', **cast(Mapping[str, str], {"usedforsecurity": False}))
