@@ -14,7 +14,7 @@ from certbot.tests import util as test_util
 if typing.TYPE_CHECKING:
     from typing_extensions import Protocol
 else:
-    Protocol = object  # type: ignore
+    Protocol = object
 
 
 

@@ -20,7 +20,7 @@ except ImportError:  # pragma: no cover
 if typing.TYPE_CHECKING:
     from typing_extensions import Protocol
 else:
-    Protocol = object  # type: ignore
+    Protocol = object
 
 
 

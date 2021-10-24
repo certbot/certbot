@@ -19,8 +19,8 @@ try:
     from lexicon.config import ConfigResolver
     from lexicon.providers.base import Provider
 except ImportError:
-    ConfigResolver = None  # type: ignore
-    Provider = None  # type: ignore
+    ConfigResolver = None
+    Provider = None
 
 logger = logging.getLogger(__name__)
 

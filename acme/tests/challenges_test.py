@@ -326,12 +326,12 @@ class TLSALPN01ResponseTest(unittest.TestCase):
         self.response.probe_cert('foo.com')
         mock_gethostbyname.assert_called_once_with('foo.com')
         mock_probe_sni.assert_called_once_with(
-            host='127.0.0.1', port=self.response.PORT, name='foo.com',
+            host=b'127.0.0.1', port=self.response.PORT, name=b'foo.com',
             alpn_protocols=['acme-tls/1'])
 
         self.response.probe_cert('foo.com', host='8.8.8.8')
         mock_probe_sni.assert_called_with(
-            host='8.8.8.8', port=mock.ANY, name='foo.com',
+            host=b'8.8.8.8', port=mock.ANY, name=b'foo.com',
             alpn_protocols=['acme-tls/1'])
 
     @mock.patch('acme.challenges.TLSALPN01Response.probe_cert')
