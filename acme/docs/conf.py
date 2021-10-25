@@ -58,7 +58,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'acme-python'
-copyright = u'2015-2015, Let\'s Encrypt Project'
+copyright = u'2015, Let\'s Encrypt Project'
 author = u'Let\'s Encrypt Project'
 
 # The version info for the project you're documenting, acts as replacement for
