@@ -57,7 +57,7 @@ class Resource(jose.Field):
     def __init__(self, resource_type: str, *args: Any, **kwargs: Any) -> None:
         self.resource_type = resource_type
         super().__init__(
-            'resource', default=resource_type, *args, **kwargs)
+            'resource', default=resource_type, *args, **kwargs)  # type: ignore[misc]
 
     def decode(self, value: Any) -> Any:
         if value != self.resource_type:

@@ -7,7 +7,7 @@ version = '1.21.0.dev0'
 
 install_requires = [
     'cryptography>=2.1.4',
-    'josepy>=1.9.0',
+    'josepy>=1.10.0',
     'PyOpenSSL>=17.3.0',
     'pyrfc3339',
     'pytz',
