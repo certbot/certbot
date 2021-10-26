@@ -68,7 +68,8 @@ ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
 T = TypeVar('T', bound='_JSONObjectWithFields')
 
 
-# TODO: Remove this class once JSONObjectWithFields and ImmutableMap in josepy becomes generic.
+# TODO: Remove this class once JSONObjectWithFields.from_json and ImmutableMap.update
+#  in josepy become generic.
 class _JSONObjectWithFields(jose.JSONObjectWithFields):
     """Generic version of jose.JSONObjectWithFields"""
 

@@ -33,7 +33,7 @@ T = TypeVar('T', bound='_JSONObjectWithFields')
 R = TypeVar('R', bound='Challenge')
 
 
-# TODO: Remove this class once JSONObjectWithFields in josepy becomes generic.
+# TODO: Remove this class once JSONObjectWithFields.from_json in josepy becomes generic.
 class _JSONObjectWithFields(jose.JSONObjectWithFields):
     """Generic version of jose.JSONObjectWithFields"""
 
