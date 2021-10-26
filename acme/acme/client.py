@@ -19,6 +19,7 @@ from typing import cast
 from typing import Dict
 from typing import Iterable
 from typing import List
+from typing import Mapping
 from typing import Optional
 from typing import Set
 from typing import Text
@@ -130,8 +131,9 @@ class ClientBase:
         :rtype: `.RegistrationResource`
 
         """
-        return self.update_registration(regr, messages.Registration.from_json(
-            {"status": "deactivated", "contact": None}))
+        return self.update_registration(regr, cast(messages.Registration,
+                                                   messages.Registration.from_json(
+                                                       {"status": "deactivated", "contact": None})))
 
     def deactivate_authorization(self,
                                  authzr: messages.AuthorizationResource
@@ -324,7 +326,8 @@ class Client(ClientBase):
 
         """
         return self.update_registration(
-            regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
+            cast(messages.RegistrationResource, regr.update(
+                body=regr.body.update(agreement=regr.terms_of_service))))
 
     def request_challenges(self, identifier: messages.Identifier,
                            new_authzr_uri: Optional[str] = None) -> messages.AuthorizationResource:
@@ -541,7 +544,7 @@ class Client(ClientBase):
             raise errors.ClientError('Location header missing')
         if response.headers['Location'] != certr.uri:
             raise errors.UnexpectedUpdate(response.text)
-        return certr.update(body=cert)
+        return cast(messages.CertificateResource, certr.update(body=cert))
 
     def refresh(self, certr: messages.CertificateResource) -> messages.CertificateResource:
         """Refresh certificate.
@@ -674,7 +677,7 @@ class ClientV2(ClientBase):
         only_existing_reg = regr.body.update(only_return_existing=True)
         response = self._post(self.directory['newAccount'], only_existing_reg)
         updated_uri = response.headers['Location']
-        new_regr = regr.update(uri=updated_uri)
+        new_regr = cast(messages.RegistrationResource, regr.update(uri=updated_uri))
         self.net.account = new_regr
         return new_regr
 
@@ -700,7 +703,7 @@ class ClientV2(ClientBase):
                 value=ips))
         order = messages.NewOrder(identifiers=identifiers)
         response = self._post(self.directory['newOrder'], order)
-        body = messages.Order.from_json(response.json())
+        body = cast(messages.Order, messages.Order.from_json(response.json()))
         authorizations = []
         # pylint has trouble understanding our josepy based objects which use
         # things like custom metaclass logic. body.authorizations should be a
@@ -772,7 +775,7 @@ class ClientV2(ClientBase):
                         failed.append(authzr)
         if failed:
             raise errors.ValidationError(failed)
-        return orderr.update(authorizations=responses)
+        return cast(messages.OrderResource, orderr.update(authorizations=responses))
 
     def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
                        fetch_alternative_chains: bool = False) -> messages.OrderResource:
@@ -794,7 +797,7 @@ class ClientV2(ClientBase):
         while datetime.datetime.now() < deadline:
             time.sleep(1)
             response = self._post_as_get(orderr.uri)
-            body = messages.Order.from_json(response.json())
+            body = cast(messages.Order, messages.Order.from_json(response.json()))
             if body.error is not None:
                 raise errors.IssuanceError(body.error)
             if body.certificate is not None:
@@ -897,16 +900,16 @@ class BackwardsCompatibleClientV2:
                 check_tos_cb(tos)
         if self.acme_version == 1:
             client_v1 = cast(Client, self.client)
-            regr = client_v1.register(regr)
-            if regr.terms_of_service is not None:
-                _assess_tos(regr.terms_of_service)
-                return client_v1.agree_to_tos(regr)
-            return regr
+            regr_res = client_v1.register(regr)
+            if regr_res.terms_of_service is not None:
+                _assess_tos(regr_res.terms_of_service)
+                return client_v1.agree_to_tos(regr_res)
+            return regr_res
         else:
             client_v2 = cast(ClientV2, self.client)
             if "terms_of_service" in client_v2.directory.meta:
                 _assess_tos(client_v2.directory.meta.terms_of_service)
-                regr = regr.update(terms_of_service_agreed=True)
+                regr = cast(messages.NewRegistration, regr.update(terms_of_service_agreed=True))
             return client_v2.new_account(regr)
 
     def new_order(self, csr_pem: bytes) -> messages.OrderResource:
@@ -970,10 +973,11 @@ class BackwardsCompatibleClientV2:
                     'certificate, please rerun the command for a new one.')
 
             cert = OpenSSL.crypto.dump_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()
+                OpenSSL.crypto.FILETYPE_PEM,
+                cast(OpenSSL.crypto.X509, cast(jose.ComparableX509, certr.body).wrapped)).decode()
             chain_str = crypto_util.dump_pyopenssl_chain(chain).decode()
 
-            return orderr.update(fullchain_pem=(cert + chain_str))
+            return cast(messages.OrderResource, orderr.update(fullchain_pem=(cert + chain_str)))
         return cast(ClientV2, self.client).finalize_order(
             orderr, deadline, fetch_alternative_chains)
 
@@ -1056,7 +1060,7 @@ class ClientNetwork:
             pass
 
     def _wrap_in_jws(self, obj: jose.JSONDeSerializable, nonce: str, url: str,
-                     acme_version: int) -> jose.JWS:
+                     acme_version: int) -> str:
         """Wrap `JSONDeSerializable` object in JWS.
 
         .. todo:: Implement ``acmePath``.
@@ -1064,7 +1068,7 @@ class ClientNetwork:
         :param josepy.JSONDeSerializable obj:
         :param str url: The URL to which this object will be POSTed
         :param str nonce:
-        :rtype: `josepy.JWS`
+        :rtype: str
 
         """
         if isinstance(obj, VersionedLEACMEMixin):
@@ -1082,7 +1086,7 @@ class ClientNetwork:
             if self.account is not None:
                 kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
-        return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
+        return jws.JWS.sign(jobj, **cast(Mapping[str, Any], kwargs)).json_dumps(indent=2)
 
     @classmethod
     def _check_response(cls, response: requests.Response,
@@ -1125,7 +1129,7 @@ class ClientNetwork:
                         'Ignoring wrong Content-Type (%r) for JSON Error',
                         response_ct)
                 try:
-                    raise messages.Error.from_json(jobj)
+                    raise cast(messages.Error, messages.Error.from_json(jobj))
                 except jose.DeserializationError as error:
                     # Couldn't deserialize JSON object
                     raise errors.ClientError((response, error))

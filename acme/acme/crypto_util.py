@@ -410,7 +410,8 @@ def gen_ss_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
     return cert
 
 
-def dump_pyopenssl_chain(chain: List[crypto.X509], filetype: int = crypto.FILETYPE_PEM) -> bytes:
+def dump_pyopenssl_chain(chain: Union[List[jose.ComparableX509], List[crypto.X509]],
+                         filetype: int = crypto.FILETYPE_PEM) -> bytes:
     """Dump certificate chain into a bundle.
 
     :param list chain: List of `OpenSSL.crypto.X509` (or wrapped in
@@ -425,6 +426,8 @@ def dump_pyopenssl_chain(chain: List[crypto.X509], filetype: int = crypto.FILETY
 
     def _dump_cert(cert: Union[jose.ComparableX509, crypto.X509]) -> bytes:
         if isinstance(cert, jose.ComparableX509):
+            if isinstance(cert.wrapped, crypto.X509Req):
+                raise errors.Error("Unexpected certificate signing request provided.")
             cert = cert.wrapped
         return crypto.dump_certificate(filetype, cert)
 

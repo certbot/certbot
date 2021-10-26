@@ -34,7 +34,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
     TYPES: Dict[str, Type['Challenge']] = {}
 
     @classmethod
-    def from_json(cls, jobj: Mapping[str, Any]) -> 'Challenge':
+    def from_json(cls, jobj: Mapping[str, Any]) -> jose.TypedJSONObjectWithFields:
         try:
             return super().from_json(jobj)
         except jose.UnrecognizedTypeError as error:
@@ -62,6 +62,7 @@ class UnrecognizedChallenge(Challenge):
     :ivar jobj: Original JSON decoded object.
 
     """
+    jobj: Dict[str, Any]
 
     def __init__(self, jobj: Mapping[str, Any]) -> None:
         super().__init__()
@@ -85,7 +86,7 @@ class _TokenChallenge(Challenge):
     """Minimum size of the :attr:`token` in bytes."""
 
     # TODO: acme-spec doesn't specify token as base64-encoded value
-    token: bytes = jose.Field(
+    token: bytes = jose.field(
         "token", encoder=jose.encode_b64jose, decoder=functools.partial(
             jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
@@ -108,10 +109,10 @@ class _TokenChallenge(Challenge):
 class KeyAuthorizationChallengeResponse(ChallengeResponse):
     """Response to Challenges based on Key Authorization.
 
-    :param unicode key_authorization:
+    :param str key_authorization:
 
     """
-    key_authorization = jose.Field("keyAuthorization")
+    key_authorization: str = jose.field("keyAuthorization")
     thumbprint_hash_function = hashes.SHA256
 
     def verify(self, chall: 'KeyAuthorizationChallenge', account_public_key: jose.JWK) -> bool:
@@ -523,7 +524,7 @@ class TLSALPN01(KeyAuthorizationChallenge):
         """Generate validation.
 
         :param JWK account_key:
-        :param unicode domain: Domain verified by the challenge.
+        :param str domain: Domain verified by the challenge.
         :param OpenSSL.crypto.PKey cert_key: Optional private key used
             in certificate generation. If not provided (``None``), then
             fresh key will be generated.
@@ -531,9 +532,12 @@ class TLSALPN01(KeyAuthorizationChallenge):
         :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
 
         """
-        return self.response(account_key).gen_cert(
+        domain = kwargs.get('domain')
+        if not isinstance(domain, str):
+            raise errors.Error("Parameter domain should be a string.")
+        return cast(TLSALPN01Response, self.response(account_key)).gen_cert(
             key=kwargs.get('cert_key'),
-            domain=kwargs.get('domain'))
+            domain=domain)
 
     @staticmethod
     def is_supported() -> bool:
@@ -599,8 +603,7 @@ class DNS(_TokenChallenge):
         :rtype: DNSResponse
 
         """
-        return DNSResponse(validation=self.gen_validation(
-            account_key, **kwargs))
+        return DNSResponse(validation=self.gen_validation(account_key, **kwargs))
 
     def validation_domain_name(self, name: str) -> str:
         """Domain name for TXT validation record.
@@ -620,7 +623,7 @@ class DNSResponse(ChallengeResponse):
     """
     typ = "dns"
 
-    validation = jose.Field("validation", decoder=jose.JWS.from_json)
+    validation: jose.JWS = jose.field("validation", decoder=jose.JWS.from_json)
 
     def check_validation(self, chall: 'DNS', account_public_key: jose.JWK) -> bool:
         """Check validation.
