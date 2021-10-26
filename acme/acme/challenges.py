@@ -12,6 +12,8 @@ from typing import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Type
+from typing import TypeVar
+from typing import Union
 
 from cryptography.hazmat.primitives import hashes
 import josepy as jose
@@ -27,14 +29,26 @@ from acme.mixins import TypeMixin
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar('T', bound='_JSONObjectWithFields')
+R = TypeVar('R', bound='Challenge')
 
-class Challenge(jose.TypedJSONObjectWithFields):
+
+# TODO: Remove this class once JSONObjectWithFields in josepy becomes generic.
+class _JSONObjectWithFields(jose.JSONObjectWithFields):
+    """Generic version of jose.JSONObjectWithFields"""
+
+    @classmethod
+    def from_json(cls: Type[T], jobj: Mapping[str, Any]) -> T:
+        return cast(T, super().from_json(jobj))
+
+
+class Challenge(_JSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge."""
     TYPES: Dict[str, Type['Challenge']] = {}
 
     @classmethod
-    def from_json(cls, jobj: Mapping[str, Any]) -> jose.TypedJSONObjectWithFields:
+    def from_json(cls: Type[R], jobj: Mapping[str, Any]) -> Union[R, 'UnrecognizedChallenge']:
         try:
             return super().from_json(jobj)
         except jose.UnrecognizedTypeError as error:
@@ -42,7 +56,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
             return UnrecognizedChallenge.from_json(jobj)
 
 
-class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields):
+class ChallengeResponse(ResourceMixin, TypeMixin, _JSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
     TYPES: Dict[str, Type['ChallengeResponse']] = {}

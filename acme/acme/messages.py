@@ -8,9 +8,10 @@ from typing import Iterator
 from typing import List
 from typing import Mapping
 from typing import MutableMapping
+from typing import Optional
 from typing import Tuple
 from typing import Type
-from typing import Optional
+from typing import TypeVar
 from typing import Union
 
 import josepy as jose
@@ -64,6 +65,20 @@ ERROR_TYPE_DESCRIPTIONS = dict(
 ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
     (OLD_ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items()))
 
+T = TypeVar('T', bound='_JSONObjectWithFields')
+
+
+# TODO: Remove this class once JSONObjectWithFields and ImmutableMap in josepy becomes generic.
+class _JSONObjectWithFields(jose.JSONObjectWithFields):
+    """Generic version of jose.JSONObjectWithFields"""
+
+    @classmethod
+    def from_json(cls: Type[T], jobj: Mapping[str, Any]) -> T:
+        return cast(T, super().from_json(jobj))
+
+    def update(self: T, **kwargs: Any) -> T:
+        return cast(T, super().update(**kwargs))
+
 
 def is_acme_error(err: BaseException) -> bool:
     """Check if argument is an ACME error."""
@@ -72,7 +87,7 @@ def is_acme_error(err: BaseException) -> bool:
     return False
 
 
-class Error(jose.JSONObjectWithFields, errors.Error):
+class Error(_JSONObjectWithFields, errors.Error):
     """ACME error.
 
     https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
@@ -188,7 +203,7 @@ IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 IDENTIFIER_IP = IdentifierType('ip') # IdentifierIP in pebble - not in Boulder yet
 
 
-class Identifier(jose.JSONObjectWithFields):
+class Identifier(_JSONObjectWithFields):
     """ACME identifier.
 
     :ivar IdentifierType typ:
@@ -273,7 +288,7 @@ class Directory(jose.JSONDeSerializable):
         return cls(jobj)
 
 
-class Resource(jose.JSONObjectWithFields):
+class Resource(_JSONObjectWithFields):
     """ACME Resource.
 
     :ivar acme.messages.ResourceBody body: Resource body.
@@ -291,7 +306,7 @@ class ResourceWithURI(Resource):
     uri: str = jose.field('uri')  # no ChallengeResource.uri
 
 
-class ResourceBody(jose.JSONObjectWithFields):
+class ResourceBody(_JSONObjectWithFields):
     """ACME Resource Body."""
 
 
@@ -558,7 +573,7 @@ class Authorization(ResourceBody):
     # that challenge is redefined. Let's ignore the type check here.
     @challenges.decoder  # type: ignore
     def challenges(value: List[Dict[str, Any]]) -> Tuple[ChallengeBody, ...]:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
-        return tuple(cast(ChallengeBody, ChallengeBody.from_json(chall)) for chall in value)
+        return tuple(ChallengeBody.from_json(chall) for chall in value)
 
     @property
     def resolved_combinations(self) -> Tuple[Tuple[ChallengeBody, ...], ...]:
@@ -658,7 +673,7 @@ class Order(ResourceBody):
     # that identifiers is redefined. Let's ignore the type check here.
     @identifiers.decoder  # type: ignore
     def identifiers(value: List[Dict[str, Any]]) -> Tuple[Identifier, ...]:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
-        return tuple(cast(Identifier, Identifier.from_json(identifier)) for identifier in value)
+        return tuple(Identifier.from_json(identifier) for identifier in value)
 
 
 class OrderResource(ResourceWithURI):

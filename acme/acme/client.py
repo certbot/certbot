@@ -326,8 +326,7 @@ class Client(ClientBase):
 
         """
         return self.update_registration(
-            cast(messages.RegistrationResource, regr.update(
-                body=regr.body.update(agreement=regr.terms_of_service))))
+            regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
 
     def request_challenges(self, identifier: messages.Identifier,
                            new_authzr_uri: Optional[str] = None) -> messages.AuthorizationResource:
@@ -544,7 +543,7 @@ class Client(ClientBase):
             raise errors.ClientError('Location header missing')
         if response.headers['Location'] != certr.uri:
             raise errors.UnexpectedUpdate(response.text)
-        return cast(messages.CertificateResource, certr.update(body=cert))
+        return certr.update(body=cert)
 
     def refresh(self, certr: messages.CertificateResource) -> messages.CertificateResource:
         """Refresh certificate.
@@ -677,7 +676,7 @@ class ClientV2(ClientBase):
         only_existing_reg = regr.body.update(only_return_existing=True)
         response = self._post(self.directory['newAccount'], only_existing_reg)
         updated_uri = response.headers['Location']
-        new_regr = cast(messages.RegistrationResource, regr.update(uri=updated_uri))
+        new_regr = regr.update(uri=updated_uri)
         self.net.account = new_regr
         return new_regr
 
@@ -703,12 +702,12 @@ class ClientV2(ClientBase):
                 value=ips))
         order = messages.NewOrder(identifiers=identifiers)
         response = self._post(self.directory['newOrder'], order)
-        body = cast(messages.Order, messages.Order.from_json(response.json()))
+        body = messages.Order.from_json(response.json())
         authorizations = []
         # pylint has trouble understanding our josepy based objects which use
         # things like custom metaclass logic. body.authorizations should be a
         # list of strings containing URLs so let's disable this check here.
-        for url in body.authorizations:  # pylint: disable=not-an-iterable
+        for url in body.authorizations:  # pylint: disable=not-an-iterable,no-member
             authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
@@ -775,7 +774,7 @@ class ClientV2(ClientBase):
                         failed.append(authzr)
         if failed:
             raise errors.ValidationError(failed)
-        return cast(messages.OrderResource, orderr.update(authorizations=responses))
+        return orderr.update(authorizations=responses)
 
     def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
                        fetch_alternative_chains: bool = False) -> messages.OrderResource:
@@ -797,11 +796,11 @@ class ClientV2(ClientBase):
         while datetime.datetime.now() < deadline:
             time.sleep(1)
             response = self._post_as_get(orderr.uri)
-            body = cast(messages.Order, messages.Order.from_json(response.json()))
-            if body.error is not None:
-                raise errors.IssuanceError(body.error)
-            if body.certificate is not None:
-                certificate_response = self._post_as_get(body.certificate)
+            body = messages.Order.from_json(response.json())
+            if body.error is not None:  # pylint: disable=no-member
+                raise errors.IssuanceError(body.error)  # pylint: disable=no-member
+            if body.certificate is not None:  # pylint: disable=no-member
+                certificate_response = self._post_as_get(body.certificate)  # pylint: disable=no-member
                 orderr = orderr.update(body=body, fullchain_pem=certificate_response.text)
                 if fetch_alternative_chains:
                     alt_chains_urls = self._get_links(certificate_response, 'alternate')
@@ -909,7 +908,7 @@ class BackwardsCompatibleClientV2:
             client_v2 = cast(ClientV2, self.client)
             if "terms_of_service" in client_v2.directory.meta:
                 _assess_tos(client_v2.directory.meta.terms_of_service)
-                regr = cast(messages.NewRegistration, regr.update(terms_of_service_agreed=True))
+                regr = regr.update(terms_of_service_agreed=True)
             return client_v2.new_account(regr)
 
     def new_order(self, csr_pem: bytes) -> messages.OrderResource:
@@ -977,7 +976,7 @@ class BackwardsCompatibleClientV2:
                 cast(OpenSSL.crypto.X509, cast(jose.ComparableX509, certr.body).wrapped)).decode()
             chain_str = crypto_util.dump_pyopenssl_chain(chain).decode()
 
-            return cast(messages.OrderResource, orderr.update(fullchain_pem=(cert + chain_str)))
+            return orderr.update(fullchain_pem=(cert + chain_str))
         return cast(ClientV2, self.client).finalize_order(
             orderr, deadline, fetch_alternative_chains)
 
@@ -1129,7 +1128,7 @@ class ClientNetwork:
                         'Ignoring wrong Content-Type (%r) for JSON Error',
                         response_ct)
                 try:
-                    raise cast(messages.Error, messages.Error.from_json(jobj))
+                    raise messages.Error.from_json(jobj)  # pylint: disable=raising-non-exception
                 except jose.DeserializationError as error:
                     # Couldn't deserialize JSON object
                     raise errors.ClientError((response, error))
