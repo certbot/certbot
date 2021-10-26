@@ -57,7 +57,7 @@ def get_configurator():
         os_like = util.get_systemd_os_like()
         if os_like:
             for os_name in os_like:
-                if os_name in OVERRIDE_CLASSES.keys():
+                if os_name in OVERRIDE_CLASSES:  # pylint: disable=consider-using-get
                     override_class = OVERRIDE_CLASSES[os_name]
         if not override_class:
             # No override class found, return the generic configurator

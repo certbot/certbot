@@ -228,7 +228,7 @@ def perform_registration(acme, config, tos_cb):
                                                     external_account_binding=eab)
         return acme.new_account_and_tos(newreg, tos_cb)
     except messages.Error as e:
-        if e.code == "invalidEmail" or e.code == "invalidContact":
+        if e.code in ("invalidEmail", "invalidContact"):
             if config.noninteractive_mode:
                 msg = ("The ACME server believes %s is an invalid email address. "
                        "Please ensure it is a valid email and attempt "

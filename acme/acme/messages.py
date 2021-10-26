@@ -304,7 +304,7 @@ class ExternalAccountBinding:
         """Create External Account Binding Resource from contact details, kid and hmac."""
 
         key_json = json.dumps(account_public_key.to_partial_json()).encode()
-        # Fix type with TO_DEFINE
+        # TODO: Remove type ignore when jose.b64.b64decode type hint is fixed (accepts str/bytes).
         decoded_hmac_key = jose.b64.b64decode(hmac_key)  # type: ignore
         url = directory["newAccount"]
 
@@ -335,7 +335,8 @@ class Registration(ResourceBody):
     status: Status = jose.field('status', omitempty=True)
     terms_of_service_agreed: bool = jose.field('termsOfServiceAgreed', omitempty=True)
     only_return_existing: bool = jose.field('onlyReturnExisting', omitempty=True)
-    external_account_binding: ExternalAccountBinding = jose.field('externalAccountBinding', omitempty=True)
+    external_account_binding: ExternalAccountBinding = jose.field('externalAccountBinding',
+                                                                  omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
@@ -527,7 +528,7 @@ class ChallengeResource(Resource):
     @property
     def uri(self) -> str:
         """The URL of the challenge body."""
-        return self.body.uri
+        return self.body.uri  # pylint: disable=no-member
 
 
 class Authorization(ResourceBody):
@@ -556,7 +557,7 @@ class Authorization(ResourceBody):
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that challenge is redefined. Let's ignore the type check here.
     @challenges.decoder  # type: ignore
-    def challenges(value: List[Mapping[str, Any]]) -> Tuple[ChallengeBody, ...]:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
+    def challenges(value: List[Dict[str, Any]]) -> Tuple[ChallengeBody, ...]:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(cast(ChallengeBody, ChallengeBody.from_json(chall)) for chall in value)
 
     @property
@@ -656,7 +657,7 @@ class Order(ResourceBody):
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that identifiers is redefined. Let's ignore the type check here.
     @identifiers.decoder  # type: ignore
-    def identifiers(value: List[Mapping[str, Any]]) -> Tuple[Identifier, ...]:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
+    def identifiers(value: List[Dict[str, Any]]) -> Tuple[Identifier, ...]:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(cast(Identifier, Identifier.from_json(identifier)) for identifier in value)
 
 

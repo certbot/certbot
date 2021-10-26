@@ -158,7 +158,7 @@ class ClientBase:
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri))
-        if identifier is not None and authzr.body.identifier != identifier:
+        if identifier is not None and authzr.body.identifier != identifier:  # pylint: disable=no-member
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
@@ -495,7 +495,7 @@ class Client(ClientBase):
             updated[authzr] = updated_authzr
 
             attempts[authzr] += 1
-            if updated_authzr.body.status not in (
+            if updated_authzr.body.status not in (  # pylint: disable=no-member
                     messages.STATUS_VALID, messages.STATUS_INVALID):
                 if attempts[authzr] < max_attempts:
                     # push back to the priority queue, with updated retry_after
@@ -759,7 +759,7 @@ class ClientV2(ClientBase):
         for url in orderr.body.authorizations:
             while datetime.datetime.now() < deadline:
                 authzr = self._authzr_from_response(self._post_as_get(url), uri=url)
-                if authzr.body.status != messages.STATUS_PENDING:
+                if authzr.body.status != messages.STATUS_PENDING:  # pylint: disable=no-member
                     responses.append(authzr)
                     break
                 time.sleep(1)

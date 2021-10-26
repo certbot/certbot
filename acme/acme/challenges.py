@@ -127,7 +127,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         :rtype: bool
 
         """
-        parts = self.key_authorization.split('.')
+        parts = self.key_authorization.split('.')  # pylint: disable=no-member
         if len(parts) != 2:
             logger.debug("Key authorization (%r) is not well formed",
                          self.key_authorization)
