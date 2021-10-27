@@ -8,6 +8,7 @@ import socket
 from typing import cast
 from typing import Any
 from typing import Dict
+from typing import Generic
 from typing import Mapping
 from typing import Optional
 from typing import Tuple
@@ -167,7 +168,6 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return jobj
 
 
-from typing import Generic
 P = TypeVar('P', bound=KeyAuthorizationChallengeResponse)
 
 
@@ -219,7 +219,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, Generic[P], metaclass=abc.ABCMe
         :returns: Challenge-specific validation.
 
         """
-        raise NotImplementedError()  # pragma: no cover
+        ...
 
     def response_and_validation(self, account_key: jose.JWK, *args: Any, **kwargs: Any
                                 ) -> Tuple[P, Any]:
@@ -276,7 +276,7 @@ class DNS01(KeyAuthorizationChallenge):
         """Generate validation.
 
         :param JWK account_key:
-        :rtype: unicode
+        :rtype: string
 
         """
         return jose.b64encode(hashlib.sha256(self.key_authorization(
@@ -285,7 +285,8 @@ class DNS01(KeyAuthorizationChallenge):
     def validation_domain_name(self, name: str) -> str:
         """Domain name for TXT validation record.
 
-        :param unicode name: Domain name being validated.
+        :param str name: Domain name being validated.
+        :rtype: string
 
         """
         return "{0}.{1}".format(self.LABEL, name)
@@ -397,7 +398,7 @@ class HTTP01(KeyAuthorizationChallenge):
         """Generate validation.
 
         :param JWK account_key:
-        :rtype: unicode
+        :rtype: string
 
         """
         return self.key_authorization(account_key)
@@ -649,4 +650,4 @@ class DNSResponse(ChallengeResponse):
         :rtype: bool
 
         """
-        return chall.check_validation(cast(jose.JWS, self.validation), account_public_key)
+        return chall.check_validation(self.validation, account_public_key)

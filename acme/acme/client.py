@@ -600,7 +600,7 @@ class Client(ClientBase):
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        self._revoke(cert, rsn, self.directory[cast(str, messages.Revocation)])
+        self._revoke(cert, rsn, self.directory[messages.Revocation])
 
 
 class ClientV2(ClientBase):

@@ -216,10 +216,13 @@ class Identifier(_JSONObjectWithFields):
     value: str = jose.field('value')
 
 
+R = TypeVar('R', bound=ResourceMixin)
+
+
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES: Dict[str, Type[jose.JSONObjectWithFields]] = {}
+    _REGISTERED_TYPES: Dict[str, Type[ResourceMixin]] = {}
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
@@ -248,17 +251,15 @@ class Directory(jose.JSONDeSerializable):
             return '_' + name if name == 'terms_of_service' else name
 
     @classmethod
-    def _canon_key(cls, key: Union[jose.JSONObjectWithFields, str]) -> str:
-        return key if isinstance(key, str) else getattr(key, 'resource_type')
+    def _canon_key(cls, key: Union[str, ResourceMixin]) -> str:
+        if isinstance(key, str):
+            return key
+        return key.resource_type
 
     @classmethod
-    def register(cls, resource_body_cls: Type[jose.JSONObjectWithFields]
-                 ) -> Type[jose.JSONObjectWithFields]:
+    def register(cls, resource_body_cls: Type[R]) -> Type[R]:
         """Register resource."""
-        resource_type = getattr(resource_body_cls, 'resource_type')
-        if not resource_type:
-            raise errors.Error(f'Error, current resource {resource_body_cls} '
-                               f'do not declare a resource_type field.')
+        resource_type = resource_body_cls.resource_type
         assert resource_type not in cls._REGISTERED_TYPES
         cls._REGISTERED_TYPES[resource_type] = resource_body_cls
         return resource_body_cls
@@ -275,7 +276,9 @@ class Directory(jose.JSONDeSerializable):
         except KeyError as error:
             raise AttributeError(str(error))
 
-    def __getitem__(self, name: Union[str, jose.JSONObjectWithFields]) -> Any:
+    def __getitem__(self, name: Any) -> Any:
+        if not isinstance((str, ResourceMixin), name):
+            raise errors.Error("Index key must be a str or implement acme.mixins.ResourceMixin.")
         try:
             return self._jobj[self._canon_key(name)]
         except KeyError:
@@ -701,6 +704,6 @@ class OrderResource(ResourceWithURI):
 
 
 @Directory.register
-class NewOrder(Order):
+class NewOrder(ResourceMixin, Order):
     """New order."""
     resource_type = 'new-order'
