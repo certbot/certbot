@@ -33,8 +33,8 @@ T = TypeVar('T', bound='_JSONObjectWithFields')
 R = TypeVar('R', bound='Challenge')
 
 
-# TODO: Remove this class once JSONObjectWithFields.from_json in josepy becomes generic.
-class _JSONObjectWithFields(jose.JSONObjectWithFields):
+# TODO: Remove this class once TypedJSONObjectWithFields.from_json in josepy becomes generic.
+class _TypedJSONObjectWithFields(jose.TypedJSONObjectWithFields):
     """Generic version of jose.JSONObjectWithFields"""
 
     @classmethod
@@ -42,7 +42,7 @@ class _JSONObjectWithFields(jose.JSONObjectWithFields):
         return cast(T, super().from_json(jobj))
 
 
-class Challenge(_JSONObjectWithFields):
+class Challenge(_TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge."""
     TYPES: Dict[str, Type['Challenge']] = {}
@@ -56,7 +56,7 @@ class Challenge(_JSONObjectWithFields):
             return UnrecognizedChallenge.from_json(jobj)
 
 
-class ChallengeResponse(ResourceMixin, TypeMixin, _JSONObjectWithFields):
+class ChallengeResponse(ResourceMixin, TypeMixin, _TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
     TYPES: Dict[str, Type['ChallengeResponse']] = {}
@@ -546,12 +546,9 @@ class TLSALPN01(KeyAuthorizationChallenge):
         :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
 
         """
-        domain = kwargs.get('domain')
-        if not isinstance(domain, str):
-            raise errors.Error("Parameter domain should be a string.")
         return cast(TLSALPN01Response, self.response(account_key)).gen_cert(
             key=kwargs.get('cert_key'),
-            domain=domain)
+            domain=cast(str, kwargs.get('domain')))
 
     @staticmethod
     def is_supported() -> bool:
