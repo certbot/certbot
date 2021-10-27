@@ -29,6 +29,7 @@ install_requires = [
     'pywin32>=300 ; sys_platform == "win32"',
     'pyyaml',
     'requests',
+    'setuptools',
     'types-python-dateutil'
 ]
 

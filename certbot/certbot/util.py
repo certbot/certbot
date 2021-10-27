@@ -61,7 +61,7 @@ _INITIAL_PID = os.getpid()
 # program exits before the lock is cleaned up, it is automatically
 # released, but the file isn't deleted.
 _LOCKS: Dict[str, lock.LockFile] = {}
-
+_VERSION_COMPONENT_RE = re.compile(r'(\d+ | [a-z]+ | \.)', re.VERBOSE)
 
 def env_no_snap_for_external_calls():
     """
@@ -637,6 +637,31 @@ def atexit_register(func, *args, **kwargs):
 
     """
     atexit.register(_atexit_call, func, *args, **kwargs)
+
+
+def parse_loose_version(version_string):
+    """Parses a version string into a tuple.
+
+    This code and the returned tuple is based on the now deprecated
+    distutils.version.LooseVersion class from the Python standard library.
+    Two LooseVersion classes and two tuples as returned by this function should
+    compare in the same way. See
+    https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L205-L347.
+
+    :param str version_string: version string
+
+    :returns: tuple of parsed version string components
+    :rtype: tuple
+
+    """
+    components = [x for x in _VERSION_COMPONENT_RE.split(vstring)
+                          if x and x != '.']
+    for i, obj in enumerate(components):
+        try:
+            components[i] = int(obj)
+        except ValueError:
+            pass
+    return components
 
 
 def _atexit_call(func, *args, **kwargs):
