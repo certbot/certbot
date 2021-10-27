@@ -29,7 +29,7 @@ from acme.mixins import TypeMixin
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T', bound='_JSONObjectWithFields')
+T = TypeVar('T', bound='_TypedJSONObjectWithFields')
 R = TypeVar('R', bound='Challenge')
 
 
@@ -167,7 +167,11 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return jobj
 
 
-class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
+from typing import Generic
+P = TypeVar('P', bound=KeyAuthorizationChallengeResponse)
+
+
+class KeyAuthorizationChallenge(_TokenChallenge, Generic[P], metaclass=abc.ABCMeta):
     """Challenge based on Key Authorization.
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
@@ -175,7 +179,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
     :param str typ: type of the challenge
     """
     typ: str = NotImplemented
-    response_cls: Type[KeyAuthorizationChallengeResponse] = NotImplemented
+    response_cls: Type[P] = NotImplemented
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
 
@@ -190,7 +194,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
             account_key.thumbprint(
                 hash_function=self.thumbprint_hash_function)).decode()
 
-    def response(self, account_key: jose.JWK) -> KeyAuthorizationChallengeResponse:
+    def response(self, account_key: jose.JWK) -> P:
         """Generate response to the challenge.
 
         :param JWK account_key:
@@ -218,7 +222,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
         raise NotImplementedError()  # pragma: no cover
 
     def response_and_validation(self, account_key: jose.JWK, *args: Any, **kwargs: Any
-                                ) -> Tuple[KeyAuthorizationChallengeResponse, Any]:
+                                ) -> Tuple[P, Any]:
         """Generate response and validation.
 
         Convenience function that return results of `response` and
@@ -546,7 +550,7 @@ class TLSALPN01(KeyAuthorizationChallenge):
         :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
 
         """
-        return cast(TLSALPN01Response, self.response(account_key)).gen_cert(
+        return self.response(account_key).gen_cert(
             key=kwargs.get('cert_key'),
             domain=cast(str, kwargs.get('domain')))
 

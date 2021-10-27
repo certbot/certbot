@@ -75,7 +75,8 @@ class _JSONObjectWithFields(jose.JSONObjectWithFields):
 
     @classmethod
     def from_json(cls: Type[T], jobj: Mapping[str, Any]) -> T:
-        return cast(T, super().from_json(jobj))
+        # TODO: Remove jobj cast once JSONObjectWithFields.from_json has the appropriate type hints.
+        return cast(T, super().from_json(cast(Dict[str, Any], jobj)))
 
     def update(self: T, **kwargs: Any) -> T:
         return cast(T, super().update(**kwargs))
