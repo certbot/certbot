@@ -251,7 +251,7 @@ class Directory(jose.JSONDeSerializable):
             return '_' + name if name == 'terms_of_service' else name
 
     @classmethod
-    def _canon_key(cls, key: Union[str, ResourceMixin]) -> str:
+    def _canon_key(cls, key: Union[str, ResourceMixin, Type[ResourceMixin]]) -> str:
         if isinstance(key, str):
             return key
         return key.resource_type
@@ -276,9 +276,7 @@ class Directory(jose.JSONDeSerializable):
         except KeyError as error:
             raise AttributeError(str(error))
 
-    def __getitem__(self, name: Any) -> Any:
-        if not isinstance((str, ResourceMixin), name):
-            raise errors.Error("Index key must be a str or implement acme.mixins.ResourceMixin.")
+    def __getitem__(self, name: Union[str, ResourceMixin, Type[ResourceMixin]]) -> Any:
         try:
             return self._jobj[self._canon_key(name)]
         except KeyError:
