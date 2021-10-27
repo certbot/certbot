@@ -169,9 +169,16 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
 
 
 P = TypeVar('P', bound=KeyAuthorizationChallengeResponse)
+try:
+    from typing import GenericMeta  # type: ignore
+
+    class GenericABCMeta(GenericMeta, abc.ABCMeta):
+        pass
+except ImportError:
+    GenericABCMeta = abc.ABCMeta  # type: ignore
 
 
-class KeyAuthorizationChallenge(_TokenChallenge, Generic[P], metaclass=abc.ABCMeta):
+class KeyAuthorizationChallenge(_TokenChallenge, Generic[P], metaclass=GenericABCMeta):
     """Challenge based on Key Authorization.
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
@@ -219,7 +226,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, Generic[P], metaclass=abc.ABCMe
         :returns: Challenge-specific validation.
 
         """
-        ...
+        raise NotImplementedError()  # pragma: no cover
 
     def response_and_validation(self, account_key: jose.JWK, *args: Any, **kwargs: Any
                                 ) -> Tuple[P, Any]:

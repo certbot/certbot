@@ -427,7 +427,7 @@ def dump_pyopenssl_chain(chain: Union[List[jose.ComparableX509], List[crypto.X50
     def _dump_cert(cert: Union[jose.ComparableX509, crypto.X509]) -> bytes:
         if isinstance(cert, jose.ComparableX509):
             if isinstance(cert.wrapped, crypto.X509Req):
-                raise errors.Error("Unexpected certificate signing request provided.")
+                raise errors.Error("Unexpected certificate signing request provided.")  # pragma: no cover
             cert = cert.wrapped
         return crypto.dump_certificate(filetype, cert)
 
