@@ -8,7 +8,6 @@ import socket
 from typing import cast
 from typing import Any
 from typing import Dict
-from typing import Generic
 from typing import Mapping
 from typing import Optional
 from typing import Tuple
@@ -168,17 +167,10 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return jobj
 
 
-P = TypeVar('P', bound=KeyAuthorizationChallengeResponse)
-try:
-    from typing import GenericMeta  # type: ignore
-
-    class GenericABCMeta(GenericMeta, abc.ABCMeta):
-        pass
-except ImportError:
-    GenericABCMeta = abc.ABCMeta  # type: ignore
-
-
-class KeyAuthorizationChallenge(_TokenChallenge, Generic[P], metaclass=GenericABCMeta):
+# TODO: Make this method a generic of K (bound=KeyAuthorizationChallenge), response_cls of type
+#  Type[K] and use it in response/response_and_validation return types once Python 3.6 support is
+#  dropped (do not support generic ABC classes, see https://github.com/python/typing/issues/449).
+class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
     """Challenge based on Key Authorization.
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
@@ -186,7 +178,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, Generic[P], metaclass=GenericAB
     :param str typ: type of the challenge
     """
     typ: str = NotImplemented
-    response_cls: Type[P] = NotImplemented
+    response_cls: Type[KeyAuthorizationChallengeResponse] = NotImplemented
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
 
@@ -201,7 +193,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, Generic[P], metaclass=GenericAB
             account_key.thumbprint(
                 hash_function=self.thumbprint_hash_function)).decode()
 
-    def response(self, account_key: jose.JWK) -> P:
+    def response(self, account_key: jose.JWK) -> KeyAuthorizationChallengeResponse:
         """Generate response to the challenge.
 
         :param JWK account_key:
@@ -229,7 +221,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, Generic[P], metaclass=GenericAB
         raise NotImplementedError()  # pragma: no cover
 
     def response_and_validation(self, account_key: jose.JWK, *args: Any, **kwargs: Any
-                                ) -> Tuple[P, Any]:
+                                ) -> Tuple[KeyAuthorizationChallengeResponse, Any]:
         """Generate response and validation.
 
         Convenience function that return results of `response` and
@@ -558,7 +550,8 @@ class TLSALPN01(KeyAuthorizationChallenge):
         :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
 
         """
-        return self.response(account_key).gen_cert(
+        # TODO: Remove cast when response() is generic.
+        return cast(TLSALPN01Response, self.response(account_key)).gen_cert(
             key=kwargs.get('cert_key'),
             domain=cast(str, kwargs.get('domain')))
 
