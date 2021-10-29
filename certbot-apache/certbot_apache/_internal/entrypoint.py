@@ -45,7 +45,7 @@ def get_configurator():
     override_class = None
 
     # Special case for older Fedora versions
-    min_version = util.parse_loose_version('29'()
+    min_version = util.parse_loose_version('29')
     if os_name == 'fedora' and util.parse_loose_version(os_version) < min_version:
         os_name = 'fedora_old'
 
