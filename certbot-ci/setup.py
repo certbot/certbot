@@ -1,5 +1,4 @@
-from distutils.version import LooseVersion
-
+from pkg_resources import parse_version
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
@@ -10,7 +9,7 @@ version = '0.32.0.dev0'
 min_setuptools_version='36.2'
 # This conditional isn't necessary, but it provides better error messages to
 # people who try to install this package with older versions of setuptools.
-if LooseVersion(setuptools_version) < LooseVersion(min_setuptools_version):
+if parse_version(setuptools_version) < parse_version(min_setuptools_version):
     raise RuntimeError(f'setuptools {min_setuptools_version}+ is required')
 
 install_requires = [
