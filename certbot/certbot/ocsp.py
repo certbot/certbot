@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 class RevocationChecker:
     """This class figures out OCSP checking on this system, and performs it."""
 
-    def __init__(self, enforce_openssl_binary_usage=False):
+    def __init__(self, enforce_openssl_binary_usage: bool = False) -> None:
         self.broken = False
         self.use_openssl_binary = enforce_openssl_binary_usage or not ocsp
 
@@ -215,7 +215,8 @@ def _check_ocsp_cryptography(cert_path: str, chain_path: str, url: str, timeout:
     return False
 
 
-def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
+def _check_ocsp_response(response_ocsp: ocsp.OCSPResponse, request_ocsp: ocsp.OCSPRequest,
+                         issuer_cert: x509.Certificate, cert_path: str) -> None:
     """Verify that the OCSP is valid for several criteria"""
     # Assert OCSP response corresponds to the certificate we are talking about
     if response_ocsp.serial_number != request_ocsp.serial_number:
@@ -249,7 +250,8 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
         raise AssertionError('param nextUpdate is in the past.')
 
 
-def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
+def _check_ocsp_response_signature(response_ocsp: ocsp.OCSPResponse, issuer_cert: x509.Certificate,
+                                   cert_path: str) -> None:
     """Verify an OCSP response signature against certificate issuer or responder"""
     def _key_hash(cert):
         return x509.SubjectKeyIdentifier.from_public_key(cert.public_key()).digest
@@ -303,7 +305,7 @@ def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
                                       response_ocsp.tbs_response_bytes, chosen_hash)
 
 
-def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
+def _translate_ocsp_query(cert_path: str, ocsp_output: str, ocsp_errors: str) -> bool:
     """Parse openssl's weird output to work out what it means."""
 
     states = ("good", "revoked", "unknown")

@@ -18,7 +18,7 @@ Note, that all annotated challenges act as a proxy objects::
 
 """
 import logging
-from typing import Type
+from typing import Any, Type
 
 import josepy as jose
 
@@ -40,7 +40,7 @@ class AnnotatedChallenge(jose.ImmutableMap):
     __slots__ = ('challb',)
     _acme_type: Type[Challenge] = NotImplemented
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         return getattr(self.challb, name)
 
 
@@ -48,7 +48,7 @@ class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
     """Client annotated `KeyAuthorizationChallenge` challenge."""
     __slots__ = ('challb', 'domain', 'account_key')
 
-    def response_and_validation(self, *args, **kwargs):
+    def response_and_validation(self, *args: Any, **kwargs: Any) -> Any:
         """Generate response and validation."""
         return self.challb.chall.response_and_validation(
             self.account_key, *args, **kwargs)

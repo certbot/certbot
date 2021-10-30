@@ -4,25 +4,31 @@ from abc import abstractmethod
 from argparse import ArgumentParser
 import sys
 from types import ModuleType
+from typing import Any
 from typing import cast
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 import warnings
 
 import zope.interface
 
+from acme.client import ClientBase
 from acme.challenges import Challenge
 from acme.challenges import ChallengeResponse
 from certbot.achallenges import AnnotatedChallenge
 from certbot import configuration
+
+if TYPE_CHECKING:
+    from certbot._internal.account import Account
 
 
 class AccountStorage(metaclass=ABCMeta):
     """Accounts storage interface."""
 
     @abstractmethod
-    def find_all(self):  # pragma: no cover
+    def find_all(self) -> List['Account']:  # pragma: no cover
         """Find all accounts.
 
         :returns: All found accounts.
@@ -32,17 +38,20 @@ class AccountStorage(metaclass=ABCMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    def load(self, account_id):  # pragma: no cover
+    def load(self, account_id: str) -> 'Account':  # pragma: no cover
         """Load an account by its id.
 
         :raises .AccountNotFound: if account could not be found
         :raises .AccountStorageError: if account could not be loaded
+        
+        :returns: The account loaded
+        :rtype: .Account
 
         """
         raise NotImplementedError()
 
     @abstractmethod
-    def save(self, account, client):  # pragma: no cover
+    def save(self, account: 'Account', client: ClientBase):  # pragma: no cover
         """Save account.
 
         :raises .AccountStorageError: if account could not be saved
@@ -95,9 +104,12 @@ class Plugin(metaclass=ABCMeta):
 
     description: str = NotImplemented
     """Short plugin description"""
+    
+    name: str = NotImplemented
+    """Unique name of the plugin"""
 
     @abstractmethod
-    def __init__(self, config: configuration.NamespaceConfig, name: str):
+    def __init__(self, config: configuration.NamespaceConfig, name: str) -> None:
         """Create a new `Plugin`.
 
         :param configuration.NamespaceConfig config: Configuration.
@@ -181,7 +193,7 @@ class Authenticator(Plugin):
         """
 
     @abstractmethod
-    def perform(self, achalls: List[AnnotatedChallenge]) -> Iterable[ChallengeResponse]:
+    def perform(self, achalls: List[AnnotatedChallenge]) -> List[ChallengeResponse]:
         """Perform the given challenge.
 
         :param list achalls: Non-empty (guaranteed) list of
@@ -192,7 +204,7 @@ class Authenticator(Plugin):
         :returns: `collections.Iterable` of ACME
             :class:`~acme.challenges.ChallengeResponse` instances corresponding to each provided
             :class:`~acme.challenges.Challenge`.
-        :rtype: :class:`collections.Iterable` of
+        :rtype: :class:`collections.List` of
             :class:`acme.challenges.ChallengeResponse`,
             where responses are required to be returned in
             the same order as corresponding input challenges
@@ -360,7 +372,7 @@ class RenewableCert(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def cert_path(self):
+    def cert_path(self) -> str:
         """Path to the certificate file.
 
         :rtype: str
@@ -369,7 +381,7 @@ class RenewableCert(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def key_path(self):
+    def key_path(self) -> str:
         """Path to the private key file.
 
         :rtype: str
@@ -378,7 +390,7 @@ class RenewableCert(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def chain_path(self):
+    def chain_path(self) -> str:
         """Path to the certificate chain file.
 
         :rtype: str
@@ -387,7 +399,7 @@ class RenewableCert(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def fullchain_path(self):
+    def fullchain_path(self) -> str:
         """Path to the full chain file.
 
         The full chain is the certificate file plus the chain file.
@@ -398,7 +410,7 @@ class RenewableCert(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def lineagename(self):
+    def lineagename(self) -> str:
         """Name given to the certificate lineage.
 
         :rtype: str
@@ -406,7 +418,7 @@ class RenewableCert(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def names(self):
+    def names(self) -> List[str]:
         """What are the subject names of this certificate?
 
         :returns: the subject names
@@ -442,7 +454,7 @@ class GenericUpdater(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def generic_updates(self, lineage, *args, **kwargs):
+    def generic_updates(self, lineage: RenewableCert, *args: Any, **kwargs: Any) -> None:
         """Perform any update types defined by the installer.
 
         If an installer is a subclass of the class containing this method, this
@@ -470,7 +482,7 @@ class RenewDeployer(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def renew_deploy(self, lineage, *args, **kwargs):
+    def renew_deploy(self, lineage: RenewableCert, *args: Any, **kwargs: Any) -> None:
         """Perform updates defined by installer when a certificate has been renewed
 
         If an installer is a subclass of the class containing this method, this
@@ -494,10 +506,10 @@ class _ZopeInterfacesDeprecationModule:
     Internal class delegating to a module, and displaying warnings when
     attributes related to Zope interfaces are accessed.
     """
-    def __init__(self, module):
+    def __init__(self, module: ModuleType) -> None:
         self.__dict__['_module'] = module
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> None:
         if attr in ('IConfig', 'IPlugin', 'IPluginFactory', 'IAuthenticator',
                     'IInstaller', 'IDisplay', 'IReporter'):
             warnings.warn('{0} attribute in certbot.interfaces module is deprecated '
@@ -505,13 +517,13 @@ class _ZopeInterfacesDeprecationModule:
                           DeprecationWarning, stacklevel=2)
         return getattr(self._module, attr)
 
-    def __setattr__(self, attr, value):  # pragma: no cover
+    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
         setattr(self._module, attr, value)
 
-    def __delattr__(self, attr):  # pragma: no cover
+    def __delattr__(self, attr: str) -> None:  # pragma: no cover
         delattr(self._module, attr)
 
-    def __dir__(self):  # pragma: no cover
+    def __dir__(self) -> List[str]:  # pragma: no cover
         return ['_module'] + dir(self._module)
 
 
