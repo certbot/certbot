@@ -196,7 +196,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     Consequently, mscvrt.locking is sufficient to obtain an effective lock, and the race
     condition encountered on Linux is not possible on Windows, leading to a simpler workflow.
     """
-    def acquire(self):
+    def acquire(self) -> None:
         """Acquire the lock"""
         open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
 
@@ -220,7 +220,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
 
         self._fd = fd
 
-    def release(self):
+    def release(self) -> None:
         """Release the lock."""
         try:
             if not self._fd:

@@ -29,10 +29,11 @@ import sys
 import tempfile
 import traceback
 from types import TracebackType
+from typing import Optional, Tuple
 from typing import IO
 
 from acme import messages
-from certbot import errors
+from certbot import configuration, errors
 from certbot import util
 from certbot._internal import constants
 from certbot.compat import os
@@ -45,7 +46,7 @@ FILE_FMT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 logger = logging.getLogger(__name__)
 
 
-def pre_arg_parse_setup():
+def pre_arg_parse_setup() -> None:
     """Setup logging before command line arguments are parsed.
 
     Terminal logging is setup using
@@ -85,7 +86,7 @@ def pre_arg_parse_setup():
         log_path=temp_handler.path)
 
 
-def post_arg_parse_setup(config):
+def post_arg_parse_setup(config: configuration.NamespaceConfig) -> None:
     """Setup logging after command line arguments are parsed.
 
     This function assumes `pre_arg_parse_setup` was called earlier and
@@ -137,7 +138,8 @@ def post_arg_parse_setup(config):
         debug=config.debug, quiet=config.quiet, log_path=file_path)
 
 
-def setup_log_file_handler(config, logfile, fmt):
+def setup_log_file_handler(config: configuration.NamespaceConfig, logfile: str,
+                           fmt: str) -> Tuple[logging.Handler, str]:
     """Setup file debug logging.
 
     :param certbot.configuration.NamespaceConfig config: Configuration object
@@ -179,13 +181,13 @@ class ColoredStreamHandler(logging.StreamHandler):
     :ivar bool red_level: The level at which to output
 
     """
-    def __init__(self, stream=None):
+    def __init__(self, stream: Optional[IO] = None):
         super().__init__(stream)
         self.colored = (sys.stderr.isatty() if stream is None else
                         stream.isatty())
         self.red_level = logging.WARNING
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         """Formats the string representation of record.
 
         :param logging.LogRecord record: Record to be formatted

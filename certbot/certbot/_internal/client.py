@@ -2,12 +2,15 @@
 import datetime
 import logging
 import platform
-from typing import Any
+from typing import IO, Any, Callable, Tuple
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
 import warnings
+from certbot import configuration
+from certbot import interfaces
+from certbot.interfaces import AccountStorage
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
@@ -36,7 +39,9 @@ from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
-def acme_from_config_key(config, key, regr=None):
+def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
+                         regr: Optional[messages.RegistrationResource] = None
+                         ) -> acme_client.BackwardsCompatibleClientV2:
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
@@ -54,7 +59,7 @@ def acme_from_config_key(config, key, regr=None):
         return client
 
 
-def determine_user_agent(config):
+def determine_user_agent(config: configuration.NamespaceConfig) -> str:
     """
     Set a user_agent string in the config based on the choice of plugins.
     (this wasn't knowable at construction time)
@@ -85,7 +90,7 @@ def determine_user_agent(config):
         ua = config.user_agent
     return ua
 
-def ua_flags(config):
+def ua_flags(config: configuration.NamespaceConfig) -> str:
     "Turn some very important CLI flags into clues in the user agent."
     if isinstance(config, DummyConfig):
         return "FLAGS"
@@ -106,23 +111,25 @@ def ua_flags(config):
 
 class DummyConfig:
     "Shim for computing a sample user agent."
-    def __init__(self):
+    def __init__(self) -> None:
         self.authenticator = "XXX"
         self.installer = "YYY"
         self.user_agent = None
         self.verb = "SUBCOMMAND"
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         "Any config properties we might have are None."
         return None
 
-def sample_user_agent():
+def sample_user_agent() -> str:
     "Document what this Certbot's user agent string will be like."
 
     return determine_user_agent(DummyConfig())
 
 
-def register(config, account_storage, tos_cb=None):
+def register(config: configuration.NamespaceConfig, account_storage: AccountStorage,
+             tos_cb: Optional[Callable[[messages.RegistrationResource], bool]] = None
+             ) -> Tuple[account.Account, acme_client.BackwardsCompatibleClientV2]:
     """Register new account with an ACME CA.
 
     This function takes care of generating fresh private key,
@@ -193,7 +200,10 @@ def register(config, account_storage, tos_cb=None):
     return acc, acme
 
 
-def perform_registration(acme, config, tos_cb):
+def perform_registration(acme: acme_client.BackwardsCompatibleClientV2,
+                         config: configuration.NamespaceConfig,
+                         tos_cb: Callable[[messages.RegistrationResource], bool]
+                         ) -> messages.RegistrationResource:
     """
     Actually register new account, trying repeatedly if there are email
     problems
@@ -255,7 +265,9 @@ class Client:
 
     """
 
-    def __init__(self, config, account_, auth, installer, acme=None):
+    def __init__(self, config: configuration.NamespaceConfig, account_: account.Account,
+                 auth: interfaces.Authenticator, installer: interfaces.Installer,
+                 acme: Optional[acme_client.BackwardsCompatibleClientV2] = None) -> None:
         """Initialize a client."""
         self.config = config
         self.account = account_
@@ -274,7 +286,9 @@ class Client:
         else:
             self.auth_handler = None
 
-    def obtain_certificate_from_csr(self, csr, orderr=None):
+    def obtain_certificate_from_csr(self, csr: util.CSR,
+                                    orderr: Optional[messages.OrderResource] = None
+                                    ) -> Tuple[bytes, bytes]:
         """Obtain certificate.
 
         :param .util.CSR csr: PEM-encoded Certificate Signing
@@ -312,7 +326,8 @@ class Client:
         cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 
-    def obtain_certificate(self, domains, old_keypath=None):
+    def obtain_certificate(self, domains: List[str], old_keypath: Optional[str] = None
+                           ) -> Tuple[util.Key, util.CSR]:
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
@@ -439,7 +454,8 @@ class Client:
         authzr = self.auth_handler.handle_authorizations(orderr, self.config, best_effort)
         return orderr.update(authorizations=authzr)
 
-    def obtain_and_enroll_certificate(self, domains, certname):
+    def obtain_and_enroll_certificate(self, domains: List[str], certname: str
+                                      ) -> Optional[Union[storage.RenewableCert, bool]]:
         """Obtain and enroll certificate.
 
         Get a new certificate for the specified domains using the specified
@@ -475,7 +491,7 @@ class Client:
             key.pem, chain,
             self.config)
 
-    def _choose_lineagename(self, domains, certname):
+    def _choose_lineagename(self, domains: List[str], certname: str) -> str:
         """Chooses a name for the new lineage.
 
         :param domains: domains in certificate request
@@ -494,8 +510,9 @@ class Client:
             return domains[0][2:]
         return domains[0]
 
-    def save_certificate(self, cert_pem, chain_pem,
-                         cert_path, chain_path, fullchain_path):
+    def save_certificate(self, cert_pem: str, chain_pem: str,
+                         cert_path: str, chain_path: str, fullchain_path: str
+                         ) -> Tuple[str, str, str]:
         """Saves the certificate received from the ACME server.
 
         :param str cert_pem:
@@ -532,7 +549,8 @@ class Client:
 
         return abs_cert_path, abs_chain_path, abs_fullchain_path
 
-    def deploy_certificate(self, domains, privkey_path, cert_path, chain_path, fullchain_path):
+    def deploy_certificate(self, domains: List[str], privkey_path: str, cert_path: str,
+                           chain_path: str, fullchain_path: str) -> None:
         """Install certificate
 
         :param list domains: list of domains to install the certificate
@@ -569,7 +587,8 @@ class Client:
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains, chain_path, redirect_default=True):
+    def enhance_config(self, domains: List[str], chain_path: str,
+                       redirect_default: bool = True) -> None:
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
@@ -650,7 +669,7 @@ class Client:
         if success_msg:
             display_util.notify(success_msg)
 
-    def _rollback_and_restart(self, success_msg):
+    def _rollback_and_restart(self, success_msg: str) -> None:
         """Rollback the most recent checkpoint and restart the webserver
 
         :param str success_msg: message to show on successful rollback
@@ -671,7 +690,7 @@ class Client:
         display_util.notify(success_msg)
 
 
-def validate_key_csr(privkey, csr=None):
+def validate_key_csr(privkey: util.Key, csr: Optional[util.CSR] = None) -> None:
     """Validate Key and CSR files.
 
     Verifies that the client key and csr arguments are valid and correspond to
@@ -717,7 +736,8 @@ def validate_key_csr(privkey, csr=None):
                 raise errors.Error("The key and CSR do not match")
 
 
-def rollback(default_installer, checkpoints, config, plugins):
+def rollback(default_installer: interfaces.Installer, checkpoints: int,
+             config: configuration.NamespaceConfig, plugins: List[interfaces.Plugin]) -> None:
     """Revert configuration the specified number of checkpoints.
 
     :param int checkpoints: Number of checkpoints to revert.
@@ -738,7 +758,7 @@ def rollback(default_installer, checkpoints, config, plugins):
         installer.rollback_checkpoints(checkpoints)
         installer.restart()
 
-def _open_pem_file(cli_arg_path, pem_path):
+def _open_pem_file(cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
     """Open a pem file.
 
     If cli_arg_path was set by the client, open that.
@@ -756,7 +776,7 @@ def _open_pem_file(cli_arg_path, pem_path):
     uniq = util.unique_file(pem_path, 0o644, "wb")
     return uniq[0], os.path.abspath(uniq[1])
 
-def _save_chain(chain_pem, chain_file):
+def _save_chain(chain_pem: str, chain_file: str) -> None:
     """Saves chain_pem at a unique path based on chain_path.
 
     :param str chain_pem: certificate chain in PEM format
