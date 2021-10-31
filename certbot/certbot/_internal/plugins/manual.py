@@ -1,5 +1,6 @@
 """Manual authenticator plugin"""
 import logging
+from typing import Any
 from typing import Dict
 
 from acme import challenges
@@ -88,7 +89,7 @@ asked to create multiple distinct TXT records with the same name. This is
 permitted by DNS standards.)
 """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()

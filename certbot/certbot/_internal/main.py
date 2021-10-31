@@ -444,7 +444,7 @@ def _ask_user_to_confirm_new_names(config: configuration.NamespaceConfig,
 
 
 def _find_domains_or_certname(config: configuration.NamespaceConfig,
-                              installer: interfaces.Installer,
+                              installer: Optional[interfaces.Installer],
                               question: Optional[str] = None) -> Tuple[List[str], str]:
     """Retrieve domains and certname from config or user input.
 
@@ -761,8 +761,9 @@ def _delete_if_appropriate(config: configuration.NamespaceConfig) -> None:
     cert_manager.delete(config)
 
 
-def _init_le_client(config: configuration.NamespaceConfig, authenticator: interfaces.Authenticator,
-                    installer: interfaces.Installer) -> client.Client:
+def _init_le_client(config: configuration.NamespaceConfig,
+                    authenticator: Optional[interfaces.Authenticator],
+                    installer: Optional[interfaces.Installer]) -> client.Client:
     """Initialize Let's Encrypt Client
 
     :param config: Configuration object
@@ -1451,7 +1452,6 @@ def certonly(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
     # SETUP: Select plugins and construct a client instance
     # installers are used in auth mode to determine domain names
     installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-
     le_client = _init_le_client(config, auth, installer)
 
     if config.csr:
@@ -1554,7 +1554,7 @@ def make_displayer(config: configuration.NamespaceConfig
             devnull.close()
 
 
-def main(cli_args: Iterable[str] = None) -> Optional[Union[str, int]]:
+def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
     """Run Certbot.
 
     :param cli_args: command line to Certbot, defaults to ``sys.argv[1:]``

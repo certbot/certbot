@@ -12,6 +12,7 @@ from typing import Iterable
 from typing import Set
 from typing import Union
 from typing import Tuple
+from typing import Optional
 
 import configargparse
 
@@ -339,7 +340,8 @@ class HelpfulArgumentParser:
             pass
         return True
 
-    def add(self, topics: Union[List[str], str], *args: Any, **kwargs: Any) -> None:
+    def add(self, topics: Optional[Union[List[Optional[str]], str]], *args: Any,
+            **kwargs: Any) -> None:
         """Add a new command line argument.
 
         :param topics: str or [str] help topic(s) this should be listed under,

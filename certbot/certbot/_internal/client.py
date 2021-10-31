@@ -266,7 +266,8 @@ class Client:
     """
 
     def __init__(self, config: configuration.NamespaceConfig, account_: account.Account,
-                 auth: interfaces.Authenticator, installer: interfaces.Installer,
+                 auth: Optional[interfaces.Authenticator],
+                 installer: Optional[interfaces.Installer],
                  acme: Optional[acme_client.ClientV2] = None) -> None:
         """Initialize a client."""
         self.config = config
