@@ -39,7 +39,7 @@ class AuthHandler:
         type strings with the most preferred challenge listed first
 
     """
-    def __init__(self, auth: interfaces.Authenticator, acme_client: client.BackwardsCompatibleClientV2,
+    def __init__(self, auth: interfaces.Authenticator, acme_client: client.ClientV2,
                  account: account.Account, pref_challs: List[challenges.Challenge]) -> None:
         self.auth = auth
         self.acme = acme_client
@@ -420,7 +420,7 @@ def _report_no_chall_path(challbs: List[messages.ChallengeBody]) -> errors.Autho
     """Logs and return a raisable error reporting that no satisfiable chall path exists.
 
     :param challbs: challenges from the authorization that can't be satisfied
-    
+
     :returns: An authorization error
     :rtype: certbot.errors.AuthorizationError
 

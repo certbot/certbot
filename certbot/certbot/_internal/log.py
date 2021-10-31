@@ -29,7 +29,7 @@ import sys
 import tempfile
 import traceback
 from types import TracebackType
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any, Type
 from typing import IO
 
 from acme import messages
@@ -181,7 +181,7 @@ class ColoredStreamHandler(logging.StreamHandler):
     :ivar bool red_level: The level at which to output
 
     """
-    def __init__(self, stream: Optional[IO] = None):
+    def __init__(self, stream: Optional[IO] = None) -> None:
         super().__init__(stream)
         self.colored = (sys.stderr.isatty() if stream is None else
                         stream.isatty())
@@ -209,11 +209,12 @@ class MemoryHandler(logging.handlers.MemoryHandler):
     only happens when flush(force=True) is called.
 
     """
-    def __init__(self, target=None, capacity=10000):
+    def __init__(self, target: Optional[logging.Handler] = None,
+                 capacity: int = 10000) -> None:
         # capacity doesn't matter because should_flush() is overridden
         super().__init__(capacity, target=target)
 
-    def close(self):
+    def close(self) -> None:
         """Close the memory handler, but don't set the target to None."""
         # This allows the logging module which may only have a weak
         # reference to the target handler to properly flush and close it.
@@ -221,7 +222,7 @@ class MemoryHandler(logging.handlers.MemoryHandler):
         super().close()
         self.target = target
 
-    def flush(self, force=False):  # pylint: disable=arguments-differ
+    def flush(self, force: bool = False) -> None:  # pylint: disable=arguments-differ
         """Flush the buffer if force=True.
 
         If force=False, this call is a noop.
@@ -234,7 +235,7 @@ class MemoryHandler(logging.handlers.MemoryHandler):
         if force:
             super().flush()
 
-    def shouldFlush(self, record):
+    def shouldFlush(self, record: logging.LogRecord) -> bool:
         """Should the buffer be automatically flushed?
 
         :param logging.LogRecord record: log record to be considered
@@ -256,7 +257,7 @@ class TempHandler(logging.StreamHandler):
     :ivar str path: file system path to the temporary log file
 
     """
-    def __init__(self):
+    def __init__(self) -> None:
         self._workdir = tempfile.mkdtemp()
         self.path = os.path.join(self._workdir, 'log')
         stream = util.safe_open(self.path, mode='w', chmod=0o600)
@@ -266,7 +267,7 @@ class TempHandler(logging.StreamHandler):
         self.stream: IO[str]
         self._delete = True
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         """Log the specified logging record.
 
         :param logging.LogRecord record: Record to be formatted
@@ -275,7 +276,7 @@ class TempHandler(logging.StreamHandler):
         self._delete = False
         super().emit(record)
 
-    def close(self):
+    def close(self) -> None:
         """Close the handler and the temporary log file.
 
         The temporary log file is deleted if it wasn't used.
@@ -294,7 +295,8 @@ class TempHandler(logging.StreamHandler):
             self.release()
 
 
-def pre_arg_parse_except_hook(memory_handler, *args, **kwargs):
+def pre_arg_parse_except_hook(memory_handler: MemoryHandler,
+                              *args: Any, **kwargs: Any) -> None:
     """A simple wrapper around post_arg_parse_except_hook.
 
     The additional functionality provided by this wrapper is the memory
@@ -321,8 +323,9 @@ def pre_arg_parse_except_hook(memory_handler, *args, **kwargs):
         memory_handler.flush(force=True)
 
 
-def post_arg_parse_except_hook(exc_type: type, exc_value: BaseException, trace: TracebackType,
-                               debug: bool, quiet: bool, log_path: str):
+def post_arg_parse_except_hook(exc_type: Type[BaseException], exc_value: BaseException,
+                               trace: TracebackType, debug: bool, quiet: bool,
+                               log_path: str) -> None:
     """Logs fatal exceptions and reports them to the user.
 
     If debug is True, the full exception and traceback is shown to the
@@ -371,7 +374,7 @@ def post_arg_parse_except_hook(exc_type: type, exc_value: BaseException, trace: 
     exit_func()
 
 
-def exit_with_advice(log_path: str):
+def exit_with_advice(log_path: str) -> None:
     """Print a link to the community forums, the debug log path, and exit
 
     The message is printed to stderr and the program will exit with a

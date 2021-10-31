@@ -1,14 +1,19 @@
 """Updaters run at renewal"""
 import logging
 
+from certbot import configuration
 from certbot import errors
 from certbot import interfaces
+from certbot._internal import storage
+from certbot._internal.plugins import disco as plugin_disco
 from certbot._internal.plugins import selection as plug_sel
 from certbot.plugins import enhancements
 
 logger = logging.getLogger(__name__)
 
-def run_generic_updaters(config, lineage, plugins):
+
+def run_generic_updaters(config: configuration.NamespaceConfig, lineage: storage.RenewableCert,
+                         plugins: plugin_disco.PluginsRegistry) -> None:
     """Run updaters that the plugin supports
 
     :param config: Configuration object

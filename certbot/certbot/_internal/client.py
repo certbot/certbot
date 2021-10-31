@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
                          regr: Optional[messages.RegistrationResource] = None
-                         ) -> acme_client.BackwardsCompatibleClientV2:
+                         ) -> acme_client.ClientV2:
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
@@ -129,7 +129,7 @@ def sample_user_agent() -> str:
 
 def register(config: configuration.NamespaceConfig, account_storage: AccountStorage,
              tos_cb: Optional[Callable[[messages.RegistrationResource], bool]] = None
-             ) -> Tuple[account.Account, acme_client.BackwardsCompatibleClientV2]:
+             ) -> Tuple[account.Account, acme_client.ClientV2]:
     """Register new account with an ACME CA.
 
     This function takes care of generating fresh private key,
@@ -200,7 +200,7 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
     return acc, acme
 
 
-def perform_registration(acme: acme_client.BackwardsCompatibleClientV2,
+def perform_registration(acme: acme_client.ClientV2,
                          config: configuration.NamespaceConfig,
                          tos_cb: Callable[[messages.RegistrationResource], bool]
                          ) -> messages.RegistrationResource:
@@ -267,7 +267,7 @@ class Client:
 
     def __init__(self, config: configuration.NamespaceConfig, account_: account.Account,
                  auth: interfaces.Authenticator, installer: interfaces.Installer,
-                 acme: Optional[acme_client.BackwardsCompatibleClientV2] = None) -> None:
+                 acme: Optional[acme_client.ClientV2] = None) -> None:
         """Initialize a client."""
         self.config = config
         self.account = account_
