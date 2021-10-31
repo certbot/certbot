@@ -7,6 +7,8 @@ import stat
 import sys
 from typing import List
 from typing import Any
+from typing import Optional
+from typing import Dict
 
 try:
     import ntsecuritycon

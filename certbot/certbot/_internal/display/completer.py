@@ -1,8 +1,10 @@
 """Provides Tab completion when prompting users for a path."""
 import glob
+from types import TracebackType
 from typing import Callable
 from typing import Iterator
 from typing import Optional
+from typing import Type
 
 # readline module is not available on all systems
 try:
@@ -28,12 +30,12 @@ class Completer:
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._iter: Iterator[str]
         self._original_completer: Optional[Callable]
         self._original_delims: str
 
-    def complete(self, text, state):
+    def complete(self, text: str, state: int) -> str:
         """Provides path completion for use with readline.
 
         :param str text: text to offer completions for
@@ -62,6 +64,8 @@ class Completer:
         else:
             readline.parse_and_bind('tab: complete')
 
-    def __exit__(self, unused_type, unused_value, unused_traceback):
+    def __exit__(self, unused_type: Optional[Type[BaseException]],
+                 unused_value: Optional[BaseException],
+                 unused_traceback: Optional[TracebackType]) -> bool:
         readline.set_completer_delims(self._original_delims)
         readline.set_completer(self._original_completer)

@@ -1,11 +1,17 @@
 """This is a module that adds configuration to the argument parser regarding
 paths for certificates"""
+from typing import TYPE_CHECKING
+
 from certbot._internal.cli.cli_utils import config_help
 from certbot._internal.cli.cli_utils import flag_default
+from certbot._internal.cli.helpful import HelpfulArgumentParser
 from certbot.compat import os
 
+if TYPE_CHECKING:
+    from certbot._internal.cli import helpful
 
-def _paths_parser(helpful):
+
+def _paths_parser(helpful: "helpful.HelpfulArgumentParser") -> None:
     add = helpful.add
     verb = helpful.verb
     if verb == "help":

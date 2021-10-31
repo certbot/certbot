@@ -7,6 +7,11 @@ import glob
 import sys
 from typing import Any
 from typing import Dict
+from typing import List
+from typing import Iterable
+from typing import Set
+from typing import Union
+from typing import Tuple
 
 import configargparse
 
@@ -26,6 +31,7 @@ from certbot._internal.cli.cli_utils import add_domains
 from certbot._internal.cli.cli_utils import CustomHelpFormatter
 from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
+from certbot._internal.plugins import disco
 from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
 from certbot._internal.display import obj as display_obj
@@ -40,7 +46,8 @@ class HelpfulArgumentParser:
     'certbot --help security' for security options.
 
     """
-    def __init__(self, args, plugins, detect_defaults=False):
+    def __init__(self, args: List[str], plugins: Iterable[str],
+                 detect_defaults: bool = False) -> None:
         from certbot._internal import main
         self.VERBS = {
             "auth": main.certonly,
@@ -111,7 +118,7 @@ class HelpfulArgumentParser:
     # Help that are synonyms for --help subcommands
     COMMANDS_TOPICS = ["command", "commands", "subcommand", "subcommands", "verbs"]
 
-    def _list_subcommands(self):
+    def _list_subcommands(self) -> str:
         longest = max(len(v) for v in VERB_HELP_MAP)
 
         text = "The full list of available SUBCOMMANDS is:\n\n"
@@ -122,7 +129,7 @@ class HelpfulArgumentParser:
         text += "\nYou can get more help on a specific subcommand with --help SUBCOMMAND\n"
         return text
 
-    def _usage_string(self, plugins, help_arg):
+    def _usage_string(self, plugins: Iterable[str], help_arg: Any) -> str:
         """Make usage strings late so that plugins can be initialised late
 
         :param plugins: all discovered plugins
@@ -156,7 +163,7 @@ class HelpfulArgumentParser:
 
         return usage
 
-    def remove_config_file_domains_for_renewal(self, parsed_args):
+    def remove_config_file_domains_for_renewal(self, parsed_args: argparse.Namespace) -> None:
         """Make "certbot renew" safe if domains are set in cli.ini."""
         # Works around https://github.com/certbot/certbot/issues/4096
         if self.verb == "renew":
@@ -164,7 +171,7 @@ class HelpfulArgumentParser:
                 if source.startswith("config_file") and "domains" in flags:
                     parsed_args.domains = _Default() if self.detect_defaults else []
 
-    def parse_args(self):
+    def parse_args(self) -> argparse.Namespace:
         """Parses command line arguments and returns the result.
 
         :returns: parsed command line arguments
@@ -224,7 +231,7 @@ class HelpfulArgumentParser:
 
         return parsed_args
 
-    def set_test_server(self, parsed_args):
+    def set_test_server(self, parsed_args: argparse.Namespace) -> None:
         """We have --staging/--dry-run; perform sanity check and set config.server"""
 
         # Flag combinations should produce these results:
@@ -253,7 +260,7 @@ class HelpfulArgumentParser:
                 parsed_args.tos = True
                 parsed_args.register_unsafely_without_email = True
 
-    def handle_csr(self, parsed_args):
+    def handle_csr(self, parsed_args: argparse.Namespace) -> None:
         """Process a --csr flag."""
         if parsed_args.verb != "certonly":
             raise errors.Error("Currently, a CSR file may only be specified "
@@ -287,7 +294,7 @@ class HelpfulArgumentParser:
                 .format(", ".join(csr_domains), ", ".join(config_domains)))
 
 
-    def determine_verb(self):
+    def determine_verb(self) -> None:
         """Determines the verb/subcommand provided by the user.
 
         This function works around some of the limitations of argparse.
@@ -311,7 +318,7 @@ class HelpfulArgumentParser:
 
         self.verb = "run"
 
-    def prescan_for_flag(self, flag, possible_arguments):
+    def prescan_for_flag(self, flag: str, possible_arguments: Set[str]) -> bool:
         """Checks cli input for flags.
 
         Check for a flag, which accepts a fixed set of possible arguments, in
@@ -332,7 +339,7 @@ class HelpfulArgumentParser:
             pass
         return True
 
-    def add(self, topics, *args, **kwargs):
+    def add(self, topics: Union[List[str], str], *args: Any, **kwargs: Any) -> None:
         """Add a new command line argument.
 
         :param topics: str or [str] help topic(s) this should be listed under,
@@ -377,7 +384,7 @@ class HelpfulArgumentParser:
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
 
-    def modify_kwargs_for_default_detection(self, **kwargs):
+    def modify_kwargs_for_default_detection(self, **kwargs: Any) -> Dict[str, Any]:
         """Modify an arg so we can check if it was set by the user.
 
         Changes the parameters given to argparse when adding an argument
@@ -399,7 +406,7 @@ class HelpfulArgumentParser:
 
         return kwargs
 
-    def add_deprecated_argument(self, argument_name, num_args):
+    def add_deprecated_argument(self, argument_name: str, num_args: int) -> None:
         """Adds a deprecated argument with the name argument_name.
 
         Deprecated arguments are not shown in the help. If they are used
@@ -427,7 +434,8 @@ class HelpfulArgumentParser:
         add_func = functools.partial(self.add, None)
         util.add_deprecated_argument(add_func, argument_name, num_args)
 
-    def add_group(self, topic, verbs=(), **kwargs):
+    def add_group(self, topic: str, verbs: Tuple[str] = (),
+                  **kwargs: Any) -> HelpfulArgumentGroup:
         """Create a new argument group.
 
         This method must be called once for every topic, however, calls
@@ -449,7 +457,7 @@ class HelpfulArgumentParser:
                     self.groups[topic].add_argument(v, help=VERB_HELP_MAP[v]["short"])
         return HelpfulArgumentGroup(self, topic)
 
-    def add_plugin_args(self, plugins):
+    def add_plugin_args(self, plugins: disco.PluginsRegistry) -> None:
         """
 
         Let each of the plugins add its own command line arguments, which
@@ -461,7 +469,7 @@ class HelpfulArgumentParser:
                                              description=plugin_ep.long_description)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
-    def determine_help_topics(self, chosen_topic):
+    def determine_help_topics(self, chosen_topic: str) -> Dict[str, bool]:
         """
 
         The user may have requested help on a topic, return a dict of which

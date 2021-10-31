@@ -4,6 +4,8 @@ import argparse
 import logging
 import logging.handlers
 import sys
+from typing import Any
+from typing import Iterable
 from typing import Optional
 
 import certbot
@@ -51,7 +53,8 @@ logger = logging.getLogger(__name__)
 helpful_parser: Optional[HelpfulArgumentParser] = None
 
 
-def prepare_and_parse_args(plugins, args, detect_defaults=False):
+def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: Iterable[str],
+                           detect_defaults: bool = False) -> argparse.Namespace:
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -443,7 +446,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     return helpful.parse_args()
 
 
-def set_by_cli(var):
+def set_by_cli(var: str) -> bool:
     """
     Return True if a particular config variable has been set by the user
     (CLI or config file) including if the user explicitly set it to the
@@ -487,7 +490,7 @@ def set_by_cli(var):
 set_by_cli.detector = None  # type: ignore
 
 
-def has_default_value(option, value):
+def has_default_value(option: str, value: Any) -> bool:
     """Does option have the default value?
 
     If the default value of option is not known, False is returned.
@@ -505,7 +508,7 @@ def has_default_value(option, value):
     return False
 
 
-def option_was_set(option, value):
+def option_was_set(option: str, value: Any) -> bool:
     """Was option set by the user or does it differ from the default?
 
     :param str option: configuration variable being considered
@@ -521,7 +524,7 @@ def option_was_set(option, value):
     return set_by_cli(option) or not has_default_value(option, value)
 
 
-def argparse_type(variable):
+def argparse_type(variable: Any) -> str:
     """Return our argparse type function for a config variable (default: str)"""
     # pylint: disable=protected-access
     if helpful_parser is not None:

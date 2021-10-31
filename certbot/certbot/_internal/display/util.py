@@ -1,12 +1,13 @@
 """Internal Certbot display utilities."""
 from typing import List
+from typing import Optional
 import textwrap
 import sys
 
 from certbot.compat import misc
 
 
-def wrap_lines(msg):
+def wrap_lines(msg: str) -> str:
     """Format lines nicely to 80 chars.
 
     :param str msg: Original message
@@ -28,7 +29,7 @@ def wrap_lines(msg):
     return '\n'.join(fixed_l)
 
 
-def parens_around_char(label):
+def parens_around_char(label: str) -> str:
     """Place parens around first character of label.
 
     :param str label: Must contain at least one character
@@ -37,7 +38,7 @@ def parens_around_char(label):
     return "({first}){rest}".format(first=label[0], rest=label[1:])
 
 
-def input_with_timeout(prompt=None, timeout=36000.0):
+def input_with_timeout(prompt: Optional[str] = None, timeout: float = 36000.0) -> str:
     """Get user input with a timeout.
 
     Behaves the same as the builtin input, however, an error is raised if
@@ -67,7 +68,7 @@ def input_with_timeout(prompt=None, timeout=36000.0):
     return line.rstrip('\n')
 
 
-def separate_list_input(input_):
+def separate_list_input(input_: str) -> List[str]:
     """Separate a comma or space separated list.
 
     :param str input_: input from the user

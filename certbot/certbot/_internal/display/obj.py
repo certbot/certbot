@@ -1,8 +1,11 @@
 """This modules define the actual display implementations used in Certbot"""
 import logging
 import sys
+from typing import Any, Iterable, Text, TextIO
 from typing import Optional
 from typing import Union
+from typing import List
+from typing import Tuple
 
 import zope.component
 import zope.interface
@@ -49,15 +52,14 @@ class FileDisplay:
     """File-based display."""
     # see https://github.com/certbot/certbot/issues/3915
 
-    def __init__(self, outfile, force_interactive):
+    def __init__(self, outfile: TextIO, force_interactive: bool) -> None:
         super().__init__()
         self.outfile = outfile
         self.force_interactive = force_interactive
         self.skipped_interaction = False
 
-    def notification(self, message, pause=True,
-                     wrap=True, force_interactive=False,
-                     decorate=True):
+    def notification(self, message: str, pause: bool = True, wrap: bool = True,
+                     force_interactive: bool = False, decorate: bool = True) -> None:
         """Displays a notification and waits for user acceptance.
 
         :param str message: Message to display
@@ -89,9 +91,11 @@ class FileDisplay:
             else:
                 logger.debug("Not pausing for user confirmation")
 
-    def menu(self, message, choices, ok_label=None, cancel_label=None,  # pylint: disable=unused-argument
-             help_label=None, default=None,  # pylint: disable=unused-argument
-             cli_flag=None, force_interactive=False, **unused_kwargs):
+    def menu(self, message: str, choices: Union[Iterable[Tuple[str, str]], Iterable[str]],
+             ok_label: Optional[str] = None, cancel_label: Optional[str] = None,
+             help_label: Optional[str] = None, default: Optional[int] = None,
+             cli_flag: Optional[str] = None, force_interactive: bool = False,
+             **unused_kwargs: Any) -> Tuple[str, int]:
         """Display a menu.
 
         .. todo:: This doesn't enable the help label/button (I wasn't sold on
@@ -122,8 +126,8 @@ class FileDisplay:
 
         return code, selection - 1
 
-    def input(self, message, default=None,
-              cli_flag=None, force_interactive=False, **unused_kwargs):
+    def input(self, message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
+              force_interactive: bool = False, **unused_kwargs: Any) -> Tuple[str, str]:
         """Accept input from the user.
 
         :param str message: message to display to the user
@@ -150,8 +154,9 @@ class FileDisplay:
             return CANCEL, "-1"
         return OK, ans
 
-    def yesno(self, message, yes_label="Yes", no_label="No", default=None,
-              cli_flag=None, force_interactive=False, **unused_kwargs):
+    def yesno(self, message: str, yes_label: str = "Yes", no_label: str = "No",
+              default: Optional[str] = None, cli_flag: Optional[str] = None,
+              force_interactive: bool = False, **unused_kwargs: Any) -> bool:
         """Query the user with a yes/no question.
 
         Yes and No label must begin with different letters, and must contain at
@@ -192,8 +197,9 @@ class FileDisplay:
                 ans.startswith(no_label[0].upper())):
                 return False
 
-    def checklist(self, message, tags, default=None,
-                  cli_flag=None, force_interactive=False, **unused_kwargs):
+    def checklist(self, message: str, tags: List[str], default: Optional[str] = None,
+                  cli_flag: Optional[str] = None, force_interactive: bool = False,
+                  **unused_kwargs: Any) -> Tuple[str, List[str]]:
         """Display a checklist.
 
         :param str message: Message to display to user
@@ -233,7 +239,8 @@ class FileDisplay:
             else:
                 return code, []
 
-    def _return_default(self, prompt, default, cli_flag, force_interactive):
+    def _return_default(self, prompt: str, default: str, cli_flag: str,
+                        force_interactive: bool) -> bool:
         """Should we return the default instead of prompting the user?
 
         :param str prompt: prompt for the user
@@ -261,7 +268,7 @@ class FileDisplay:
             default, prompt)
         return True
 
-    def _can_interact(self, force_interactive):
+    def _can_interact(self, force_interactive: bool) -> bool:
         """Can we safely interact with the user?
 
         :param bool force_interactive: if interactivity is forced
@@ -282,8 +289,9 @@ class FileDisplay:
             self.skipped_interaction = True
         return False
 
-    def directory_select(self, message, default=None, cli_flag=None,
-                         force_interactive=False, **unused_kwargs):
+    def directory_select(self, message: str, default: Optional[str] = None,
+                         cli_flag: Optional[str] = None, force_interactive: bool = False,
+                         **unused_kwargs: Any) -> Tuple[str, str]:
         """Display a directory selection screen.
 
         :param str message: prompt to give the user
@@ -300,7 +308,7 @@ class FileDisplay:
         with completer.Completer():
             return self.input(message, default, cli_flag, force_interactive)
 
-    def _scrub_checklist_input(self, indices, tags):
+    def _scrub_checklist_input(self, indices: Iterable[str], tags: List[str]) -> List[str]:
         """Validate input and transform indices to appropriate tags.
 
         :param list indices: input
@@ -326,7 +334,8 @@ class FileDisplay:
         # Transform indices to appropriate tags
         return [tags[index - 1] for index in indices]
 
-    def _print_menu(self, message, choices):
+    def _print_menu(self, message: str,
+                    choices: Union[Iterable[Tuple[str, str]], Iterable[str]]) -> None:
         """Print a menu on the screen.
 
         :param str message: title of menu
@@ -355,7 +364,7 @@ class FileDisplay:
         self.outfile.write(SIDE_FRAME + os.linesep)
         self.outfile.flush()
 
-    def _get_valid_int_ans(self, max_):
+    def _get_valid_int_ans(self, max_: int) -> Tuple[str, int]:
         """Get a numerical selection.
 
         :param int max: The maximum entry (len of choices), must be positive
@@ -398,11 +407,11 @@ class FileDisplay:
 class NoninteractiveDisplay:
     """A display utility implementation that never asks for interactive user input"""
 
-    def __init__(self, outfile, *unused_args, **unused_kwargs):
+    def __init__(self, outfile: TextIO, *unused_args: Any, **unused_kwargs: Any) -> None:
         super().__init__()
         self.outfile = outfile
 
-    def _interaction_fail(self, message, cli_flag, extra=""):
+    def _interaction_fail(self, message: str, cli_flag: str, extra: str = "") -> None:
         """Error out in case of an attempt to interact in noninteractive mode"""
         msg = "Missing command line flag or config entry for this setting:\n"
         msg += message
@@ -412,7 +421,8 @@ class NoninteractiveDisplay:
             msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
         raise errors.MissingCommandlineFlag(msg)
 
-    def notification(self, message, pause=False, wrap=True, decorate=True, **unused_kwargs):  # pylint: disable=unused-argument
+    def notification(self, message: str, pause: bool = False, wrap: bool = True,
+                     decorate: bool = True, **unused_kwargs: Any) -> None:
         """Displays a notification without waiting for user acceptance.
 
         :param str message: Message to display to stdout
@@ -434,8 +444,10 @@ class NoninteractiveDisplay:
         )
         self.outfile.flush()
 
-    def menu(self, message, choices, ok_label=None, cancel_label=None,
-             help_label=None, default=None, cli_flag=None, **unused_kwargs):
+    def menu(self, message: str, choices: Union[Iterable[Tuple[str, str]], Iterable[str]],
+             ok_label: Optional[str] = None, cancel_label: Optional[str] = None,
+             help_label: Optional[str] = None, default: Optional[int] = None,
+             cli_flag: Optional[str] = None, **unused_kwargs: Any) -> Tuple[str, int]:
         # pylint: disable=unused-argument
         """Avoid displaying a menu.
 
@@ -458,7 +470,8 @@ class NoninteractiveDisplay:
 
         return OK, default
 
-    def input(self, message, default=None, cli_flag=None, **unused_kwargs):
+    def input(self, message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
+              **unused_kwargs: Any) -> Tuple[str, str]:
         """Accept input from the user.
 
         :param str message: message to display to the user
@@ -474,8 +487,9 @@ class NoninteractiveDisplay:
             self._interaction_fail(message, cli_flag)
         return OK, default
 
-    def yesno(self, message, yes_label=None, no_label=None,  # pylint: disable=unused-argument
-              default=None, cli_flag=None, **unused_kwargs):
+    def yesno(self, message: str, yes_label: Optional[str] = None, no_label: Optional[str] = None,
+              default: Optional[str] = None, cli_flag: Optional[str] = None,
+              **unused_kwargs: Any) -> bool:
         """Decide Yes or No, without asking anybody
 
         :param str message: question for the user
@@ -490,8 +504,8 @@ class NoninteractiveDisplay:
             self._interaction_fail(message, cli_flag)
         return default
 
-    def checklist(self, message, tags, default=None,
-                  cli_flag=None, **unused_kwargs):
+    def checklist(self, message: str, tags: Iterable[str], default: Optional[str] = None,
+                  cli_flag: Optional[str] = None, **unused_kwargs: Any) -> Tuple[str, List[str]]:
         """Display a checklist.
 
         :param str message: Message to display to user
@@ -508,8 +522,8 @@ class NoninteractiveDisplay:
             self._interaction_fail(message, cli_flag, "? ".join(tags) + "?")
         return OK, default
 
-    def directory_select(self, message, default=None,
-                         cli_flag=None, **unused_kwargs):
+    def directory_select(self, message: str, default: Optional[str] = None,
+                         cli_flag: Optional[str] = None, **unused_kwargs: Any) -> Tuple[str, str]:
         """Simulate prompting the user for a directory.
 
         This function returns default if it is not ``None``, otherwise,
