@@ -91,11 +91,11 @@ class FileDisplay:
             else:
                 logger.debug("Not pausing for user confirmation")
 
-    def menu(self, message: str, choices: Union[Iterable[Tuple[str, str]], Iterable[str]],
+    def menu(self, message: str, choices: Union[List[Tuple[str, str]], List[str]],
              ok_label: Optional[str] = None, cancel_label: Optional[str] = None,
              help_label: Optional[str] = None, default: Optional[int] = None,
              cli_flag: Optional[str] = None, force_interactive: bool = False,
-             **unused_kwargs: Any) -> Tuple[str, int]:
+             **unused_kwargs: Any) -> Tuple[str, Optional[int]]:
         """Display a menu.
 
         .. todo:: This doesn't enable the help label/button (I wasn't sold on
@@ -127,7 +127,7 @@ class FileDisplay:
         return code, selection - 1
 
     def input(self, message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
-              force_interactive: bool = False, **unused_kwargs: Any) -> Tuple[str, str]:
+              force_interactive: bool = False, **unused_kwargs: Any) -> Tuple[str, Optional[str]]:
         """Accept input from the user.
 
         :param str message: message to display to the user
@@ -155,8 +155,8 @@ class FileDisplay:
         return OK, ans
 
     def yesno(self, message: str, yes_label: str = "Yes", no_label: str = "No",
-              default: Optional[str] = None, cli_flag: Optional[str] = None,
-              force_interactive: bool = False, **unused_kwargs: Any) -> bool:
+              default: Optional[bool] = None, cli_flag: Optional[str] = None,
+              force_interactive: bool = False, **unused_kwargs: Any) -> Optional[bool]:
         """Query the user with a yes/no question.
 
         Yes and No label must begin with different letters, and must contain at
@@ -197,7 +197,7 @@ class FileDisplay:
                 ans.startswith(no_label[0].upper())):
                 return False
 
-    def checklist(self, message: str, tags: List[str], default: Optional[str] = None,
+    def checklist(self, message: str, tags: List[str], default: Optional[List[str]] = None,
                   cli_flag: Optional[str] = None, force_interactive: bool = False,
                   **unused_kwargs: Any) -> Tuple[str, List[str]]:
         """Display a checklist.
@@ -239,8 +239,8 @@ class FileDisplay:
             else:
                 return code, []
 
-    def _return_default(self, prompt: str, default: str, cli_flag: str,
-                        force_interactive: bool) -> bool:
+    def _return_default(self, prompt: str, default: Optional[Union[str, int]],
+                        cli_flag: Optional[str], force_interactive: bool) -> bool:
         """Should we return the default instead of prompting the user?
 
         :param str prompt: prompt for the user
@@ -335,7 +335,7 @@ class FileDisplay:
         return [tags[index - 1] for index in indices]
 
     def _print_menu(self, message: str,
-                    choices: Union[Iterable[Tuple[str, str]], Iterable[str]]) -> None:
+                    choices: Union[List[Tuple[str, str]], List[str]]) -> None:
         """Print a menu on the screen.
 
         :param str message: title of menu
@@ -444,7 +444,7 @@ class NoninteractiveDisplay:
         )
         self.outfile.flush()
 
-    def menu(self, message: str, choices: Union[Iterable[Tuple[str, str]], Iterable[str]],
+    def menu(self, message: str, choices: Union[List[Tuple[str, str]], List[str]],
              ok_label: Optional[str] = None, cancel_label: Optional[str] = None,
              help_label: Optional[str] = None, default: Optional[int] = None,
              cli_flag: Optional[str] = None, **unused_kwargs: Any) -> Tuple[str, int]:

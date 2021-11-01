@@ -61,7 +61,7 @@ def prepare_virtual_console() -> None:
         logger.debug("Failed to set console mode", exc_info=True)
 
 
-def readline_with_timeout(timeout: float, prompt: str) -> str:
+def readline_with_timeout(timeout: float, prompt: Optional[str]) -> str:
     """
     Read user input to return the first line entered, or raise after specified timeout.
 
@@ -79,7 +79,7 @@ def readline_with_timeout(timeout: float, prompt: str) -> str:
         rlist, _, _ = select.select([sys.stdin], [], [], timeout)
         if not rlist:
             raise errors.Error(
-                "Timed out waiting for answer to prompt '{0}'".format(prompt))
+                "Timed out waiting for answer to prompt '{0}'".format(prompt if prompt else ""))
         return rlist[0].readline()
     except OSError:
         # Windows specific

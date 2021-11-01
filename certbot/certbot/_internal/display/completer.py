@@ -2,6 +2,7 @@
 import glob
 from types import TracebackType
 from typing import Callable
+from typing import Literal
 from typing import Iterator
 from typing import Optional
 from typing import Type
@@ -31,11 +32,11 @@ class Completer:
     """
 
     def __init__(self) -> None:
-        self._iter: Iterator[str]
+        self._iter: Iterator[Optional[str]]
         self._original_completer: Optional[Callable]
         self._original_delims: str
 
-    def complete(self, text: str, state: int) -> str:
+    def complete(self, text: str, state: int) -> Optional[str]:
         """Provides path completion for use with readline.
 
         :param str text: text to offer completions for
@@ -50,7 +51,7 @@ class Completer:
             self._iter = glob.iglob(text + '*')
         return next(self._iter, None)
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self._original_completer = readline.get_completer()
         self._original_delims = readline.get_completer_delims()
 
@@ -66,6 +67,7 @@ class Completer:
 
     def __exit__(self, unused_type: Optional[Type[BaseException]],
                  unused_value: Optional[BaseException],
-                 unused_traceback: Optional[TracebackType]) -> bool:
+                 unused_traceback: Optional[TracebackType]) -> Literal[False]:
         readline.set_completer_delims(self._original_delims)
         readline.set_completer(self._original_completer)
+        return False
