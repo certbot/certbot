@@ -20,7 +20,7 @@ Sign into code signing server and sign Windowas installer prior to running this 
 
 Run:
 
-python tools/finish_release.py ~/.ssh/githubpat.txt
+python tools/finish_release.py ~/.ssh/githubpat.txt --css <hostname>
 """
 
 import argparse
@@ -64,7 +64,7 @@ def parse_args(args):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('githubpat', help='path to your GitHub personal access token')
-    parser.add_argument('cssserver', help='host name of internal css server')
+    parser.add_argument('--css', type=str, required=True, help='hostname of code signing server')
     group = parser.add_mutually_exclusive_group()
     # We use 'store_false' and a destination related to the other type of
     # artifact to cause the flag being set to disable publishing of the other
@@ -111,7 +111,7 @@ def download_azure_artifacts(tempdir):
     version = build_client.get_build('certbot', build_id).source_branch.split('v')[1]
     return version
 
-def create_github_release(github_access_token, tempdir, version, css_server):
+def create_github_release(github_access_token, tempdir, version, css):
     """Use build artifacts to create a github release, including uploading additional assets
 
     :param str github_access_token: string containing github access token
@@ -131,9 +131,9 @@ def create_github_release(github_access_token, tempdir, version, css_server):
 
     # SSH into CSS and sign executable, then retrieve
     username = getpass.getuser()
-    host = css_server
-    css = username + '@' + host + ':~/signed-exes/certbot-beta-installer-win32-signed.exe'
-    subprocess.run(["scp", css , tempdir + '/windows-installer/'])
+    host = css
+    css_path = username + '@' + host + ':~/signed-exes/certbot-beta-installer-win32-signed.exe'
+    subprocess.run(["scp", css_path , tempdir + '/windows-installer/'])
 
     # Upload windows installer to release
     print("Uploading windows installer")
@@ -223,7 +223,7 @@ def main(args):
 
     github_access_token_file = parsed_args.githubpat
     github_access_token = open(github_access_token_file, 'r').read().rstrip()
-    css_server = parse_args.cssserver
+    css = parse_args.css
 
     with tempfile.TemporaryDirectory() as tempdir:
         version = download_azure_artifacts(tempdir)
@@ -234,7 +234,7 @@ def main(args):
         if parsed_args.publish_snaps:
             promote_snaps(version)
         if parsed_args.publish_windows:
-            create_github_release(github_access_token, tempdir, version, css_server)
+            create_github_release(github_access_token, tempdir, version, css)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
