@@ -16,6 +16,8 @@ Setup:
    - https://snapcraft.io/docs/installing-snapcraft
    - Use the command `snapcraft login` to log in.
 
+Sign into code signing server and sign Windowas installer prior to running this script
+
 Run:
 
 python tools/finish_release.py ~/.ssh/githubpat.txt
@@ -28,6 +30,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import userpass
 from zipfile import ZipFile
 
 from azure.devops.connection import Connection
@@ -61,6 +64,7 @@ def parse_args(args):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('githubpat', help='path to your GitHub personal access token')
+    parser.add_argument('cssserver', help='host name of internal css server')
     group = parser.add_mutually_exclusive_group()
     # We use 'store_false' and a destination related to the other type of
     # artifact to cause the flag being set to disable publishing of the other
@@ -107,7 +111,7 @@ def download_azure_artifacts(tempdir):
     version = build_client.get_build('certbot', build_id).source_branch.split('v')[1]
     return version
 
-def create_github_release(github_access_token, tempdir, version):
+def create_github_release(github_access_token, tempdir, version, css_server):
     """Use build artifacts to create a github release, including uploading additional assets
 
     :param str github_access_token: string containing github access token
@@ -125,11 +129,16 @@ def create_github_release(github_access_token, tempdir, version):
                                      release_notes,
                                      draft=True)
 
+    # SSH into CSS and sign executable, then retrieve
+    username = getpass.getuser()
+    host = css_server
+    css = username + '@' + host + ':~/signed-exes/certbot-beta-installer-win32-signed.exe'
+    subprocess.run(["scp", css , tempdir + '/windows-installer/'])
+
     # Upload windows installer to release
     print("Uploading windows installer")
-    release.upload_asset(tempdir + '/windows-installer/certbot-beta-installer-win32.exe')
+    release.upload_asset(tempdir + '/windows-installer/certbot-beta-installer-win32-signed.exe')
     release.update_release(release.title, release.body, draft=False)
-
 
 def assert_logged_into_snapcraft():
     """Confirms that snapcraft is logged in to an account.
@@ -214,6 +223,7 @@ def main(args):
 
     github_access_token_file = parsed_args.githubpat
     github_access_token = open(github_access_token_file, 'r').read().rstrip()
+    css_server = parse_args.cssserver
 
     with tempfile.TemporaryDirectory() as tempdir:
         version = download_azure_artifacts(tempdir)
@@ -224,7 +234,7 @@ def main(args):
         if parsed_args.publish_snaps:
             promote_snaps(version)
         if parsed_args.publish_windows:
-            create_github_release(github_access_token, tempdir, version)
+            create_github_release(github_access_token, tempdir, version, css_server)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
