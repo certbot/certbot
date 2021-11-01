@@ -8,7 +8,11 @@ import datetime
 import hashlib
 import logging
 import re
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 from typing import Set
 import warnings
 
@@ -127,7 +131,7 @@ def init_save_key(key_size: int, key_dir: str, key_type: str = "rsa",
                         keyname=keyname, strict_permissions=config.strict_permissions)
 
 
-def generate_csr(privkey: util.Key, names: Set[str], path: str,
+def generate_csr(privkey: util.Key, names: Union[List[str], Set[str]], path: str,
                  must_staple: bool = False, strict_permissions: bool = True) -> util.CSR:
     """Initialize a CSR with the given private key.
 
@@ -189,12 +193,12 @@ def init_save_csr(privkey: util.Key, names: Set[str], path: str) -> util.CSR:
 # A. Do more checks to verify that the CSR is trusted/valid
 # B. Audit the parsing code for vulnerabilities
 
-def valid_csr(csr: str) -> bool:
+def valid_csr(csr: bytes) -> bool:
     """Validate CSR.
 
     Check if `csr` is a valid CSR for the given domains.
 
-    :param str csr: CSR in PEM.
+    :param bytes csr: CSR in PEM.
 
     :returns: Validity of CSR.
     :rtype: bool
@@ -209,11 +213,11 @@ def valid_csr(csr: str) -> bool:
         return False
 
 
-def csr_matches_pubkey(csr: str, privkey: str) -> bool:
+def csr_matches_pubkey(csr: bytes, privkey: bytes) -> bool:
     """Does private key correspond to the subject public key in the CSR?
 
-    :param str csr: CSR in PEM.
-    :param str privkey: Private key file contents (PEM)
+    :param bytes csr: CSR in PEM.
+    :param bytes privkey: Private key file contents (PEM)
 
     :returns: Correspondence of private key to CSR subject public key.
     :rtype: bool
@@ -229,11 +233,11 @@ def csr_matches_pubkey(csr: str, privkey: str) -> bool:
         return False
 
 
-def import_csr_file(csrfile: str, data: str) -> Tuple[int, util.CSR, List[str]]:
+def import_csr_file(csrfile: str, data: bytes) -> Tuple[int, util.CSR, List[str]]:
     """Import a CSR file, which can be either PEM or DER.
 
     :param str csrfile: CSR filename
-    :param str data: contents of the CSR file
+    :param bytes data: contents of the CSR file
 
     :returns: (`crypto.FILETYPE_PEM`,
                util.CSR object representing the CSR,
@@ -258,12 +262,13 @@ def import_csr_file(csrfile: str, data: str) -> Tuple[int, util.CSR, List[str]]:
     return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
-def make_key(bits: int = 1024, key_type: str = "rsa", elliptic_curve: Optional[str] = None) -> str:
+def make_key(bits: int = 1024, key_type: str = "rsa",
+             elliptic_curve: Optional[str] = None) -> bytes:
     """Generate PEM encoded RSA|EC key.
 
     :param int bits: Number of bits if key_type=rsa. At least 1024 for RSA.
-
-    :param str ec_curve: The elliptic curve to use.
+    :param str key_type: The type of key to generate, but be rsa or ecdsa
+    :param str elliptic_curve: The elliptic curve to use.
 
     :returns: new RSA or ECDSA key in PEM form with specified number of bits
               or of type ec_curve when key_type ecdsa is used.
@@ -276,6 +281,8 @@ def make_key(bits: int = 1024, key_type: str = "rsa", elliptic_curve: Optional[s
         key = crypto.PKey()
         key.generate_key(crypto.TYPE_RSA, bits)
     elif key_type == 'ecdsa':
+        if not elliptic_curve:
+            raise errors.Error("When key_type == ecdsa, elliptic_curve must be set.")
         try:
             name = elliptic_curve.upper()
             if name in ('SECP256R1', 'SECP384R1', 'SECP521R1'):
@@ -444,7 +451,7 @@ def verify_fullchain(renewable_cert: interfaces.RenewableCert) -> None:
         raise e
 
 
-def pyopenssl_load_certificate(data: bytes) -> crypto.X509:
+def pyopenssl_load_certificate(data: bytes) -> Tuple[crypto.X509, int]:
     """Load PEM/DER certificate.
 
     :raises errors.Error:
@@ -462,8 +469,8 @@ def pyopenssl_load_certificate(data: bytes) -> crypto.X509:
         str(error) for error in openssl_errors)))
 
 
-def _load_cert_or_req(cert_or_req_str: str,
-                      load_func: Callable[[int, str], Union[crypto.X509, crypto.X509Req]],
+def _load_cert_or_req(cert_or_req_str: bytes,
+                      load_func: Callable[[int, bytes], Union[crypto.X509, crypto.X509Req]],
                       typ: int = crypto.FILETYPE_PEM) -> Union[crypto.X509, crypto.X509Req]:
     try:
         return load_func(typ, cert_or_req_str)
@@ -473,15 +480,15 @@ def _load_cert_or_req(cert_or_req_str: str,
         raise
 
 
-def _get_sans_from_cert_or_req(cert_or_req_str: str,
-                               load_func: Callable[[int, str], Union[crypto.X509, crypto.X509Req]],
+def _get_sans_from_cert_or_req(cert_or_req_str: bytes,
+                               load_func: Callable[[int, bytes], Union[crypto.X509, crypto.X509Req]],
                                typ: int =crypto.FILETYPE_PEM) -> List[str]:
     # pylint: disable=protected-access
     return acme_crypto_util._pyopenssl_cert_or_req_san(_load_cert_or_req(
         cert_or_req_str, load_func, typ))
 
 
-def get_sans_from_cert(cert: str, typ: int = crypto.FILETYPE_PEM) -> List[str]:
+def get_sans_from_cert(cert: bytes, typ: int = crypto.FILETYPE_PEM) -> List[str]:
     """Get a list of Subject Alternative Names from a certificate.
 
     :param str cert: Certificate (encoded).
@@ -495,8 +502,8 @@ def get_sans_from_cert(cert: str, typ: int = crypto.FILETYPE_PEM) -> List[str]:
         cert, crypto.load_certificate, typ)
 
 
-def _get_names_from_cert_or_req(cert_or_req: str,
-                                load_func: Callable[[int, str], Union[crypto.X509, crypto.X509Req]],
+def _get_names_from_cert_or_req(cert_or_req: bytes,
+                                load_func: Callable[[int, bytes], Union[crypto.X509, crypto.X509Req]],
                                 typ: int) -> List[str]:
     loaded_cert_or_req = _load_cert_or_req(cert_or_req, load_func, typ)
     return _get_names_from_loaded_cert_or_req(loaded_cert_or_req)
@@ -508,7 +515,7 @@ def _get_names_from_loaded_cert_or_req(loaded_cert_or_req: Union[crypto.X509, cr
     return acme_crypto_util._pyopenssl_cert_or_req_all_names(loaded_cert_or_req)
 
 
-def get_names_from_cert(csr: str, typ: int = crypto.FILETYPE_PEM) -> List[str]:
+def get_names_from_cert(cert: bytes, typ: int = crypto.FILETYPE_PEM) -> List[str]:
     """Get a list of domains from a cert, including the CN if it is set.
 
     :param str cert: Certificate (encoded).
@@ -519,13 +526,13 @@ def get_names_from_cert(csr: str, typ: int = crypto.FILETYPE_PEM) -> List[str]:
 
     """
     return _get_names_from_cert_or_req(
-        csr, crypto.load_certificate, typ)
+        cert, crypto.load_certificate, typ)
 
 
-def get_names_from_req(csr: str, typ: int = crypto.FILETYPE_PEM) -> List[str]:
+def get_names_from_req(csr: bytes, typ: int = crypto.FILETYPE_PEM) -> List[str]:
     """Get a list of domains from a CSR, including the CN if it is set.
 
-    :param str cert: CSR (encoded).
+    :param str csr: CSR (encoded).
     :param typ: `crypto.FILETYPE_PEM` or `crypto.FILETYPE_ASN1`
     :returns: A list of domain names.
     :rtype: list
@@ -571,7 +578,8 @@ def notAfter(cert_path: str) -> datetime.datetime:
     return _notAfterBefore(cert_path, crypto.X509.get_notAfter)
 
 
-def _notAfterBefore(cert_path: str, method: Callable[[crypto.X509], bytes]) -> datetime.datetime:
+def _notAfterBefore(cert_path: str,
+                    method: Callable[[crypto.X509], Optional[bytes]]) -> datetime.datetime:
     """Internal helper function for finding notbefore/notafter.
 
     :param str cert_path: path to a cert in PEM format
@@ -587,6 +595,8 @@ def _notAfterBefore(cert_path: str, method: Callable[[crypto.X509], bytes]) -> d
         x509 = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
     # pyopenssl always returns bytes
     timestamp = method(x509)
+    if not timestamp:
+        raise errors.Error("Error while invoking timestamp method, None has been returned.")
     reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
                              timestamp[6:8], b"T", timestamp[8:10], b":",
                              timestamp[10:12], b":", timestamp[12:]]
@@ -666,7 +676,7 @@ def get_serial_from_cert(cert_path: str) -> int:
 
 
 def find_chain_with_issuer(fullchains: List[str], issuer_cn: str,
-                           warn_on_no_match: bool  =False) -> str:
+                           warn_on_no_match: bool = False) -> str:
     """Chooses the first certificate chain from fullchains whose topmost
     intermediate has an Issuer Common Name matching issuer_cn (in other words
     the first chain which chains to a root whose name matches issuer_cn).

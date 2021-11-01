@@ -71,6 +71,10 @@ class NamespaceConfig:
         """
         return self.namespace.email
 
+    @email.setter
+    def email(self, mail: str) -> None:
+        self.namespace.email = mail
+
     @property
     def rsa_key_size(self) -> int:
         """Size of the RSA key."""

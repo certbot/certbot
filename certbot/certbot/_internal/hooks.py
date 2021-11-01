@@ -2,6 +2,7 @@
 
 import logging
 from typing import List
+from typing import Optional
 from typing import Set
 
 from certbot import configuration, errors
@@ -23,7 +24,7 @@ def validate_hooks(config: configuration.NamespaceConfig) -> None:
     validate_hook(config.renew_hook, "renew")
 
 
-def _prog(shell_cmd: str) -> str:
+def _prog(shell_cmd: str) -> Optional[str]:
     """Extract the program run by a shell command.
 
     :param str shell_cmd: command to be executed
@@ -36,6 +37,7 @@ def _prog(shell_cmd: str) -> str:
         plug_util.path_surgery(shell_cmd)
         if not util.exe_exists(shell_cmd):
             return None
+
     return os.path.basename(shell_cmd)
 
 

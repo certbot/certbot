@@ -932,7 +932,7 @@ class RenewableCert(interfaces.RenewableCert):
         target = self.current_target("cert")
         if target is None:
             raise errors.CertStorageError("could not find the certificate file")
-        with open(target) as f:
+        with open(target, "rb") as f:
             return crypto_util.get_names_from_cert(f.read())
 
     def ocsp_revoked(self, version: int) -> bool:

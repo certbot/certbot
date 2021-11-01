@@ -2,6 +2,7 @@
 import datetime
 import logging
 import platform
+from typing import cast
 from typing import IO, Any, Callable, Tuple
 from typing import Dict
 from typing import List
@@ -39,10 +40,11 @@ from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
+
 def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
                          regr: Optional[messages.RegistrationResource] = None
                          ) -> acme_client.ClientV2:
-    "Wrangle ACME client construction"
+    """Wrangle ACME client construction"""
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
@@ -90,8 +92,9 @@ def determine_user_agent(config: configuration.NamespaceConfig) -> str:
         ua = config.user_agent
     return ua
 
+
 def ua_flags(config: configuration.NamespaceConfig) -> str:
-    "Turn some very important CLI flags into clues in the user agent."
+    """Turn some very important CLI flags into clues in the user agent."""
     if isinstance(config, DummyConfig):
         return "FLAGS"
     flags = []
@@ -109,8 +112,9 @@ def ua_flags(config: configuration.NamespaceConfig) -> str:
         flags.append("hook")
     return " ".join(flags)
 
+
 class DummyConfig:
-    "Shim for computing a sample user agent."
+    """Shim for computing a sample user agent."""
     def __init__(self) -> None:
         self.authenticator = "XXX"
         self.installer = "YYY"
@@ -118,13 +122,15 @@ class DummyConfig:
         self.verb = "SUBCOMMAND"
 
     def __getattr__(self, name: str) -> Any:
-        "Any config properties we might have are None."
+        """Any config properties we might have are None."""
         return None
 
-def sample_user_agent() -> str:
-    "Document what this Certbot's user agent string will be like."
 
-    return determine_user_agent(DummyConfig())
+def sample_user_agent() -> str:
+    """Document what this Certbot's user agent string will be like."""
+    # DummyConfig is designed to mock certbot.configuration.NamespaceConfig.
+    # Let mypy accept that.
+    return determine_user_agent(cast(configuration.NamespaceConfig, DummyConfig()))
 
 
 def register(config: configuration.NamespaceConfig, account_storage: AccountStorage,
@@ -202,13 +208,13 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
 
 def perform_registration(acme: acme_client.ClientV2,
                          config: configuration.NamespaceConfig,
-                         tos_cb: Callable[[messages.RegistrationResource], bool]
+                         tos_cb: Optional[Callable[[messages.RegistrationResource], bool]]
                          ) -> messages.RegistrationResource:
     """
     Actually register new account, trying repeatedly if there are email
     problems
 
-    :param acme.client.Client client: ACME client object.
+    :param acme.client.Client acme: ACME client object.
     :param certbot.configuration.NamespaceConfig config: Client configuration.
     :param Callable tos_cb: a callback to handle Term of Service agreement.
 
@@ -315,15 +321,13 @@ class Client:
             orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
 
         deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
-        get_alt_chains = self.config.preferred_chain is not None
-        orderr = self.acme.finalize_order(orderr, deadline,
-                                          fetch_alternative_chains=get_alt_chains)
+        orderr = self.acme.finalize_order(
+            orderr, deadline, fetch_alternative_chains=self.config.preferred_chain is not None)
         fullchain = orderr.fullchain_pem
-        if get_alt_chains and orderr.alternative_fullchains_pem:
-            fullchain = crypto_util.find_chain_with_issuer([fullchain] + \
-                                                           orderr.alternative_fullchains_pem,
-                                                           self.config.preferred_chain,
-                                                           not self.config.dry_run)
+        if self.config.preferred_chain and orderr.alternative_fullchains_pem:
+            fullchain = crypto_util.find_chain_with_issuer(
+                [fullchain] + orderr.alternative_fullchains_pem,
+                self.config.preferred_chain, not self.config.dry_run)
         cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 
@@ -532,7 +536,6 @@ class Client:
         for path in cert_path, chain_path, fullchain_path:
             util.make_or_verify_dir(os.path.dirname(path), 0o755, self.config.strict_permissions)
 
-
         cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
 
         try:
@@ -540,10 +543,8 @@ class Client:
         finally:
             cert_file.close()
 
-        chain_file, abs_chain_path =\
-                _open_pem_file('chain_path', chain_path)
-        fullchain_file, abs_fullchain_path =\
-                _open_pem_file('fullchain_path', fullchain_path)
+        chain_file, abs_chain_path = _open_pem_file('chain_path', chain_path)
+        fullchain_file, abs_fullchain_path = _open_pem_file('fullchain_path', fullchain_path)
 
         _save_chain(chain_pem, chain_file)
         _save_chain(cert_pem + chain_pem, fullchain_file)
@@ -647,11 +648,14 @@ class Client:
 
 
         """
+        if not self.installer:
+            raise errors.Error("No installer plugin has been set.")
         enh_label = options if enhancement == "ensure-http-header" else enhancement
+        options_list = [options] if isinstance(options, str) else options
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
             for dom in domains:
                 try:
-                    self.installer.enhance(dom, enhancement, options)
+                    self.installer.enhance(dom, enhancement, options_list)
                 except errors.PluginEnhancementAlreadyPresent:
                     logger.info("Enhancement %s was already set.", enh_label)
                 except errors.PluginError:
@@ -666,9 +670,13 @@ class Client:
         :param str success_msg: message to show on successful recovery
 
         """
-        self.installer.recovery_routine()
-        if success_msg:
-            display_util.notify(success_msg)
+        if self.installer:
+            self.installer.recovery_routine()
+            if success_msg:
+                display_util.notify(success_msg)
+        else:
+            display_util.notify("No installer plugin as been set, "
+                                "so no recovery routing has been executed.")
 
     def _rollback_and_restart(self, success_msg: str) -> None:
         """Rollback the most recent checkpoint and restart the webserver
@@ -676,19 +684,23 @@ class Client:
         :param str success_msg: message to show on successful rollback
 
         """
-        logger.info("Rolling back to previous server configuration...")
-        try:
-            self.installer.rollback_checkpoints()
-            self.installer.restart()
-        except:
-            logger.error(
-                "An error occurred and we failed to restore your config and "
-                "restart your server. Please post to "
-                "https://community.letsencrypt.org/c/help "
-                "with details about your configuration and this error you received."
-            )
-            raise
-        display_util.notify(success_msg)
+        if self.installer:
+            logger.info("Rolling back to previous server configuration...")
+            try:
+                self.installer.rollback_checkpoints()
+                self.installer.restart()
+            except:
+                logger.error(
+                    "An error occurred and we failed to restore your config and "
+                    "restart your server. Please post to "
+                    "https://community.letsencrypt.org/c/help "
+                    "with details about your configuration and this error you received."
+                )
+                raise
+            display_util.notify(success_msg)
+        else:
+            display_util.notify("No installer plugin has been set, "
+                                "so no rollback has been executed.")
 
 
 def validate_key_csr(privkey: util.Key, csr: Optional[util.CSR] = None) -> None:
@@ -759,6 +771,7 @@ def rollback(default_installer: interfaces.Installer, checkpoints: int,
         installer.rollback_checkpoints(checkpoints)
         installer.restart()
 
+
 def _open_pem_file(cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
     """Open a pem file.
 
@@ -777,7 +790,8 @@ def _open_pem_file(cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
     uniq = util.unique_file(pem_path, 0o644, "wb")
     return uniq[0], os.path.abspath(uniq[1])
 
-def _save_chain(chain_pem: str, chain_file: str) -> None:
+
+def _save_chain(chain_pem: str, chain_file: IO) -> None:
     """Saves chain_pem at a unique path based on chain_path.
 
     :param str chain_pem: certificate chain in PEM format

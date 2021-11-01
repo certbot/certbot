@@ -105,6 +105,8 @@ class AuthHandler:
 
             return authzrs_validated
 
+        raise errors.Error("An unexpected error occurred while handling the authorizations.")
+
     def deactivate_valid_authorizations(self, orderr: messages.OrderResource) -> Tuple[List, List]:
         """
         Deactivate all `valid` authorizations in the order, so that they cannot be re-used
