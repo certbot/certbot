@@ -158,7 +158,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
         if new_key_type != cur_key_type:
             msg = ('Are you trying to change the key type of the certificate named {0} '
                    'from {1} to {2}? Please provide both --cert-name and --key-type on '
-                   'the command line confirm the change you are trying to make.')
+                   'the command line to confirm the change you are trying to make.')
             msg = msg.format(cert.lineagename, cur_key_type, new_key_type)
             raise errors.Error(msg)
 

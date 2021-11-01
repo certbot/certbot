@@ -5,6 +5,12 @@ import functools
 import hashlib
 import logging
 import socket
+from typing import cast
+from typing import Any
+from typing import Dict
+from typing import Mapping
+from typing import Optional
+from typing import Tuple
 from typing import Type
 
 from cryptography.hazmat.primitives import hashes
@@ -25,10 +31,10 @@ logger = logging.getLogger(__name__)
 class Challenge(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge."""
-    TYPES: dict = {}
+    TYPES: Dict[str, Type['Challenge']] = {}
 
     @classmethod
-    def from_json(cls, jobj):
+    def from_json(cls, jobj: Mapping[str, Any]) -> 'Challenge':
         try:
             return super().from_json(jobj)
         except jose.UnrecognizedTypeError as error:
@@ -39,7 +45,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
 class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
-    TYPES: dict = {}
+    TYPES: Dict[str, Type['ChallengeResponse']] = {}
     resource_type = 'challenge'
     resource = fields.Resource(resource_type)
 
@@ -57,15 +63,15 @@ class UnrecognizedChallenge(Challenge):
 
     """
 
-    def __init__(self, jobj):
+    def __init__(self, jobj: Mapping[str, Any]) -> None:
         super().__init__()
         object.__setattr__(self, "jobj", jobj)
 
-    def to_partial_json(self):
+    def to_partial_json(self) -> Dict[str, Any]:
         return self.jobj  # pylint: disable=no-member
 
     @classmethod
-    def from_json(cls, jobj):
+    def from_json(cls, jobj: Mapping[str, Any]) -> 'UnrecognizedChallenge':
         return cls(jobj)
 
 
@@ -79,13 +85,13 @@ class _TokenChallenge(Challenge):
     """Minimum size of the :attr:`token` in bytes."""
 
     # TODO: acme-spec doesn't specify token as base64-encoded value
-    token = jose.Field(
+    token: bytes = jose.Field(
         "token", encoder=jose.encode_b64jose, decoder=functools.partial(
             jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
     # XXX: rename to ~token_good_for_url
     @property
-    def good_token(self):  # XXX: @token.decoder
+    def good_token(self) -> bool:  # XXX: @token.decoder
         """Is `token` good?
 
         .. todo:: acme-spec wants "It MUST NOT contain any non-ASCII
@@ -108,7 +114,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
     key_authorization = jose.Field("keyAuthorization")
     thumbprint_hash_function = hashes.SHA256
 
-    def verify(self, chall, account_public_key):
+    def verify(self, chall: 'KeyAuthorizationChallenge', account_public_key: jose.JWK) -> bool:
         """Verify the key authorization.
 
         :param KeyAuthorization chall: Challenge that corresponds to
@@ -140,7 +146,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
 
         return True
 
-    def to_partial_json(self):
+    def to_partial_json(self) -> Dict[str, Any]:
         jobj = super().to_partial_json()
         jobj.pop('keyAuthorization', None)
         return jobj
@@ -158,7 +164,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
 
-    def key_authorization(self, account_key):
+    def key_authorization(self, account_key: jose.JWK) -> str:
         """Generate Key Authorization.
 
         :param JWK account_key:
@@ -169,7 +175,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
             account_key.thumbprint(
                 hash_function=self.thumbprint_hash_function)).decode()
 
-    def response(self, account_key):
+    def response(self, account_key: jose.JWK) -> KeyAuthorizationChallengeResponse:
         """Generate response to the challenge.
 
         :param JWK account_key:
@@ -182,7 +188,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
             key_authorization=self.key_authorization(account_key))
 
     @abc.abstractmethod
-    def validation(self, account_key, **kwargs):
+    def validation(self, account_key: jose.JWK, **kwargs: Any) -> Any:
         """Generate validation for the challenge.
 
         Subclasses must implement this method, but they are likely to
@@ -196,7 +202,8 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()  # pragma: no cover
 
-    def response_and_validation(self, account_key, *args, **kwargs):
+    def response_and_validation(self, account_key: jose.JWK, *args: Any, **kwargs: Any
+                                ) -> Tuple[KeyAuthorizationChallengeResponse, Any]:
         """Generate response and validation.
 
         Convenience function that return results of `response` and
@@ -215,7 +222,7 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
     """ACME dns-01 challenge response."""
     typ = "dns-01"
 
-    def simple_verify(self, chall, domain, account_public_key):  # pylint: disable=unused-argument
+    def simple_verify(self, chall: 'DNS01', domain: str, account_public_key: jose.JWK) -> bool:  # pylint: disable=unused-argument
         """Simple verify.
 
         This method no longer checks DNS records and is a simple wrapper
@@ -246,7 +253,7 @@ class DNS01(KeyAuthorizationChallenge):
     LABEL = "_acme-challenge"
     """Label clients prepend to the domain name being validated."""
 
-    def validation(self, account_key, **unused_kwargs):
+    def validation(self, account_key: jose.JWK, **unused_kwargs: Any) -> str:
         """Generate validation.
 
         :param JWK account_key:
@@ -256,7 +263,7 @@ class DNS01(KeyAuthorizationChallenge):
         return jose.b64encode(hashlib.sha256(self.key_authorization(
             account_key).encode("utf-8")).digest()).decode()
 
-    def validation_domain_name(self, name):
+    def validation_domain_name(self, name: str) -> str:
         """Domain name for TXT validation record.
 
         :param unicode name: Domain name being validated.
@@ -281,7 +288,8 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
     WHITESPACE_CUTSET = "\n\r\t "
     """Whitespace characters which should be ignored at the end of the body."""
 
-    def simple_verify(self, chall, domain, account_public_key, port=None):
+    def simple_verify(self, chall: 'HTTP01', domain: str, account_public_key: jose.JWK,
+                      port: Optional[int] = None) -> bool:
         """Simple verify.
 
         :param challenges.SimpleHTTP chall: Corresponding challenge.
@@ -346,7 +354,7 @@ class HTTP01(KeyAuthorizationChallenge):
     """URI root path for the server provisioned resource."""
 
     @property
-    def path(self):
+    def path(self) -> str:
         """Path (starting with '/') for provisioned resource.
 
         :rtype: string
@@ -354,7 +362,7 @@ class HTTP01(KeyAuthorizationChallenge):
         """
         return '/' + self.URI_ROOT_PATH + '/' + self.encode('token')
 
-    def uri(self, domain):
+    def uri(self, domain: str) -> str:
         """Create an URI to the provisioned resource.
 
         Forms an URI to the HTTPS server provisioned resource
@@ -366,7 +374,7 @@ class HTTP01(KeyAuthorizationChallenge):
         """
         return "http://" + domain + self.path
 
-    def validation(self, account_key, **unused_kwargs):
+    def validation(self, account_key: jose.JWK, **unused_kwargs: Any) -> str:
         """Generate validation.
 
         :param JWK account_key:
@@ -393,11 +401,12 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
     ACME_TLS_1_PROTOCOL = "acme-tls/1"
 
     @property
-    def h(self):
+    def h(self) -> bytes:
         """Hash value stored in challenge certificate"""
         return hashlib.sha256(self.key_authorization.encode('utf-8')).digest()
 
-    def gen_cert(self, domain, key=None, bits=2048):
+    def gen_cert(self, domain: str, key: Optional[crypto.PKey] = None, bits: int = 2048
+                 ) -> Tuple[crypto.X509, crypto.PKey]:
         """Generate tls-alpn-01 certificate.
 
         :param unicode domain: Domain verified by the challenge.
@@ -413,15 +422,15 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
             key = crypto.PKey()
             key.generate_key(crypto.TYPE_RSA, bits)
 
-
         der_value = b"DER:" + codecs.encode(self.h, 'hex')
         acme_extension = crypto.X509Extension(self.ID_PE_ACME_IDENTIFIER_V1,
-                critical=True, value=der_value)
+                                              critical=True, value=der_value)
 
         return crypto_util.gen_ss_cert(key, [domain], force_san=True,
-                extensions=[acme_extension]), key
+                                       extensions=[acme_extension]), key
 
-    def probe_cert(self, domain, host=None, port=None):
+    def probe_cert(self, domain: str, host: Optional[str] = None,
+                   port: Optional[int] = None) -> crypto.X509:
         """Probe tls-alpn-01 challenge certificate.
 
         :param unicode domain: domain being validated, required.
@@ -435,10 +444,10 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         if port is None:
             port = self.PORT
 
-        return crypto_util.probe_sni(host=host, port=port, name=domain,
-                alpn_protocols=[self.ACME_TLS_1_PROTOCOL])
+        return crypto_util.probe_sni(host=host.encode(), port=port, name=domain.encode(),
+                                     alpn_protocols=[self.ACME_TLS_1_PROTOCOL])
 
-    def verify_cert(self, domain, cert):
+    def verify_cert(self, domain: str, cert: crypto.X509) -> bool:
         """Verify tls-alpn-01 challenge certificate.
 
         :param unicode domain: Domain name being validated.
@@ -450,7 +459,10 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         """
         # pylint: disable=protected-access
         names = crypto_util._pyopenssl_cert_or_req_all_names(cert)
-        logger.debug('Certificate %s. SANs: %s', cert.digest('sha256'), names)
+        # Type ignore needed due to
+        # https://github.com/pyca/pyopenssl/issues/730.
+        logger.debug('Certificate %s. SANs: %s',
+                     cert.digest('sha256'), names)  # type: ignore[arg-type]
         if len(names) != 1 or names[0].lower() != domain.lower():
             return False
 
@@ -465,8 +477,9 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         return False
 
     # pylint: disable=too-many-arguments
-    def simple_verify(self, chall, domain, account_public_key,
-                      cert=None, host=None, port=None):
+    def simple_verify(self, chall: 'TLSALPN01', domain: str, account_public_key: jose.JWK,
+                      cert: Optional[crypto.X509] = None, host: Optional[str] = None,
+                      port: Optional[int] = None) -> bool:
         """Simple verify.
 
         Verify ``validation`` using ``account_public_key``, optionally
@@ -506,7 +519,7 @@ class TLSALPN01(KeyAuthorizationChallenge):
     response_cls = TLSALPN01Response
     typ = response_cls.typ
 
-    def validation(self, account_key, **kwargs):
+    def validation(self, account_key: jose.JWK, **kwargs: Any) -> Tuple[crypto.X509, crypto.PKey]:
         """Generate validation.
 
         :param JWK account_key:
@@ -523,7 +536,7 @@ class TLSALPN01(KeyAuthorizationChallenge):
             domain=kwargs.get('domain'))
 
     @staticmethod
-    def is_supported():
+    def is_supported() -> bool:
         """
         Check if TLS-ALPN-01 challenge is supported on this machine.
         This implies that a recent version of OpenSSL is installed (>= 1.0.2),
@@ -545,7 +558,8 @@ class DNS(_TokenChallenge):
     LABEL = "_acme-challenge"
     """Label clients prepend to the domain name being validated."""
 
-    def gen_validation(self, account_key, alg=jose.RS256, **kwargs):
+    def gen_validation(self, account_key: jose.JWK, alg: jose.JWASignature = jose.RS256,
+                       **kwargs: Any) -> jose.JWS:
         """Generate validation.
 
         :param .JWK account_key: Private account key.
@@ -559,7 +573,7 @@ class DNS(_TokenChallenge):
             payload=self.json_dumps(sort_keys=True).encode('utf-8'),
             key=account_key, alg=alg, **kwargs)
 
-    def check_validation(self, validation, account_public_key):
+    def check_validation(self, validation: jose.JWS, account_public_key: jose.JWK) -> bool:
         """Check validation.
 
         :param JWS validation:
@@ -576,7 +590,7 @@ class DNS(_TokenChallenge):
             logger.debug("Checking validation for DNS failed: %s", error)
             return False
 
-    def gen_response(self, account_key, **kwargs):
+    def gen_response(self, account_key: jose.JWK, **kwargs: Any) -> 'DNSResponse':
         """Generate response.
 
         :param .JWK account_key: Private account key.
@@ -588,7 +602,7 @@ class DNS(_TokenChallenge):
         return DNSResponse(validation=self.gen_validation(
             account_key, **kwargs))
 
-    def validation_domain_name(self, name):
+    def validation_domain_name(self, name: str) -> str:
         """Domain name for TXT validation record.
 
         :param unicode name: Domain name being validated.
@@ -608,7 +622,7 @@ class DNSResponse(ChallengeResponse):
 
     validation = jose.Field("validation", decoder=jose.JWS.from_json)
 
-    def check_validation(self, chall, account_public_key):
+    def check_validation(self, chall: 'DNS', account_public_key: jose.JWK) -> bool:
         """Check validation.
 
         :param challenges.DNS chall:
@@ -617,4 +631,4 @@ class DNSResponse(ChallengeResponse):
         :rtype: bool
 
         """
-        return chall.check_validation(self.validation, account_public_key)
+        return chall.check_validation(cast(jose.JWS, self.validation), account_public_key)

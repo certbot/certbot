@@ -86,6 +86,35 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(self.config.webroot_map[self.achall.domain],
                          self.path)
 
+    @unittest.skipIf(filesystem.POSIX_MODE, reason='Test specific to Windows')
+    @test_util.patch_display_util()
+    def test_webconfig_file_generate_and_cleanup(self, mock_get_utility):
+        mock_display = mock_get_utility()
+        mock_display.menu.return_value = (display_util.OK, 1,)
+
+        self.auth.perform([self.achall])
+        self.assertTrue(os.path.exists(os.path.join(self.root_challenge_path, "web.config")))
+        self.auth.cleanup([self.achall])
+        self.assertFalse(os.path.exists(os.path.join(self.root_challenge_path, "web.config")))
+
+    @unittest.skipIf(filesystem.POSIX_MODE, reason='Test specific to Windows')
+    @test_util.patch_display_util()
+    def test_foreign_webconfig_file_handling(self, mock_get_utility):
+        mock_display = mock_get_utility()
+        mock_display.menu.return_value = (display_util.OK, 1,)
+
+        challenge_path = os.path.join(self.path, ".well-known", "acme-challenge")
+        filesystem.makedirs(challenge_path)
+
+        webconfig_path = os.path.join(challenge_path, "web.config")
+        with open(webconfig_path, "w") as file:
+            file.write("something")
+        self.auth.perform([self.achall])
+        from certbot import crypto_util
+        webconfig_hash = crypto_util.sha256sum(webconfig_path)
+        from certbot._internal.plugins.webroot import _WEB_CONFIG_SHA256SUMS
+        self.assertTrue(webconfig_hash not in _WEB_CONFIG_SHA256SUMS)
+
     @test_util.patch_display_util()
     def test_webroot_from_list_help_and_cancel(self, mock_get_utility):
         self.config.webroot_path = []

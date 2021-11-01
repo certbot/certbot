@@ -15,7 +15,7 @@ from certbot_apache._internal import constants
 try:
     from augeas import Augeas
 except ImportError:  # pragma: no cover
-    Augeas = None  # type: ignore
+    Augeas = None
 
 logger = logging.getLogger(__name__)
 

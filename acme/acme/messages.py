@@ -3,7 +3,13 @@ from collections.abc import Hashable
 import json
 from typing import Any
 from typing import Dict
+from typing import Iterator
+from typing import List
+from typing import Mapping
+from typing import MutableMapping
+from typing import Tuple
 from typing import Type
+from typing import Optional
 
 import josepy as jose
 
@@ -57,7 +63,7 @@ ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
     (OLD_ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items()))
 
 
-def is_acme_error(err):
+def is_acme_error(err: BaseException) -> bool:
     """Check if argument is an ACME error."""
     if isinstance(err, Error) and (err.typ is not None):
         return (ERROR_PREFIX in err.typ) or (OLD_ERROR_PREFIX in err.typ)
@@ -79,7 +85,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
     detail = jose.Field('detail', omitempty=True)
 
     @classmethod
-    def with_code(cls, code, **kwargs):
+    def with_code(cls, code: str, **kwargs: Any) -> 'Error':
         """Create an Error instance with an ACME Error code.
 
         :unicode code: An ACME error code, like 'dnssec'.
@@ -95,7 +101,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         return cls(typ=typ, **kwargs)  # type: ignore
 
     @property
-    def description(self):
+    def description(self) -> Optional[str]:
         """Hardcoded error description based on its type.
 
         :returns: Description if standard ACME error or ``None``.
@@ -105,7 +111,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         return ERROR_TYPE_DESCRIPTIONS.get(self.typ)
 
     @property
-    def code(self):
+    def code(self) -> Optional[str]:
         """ACME error code.
 
         Basically self.typ without the ERROR_PREFIX.
@@ -119,7 +125,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             return code
         return None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return b' :: '.join(
             part.encode('ascii', 'backslashreplace') for part in
             (self.typ, self.description, self.detail, self.title)
@@ -131,34 +137,36 @@ class _Constant(jose.JSONDeSerializable, Hashable):
     __slots__ = ('name',)
     POSSIBLE_NAMES: Dict[str, '_Constant'] = NotImplemented
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         super().__init__()
         self.POSSIBLE_NAMES[name] = self  # pylint: disable=unsupported-assignment-operation
         self.name = name
 
-    def to_partial_json(self):
+    def to_partial_json(self) -> str:
         return self.name
 
     @classmethod
-    def from_json(cls, jobj):
+    def from_json(cls, jobj: str) -> '_Constant':
         if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
             raise jose.DeserializationError(
                 '{0} not recognized'.format(cls.__name__))
         return cls.POSSIBLE_NAMES[jobj]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '{0}({1})'.format(self.__class__.__name__, self.name)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, type(self)) and other.name == self.name
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.__class__, self.name))
 
 
 class Status(_Constant):
     """ACME "status" field."""
-    POSSIBLE_NAMES: dict = {}
+    POSSIBLE_NAMES: Dict[str, 'Status'] = {}
+
+
 STATUS_UNKNOWN = Status('unknown')
 STATUS_PENDING = Status('pending')
 STATUS_PROCESSING = Status('processing')
@@ -172,7 +180,8 @@ STATUS_DEACTIVATED = Status('deactivated')
 class IdentifierType(_Constant):
     """ACME identifier type."""
     POSSIBLE_NAMES: Dict[str, 'IdentifierType'] = {}
-    # class def ends here
+
+
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 IDENTIFIER_IP = IdentifierType('ip') # IdentifierIP in pebble - not in Boulder yet
 
@@ -191,7 +200,7 @@ class Identifier(jose.JSONObjectWithFields):
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES: Dict[str, Type[Any]] = {}
+    _REGISTERED_TYPES: Dict[str, Type['Directory']] = {}
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
@@ -201,60 +210,59 @@ class Directory(jose.JSONDeSerializable):
         caa_identities = jose.Field('caaIdentities', omitempty=True)
         external_account_required = jose.Field('externalAccountRequired', omitempty=True)
 
-        def __init__(self, **kwargs):
+        def __init__(self, **kwargs: Any) -> None:
             kwargs = {self._internal_name(k): v for k, v in kwargs.items()}
             super().__init__(**kwargs)
 
         @property
-        def terms_of_service(self):
+        def terms_of_service(self) -> str:
             """URL for the CA TOS"""
             return self._terms_of_service or self._terms_of_service_v2
 
-        def __iter__(self):
+        def __iter__(self) -> Iterator[str]:
             # When iterating over fields, use the external name 'terms_of_service' instead of
             # the internal '_terms_of_service'.
             for name in super().__iter__():
                 yield name[1:] if name == '_terms_of_service' else name
 
-        def _internal_name(self, name):
+        def _internal_name(self, name: str) -> str:
             return '_' + name if name == 'terms_of_service' else name
 
-
     @classmethod
-    def _canon_key(cls, key):
+    def _canon_key(cls, key: str) -> str:
         return getattr(key, 'resource_type', key)
 
     @classmethod
-    def register(cls, resource_body_cls: Type[Any]) -> Type[Any]:
+    def register(cls, resource_body_cls: Type['Directory']) -> Type['Directory']:
         """Register resource."""
         resource_type = resource_body_cls.resource_type
         assert resource_type not in cls._REGISTERED_TYPES
         cls._REGISTERED_TYPES[resource_type] = resource_body_cls
         return resource_body_cls
 
-    def __init__(self, jobj):
+    def __init__(self, jobj: Mapping[str, Any]) -> None:
         canon_jobj = util.map_keys(jobj, self._canon_key)
         # TODO: check that everything is an absolute URL; acme-spec is
         # not clear on that
         self._jobj = canon_jobj
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         try:
             return self[name.replace('_', '-')]
         except KeyError as error:
             raise AttributeError(str(error))
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> Any:
         try:
             return self._jobj[self._canon_key(name)]
         except KeyError:
             raise KeyError('Directory field "' + self._canon_key(name) + '" not found')
 
-    def to_partial_json(self):
+    def to_partial_json(self) -> Dict[str, Any]:
         return self._jobj
 
     @classmethod
-    def from_json(cls, jobj):
+    def from_json(cls, jobj: MutableMapping[str, Any]) -> 'Directory':
         jobj['meta'] = cls.Meta.from_json(jobj.pop('meta', {}))
         return cls(jobj)
 
@@ -285,7 +293,8 @@ class ExternalAccountBinding:
     """ACME External Account Binding"""
 
     @classmethod
-    def from_data(cls, account_public_key, kid, hmac_key, directory):
+    def from_data(cls, account_public_key: jose.JWK, kid: str, hmac_key: str,
+                  directory: Directory) -> Dict[str, Any]:
         """Create External Account Binding Resource from contact details, kid and hmac."""
 
         key_json = json.dumps(account_public_key.to_partial_json()).encode()
@@ -325,7 +334,9 @@ class Registration(ResourceBody):
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls, phone=None, email=None, external_account_binding=None, **kwargs):
+    def from_data(cls, phone: Optional[str] = None, email: Optional[str] = None,
+                  external_account_binding: Optional[ExternalAccountBinding] = None,
+                  **kwargs: Any) -> 'Registration':
         """
         Create registration resource from contact details.
 
@@ -354,19 +365,19 @@ class Registration(ResourceBody):
 
         return cls(**kwargs)
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """Note if the user provides a value for the `contact` member."""
-        if 'contact' in kwargs:
+        if 'contact' in kwargs and kwargs['contact'] is not None:
             # Avoid the __setattr__ used by jose.TypedJSONObjectWithFields
             object.__setattr__(self, '_add_contact', True)
         super().__init__(**kwargs)
 
-    def _filter_contact(self, prefix):
+    def _filter_contact(self, prefix: str) -> Tuple[str, ...]:
         return tuple(
             detail[len(prefix):] for detail in self.contact  # pylint: disable=not-an-iterable
             if detail.startswith(prefix))
 
-    def _add_contact_if_appropriate(self, jobj):
+    def _add_contact_if_appropriate(self, jobj: Dict[str, Any]) -> Dict[str, Any]:
         """
         The `contact` member of Registration objects should not be required when
         de-serializing (as it would be if the Fields' `omitempty` flag were `False`), but
@@ -383,23 +394,23 @@ class Registration(ResourceBody):
 
         return jobj
 
-    def to_partial_json(self):
+    def to_partial_json(self) -> Dict[str, Any]:
         """Modify josepy.JSONDeserializable.to_partial_json()"""
         jobj = super().to_partial_json()
         return self._add_contact_if_appropriate(jobj)
 
-    def fields_to_partial_json(self):
+    def fields_to_partial_json(self) -> Dict[str, Any]:
         """Modify josepy.JSONObjectWithFields.fields_to_partial_json()"""
         jobj = super().fields_to_partial_json()
         return self._add_contact_if_appropriate(jobj)
 
     @property
-    def phones(self):
+    def phones(self) -> Tuple[str, ...]:
         """All phones found in the ``contact`` field."""
         return self._filter_contact(self.phone_prefix)
 
     @property
-    def emails(self):
+    def emails(self) -> Tuple[str, ...]:
         """All emails found in the ``contact`` field."""
         return self._filter_contact(self.email_prefix)
 
@@ -460,39 +471,39 @@ class ChallengeBody(ResourceBody):
     error = jose.Field('error', decoder=Error.from_json,
                        omitempty=True, default=None)
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         kwargs = {self._internal_name(k): v for k, v in kwargs.items()}
         super().__init__(**kwargs)
 
-    def encode(self, name):
+    def encode(self, name: str) -> Any:
         return super().encode(self._internal_name(name))
 
-    def to_partial_json(self):
+    def to_partial_json(self) -> Dict[str, Any]:
         jobj = super().to_partial_json()
         jobj.update(self.chall.to_partial_json())
         return jobj
 
     @classmethod
-    def fields_from_json(cls, jobj):
+    def fields_from_json(cls, jobj: Mapping[str, Any]) -> Dict[str, Any]:
         jobj_fields = super().fields_from_json(jobj)
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
         return jobj_fields
 
     @property
-    def uri(self):
+    def uri(self) -> str:
         """The URL of this challenge."""
         return self._url or self._uri
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         return getattr(self.chall, name)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         # When iterating over fields, use the external name 'uri' instead of
         # the internal '_uri'.
         for name in super().__iter__():
             yield name[1:] if name == '_uri' else name
 
-    def _internal_name(self, name):
+    def _internal_name(self, name: str) -> str:
         return '_' + name if name == 'uri' else name
 
 
@@ -507,7 +518,7 @@ class ChallengeResource(Resource):
     authzr_uri = jose.Field('authzr_uri')
 
     @property
-    def uri(self):
+    def uri(self) -> str:
         """The URL of the challenge body."""
         return self.body.uri
 
@@ -538,11 +549,11 @@ class Authorization(ResourceBody):
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that challenge is redefined. Let's ignore the type check here.
     @challenges.decoder  # type: ignore
-    def challenges(value):  # pylint: disable=no-self-argument,missing-function-docstring
+    def challenges(value: List[Mapping[str, Any]]) -> Tuple[ChallengeBody, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
     @property
-    def resolved_combinations(self):
+    def resolved_combinations(self) -> Tuple[Tuple[Dict[str, Any], ...], ...]:
         """Combinations with challenges instead of indices."""
         return tuple(tuple(self.challenges[idx] for idx in combo)
                      for combo in self.combinations)  # pylint: disable=not-an-iterable
@@ -639,8 +650,9 @@ class Order(ResourceBody):
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that identifiers is redefined. Let's ignore the type check here.
     @identifiers.decoder  # type: ignore
-    def identifiers(value):  # pylint: disable=no-self-argument,missing-function-docstring
+    def identifiers(value: List[Mapping[str, Any]]) -> Tuple[Identifier, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(Identifier.from_json(identifier) for identifier in value)
+
 
 class OrderResource(ResourceWithURI):
     """Order Resource.

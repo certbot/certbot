@@ -93,6 +93,12 @@ def delete(config):
     msg = ["The following certificate(s) are selected for deletion:\n"]
     for certname in certnames:
         msg.append("  * " + certname)
+    msg.append(
+        "\nWARNING: Before continuing, ensure that the listed certificates are not being used "
+        "by any installed server software (e.g. Apache, nginx, mail servers). Deleting a "
+        "certificate that is still being used will cause the server software to stop working. "
+        "See https://certbot.org/deleting-certs for information on deleting certificates safely."
+    )
     msg.append("\nAre you sure you want to delete the above certificate(s)?")
     if not display_util.yesno("\n".join(msg), default=True):
         logger.info("Deletion of certificate(s) canceled.")
