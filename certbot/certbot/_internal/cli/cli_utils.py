@@ -2,7 +2,7 @@
 import argparse
 import copy
 import inspect
-from typing import Any, Iterable
+from typing import Any, Iterable, Sequence
 from typing import Optional
 from typing import Tuple
 from typing import List
@@ -97,12 +97,12 @@ class CustomHelpFormatter(argparse.HelpFormatter):
     In particular we fix https://bugs.python.org/issue28742
     """
 
-    def _get_help_string(self, action: argparse.Action) -> str:
+    def _get_help_string(self, action: argparse.Action) -> Optional[str]:
         helpstr = action.help
-        if '%(default)' not in action.help and '(default:' not in action.help:
+        if action.help and '%(default)' not in action.help and '(default:' not in action.help:
             if action.default != argparse.SUPPRESS:
                 defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
-                if action.option_strings or action.nargs in defaulting_nargs:
+                if helpstr and (action.option_strings or action.nargs in defaulting_nargs):
                     helpstr += ' (default: %(default)s)'
         return helpstr
 
@@ -111,13 +111,14 @@ class _DomainsAction(argparse.Action):
     """Action class for parsing domains."""
 
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
-                 domain: str, option_string: Optional[str] = None) -> None:
+                 domain: Union[str, Sequence[Any], None],
+                 option_string: Optional[str] = None) -> None:
         """Just wrap add_domains in argparseese."""
-        add_domains(namespace, domain)
+        add_domains(namespace, str(domain) if domain is not None else None)
 
 
 def add_domains(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
-                domains: str) -> List[str]:
+                domains: Optional[str]) -> List[str]:
     """Registers new domains to be used during the current client run.
 
     Domains are not added to the list of requested domains if they have
@@ -132,7 +133,10 @@ def add_domains(args_or_config: Union[argparse.Namespace, configuration.Namespac
     :rtype: `list` of `str`
 
     """
-    validated_domains = []
+    validated_domains: List[str] = []
+    if not domains:
+        return validated_domains
+    
     for domain in domains.split(","):
         domain = util.enforce_domain_sanity(domain.strip())
         validated_domains.append(domain)
@@ -148,7 +152,9 @@ class CaseInsensitiveList(list):
     This class is passed to the `choices` argument of `argparse.add_arguments`
     through the `helpful` wrapper. It is necessary due to special handling of
     command line arguments by `set_by_cli` in which the `type_func` is not applied."""
-    def __contains__(self, element: str) -> bool:
+    def __contains__(self, element: object) -> bool:
+        if not isinstance(element, str):
+            return False
         return super().__contains__(element.lower())
 
 
@@ -161,10 +167,13 @@ def _user_agent_comment_type(value: str) -> str:
 class _EncodeReasonAction(argparse.Action):
     """Action class for parsing revocation reason."""
 
-    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace, reason: str,
+    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
+                 reason: Union[str, Sequence[Any], None],
                  option_string: Optional[str] = None) -> None:
         """Encodes the reason for certificate revocation."""
-        code = constants.REVOCATION_REASONS[reason.lower()]
+        if reason is None:
+            raise ValueError("Unexpected null reason.")
+        code = constants.REVOCATION_REASONS[str(reason).lower()]
         setattr(namespace, self.dest, code)
 
 
@@ -196,9 +205,12 @@ class _PrefChallAction(argparse.Action):
     """Action class for parsing preferred challenges."""
 
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
-                 pref_challs: str, option_string: Optional[str] = None) -> None:
+                 pref_challs: Union[str, Sequence[Any], None],
+                 option_string: Optional[str] = None) -> None:
+        if pref_challs is None:
+            raise ValueError("Unexpected null pref_challs.")
         try:
-            challs = parse_preferred_challenges(pref_challs.split(","))
+            challs = parse_preferred_challenges(str(pref_challs).split(","))
         except errors.Error as error:
             raise argparse.ArgumentError(self, str(error))
         namespace.pref_challs.extend(challs)
@@ -208,7 +220,8 @@ class _DeployHookAction(argparse.Action):
     """Action class for parsing deploy hooks."""
 
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
-                 values: str, option_string: Optional[str] = None) -> None:
+                 values: Union[str, Sequence[Any], None],
+                 option_string: Optional[str] = None) -> None:
         renew_hook_set = namespace.deploy_hook != namespace.renew_hook
         if renew_hook_set and namespace.renew_hook != values:
             raise argparse.ArgumentError(
@@ -219,7 +232,8 @@ class _DeployHookAction(argparse.Action):
 class _RenewHookAction(argparse.Action):
     """Action class for parsing renew hooks."""
 
-    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace, values: str,
+    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
+                 values: Union[str, Sequence[Any], None],
                  option_string: Optional[str] = None) -> None:
         deploy_hook_set = namespace.deploy_hook is not None
         if deploy_hook_set and namespace.deploy_hook != values:

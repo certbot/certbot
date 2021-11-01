@@ -1,5 +1,4 @@
 """Utilities for plugins discovery and selection."""
-from collections.abc import Mapping
 import itertools
 import logging
 import sys
@@ -12,6 +11,7 @@ from typing import Iterable
 from typing import Iterator
 from typing import List
 from typing import Callable
+from typing import Mapping
 import warnings
 
 import pkg_resources

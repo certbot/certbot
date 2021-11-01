@@ -7,6 +7,8 @@ import sys
 from typing import Any
 from typing import Iterable
 from typing import Optional
+from typing import List
+from typing import Type
 
 import certbot
 from certbot._internal import constants
@@ -53,7 +55,7 @@ logger = logging.getLogger(__name__)
 helpful_parser: Optional[HelpfulArgumentParser] = None
 
 
-def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: Iterable[str],
+def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[str],
                            detect_defaults: bool = False) -> argparse.Namespace:
     """Returns parsed command line arguments.
 
@@ -524,7 +526,7 @@ def option_was_set(option: str, value: Any) -> bool:
     return set_by_cli(option) or not has_default_value(option, value)
 
 
-def argparse_type(variable: Any) -> str:
+def argparse_type(variable: Any) -> Type:
     """Return our argparse type function for a config variable (default: str)"""
     # pylint: disable=protected-access
     if helpful_parser is not None:

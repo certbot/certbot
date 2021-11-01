@@ -88,6 +88,7 @@ class HelpfulArgumentParser:
         self.determine_verb()
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
+        self.help_arg: Union[str, bool]
         if isinstance(help1, bool) and isinstance(help2, bool):
             self.help_arg = help1 or help2
         else:
@@ -130,7 +131,7 @@ class HelpfulArgumentParser:
         text += "\nYou can get more help on a specific subcommand with --help SUBCOMMAND\n"
         return text
 
-    def _usage_string(self, plugins: Iterable[str], help_arg: Any) -> str:
+    def _usage_string(self, plugins: Iterable[str], help_arg: Union[str, bool]) -> str:
         """Make usage strings late so that plugins can be initialised late
 
         :param plugins: all discovered plugins
@@ -158,9 +159,10 @@ class HelpfulArgumentParser:
             # if we're doing --help all, the OVERVIEW is part of the SHORT_USAGE at
             # the top; if we're doing --help someothertopic, it's OT so it's not
             usage += COMMAND_OVERVIEW % (apache_doc, nginx_doc)
-        else:
+        elif isinstance(help_arg, str):
             custom = VERB_HELP_MAP.get(help_arg, {}).get("usage", None)
             usage = custom if custom else usage
+        # Only remaining case is help_arg == False, which gives effectively usage == SHORT_USAGE.
 
         return usage
 
@@ -319,7 +321,7 @@ class HelpfulArgumentParser:
 
         self.verb = "run"
 
-    def prescan_for_flag(self, flag: str, possible_arguments: Set[str]) -> bool:
+    def prescan_for_flag(self, flag: str, possible_arguments: Iterable[str]) -> Union[str, bool]:
         """Checks cli input for flags.
 
         Check for a flag, which accepts a fixed set of possible arguments, in
@@ -376,7 +378,7 @@ class HelpfulArgumentParser:
         if self.detect_defaults:
             kwargs = self.modify_kwargs_for_default_detection(**kwargs)
 
-        if self.visible_topics[topic]:
+        if isinstance(topic, str) and self.visible_topics[topic]:
             if topic in self.groups:
                 group = self.groups[topic]
                 group.add_argument(*args, **kwargs)
@@ -436,7 +438,7 @@ class HelpfulArgumentParser:
         add_func = functools.partial(self.add, None)
         util.add_deprecated_argument(add_func, argument_name, num_args)
 
-    def add_group(self, topic: str, verbs: Tuple[str] = (),
+    def add_group(self, topic: str, verbs: Iterable[str] = (),
                   **kwargs: Any) -> HelpfulArgumentGroup:
         """Create a new argument group.
 
@@ -471,7 +473,7 @@ class HelpfulArgumentParser:
                                              description=plugin_ep.long_description)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
-    def determine_help_topics(self, chosen_topic: str) -> Dict[str, bool]:
+    def determine_help_topics(self, chosen_topic: Union[str, bool]) -> Dict[str, bool]:
         """
 
         The user may have requested help on a topic, return a dict of which

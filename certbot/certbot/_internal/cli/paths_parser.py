@@ -1,6 +1,7 @@
 """This is a module that adds configuration to the argument parser regarding
 paths for certificates"""
 from typing import TYPE_CHECKING
+from typing import Union
 
 from certbot._internal.cli.cli_utils import config_help
 from certbot._internal.cli.cli_utils import flag_default
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
 
 def _paths_parser(helpful: "helpful.HelpfulArgumentParser") -> None:
     add = helpful.add
-    verb = helpful.verb
+    verb: Union[str, bool] = helpful.verb
     if verb == "help":
         verb = helpful.help_arg
 
@@ -27,7 +28,7 @@ def _paths_parser(helpful: "helpful.HelpfulArgumentParser") -> None:
     add(["paths", "install", "revoke", "certonly", "manage"], "--cert-path", **cpkwargs)
 
     section = "paths"
-    if verb in ("install", "revoke"):
+    if isinstance(verb, str) and verb in ("install", "revoke"):
         section = verb
     add(section, "--key-path", type=os.path.abspath,
         help="Path to private key for certificate installation "
