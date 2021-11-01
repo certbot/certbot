@@ -90,7 +90,7 @@ def config_with_defaults(config: Optional[configuration.NamespaceConfig] = None
 
 def add_time_interval(base_time: datetime.datetime, interval: str,
                       textparser: parsedatetime.Calendar = parsedatetime.Calendar()
-                      ) -> Tuple[datetime.datetime, str]:
+                      ) -> datetime.datetime:
     """Parse the time specified time interval, and add it to the base_time
 
     The interval can be in the English-language format understood by
@@ -532,7 +532,10 @@ class RenewableCert(interfaces.RenewableCert):
         :returns: Expiration datetime of the current target certificate
         :rtype: :class:`datetime.datetime`
         """
-        return crypto_util.notAfter(self.current_target("cert"))
+        cert_path = self.current_target("cert")
+        if not cert_path:
+            raise errors.Error("Target cert does not exist!")
+        return crypto_util.notAfter(cert_path)
 
     @property
     def archive_dir(self) -> str:
@@ -766,7 +769,10 @@ class RenewableCert(interfaces.RenewableCert):
         """
         if kind not in ALL_FOUR:
             raise errors.CertStorageError("unknown kind of item")
-        where = os.path.dirname(self.current_target(kind))
+        link = self.current_target(kind)
+        if not link:
+            raise errors.Error(f"Target {kind} does not exist!")
+        where = os.path.dirname(link)
         return os.path.join(where, "{0}{1}.pem".format(kind, version))
 
     def available_versions(self, kind: str) -> List[int]:
@@ -784,7 +790,10 @@ class RenewableCert(interfaces.RenewableCert):
         """
         if kind not in ALL_FOUR:
             raise errors.CertStorageError("unknown kind of item")
-        where = os.path.dirname(self.current_target(kind))
+        link = self.current_target(kind)
+        if not link:
+            raise errors.Error(f"Target {kind} does not exist!")
+        where = os.path.dirname(link)
         files = os.listdir(where)
         pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
         matches = [pattern.match(f) for f in files]
@@ -855,9 +864,15 @@ class RenewableCert(interfaces.RenewableCert):
         :rtype: bool
 
         """
+        all_versions: List[int] = []
+        for item in ALL_FOUR:
+            version = self.current_version(item)
+            if version is None:
+                raise errors.Error(f"Missing computable version for item {item}!")
+            all_versions.append(version)
         # TODO: consider whether to assume consistency or treat
         #       inconsistent/consistent versions differently
-        smallest_current = min(self.current_version(x) for x in ALL_FOUR)
+        smallest_current = min(all_versions)
         return smallest_current < self.latest_common_version()
 
     def _update_link_to(self, kind: str, version: int) -> None:
@@ -895,7 +910,10 @@ class RenewableCert(interfaces.RenewableCert):
         with error_handler.ErrorHandler(self._fix_symlinks):
             previous_links = self._previous_symlinks()
             for kind, link in previous_links:
-                os.symlink(self.current_target(kind), link)
+                target = self.current_target(kind)
+                if not target:
+                    raise errors.Error(f"Target {kind} does not exist!")
+                os.symlink(target, link)
 
             for kind in ALL_FOUR:
                 self._update_link_to(kind, version)
@@ -995,7 +1013,7 @@ class RenewableCert(interfaces.RenewableCert):
         return False
 
     @classmethod
-    def new_lineage(cls, lineagename: str, cert: str, privkey: str, chain: str,
+    def new_lineage(cls, lineagename: str, cert: bytes, privkey: bytes, chain: bytes,
                     cli_config: configuration.NamespaceConfig) -> "RenewableCert":
         """Create a new certificate lineage.
 
