@@ -21,7 +21,10 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
+from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+from cryptography.hazmat.primitives.asymmetric.ed448 import Ed448PublicKey
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
@@ -359,20 +362,21 @@ def verify_renewable_cert_sig(renewable_cert: interfaces.RenewableCert) -> None:
         raise errors.Error(error_str)
 
 
-def verify_signed_payload(public_key: Union[RSAPublicKey, EllipticCurvePublicKey],
+def verify_signed_payload(public_key: Union[DSAPublicKey, Ed25519PublicKey, Ed448PublicKey, EllipticCurvePublicKey, RSAPublicKey],
                           signature: bytes, payload: bytes,
-                          signature_hash_algorithm: hashes.HashAlgorithm) -> None:
+                          signature_hash_algorithm: Optional[hashes.HashAlgorithm]) -> None:
     """Check the signature of a payload.
 
     :param RSAPublicKey/EllipticCurvePublicKey public_key: the public_key to check signature
     :param bytes signature: the signature bytes
     :param bytes payload: the payload bytes
-    :param cryptography.hazmat.primitives.hashes.HashAlgorithm \
-           signature_hash_algorithm: algorithm used to hash the payload
+    :param hashes.HashAlgorithm signature_hash_algorithm: algorithm used to hash the payload
 
     :raises InvalidSignature: If signature verification fails.
     :raises errors.Error: If public key type is not supported
     """
+    if not signature_hash_algorithm:
+        raise errors.Error("No signature hash algorithm defined.")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if isinstance(public_key, RSAPublicKey):
@@ -388,7 +392,7 @@ def verify_signed_payload(public_key: Union[RSAPublicKey, EllipticCurvePublicKey
             verifier.update(payload)
             verifier.verify()
         else:
-            raise errors.Error("Unsupported public key type")
+            raise errors.Error("Unsupported public key type.")
 
 
 def verify_cert_matches_priv_key(cert_path: str, key_path: str) -> None:

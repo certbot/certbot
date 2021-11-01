@@ -92,11 +92,13 @@ def choose_values(values: List[str], question: Optional[str] = None) -> List[str
     list.
 
     :param list values: Values to select from
+    :param str question: Question to ask to user while choosing values
 
     :returns: List of selected values
     :rtype: list
     """
-    code, items = display_util.checklist(question, tags=values, force_interactive=True)
+    code, items = display_util.checklist(question if question else "", tags=values,
+                                         force_interactive=True)
     if code == display_util.OK and items:
         return items
     return []
@@ -237,7 +239,7 @@ def _choose_names_manually(prompt_prefix: str = "") -> List[str]:
     return []
 
 
-def success_installation(domains: Iterable[str]) -> None:
+def success_installation(domains: List[str]) -> None:
     """Display a box confirming the installation of HTTPS.
 
     :param list domains: domain names which were enabled

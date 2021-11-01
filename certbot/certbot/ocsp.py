@@ -256,8 +256,8 @@ def _check_ocsp_response_signature(response_ocsp: ocsp.OCSPResponse, issuer_cert
     def _key_hash(cert):
         return x509.SubjectKeyIdentifier.from_public_key(cert.public_key()).digest
 
-    if response_ocsp.responder_name == issuer_cert.subject or \
-       response_ocsp.responder_key_hash == _key_hash(issuer_cert):
+    if (response_ocsp.responder_name == issuer_cert.subject
+            or response_ocsp.responder_key_hash == _key_hash(issuer_cert)):
         # Case where the OCSP responder is also the certificate issuer
         logger.debug('OCSP response for certificate %s is signed by the certificate\'s issuer.',
                      cert_path)
@@ -291,18 +291,18 @@ def _check_ocsp_response_signature(response_ocsp: ocsp.OCSPResponse, issuer_cert
             raise AssertionError('responder is not authorized by issuer to sign OCSP responses')
 
         # Following line may raise UnsupportedAlgorithm
-        chosen_hash = responder_cert.signature_hash_algorithm
+        chosen_cert_hash = responder_cert.signature_hash_algorithm
         # For a delegate OCSP responder, we need first check that its certificate is effectively
         # signed by the certificate issuer.
         crypto_util.verify_signed_payload(issuer_cert.public_key(), responder_cert.signature,
-                                          responder_cert.tbs_certificate_bytes, chosen_hash)
+                                          responder_cert.tbs_certificate_bytes, chosen_cert_hash)
 
     # Following line may raise UnsupportedAlgorithm
-    chosen_hash = response_ocsp.signature_hash_algorithm
+    chosen_response_hash = response_ocsp.signature_hash_algorithm
     # We check that the OSCP response is effectively signed by the responder
     # (an authorized delegate one or the certificate issuer itself).
     crypto_util.verify_signed_payload(responder_cert.public_key(), response_ocsp.signature,
-                                      response_ocsp.tbs_response_bytes, chosen_hash)
+                                      response_ocsp.tbs_response_bytes, chosen_response_hash)
 
 
 def _translate_ocsp_query(cert_path: str, ocsp_output: str, ocsp_errors: str) -> bool:
