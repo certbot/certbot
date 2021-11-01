@@ -10,6 +10,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Certbot will generate a `web.config` file on Windows in the challenge path
   when the `webroot` plugin is used, if one does not exist. This `web.config` file
   lets IIS serve challenge files while they do not have an extension.
+* The function certbot.util.parse_loose_version was added to parse version
+  strings in the same way as the now deprecated distutils.version.LooseVersion
+  class from the Python standard library.
 
 ### Changed
 
