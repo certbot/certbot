@@ -273,7 +273,7 @@ def _restore_int(name: str, value: str) -> int:
         raise errors.Error("Expected a numeric value for {0}".format(name))
 
 
-def _restore_str(name: str, value: str) -> str:
+def _restore_str(name: str, value: str) -> Optional[str]:
     """Restores a string key-value pair from a renewal config file.
 
     :param str name: option name
@@ -457,7 +457,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
             continue
 
         try:
-            if renewal_candidate is None:
+            if not renewal_candidate:
                 parse_failures.append(renewal_file)
             else:
                 # This call is done only for retro-compatibility purposes.
@@ -499,7 +499,8 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
                 lineagename, e
             )
             logger.debug("Traceback was:\n%s", traceback.format_exc())
-            renew_failures.append(renewal_candidate.fullchain)
+            if renewal_candidate:
+                renew_failures.append(renewal_candidate.fullchain)
 
     # Describe all the results
     _renew_describe_results(config, renew_successes, renew_failures,

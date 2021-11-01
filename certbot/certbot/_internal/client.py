@@ -328,7 +328,7 @@ class Client:
         return cert.encode(), chain.encode()
 
     def obtain_certificate(self, domains: List[str], old_keypath: Optional[str] = None
-                           ) -> Tuple[util.Key, util.CSR]:
+                           ) -> Tuple[bytes, bytes, util.Key, util.CSR]:
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
