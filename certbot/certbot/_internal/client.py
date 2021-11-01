@@ -751,12 +751,12 @@ def validate_key_csr(privkey: util.Key, csr: Optional[util.CSR] = None) -> None:
                 raise errors.Error("The key and CSR do not match")
 
 
-def rollback(default_installer: interfaces.Installer, checkpoints: int,
+def rollback(default_installer: str, checkpoints: int,
              config: configuration.NamespaceConfig, plugins: plugin_disco.PluginsRegistry) -> None:
     """Revert configuration the specified number of checkpoints.
 
+    :param str default_installer: Default installer name to use for the rollback
     :param int checkpoints: Number of checkpoints to revert.
-
     :param config: Configuration.
     :type config: :class:`certbot.configuration.NamespaceConfiguration`
     :param plugins: Plugins available

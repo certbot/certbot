@@ -296,11 +296,11 @@ class PluginsRegistry(Mapping):
         """Filter plugins based on visibility."""
         return self.filter(lambda plugin_ep: not plugin_ep.hidden)
 
-    def ifaces(self, *ifaces_groups: List[Type]) -> "PluginsRegistry":
+    def ifaces(self, *ifaces_groups: Iterable[Type]) -> "PluginsRegistry":
         """Filter plugins based on interfaces."""
         return self.filter(lambda p_ep: p_ep.ifaces(*ifaces_groups))
 
-    def verify(self, ifaces: List[Type]) -> "PluginsRegistry":
+    def verify(self, ifaces: Iterable[Type]) -> "PluginsRegistry":
         """Filter plugins based on verification."""
         return self.filter(lambda p_ep: p_ep.verify(ifaces))
 
