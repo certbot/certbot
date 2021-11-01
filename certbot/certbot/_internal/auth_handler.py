@@ -40,7 +40,8 @@ class AuthHandler:
 
     """
     def __init__(self, auth: interfaces.Authenticator, acme_client: client.ClientV2,
-                 account: account.Account, pref_challs: List[challenges.Challenge]) -> None:
+                 account: Optional[account.Account],
+                 pref_challs: List[challenges.Challenge]) -> None:
         self.auth = auth
         self.acme = acme_client
 
@@ -267,6 +268,8 @@ class AuthHandler:
         :raises .errors.Error: if challenge type is not recognized
 
         """
+        if not self.account:
+            raise errors.Error("Account is not set.")
         achalls = []
 
         for index in path:
@@ -278,6 +281,8 @@ class AuthHandler:
 
     def _report_failed_authzrs(self, failed_authzrs: List[messages.AuthorizationResource]) -> None:
         """Notifies the user about failed authorizations."""
+        if not self.account:
+            raise errors.Error("Account is not set.")
         problems: Dict[str, List[achallenges.AnnotatedChallenge]] = {}
         failed_achalls = [challb_to_achall(challb, self.account.key, authzr.body.identifier.value)
                         for authzr in failed_authzrs for challb in authzr.body.challenges

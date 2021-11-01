@@ -44,7 +44,7 @@ def prepare_subscription(config: configuration.NamespaceConfig, acc: Account) ->
         storage.update_meta(acc)
 
 
-def handle_subscription(config: configuration.NamespaceConfig, acc: Account) -> None:
+def handle_subscription(config: configuration.NamespaceConfig, acc: Optional[Account]) -> None:
     """High level function to take care of EFF newsletter subscriptions.
 
     Once subscription is handled, it will not be handled again.
@@ -53,7 +53,7 @@ def handle_subscription(config: configuration.NamespaceConfig, acc: Account) -> 
     :param Account acc: Current client account.
 
     """
-    if config.dry_run:
+    if config.dry_run or not acc:
         return
     if acc.meta.register_to_eff:
         # TODO: Remove cast when https://github.com/certbot/certbot/pull/9073 is merged.

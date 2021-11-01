@@ -98,10 +98,10 @@ def summarize_domain_list(domains: List[str]) -> str:
     if not domains:
         return ""
 
-    l = len(domains)
-    if l == 1:
+    length = len(domains)
+    if length == 1:
         return domains[0]
-    elif l == 2:
+    elif length == 2:
         return " and ".join(domains)
     else:
-        return "{0} and {1} more domains".format(domains[0], l-1)
+        return "{0} and {1} more domains".format(domains[0], length-1)

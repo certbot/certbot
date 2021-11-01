@@ -112,6 +112,7 @@ def delete(config: configuration.NamespaceConfig) -> None:
 # Public Helpers
 ###################
 
+
 def lineage_for_certname(cli_config: configuration.NamespaceConfig,
                          certname: str) -> Optional[storage.RenewableCert]:
     """Find a lineage object with name certname."""
@@ -184,7 +185,7 @@ def find_duplicative_certs(config: configuration.NamespaceConfig,
             elif len(candidate_names) > len(subset_names_cert.names()):
                 subset_names_cert = candidate_lineage
         return (identical_names_cert, subset_names_cert)
-    
+
     init: Tuple[Optional[storage.RenewableCert], Optional[storage.RenewableCert]] = (None, None)
 
     return _search_lineages(config, update_certs_for_domain_matches, init)
@@ -237,7 +238,7 @@ def cert_path_to_lineage(cli_config: configuration.NamespaceConfig) -> str:
     """
     acceptable_matches = _acceptable_matches()
     match = match_and_check_overlaps(cli_config, acceptable_matches,
-            lambda x: cli_config.cert_path, lambda x: x.lineagename)
+                                     lambda x: cli_config.cert_path, lambda x: x.lineagename)
     return match[0]
 
 

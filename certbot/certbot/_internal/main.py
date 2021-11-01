@@ -84,7 +84,7 @@ def _suggest_donation_if_appropriate(config: configuration.NamespaceConfig) -> N
 
 
 def _get_and_save_cert(le_client: client.Client, config: configuration.NamespaceConfig,
-                       domains: Optional[Iterable[str]] = None, certname: Optional[str] = None,
+                       domains: Optional[List[str]] = None, certname: Optional[str] = None,
                        lineage: Optional[storage.RenewableCert] = None
                        ) -> Optional[storage.RenewableCert]:
     """Authenticate and enroll certificate.
@@ -119,14 +119,15 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
             display_util.notify(
                 "{action} for {domains}".format(
                     action="Simulating renewal of an existing certificate"
-                            if config.dry_run else "Renewing an existing certificate",
+                    if config.dry_run else "Renewing an existing certificate",
                     domains=internal_display_util.summarize_domain_list(domains or lineage.names())
                 )
             )
             renewal.renew_cert(config, domains, le_client, lineage)
         else:
             # TREAT AS NEW REQUEST
-            assert domains is not None
+            if domains is None:
+                raise errors.Error("Domain list cannot be none if the lineage is not set.")
             display_util.notify(
                 "{action} for {domains}".format(
                     action="Simulating a certificate request" if config.dry_run else
@@ -268,7 +269,7 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     raise AssertionError('This is impossible')
 
 
-def _find_lineage_for_domains(config: configuration.NamespaceConfig, domains: Iterable[str]
+def _find_lineage_for_domains(config: configuration.NamespaceConfig, domains: List[str]
                               ) -> Tuple[Optional[str], Optional[storage.RenewableCert]]:
     """Determine whether there are duplicated names and how to handle
     them (renew, reinstall, newcert, or raising an error to stop
@@ -309,7 +310,7 @@ def _find_lineage_for_domains(config: configuration.NamespaceConfig, domains: It
     return None, None
 
 
-def _find_cert(config: configuration.NamespaceConfig, domains: Iterable[str], certname: str
+def _find_cert(config: configuration.NamespaceConfig, domains: List[str], certname: str
                ) -> Tuple[bool, Optional[storage.RenewableCert]]:
     """Finds an existing certificate object given domains and/or a certificate name.
 
@@ -334,10 +335,9 @@ def _find_cert(config: configuration.NamespaceConfig, domains: Iterable[str], ce
     return (action != "reinstall"), lineage
 
 
-def _find_lineage_for_domains_and_certname(config: configuration.NamespaceConfig,
-                                           domains: Iterable[str],
-                                           certname: str
-                                           ) -> Tuple[str, Optional[storage.RenewableCert]]:
+def _find_lineage_for_domains_and_certname(
+        config: configuration.NamespaceConfig, domains: List[str],
+        certname: str) -> Tuple[Optional[str], Optional[storage.RenewableCert]]:
     """Find appropriate lineage based on given domains and/or certname.
 
     :param config: Configuration object
@@ -363,7 +363,8 @@ def _find_lineage_for_domains_and_certname(config: configuration.NamespaceConfig
     lineage = cert_manager.lineage_for_certname(config, certname)
     if lineage:
         if domains:
-            if set(cert_manager.domains_for_certname(config, certname)) != set(domains):
+            computed_domains = cert_manager.domains_for_certname(config, certname)
+            if computed_domains and set(computed_domains) != set(domains):
                 _handle_unexpected_key_type_migration(config, lineage)
                 _ask_user_to_confirm_new_names(config, domains, certname,
                                                lineage.names())  # raises if no
@@ -373,8 +374,8 @@ def _find_lineage_for_domains_and_certname(config: configuration.NamespaceConfig
     elif domains:
         return "newcert", None
     raise errors.ConfigurationError("No certificate with name {0} found. "
-        "Use -d to specify domains, or run certbot certificates to see "
-        "possible certificate names.".format(certname))
+                                    "Use -d to specify domains, or run certbot certificates to see "
+                                    "possible certificate names.".format(certname))
 
 
 T = TypeVar("T")
@@ -688,7 +689,10 @@ def _determine_account(config: configuration.NamespaceConfig
     else:
         accounts = account_storage.find_all()
         if len(accounts) > 1:
-            acc = display_ops.choose_account(accounts)
+            potential_acc = display_ops.choose_account(accounts)
+            if not potential_acc:
+                raise errors.Error("No account has been chosen.")
+            acc = potential_acc
         elif len(accounts) == 1:
             acc = accounts[0]
         else:  # no account registered yet
@@ -747,14 +751,14 @@ def _delete_if_appropriate(config: configuration.NamespaceConfig) -> None:
             config, config.certname)
     try:
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
-            lambda x: x.archive_dir, lambda x: x)
+                                              lambda x: x.archive_dir, lambda x: x.lineagename)
     except errors.OverlappingMatchFound:
         logger.warning("Not deleting revoked certificates due to overlapping archive dirs. "
                        "More than one certificate is using %s", archive_dir)
         return
     except Exception as e:
         msg = ('config.default_archive_dir: {0}, config.live_dir: {1}, archive_dir: {2},'
-        'original exception: {3}')
+               'original exception: {3}')
         msg = msg.format(config.default_archive_dir, config.live_dir, archive_dir, e)
         raise errors.Error(msg)
 
@@ -778,12 +782,11 @@ def _init_le_client(config: configuration.NamespaceConfig,
     :rtype: client.Client
 
     """
+    acc: Optional[account.Account]
     if authenticator is not None:
         # if authenticator was given, then we will need account...
         acc, acme = _determine_account(config)
         logger.debug("Picked account: %r", acc)
-        # XXX
-        #crypto_util.validate_key_csr(acc.key)
     else:
         acc, acme = None, None
 
@@ -819,6 +822,9 @@ def unregister(config: configuration.NamespaceConfig,
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
+
+    if not cb_client.acme:
+        raise errors.Error("ACME client is not set.")
 
     # delete on boulder
     cb_client.acme.deactivate_registration(acc.regr)
@@ -887,8 +893,11 @@ def update_account(config: configuration.NamespaceConfig,
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
-    # Empty list of contacts in case the user is removing all emails
 
+    if not cb_client.acme:
+        raise errors.Error("ACME client is not set.")
+
+    # Empty list of contacts in case the user is removing all emails
     acc_contacts: Iterable[str] = ()
     if config.email:
         acc_contacts = ['mailto:' + email for email in config.email.split(',')]
@@ -928,7 +937,7 @@ def _cert_name_from_config_or_lineage(config: configuration.NamespaceConfig,
 
 
 def _install_cert(config: configuration.NamespaceConfig, le_client: client.Client,
-                  domains: Iterable[str], lineage: Optional[storage.RenewableCert] = None) -> None:
+                  domains: List[str], lineage: Optional[storage.RenewableCert] = None) -> None:
     """Install a cert
 
     :param config: Configuration object
@@ -947,7 +956,8 @@ def _install_cert(config: configuration.NamespaceConfig, le_client: client.Clien
     :rtype: None
 
     """
-    path_provider = lineage if lineage else config
+    path_provider: Union[storage.RenewableCert,
+                         configuration.NamespaceConfig] = lineage if lineage else config
     assert path_provider.cert_path is not None
 
     le_client.deploy_certificate(domains, path_provider.key_path, path_provider.cert_path,
@@ -955,7 +965,8 @@ def _install_cert(config: configuration.NamespaceConfig, le_client: client.Clien
     le_client.enhance_config(domains, path_provider.chain_path)
 
 
-def install(config: configuration.NamespaceConfig, plugins: plugins_disco.PluginsRegistry) -> None:
+def install(config: configuration.NamespaceConfig,
+            plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
     """Install a previously obtained cert in a server.
 
     :param config: Configuration object
@@ -964,8 +975,8 @@ def install(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugin
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None`
-    :rtype: None
+    :returns: `None` or the error message
+    :rtype: None or str
 
     """
     # XXX: Update for renewer/RenewableCert
@@ -1119,6 +1130,8 @@ def enhance(config: configuration.NamespaceConfig,
         config, "enhance", allow_multiple=False,
         custom_prompt=certname_question)[0]
     cert_domains = cert_manager.domains_for_certname(config, config.certname)
+    if cert_domains is None:
+        raise errors.Error("Could not find the list of domains for the given certificate name.")
     if config.noninteractive_mode:
         domains = cert_domains
     else:
@@ -1130,6 +1143,8 @@ def enhance(config: configuration.NamespaceConfig,
                                "defined, exiting.")
 
     lineage = cert_manager.lineage_for_certname(config, config.certname)
+    if not lineage:
+        raise errors.Error("Could not find the lineage for the given certificate name.")
     if not config.chain_path:
         config.chain_path = lineage.chain_path
     if oldstyle_enh:

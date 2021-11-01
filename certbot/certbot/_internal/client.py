@@ -33,6 +33,7 @@ from certbot._internal import constants
 from certbot._internal import eff
 from certbot._internal import error_handler
 from certbot._internal import storage
+from certbot._internal.plugins import disco as plugin_disco
 from certbot._internal.plugins import selection as plugin_selection
 from certbot.compat import os
 from certbot.display import ops as display_ops
@@ -271,7 +272,7 @@ class Client:
 
     """
 
-    def __init__(self, config: configuration.NamespaceConfig, account_: account.Account,
+    def __init__(self, config: configuration.NamespaceConfig, account_: Optional[account.Account],
                  auth: Optional[interfaces.Authenticator],
                  installer: Optional[interfaces.Installer],
                  acme: Optional[acme_client.ClientV2] = None) -> None:
@@ -312,8 +313,10 @@ class Client:
                    "not set.")
             logger.error(msg)
             raise errors.Error(msg)
-        if self.account.regr is None:
+        if self.account is None or self.account.regr is None:
             raise errors.Error("Please register with the ACME server first.")
+        if self.acme is None:
+            raise errors.Error("ACME client is not set.")
 
         logger.debug("CSR: %s", csr)
 
@@ -437,6 +440,8 @@ class Client:
         :rtype: acme.messages.OrderResource
 
         """
+        if not self.acme:
+            raise errors.Error("ACME client is not set.")
         try:
             orderr = self.acme.new_order(csr_pem)
         except acme_errors.WildcardUnsupportedError:
@@ -459,8 +464,8 @@ class Client:
         authzr = self.auth_handler.handle_authorizations(orderr, self.config, best_effort)
         return orderr.update(authorizations=authzr)
 
-    def obtain_and_enroll_certificate(self, domains: List[str], certname: str
-                                      ) -> Optional[Union[storage.RenewableCert, bool]]:
+    def obtain_and_enroll_certificate(self, domains: List[str], certname: Optional[str]
+                                      ) -> Optional[storage.RenewableCert]:
         """Obtain and enroll certificate.
 
         Get a new certificate for the specified domains using the specified
@@ -473,8 +478,7 @@ class Client:
         :type certname: `str` or `None`
 
         :returns: A new :class:`certbot._internal.storage.RenewableCert` instance
-            referred to the enrolled cert lineage, False if the cert could not
-            be obtained, or None if doing a successful dry run.
+            referred to the enrolled cert lineage, or None if doing a successful dry run.
 
         """
         cert, chain, key, _ = self.obtain_certificate(domains)
@@ -488,15 +492,14 @@ class Client:
         new_name = self._choose_lineagename(domains, certname)
 
         if self.config.dry_run:
-            logger.debug("Dry run: Skipping creating new lineage for %s",
-                        new_name)
+            logger.debug("Dry run: Skipping creating new lineage for %s", new_name)
             return None
         return storage.RenewableCert.new_lineage(
             new_name, cert,
             key.pem, chain,
             self.config)
 
-    def _choose_lineagename(self, domains: List[str], certname: str) -> str:
+    def _choose_lineagename(self, domains: List[str], certname: Optional[str]) -> str:
         """Chooses a name for the new lineage.
 
         :param domains: domains in certificate request
@@ -515,13 +518,13 @@ class Client:
             return domains[0][2:]
         return domains[0]
 
-    def save_certificate(self, cert_pem: str, chain_pem: str,
+    def save_certificate(self, cert_pem: bytes, chain_pem: bytes,
                          cert_path: str, chain_path: str, fullchain_path: str
                          ) -> Tuple[str, str, str]:
         """Saves the certificate received from the ACME server.
 
-        :param str cert_pem:
-        :param str chain_pem:
+        :param bytes cert_pem:
+        :param bytes chain_pem:
         :param str cert_path: Candidate path to a certificate.
         :param str chain_path: Candidate path to a certificate chain.
         :param str fullchain_path: Candidate path to a full cert chain.
@@ -651,11 +654,10 @@ class Client:
         if not self.installer:
             raise errors.Error("No installer plugin has been set.")
         enh_label = options if enhancement == "ensure-http-header" else enhancement
-        options_list = [options] if isinstance(options, str) else options
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
             for dom in domains:
                 try:
-                    self.installer.enhance(dom, enhancement, options_list)
+                    self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
                     logger.info("Enhancement %s was already set.", enh_label)
                 except errors.PluginError:
@@ -750,13 +752,15 @@ def validate_key_csr(privkey: util.Key, csr: Optional[util.CSR] = None) -> None:
 
 
 def rollback(default_installer: interfaces.Installer, checkpoints: int,
-             config: configuration.NamespaceConfig, plugins: List[interfaces.Plugin]) -> None:
+             config: configuration.NamespaceConfig, plugins: plugin_disco.PluginsRegistry) -> None:
     """Revert configuration the specified number of checkpoints.
 
     :param int checkpoints: Number of checkpoints to revert.
 
     :param config: Configuration.
     :type config: :class:`certbot.configuration.NamespaceConfiguration`
+    :param plugins: Plugins available
+    :type plugins: :class:`certbot._internal.plugins.disco.PluginsRegistry`
 
     """
     # Misconfigurations are only a slight problems... allow the user to rollback
@@ -791,10 +795,10 @@ def _open_pem_file(cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
     return uniq[0], os.path.abspath(uniq[1])
 
 
-def _save_chain(chain_pem: str, chain_file: IO) -> None:
+def _save_chain(chain_pem: bytes, chain_file: IO) -> None:
     """Saves chain_pem at a unique path based on chain_path.
 
-    :param str chain_pem: certificate chain in PEM format
+    :param bytes chain_pem: certificate chain in PEM format
     :param str chain_file: chain file object
 
     """

@@ -9,6 +9,7 @@ from typing import cast
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Union
 from typing import TYPE_CHECKING
 import warnings
 
@@ -43,7 +44,7 @@ class AccountStorage(metaclass=ABCMeta):
 
         :raises .AccountNotFound: if account could not be found
         :raises .AccountStorageError: if account could not be loaded
-        
+
         :returns: The account loaded
         :rtype: .Account
 
@@ -104,7 +105,7 @@ class Plugin(metaclass=ABCMeta):
 
     description: str = NotImplemented
     """Short plugin description"""
-    
+
     name: str = NotImplemented
     """Unique name of the plugin"""
 
@@ -273,7 +274,8 @@ class Installer(Plugin):
         """
 
     @abstractmethod
-    def enhance(self, domain: str, enhancement: str, options: Optional[List[str]] = None) -> None:
+    def enhance(self, domain: str, enhancement: str,
+                options: Optional[Union[List[str], str]] = None) -> None:
         """Perform a configuration enhancement.
 
         :param str domain: domain for which to provide enhancement

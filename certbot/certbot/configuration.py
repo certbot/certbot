@@ -62,6 +62,10 @@ class NamespaceConfig:
         """ACME Directory Resource URI."""
         return self.namespace.server
 
+    @server.setter
+    def server(self, server_: str) -> None:
+        self.namespace.server = server_
+
     @property
     def email(self) -> Optional[str]:
         """Email used for registration and recovery contact.
