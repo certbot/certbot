@@ -648,7 +648,7 @@ def _copy_win_mode(src: str, dst: str) -> None:
     win32security.SetFileSecurity(dst, win32security.DACL_SECURITY_INFORMATION, security_dst)
 
 
-def _generate_windows_flags(rights_desc: Dict[str, Dict[str, int]]) -> int:
+def _generate_windows_flags(rights_desc: Dict[str, int]) -> int:
     # Some notes about how each POSIX right is interpreted.
     #
     # For the rights read and execute, we have a pretty bijective relation between

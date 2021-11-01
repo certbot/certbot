@@ -83,7 +83,7 @@ def prepare_env(cli_args: List[str]) -> List[str]:
 class _SnapdConnection(HTTPConnection):
     def __init__(self) -> None:
         super().__init__("localhost")
-        self.sock = None
+        self.sock: Optional[socket.socket] = None
 
     def connect(self) -> None:
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
