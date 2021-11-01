@@ -77,7 +77,7 @@ def notification(message: str, pause: bool = True, wrap: bool = True,
                                    force_interactive=force_interactive, decorate=decorate)
 
 
-def menu(message: str, choices: Union[List[str], Tuple[str, str]],
+def menu(message: str, choices: Union[List[str], List[Tuple[str, str]]],
          default: Optional[int] = None, cli_flag: Optional[str] = None,
          force_interactive: bool = False) -> Tuple[str, int]:
     """Display a menu.
@@ -149,7 +149,7 @@ def yesno(message: str, yes_label: str = "Yes", no_label: str = "No",
                                    cli_flag=cli_flag, force_interactive=force_interactive)
 
 
-def checklist(message: str, tags: List[str], default: Optional[str] = None,
+def checklist(message: str, tags: List[str], default: Optional[List[str]] = None,
               cli_flag: Optional[str] = None,
               force_interactive: bool = False) -> Tuple[str, List[str]]:
     """Display a checklist.
@@ -172,7 +172,7 @@ def checklist(message: str, tags: List[str], default: Optional[str] = None,
 
 
 def directory_select(message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
-                     force_interactive: bool = False) -> Tuple[int, str]:
+                     force_interactive: bool = False) -> Tuple[str, str]:
     """Display a directory selection screen.
 
     :param str message: prompt to give the user

@@ -255,8 +255,9 @@ class PluginsRegistry(Mapping):
         return cls(plugins)
 
     @classmethod
-    def _load_entry_point(cls, entry_point: pkg_resources.EntryPoint, plugins: "PluginsRegistry",
-                          with_prefix: bool) -> None:
+    def _load_entry_point(cls, entry_point: pkg_resources.EntryPoint,
+                          plugins: Dict[str, PluginEntryPoint],
+                          with_prefix: bool) -> PluginEntryPoint:
         plugin_ep = PluginEntryPoint(entry_point, with_prefix)
         if plugin_ep.name in plugins:
             other_ep = plugins[plugin_ep.name]
@@ -286,28 +287,28 @@ class PluginsRegistry(Mapping):
         return [plugin_ep.init(config) for plugin_ep
                 in self._plugins.values()]
 
-    def filter(self, pred: Callable[[PluginEntryPoint], bool]) -> Dict[str, PluginEntryPoint]:
+    def filter(self, pred: Callable[[PluginEntryPoint], bool]) -> "PluginsRegistry":
         """Filter plugins based on predicate."""
         return type(self)({name: plugin_ep for name, plugin_ep
-                               in self._plugins.items() if pred(plugin_ep)})
+                           in self._plugins.items() if pred(plugin_ep)})
 
-    def visible(self) -> Dict[str, PluginEntryPoint]:
+    def visible(self) -> "PluginsRegistry":
         """Filter plugins based on visibility."""
         return self.filter(lambda plugin_ep: not plugin_ep.hidden)
 
-    def ifaces(self, *ifaces_groups: List[Type]) -> Dict[str, PluginEntryPoint]:
+    def ifaces(self, *ifaces_groups: List[Type]) -> "PluginsRegistry":
         """Filter plugins based on interfaces."""
         return self.filter(lambda p_ep: p_ep.ifaces(*ifaces_groups))
 
-    def verify(self, ifaces: List[Type]) -> Dict[str, PluginEntryPoint]:
+    def verify(self, ifaces: List[Type]) -> "PluginsRegistry":
         """Filter plugins based on verification."""
         return self.filter(lambda p_ep: p_ep.verify(ifaces))
 
-    def prepare(self) -> List[bool]:
+    def prepare(self) -> List[Union[bool, Error]]:
         """Prepare all plugins in the registry."""
         return [plugin_ep.prepare() for plugin_ep in self._plugins.values()]
 
-    def available(self) -> Dict[str, PluginEntryPoint]:
+    def available(self) -> "PluginsRegistry":
         """Filter plugins based on availability."""
         return self.filter(lambda p_ep: p_ep.available)
         # successfully prepared + misconfigured
