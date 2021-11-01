@@ -2,6 +2,12 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 11.1.2021 - 2021-11-01
+
+### Added
+
+* Added code signing server workflow to `tools/finish_release.py`
+
 ## 1.20.0 - master
 
 ### Added
