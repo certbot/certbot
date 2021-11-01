@@ -20,6 +20,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
     * BF6BCFC89E90747B9A680FD7B6029E8500F7DB16
     * 86379B4F0AF371B50CD9E5FF3402831161D1D280
     * 20F201346BF8F3F455A73F9A780CC99432A28621
+* The function certbot.util.get_strict_version was deprecated and will be
+  removed in a future release.
 
 ### Fixed
 

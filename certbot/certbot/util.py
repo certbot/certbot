@@ -1,10 +1,7 @@
 """Utilities for all Certbot."""
-# distutils.version under virtualenv confuses pylint
-# For more info, see: https://github.com/PyCQA/pylint/issues/73
 import argparse
 import atexit
 import collections
-import distutils.version
 import errno
 import logging
 import platform
@@ -613,8 +610,13 @@ def get_strict_version(normalized):
     :rtype: distutils.version.StrictVersion
 
     """
-    # strict version ending with "a" and a number designates a pre-release
-    return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
+    warnings.warn("certbot.util.get_strict_version is deprecated and will be "
+                  "removed in a future release.", DeprecationWarning)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        import distutils.version
+        # strict version ending with "a" and a number designates a pre-release
+        return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
 
 
 def is_staging(srv):
