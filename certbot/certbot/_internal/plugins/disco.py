@@ -2,6 +2,7 @@
 import itertools
 import logging
 import sys
+from typing import cast
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -77,6 +78,8 @@ class PluginEntryPoint:
                                    with_prefix: bool) -> str:
         """Unique plugin name for an ``entry_point``"""
         if with_prefix:
+            if not entry_point.dist:
+                raise errors.Error(f"Entrypoint {entry_point.name} as no distribution!")
             return entry_point.dist.key + ":" + entry_point.name
         return entry_point.name
 
@@ -124,7 +127,7 @@ class PluginEntryPoint:
 
     def init(self, config: Optional[configuration.NamespaceConfig] = None) -> interfaces.Plugin:
         """Memoized plugin initialization."""
-        if not self.initialized:
+        if not self._initialized:
             self.entry_point.require()  # fetch extras!
             # For plugins implementing ABCs Plugin, Authenticator or Installer, the following
             # line will raise an exception if some implementations of abstract methods are missing.
@@ -148,7 +151,7 @@ class PluginEntryPoint:
             logger.debug(".prepared called on uninitialized %r", self)
         return self._prepared is not None
 
-    def prepare(self) -> bool:
+    def prepare(self) -> Union[bool, Error]:
         """Memoized plugin preparation."""
         if self._initialized is None:
             raise ValueError("Plugin is not initialized.")
@@ -167,7 +170,8 @@ class PluginEntryPoint:
                 self._prepared = error
             else:
                 self._prepared = True
-        return self._prepared
+        # Mypy seems to fail to understand the actual type here, let's help it.
+        return cast(Union[bool, Error], self._prepared)
 
     @property
     def misconfigured(self) -> bool:

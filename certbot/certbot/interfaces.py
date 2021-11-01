@@ -109,7 +109,7 @@ class Plugin(metaclass=ABCMeta):
     """Unique name of the plugin"""
 
     @abstractmethod
-    def __init__(self, config: configuration.NamespaceConfig, name: str) -> None:
+    def __init__(self, config: Optional[configuration.NamespaceConfig], name: str) -> None:
         """Create a new `Plugin`.
 
         :param configuration.NamespaceConfig config: Configuration.
