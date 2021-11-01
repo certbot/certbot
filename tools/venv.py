@@ -14,7 +14,6 @@ variable VENV_NAME.
 
 from __future__ import print_function
 
-from distutils.version import LooseVersion
 import glob
 import os
 import re
