@@ -2,13 +2,16 @@
 import datetime
 import logging
 import time
+from typing import cast
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Type
 from typing import Union
 
 import josepy
+from requests.models import Response
 
 from acme import challenges
 from acme import client
@@ -149,7 +152,8 @@ class AuthHandler:
         if not self.acme:
             raise errors.Error("No ACME client defined, cannot poll authorizations.")
         
-        authzrs_to_check = {index: (authzr, None)
+        authzrs_to_check: Dict[int, Tuple[messages.AuthorizationResource,
+                                          Optional[Response]]] = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
         authzrs_failed_to_report = []
         # Give an initial second to the ACME CA server to check the authorizations
@@ -188,7 +192,8 @@ class AuthHandler:
             # and wait this time before polling again in next loop iteration.
             # From all the pending authorizations, we take the greatest Retry-After value
             # to avoid polling an authorization before its relevant Retry-After value.
-            retry_after = max(self.acme.retry_after(resp, 3)
+            # (by construction resp cannot be None at that time, but mypy do not know it).
+            retry_after = max(self.acme.retry_after(cast(Response, resp), 3)
                               for _, resp in authzrs_to_check.values())
             sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
 
@@ -234,7 +239,7 @@ class AuthHandler:
 
         return achalls
 
-    def _get_chall_pref(self, domain: str) -> challenges.Challenge:
+    def _get_chall_pref(self, domain: str) -> List[Type[challenges.Challenge]]:
         """Return list of challenge preferences.
 
         :param str domain: domain for which you are requesting preferences
@@ -343,7 +348,7 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
 
 
 def gen_challenge_path(challbs: List[messages.ChallengeBody],
-                       preferences: List[challenges.Challenge],
+                       preferences: List[Type[challenges.Challenge]],
                        combinations: Tuple[List[int], ...]) -> List[int]:
     """Generate a plan to get authority over the identity.
 
@@ -376,7 +381,7 @@ def gen_challenge_path(challbs: List[messages.ChallengeBody],
 
 
 def _find_smart_path(challbs: List[messages.ChallengeBody],
-                     preferences: List[challenges.Challenge],
+                     preferences: List[Type[challenges.Challenge]],
                      combinations: Tuple[List[int], ...]
                      ) -> List[int]:
     """Find challenge path with server hints.
@@ -416,7 +421,7 @@ def _find_smart_path(challbs: List[messages.ChallengeBody],
 
 
 def _find_dumb_path(challbs: List[messages.ChallengeBody],
-                    preferences: List[challenges.Challenge]) -> List[int]:
+                    preferences: List[Type[challenges.Challenge]]) -> List[int]:
     """Find challenge path without server hints.
 
     Should be called if the combinations hint is not included by the
