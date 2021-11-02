@@ -1439,6 +1439,9 @@ def renew_cert(config: configuration.NamespaceConfig, plugins: plugins_disco.Plu
 
     renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
 
+    if not renewed_lineage:
+        raise errors.Error("An existing certificate for the given name could not be found.")
+
     if installer and not config.dry_run:
         # In case of a renewal, reload server to pick up new certificate.
         updater.run_renewal_deployer(config, renewed_lineage, installer)
