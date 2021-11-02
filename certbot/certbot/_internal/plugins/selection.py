@@ -48,7 +48,7 @@ def pick_authenticator(config: configuration.NamespaceConfig, default: str,
 
 
 def get_unprepared_installer(config: configuration.NamespaceConfig,
-                             plugins: disco.PluginsRegistry) -> Optional[interfaces.Plugin]:
+                             plugins: disco.PluginsRegistry) -> Optional[interfaces.Installer]:
     """
     Get an unprepared interfaces.Installer object.
 

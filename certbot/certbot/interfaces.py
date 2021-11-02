@@ -52,7 +52,7 @@ class AccountStorage(metaclass=ABCMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    def save(self, account: 'Account', client: ClientBase):  # pragma: no cover
+    def save(self, account: 'Account', client: ClientBase) -> None:  # pragma: no cover
         """Save account.
 
         :raises .AccountStorageError: if account could not be saved

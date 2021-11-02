@@ -418,7 +418,7 @@ class HelpfulArgumentParser:
         argument is deprecated and no other action is taken.
 
         :param str argument_name: Name of deprecated argument.
-        :param int nargs: Number of arguments the option takes.
+        :param int num_args: Number of arguments the option takes.
 
         """
         # certbot.util.add_deprecated_argument expects the normal add_argument

@@ -75,8 +75,8 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):
 
         """
         # dummy function, doesn't check if dest.startswith(self.dest_namespace)
-        def add(arg_name_no_prefix, *args, **kwargs):
-            return parser.add_argument(
+        def add(arg_name_no_prefix: str, *args: Any, **kwargs: Any) -> None:
+            parser.add_argument(
                 "--{0}{1}".format(option_namespace(name), arg_name_no_prefix),
                 *args, **kwargs)
         return cls.add_parser_arguments(add)
@@ -386,11 +386,11 @@ def install_version_controlled_file(dest_path: str, digest_path: str, src_path: 
     """
     current_hash = crypto_util.sha256sum(src_path)
 
-    def _write_current_hash():
-        with open(digest_path, "w") as f:
-            f.write(current_hash)
+    def _write_current_hash() -> None:
+        with open(digest_path, "w") as file_h:
+            file_h.write(current_hash)
 
-    def _install_current_file():
+    def _install_current_file() -> None:
         shutil.copyfile(src_path, dest_path)
         _write_current_hash()
 

@@ -40,7 +40,7 @@ it as a heading)"""
 # Adding a level of indirection causes the lookup of the global _DisplayService
 # object to happen first avoiding this potential bug.
 class _DisplayService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.display: Optional[Union[FileDisplay, NoninteractiveDisplay]] = None
 
 

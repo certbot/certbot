@@ -668,9 +668,9 @@ def _determine_account(config: configuration.NamespaceConfig
     :raises errors.Error: If unable to register an account with ACME server
 
     """
-    def _tos_cb(terms_of_service):
+    def _tos_cb(terms_of_service: str) -> None:
         if config.tos:
-            return True
+            return
         msg = ("Please read the Terms of Service at {0}. You "
                "must agree in order to register with the ACME "
                "server. Do you agree?".format(terms_of_service))
@@ -679,7 +679,6 @@ def _determine_account(config: configuration.NamespaceConfig
             raise errors.Error(
                 "Registration cannot proceed without accepting "
                 "Terms of Service.")
-        return None
 
     account_storage = account.AccountFileStorage(config)
     acme: Optional[acme_client.ClientV2] = None

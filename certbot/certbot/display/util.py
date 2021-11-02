@@ -11,6 +11,7 @@ Other messages can use the `logging` module. See `log.py`.
 """
 import sys
 from types import ModuleType
+from typing import Any
 from typing import cast
 from typing import List
 from typing import Optional
@@ -190,7 +191,7 @@ def directory_select(message: str, default: Optional[str] = None, cli_flag: Opti
                                               force_interactive=force_interactive)
 
 
-def assert_valid_call(prompt, default, cli_flag, force_interactive):
+def assert_valid_call(prompt: str, default: str, cli_flag: str, force_interactive: bool) -> None:
     """Verify that provided arguments is a valid display call.
 
     :param str prompt: prompt for the user
@@ -215,10 +216,10 @@ class _DisplayUtilDeprecationModule:
     Internal class delegating to a module, and displaying warnings when attributes
     related to deprecated attributes in the certbot.display.util module.
     """
-    def __init__(self, module):
+    def __init__(self, module: ModuleType) -> None:
         self.__dict__['_module'] = module
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> Any:
         if attr in ('FileDisplay', 'NoninteractiveDisplay', 'SIDE_FRAME', 'input_with_timeout',
                     'separate_list_input', 'summarize_domain_list', 'WIDTH', 'HELP', 'ESC'):
             warnings.warn('{0} attribute in certbot.display.util module is deprecated '
@@ -226,13 +227,13 @@ class _DisplayUtilDeprecationModule:
                           DeprecationWarning, stacklevel=2)
         return getattr(self._module, attr)
 
-    def __setattr__(self, attr, value):  # pragma: no cover
+    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
         setattr(self._module, attr, value)
 
-    def __delattr__(self, attr):  # pragma: no cover
+    def __delattr__(self, attr: str) -> None:  # pragma: no cover
         delattr(self._module, attr)
 
-    def __dir__(self):  # pragma: no cover
+    def __dir__(self) -> List[str]:  # pragma: no cover
         return ['_module'] + dir(self._module)
 
 

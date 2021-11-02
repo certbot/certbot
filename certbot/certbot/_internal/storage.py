@@ -543,7 +543,7 @@ class RenewableCert(interfaces.RenewableCert):
         return full_archive_path(self.configuration,
             self.cli_config, self.lineagename)
 
-    def relative_archive_dir(self, from_file) -> str:
+    def relative_archive_dir(self, from_file: str) -> str:
         """Returns the default or specified archive directory as a relative path
 
         Used for creating symbolic links.

@@ -2,22 +2,24 @@
 from importlib import reload as reload_module
 import io
 import logging
-from multiprocessing import Event
-from multiprocessing import Process
+import multiprocessing
 import shutil
 import sys
 import tempfile
+from typing import IO
+from typing import Any
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import Callable
 import unittest
 import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
-import OpenSSL
+from OpenSSL import crypto
 import pkg_resources
 
 from certbot import configuration
@@ -72,7 +74,7 @@ class DummyInstaller(common.Installer):
         pass
 
     @classmethod
-    def add_parser_arguments(cls, add):
+    def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         pass
 
     def prepare(self) -> None:
@@ -82,13 +84,13 @@ class DummyInstaller(common.Installer):
         pass
 
 
-def vector_path(*names):
+def vector_path(*names: str) -> str:
     """Path to a test vector."""
     return pkg_resources.resource_filename(
         __name__, os.path.join('testdata', *names))
 
 
-def load_vector(*names):
+def load_vector(*names: str) -> bytes:
     """Load contents of a test vector."""
     # luckily, resource_string opens file in binary mode
     data = pkg_resources.resource_string(
@@ -102,7 +104,7 @@ def load_vector(*names):
         return data
 
 
-def _guess_loader(filename, loader_pem, loader_der):
+def _guess_loader(filename: str, loader_pem: int, loader_der: int) -> int:
     _, ext = os.path.splitext(filename)
     if ext.lower() == '.pem':
         return loader_pem
@@ -111,41 +113,45 @@ def _guess_loader(filename, loader_pem, loader_der):
     raise ValueError("Loader could not be recognized based on extension")  # pragma: no cover
 
 
-def load_cert(*names):
+def load_cert(*names: str) -> crypto.X509:
     """Load certificate."""
     loader = _guess_loader(
-        names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
-    return OpenSSL.crypto.load_certificate(loader, load_vector(*names))
+        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    return crypto.load_certificate(loader, load_vector(*names))
 
 
-def load_csr(*names):
+def load_csr(*names: str) -> crypto.X509Req:
     """Load certificate request."""
     loader = _guess_loader(
-        names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
-    return OpenSSL.crypto.load_certificate_request(loader, load_vector(*names))
+        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    return crypto.load_certificate_request(loader, load_vector(*names))
 
 
-def load_comparable_csr(*names):
+def load_comparable_csr(*names: str) -> jose.ComparableX509:
     """Load ComparableX509 certificate request."""
     return jose.ComparableX509(load_csr(*names))
 
 
-def load_rsa_private_key(*names):
+def load_rsa_private_key(*names: str) -> jose.ComparableRSAKey:
     """Load RSA private key."""
-    loader = _guess_loader(names[-1], serialization.load_pem_private_key,
-                           serialization.load_der_private_key)
-    return jose.ComparableRSAKey(loader(
+    loader = _guess_loader(names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    loader_fn: Callable[..., Any]
+    if loader == crypto.FILETYPE_PEM:
+        loader_fn = serialization.load_pem_private_key
+    else:
+        loader_fn = serialization.load_der_private_key
+    return jose.ComparableRSAKey(loader_fn(
         load_vector(*names), password=None, backend=default_backend()))
 
 
-def load_pyopenssl_private_key(*names):
+def load_pyopenssl_private_key(*names: str) -> crypto.PKey:
     """Load pyOpenSSL private key."""
     loader = _guess_loader(
-        names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
-    return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
+        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    return crypto.load_privatekey(loader, load_vector(*names))
 
 
-def make_lineage(config_dir, testfile, ec=False):
+def make_lineage(config_dir: str, testfile: str, ec: bool = False) -> str:
     """Creates a lineage defined by testfile.
 
     This creates the archive, live, and renewal directories if
@@ -153,6 +159,7 @@ def make_lineage(config_dir, testfile, ec=False):
 
     :param str config_dir: path to the configuration directory
     :param str testfile: configuration file to base the lineage on
+    :param bool ec: True if we generate the lineage with an ECDSA key
 
     :returns: path to the renewal conf file for the created lineage
     :rtype: str
@@ -189,13 +196,14 @@ def make_lineage(config_dir, testfile, ec=False):
     return conf_path
 
 
-def patch_get_utility(target='zope.component.getUtility'):
+def patch_get_utility(target: str = 'zope.component.getUtility'
+                      ) -> mock.mock._patch[Union[mock.MagicMock, mock.AsyncMock]]:
     """Deprecated, patch certbot.display.util directly or use patch_display_util instead.
 
     :param str target: path to patch
 
     :returns: mock zope.component.getUtility
-    :rtype: mock.MagicMock
+    :rtype: unittest.mock._patch
 
     """
     warnings.warn('Decorator certbot.tests.util.patch_get_utility is deprecated. You should now '
@@ -204,8 +212,9 @@ def patch_get_utility(target='zope.component.getUtility'):
     return mock.patch(target, new_callable=_create_display_util_mock)
 
 
-def patch_get_utility_with_stdout(target='zope.component.getUtility',
-                                  stdout=None):
+def patch_get_utility_with_stdout(target: str = 'zope.component.getUtility',
+                                  stdout: Optional[IO] = None
+                                  ) -> mock.mock._patch[Union[mock.MagicMock, mock.AsyncMock]]:
     """Deprecated, patch certbot.display.util directly
     or use patch_display_util_with_stdout instead.
 
@@ -214,7 +223,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
         expected to have a `write` method
 
     :returns: mock zope.component.getUtility
-    :rtype: mock.MagicMock
+    :rtype: unittest.mock._patch
 
     """
     warnings.warn('Decorator certbot.tests.util.patch_get_utility_with_stdout is deprecated. You '
@@ -226,7 +235,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
     return mock.patch(target, new=freezable_mock)
 
 
-def patch_display_util():
+def patch_display_util() -> mock.mock._patch[Union[mock.MagicMock, mock.AsyncMock]]:
     """Patch certbot.display.util to use a special mock display utility.
 
     The mock display utility works like a regular mock object, except it also
@@ -251,7 +260,8 @@ def patch_display_util():
                       new_callable=_create_display_util_mock)
 
 
-def patch_display_util_with_stdout(stdout=None):
+def patch_display_util_with_stdout(
+        stdout: Optional[IO] = None) -> mock.mock._patch[Union[mock.MagicMock, mock.AsyncMock]]:
     """Patch certbot.display.util to use a special mock display utility.
 
     The mock display utility works like a regular mock object, except it also
@@ -296,7 +306,8 @@ class FreezableMock:
     value of func is ignored.
 
     """
-    def __init__(self, frozen=False, func=None, return_value=mock.sentinel.DEFAULT):
+    def __init__(self, frozen: bool = False, func: Callable[..., Any] = None,
+                 return_value: Any = mock.sentinel.DEFAULT) -> None:
         self._frozen_set = set() if frozen else {'freeze', }
         self._func = func
         self._mock = mock.MagicMock()
@@ -304,16 +315,16 @@ class FreezableMock:
             self.return_value = return_value
         self._frozen = frozen
 
-    def freeze(self):
+    def freeze(self) -> None:
         """Freeze object preventing further changes."""
         self._frozen = True
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> mock.MagicMock:
         if self._func is not None:
             self._func(*args, **kwargs)
         return self._mock(*args, **kwargs)
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str) -> Any:
         if name == '_frozen':
             try:
                 return object.__getattribute__(self, name)
@@ -326,7 +337,7 @@ class FreezableMock:
         else:
             return getattr(object.__getattribute__(self, '_mock'), name)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         """ Before it is frozen, attributes are set on the FreezableMock
         instance and added to the _frozen_set. Attributes in the _frozen_set
         cannot be changed after the FreezableMock is frozen. In this case,
@@ -351,7 +362,7 @@ class FreezableMock:
         return object.__setattr__(self, name, value)
 
 
-def _create_display_util_mock():
+def _create_display_util_mock() -> FreezableMock:
     display = FreezableMock()
     # Use pylint code for disable to keep on single line under line length limit
     method_list = [func for func in dir(display_obj.FileDisplay)
@@ -365,14 +376,14 @@ def _create_display_util_mock():
     return FreezableMock(frozen=True, return_value=display)
 
 
-def _create_display_util_mock_with_stdout(stdout):
-    def _write_msg(message, *unused_args, **unused_kwargs):
+def _create_display_util_mock_with_stdout(stdout: IO) -> FreezableMock:
+    def _write_msg(message: str, *unused_args: Any, **unused_kwargs: Any) -> None:
         """Write to message to stdout.
         """
         if message:
             stdout.write(message)
 
-    def mock_method(*args, **kwargs):
+    def mock_method(*args: Any, **kwargs: Any) -> None:
         """
         Mock function for display utility methods.
         """
@@ -396,7 +407,7 @@ def _create_display_util_mock_with_stdout(stdout):
     return FreezableMock(frozen=True, return_value=display)
 
 
-def _assert_valid_call(*args, **kwargs):
+def _assert_valid_call(*args: Any, **kwargs: Any) -> None:
     assert_args = [args[0] if args else kwargs['message']]
 
     assert_kwargs = {}
@@ -410,11 +421,11 @@ def _assert_valid_call(*args, **kwargs):
 class TempDirTestCase(unittest.TestCase):
     """Base test class which sets up and tears down a temporary directory"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Execute before test"""
         self.tempdir = tempfile.mkdtemp()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Execute after test"""
         # Cleanup opened resources after a test. This is usually done through atexit handlers in
         # Certbot, but during tests, atexit will not run registered functions before tearDown is
@@ -431,7 +442,7 @@ class TempDirTestCase(unittest.TestCase):
 
 class ConfigTestCase(TempDirTestCase):
     """Test class which sets up a NamespaceConfig object."""
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.config = configuration.NamespaceConfig(
             mock.MagicMock(**constants.CLI_DEFAULTS)
@@ -446,7 +457,8 @@ class ConfigTestCase(TempDirTestCase):
         self.config.namespace.server = "https://example.com"
 
 
-def _handle_lock(event_in, event_out, path):
+def _handle_lock(event_in: multiprocessing.synchronize.Event,
+                 event_out: multiprocessing.synchronize.Event, path: str) -> None:
     """
     Acquire a file lock on given path, then wait to release it. This worker is coordinated
     using events to signal when the lock should be acquired and released.
@@ -465,7 +477,7 @@ def _handle_lock(event_in, event_out, path):
         my_lock.release()
 
 
-def lock_and_call(callback, path_to_lock):
+def lock_and_call(callback: Callable[[], Any], path_to_lock: str) -> None:
     """
     Grab a lock on path_to_lock from a foreign process then execute the callback.
     :param callable callback: object to call after acquiring the lock
@@ -474,9 +486,10 @@ def lock_and_call(callback, path_to_lock):
     # Reload certbot.util module to reset internal _LOCKS dictionary.
     reload_module(util)
 
-    emit_event = Event()
-    receive_event = Event()
-    process = Process(target=_handle_lock, args=(emit_event, receive_event, path_to_lock))
+    emit_event = multiprocessing.Event()
+    receive_event = multiprocessing.Event()
+    process = multiprocessing.Process(target=_handle_lock,
+                                      args=(emit_event, receive_event, path_to_lock))
     process.start()
 
     # Wait confirmation that lock is acquired
@@ -491,15 +504,15 @@ def lock_and_call(callback, path_to_lock):
     assert process.exitcode == 0
 
 
-def skip_on_windows(reason):
+def skip_on_windows(reason: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator to skip permanently a test on Windows. A reason is required."""
-    def wrapper(function):
+    def wrapper(function: Callable[..., Any]) -> Callable[..., Any]:
         """Wrapped version"""
         return unittest.skipIf(sys.platform == 'win32', reason)(function)
     return wrapper
 
 
-def temp_join(path):
+def temp_join(path: str) -> str:
     """
     Return the given path joined to the tempdir path for the current platform
     Eg.: 'cert' => /tmp/cert (Linux) or 'C:\\Users\\currentuser\\AppData\\Temp\\cert' (Windows)

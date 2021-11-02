@@ -444,11 +444,12 @@ def safe_email(email: str) -> bool:
 class DeprecatedArgumentAction(argparse.Action):
     """Action to log a warning when an argument is used."""
     def __call__(self, unused1: Any, unused2: Any, unused3: Any,
-                 option_string: Optional[str] = None):
+                 option_string: Optional[str] = None) -> None:
         warnings.warn("Use of %s is deprecated." % option_string, DeprecationWarning)
 
 
-def add_deprecated_argument(add_argument, argument_name, nargs):
+def add_deprecated_argument(add_argument: Callable[..., None], argument_name: str,
+                            nargs: Union[str, int]) -> None:
     """Adds a deprecated argument with the name argument_name.
 
     Deprecated arguments are not shown in the help. If they are used on

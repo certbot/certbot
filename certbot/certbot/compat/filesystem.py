@@ -31,7 +31,7 @@ else:
 # that could happen with this kind of pattern.
 class _WindowsUmask:
     """Store the current umask to apply on Windows"""
-    def __init__(self):
+    def __init__(self) -> None:
         self.mask = 0o022
 
 
@@ -534,7 +534,7 @@ def has_min_permissions(path: str, min_mode: int) -> bool:
     return True
 
 
-def _win_is_executable(path) -> bool:
+def _win_is_executable(path: str) -> bool:
     if not os.path.isfile(path):
         return False
 
@@ -550,7 +550,7 @@ def _win_is_executable(path) -> bool:
     return mode & ntsecuritycon.FILE_GENERIC_EXECUTE == ntsecuritycon.FILE_GENERIC_EXECUTE
 
 
-def _apply_win_mode(file_path, mode) -> None:
+def _apply_win_mode(file_path: str, mode: int) -> None:
     """
     This function converts the given POSIX mode into a Windows ACL list, and applies it to the
     file given its path. If the given path is a symbolic link, it will resolved to apply the

@@ -135,7 +135,7 @@ def sample_user_agent() -> str:
 
 
 def register(config: configuration.NamespaceConfig, account_storage: AccountStorage,
-             tos_cb: Optional[Callable[[messages.RegistrationResource], bool]] = None
+             tos_cb: Optional[Callable[[str], None]] = None
              ) -> Tuple[account.Account, acme_client.ClientV2]:
     """Register new account with an ACME CA.
 
@@ -156,13 +156,11 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
         Service before registering account, client action is
         necessary. For example, a CLI tool would prompt the user
         acceptance. `tos_cb` must be a callable that should accept
-        `.RegistrationResource` and return a `bool`: ``True`` iff the
-        Terms of Service present in the contained
-        `.Registration.terms_of_service` is accepted by the client, and
-        ``False`` otherwise. ``tos_cb`` will be called only if the
-        client action is necessary, i.e. when ``terms_of_service is not
-        None``. This argument is optional, if not supplied it will
-        default to automatic acceptance!
+        a Term of Service URL as a string, and raise an exception
+        if the TOS is not accepted by the client. ``tos_cb`` will be
+        called only if the client action is necessary, i.e. when
+        ``terms_of_service is not None``. This argument is optional,
+        if not supplied it will default to automatic acceptance!
 
     :raises certbot.errors.Error: In case of any client problems, in
         particular registration failure, or unaccepted Terms of Service.
@@ -209,7 +207,7 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
 
 def perform_registration(acme: acme_client.ClientV2,
                          config: configuration.NamespaceConfig,
-                         tos_cb: Optional[Callable[[messages.RegistrationResource], bool]]
+                         tos_cb: Optional[Callable[[str], None]]
                          ) -> messages.RegistrationResource:
     """
     Actually register new account, trying repeatedly if there are email

@@ -23,16 +23,16 @@ if TYPE_CHECKING:
 class _Default:
     """A class to use as a default to detect if a value is set by a user"""
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, _Default)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return id(_Default)
 
-    def __nonzero__(self):
+    def __nonzero__(self) -> bool:
         return self.__bool__()
 
 
@@ -136,7 +136,7 @@ def add_domains(args_or_config: Union[argparse.Namespace, configuration.Namespac
     validated_domains: List[str] = []
     if not domains:
         return validated_domains
-    
+
     for domain in domains.split(","):
         domain = util.enforce_domain_sanity(domain.strip())
         validated_domains.append(domain)

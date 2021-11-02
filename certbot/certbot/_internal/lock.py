@@ -89,10 +89,10 @@ class _BaseLockMechanism:
         """
         return self._fd is not None
 
-    def acquire(self):  # pylint: disable=missing-function-docstring
+    def acquire(self) -> None:  # pylint: disable=missing-function-docstring
         pass  # pragma: no cover
 
-    def release(self):  # pylint: disable=missing-function-docstring
+    def release(self) -> None:  # pylint: disable=missing-function-docstring
         pass  # pragma: no cover
 
 
