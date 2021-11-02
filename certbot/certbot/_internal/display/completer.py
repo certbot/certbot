@@ -3,9 +3,12 @@ import glob
 from types import TracebackType
 from typing import Callable
 from typing import Iterator
-from typing import Literal
 from typing import Optional
 from typing import Type
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing_extensions import Literal
 
 # readline module is not available on all systems
 try:
@@ -67,7 +70,7 @@ class Completer:
 
     def __exit__(self, unused_type: Optional[Type[BaseException]],
                  unused_value: Optional[BaseException],
-                 unused_traceback: Optional[TracebackType]) -> Literal[False]:
+                 unused_traceback: Optional[TracebackType]) -> 'Literal[False]':
         readline.set_completer_delims(self._original_delims)
         readline.set_completer(self._original_completer)
         return False
