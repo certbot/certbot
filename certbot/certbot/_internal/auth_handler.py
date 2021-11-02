@@ -6,6 +6,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import josepy
 
@@ -41,7 +42,7 @@ class AuthHandler:
         type strings with the most preferred challenge listed first
 
     """
-    def __init__(self, auth: interfaces.Authenticator, acme_client: client.ClientV2,
+    def __init__(self, auth: interfaces.Authenticator, acme_client: Optional[client.ClientV2],
                  account: Optional[Account], pref_challs: List[challenges.Challenge]) -> None:
         self.auth = auth
         self.acme = acme_client
@@ -67,6 +68,8 @@ class AuthHandler:
         authzrs = orderr.authorizations[:]
         if not authzrs:
             raise errors.AuthorizationError('No authorization to handle.')
+        if not self.acme:
+            raise errors.Error("No ACME client defined, authorizations cannot be handled.")
 
         # Retrieve challenges that need to be performed to validate authorizations.
         achalls = self._choose_challenges(authzrs)
@@ -118,6 +121,9 @@ class AuthHandler:
                   list of unsuccessfully deactivated authorizations.
         :rtype: tuple
         """
+        if not self.acme:
+            raise errors.Error("No ACME client defined, cannot deactivate valid authorizations.")
+        
         to_deactivate = [authzr for authzr in orderr.authorizations
                          if authzr.body.status == messages.STATUS_VALID]
         deactivated = []
@@ -140,11 +146,14 @@ class AuthHandler:
         all verified. The poll may occur several times, until all authorizations are checked
         (valid or invalid), or after a maximum of retries.
         """
+        if not self.acme:
+            raise errors.Error("No ACME client defined, cannot poll authorizations.")
+        
         authzrs_to_check = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
         authzrs_failed_to_report = []
         # Give an initial second to the ACME CA server to check the authorizations
-        sleep_seconds = 1
+        sleep_seconds: Union[float, int] = 1
         for _ in range(max_retries):
             # Wait for appropriate time (from Retry-After, initial wait, or no wait)
             if sleep_seconds > 0:
@@ -201,6 +210,9 @@ class AuthHandler:
         NB: Necessary and already validated challenges are not retrieved,
         as they can be reused for a certificate issuance.
         """
+        if not self.acme:
+            raise errors.Error("No ACME client defined, cannot choose the challenges.")
+
         pending_authzrs = [authzr for authzr in authzrs
                            if authzr.body.status != messages.STATUS_VALID]
         achalls: List[achallenges.AnnotatedChallenge] = []

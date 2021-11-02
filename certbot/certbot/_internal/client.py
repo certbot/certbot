@@ -62,7 +62,7 @@ def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
                 "Certbot is configured to use an ACMEv1 server (%s). ACMEv1 support is deprecated"
                 " and will soon be removed. See https://community.letsencrypt.org/t/143839 for "
                 "more information.", config.server)
-        return client
+        return cast(acme_client.ClientV2, client)
 
 
 def determine_user_agent(config: configuration.NamespaceConfig) -> str:
@@ -244,7 +244,8 @@ def perform_registration(acme: acme_client.ClientV2,
     try:
         newreg = messages.NewRegistration.from_data(email=config.email,
                                                     external_account_binding=eab)
-        return acme.new_account_and_tos(newreg, tos_cb)
+        return cast(acme_client.BackwardsCompatibleClientV2, acme).new_account_and_tos(
+            newreg, tos_cb)
     except messages.Error as e:
         if e.code == "invalidEmail" or e.code == "invalidContact":
             if config.noninteractive_mode:
@@ -287,9 +288,6 @@ class Client:
         if acme is None and self.account is not None:
             acme = acme_from_config_key(config, self.account.key, self.account.regr)
         self.acme = acme
-        
-        if not self.acme:
-            raise errors.Error("Could not initialize the ACME client.")
 
         self.auth_handler: Optional[auth_handler.AuthHandler]
         if auth is not None:

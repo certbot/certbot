@@ -50,11 +50,11 @@ class ServerManager:
     def __init__(self, certs: Mapping[bytes, Tuple[crypto.PKey, crypto.X509]],
                  http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
                  ) -> None:
-        self._instances: Dict[int, acme_standalone.BaseDualNetworkedServers] = {}
+        self._instances: Dict[int, acme_standalone.HTTP01DualNetworkedServers] = {}
         self.certs = certs
         self.http_01_resources = http_01_resources
 
-    def run(self, port: int, challenge_type: challenges.Challenge,
+    def run(self, port: int, challenge_type: Type[challenges.Challenge],
             listenaddr: str = "") -> acme_standalone.HTTP01DualNetworkedServers:
         """Run ACME server on specified ``port``.
 
@@ -102,7 +102,7 @@ class ServerManager:
         instance.shutdown_and_server_close()
         del self._instances[port]
 
-    def running(self) -> Dict[int, acme_standalone.BaseDualNetworkedServers]:
+    def running(self) -> Dict[int, acme_standalone.HTTP01DualNetworkedServers]:
         """Return all running instances.
 
         Once the server is stopped using `stop`, it will not be
@@ -176,7 +176,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         return response
 
     def _perform_http_01(self, achall: achallenges.AnnotatedChallenge
-                         ) -> Tuple[Dict[int, acme_standalone.BaseDualNetworkedServers],
+                         ) -> Tuple[acme_standalone.HTTP01DualNetworkedServers,
                                     challenges.ChallengeResponse]:
         port = self.config.http01_port
         addr = self.config.http01_address
