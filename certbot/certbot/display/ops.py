@@ -4,7 +4,6 @@ from textwrap import indent
 from typing import Any
 from typing import Callable
 from typing import Iterable
-from typing import Iterator
 from typing import Optional
 from typing import List
 from typing import Tuple

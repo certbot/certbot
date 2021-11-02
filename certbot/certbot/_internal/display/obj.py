@@ -1,13 +1,14 @@
 """This modules define the actual display implementations used in Certbot"""
 import logging
 import sys
-from typing import Any, Iterable, Text, TextIO
+from typing import Any
+from typing import Iterable
+from typing import TextIO
 from typing import Optional
 from typing import Union
 from typing import List
 from typing import Tuple
 from typing import TypeVar
-from typing import Mapping
 
 import zope.component
 import zope.interface
@@ -96,8 +97,8 @@ class FileDisplay:
                 logger.debug("Not pausing for user confirmation")
 
     def menu(self, message: str, choices: Union[List[Tuple[str, str]], List[str]],
-             ok_label: Optional[str] = None, cancel_label: Optional[str] = None,
-             help_label: Optional[str] = None, default: Optional[int] = None,
+             ok_label: Optional[str] = None, cancel_label: Optional[str] = None,  # pylint: disable=unused-argument
+             help_label: Optional[str] = None, default: Optional[int] = None,  # pylint: disable=unused-argument
              cli_flag: Optional[str] = None, force_interactive: bool = False,
              **unused_kwargs: Any) -> Tuple[str, int]:
         """Display a menu.
@@ -431,7 +432,7 @@ class NoninteractiveDisplay:
             msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
         return errors.MissingCommandlineFlag(msg)
 
-    def notification(self, message: str, pause: bool = False, wrap: bool = True,
+    def notification(self, message: str, pause: bool = False, wrap: bool = True,  # pylint: disable=unused-argument
                      decorate: bool = True, **unused_kwargs: Any) -> None:
         """Displays a notification without waiting for user acceptance.
 
@@ -497,7 +498,7 @@ class NoninteractiveDisplay:
             raise self._interaction_fail(message, cli_flag)
         return OK, default
 
-    def yesno(self, message: str, yes_label: Optional[str] = None, no_label: Optional[str] = None,
+    def yesno(self, message: str, yes_label: Optional[str] = None, no_label: Optional[str] = None,  # pylint: disable=unused-argument
               default: Optional[bool] = None, cli_flag: Optional[str] = None,
               **unused_kwargs: Any) -> bool:
         """Decide Yes or No, without asking anybody

@@ -5,7 +5,6 @@ from typing import Union
 
 from certbot._internal.cli.cli_utils import config_help
 from certbot._internal.cli.cli_utils import flag_default
-from certbot._internal.cli.helpful import HelpfulArgumentParser
 from certbot.compat import os
 
 if TYPE_CHECKING:

@@ -11,7 +11,6 @@ from typing import List
 from typing import Set
 from typing import Iterable
 from typing import Optional
-from typing import Mapping
 from typing import Union
 from typing import Sequence
 

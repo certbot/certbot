@@ -4,7 +4,6 @@ import logging
 import time
 from typing import Dict
 from typing import Optional
-from typing import Set
 from typing import List
 from typing import Tuple
 
@@ -15,7 +14,7 @@ from acme import messages
 from certbot import achallenges, configuration, interfaces
 from certbot import errors
 from certbot._internal import error_handler
-from certbot._internal import account
+from certbot._internal.account import Account
 from certbot.display import util as display_util
 from certbot.plugins import common as plugin_common
 import josepy
@@ -40,16 +39,15 @@ class AuthHandler:
 
     """
     def __init__(self, auth: interfaces.Authenticator, acme_client: client.ClientV2,
-                 account: Optional[account.Account],
-                 pref_challs: List[challenges.Challenge]) -> None:
+                 account: Optional[Account], pref_challs: List[challenges.Challenge]) -> None:
         self.auth = auth
         self.acme = acme_client
 
         self.account = account
         self.pref_challs = pref_challs
 
-    def handle_authorizations(self, orderr: messages.OrderResource, config: configuration.NamespaceConfig,
-                              best_effort: bool = False,
+    def handle_authorizations(self, orderr: messages.OrderResource,
+                              config: configuration.NamespaceConfig, best_effort: bool = False,
                               max_retries: int = 30) -> List[messages.AuthorizationResource]:
         """
         Retrieve all authorizations, perform all challenges required to validate
@@ -402,7 +400,8 @@ def _find_smart_path(challbs: List[messages.ChallengeBody],
     return best_combo
 
 
-def _find_dumb_path(challbs: List[messages.ChallengeBody], preferences: List[challenges.Challenge]) -> List[int]:
+def _find_dumb_path(challbs: List[messages.ChallengeBody],
+                    preferences: List[challenges.Challenge]) -> List[int]:
     """Find challenge path without server hints.
 
     Should be called if the combinations hint is not included by the

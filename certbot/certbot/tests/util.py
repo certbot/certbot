@@ -3,9 +3,11 @@ from importlib import reload as reload_module
 import io
 import logging
 import multiprocessing
+from multiprocessing import synchronize
 import shutil
 import sys
 import tempfile
+from typing import cast
 from typing import IO
 from typing import Any
 from typing import Iterable
@@ -196,25 +198,23 @@ def make_lineage(config_dir: str, testfile: str, ec: bool = False) -> str:
     return conf_path
 
 
-def patch_get_utility(target: str = 'zope.component.getUtility'
-                      ) -> mock.mock._patch[Union[mock.MagicMock, mock.AsyncMock]]:
+def patch_get_utility(target: str = 'zope.component.getUtility') -> mock.MagicMock:
     """Deprecated, patch certbot.display.util directly or use patch_display_util instead.
 
     :param str target: path to patch
 
     :returns: mock zope.component.getUtility
-    :rtype: unittest.mock._patch
+    :rtype: mock.MagicMock
 
     """
     warnings.warn('Decorator certbot.tests.util.patch_get_utility is deprecated. You should now '
                   'patch certbot.display.util yourself directly or use '
                   'certbot.tests.util.patch_display_util as a temporary workaround.')
-    return mock.patch(target, new_callable=_create_display_util_mock)
+    return cast(mock.MagicMock, mock.patch(target, new_callable=_create_display_util_mock))
 
 
 def patch_get_utility_with_stdout(target: str = 'zope.component.getUtility',
-                                  stdout: Optional[IO] = None
-                                  ) -> mock.mock._patch[Union[mock.MagicMock, mock.AsyncMock]]:
+                                  stdout: Optional[IO] = None) -> mock.MagicMock:
     """Deprecated, patch certbot.display.util directly
     or use patch_display_util_with_stdout instead.
 
@@ -223,7 +223,7 @@ def patch_get_utility_with_stdout(target: str = 'zope.component.getUtility',
         expected to have a `write` method
 
     :returns: mock zope.component.getUtility
-    :rtype: unittest.mock._patch
+    :rtype: mock.MagicMock
 
     """
     warnings.warn('Decorator certbot.tests.util.patch_get_utility_with_stdout is deprecated. You '
@@ -232,10 +232,10 @@ def patch_get_utility_with_stdout(target: str = 'zope.component.getUtility',
                   'workaround.')
     stdout = stdout if stdout else io.StringIO()
     freezable_mock = _create_display_util_mock_with_stdout(stdout)
-    return mock.patch(target, new=freezable_mock)
+    return cast(mock.MagicMock, mock.patch(target, new=freezable_mock))
 
 
-def patch_display_util() -> mock.mock._patch[Union[mock.MagicMock, mock.AsyncMock]]:
+def patch_display_util() -> mock.MagicMock:
     """Patch certbot.display.util to use a special mock display utility.
 
     The mock display utility works like a regular mock object, except it also
@@ -253,15 +253,15 @@ def patch_display_util() -> mock.mock._patch[Union[mock.MagicMock, mock.AsyncMoc
 
     :returns: patch on the function used internally by certbot.display.util to
         get a display utility instance
-    :rtype: unittest.mock._patch
+    :rtype: mock.MagicMock
 
     """
-    return mock.patch('certbot._internal.display.obj.get_display',
-                      new_callable=_create_display_util_mock)
+    return cast(mock.MagicMock, mock.patch('certbot._internal.display.obj.get_display',
+                                           new_callable=_create_display_util_mock))
 
 
 def patch_display_util_with_stdout(
-        stdout: Optional[IO] = None) -> mock.mock._patch[Union[mock.MagicMock, mock.AsyncMock]]:
+        stdout: Optional[IO] = None) -> mock.MagicMock:
     """Patch certbot.display.util to use a special mock display utility.
 
     The mock display utility works like a regular mock object, except it also
@@ -284,13 +284,13 @@ def patch_display_util_with_stdout(
         expected to have a `write` method
     :returns: patch on the function used internally by certbot.display.util to
         get a display utility instance
-    :rtype: unittest.mock._patch
+    :rtype: mock.MagicMock
 
     """
     stdout = stdout if stdout else io.StringIO()
 
-    return mock.patch('certbot._internal.display.obj.get_display',
-                      new=_create_display_util_mock_with_stdout(stdout))
+    return cast(mock.MagicMock, mock.patch('certbot._internal.display.obj.get_display',
+                                           new=_create_display_util_mock_with_stdout(stdout)))
 
 
 class FreezableMock:
@@ -457,8 +457,7 @@ class ConfigTestCase(TempDirTestCase):
         self.config.namespace.server = "https://example.com"
 
 
-def _handle_lock(event_in: multiprocessing.synchronize.Event,
-                 event_out: multiprocessing.synchronize.Event, path: str) -> None:
+def _handle_lock(event_in: synchronize.Event, event_out: synchronize.Event, path: str) -> None:
     """
     Acquire a file lock on given path, then wait to release it. This worker is coordinated
     using events to signal when the lock should be acquired and released.

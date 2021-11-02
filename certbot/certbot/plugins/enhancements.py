@@ -70,7 +70,8 @@ def are_supported(config: configuration.NamespaceConfig,
 
 
 def enable(lineage: Optional[interfaces.RenewableCert], domains: Iterable[str],
-           installer: Optional[interfaces.Installer], config: configuration.NamespaceConfig) -> None:
+           installer: Optional[interfaces.Installer],
+           config: configuration.NamespaceConfig) -> None:
     """
     Run enable method for each requested enhancement that is supported.
 

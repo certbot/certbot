@@ -369,7 +369,8 @@ def verify_renewable_cert_sig(renewable_cert: interfaces.RenewableCert) -> None:
         raise errors.Error(error_str)
 
 
-def verify_signed_payload(public_key: Union[DSAPublicKey, Ed25519PublicKey, Ed448PublicKey, EllipticCurvePublicKey, RSAPublicKey],
+def verify_signed_payload(public_key: Union[DSAPublicKey, Ed25519PublicKey, Ed448PublicKey,
+                                            EllipticCurvePublicKey, RSAPublicKey],
                           signature: bytes, payload: bytes,
                           signature_hash_algorithm: Optional[hashes.HashAlgorithm]) -> None:
     """Check the signature of a payload.
@@ -481,7 +482,8 @@ def _load_cert_or_req(cert_or_req_str: bytes,
 
 
 def _get_sans_from_cert_or_req(cert_or_req_str: bytes,
-                               load_func: Callable[[int, bytes], Union[crypto.X509, crypto.X509Req]],
+                               load_func: Callable[[int, bytes], Union[crypto.X509,
+                                                                       crypto.X509Req]],
                                typ: int =crypto.FILETYPE_PEM) -> List[str]:
     # pylint: disable=protected-access
     return acme_crypto_util._pyopenssl_cert_or_req_san(_load_cert_or_req(
@@ -503,7 +505,8 @@ def get_sans_from_cert(cert: bytes, typ: int = crypto.FILETYPE_PEM) -> List[str]
 
 
 def _get_names_from_cert_or_req(cert_or_req: bytes,
-                                load_func: Callable[[int, bytes], Union[crypto.X509, crypto.X509Req]],
+                                load_func: Callable[[int, bytes], Union[crypto.X509,
+                                                                        crypto.X509Req]],
                                 typ: int) -> List[str]:
     loaded_cert_or_req = _load_cert_or_req(cert_or_req, load_func, typ)
     return _get_names_from_loaded_cert_or_req(loaded_cert_or_req)

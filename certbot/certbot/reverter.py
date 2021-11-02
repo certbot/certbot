@@ -1,7 +1,6 @@
 """Reverter class saves configuration checkpoints and allows for recovery."""
 import csv
 import glob
-from io import TextIOWrapper
 import logging
 import shutil
 import time

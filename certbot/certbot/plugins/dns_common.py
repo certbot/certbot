@@ -32,8 +32,8 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
         self._attempt_cleanup = False
 
     @classmethod
-    def add_parser_arguments(cls, add: Callable[..., None],
-                             default_propagation_seconds: int = 10) -> None:  # pylint: disable=arguments-differ
+    def add_parser_arguments(cls, add: Callable[..., None],  # pylint: disable=arguments-differ
+                             default_propagation_seconds: int = 10) -> None:
         add('propagation-seconds',
             default=default_propagation_seconds,
             type=int,
@@ -100,7 +100,8 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _perform(self, domain: str, validation_name: str, validation: str) -> None:  # pragma: no cover
+    def _perform(self, domain: str, validation_name: str,
+                 validation: str) -> None:  # pragma: no cover
         """
         Performs a dns-01 challenge by creating a DNS TXT record.
 
@@ -112,7 +113,8 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _cleanup(self, domain: str, validation_name: str, validation: str) -> None:  # pragma: no cover
+    def _cleanup(self, domain: str, validation_name: str,
+                 validation: str) -> None:  # pragma: no cover
         """
         Deletes the DNS TXT record which would have been created by `_perform_achall`.
 

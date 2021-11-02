@@ -5,7 +5,7 @@ from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.plugins import disco
 
 if TYPE_CHECKING:
-      from certbot._internal.cli import helpful
+    from certbot._internal.cli import helpful
 
 
 def _plugins_parsing(helpful: "helpful.HelpfulArgumentParser",
