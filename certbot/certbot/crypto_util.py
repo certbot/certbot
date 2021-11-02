@@ -26,7 +26,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.primitives.serialization import Encoding
@@ -44,9 +43,10 @@ from certbot import interfaces
 from certbot import util
 from certbot.compat import os
 
-# Cryptography ed448 module does not exist on oldest tests
+# Cryptography ed448 and ed25519 modules do not exist on oldest tests
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric.ed448 import Ed448PublicKey
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 logger = logging.getLogger(__name__)
 
@@ -373,7 +373,7 @@ def verify_renewable_cert_sig(renewable_cert: interfaces.RenewableCert) -> None:
         raise errors.Error(error_str)
 
 
-def verify_signed_payload(public_key: Union[DSAPublicKey, Ed25519PublicKey, 'Ed448PublicKey',
+def verify_signed_payload(public_key: Union[DSAPublicKey, 'Ed25519PublicKey', 'Ed448PublicKey',
                                             EllipticCurvePublicKey, RSAPublicKey],
                           signature: bytes, payload: bytes,
                           signature_hash_algorithm: Optional[hashes.HashAlgorithm]) -> None:
