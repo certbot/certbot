@@ -126,7 +126,7 @@ class AuthHandler:
         """
         if not self.acme:
             raise errors.Error("No ACME client defined, cannot deactivate valid authorizations.")
-        
+
         to_deactivate = [authzr for authzr in orderr.authorizations
                          if authzr.body.status == messages.STATUS_VALID]
         deactivated = []
@@ -151,7 +151,7 @@ class AuthHandler:
         """
         if not self.acme:
             raise errors.Error("No ACME client defined, cannot poll authorizations.")
-        
+
         authzrs_to_check: Dict[int, Tuple[messages.AuthorizationResource,
                                           Optional[Response]]] = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}

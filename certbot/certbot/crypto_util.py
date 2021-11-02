@@ -27,11 +27,6 @@ from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-
-# Cryptography ed448 module does not exist on oldest tests
-if TYPE_CHECKING:
-    from cryptography.hazmat.primitives.asymmetric.ed448 import Ed448PublicKey
-
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.primitives.serialization import Encoding
@@ -48,6 +43,10 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot.compat import os
+
+# Cryptography ed448 module does not exist on oldest tests
+if TYPE_CHECKING:
+    from cryptography.hazmat.primitives.asymmetric.ed448 import Ed448PublicKey
 
 logger = logging.getLogger(__name__)
 
