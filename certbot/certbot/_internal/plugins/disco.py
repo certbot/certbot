@@ -55,7 +55,7 @@ class PluginEntryPoint:
     # this object is mutable, don't allow it to be hashed!
     __hash__ = None  # type: ignore
 
-    def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix=False) -> None:
+    def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix: bool = False) -> None:
         self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
         self.plugin_cls: Type[interfaces.Plugin] = entry_point.load()
         self.entry_point = entry_point

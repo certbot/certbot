@@ -59,7 +59,7 @@ def validate_hook(shell_cmd: str, hook_name: str) -> None:
             raise errors.HookCommandNotFound(msg)
 
 
-def pre_hook(config: configuration.NamespaceConfig):
+def pre_hook(config: configuration.NamespaceConfig) -> None:
     """Run pre-hooks if they exist and haven't already been run.
 
     When Certbot is running with the renew subcommand, this function

@@ -18,7 +18,7 @@ class Installer(common.Plugin, interfaces.Installer):
     hidden = True
 
     @classmethod
-    def add_parser_arguments(cls, add: Callable[..., None]):
+    def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         pass
 
     # pylint: disable=missing-function-docstring

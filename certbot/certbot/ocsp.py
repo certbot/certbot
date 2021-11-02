@@ -253,7 +253,7 @@ def _check_ocsp_response(response_ocsp: ocsp.OCSPResponse, request_ocsp: ocsp.OC
 def _check_ocsp_response_signature(response_ocsp: ocsp.OCSPResponse, issuer_cert: x509.Certificate,
                                    cert_path: str) -> None:
     """Verify an OCSP response signature against certificate issuer or responder"""
-    def _key_hash(cert):
+    def _key_hash(cert: x509.Certificate) -> bytes:
         return x509.SubjectKeyIdentifier.from_public_key(cert.public_key()).digest
 
     if (response_ocsp.responder_name == issuer_cert.subject

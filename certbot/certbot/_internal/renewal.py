@@ -7,7 +7,7 @@ import random
 import sys
 import time
 import traceback
-from typing import Any
+from typing import Any, Iterable
 from typing import Dict
 from typing import List
 from typing import Mapping
@@ -353,7 +353,7 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str
     hooks.renew_hook(config, domains, lineage.live_dir)
 
 
-def report(msgs, category):
+def report(msgs: Iterable[str], category: str) -> str:
     """Format a results report for a category of renewal outcomes"""
     lines = ("%s (%s)" % (m, category) for m in msgs)
     return "  " + "\n  ".join(lines)

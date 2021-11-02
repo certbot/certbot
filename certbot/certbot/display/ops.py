@@ -1,7 +1,9 @@
 """Contains UI methods for LE user operations."""
 import logging
 from textwrap import indent
-from typing import Callable, Iterable
+from typing import Any
+from typing import Callable
+from typing import Iterable
 from typing import Iterator
 from typing import Optional
 from typing import List
@@ -314,7 +316,9 @@ def _gen_https_names(domains: List[str]) -> str:
     return ""
 
 
-def _get_validated(method, validator, message, default=None, **kwargs):
+def _get_validated(method: Callable[..., Tuple[str, str]],
+                   validator: Callable[[str], Any], message: str,
+                   default: Optional[str] = None, **kwargs: Any) -> Tuple[str, str]:
     if default is not None:
         try:
             validator(default)
@@ -341,7 +345,8 @@ def _get_validated(method, validator, message, default=None, **kwargs):
             return code, raw
 
 
-def validated_input(validator, *args, **kwargs):
+def validated_input(validator: Callable[[str], Any],
+                    *args: Any, **kwargs: Any) -> Tuple[str, str]:
     """Like `~certbot.display.util.input_text`, but with validation.
 
     :param callable validator: A method which will be called on the
@@ -355,7 +360,8 @@ def validated_input(validator, *args, **kwargs):
     return _get_validated(display_util.input_text, validator, *args, **kwargs)
 
 
-def validated_directory(validator, *args, **kwargs):
+def validated_directory(validator: Callable[[str], Any],
+                        *args: Any, **kwargs: Any) -> Tuple[str, str]:
     """Like `~certbot.display.util.directory_select`, but with validation.
 
     :param callable validator: A method which will be called on the

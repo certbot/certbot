@@ -95,24 +95,24 @@ class LexiconClient:
 
                 return  # If `authenticate` doesn't throw an exception, we've found the right name
             except HTTPError as e:
-                result = self._handle_http_error(e, domain_name)
+                result1 = self._handle_http_error(e, domain_name)
 
-                if result:
-                    raise result
+                if result1:
+                    raise result1
             except Exception as e:  # pylint: disable=broad-except
-                result = self._handle_general_error(e, domain_name)
+                result2 = self._handle_general_error(e, domain_name)
 
-                if result:
-                    raise result  # pylint: disable=raising-bad-type
+                if result2:
+                    raise result2  # pylint: disable=raising-bad-type
 
         raise errors.PluginError('Unable to determine zone identifier for {0} using zone names: {1}'
                                  .format(domain, domain_name_guesses))
 
-    def _handle_http_error(self, e: HTTPError, domain_name: str):
+    def _handle_http_error(self, e: HTTPError, domain_name: str) -> errors.PluginError:
         return errors.PluginError('Error determining zone identifier for {0}: {1}.'
                                   .format(domain_name, e))
 
-    def _handle_general_error(self, e: Exception, domain_name: str):
+    def _handle_general_error(self, e: Exception, domain_name: str) -> Optional[errors.PluginError]:
         if not str(e).startswith('No domain found'):
             return errors.PluginError('Unexpected error determining zone identifier for {0}: {1}'
                                       .format(domain_name, e))
