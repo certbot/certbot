@@ -227,11 +227,11 @@ def perform_registration(acme: acme_client.ClientV2,
     eab_credentials_supplied = config.eab_kid and config.eab_hmac_key
     eab: Optional[Dict[str, Any]]
     if eab_credentials_supplied:
-        account_public_key = acme.client.net.key.public_key()
+        account_public_key = acme.net.key.public_key()
         eab = messages.ExternalAccountBinding.from_data(account_public_key=account_public_key,
                                                         kid=config.eab_kid,
                                                         hmac_key=config.eab_hmac_key,
-                                                        directory=acme.client.directory)
+                                                        directory=acme.directory)
     else:
         eab = None
 
@@ -287,6 +287,9 @@ class Client:
         if acme is None and self.account is not None:
             acme = acme_from_config_key(config, self.account.key, self.account.regr)
         self.acme = acme
+        
+        if not self.acme:
+            raise errors.Error("Could not initialize the ACME client.")
 
         self.auth_handler: Optional[auth_handler.AuthHandler]
         if auth is not None:
@@ -429,11 +432,11 @@ class Client:
             cert, chain = self.obtain_certificate_from_csr(csr, orderr)
             return cert, chain, key, csr
 
-    def _get_order_and_authorizations(self, csr_pem: str,
+    def _get_order_and_authorizations(self, csr_pem: bytes,
                                       best_effort: bool) -> messages.OrderResource:
         """Request a new order and complete its authorizations.
 
-        :param str csr_pem: A CSR in PEM format.
+        :param bytes csr_pem: A CSR in PEM format.
         :param bool best_effort: True if failing to complete all
             authorizations should not raise an exception
 

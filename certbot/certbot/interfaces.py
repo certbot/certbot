@@ -9,6 +9,7 @@ from typing import cast
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Type
 from typing import TYPE_CHECKING
 from typing import Union
 import warnings
@@ -180,7 +181,7 @@ class Authenticator(Plugin):
     """
 
     @abstractmethod
-    def get_chall_pref(self, domain: str) -> Iterable[Challenge]:
+    def get_chall_pref(self, domain: str) -> Iterable[Type[Challenge]]:
         """Return `collections.Iterable` of challenge preferences.
 
         :param str domain: Domain for which challenge preferences are sought.

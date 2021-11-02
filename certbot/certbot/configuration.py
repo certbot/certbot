@@ -5,6 +5,7 @@ from typing import Any
 from typing import List
 from typing import Optional
 from urllib import parse
+from acme.challenges import Challenge
 
 from certbot import errors
 from certbot import util
@@ -195,7 +196,7 @@ class NamespaceConfig:
         return self.namespace.https_port
 
     @property
-    def pref_challs(self) -> List[str]:
+    def pref_challs(self) -> List[Challenge]:
         """List of user specified preferred challenges.
 
         Sorted with the most preferred challenge listed first.

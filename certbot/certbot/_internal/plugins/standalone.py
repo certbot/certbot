@@ -12,6 +12,7 @@ from typing import List
 from typing import Mapping
 from typing import Set
 from typing import Tuple
+from typing import Type
 from typing import TYPE_CHECKING
 
 from OpenSSL import crypto
@@ -152,7 +153,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
     def prepare(self) -> None:  # pylint: disable=missing-function-docstring
         pass
 
-    def get_chall_pref(self, domain: str) -> List[challenges.Challenge]:
+    def get_chall_pref(self, domain: str) -> Iterable[Type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01]
 

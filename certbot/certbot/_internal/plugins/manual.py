@@ -6,6 +6,7 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Tuple
+from typing import Type
 
 from acme import challenges
 from certbot import achallenges
@@ -167,7 +168,7 @@ permitted by DNS standards.)
                 )
             )
 
-    def get_chall_pref(self, domain: str) -> List[challenges.Challenge]:
+    def get_chall_pref(self, domain: str) -> Iterable[Type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01, challenges.DNS01]
 

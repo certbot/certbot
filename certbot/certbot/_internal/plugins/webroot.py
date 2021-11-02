@@ -12,6 +12,7 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Set
+from typing import Type
 from typing import Union
 
 from acme import challenges
@@ -86,7 +87,7 @@ to serve all files under specified web root ({0})."""
                 "the provided --webroot-path/-w and that files created there can be downloaded "
                 "from the internet.")
 
-    def get_chall_pref(self, domain: str) -> List[challenges.Challenge]:  # pragma: no cover
+    def get_chall_pref(self, domain: str) -> Iterable[Type[challenges.Challenge]]:  # pragma: no cover
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01]
 
