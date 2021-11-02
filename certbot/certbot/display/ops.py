@@ -4,11 +4,12 @@ from textwrap import indent
 from typing import Any
 from typing import Callable
 from typing import Iterable
-from typing import Optional
 from typing import List
+from typing import Optional
 from typing import Tuple
 
-from certbot import errors, interfaces
+from certbot import errors
+from certbot import interfaces
 from certbot import util
 from certbot._internal import account
 from certbot._internal.display import util as internal_display_util

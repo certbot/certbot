@@ -7,14 +7,14 @@ from multiprocessing import synchronize
 import shutil
 import sys
 import tempfile
+from typing import Any
+from typing import Callable
 from typing import cast
 from typing import IO
-from typing import Any
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Union
-from typing import Callable
 import unittest
 import warnings
 

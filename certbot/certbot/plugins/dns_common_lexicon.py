@@ -1,9 +1,10 @@
 """Common code for DNS Authenticator Plugins built on Lexicon."""
 import logging
-from typing import Any, Mapping
+from typing import Any
 from typing import Dict
-from typing import Union
+from typing import Mapping
 from typing import Optional
+from typing import Union
 
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException

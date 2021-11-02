@@ -5,18 +5,18 @@ import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 import sys
-from typing import List
 from typing import Any
-from typing import Optional
 from typing import Dict
+from typing import List
+from typing import Optional
 
 try:
     import ntsecuritycon
-    import win32security
-    import win32con
-    import win32api
-    import win32file
     import pywintypes
+    import win32api
+    import win32con
+    import win32file
+    import win32security
     import winerror
 except ImportError:
     POSIX_MODE = True

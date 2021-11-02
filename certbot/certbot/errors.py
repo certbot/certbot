@@ -1,6 +1,7 @@
 """Certbot client errors."""
 from typing import Set
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from certbot.achallenges import AnnotatedChallenge
 

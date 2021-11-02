@@ -11,9 +11,9 @@ import re
 from typing import Callable
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Union
-from typing import Set
 import warnings
 
 from cryptography import x509
@@ -22,19 +22,19 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
-from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
-from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ed448 import Ed448PublicKey
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
+import josepy
 from OpenSSL import crypto
 from OpenSSL import SSL
-import josepy
 import pyrfc3339
 import zope.component
 

@@ -8,17 +8,18 @@ import logging
 import select
 import subprocess
 import sys
-import warnings
 from typing import Optional
 from typing import Tuple
+import warnings
 
 from certbot import errors
 from certbot.compat import os
 
 try:
-    from win32com.shell import shell as shellwin32
-    from win32console import GetStdHandle, STD_OUTPUT_HANDLE
     from pywintypes import error as pywinerror
+    from win32com.shell import shell as shellwin32
+    from win32console import GetStdHandle
+    from win32console import STD_OUTPUT_HANDLE
     POSIX_MODE = False
 except ImportError:  # pragma: no cover
     POSIX_MODE = True

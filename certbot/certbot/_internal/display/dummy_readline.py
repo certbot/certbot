@@ -1,8 +1,8 @@
 """A dummy module with no effect for use on systems without readline."""
 from typing import Callable
-from typing import Optional
-from typing import List
 from typing import Iterable
+from typing import List
+from typing import Optional
 
 
 def get_completer() -> Optional[Callable[[], str]]:

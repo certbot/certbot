@@ -1,9 +1,9 @@
 """Module configuring Certbot in a snap environment"""
 import logging
 import socket
+from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Iterable
 
 from requests import Session
 from requests.adapters import HTTPAdapter

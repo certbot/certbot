@@ -29,11 +29,15 @@ import sys
 import tempfile
 import traceback
 from types import TracebackType
-from typing import Optional, Tuple, Any, Type
+from typing import Any
 from typing import IO
+from typing import Optional
+from typing import Tuple
+from typing import Type
 
 from acme import messages
-from certbot import configuration, errors
+from certbot import configuration
+from certbot import errors
 from certbot import util
 from certbot._internal import constants
 from certbot.compat import os

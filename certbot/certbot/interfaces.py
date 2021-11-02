@@ -9,17 +9,17 @@ from typing import cast
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Union
 from typing import TYPE_CHECKING
+from typing import Union
 import warnings
 
 import zope.interface
 
-from acme.client import ClientBase
 from acme.challenges import Challenge
 from acme.challenges import ChallengeResponse
-from certbot.achallenges import AnnotatedChallenge
+from acme.client import ClientBase
 from certbot import configuration
+from certbot.achallenges import AnnotatedChallenge
 
 if TYPE_CHECKING:
     from certbot._internal.account import Account

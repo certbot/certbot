@@ -5,8 +5,8 @@ import queue
 import sys
 import textwrap
 
-from certbot import util
 from certbot import configuration
+from certbot import util
 
 logger = logging.getLogger(__name__)
 

@@ -1,18 +1,18 @@
 """Plugin common functions."""
-import argparse
 from abc import ABCMeta
 from abc import abstractmethod
+import argparse
 import logging
 import re
 import shutil
 import tempfile
 from typing import Any
-from typing import List
 from typing import Callable
-from typing import Tuple
-from typing import Set
-from typing import Optional
 from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Set
+from typing import Tuple
 
 import pkg_resources
 

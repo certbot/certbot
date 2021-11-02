@@ -7,10 +7,10 @@ import glob
 import sys
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Iterable
-from typing import Union
+from typing import List
 from typing import Optional
+from typing import Union
 
 import configargparse
 
@@ -30,10 +30,10 @@ from certbot._internal.cli.cli_utils import add_domains
 from certbot._internal.cli.cli_utils import CustomHelpFormatter
 from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
-from certbot._internal.plugins import disco
 from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
 from certbot._internal.display import obj as display_obj
+from certbot._internal.plugins import disco
 from certbot.compat import os
 
 

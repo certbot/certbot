@@ -1,8 +1,8 @@
 """Internal Certbot display utilities."""
+import sys
+import textwrap
 from typing import List
 from typing import Optional
-import textwrap
-import sys
 
 from certbot.compat import misc
 

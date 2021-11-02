@@ -5,12 +5,13 @@ import hashlib
 import logging
 import shutil
 import socket
-from typing import Callable, Dict
-from typing import List
-from typing import Optional
-from typing import cast
 from typing import Any
+from typing import Callable
+from typing import cast
+from typing import Dict
+from typing import List
 from typing import Mapping
+from typing import Optional
 
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
@@ -20,7 +21,8 @@ import pytz
 from acme import fields as acme_fields
 from acme import messages
 from acme.client import ClientBase  # pylint: disable=unused-import
-from certbot import configuration, errors
+from certbot import configuration
+from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot._internal import constants

@@ -2,16 +2,16 @@
 import datetime
 import logging
 import platform
+from typing import Any
+from typing import Callable
 from typing import cast
-from typing import IO, Any, Callable, Tuple
 from typing import Dict
+from typing import IO
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 import warnings
-from certbot import configuration
-from certbot import interfaces
-from certbot.interfaces import AccountStorage
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
@@ -23,8 +23,10 @@ from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
 import certbot
+from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
+from certbot import interfaces
 from certbot import util
 from certbot._internal import account
 from certbot._internal import auth_handler
@@ -38,6 +40,7 @@ from certbot._internal.plugins import selection as plugin_selection
 from certbot.compat import os
 from certbot.display import ops as display_ops
 from certbot.display import util as display_util
+from certbot.interfaces import AccountStorage
 
 logger = logging.getLogger(__name__)
 

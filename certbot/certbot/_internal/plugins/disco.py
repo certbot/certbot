@@ -2,23 +2,24 @@
 import itertools
 import logging
 import sys
+from typing import Callable
 from typing import cast
 from typing import Dict
-from typing import Optional
-from typing import Type
-from typing import Union
 from typing import Iterable
 from typing import Iterator
 from typing import List
-from typing import Callable
 from typing import Mapping
+from typing import Optional
+from typing import Type
+from typing import Union
 import warnings
 
 import pkg_resources
 import zope.interface
 import zope.interface.verify
 
-from certbot import configuration, errors
+from certbot import configuration
+from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os

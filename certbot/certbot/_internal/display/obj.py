@@ -3,12 +3,12 @@ import logging
 import sys
 from typing import Any
 from typing import Iterable
-from typing import TextIO
-from typing import Optional
-from typing import Union
 from typing import List
+from typing import Optional
+from typing import TextIO
 from typing import Tuple
 from typing import TypeVar
+from typing import Union
 
 import zope.component
 import zope.interface

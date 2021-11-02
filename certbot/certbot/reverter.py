@@ -5,9 +5,9 @@ import logging
 import shutil
 import time
 import traceback
-from typing import TextIO
 from typing import List
 from typing import Set
+from typing import TextIO
 from typing import Tuple
 
 from certbot import configuration

@@ -5,13 +5,13 @@ import logging
 import re
 import shutil
 import stat
-from typing import Optional
-from typing import List
-from typing import Tuple
-from typing import Mapping
 from typing import Any
-from typing import Iterable
 from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Mapping
+from typing import Optional
+from typing import Tuple
 
 import configobj
 from cryptography.hazmat.backends import default_backend

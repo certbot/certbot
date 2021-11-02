@@ -1,7 +1,8 @@
 """Certbot user-supplied configuration."""
 import argparse
 import copy
-from typing import Any, List
+from typing import Any
+from typing import List
 from typing import Optional
 from urllib import parse
 

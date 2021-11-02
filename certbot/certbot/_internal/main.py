@@ -5,12 +5,13 @@ from contextlib import contextmanager
 import functools
 import logging.handlers
 import sys
-from typing import Generator, TypeVar
+from typing import Generator
 from typing import IO
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import TypeVar
 from typing import Union
 
 import configobj

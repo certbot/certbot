@@ -5,7 +5,8 @@ from typing import List
 from typing import Optional
 from typing import Set
 
-from certbot import configuration, errors
+from certbot import configuration
+from certbot import errors
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import misc

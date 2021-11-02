@@ -19,7 +19,7 @@ from typing import Tuple
 from typing import Union
 import warnings
 
-
+from certbot._internal.display import obj
 # These specific imports from certbot._internal.display.obj and
 # certbot._internal.display.util are done to not break the public API of this
 # module.
@@ -29,8 +29,6 @@ from certbot._internal.display.obj import SIDE_FRAME  # pylint: disable=unused-i
 from certbot._internal.display.util import input_with_timeout  # pylint: disable=unused-import
 from certbot._internal.display.util import separate_list_input  # pylint: disable=unused-import
 from certbot._internal.display.util import summarize_domain_list  # pylint: disable=unused-import
-from certbot._internal.display import obj
-
 
 # These constants are defined this way to make them easier to document with
 # Sphinx and to not couple our public docstrings to our internal ones.

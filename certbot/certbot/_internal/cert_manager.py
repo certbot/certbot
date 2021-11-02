@@ -3,11 +3,19 @@ import datetime
 import logging
 import re
 import traceback
-from typing import Any, Callable, Iterable, List, Optional, Tuple, TypeVar, Union
+from typing import Any
+from typing import Callable
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import TypeVar
+from typing import Union
 
 import pytz
 
-from certbot import configuration, crypto_util
+from certbot import configuration
+from certbot import crypto_util
 from certbot import errors
 from certbot import ocsp
 from certbot import util

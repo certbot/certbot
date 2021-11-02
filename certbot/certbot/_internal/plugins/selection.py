@@ -2,10 +2,10 @@
 
 import logging
 from typing import cast
+from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Iterable
 from typing import Type
 from typing import TypeVar
 

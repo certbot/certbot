@@ -2,12 +2,14 @@
 import argparse
 import copy
 import inspect
-from typing import Any, Iterable, Sequence
-from typing import Optional
-from typing import Tuple
+from typing import Any
+from typing import Iterable
 from typing import List
-from typing import Union
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
 from typing import TYPE_CHECKING
+from typing import Union
 
 from acme import challenges
 from certbot import configuration

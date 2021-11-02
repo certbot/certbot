@@ -12,8 +12,13 @@ import re
 import socket
 import subprocess
 import sys
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import IO
+from typing import List
+from typing import Optional
+from typing import Set
 from typing import Text
 from typing import Tuple
 from typing import Union

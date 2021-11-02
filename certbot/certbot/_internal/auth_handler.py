@@ -3,21 +3,24 @@ import datetime
 import logging
 import time
 from typing import Dict
-from typing import Optional
 from typing import List
+from typing import Optional
 from typing import Tuple
 
-from acme import client
+import josepy
+
 from acme import challenges
+from acme import client
 from acme import errors as acme_errors
 from acme import messages
-from certbot import achallenges, configuration, interfaces
+from certbot import achallenges
+from certbot import configuration
 from certbot import errors
+from certbot import interfaces
 from certbot._internal import error_handler
 from certbot._internal.account import Account
 from certbot.display import util as display_util
 from certbot.plugins import common as plugin_common
-import josepy
 
 logger = logging.getLogger(__name__)
 
