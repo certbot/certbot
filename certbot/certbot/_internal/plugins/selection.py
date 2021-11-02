@@ -186,7 +186,7 @@ def record_chosen_plugins(config: configuration.NamespaceConfig, plugins: disco.
     if inst:
         inst_ep = plugins.find_init(inst)
         if inst_ep:
-            config.authenticator = inst_ep.name
+            config.installer = inst_ep.name
     logger.info("Plugins selected: Authenticator %s, Installer %s",
                 config.authenticator, config.installer)
 
