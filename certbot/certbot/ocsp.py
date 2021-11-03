@@ -215,7 +215,7 @@ def _check_ocsp_cryptography(cert_path: str, chain_path: str, url: str, timeout:
     return False
 
 
-def _check_ocsp_response(response_ocsp: ocsp.OCSPResponse, request_ocsp: ocsp.OCSPRequest,
+def _check_ocsp_response(response_ocsp: 'ocsp.OCSPResponse', request_ocsp: 'ocsp.OCSPRequest',
                          issuer_cert: x509.Certificate, cert_path: str) -> None:
     """Verify that the OCSP is valid for several criteria"""
     # Assert OCSP response corresponds to the certificate we are talking about
@@ -250,8 +250,8 @@ def _check_ocsp_response(response_ocsp: ocsp.OCSPResponse, request_ocsp: ocsp.OC
         raise AssertionError('param nextUpdate is in the past.')
 
 
-def _check_ocsp_response_signature(response_ocsp: ocsp.OCSPResponse, issuer_cert: x509.Certificate,
-                                   cert_path: str) -> None:
+def _check_ocsp_response_signature(response_ocsp: 'ocsp.OCSPResponse',
+                                   issuer_cert: x509.Certificate, cert_path: str) -> None:
     """Verify an OCSP response signature against certificate issuer or responder"""
     def _key_hash(cert: x509.Certificate) -> bytes:
         return x509.SubjectKeyIdentifier.from_public_key(cert.public_key()).digest
