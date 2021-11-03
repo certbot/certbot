@@ -208,10 +208,8 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
     return acc, acme
 
 
-def perform_registration(acme: acme_client.ClientV2,
-                         config: configuration.NamespaceConfig,
-                         tos_cb: Optional[Callable[[str], None]]
-                         ) -> messages.RegistrationResource:
+def perform_registration(acme: acme_client.ClientV2, config: configuration.NamespaceConfig,
+                         tos_cb: Optional[Callable[[str], None]]) -> messages.RegistrationResource:
     """
     Actually register new account, trying repeatedly if there are email
     problems
@@ -244,8 +242,11 @@ def perform_registration(acme: acme_client.ClientV2,
     try:
         newreg = messages.NewRegistration.from_data(email=config.email,
                                                     external_account_binding=eab)
-        return cast(acme_client.BackwardsCompatibleClientV2, acme).new_account_and_tos(
-            newreg, tos_cb)
+        # Until ACME v1 support is removed from Certbot, we actually need the provided
+        # ACME client to be a wrapper of type BackwardsCompatibleClientV2.
+        # TODO: Remove this assertion and rewrite the logic when the client is actually a ClientV2
+        assert(isinstance(acme, acme_client.BackwardsCompatibleClientV2))
+        return acme.new_account_and_tos(newreg, tos_cb)
     except messages.Error as e:
         if e.code == "invalidEmail" or e.code == "invalidContact":
             if config.noninteractive_mode:
