@@ -9,5 +9,5 @@
 
 # We also pin our dependencies for increased stability.
 
--c tools/requirements.txt
+-c ../tools/requirements.txt
 -e acme[docs]
