@@ -118,7 +118,8 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         # Generate reversal command.
         # Try to be safe here... check that we can probably reverse before
         # applying enmod command
-        if not util.exe_exists(self.options.dismod):
+        if (self.options.dismod is None or self.options.enmod is None
+                or not util.exe_exists(self.options.dismod)):
             raise errors.MisconfigurationError(
                 "Unable to find a2dismod, please make sure a2enmod and "
                 "a2dismod are configured correctly for certbot.")

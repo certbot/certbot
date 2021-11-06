@@ -29,7 +29,7 @@ class Validator:
         except acme_errors.Error as error:
             logger.exception(str(error))
             return False
-        
+
         # Despite documentation saying that bytes are expected for digest(), we must provide a str.
         return presented_cert.digest(cast(bytes, "sha256")) == cert.digest("sha256")
 
