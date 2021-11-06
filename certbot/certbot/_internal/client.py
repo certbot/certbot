@@ -244,9 +244,13 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
                                                     external_account_binding=eab)
         # Until ACME v1 support is removed from Certbot, we actually need the provided
         # ACME client to be a wrapper of type BackwardsCompatibleClientV2.
-        # TODO: Remove this assertion and rewrite the logic when the client is actually a ClientV2
-        assert(isinstance(acme, acme_client.BackwardsCompatibleClientV2))
-        return acme.new_account_and_tos(newreg, tos_cb)
+        # TODO: Remove this cast and rewrite the logic when the client is actually a ClientV2
+        try:
+            return cast(acme_client.BackwardsCompatibleClientV2,
+                        acme).new_account_and_tos(newreg, tos_cb)
+        except AttributeError:
+            raise errors.Error("The ACME client must be an instance of "
+                               "acme.client.BackwardsCompatibleClientV2")
     except messages.Error as e:
         if e.code == "invalidEmail" or e.code == "invalidContact":
             if config.noninteractive_mode:
