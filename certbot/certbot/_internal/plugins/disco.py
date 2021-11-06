@@ -131,7 +131,9 @@ class PluginEntryPoint:
             self.entry_point.require()  # fetch extras!
             # For plugins implementing ABCs Plugin, Authenticator or Installer, the following
             # line will raise an exception if some implementations of abstract methods are missing.
-            self._initialized = self.plugin_cls(config, self.name)
+            # TODO: Remove the cast once certbot package is fully typed
+            self._initialized = self.plugin_cls(
+                cast(configuration.NamespaceConfig, config), self.name)
         return self._initialized
 
     def verify(self, ifaces: Iterable[Type]) -> bool:

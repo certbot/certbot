@@ -1,6 +1,7 @@
 """Internal Certbot display utilities."""
 import sys
 import textwrap
+from typing import cast
 from typing import List
 from typing import Optional
 
@@ -61,7 +62,8 @@ def input_with_timeout(prompt: Optional[str] = None, timeout: float = 36000.0) -
         sys.stdout.write(prompt)
         sys.stdout.flush()
 
-    line = misc.readline_with_timeout(timeout, prompt)
+    # TODO: Remove the cast once certbot package is fully typed
+    line = misc.readline_with_timeout(timeout, cast(str, prompt))
 
     if not line:
         raise EOFError
