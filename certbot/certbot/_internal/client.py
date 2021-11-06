@@ -9,6 +9,7 @@ from typing import Dict
 from typing import IO
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Union
 import warnings
@@ -18,6 +19,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 import josepy as jose
 import OpenSSL
 
+from acme.challenges import Challenge
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
@@ -188,7 +190,8 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
 
     # If --dry-run is used, and there is no staging account, create one with no email.
     if config.dry_run:
-        config.email = None
+        # TODO: Remove the type ignore once certbot package is fully typed
+        config.email = None  # type: ignore[misc]
 
     # Each new registration shall use a fresh new key
     rsa_key = generate_private_key(
@@ -240,8 +243,10 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
             raise errors.Error(msg)
 
     try:
-        newreg = messages.NewRegistration.from_data(email=config.email,
-                                                    external_account_binding=eab)
+        # TODO: Remove the cast once certbot package is fully typed
+        newreg = messages.NewRegistration.from_data(
+            email=config.email,
+            external_account_binding=cast(messages.ExternalAccountBinding, eab))
         # Until ACME v1 support is removed from Certbot, we actually need the provided
         # ACME client to be a wrapper of type BackwardsCompatibleClientV2.
         # TODO: Remove this cast and rewrite the logic when the client is actually a ClientV2
@@ -258,7 +263,8 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
                        "Please ensure it is a valid email and attempt "
                        "registration again." % config.email)
                 raise errors.Error(msg)
-            config.email = display_ops.get_email(invalid=True)
+            # TODO: Remove the type ignore once certbot package is fully typed
+            config.email = display_ops.get_email(invalid=True)  # type: ignore[misc]
             return perform_registration(acme, config, tos_cb)
         raise
 
@@ -297,7 +303,8 @@ class Client:
         self.auth_handler: Optional[auth_handler.AuthHandler]
         if auth is not None:
             self.auth_handler = auth_handler.AuthHandler(
-                auth, self.acme, self.account, self.config.pref_challs)
+                # TODO: Remove the cast once certbot package is fully typed
+                auth, self.acme, self.account, cast(List[Challenge], self.config.pref_challs))
         else:
             self.auth_handler = None
 
@@ -413,7 +420,8 @@ class Client:
                 elliptic_curve=elliptic_curve,
                 strict_permissions=self.config.strict_permissions,
             )
-            csr = crypto_util.generate_csr(key, domains, self.config.csr_dir,
+            # TODO: Remove the cast once certbot package is fully typed
+            csr = crypto_util.generate_csr(key, cast(Set[str], domains), self.config.csr_dir,
                                            self.config.must_staple, self.config.strict_permissions)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
@@ -664,7 +672,8 @@ class Client:
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
             for dom in domains:
                 try:
-                    self.installer.enhance(dom, enhancement, options)
+                    # TODO: Remove the cast once certbot package is fully typed
+                    self.installer.enhance(dom, enhancement, cast(Optional[List[str]], options))
                 except errors.PluginEnhancementAlreadyPresent:
                     logger.info("Enhancement %s was already set.", enh_label)
                 except errors.PluginError:

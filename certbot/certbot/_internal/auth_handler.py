@@ -6,6 +6,7 @@ from typing import cast
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sized
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -95,7 +96,9 @@ class AuthHandler:
                 logger.info('Attempting to clean up outstanding challenges...')
                 raise error
             # All challenges should have been processed by the authenticator.
-            assert len(resps) == len(achalls), 'Some challenges have not been performed.'
+            # TODO: Remove the cast once certbot package is fully typed
+            assert len(cast(Sized, resps)) == len(achalls), \
+                'Some challenges have not been performed.'
 
             # Inform the ACME CA server that challenges are available for validation.
             for achall, resp in zip(achalls, resps):
@@ -309,8 +312,10 @@ class AuthHandler:
         for achall in failed_achalls:
             problems.setdefault(achall.error.typ, []).append(achall)
 
-        msg = [f"\nCertbot failed to authenticate some domains (authenticator: {self.auth.name})."
-            " The Certificate Authority reported these problems:"]
+        # TODO: Remove the type ignore once certbot package is fully typed
+        msg = ["\nCertbot failed to authenticate some domains "  # type: ignore[attr-defined]
+               f"(authenticator: {self.auth.name})."
+               " The Certificate Authority reported these problems:"]
 
         for _, achalls in sorted(problems.items(), key=lambda item: item[0]):
             msg.append(_generate_failed_chall_msg(achalls))

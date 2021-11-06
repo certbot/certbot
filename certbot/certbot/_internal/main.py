@@ -697,7 +697,8 @@ def _determine_account(config: configuration.NamespaceConfig
             acc = accounts[0]
         else:  # no account registered yet
             if config.email is None and not config.register_unsafely_without_email:
-                config.email = display_ops.get_email()
+                # TODO: Remove the type ignore once certbot package is fully typed
+                config.email = display_ops.get_email()  # type: ignore[misc]
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
@@ -889,7 +890,8 @@ def update_account(config: configuration.NamespaceConfig,
     if not accounts:
         return "Could not find an existing account to update."
     if config.email is None and not config.register_unsafely_without_email:
-        config.email = display_ops.get_email(optional=False)
+        # TODO: Remove the type ignore once certbot package is fully typed
+        config.email = display_ops.get_email(optional=False)  # type: ignore[misc]
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
@@ -1273,7 +1275,8 @@ def revoke(config: configuration.NamespaceConfig,
         config.cert_path = lineage.cert_path
         # --server takes priority over lineage.server
         if lineage.server and not cli.set_by_cli("server"):
-            config.server = lineage.server
+            # TODO: Remove the type ignore once certbot package is fully typed
+            config.server = lineage.server  # type: ignore[misc]
     elif not config.cert_path or (config.cert_path and config.certname):
         # intentionally not supporting --cert-path & --cert-name together,
         # to avoid dealing with mismatched values
