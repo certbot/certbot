@@ -14,6 +14,7 @@ import subprocess
 import sys
 from typing import Dict
 from typing import IO
+from typing import Optional
 from typing import Text
 from typing import Tuple
 from typing import Union
@@ -118,7 +119,7 @@ def run_script(params, log=logger.error):
     return proc.stdout, proc.stderr
 
 
-def exe_exists(exe):
+def exe_exists(exe: Optional[str]) -> bool:
     """Determine whether path/name refers to an executable.
 
     :param str exe: Executable path or name
@@ -127,6 +128,9 @@ def exe_exists(exe):
     :rtype: bool
 
     """
+    if exe is None:
+        return False
+
     path, _ = os.path.split(exe)
     if path:
         return filesystem.is_executable(exe)
