@@ -2,6 +2,7 @@
 import logging
 import re
 from typing import Optional
+from typing import Union
 
 from lexicon.providers import linode
 from lexicon.providers import linode4
@@ -58,7 +59,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         api_key = self.credentials.conf('key')
-        api_version = self.credentials.conf('version')
+        api_version: Optional[Union[str, int]] = self.credentials.conf('version')
         if api_version == '':
             api_version = None
 

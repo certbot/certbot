@@ -19,6 +19,7 @@ import pkg_resources
 from certbot import achallenges
 from certbot import configuration
 from certbot import crypto_util
+from certbot import interfaces
 from certbot import errors
 from certbot import reverter
 from certbot._internal import constants
@@ -236,6 +237,13 @@ class Installer(AbstractInstaller, Plugin, metaclass=ABCMeta):
             constants.ALL_SSL_DHPARAMS_HASHES)
 
 
+class Configurator(Installer, interfaces.Authenticator, metaclass=ABCMeta):
+    """
+    A plugin that extends certbot.plugins.common.Installer
+    and implements certbot.interfaces.Authenticator
+    """
+
+
 class Addr:
     r"""Represents an virtual host address.
 
@@ -346,7 +354,7 @@ class ChallengePerformer:
 
     """
 
-    def __init__(self, configurator: AbstractPlugin):
+    def __init__(self, configurator: Configurator):
         self.configurator = configurator
         self.achalls: List[achallenges.KeyAuthorizationAnnotatedChallenge] = []
         self.indices: List[int] = []
