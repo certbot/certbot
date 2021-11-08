@@ -1,10 +1,7 @@
 """Utilities for all Certbot."""
-# distutils.version under virtualenv confuses pylint
-# For more info, see: https://github.com/PyCQA/pylint/issues/73
 import argparse
 import atexit
 import collections
-import distutils.version
 import errno
 import logging
 import platform
@@ -14,6 +11,7 @@ import subprocess
 import sys
 from typing import Dict
 from typing import IO
+from typing import List
 from typing import Text
 from typing import Tuple
 from typing import Union
@@ -61,7 +59,7 @@ _INITIAL_PID = os.getpid()
 # program exits before the lock is cleaned up, it is automatically
 # released, but the file isn't deleted.
 _LOCKS: Dict[str, lock.LockFile] = {}
-
+_VERSION_COMPONENT_RE = re.compile(r'(\d+ | [a-z]+ | \.)', re.VERBOSE)
 
 def env_no_snap_for_external_calls():
     """
@@ -612,8 +610,13 @@ def get_strict_version(normalized):
     :rtype: distutils.version.StrictVersion
 
     """
-    # strict version ending with "a" and a number designates a pre-release
-    return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
+    warnings.warn("certbot.util.get_strict_version is deprecated and will be "
+                  "removed in a future release.", DeprecationWarning)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        import distutils.version
+        # strict version ending with "a" and a number designates a pre-release
+        return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
 
 
 def is_staging(srv):
@@ -637,6 +640,32 @@ def atexit_register(func, *args, **kwargs):
 
     """
     atexit.register(_atexit_call, func, *args, **kwargs)
+
+
+def parse_loose_version(version_string):
+    """Parses a version string into its components.
+
+    This code and the returned tuple is based on the now deprecated
+    distutils.version.LooseVersion class from the Python standard library.
+    Two LooseVersion classes and two lists as returned by this function should
+    compare in the same way. See
+    https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L205-L347.
+
+    :param str version_string: version string
+
+    :returns: list of parsed version string components
+    :rtype: list
+
+    """
+    components: List[Union[int, str]]
+    components = [x for x in _VERSION_COMPONENT_RE.split(version_string)
+                          if x and x != '.']
+    for i, obj in enumerate(components):
+        try:
+            components[i] = int(obj)
+        except ValueError:
+            pass
+    return components
 
 
 def _atexit_call(func, *args, **kwargs):

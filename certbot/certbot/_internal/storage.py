@@ -12,6 +12,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
+import pkg_resources
 import pytz
 
 import certbot
@@ -33,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 README = "README"
-CURRENT_VERSION = util.get_strict_version(certbot.__version__)
+CURRENT_VERSION = pkg_resources.parse_version(certbot.__version__)
 BASE_PRIVKEY_MODE = 0o600
 
 
@@ -457,7 +458,7 @@ class RenewableCert(interfaces.RenewableCert):
 
         conf_version = self.configuration.get("version")
         if (conf_version is not None and
-                util.get_strict_version(conf_version) > CURRENT_VERSION):
+                pkg_resources.parse_version(conf_version) > CURRENT_VERSION):
             logger.info(
                 "Attempting to parse the version %s renewal configuration "
                 "file found at %s with version %s of Certbot. This might not "
