@@ -16,7 +16,7 @@ Setup:
    - https://snapcraft.io/docs/installing-snapcraft
    - Use the command `snapcraft login` to log in.
 
-Sign into code signing server and sign Windowas installer prior to running this script
+Sign into code signing server and sign Windows installer prior to running this script
 
 Run:
 
