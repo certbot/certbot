@@ -30,7 +30,7 @@ import re
 import subprocess
 import sys
 import tempfile
-import userpass
+import getpass
 from zipfile import ZipFile
 
 from azure.devops.connection import Connection
