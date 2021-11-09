@@ -205,7 +205,6 @@ use the DNS plugins on your system.
 
 Once installed, you can find documentation on how to use each plugin at:
 
-* `certbot-dns-azure <https://certbot-dns-azure.readthedocs.io/en/latest/>`_
 * `certbot-dns-cloudflare <https://certbot-dns-cloudflare.readthedocs.io>`_
 * `certbot-dns-cloudxns <https://certbot-dns-cloudxns.readthedocs.io>`_
 * `certbot-dns-digitalocean <https://certbot-dns-digitalocean.readthedocs.io>`_
@@ -310,6 +309,7 @@ varnish_           Y    N    Obtain certificates via a Varnish server
 external-auth_     Y    Y    A plugin for convenient scripting
 pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN servers
 proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
+dns-azure          Y    Y    DNS Authentication using Azure DNS
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
@@ -330,6 +330,7 @@ Infomaniak_        Y    N    DNS Authentication using Infomaniak Domains API
 .. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
 .. _external-auth: https://github.com/EnigmaBridge/certbot-external-auth
+.. _dns-azure: https://github.com/binkhq/certbot-dns-azure
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
