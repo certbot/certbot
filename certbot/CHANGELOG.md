@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed an issue on Windows where the `web.config` created by Certbot would sometimes
+  conflict with preexisting configurations (#9088).
 
 More details about these changes can be found on our GitHub repo.
 
