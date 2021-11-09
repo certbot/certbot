@@ -30,6 +30,8 @@ for an account with the following permissions:
 
 * ``dns.changes.create``
 * ``dns.changes.get``
+* ``dns.changes.list``
+* ``dns.managedZones.get``
 * ``dns.managedZones.list``
 * ``dns.resourceRecordSets.create``
 * ``dns.resourceRecordSets.delete``
