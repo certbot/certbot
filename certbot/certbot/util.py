@@ -487,7 +487,7 @@ def enforce_le_validity(domain: str) -> str:
     """Checks that Let's Encrypt will consider domain to be valid.
 
     :param str domain: FQDN to check
-    :type domain: `str` or `unicode`
+    :type domain: `str`
     :returns: The domain cast to `str`, with ASCII-only contents
     :rtype: str
     :raises ConfigurationError: for invalid domains and cases where Let's
