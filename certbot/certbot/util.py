@@ -599,7 +599,7 @@ def is_ipaddress(address: str) -> bool:
             return False
 
 
-def is_wildcard_domain(domain: str) -> bool:
+def is_wildcard_domain(domain: Union[str, bytes]) -> bool:
     """"Is domain a wildcard domain?
 
     :param domain: domain to check
