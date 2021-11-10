@@ -303,8 +303,7 @@ class Client:
         self.auth_handler: Optional[auth_handler.AuthHandler]
         if auth is not None:
             self.auth_handler = auth_handler.AuthHandler(
-                # TODO: Remove the cast once certbot package is fully typed
-                auth, self.acme, self.account, cast(List[Challenge], self.config.pref_challs))
+                auth, self.acme, self.account, self.config.pref_challs)
         else:
             self.auth_handler = None
 

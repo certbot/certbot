@@ -47,7 +47,7 @@ class AuthHandler:
 
     """
     def __init__(self, auth: interfaces.Authenticator, acme_client: Optional[client.ClientV2],
-                 account: Optional[Account], pref_challs: List[challenges.Challenge]) -> None:
+                 account: Optional[Account], pref_challs: List[str]) -> None:
         self.auth = auth
         self.acme = acme_client
 
