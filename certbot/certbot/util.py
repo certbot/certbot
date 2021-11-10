@@ -516,12 +516,13 @@ def enforce_le_validity(domain: str) -> str:
                     label, domain))
     return domain
 
-def enforce_domain_sanity(domain: str) -> str:
+
+def enforce_domain_sanity(domain: Union[str, bytes]) -> str:
     """Method which validates domain value and errors out if
     the requirements are not met.
 
     :param domain: Domain to check
-    :type domain: `str`
+    :type domain: `str` or `bytes`
     :raises ConfigurationError: for invalid domains and cases where Let's
                                 Encrypt currently will not issue certificates
 
