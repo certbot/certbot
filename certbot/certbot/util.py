@@ -487,7 +487,7 @@ def enforce_le_validity(domain: str) -> str:
     """Checks that Let's Encrypt will consider domain to be valid.
 
     :param str domain: FQDN to check
-    :type domain: `str` or `unicode`
+    :type domain: `str`
     :returns: The domain cast to `str`, with ASCII-only contents
     :rtype: str
     :raises ConfigurationError: for invalid domains and cases where Let's
@@ -516,12 +516,13 @@ def enforce_le_validity(domain: str) -> str:
                     label, domain))
     return domain
 
-def enforce_domain_sanity(domain: str) -> str:
+
+def enforce_domain_sanity(domain: Union[str, bytes]) -> str:
     """Method which validates domain value and errors out if
     the requirements are not met.
 
     :param domain: Domain to check
-    :type domain: `str`
+    :type domain: `str` or `bytes`
     :raises ConfigurationError: for invalid domains and cases where Let's
                                 Encrypt currently will not issue certificates
 
@@ -598,7 +599,7 @@ def is_ipaddress(address: str) -> bool:
             return False
 
 
-def is_wildcard_domain(domain: str) -> bool:
+def is_wildcard_domain(domain: Union[str, bytes]) -> bool:
     """"Is domain a wildcard domain?
 
     :param domain: domain to check
@@ -608,10 +609,9 @@ def is_wildcard_domain(domain: str) -> bool:
     :rtype: bool
 
     """
-    wildcard_marker: Union[Text, bytes] = b"*."
     if isinstance(domain, str):
-        wildcard_marker = "*."
-    return domain.startswith(wildcard_marker)
+        return domain.startswith("*.")
+    return domain.startswith(b"*.")
 
 
 def get_strict_version(normalized: str) -> distutils.version.StrictVersion:

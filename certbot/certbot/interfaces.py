@@ -203,7 +203,7 @@ class Authenticator(Plugin):
             instances, such that it contains types found within
             :func:`get_chall_pref` only.
 
-        :returns: `collections.Iterable` of ACME
+        :returns: list of ACME
             :class:`~acme.challenges.ChallengeResponse` instances corresponding to each provided
             :class:`~acme.challenges.Challenge`.
         :rtype: :class:`collections.List` of

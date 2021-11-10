@@ -5,6 +5,7 @@ import logging
 import shutil
 import time
 import traceback
+from typing import Iterable
 from typing import List
 from typing import Set
 from typing import TextIO
@@ -337,7 +338,7 @@ class Reverter:
             if new_fd is not None:
                 new_fd.close()
 
-    def register_undo_command(self, temporary: bool, command: List[str]) -> None:
+    def register_undo_command(self, temporary: bool, command: Iterable[str]) -> None:
         """Register a command to be run to undo actions taken.
 
         .. warning:: This function does not enforce order of operations in terms
