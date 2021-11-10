@@ -42,6 +42,8 @@ class NamespaceConfig:
     """
 
     def __init__(self, namespace: argparse.Namespace) -> None:
+        self.namespace: argparse.Namespace
+        # Avoid recursion loop because of the delegation defined in __setattr__
         object.__setattr__(self, 'namespace', namespace)
 
         self.namespace.config_dir = os.path.abspath(self.namespace.config_dir)
