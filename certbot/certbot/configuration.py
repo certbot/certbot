@@ -196,7 +196,7 @@ class NamespaceConfig:
         return self.namespace.https_port
 
     @property
-    def pref_challs(self) -> List[Challenge]:
+    def pref_challs(self) -> List[str]:
         """List of user specified preferred challenges.
 
         Sorted with the most preferred challenge listed first.
