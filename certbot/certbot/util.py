@@ -609,10 +609,9 @@ def is_wildcard_domain(domain: Union[str, bytes]) -> bool:
     :rtype: bool
 
     """
-    wildcard_marker: Union[Text, bytes] = b"*."
     if isinstance(domain, str):
-        wildcard_marker = "*."
-    return domain.startswith(wildcard_marker)
+        return domain.startswith("*.")
+    return domain.startswith(b"*.")
 
 
 def get_strict_version(normalized: str) -> distutils.version.StrictVersion:
