@@ -486,7 +486,7 @@ def _load_cert_or_req(cert_or_req_str: bytes,
 def _get_sans_from_cert_or_req(cert_or_req_str: bytes,
                                load_func: Callable[[int, bytes], Union[crypto.X509,
                                                                        crypto.X509Req]],
-                               typ: int =crypto.FILETYPE_PEM) -> List[str]:
+                               typ: int = crypto.FILETYPE_PEM) -> List[str]:
     # pylint: disable=protected-access
     return acme_crypto_util._pyopenssl_cert_or_req_san(_load_cert_or_req(
         cert_or_req_str, load_func, typ))
