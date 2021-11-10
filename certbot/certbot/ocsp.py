@@ -301,6 +301,8 @@ def _check_ocsp_response_signature(response_ocsp: 'ocsp.OCSPResponse',
     chosen_response_hash = response_ocsp.signature_hash_algorithm
     # We check that the OSCP response is effectively signed by the responder
     # (an authorized delegate one or the certificate issuer itself).
+    if not chosen_response_hash:
+        raise AssertionError("no signature hash algorithm defined")
     crypto_util.verify_signed_payload(responder_cert.public_key(), response_ocsp.signature,
                                       response_ocsp.tbs_response_bytes, chosen_response_hash)
 

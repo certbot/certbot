@@ -376,7 +376,7 @@ def verify_renewable_cert_sig(renewable_cert: interfaces.RenewableCert) -> None:
 def verify_signed_payload(public_key: Union[DSAPublicKey, 'Ed25519PublicKey', 'Ed448PublicKey',
                                             EllipticCurvePublicKey, RSAPublicKey],
                           signature: bytes, payload: bytes,
-                          signature_hash_algorithm: Optional[hashes.HashAlgorithm]) -> None:
+                          signature_hash_algorithm: hashes.HashAlgorithm) -> None:
     """Check the signature of a payload.
 
     :param RSAPublicKey/EllipticCurvePublicKey public_key: the public_key to check signature
@@ -387,8 +387,6 @@ def verify_signed_payload(public_key: Union[DSAPublicKey, 'Ed25519PublicKey', 'E
     :raises InvalidSignature: If signature verification fails.
     :raises errors.Error: If public key type is not supported
     """
-    if not signature_hash_algorithm:
-        raise errors.Error("No signature hash algorithm defined.")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if isinstance(public_key, RSAPublicKey):
