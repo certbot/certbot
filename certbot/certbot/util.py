@@ -12,8 +12,13 @@ import re
 import socket
 import subprocess
 import sys
+from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import IO
+from typing import List
+from typing import Optional
+from typing import Set
 from typing import Text
 from typing import Tuple
 from typing import Union
@@ -63,7 +68,7 @@ _INITIAL_PID = os.getpid()
 _LOCKS: Dict[str, lock.LockFile] = {}
 
 
-def env_no_snap_for_external_calls():
+def env_no_snap_for_external_calls() -> Dict[str, str]:
     """
     When Certbot is run inside a Snap, certain environment variables
     are modified. But Certbot sometimes calls out to external programs,
@@ -88,7 +93,7 @@ def env_no_snap_for_external_calls():
     return env
 
 
-def run_script(params, log=logger.error):
+def run_script(params: List[str], log: Callable[[str], None]=logger.error) -> Tuple[str, str]:
     """Run the script with the given params.
 
     :param list params: List of parameters to pass to subprocess.run
@@ -118,7 +123,7 @@ def run_script(params, log=logger.error):
     return proc.stdout, proc.stderr
 
 
-def exe_exists(exe):
+def exe_exists(exe: Optional[str]) -> bool:
     """Determine whether path/name refers to an executable.
 
     :param str exe: Executable path or name
@@ -127,6 +132,9 @@ def exe_exists(exe):
     :rtype: bool
 
     """
+    if exe is None:
+        return False
+
     path, _ = os.path.split(exe)
     if path:
         return filesystem.is_executable(exe)
@@ -137,7 +145,7 @@ def exe_exists(exe):
     return False
 
 
-def lock_dir_until_exit(dir_path):
+def lock_dir_until_exit(dir_path: str) -> None:
     """Lock the directory at dir_path until program exit.
 
     :param str dir_path: path to directory
@@ -152,7 +160,7 @@ def lock_dir_until_exit(dir_path):
         _LOCKS[dir_path] = lock.lock_dir(dir_path)
 
 
-def _release_locks():
+def _release_locks() -> None:
     for dir_lock in _LOCKS.values():
         try:
             dir_lock.release()
@@ -162,7 +170,7 @@ def _release_locks():
     _LOCKS.clear()
 
 
-def set_up_core_dir(directory, mode, strict):
+def set_up_core_dir(directory: str, mode: int, strict: bool) -> None:
     """Ensure directory exists with proper permissions and is locked.
 
     :param str directory: Path to a directory.
@@ -181,7 +189,7 @@ def set_up_core_dir(directory, mode, strict):
         raise errors.Error(PERM_ERR_FMT.format(error))
 
 
-def make_or_verify_dir(directory, mode=0o755, strict=False):
+def make_or_verify_dir(directory: str, mode: int = 0o755, strict: bool = False) -> None:
     """Make sure directory exists with proper permissions.
 
     :param str directory: Path to a directory.
@@ -208,7 +216,7 @@ def make_or_verify_dir(directory, mode=0o755, strict=False):
             raise
 
 
-def safe_open(path: str, mode: str = "w", chmod=None) -> IO:
+def safe_open(path: str, mode: str = "w", chmod: Optional[int] = None) -> IO:
     """Safely open a file.
 
     :param str path: Path to a file.
@@ -225,12 +233,12 @@ def safe_open(path: str, mode: str = "w", chmod=None) -> IO:
     return os.fdopen(fd, mode, *fdopen_args)
 
 
-def _unique_file(path, filename_pat, count, chmod, mode):
+def _unique_file(path: str, filename_pat: Callable[[int], str], count: int,
+                 chmod: int, mode: str) -> Tuple[IO, str]:
     while True:
         current_path = os.path.join(path, filename_pat(count))
         try:
-            return safe_open(current_path, chmod=chmod, mode=mode),\
-                os.path.abspath(current_path)
+            return safe_open(current_path, chmod=chmod, mode=mode), os.path.abspath(current_path)
         except OSError as err:
             # "File exists," is okay, try a different name.
             if err.errno != errno.EEXIST:
@@ -238,7 +246,7 @@ def _unique_file(path, filename_pat, count, chmod, mode):
         count += 1
 
 
-def unique_file(path, chmod=0o777, mode="w"):
+def unique_file(path: str, chmod: int = 0o777, mode: str = "w") -> Tuple[IO, str]:
     """Safely finds a unique file.
 
     :param str path: path/filename.ext
@@ -254,7 +262,8 @@ def unique_file(path, chmod=0o777, mode="w"):
         count=0, chmod=chmod, mode=mode)
 
 
-def unique_lineage_name(path, filename, chmod=0o644, mode="w"):
+def unique_lineage_name(path: str, filename: str, chmod: int = 0o644,
+                        mode: str = "w") -> Tuple[IO, str]:
     """Safely finds a unique file using lineage convention.
 
     :param str path: directory path
@@ -281,7 +290,7 @@ def unique_lineage_name(path, filename, chmod=0o644, mode="w"):
         count=1, chmod=chmod, mode=mode)
 
 
-def safely_remove(path):
+def safely_remove(path: str) -> None:
     """Remove a file that may not exist."""
     try:
         os.remove(path)
@@ -290,7 +299,7 @@ def safely_remove(path):
             raise
 
 
-def get_filtered_names(all_names):
+def get_filtered_names(all_names: Set[str]) -> Set[str]:
     """Removes names that aren't considered valid by Let's Encrypt.
 
     :param set all_names: all names found in the configuration
@@ -307,7 +316,7 @@ def get_filtered_names(all_names):
             logger.debug('Not suggesting name "%s"', name, exc_info=True)
     return filtered_names
 
-def get_os_info():
+def get_os_info() -> Tuple[str, str]:
     """
     Get OS name and version
 
@@ -317,7 +326,7 @@ def get_os_info():
 
     return get_python_os_info(pretty=False)
 
-def get_os_info_ua():
+def get_os_info_ua() -> str:
     """
     Get OS name and version string for User Agent
 
@@ -331,7 +340,7 @@ def get_os_info_ua():
         return " ".join(get_python_os_info(pretty=True))
     return os_info
 
-def get_systemd_os_like():
+def get_systemd_os_like() -> List[str]:
     """
     Get a list of strings that indicate the distribution likeness to
     other distributions.
@@ -344,7 +353,7 @@ def get_systemd_os_like():
         return distro.like().split(" ")
     return []
 
-def get_var_from_file(varname, filepath="/etc/os-release"):
+def get_var_from_file(varname: str, filepath: str = "/etc/os-release") -> str:
     """
     Get single value from a file formatted like systemd /etc/os-release
 
@@ -366,14 +375,14 @@ def get_var_from_file(varname, filepath="/etc/os-release"):
             return _normalize_string(line.strip()[len(var_string):])
     return ""
 
-def _normalize_string(orig):
+def _normalize_string(orig: str) -> str:
     """
     Helper function for get_var_from_file() to remove quotes
     and whitespaces
     """
     return orig.replace('"', '').replace("'", "").strip()
 
-def get_python_os_info(pretty=False):
+def get_python_os_info(pretty: bool = False) -> Tuple[str, str]:
     """
     Get Operating System type/distribution and major version
     using python platform module
@@ -432,7 +441,7 @@ def get_python_os_info(pretty=False):
 EMAIL_REGEX = re.compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$")
 
 
-def safe_email(email):
+def safe_email(email: str) -> bool:
     """Scrub email address before using it."""
     if EMAIL_REGEX.match(email) is not None:
         return not email.startswith(".") and ".." not in email
@@ -442,11 +451,13 @@ def safe_email(email):
 
 class DeprecatedArgumentAction(argparse.Action):
     """Action to log a warning when an argument is used."""
-    def __call__(self, unused1, unused2, unused3, option_string=None):
+    def __call__(self, unused1: Any, unused2: Any, unused3: Any,
+                 option_string: Optional[str] = None) -> None:
         warnings.warn("Use of %s is deprecated." % option_string, DeprecationWarning)
 
 
-def add_deprecated_argument(add_argument, argument_name, nargs):
+def add_deprecated_argument(add_argument: Callable[..., None], argument_name: str,
+                            nargs: Union[str, int]) -> None:
     """Adds a deprecated argument with the name argument_name.
 
     Deprecated arguments are not shown in the help. If they are used on
@@ -472,7 +483,7 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
                  help=argparse.SUPPRESS, nargs=nargs)
 
 
-def enforce_le_validity(domain):
+def enforce_le_validity(domain: str) -> str:
     """Checks that Let's Encrypt will consider domain to be valid.
 
     :param str domain: FQDN to check
@@ -505,12 +516,12 @@ def enforce_le_validity(domain):
                     label, domain))
     return domain
 
-def enforce_domain_sanity(domain):
+def enforce_domain_sanity(domain: str) -> str:
     """Method which validates domain value and errors out if
     the requirements are not met.
 
     :param domain: Domain to check
-    :type domain: `str` or `unicode`
+    :type domain: `str`
     :raises ConfigurationError: for invalid domains and cases where Let's
                                 Encrypt currently will not issue certificates
 
@@ -564,11 +575,11 @@ def enforce_domain_sanity(domain):
     return domain
 
 
-def is_ipaddress(address):
+def is_ipaddress(address: str) -> bool:
     """Is given address string form of IP(v4 or v6) address?
 
     :param address: address to check
-    :type address: `str` or `unicode`
+    :type address: `str`
 
     :returns: True if address is valid IP address, otherwise return False.
     :rtype: bool
@@ -587,11 +598,11 @@ def is_ipaddress(address):
             return False
 
 
-def is_wildcard_domain(domain):
+def is_wildcard_domain(domain: str) -> bool:
     """"Is domain a wildcard domain?
 
     :param domain: domain to check
-    :type domain: `bytes` or `str` or `unicode`
+    :type domain: `bytes` or `str`
 
     :returns: True if domain is a wildcard, otherwise, False
     :rtype: bool
@@ -603,7 +614,7 @@ def is_wildcard_domain(domain):
     return domain.startswith(wildcard_marker)
 
 
-def get_strict_version(normalized):
+def get_strict_version(normalized: str) -> distutils.version.StrictVersion:
     """Converts a normalized version to a strict version.
 
     :param str normalized: normalized version string
@@ -616,7 +627,7 @@ def get_strict_version(normalized):
     return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
 
 
-def is_staging(srv):
+def is_staging(srv: str) -> bool:
     """
     Determine whether a given ACME server is a known test / staging server.
 
@@ -627,7 +638,7 @@ def is_staging(srv):
     return srv == constants.STAGING_URI or "staging" in srv
 
 
-def atexit_register(func, *args, **kwargs):
+def atexit_register(func: Callable, *args: Any, **kwargs: Any) -> None:
     """Sets func to be called before the program exits.
 
     Special care is taken to ensure func is only called when the process
@@ -639,6 +650,6 @@ def atexit_register(func, *args, **kwargs):
     atexit.register(_atexit_call, func, *args, **kwargs)
 
 
-def _atexit_call(func, *args, **kwargs):
+def _atexit_call(func: Callable, *args: Any, **kwargs: Any) -> None:
     if _INITIAL_PID == os.getpid():
         func(*args, **kwargs)
