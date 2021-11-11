@@ -19,7 +19,6 @@ from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 import josepy as jose
 import OpenSSL
 
-from acme.challenges import Challenge
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
