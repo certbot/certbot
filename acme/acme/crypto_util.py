@@ -348,7 +348,7 @@ def gen_ss_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
                 not_before: Optional[int] = None,
                 validity: int = (7 * 24 * 60 * 60), force_san: bool = True,
                 extensions: Optional[List[crypto.X509Extension]] = None,
-                ips: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv4Address]]] = None
+                ips: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None
                 ) -> crypto.X509:
     """Generate new self-signed certificate.
 
