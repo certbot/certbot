@@ -614,7 +614,7 @@ def is_wildcard_domain(domain: Union[str, bytes]) -> bool:
     return domain.startswith(b"*.")
 
 
-def get_strict_version(normalized: str) -> distutils.version.StrictVersion:
+def get_strict_version(normalized: str) -> "distutils.version.StrictVersion":
     """Converts a normalized version to a strict version.
 
     :param str normalized: normalized version string
