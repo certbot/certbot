@@ -21,9 +21,6 @@ from typing import TYPE_CHECKING
 from typing import Union
 import warnings
 
-if TYPE_CHECKING:
-    import distutils.version
-
 import configargparse
 
 from certbot import errors
@@ -35,6 +32,9 @@ from certbot.compat import os
 _USE_DISTRO = sys.platform.startswith('linux')
 if _USE_DISTRO:
     import distro
+
+if TYPE_CHECKING:
+    import distutils.version
 
 logger = logging.getLogger(__name__)
 

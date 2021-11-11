@@ -6,7 +6,6 @@ from typing import List
 from typing import Optional
 from urllib import parse
 
-from acme.challenges import Challenge
 from certbot import errors
 from certbot import util
 from certbot._internal import constants
