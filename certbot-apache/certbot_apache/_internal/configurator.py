@@ -2437,10 +2437,9 @@ class ApacheConfigurator(common.Installer, interfaces.Authenticator):
         except errors.SubprocessError as err:
             logger.warning("Unable to restart apache using %s",
                         self.options.restart_cmd)
-            alt_restart = self.options.restart_cmd_alt
-            if alt_restart:
+            if self.options.restart_cmd_alt:
                 logger.debug("Trying alternative restart command: %s",
-                             alt_restart)
+                             self.options.restart_cmd_alt)
                 # There is an alternative restart command available
                 # This usually is "restart" verb while original is "graceful"
                 try:
