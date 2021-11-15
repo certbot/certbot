@@ -88,7 +88,7 @@ def menu(message: str, choices: Union[List[str], List[Tuple[str, str]]],
     :param choices: Menu lines, len must be > 0
     :type choices: list of tuples (tag, item) or
         list of descriptions (tags will be enumerated)
-    :param default: default value to return (if one exists)
+    :param default: default value to return, if interaction is not possible
     :param str cli_flag: option used to set this value with the CLI
     :param bool force_interactive: True if it's safe to prompt the user
         because it won't cause any workflow regressions
@@ -109,7 +109,7 @@ def input_text(message: str, default: Optional[str] = None, cli_flag: Optional[s
     """Accept input from the user.
 
     :param str message: message to display to the user
-    :param default: default value to return (if one exists)
+    :param default: default value to return, if interaction is not possible
     :param str cli_flag: option used to set this value with the CLI
     :param bool force_interactive: True if it's safe to prompt the user
         because it won't cause any workflow regressions
@@ -135,7 +135,7 @@ def yesno(message: str, yes_label: str = "Yes", no_label: str = "No",
     :param str message: question for the user
     :param str yes_label: Label of the "Yes" parameter
     :param str no_label: Label of the "No" parameter
-    :param default: default value to return (if one exists)
+    :param default: default value to return, if interaction is not possible
     :param str cli_flag: option used to set this value with the CLI
     :param bool force_interactive: True if it's safe to prompt the user
         because it won't cause any workflow regressions
@@ -155,7 +155,7 @@ def checklist(message: str, tags: List[str], default: Optional[List[str]] = None
 
     :param str message: Message to display to user
     :param list tags: `str` tags to select, len(tags) > 0
-    :param default: default value to return (if one exists)
+    :param default: default value to return, if interaction is not possible
     :param str cli_flag: option used to set this value with the CLI
     :param bool force_interactive: True if it's safe to prompt the user
         because it won't cause any workflow regressions
@@ -175,7 +175,7 @@ def directory_select(message: str, default: Optional[str] = None, cli_flag: Opti
     """Display a directory selection screen.
 
     :param str message: prompt to give the user
-    :param default: default value to return (if one exists)
+    :param default: default value to return, if interaction is not possible
     :param str cli_flag: option used to set this value with the CLI
     :param bool force_interactive: True if it's safe to prompt the user
         because it won't cause any workflow regressions
