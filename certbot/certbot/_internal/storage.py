@@ -5,6 +5,7 @@ import logging
 import re
 import shutil
 import stat
+from typing import cast
 from typing import Optional
 
 import configobj
@@ -895,7 +896,8 @@ class RenewableCert(interfaces.RenewableCert):
         if target is None:
             raise errors.CertStorageError("could not find the certificate file")
         with open(target) as f:
-            return crypto_util.get_names_from_cert(f.read())
+            # TODO: Remove the cast once certbot package is fully typed
+            return crypto_util.get_names_from_cert(cast(bytes, f.read()))
 
     def ocsp_revoked(self, version):
         """Is the specified cert version revoked according to OCSP?

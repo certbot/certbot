@@ -1,5 +1,7 @@
 """ACME utilities for testing."""
 import datetime
+from typing import Iterable
+from typing import Tuple
 
 import josepy as jose
 
@@ -20,13 +22,13 @@ DNS01_2 = challenges.DNS01(token=b"cafecafecafecafecafecafe0feedbac")
 CHALLENGES = [HTTP01, DNS01]
 
 
-def gen_combos(challbs):
+def gen_combos(challbs: Iterable[messages.ChallengeBody]) -> Tuple[Tuple[int], ...]:
     """Generate natural combinations for challbs."""
     # completing a single DV challenge satisfies the CA
     return tuple((i,) for i, _ in enumerate(challbs))
 
 
-def chall_to_challb(chall, status):
+def chall_to_challb(chall: challenges.Challenge, status: messages.Status) -> messages.ChallengeBody:
     """Return ChallengeBody from Challenge."""
     kwargs = {
         "chall": chall,
@@ -56,7 +58,9 @@ DNS01_A_2 = auth_handler.challb_to_achall(DNS01_P_2, JWK, "esimerkki.example.org
 ACHALLENGES = [HTTP01_A, DNS01_A]
 
 
-def gen_authzr(authz_status, domain, challs, statuses, combos=True):
+def gen_authzr(authz_status: messages.Status, domain: str, challs: Iterable[challenges.Challenge],
+               statuses: Iterable[messages.Status],
+               combos: bool = True) -> messages.AuthorizationResource:
     """Generate an authorization resource.
 
     :param authz_status: Status object
