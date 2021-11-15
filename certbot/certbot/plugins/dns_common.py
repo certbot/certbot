@@ -52,7 +52,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
             .format(name=self.name, secs=delay, suffix='s' if delay != 1 else '')
         )
 
-    def get_chall_pref(self, unused_domain: Optional[str]) -> Iterable[Type[challenges.Challenge]]:  # pylint: disable=missing-function-docstring
+    def get_chall_pref(self, unused_domain: str) -> Iterable[Type[challenges.Challenge]]:  # pylint: disable=missing-function-docstring
         return [challenges.DNS01]
 
     def prepare(self) -> None:  # pylint: disable=missing-function-docstring
