@@ -19,7 +19,7 @@ from certbot.display import util as display_util
 logger = logging.getLogger(__name__)
 
 
-def get_email(invalid: bool = False, optional: bool = True) -> Optional[str]:
+def get_email(invalid: bool = False, optional: bool = True) -> str:
     """Prompt for valid email address.
 
     :param bool invalid: True if an invalid address was provided by the user
