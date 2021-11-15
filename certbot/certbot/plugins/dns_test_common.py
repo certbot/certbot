@@ -64,7 +64,7 @@ class BaseAuthenticatorTest:
         self.assertTrue(isinstance(self.auth.more_info(), str))  # pylint: disable=no-member
 
     def test_get_chall_pref(self: _AuthenticatorCallableTestCase) -> None:
-        self.assertEqual(self.auth.get_chall_pref(None), [challenges.DNS01])  # pylint: disable=no-member
+        self.assertEqual(self.auth.get_chall_pref("example.org"), [challenges.DNS01])  # pylint: disable=no-member
 
     def test_parser_arguments(self: _AuthenticatorCallableTestCase) -> None:
         m = mock.MagicMock()
