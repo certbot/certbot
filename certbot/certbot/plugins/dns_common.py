@@ -211,7 +211,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
         :rtype: str
         """
 
-        def __validator(i: Optional[str]) -> None:  # pylint: disable=unused-private-member
+        def __validator(i: str) -> None:  # pylint: disable=unused-private-member
             if not i:
                 raise errors.PluginError('Please enter your {0}.'.format(label))
 
@@ -237,7 +237,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
         :rtype: str
         """
 
-        def __validator(filename: Optional[str]) -> None:  # pylint: disable=unused-private-member
+        def __validator(filename: str) -> None:  # pylint: disable=unused-private-member
             if not filename:
                 raise errors.PluginError('Please enter a valid path to your {0}.'.format(label))
 
