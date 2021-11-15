@@ -52,8 +52,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
             .format(name=self.name, secs=delay, suffix='s' if delay != 1 else '')
         )
 
-    # TODO: Remove the type ignore once certbot package is fully typed
-    def get_chall_pref(self,  # type: ignore[override]  # pylint: disable=missing-function-docstring
+    def get_chall_pref(self,  # pylint: disable=missing-function-docstring
                        unused_domain: Optional[str]) -> Iterable[Type[challenges.Challenge]]:
         return [challenges.DNS01]
 
