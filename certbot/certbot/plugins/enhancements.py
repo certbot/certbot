@@ -156,7 +156,7 @@ class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def enable_autohsts(self, lineage: interfaces.RenewableCert, domains: Iterable[str],
+    def enable_autohsts(self, lineage: Optional[interfaces.RenewableCert], domains: Iterable[str],
                         *args: Any, **kwargs: Any) -> None:
         """
         Enables the AutoHSTS enhancement, installing
