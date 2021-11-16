@@ -807,6 +807,14 @@ class ClientV2(ClientBase):
                 return orderr
         raise errors.TimeoutError()
 
+    def get_renewal_info(self, certIDPath: str) -> messages.RenewalInfoResource:
+        """Fetch ACME Renewal Information for certificate.
+
+        :param str certIDPath: The path (consisting of hex-encoded issuer key
+            hash, issuer name hash, and serial) which uniquely identifies the cert.
+        """
+        return self.net.get(self.directory['renewalInfo'].rstrip('/') + '/' + certIDPath)
+
     def revoke(self, cert: jose.ComparableX509, rsn: int) -> None:
         """Revoke certificate.
 

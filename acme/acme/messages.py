@@ -678,3 +678,32 @@ class OrderResource(ResourceWithURI):
 class NewOrder(Order):
     """New order."""
     resource_type = 'new-order'
+
+
+class RenewalInfo(ResourceBody):
+    """Renewal Info Resource Body.
+
+    :ivar acme.messages.SuggestedWindow window: The suggested renewal window.
+    """
+    class SuggestedWindow(jose.JSONObjectWithFields):
+        """Suggested Renewal Window, sub-resource of Renewal Info Resource.
+
+        :ivar datetime.datetime start: Beginning of suggested renewal window
+        :ivar datetime.datetime end: End of suggested renewal window (inclusive)
+        """
+        start = fields.RFC3339Field('start', omitempty=True)
+        end = fields.RFC3339Field('end', omitempty=True)
+
+    window = jose.Field('window', decoder=SuggestedWindow.from_json)
+
+class RenewalInfoResource(ResourceWithURI):
+    """Renewal Info Resource.
+
+    :ivar acme.messages.RenewalInfo body:
+    """
+    body = jose.Field('body', decoder=RenewalInfo.from_json)
+
+@Directory.register
+class GetRenewalInfo(RenewalInfo):
+    """Get renewal info."""
+    resource_type = 'renewal-info'

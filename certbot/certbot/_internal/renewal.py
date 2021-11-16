@@ -1,6 +1,7 @@
 """Functionality for autorenewal and associated juggling of configurations"""
 
 import copy
+import datetime
 import itertools
 import logging
 import random
@@ -10,7 +11,9 @@ import traceback
 from typing import List
 from typing import Optional
 
+from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
@@ -31,6 +34,15 @@ from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import os
 from certbot.display import util as display_util
+
+try:
+    # Only cryptography>=2.5 has ocsp module
+    # and signature_hash_algorithm attribute in OCSPResponse class
+    from cryptography.x509 import ocsp  # pylint: disable=ungrouped-imports
+    getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
+except (ImportError, AttributeError):  # pragma: no cover
+    ocsp = None  # type: ignore
+
 
 logger = logging.getLogger(__name__)
 
@@ -290,7 +302,7 @@ def _restore_str(name, value):
     return None if value == "None" else value
 
 
-def should_renew(config, lineage):
+def should_renew(config: configuration.NamespaceConfig, lineage: interfaces.RenewableCert) -> bool:
     """Return true if any of the circumstances for automatic renewal apply."""
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
@@ -298,11 +310,60 @@ def should_renew(config, lineage):
     if lineage.should_autorenew():
         logger.info("Certificate is due for renewal, auto-renewing...")
         return True
+    if _ari_should_renew(config, lineage):
+        logger.info("Certificate suggested renewal time in past, renewing...")
+        return True
     if config.dry_run:
         logger.info("Certificate not due for renewal, but simulating renewal for dry run")
         return True
     display_util.notify("Certificate not yet due for renewal")
     return False
+
+
+def _ari_should_renew(config: configuration.NamespaceConfig, lineage: interfaces.RenewableCert) -> bool:
+    """Return true if ARI says the certificate should be renewed.
+
+    Queries the ACME server for the certificate's Renewal Info, picks a random
+    time within the Suggested Window, and returns True if the selected time is
+    in the past.
+    """
+    # TODO: Break this routine into smaller testable helper functions; test them.
+
+    # If we failed to import the OCSP module, we won't be able to construct the
+    # ARI path later on, so just bail out now.
+    if ocsp is None:
+        logger.info("Skipping ARI check because can't compute ARI path")
+        return False
+
+    # Create a throwaway client with no account, installer, or underlying ACME
+    # client. It will synthesize an ACME client from the config's private key.
+    le_client = client.Client(config, None, None, None, None)
+    # Load the certificate and its issuing intermediate.
+    with open(lineage.cert_path, 'rb') as cert_file:
+        cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
+    with open(lineage.chain_path, 'rb') as chain_file:
+        chain = x509.load_pem_x509_certificate(chain_file.read(), default_backend())
+
+    # Create an OCSP request, which will compute the CertID (issuer key hash,
+    # issuer name hash, serial) for us.
+    builder = ocsp.OCSPRequestBuilder()
+    builder = builder.add_certificate(cert, chain, hashes.SHA1())
+    ocspRequest = builder.build()
+
+    # Construct the path from the elements of the CertID.
+    key_hash = ocspRequest.issuer_key_hash.hex()
+    name_hash = ocspRequest.issuer_name_hash.hex()
+    serial = ocspRequest.serial_number.hex()
+    path = f'{key_hash}/{name_hash}/{serial}'
+
+    # Query ACME for the suggested window and pick a time within it, inclusive.
+    ari = le_client.acme.get_renewal_info(path)
+    window_secs = ari.window.end + datetime.timedelta(seconds=1) - ari.window.start
+    rand_offset = random.randrange(window_secs)
+    instant = ari.window.start + datetime.timedelta(seconds=rand_offset)
+
+    # If the chosen point in time is in the past, we should renew now.
+    return instant <= datetime.datetime.now()
 
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
