@@ -706,7 +706,7 @@ class ClientV2(ClientBase):
         # pylint has trouble understanding our josepy based objects which use
         # things like custom metaclass logic. body.authorizations should be a
         # list of strings containing URLs so let's disable this check here.
-        for url in body.authorizations:  # pylint: disable=not-an-iterable,no-member
+        for url in body.authorizations:  # pylint: disable=not-an-iterable
             authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
@@ -796,10 +796,10 @@ class ClientV2(ClientBase):
             time.sleep(1)
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
-            if body.error is not None:  # pylint: disable=no-member
-                raise errors.IssuanceError(body.error)  # pylint: disable=no-member
-            if body.certificate is not None:  # pylint: disable=no-member
-                certificate_response = self._post_as_get(body.certificate)  # pylint: disable=no-member
+            if body.error is not None:
+                raise errors.IssuanceError(body.error)
+            if body.certificate is not None:
+                certificate_response = self._post_as_get(body.certificate)
                 orderr = orderr.update(body=body, fullchain_pem=certificate_response.text)
                 if fetch_alternative_chains:
                     alt_chains_urls = self._get_links(certificate_response, 'alternate')
@@ -1127,7 +1127,7 @@ class ClientNetwork:
                         'Ignoring wrong Content-Type (%r) for JSON Error',
                         response_ct)
                 try:
-                    raise messages.Error.from_json(jobj)  # pylint: disable=raising-non-exception
+                    raise messages.Error.from_json(jobj)
                 except jose.DeserializationError as error:
                     # Couldn't deserialize JSON object
                     raise errors.ClientError((response, error))
