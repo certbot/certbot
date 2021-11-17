@@ -1,7 +1,6 @@
 """ACME protocol messages."""
 from collections.abc import Hashable
 import json
-from typing import cast
 from typing import Any
 from typing import Dict
 from typing import Iterator
@@ -65,22 +64,6 @@ ERROR_TYPE_DESCRIPTIONS = dict(
 ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
     (OLD_ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items()))
 
-T = TypeVar('T', bound='_JSONObjectWithFields')
-
-
-# TODO: Remove this class once JSONObjectWithFields.from_json and ImmutableMap.update
-#  in josepy become generic.
-class _JSONObjectWithFields(jose.JSONObjectWithFields):
-    """Generic version of jose.JSONObjectWithFields"""
-
-    @classmethod
-    def from_json(cls: Type[T], jobj: Mapping[str, Any]) -> T:
-        # TODO: Remove jobj cast once JSONObjectWithFields.from_json has the appropriate type hints.
-        return cast(T, super().from_json(cast(Dict[str, Any], jobj)))
-
-    def update(self: T, **kwargs: Any) -> T:
-        return cast(T, super().update(**kwargs))
-
 
 def is_acme_error(err: BaseException) -> bool:
     """Check if argument is an ACME error."""
@@ -89,7 +72,7 @@ def is_acme_error(err: BaseException) -> bool:
     return False
 
 
-class Error(_JSONObjectWithFields, errors.Error):
+class Error(jose.JSONObjectWithFields, errors.Error):
     """ACME error.
 
     https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
@@ -205,7 +188,7 @@ IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 IDENTIFIER_IP = IdentifierType('ip') # IdentifierIP in pebble - not in Boulder yet
 
 
-class Identifier(_JSONObjectWithFields):
+class Identifier(jose.JSONObjectWithFields):
     """ACME identifier.
 
     :ivar IdentifierType typ:
@@ -291,7 +274,7 @@ class Directory(jose.JSONDeSerializable):
         return cls(jobj)
 
 
-class Resource(_JSONObjectWithFields):
+class Resource(jose.JSONObjectWithFields):
     """ACME Resource.
 
     :ivar acme.messages.ResourceBody body: Resource body.
@@ -309,7 +292,7 @@ class ResourceWithURI(Resource):
     uri: str = jose.field('uri')  # no ChallengeResource.uri
 
 
-class ResourceBody(_JSONObjectWithFields):
+class ResourceBody(jose.JSONObjectWithFields):
     """ACME Resource Body."""
 
 
@@ -322,8 +305,7 @@ class ExternalAccountBinding:
         """Create External Account Binding Resource from contact details, kid and hmac."""
 
         key_json = json.dumps(account_public_key.to_partial_json()).encode()
-        # TODO: Remove type ignore when jose.b64.b64decode type hint is fixed (accepts str/bytes).
-        decoded_hmac_key = jose.b64.b64decode(hmac_key)  # type: ignore
+        decoded_hmac_key = jose.b64.b64decode(hmac_key)
         url = directory["newAccount"]
 
         eab = jws.JWS.sign(key_json, jose.jwk.JWKOct(key=decoded_hmac_key),

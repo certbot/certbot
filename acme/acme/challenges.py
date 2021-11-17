@@ -29,34 +29,25 @@ from acme.mixins import TypeMixin
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T', bound='_TypedJSONObjectWithFields')
-R = TypeVar('R', bound='Challenge')
+GenericChallenge = TypeVar('GenericChallenge', bound='Challenge')
 
 
-# TODO: Remove this class once TypedJSONObjectWithFields.from_json in josepy becomes generic.
-class _TypedJSONObjectWithFields(jose.TypedJSONObjectWithFields):
-    """Generic version of jose.JSONObjectWithFields"""
-
-    @classmethod
-    def from_json(cls: Type[T], jobj: Mapping[str, Any]) -> T:
-        return cast(T, super().from_json(jobj))
-
-
-class Challenge(_TypedJSONObjectWithFields):
+class Challenge(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge."""
     TYPES: Dict[str, Type['Challenge']] = {}
 
     @classmethod
-    def from_json(cls: Type[R], jobj: Mapping[str, Any]) -> Union[R, 'UnrecognizedChallenge']:
+    def from_json(cls: Type[GenericChallenge],
+                  jobj: Mapping[str, Any]) -> Union[GenericChallenge, 'UnrecognizedChallenge']:
         try:
-            return super().from_json(jobj)
+            return cast(GenericChallenge, super().from_json(jobj))
         except jose.UnrecognizedTypeError as error:
             logger.debug(error)
             return UnrecognizedChallenge.from_json(jobj)
 
 
-class ChallengeResponse(ResourceMixin, TypeMixin, _TypedJSONObjectWithFields):
+class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
     TYPES: Dict[str, Type['ChallengeResponse']] = {}
