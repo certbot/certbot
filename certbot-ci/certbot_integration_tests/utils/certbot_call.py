@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Module to call certbot in test mode"""
 
-from distutils.version import LooseVersion
 import os
+import pkg_resources
 import subprocess
 import sys
 
@@ -85,7 +85,7 @@ def _compute_additional_args(workspace, environ, force_renew):
                                      cwd=workspace, env=environ)
     # Typical response is: output = 'certbot 0.31.0.dev0'
     version_str = output.split(' ')[1].strip()
-    if LooseVersion(version_str) >= LooseVersion('0.30.0'):
+    if pkg_resources.parse_version(version_str) >= pkg_resources.parse_version('0.30.0'):
         additional_args.append('--no-random-sleep-on-renew')
 
     if force_renew:
