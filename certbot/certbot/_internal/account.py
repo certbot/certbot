@@ -128,7 +128,7 @@ class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
        continue to write out this field for some time so older
        clients don't crash in that scenario.
     """
-    new_authzr_uri = jose.Field('new_authzr_uri')
+    new_authzr_uri: str = jose.field('new_authzr_uri')
 
 class AccountFileStorage(interfaces.AccountStorage):
     """Accounts file storage.
