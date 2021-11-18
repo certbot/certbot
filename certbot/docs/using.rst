@@ -775,6 +775,11 @@ you would need to change the ``--webroot-path`` to the new directory. Following 
 
      certbot renew --cert-name example.com --webroot-path /path/to/new/location --force-renewal
 
+   ``--cert-name`` selects the particular certificate to be modified. Without this option, all certificates will be selected.
+
+   ``--webroot-path`` is the option intended to be changed. All other previously selected options will be kept the same
+   and do not need to be included in the command.
+
 For advanced certificate management tasks, it is also possible to manually modify the certificate's renewal configuration
 file, but this is discouraged since it can easily break Certbot's ability to renew your certificates. These renewal
 configuration files are located at ``/etc/letsencrypt/renewal/CERTNAME.conf``. If you choose to modify the renewal
