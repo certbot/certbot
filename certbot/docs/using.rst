@@ -760,7 +760,7 @@ you will need to perform the following steps:
    renewals. If the certificate is not yet due to expire, you will need to force a renewal using ``--force-renewal``.
 
 .. note:: Rate limits from the certificate authority may prevent you from performing multiple renewals in a short
-   period of time. It is strongly recommended to only perform the second step only once, when you have decided on what
+   period of time. It is strongly recommended to perform the second step only once, when you have decided on what
    options should change.
 
 As a practical example, if you were using the ``webroot`` authenticator and had relocated your website to another directory,
@@ -778,7 +778,7 @@ you would need to change the ``--webroot-path`` to the new directory. Following 
 For advanced certificate management tasks, it is also possible to manually modify the certificate's renewal configuration
 file, but this is discouraged since it can easily break Certbot's ability to renew your certificates. These renewal
 configuration files are located at ``/etc/letsencrypt/renewal/CERTNAME.conf``. If you choose to modify the renewal
-configuration file we advise you to test its validity with the ``certbot renew --dry-run`` command.
+configuration file we advise you to make a backup of the file beforehand and test its validity with the ``certbot renew --dry-run`` command.
 
 .. warning:: Modifying any files in ``/etc/letsencrypt`` can damage them so Certbot can no longer properly manage its certificates, and we do not recommend doing so.
 
