@@ -320,7 +320,8 @@ def should_renew(config: configuration.NamespaceConfig, lineage: interfaces.Rene
     return False
 
 
-def _ari_should_renew(config: configuration.NamespaceConfig, lineage: interfaces.RenewableCert) -> bool:
+def _ari_should_renew(
+    config: configuration.NamespaceConfig, lineage: interfaces.RenewableCert) -> bool:
     """Return true if ARI says the certificate should be renewed.
 
     Queries the ACME server for the certificate's Renewal Info, picks a random
@@ -354,7 +355,7 @@ def _ari_should_renew(config: configuration.NamespaceConfig, lineage: interfaces
     key_hash = ocspRequest.issuer_key_hash.hex()
     name_hash = ocspRequest.issuer_name_hash.hex()
     serial = ocspRequest.serial_number.hex()
-    path = f'{key_hash}/{name_hash}/{serial}'
+    path = f"{key_hash}/{name_hash}/{serial}"
 
     # Query ACME for the suggested window and pick a time within it, inclusive.
     ari = le_client.acme.get_renewal_info(path)
