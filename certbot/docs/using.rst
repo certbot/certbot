@@ -780,7 +780,7 @@ file, but this is discouraged since it can easily break Certbot's ability to ren
 configuration files are located at ``/etc/letsencrypt/renewal/CERTNAME.conf``. If you choose to modify the renewal
 configuration file we advise you to make a backup of the file beforehand and test its validity with the ``certbot renew --dry-run`` command.
 
-.. warning:: Modifying any files in ``/etc/letsencrypt`` can damage them so Certbot can no longer properly manage its certificates, and we do not recommend doing so.
+.. warning:: Manually modifying files under ``/etc/letsencrypt/renewal/`` can damage them if done improperly and we do not recommend doing so.
 
 
 Automated Renewals
