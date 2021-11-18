@@ -310,7 +310,7 @@ def should_renew(config: configuration.NamespaceConfig, lineage: interfaces.Rene
     if lineage.should_autorenew():
         logger.info("Certificate is due for renewal, auto-renewing...")
         return True
-    if _ari_should_renew(config, lineage):
+    if util.is_staging(config.server) and _ari_should_renew(config, lineage):
         logger.info("Certificate suggested renewal time in past, renewing...")
         return True
     if config.dry_run:
