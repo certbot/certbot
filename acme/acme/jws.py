@@ -14,7 +14,7 @@ class Header(jose.Header):
     """
     nonce: bytes = jose.field('nonce', omitempty=True, encoder=jose.encode_b64jose)
     kid: bytes = jose.field('kid', omitempty=True)
-    url: str = jose.field('url', omitempty=True)
+    url: bytes = jose.field('url', omitempty=True)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that nonce is redefined. Let's ignore the type check here.
