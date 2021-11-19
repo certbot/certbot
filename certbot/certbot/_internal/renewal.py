@@ -32,6 +32,7 @@ from certbot._internal import storage
 from certbot._internal import updater
 from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins import disco as plugins_disco
+from certbot._internal.plugins import selection as plug_sel
 from certbot.compat import os
 from certbot.display import util as display_util
 
@@ -311,7 +312,7 @@ def should_renew(config: configuration.NamespaceConfig, lineage: interfaces.Rene
         logger.info("Certificate is due for renewal, auto-renewing...")
         return True
     if util.is_staging(config.server) and _ari_should_renew(config, lineage):
-        logger.info("Certificate suggested renewal time in past, renewing...")
+        logger.info("Suggested renewal time in the past, renewing...")
         return True
     if config.dry_run:
         logger.info("Certificate not due for renewal, but simulating renewal for dry run")
@@ -328,42 +329,37 @@ def _ari_should_renew(
     time within the Suggested Window, and returns True if the selected time is
     in the past.
     """
-    # TODO: Break this routine into smaller testable helper functions; test them.
-
-    # If we failed to import the OCSP module, we won't be able to construct the
-    # ARI path later on, so just bail out now.
+    # We need to use OCSP, so if we failed to import it, just bail out now.
     if ocsp is None:
         logger.info("Skipping ARI check because can't compute ARI path")
         return False
 
-    # Create a throwaway client with no account, installer, or underlying ACME
-    # client. It will synthesize an ACME client from the config's private key.
-    le_client = client.Client(config, None, None, None, None)
-    # Load the certificate and its issuing intermediate.
+    # Compute an OCSP request using the given certificate and its issuer.
     with open(lineage.cert_path, 'rb') as cert_file:
         cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
     with open(lineage.chain_path, 'rb') as chain_file:
-        chain = x509.load_pem_x509_certificate(chain_file.read(), default_backend())
-
-    # Create an OCSP request, which will compute the CertID (issuer key hash,
-    # issuer name hash, serial) for us.
+        issuer = x509.load_pem_x509_certificate(chain_file.read(), default_backend())
     builder = ocsp.OCSPRequestBuilder()
-    builder = builder.add_certificate(cert, chain, hashes.SHA1())
+    builder = builder.add_certificate(cert, issuer, hashes.SHA1())
     ocspRequest = builder.build()
 
-    # Construct the path from the elements of the CertID.
+    # Construct the ARI path from the OCSP CertID sequence.
     key_hash = ocspRequest.issuer_key_hash.hex()
     name_hash = ocspRequest.issuer_name_hash.hex()
-    serial = ocspRequest.serial_number.hex()
+    serial = hex(ocspRequest.serial_number)[2:]
     path = f"{key_hash}/{name_hash}/{serial}"
+
+    # Construct an ACME client, violating like three layers of abstraction to do so.
+    plugins = plugins_disco.PluginsRegistry.find_all()
+    installer, authenticator = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
+    from certbot._internal import main
+    le_client = main._init_le_client(config, authenticator, installer)
 
     # Query ACME for the suggested window and pick a time within it, inclusive.
     ari = le_client.acme.get_renewal_info(path)
     window_secs = ari.window.end + datetime.timedelta(seconds=1) - ari.window.start
-    rand_offset = random.randrange(window_secs)
+    rand_offset = random.randrange(int(window_secs.total_seconds()))
     instant = ari.window.start + datetime.timedelta(seconds=rand_offset)
-
-    # If the chosen point in time is in the past, we should renew now.
     return instant <= datetime.datetime.now()
 
 

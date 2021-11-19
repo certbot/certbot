@@ -1089,10 +1089,11 @@ class MainTest(test_util.ConfigTestCase):
                              quiet_mode=False, expiry_date=datetime.datetime.now(),
                              reuse_key=False):
         cert_path = test_util.vector_path('cert_512.pem')
-        chain_path = os.path.normpath(os.path.join(self.config.config_dir,
-                                                   'live/foo.bar/fullchain.pem'))
-        mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
-                                      cert_path=cert_path, fullchain_path=chain_path)
+        chain_path = test_util.vector_path('cert_intermediate_1.pem')
+        mock_lineage = mock.MagicMock(
+            cert=cert_path, cert_path=cert_path,
+            chain=chain_path, chain_path=chain_path,
+            fullchain=chain_path, fullchain_path=chain_path)
         mock_lineage.should_autorenew.return_value = due_for_renewal
         mock_lineage.has_pending_deployment.return_value = False
         mock_lineage.names.return_value = ['isnot.org']
