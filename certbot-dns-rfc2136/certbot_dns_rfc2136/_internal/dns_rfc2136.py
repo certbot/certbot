@@ -72,7 +72,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             {
                 'name': 'TSIG key name',
                 'secret': 'TSIG key secret',
-                'server': 'The target DNS server'
+                'server': 'The target DNS server',
+                'sign_query': 'TSIG sign the SOA query'
             },
             self._validate_credentials
         )
@@ -91,21 +92,25 @@ class Authenticator(dns_common.DNSAuthenticator):
                               self.credentials.conf('name'),
                               self.credentials.conf('secret'),
                               self.ALGORITHMS.get(self.credentials.conf('algorithm'),
-                                                  dns.tsig.HMAC_MD5))
+                                                  dns.tsig.HMAC_MD5),
+                              self.credentials.conf('sign_query'))
 
 
 class _RFC2136Client:
     """
     Encapsulates all communication with the target DNS server.
     """
-    def __init__(self, server, port, key_name, key_secret, key_algorithm,
+    def __init__(self, server, port, key_name, key_secret, key_algorithm, sign_query,
         timeout=DEFAULT_NETWORK_TIMEOUT):
         self.server = server
         self.port = port
+        self.sign_query, = sign_query,
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
         })
         self.algorithm = key_algorithm
+        self.keyname = key_name
+        self.sign_query = sign_query
         self._default_timeout = timeout
 
     def add_txt_record(self, record_name, record_content, record_ttl):
@@ -211,6 +216,10 @@ class _RFC2136Client:
         domain = dns.name.from_text(domain_name)
 
         request = dns.message.make_query(domain, dns.rdatatype.SOA, dns.rdataclass.IN)
+
+        if self.sign_query:
+            request.use_tsig(self.keyring, self.keyname, algorithm=self.algorithm)
+
         # Turn off Recursion Desired bit in query
         request.flags ^= dns.flags.RD
 
