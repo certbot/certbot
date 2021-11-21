@@ -104,7 +104,7 @@ class _RFC2136Client:
         timeout=DEFAULT_NETWORK_TIMEOUT):
         self.server = server
         self.port = port
-        self.sign_query, = sign_query,
+        self.sign_query = sign_query,
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
         })
