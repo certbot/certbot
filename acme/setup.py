@@ -6,7 +6,7 @@ from setuptools import setup
 version = '1.22.0.dev0'
 
 install_requires = [
-    'cryptography>=2.1.4',
+    'cryptography>=2.5.0',
     'josepy>=1.9.0',
     'PyOpenSSL>=17.3.0',
     'pyrfc3339',

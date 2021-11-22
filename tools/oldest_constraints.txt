@@ -17,7 +17,7 @@ colorama==0.4.4; python_version >= "3.6" and python_full_version < "3.0.0" and s
 configargparse==0.10.0
 configobj==5.0.6
 coverage==5.5; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.6"
-cryptography==2.1.4
+cryptography==2.5.0
 cython==0.29.24; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
 distlib==0.3.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
 distro==1.0.1
