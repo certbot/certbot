@@ -31,6 +31,7 @@ _WEB_CONFIG_CONTENT = """\
 <configuration>
   <system.webServer>
       <staticContent>
+          <remove fileExtension="."/>
           <mimeMap fileExtension="." mimeType="text/plain" />
       </staticContent>
   </system.webServer>
@@ -39,7 +40,10 @@ _WEB_CONFIG_CONTENT = """\
 # This list references the hashes of all versions of the web.config files that Certbot could
 # have generated during an HTTP-01 challenge. If you modify _WEB_CONFIG_CONTENT, you MUST add
 # the new hash in this list.
-_WEB_CONFIG_SHA256SUMS = ["20c5ca1bd58fa8ad5f07a2f1be8b7cbb707c20fcb607a8fc8db9393952846a97"]
+_WEB_CONFIG_SHA256SUMS = [
+    "20c5ca1bd58fa8ad5f07a2f1be8b7cbb707c20fcb607a8fc8db9393952846a97",
+    "8d31383d3a079d2098a9d0c0921f4ab87e708b9868dc3f314d54094c2fe70336"
+]
 
 
 class Authenticator(common.Plugin, interfaces.Authenticator):

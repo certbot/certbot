@@ -6,15 +6,20 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Support for Python 3.10 was added to Certbot and all of its components.
+* The function certbot.util.parse_loose_version was added to parse version
+  strings in the same way as the now deprecated distutils.version.LooseVersion
+  class from the Python standard library.
 
 ### Changed
 
-*
+* The function certbot.util.get_strict_version was deprecated and will be
+  removed in a future release.
 
 ### Fixed
 
-*
+* Fixed an issue on Windows where the `web.config` created by Certbot would sometimes
+  conflict with preexisting configurations (#9088).
 
 More details about these changes can be found on our GitHub repo.
 
