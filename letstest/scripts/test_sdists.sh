@@ -47,7 +47,7 @@ cd $TEMP_DIR
 for pkg in acme certbot $PLUGINS; do
     tar -xvf "$pkg-$VERSION.tar.gz"
     cd "$pkg-$VERSION"
-    PIP_CONSTRAINT=../constraints.txt PIP_NO_BINARY=:all: pip install .
+    PIP_CONSTRAINT=../constraints.txt PIP_NO_BINARY=:all: pip install -vvvvvv .
     python -m pytest
     cd -
 done
