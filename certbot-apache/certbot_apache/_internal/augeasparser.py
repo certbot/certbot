@@ -170,7 +170,6 @@ class AugeasCommentNode(AugeasParserNode):
     def __init__(self, **kwargs):
         comment, kwargs = util.commentnode_kwargs(kwargs)  # pylint: disable=unused-variable
         super().__init__(**kwargs)
-        # self.comment = comment
         self.comment = comment
 
     def __eq__(self, other):
