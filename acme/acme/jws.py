@@ -12,13 +12,14 @@ import josepy as jose
 class Header(jose.Header):
     """ACME-specific JOSE Header. Implements nonce, kid, and url.
     """
-    nonce: bytes = jose.field('nonce', omitempty=True, encoder=jose.encode_b64jose)
-    kid: bytes = jose.field('kid', omitempty=True)
-    url: bytes = jose.field('url', omitempty=True)
+    nonce: Optional[bytes] = jose.field('nonce', omitempty=True, encoder=jose.encode_b64jose)
+    # TODO: Remove the type ignore directive once https://github.com/certbot/josepy/pull/122 is merged.
+    kid: Optional[str] = jose.field('kid', omitempty=True)  # type: ignore[assignment]
+    url: Optional[str] = jose.field('url', omitempty=True)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that nonce is redefined. Let's ignore the type check here.
-    @nonce.decoder  # type: ignore[no-redef,attr-defined]
+    @nonce.decoder  # type: ignore[no-redef,attr-defined,union-attr]
     def nonce(value: str) -> bytes:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
         try:
             return jose.decode_b64jose(value)
