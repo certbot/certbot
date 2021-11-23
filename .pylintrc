@@ -72,7 +72,12 @@ extension-pkg-whitelist=pywintypes,win32api,win32file,win32security
 #    (unspecified encoding makes the open function use the default encoding of the system)
 #    than a clear flaw on which a check should be enforced. Anyway the project does
 #    not need to enforce encoding on files so we disable this check.
-disable=fixme,locally-disabled,locally-enabled,bad-continuation,no-self-use,invalid-name,cyclic-import,duplicate-code,design,import-outside-toplevel,useless-object-inheritance,unsubscriptable-object,no-value-for-parameter,no-else-return,no-else-raise,no-else-break,no-else-continue,raise-missing-from,wrong-import-order,unspecified-encoding
+# 7) pylint's refactoring checker makes suggestions on how code could be
+#    structured differently. These checks are very opinionated and have caused
+#    pylint to fail on Certbot when it's upgraded so let's disable this checker
+#    entirely. You can see a list of the things the checker considers at
+#    https://pylint.pycqa.org/en/v2.11.1/technical_reference/features.html#refactoring-checker.
+disable=fixme,locally-disabled,locally-enabled,bad-continuation,no-self-use,invalid-name,cyclic-import,duplicate-code,design,import-outside-toplevel,useless-object-inheritance,unsubscriptable-object,no-value-for-parameter,no-else-return,no-else-raise,no-else-break,no-else-continue,raise-missing-from,wrong-import-order,unspecified-encoding,refactoring
 
 [REPORTS]
 
