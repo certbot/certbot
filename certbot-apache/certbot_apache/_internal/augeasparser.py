@@ -277,13 +277,14 @@ class AugeasBlockNode(AugeasDirectiveNode):
         )
 
         # Parameters will be set at the initialization of the new object
-        new_block = AugeasBlockNode(name=name,
-                                    parameters=parameters,
-                                    enabled=enabled,
-                                    ancestor=assertions.PASS,
-                                    filepath=apache_util.get_file_path(realpath),
-                                    metadata=new_metadata)
-        return new_block
+        return AugeasBlockNode(
+            name=name,
+            parameters=parameters,
+            enabled=enabled,
+            ancestor=assertions.PASS,
+            filepath=apache_util.get_file_path(realpath),
+            metadata=new_metadata,
+        )
 
     # pylint: disable=unused-argument
     def add_child_directive(self, name, parameters=None, position=None):  # pragma: no cover
@@ -307,13 +308,14 @@ class AugeasBlockNode(AugeasDirectiveNode):
             apache_util.get_file_path(realpath)
         )
 
-        new_dir = AugeasDirectiveNode(name=name,
-                                      parameters=parameters,
-                                      enabled=enabled,
-                                      ancestor=assertions.PASS,
-                                      filepath=apache_util.get_file_path(realpath),
-                                      metadata=new_metadata)
-        return new_dir
+        return AugeasDirectiveNode(
+            name=name,
+            parameters=parameters,
+            enabled=enabled,
+            ancestor=assertions.PASS,
+            filepath=apache_util.get_file_path(realpath),
+            metadata=new_metadata,
+        )
 
     def add_child_comment(self, comment="", position=None):
         """Adds a new CommentNode to the sequence of children"""
@@ -329,11 +331,12 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # Set the comment content
         self.parser.aug.set(realpath, comment)
 
-        new_comment = AugeasCommentNode(comment=comment,
-                                        ancestor=assertions.PASS,
-                                        filepath=apache_util.get_file_path(realpath),
-                                        metadata=new_metadata)
-        return new_comment
+        return AugeasCommentNode(
+            comment=comment,
+            ancestor=assertions.PASS,
+            filepath=apache_util.get_file_path(realpath),
+            metadata=new_metadata,
+        )
 
     def find_blocks(self, name, exclude=True):
         """Recursive search of BlockNodes from the sequence of children"""
