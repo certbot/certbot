@@ -13,7 +13,7 @@ class Header(jose.Header):
     """ACME-specific JOSE Header. Implements nonce, kid, and url.
     """
     nonce: Optional[bytes] = jose.field('nonce', omitempty=True, encoder=jose.encode_b64jose)
-    # TODO: Remove the type ignore directive once https://github.com/certbot/josepy/pull/122 is merged.
+    # TODO: Remove the type ignore once https://github.com/certbot/josepy/pull/122 is merged.
     kid: Optional[str] = jose.field('kid', omitempty=True)  # type: ignore[assignment]
     url: Optional[str] = jose.field('url', omitempty=True)
 
