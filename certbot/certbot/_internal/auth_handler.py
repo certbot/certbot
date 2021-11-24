@@ -145,7 +145,7 @@ class AuthHandler:
 
         return (deactivated, failed)
 
-    def _poll_authorizations(self, authzrs: messages.AuthorizationResource, max_retries: int,
+    def _poll_authorizations(self, authzrs: List[messages.AuthorizationResource], max_retries: int,
                              best_effort: bool) -> None:
         """
         Poll the ACME CA server, to wait for confirmation that authorizations have their challenges
