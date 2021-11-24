@@ -11,6 +11,7 @@ Other messages can use the `logging` module. See `log.py`.
 """
 import sys
 from types import ModuleType
+from typing import Any
 from typing import cast
 from typing import List
 from typing import Optional
@@ -18,7 +19,7 @@ from typing import Tuple
 from typing import Union
 import warnings
 
-
+from certbot._internal.display import obj
 # These specific imports from certbot._internal.display.obj and
 # certbot._internal.display.util are done to not break the public API of this
 # module.
@@ -28,8 +29,6 @@ from certbot._internal.display.obj import SIDE_FRAME  # pylint: disable=unused-i
 from certbot._internal.display.util import input_with_timeout  # pylint: disable=unused-import
 from certbot._internal.display.util import separate_list_input  # pylint: disable=unused-import
 from certbot._internal.display.util import summarize_domain_list  # pylint: disable=unused-import
-from certbot._internal.display import obj
-
 
 # These constants are defined this way to make them easier to document with
 # Sphinx and to not couple our public docstrings to our internal ones.
@@ -77,7 +76,7 @@ def notification(message: str, pause: bool = True, wrap: bool = True,
                                    force_interactive=force_interactive, decorate=decorate)
 
 
-def menu(message: str, choices: Union[List[str], Tuple[str, str]],
+def menu(message: str, choices: Union[List[str], List[Tuple[str, str]]],
          default: Optional[int] = None, cli_flag: Optional[str] = None,
          force_interactive: bool = False) -> Tuple[str, int]:
     """Display a menu.
@@ -89,7 +88,7 @@ def menu(message: str, choices: Union[List[str], Tuple[str, str]],
     :param choices: Menu lines, len must be > 0
     :type choices: list of tuples (tag, item) or
         list of descriptions (tags will be enumerated)
-    :param default: default value to return (if one exists)
+    :param default: default value to return, if interaction is not possible
     :param str cli_flag: option used to set this value with the CLI
     :param bool force_interactive: True if it's safe to prompt the user
         because it won't cause any workflow regressions
@@ -110,7 +109,7 @@ def input_text(message: str, default: Optional[str] = None, cli_flag: Optional[s
     """Accept input from the user.
 
     :param str message: message to display to the user
-    :param default: default value to return (if one exists)
+    :param default: default value to return, if interaction is not possible
     :param str cli_flag: option used to set this value with the CLI
     :param bool force_interactive: True if it's safe to prompt the user
         because it won't cause any workflow regressions
@@ -136,7 +135,7 @@ def yesno(message: str, yes_label: str = "Yes", no_label: str = "No",
     :param str message: question for the user
     :param str yes_label: Label of the "Yes" parameter
     :param str no_label: Label of the "No" parameter
-    :param default: default value to return (if one exists)
+    :param default: default value to return, if interaction is not possible
     :param str cli_flag: option used to set this value with the CLI
     :param bool force_interactive: True if it's safe to prompt the user
         because it won't cause any workflow regressions
@@ -149,14 +148,14 @@ def yesno(message: str, yes_label: str = "Yes", no_label: str = "No",
                                    cli_flag=cli_flag, force_interactive=force_interactive)
 
 
-def checklist(message: str, tags: List[str], default: Optional[str] = None,
+def checklist(message: str, tags: List[str], default: Optional[List[str]] = None,
               cli_flag: Optional[str] = None,
               force_interactive: bool = False) -> Tuple[str, List[str]]:
     """Display a checklist.
 
     :param str message: Message to display to user
     :param list tags: `str` tags to select, len(tags) > 0
-    :param default: default value to return (if one exists)
+    :param default: default value to return, if interaction is not possible
     :param str cli_flag: option used to set this value with the CLI
     :param bool force_interactive: True if it's safe to prompt the user
         because it won't cause any workflow regressions
@@ -172,11 +171,11 @@ def checklist(message: str, tags: List[str], default: Optional[str] = None,
 
 
 def directory_select(message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
-                     force_interactive: bool = False) -> Tuple[int, str]:
+                     force_interactive: bool = False) -> Tuple[str, str]:
     """Display a directory selection screen.
 
     :param str message: prompt to give the user
-    :param default: default value to return (if one exists)
+    :param default: default value to return, if interaction is not possible
     :param str cli_flag: option used to set this value with the CLI
     :param bool force_interactive: True if it's safe to prompt the user
         because it won't cause any workflow regressions
@@ -190,7 +189,7 @@ def directory_select(message: str, default: Optional[str] = None, cli_flag: Opti
                                               force_interactive=force_interactive)
 
 
-def assert_valid_call(prompt, default, cli_flag, force_interactive):
+def assert_valid_call(prompt: str, default: str, cli_flag: str, force_interactive: bool) -> None:
     """Verify that provided arguments is a valid display call.
 
     :param str prompt: prompt for the user
@@ -215,10 +214,10 @@ class _DisplayUtilDeprecationModule:
     Internal class delegating to a module, and displaying warnings when attributes
     related to deprecated attributes in the certbot.display.util module.
     """
-    def __init__(self, module):
+    def __init__(self, module: ModuleType) -> None:
         self.__dict__['_module'] = module
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> Any:
         if attr in ('FileDisplay', 'NoninteractiveDisplay', 'SIDE_FRAME', 'input_with_timeout',
                     'separate_list_input', 'summarize_domain_list', 'WIDTH', 'HELP', 'ESC'):
             warnings.warn('{0} attribute in certbot.display.util module is deprecated '
@@ -226,13 +225,13 @@ class _DisplayUtilDeprecationModule:
                           DeprecationWarning, stacklevel=2)
         return getattr(self._module, attr)
 
-    def __setattr__(self, attr, value):  # pragma: no cover
+    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
         setattr(self._module, attr, value)
 
-    def __delattr__(self, attr):  # pragma: no cover
+    def __delattr__(self, attr: str) -> None:  # pragma: no cover
         delattr(self._module, attr)
 
-    def __dir__(self):  # pragma: no cover
+    def __dir__(self) -> List[str]:  # pragma: no cover
         return ['_module'] + dir(self._module)
 
 

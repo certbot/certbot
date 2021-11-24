@@ -313,8 +313,7 @@ class AuthHandler:
         for achall in failed_achalls:
             problems.setdefault(achall.error.typ, []).append(achall)
 
-        # TODO: Remove the type ignore once certbot package is fully typed
-        msg = ["\nCertbot failed to authenticate some domains "  # type: ignore[attr-defined]
+        msg = ["\nCertbot failed to authenticate some domains "
                f"(authenticator: {self.auth.name})."
                " The Certificate Authority reported these problems:"]
 

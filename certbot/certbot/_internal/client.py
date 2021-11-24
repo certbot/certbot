@@ -2,6 +2,7 @@
 import datetime
 import logging
 import platform
+from typing import cast
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -189,8 +190,7 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
 
     # If --dry-run is used, and there is no staging account, create one with no email.
     if config.dry_run:
-        # TODO: Remove the type ignore once certbot package is fully typed
-        config.email = None  # type: ignore[misc]
+        config.email = None
 
     # Each new registration shall use a fresh new key
     rsa_key = generate_private_key(
@@ -245,7 +245,7 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
         # TODO: Remove the cast once certbot package is fully typed
         newreg = messages.NewRegistration.from_data(
             email=config.email,
-            external_account_binding=cast(messages.ExternalAccountBinding, eab))
+            external_account_binding=cast(Optional[messages.ExternalAccountBinding], eab))
         # Until ACME v1 support is removed from Certbot, we actually need the provided
         # ACME client to be a wrapper of type BackwardsCompatibleClientV2.
         # TODO: Remove this cast and rewrite the logic when the client is actually a ClientV2
@@ -256,14 +256,13 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
             raise errors.Error("The ACME client must be an instance of "
                                "acme.client.BackwardsCompatibleClientV2")
     except messages.Error as e:
-        if e.code == "invalidEmail" or e.code == "invalidContact":
+        if e.code in ('invalidEmail', 'invalidContact'):
             if config.noninteractive_mode:
                 msg = ("The ACME server believes %s is an invalid email address. "
                        "Please ensure it is a valid email and attempt "
                        "registration again." % config.email)
                 raise errors.Error(msg)
-            # TODO: Remove the type ignore once certbot package is fully typed
-            config.email = display_ops.get_email(invalid=True)  # type: ignore[misc]
+            config.email = display_ops.get_email(invalid=True)
             return perform_registration(acme, config, tos_cb)
         raise
 

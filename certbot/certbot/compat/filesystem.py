@@ -5,15 +5,18 @@ import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 import sys
+from typing import Any
+from typing import Dict
 from typing import List
+from typing import Optional
 
 try:
     import ntsecuritycon
-    import win32security
-    import win32con
-    import win32api
-    import win32file
     import pywintypes
+    import win32api
+    import win32con
+    import win32file
+    import win32security
     import winerror
 except ImportError:
     POSIX_MODE = True
@@ -28,7 +31,7 @@ else:
 # that could happen with this kind of pattern.
 class _WindowsUmask:
     """Store the current umask to apply on Windows"""
-    def __init__(self):
+    def __init__(self) -> None:
         self.mask = 0o022
 
 
@@ -531,7 +534,7 @@ def has_min_permissions(path: str, min_mode: int) -> bool:
     return True
 
 
-def _win_is_executable(path):
+def _win_is_executable(path: str) -> bool:
     if not os.path.isfile(path):
         return False
 
@@ -547,7 +550,7 @@ def _win_is_executable(path):
     return mode & ntsecuritycon.FILE_GENERIC_EXECUTE == ntsecuritycon.FILE_GENERIC_EXECUTE
 
 
-def _apply_win_mode(file_path, mode):
+def _apply_win_mode(file_path: str, mode: int) -> None:
     """
     This function converts the given POSIX mode into a Windows ACL list, and applies it to the
     file given its path. If the given path is a symbolic link, it will resolved to apply the
@@ -566,7 +569,7 @@ def _apply_win_mode(file_path, mode):
     win32security.SetFileSecurity(file_path, win32security.DACL_SECURITY_INFORMATION, security)
 
 
-def _generate_dacl(user_sid, mode, mask=None):
+def _generate_dacl(user_sid: Any, mode: int, mask: Optional[int] = None) -> Any:
     if mask:
         mode = mode & (0o777 - mask)
     analysis = _analyze_mode(mode)
@@ -602,7 +605,7 @@ def _generate_dacl(user_sid, mode, mask=None):
     return dacl
 
 
-def _analyze_mode(mode):
+def _analyze_mode(mode: int) -> Dict[str, Dict[str, int]]:
     return {
         'user': {
             'read': mode & stat.S_IRUSR,
@@ -617,7 +620,7 @@ def _analyze_mode(mode):
     }
 
 
-def _copy_win_ownership(src, dst):
+def _copy_win_ownership(src: str, dst: str) -> None:
     # Resolve symbolic links
     src = realpath(src)
 
@@ -632,7 +635,7 @@ def _copy_win_ownership(src, dst):
     win32security.SetFileSecurity(dst, win32security.OWNER_SECURITY_INFORMATION, security_dst)
 
 
-def _copy_win_mode(src, dst):
+def _copy_win_mode(src: str, dst: str) -> None:
     # Resolve symbolic links
     src = realpath(src)
 
@@ -645,7 +648,7 @@ def _copy_win_mode(src, dst):
     win32security.SetFileSecurity(dst, win32security.DACL_SECURITY_INFORMATION, security_dst)
 
 
-def _generate_windows_flags(rights_desc):
+def _generate_windows_flags(rights_desc: Dict[str, int]) -> int:
     # Some notes about how each POSIX right is interpreted.
     #
     # For the rights read and execute, we have a pretty bijective relation between
@@ -676,7 +679,7 @@ def _generate_windows_flags(rights_desc):
     return flag
 
 
-def _check_win_mode(file_path, mode):
+def _check_win_mode(file_path: str, mode: int) -> bool:
     # Resolve symbolic links
     file_path = realpath(file_path)
     # Get current dacl file
@@ -698,7 +701,7 @@ def _check_win_mode(file_path, mode):
     return _compare_dacls(dacl, ref_dacl)
 
 
-def _compare_dacls(dacl1, dacl2):
+def _compare_dacls(dacl1: Any, dacl2: Any) -> bool:
     """
     This method compare the two given DACLs to check if they are identical.
     Identical means here that they contains the same set of ACEs in the same order.
@@ -707,7 +710,7 @@ def _compare_dacls(dacl1, dacl2):
             [dacl2.GetAce(index) for index in range(dacl2.GetAceCount())])
 
 
-def _get_current_user():
+def _get_current_user() -> Any:
     """
     Return the pySID corresponding to the current user.
     """

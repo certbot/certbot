@@ -474,7 +474,7 @@ class ChooseValuesTest(unittest.TestCase):
         result = self._call(items, None)
         self.assertEqual(result, [items[2]])
         self.assertIs(mock_util().checklist.called, True)
-        self.assertIsNone(mock_util().checklist.call_args[0][0])
+        self.assertEqual(mock_util().checklist.call_args[0][0], "")
 
     @test_util.patch_display_util()
     def test_choose_names_success_question(self, mock_util):
