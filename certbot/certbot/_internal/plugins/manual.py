@@ -168,9 +168,7 @@ permitted by DNS standards.)
                 )
             )
 
-    # TODO: Remove the type ignore once certbot package is fully typed
-    def get_chall_pref(self,  # type: ignore[override]
-                       domain: str) -> Iterable[Type[challenges.Challenge]]:
+    def get_chall_pref(self, domain: str) -> Iterable[Type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01, challenges.DNS01]
 

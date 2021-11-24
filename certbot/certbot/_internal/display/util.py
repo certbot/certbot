@@ -62,8 +62,7 @@ def input_with_timeout(prompt: Optional[str] = None, timeout: float = 36000.0) -
         sys.stdout.write(prompt)
         sys.stdout.flush()
 
-    # TODO: Remove the cast once certbot package is fully typed
-    line = misc.readline_with_timeout(timeout, cast(str, prompt))
+    line = misc.readline_with_timeout(timeout, prompt)
 
     if not line:
         raise EOFError

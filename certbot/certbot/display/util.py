@@ -100,9 +100,7 @@ def menu(message: str, choices: Union[List[str], List[Tuple[str, str]]],
     :rtype: tuple
 
     """
-    # TODO: Remove the cast once certbot package is fully typed
-    return obj.get_display().menu(message, cast(Union[List[Tuple[str, str]], List[str]], choices),
-                                  default=default, cli_flag=cli_flag,
+    return obj.get_display().menu(message, choices, default=default, cli_flag=cli_flag,
                                   force_interactive=force_interactive)
 
 
@@ -168,9 +166,7 @@ def checklist(message: str, tags: List[str], default: Optional[List[str]] = None
     :rtype: tuple
 
     """
-    # TODO: Remove the cast once certbot package is fully typed
-    return obj.get_display().checklist(message, tags, default=cast(Optional[List[str]], default),
-                                       cli_flag=cli_flag,
+    return obj.get_display().checklist(message, tags, default=default, cli_flag=cli_flag,
                                        force_interactive=force_interactive)
 
 
@@ -189,9 +185,7 @@ def directory_select(message: str, default: Optional[str] = None, cli_flag: Opti
         `string` - input entered by the user
 
     """
-    # TODO: Remove the type ignore once certbot package is fully typed
-    return obj.get_display().directory_select(message,  # type: ignore[return-value]
-                                              default=default, cli_flag=cli_flag,
+    return obj.get_display().directory_select(message, default=default, cli_flag=cli_flag,
                                               force_interactive=force_interactive)
 
 

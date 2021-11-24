@@ -91,9 +91,7 @@ to serve all files under specified web root ({0})."""
                 "the provided --webroot-path/-w and that files created there can be downloaded "
                 "from the internet.")
 
-    # TODO: Remove the type ignore once certbot package is fully typed
-    def get_chall_pref(self,  # type: ignore[override]  # pragma: no cover
-                       domain: str) -> Iterable[Type[challenges.Challenge]]:
+    def get_chall_pref(self, domain: str) -> Iterable[Type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01]
 
