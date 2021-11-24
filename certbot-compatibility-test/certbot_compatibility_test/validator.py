@@ -1,6 +1,7 @@
 """Validators to determine the current webserver configuration"""
 import logging
 import socket
+from typing import cast
 
 import requests
 
@@ -29,7 +30,8 @@ class Validator:
             logger.exception(str(error))
             return False
 
-        return presented_cert.digest("sha256") == cert.digest("sha256")
+        # Despite documentation saying that bytes are expected for digest(), we must provide a str.
+        return presented_cert.digest(cast(bytes, "sha256")) == cert.digest("sha256")
 
     def redirect(self, name, port=80, headers=None):
         """Test whether webserver redirects to secure connection."""

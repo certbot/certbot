@@ -119,7 +119,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.19.0 (certbot;
+                        "". (default: CertbotACMEClient/1.21.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -156,6 +156,11 @@ automation:
                         near expiry. (default: False)
   --reuse-key           When renewing, use the same private key as the
                         existing certificate. (default: False)
+  --no-reuse-key        When renewing, do not use the same private key as the
+                        existing certificate. Not reusing private keys is the
+                        default behavior of Certbot. This option may be used
+                        to unset --reuse-key on an existing certificate.
+                        (default: False)
   --allow-subset-of-names
                         When performing domain validation, do not consider it
                         a failure if authorizations can not be obtained for a
@@ -281,13 +286,12 @@ certonly:
                         'certonly' subcommand. (default: None)
 
 renew:
-  The 'renew' subcommand will attempt to renew all certificates (or more
-  precisely, certificate lineages) you have previously obtained if they are
-  close to expiry, and print a summary of the results. By default, 'renew'
-  will reuse the options used to create obtain or most recently successfully
-  renew each certificate lineage. You can try it with `--dry-run` first. For
-  more fine-grained control, you can renew individual lineages with the
-  `certonly` subcommand. Hooks are available to run commands before and
+  The 'renew' subcommand will attempt to renew any certificates previously
+  obtained if they are close to expiry, and print a summary of the results.
+  By default, 'renew' will reuse the plugins and options used to obtain or
+  most recently renew each certificate. You can test whether future renewals
+  will succeed with `--dry-run`. Individual certificates can be renewed with
+  the `--cert-name` option. Hooks are available to run commands before and
   after renewal; see https://certbot.eff.org/docs/using.html#renewal for
   more information on these.
 

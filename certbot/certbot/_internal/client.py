@@ -2,7 +2,12 @@
 import datetime
 import logging
 import platform
-from typing import List, Optional, Union
+from typing import cast
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 import warnings
 
 from cryptography.hazmat.backends import default_backend
@@ -203,6 +208,7 @@ def perform_registration(acme, config, tos_cb):
     """
 
     eab_credentials_supplied = config.eab_kid and config.eab_hmac_key
+    eab: Optional[Dict[str, Any]]
     if eab_credentials_supplied:
         account_public_key = acme.client.net.key.public_key()
         eab = messages.ExternalAccountBinding.from_data(account_public_key=account_public_key,
@@ -219,11 +225,13 @@ def perform_registration(acme, config, tos_cb):
             raise errors.Error(msg)
 
     try:
-        newreg = messages.NewRegistration.from_data(email=config.email,
-                                                    external_account_binding=eab)
+        # TODO: Remove the cast once certbot package is fully typed
+        newreg = messages.NewRegistration.from_data(
+            email=config.email,
+            external_account_binding=cast(Optional[messages.ExternalAccountBinding], eab))
         return acme.new_account_and_tos(newreg, tos_cb)
     except messages.Error as e:
-        if e.code == "invalidEmail" or e.code == "invalidContact":
+        if e.code in ('invalidEmail', 'invalidContact'):
             if config.noninteractive_mode:
                 msg = ("The ACME server believes %s is an invalid email address. "
                        "Please ensure it is a valid email and attempt "

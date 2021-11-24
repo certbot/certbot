@@ -2,7 +2,6 @@
 # pylint: disable=too-many-lines
 from collections import defaultdict
 import copy
-from distutils.version import LooseVersion
 import fnmatch
 import logging
 import re
@@ -154,9 +153,10 @@ class ApacheConfigurator(common.Installer, interfaces.Authenticator):
         """
         # Disabling TLS session tickets is supported by Apache 2.4.11+ and OpenSSL 1.0.2l+.
         # So for old versions of Apache we pick a configuration without this option.
+        min_openssl_version = util.parse_loose_version('1.0.2l')
         openssl_version = self.openssl_version(warn_on_no_mod_ssl)
         if self.version < (2, 4, 11) or not openssl_version or\
-            LooseVersion(openssl_version) < LooseVersion('1.0.2l'):
+            util.parse_loose_version(openssl_version) < min_openssl_version:
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 
@@ -2437,10 +2437,9 @@ class ApacheConfigurator(common.Installer, interfaces.Authenticator):
         except errors.SubprocessError as err:
             logger.warning("Unable to restart apache using %s",
                         self.options.restart_cmd)
-            alt_restart = self.options.restart_cmd_alt
-            if alt_restart:
+            if self.options.restart_cmd_alt:
                 logger.debug("Trying alternative restart command: %s",
-                             alt_restart)
+                             self.options.restart_cmd_alt)
                 # There is an alternative restart command available
                 # This usually is "restart" verb while original is "graceful"
                 try:

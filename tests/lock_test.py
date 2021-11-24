@@ -144,8 +144,7 @@ def setup_certificate(workspace):
     :rtype: `tuple`
     """
     # Generate key
-    # See comment on cryptography import about type: ignore
-    private_key = rsa.generate_private_key(  # type: ignore
+    private_key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048,
         backend=default_backend()
@@ -169,7 +168,7 @@ def setup_certificate(workspace):
 
     key_path = os.path.join(workspace, 'cert.key')
     with open(key_path, 'wb') as file_handle:
-        file_handle.write(private_key.private_bytes(  # type: ignore
+        file_handle.write(private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption()

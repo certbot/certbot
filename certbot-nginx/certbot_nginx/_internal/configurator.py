@@ -1,6 +1,5 @@
 # pylint: disable=too-many-lines
 """Nginx Configuration"""
-from distutils.version import LooseVersion
 import logging
 import re
 import socket
@@ -142,8 +141,9 @@ class NginxConfigurator(common.Installer, interfaces.Authenticator):
         # For a complete history, check out https://github.com/certbot/certbot/issues/7322
 
         use_tls13 = self.version >= (1, 13, 0)
+        min_openssl_version = util.parse_loose_version('1.0.2l')
         session_tix_off = self.version >= (1, 5, 9) and self.openssl_version and\
-            LooseVersion(self.openssl_version) >= LooseVersion('1.0.2l')
+            util.parse_loose_version(self.openssl_version) >= min_openssl_version
 
         if use_tls13:
             if session_tix_off:

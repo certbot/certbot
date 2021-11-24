@@ -4,6 +4,8 @@ The JWS implementation in josepy only implements the base JOSE standard. In
 order to support the new header fields defined in ACME, this module defines some
 ACME-specific classes that layer on top of josepy.
 """
+from typing import Optional
+
 import josepy as jose
 
 
@@ -17,7 +19,7 @@ class Header(jose.Header):
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that nonce is redefined. Let's ignore the type check here.
     @nonce.decoder  # type: ignore
-    def nonce(value):  # pylint: disable=no-self-argument,missing-function-docstring
+    def nonce(value: str) -> bytes:  # pylint: disable=no-self-argument,missing-function-docstring
         try:
             return jose.decode_b64jose(value)
         except jose.DeserializationError as error:
@@ -46,11 +48,12 @@ class JWS(jose.JWS):
 
     @classmethod
     # pylint: disable=arguments-differ
-    def sign(cls, payload, key, alg, nonce, url=None, kid=None):
+    def sign(cls, payload: bytes, key: jose.JWK, alg: jose.JWASignature, nonce: Optional[bytes],
+             url: Optional[str] = None, kid: Optional[str] = None) -> jose.JWS:
         # Per ACME spec, jwk and kid are mutually exclusive, so only include a
         # jwk field if kid is not provided.
         include_jwk = kid is None
         return super().sign(payload, key=key, alg=alg,
-                                    protect=frozenset(['nonce', 'url', 'kid', 'jwk', 'alg']),
-                                    nonce=nonce, url=url, kid=kid,
-                                    include_jwk=include_jwk)
+                            protect=frozenset(['nonce', 'url', 'kid', 'jwk', 'alg']),
+                            nonce=nonce, url=url, kid=kid,
+                            include_jwk=include_jwk)

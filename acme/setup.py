@@ -3,7 +3,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.20.0.dev0'
+version = '1.22.0.dev0'
 
 install_requires = [
     'cryptography>=2.1.4',
@@ -45,6 +45,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
     ],
