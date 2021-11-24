@@ -20,7 +20,6 @@ from acme import challenges
 from acme import crypto_util as acme_crypto_util
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot.display import util as display_util
 from certbot.compat import os
@@ -42,7 +41,7 @@ NO_SSL_MODIFIER = 4
 logger = logging.getLogger(__name__)
 
 
-class NginxConfigurator(common.Installer, interfaces.Authenticator):
+class NginxConfigurator(common.Configurator):
     """Nginx configurator.
 
     .. todo:: Add proper support for comments in the config. Currently,

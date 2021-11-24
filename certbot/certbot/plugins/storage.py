@@ -4,6 +4,7 @@ import logging
 from typing import Any
 from typing import Dict
 
+from certbot import configuration
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 class PluginStorage:
     """Class implementing storage functionality for plugins"""
 
-    def __init__(self, config, classkey):
+    def __init__(self, config: configuration.NamespaceConfig, classkey: str) -> None:
         """Initializes PluginStorage object storing required configuration
         options.
 
@@ -29,7 +30,7 @@ class PluginStorage:
         self._data: Dict
         self._storagepath: str
 
-    def _initialize_storage(self):
+    def _initialize_storage(self) -> None:
         """Initializes PluginStorage data and reads current state from the disk
         if the storage json exists."""
 
@@ -37,7 +38,7 @@ class PluginStorage:
         self._load()
         self._initialized = True
 
-    def _load(self):
+    def _load(self) -> None:
         """Reads PluginStorage content from the disk to a dict structure
 
         :raises .errors.PluginStorageError: when unable to open or read the file
@@ -67,7 +68,7 @@ class PluginStorage:
                 raise errors.PluginStorageError(errmsg)
         self._data = data
 
-    def save(self):
+    def save(self) -> None:
         """Saves PluginStorage content to disk
 
         :raises .errors.PluginStorageError: when unable to serialize the data
@@ -97,7 +98,7 @@ class PluginStorage:
             logger.error(errmsg)
             raise errors.PluginStorageError(errmsg)
 
-    def put(self, key, value):
+    def put(self, key: str, value: Any) -> None:
         """Put configuration value to PluginStorage
 
         :param str key: Key to store the value to
@@ -110,7 +111,7 @@ class PluginStorage:
             self._data[self._classkey] = {}
         self._data[self._classkey][key] = value
 
-    def fetch(self, key):
+    def fetch(self, key: str) -> Any:
         """Get configuration value from PluginStorage
 
         :param str key: Key to get value from the storage
