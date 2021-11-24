@@ -9,7 +9,6 @@ from typing import Optional
 from typing import Sized
 from typing import Tuple
 from typing import Type
-from typing import Union
 
 import josepy
 from requests.models import Response
@@ -196,8 +195,9 @@ class AuthHandler:
             # From all the pending authorizations, we take the greatest Retry-After value
             # to avoid polling an authorization before its relevant Retry-After value.
             # (by construction resp cannot be None at that time, but mypy do not know it).
-            retry_after = max(self.acme.retry_after(cast(Response, resp), 3)
-                              for _, resp in authzrs_to_check.values())
+            retry_after = max(self.acme.retry_after(resp, 3)
+                              for _, resp in authzrs_to_check.values()
+                              if resp is not None)
             sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
 
         # In case of failed authzrs, create a report to the user.
