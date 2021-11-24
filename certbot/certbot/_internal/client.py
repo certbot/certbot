@@ -711,9 +711,6 @@ class Client:
                 )
                 raise
             display_util.notify(success_msg)
-        else:
-            display_util.notify("No installer plugin has been set, "
-                                "so no rollback has been executed.")
 
 
 def validate_key_csr(privkey: util.Key, csr: Optional[util.CSR] = None) -> None:
