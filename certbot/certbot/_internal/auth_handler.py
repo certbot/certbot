@@ -2,12 +2,10 @@
 import datetime
 import logging
 import time
-from typing import cast
 from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Sized
 from typing import Tuple
 from typing import Type
 
@@ -96,9 +94,7 @@ class AuthHandler:
                 logger.info('Attempting to clean up outstanding challenges...')
                 raise error
             # All challenges should have been processed by the authenticator.
-            # TODO: Remove the cast once certbot package is fully typed
-            assert len(cast(Sized, resps)) == len(achalls), \
-                'Some challenges have not been performed.'
+            assert len(resps) == len(achalls), 'Some challenges have not been performed.'
 
             # Inform the ACME CA server that challenges are available for validation.
             for achall, resp in zip(achalls, resps):
