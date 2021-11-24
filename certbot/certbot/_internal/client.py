@@ -690,9 +690,6 @@ class Client:
             self.installer.recovery_routine()
             if success_msg:
                 display_util.notify(success_msg)
-        else:
-            display_util.notify("No installer plugin as been set, "
-                                "so no recovery routing has been executed.")
 
     def _rollback_and_restart(self, success_msg: str) -> None:
         """Rollback the most recent checkpoint and restart the webserver
