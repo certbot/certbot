@@ -240,10 +240,8 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
             raise errors.Error(msg)
 
     try:
-        # TODO: Remove the cast once certbot package is fully typed
         newreg = messages.NewRegistration.from_data(
-            email=config.email,
-            external_account_binding=cast(Optional[messages.ExternalAccountBinding], eab))
+            email=config.email, external_account_binding=eab)
         # Until ACME v1 support is removed from Certbot, we actually need the provided
         # ACME client to be a wrapper of type BackwardsCompatibleClientV2.
         # TODO: Remove this cast and rewrite the logic when the client is actually a ClientV2
