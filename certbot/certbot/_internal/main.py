@@ -1104,7 +1104,7 @@ def enhance(config: configuration.NamespaceConfig,
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None` or a string indicating and error
+    :returns: `None` or a string indicating an error
     :rtype: None or str
 
     """
