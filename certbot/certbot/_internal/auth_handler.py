@@ -160,7 +160,7 @@ class AuthHandler:
                             for index, authzr in enumerate(authzrs)}
         authzrs_failed_to_report = []
         # Give an initial second to the ACME CA server to check the authorizations
-        sleep_seconds: Union[float, int] = 1
+        sleep_seconds: float = 1
         for _ in range(max_retries):
             # Wait for appropriate time (from Retry-After, initial wait, or no wait)
             if sleep_seconds > 0:
