@@ -115,6 +115,22 @@ class AuthenticatorTest(unittest.TestCase):
         from certbot._internal.plugins.webroot import _WEB_CONFIG_SHA256SUMS
         self.assertTrue(webconfig_hash not in _WEB_CONFIG_SHA256SUMS)
 
+    @unittest.skipIf(filesystem.POSIX_MODE, reason='Test specific to Windows')
+    def test_foreign_webconfig_multiple_domains(self):
+        # Covers bug https://github.com/certbot/certbot/issues/9091
+        achall_2 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(challenges.HTTP01(token=b"bingo"), "pending"),
+            domain="second-thing.com", account_key=KEY)
+        self.config.webroot_map["second-thing.com"] = self.path
+
+        challenge_path = os.path.join(self.path, ".well-known", "acme-challenge")
+        filesystem.makedirs(challenge_path)
+
+        webconfig_path = os.path.join(challenge_path, "web.config")
+        with open(webconfig_path, "w") as file:
+            file.write("something")
+        self.auth.perform([self.achall, achall_2])
+
     @test_util.patch_display_util()
     def test_webroot_from_list_help_and_cancel(self, mock_get_utility):
         self.config.webroot_path = []
