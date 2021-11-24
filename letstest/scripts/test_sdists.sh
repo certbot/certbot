@@ -20,6 +20,14 @@ TEMP_DIR=$(mktemp -d)
 CONSTRAINTS="$TEMP_DIR/constraints.txt"
 cp tools/requirements.txt "$CONSTRAINTS"
 
+# We pin cryptography to 3.1.1 and pyopenssl to 19.1.0 specifically for CentOS 7 / RHEL 7
+# because these systems ship only with OpenSSL 1.0.2, and this OpenSSL version support has been
+# dropped on cryptography>=3.2 and pyopenssl>=20.0.0.
+# Using this old version of OpenSSL would break the cryptography and pyopenssl wheels builds.
+if [ -f /etc/redhat-release ] && [ "$(. /etc/os-release 2> /dev/null && echo "$VERSION_ID" | cut -d '.' -f1)" -eq 7 ]; then
+  sed -i 's|cryptography==.*|cryptography==3.1.1|g' "$CONSTRAINTS"
+  sed -i 's|pyopenssl==.*|pyopenssl==19.1.0|g' "$CONSTRAINTS"
+fi
 
 PLUGINS="certbot-apache certbot-nginx"
 # build sdists
