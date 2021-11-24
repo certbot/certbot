@@ -535,7 +535,7 @@ class RenewableCert(interfaces.RenewableCert):
         """
         cert_path = self.current_target("cert")
         if not cert_path:
-            raise errors.Error("Target cert does not exist!")
+            raise errors.Error("Target certificate does not exist.")
         return crypto_util.notAfter(cert_path)
 
     @property
