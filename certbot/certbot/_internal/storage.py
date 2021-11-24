@@ -869,7 +869,7 @@ class RenewableCert(interfaces.RenewableCert):
         for item in ALL_FOUR:
             version = self.current_version(item)
             if version is None:
-                raise errors.Error(f"Missing computable version for item {item}!")
+                raise errors.Error(f"{item} is required but missing for this certificate.")
             all_versions.append(version)
         # TODO: consider whether to assume consistency or treat
         #       inconsistent/consistent versions differently
