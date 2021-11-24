@@ -1,5 +1,6 @@
 """Subscribes users to the EFF newsletter."""
 import logging
+from typing import cast
 from typing import Optional
 
 import requests
@@ -32,16 +33,18 @@ def prepare_subscription(config: configuration.NamespaceConfig, acc: Account) ->
         if config.email is None:
             _report_failure("you didn't provide an e-mail address")
         else:
-            acc.meta = acc.meta.update(register_to_eff=config.email)
+            # TODO: Remove cast when https://github.com/certbot/certbot/pull/9073 is merged.
+            acc.meta = cast(Account.Meta, acc.meta.update(register_to_eff=config.email))
     elif config.email and _want_subscription():
-        acc.meta = acc.meta.update(register_to_eff=config.email)
+        # TODO: Remove cast when https://github.com/certbot/certbot/pull/9073 is merged.
+        acc.meta = cast(Account.Meta, acc.meta.update(register_to_eff=config.email))
 
     if acc.meta.register_to_eff:
         storage = AccountFileStorage(config)
         storage.update_meta(acc)
 
 
-def handle_subscription(config: configuration.NamespaceConfig, acc: Account) -> None:
+def handle_subscription(config: configuration.NamespaceConfig, acc: Optional[Account]) -> None:
     """High level function to take care of EFF newsletter subscriptions.
 
     Once subscription is handled, it will not be handled again.
@@ -50,12 +53,14 @@ def handle_subscription(config: configuration.NamespaceConfig, acc: Account) -> 
     :param Account acc: Current client account.
 
     """
-    if config.dry_run:
+    if config.dry_run or not acc:
         return
     if acc.meta.register_to_eff:
-        subscribe(acc.meta.register_to_eff)
+        # TODO: Remove cast when https://github.com/certbot/certbot/pull/9073 is merged.
+        subscribe(cast(str, acc.meta.register_to_eff))
 
-        acc.meta = acc.meta.update(register_to_eff=None)
+        # TODO: Remove cast when https://github.com/certbot/certbot/pull/9073 is merged.
+        acc.meta = cast(Account.Meta, acc.meta.update(register_to_eff=None))
         storage = AccountFileStorage(config)
         storage.update_meta(acc)
 

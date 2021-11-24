@@ -3,15 +3,25 @@ import datetime
 import logging
 import time
 from typing import Dict
+from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Tuple
+from typing import Type
+
+import josepy
+from requests.models import Response
 
 from acme import challenges
+from acme import client
 from acme import errors as acme_errors
 from acme import messages
 from certbot import achallenges
+from certbot import configuration
 from certbot import errors
+from certbot import interfaces
 from certbot._internal import error_handler
+from certbot._internal.account import Account
 from certbot.display import util as display_util
 from certbot.plugins import common as plugin_common
 
@@ -34,14 +44,17 @@ class AuthHandler:
         type strings with the most preferred challenge listed first
 
     """
-    def __init__(self, auth, acme_client, account, pref_challs):
+    def __init__(self, auth: interfaces.Authenticator, acme_client: Optional[client.ClientV2],
+                 account: Optional[Account], pref_challs: List[str]) -> None:
         self.auth = auth
         self.acme = acme_client
 
         self.account = account
         self.pref_challs = pref_challs
 
-    def handle_authorizations(self, orderr, config, best_effort=False, max_retries=30):
+    def handle_authorizations(self, orderr: messages.OrderResource,
+                              config: configuration.NamespaceConfig, best_effort: bool = False,
+                              max_retries: int = 30) -> List[messages.AuthorizationResource]:
         """
         Retrieve all authorizations, perform all challenges required to validate
         these authorizations, then poll and wait for the authorization to be checked.
@@ -57,6 +70,8 @@ class AuthHandler:
         authzrs = orderr.authorizations[:]
         if not authzrs:
             raise errors.AuthorizationError('No authorization to handle.')
+        if not self.acme:
+            raise errors.Error("No ACME client defined, authorizations cannot be handled.")
 
         # Retrieve challenges that need to be performed to validate authorizations.
         achalls = self._choose_challenges(authzrs)
@@ -97,6 +112,8 @@ class AuthHandler:
 
             return authzrs_validated
 
+        raise errors.Error("An unexpected error occurred while handling the authorizations.")
+
     def deactivate_valid_authorizations(self, orderr: messages.OrderResource) -> Tuple[List, List]:
         """
         Deactivate all `valid` authorizations in the order, so that they cannot be re-used
@@ -106,6 +123,9 @@ class AuthHandler:
                   list of unsuccessfully deactivated authorizations.
         :rtype: tuple
         """
+        if not self.acme:
+            raise errors.Error("No ACME client defined, cannot deactivate valid authorizations.")
+
         to_deactivate = [authzr for authzr in orderr.authorizations
                          if authzr.body.status == messages.STATUS_VALID]
         deactivated = []
@@ -121,17 +141,22 @@ class AuthHandler:
 
         return (deactivated, failed)
 
-    def _poll_authorizations(self, authzrs, max_retries, best_effort):
+    def _poll_authorizations(self, authzrs: List[messages.AuthorizationResource], max_retries: int,
+                             best_effort: bool) -> None:
         """
         Poll the ACME CA server, to wait for confirmation that authorizations have their challenges
         all verified. The poll may occur several times, until all authorizations are checked
         (valid or invalid), or after a maximum of retries.
         """
-        authzrs_to_check = {index: (authzr, None)
+        if not self.acme:
+            raise errors.Error("No ACME client defined, cannot poll authorizations.")
+
+        authzrs_to_check: Dict[int, Tuple[messages.AuthorizationResource,
+                                          Optional[Response]]] = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
         authzrs_failed_to_report = []
         # Give an initial second to the ACME CA server to check the authorizations
-        sleep_seconds = 1
+        sleep_seconds: float = 1
         for _ in range(max_retries):
             # Wait for appropriate time (from Retry-After, initial wait, or no wait)
             if sleep_seconds > 0:
@@ -166,8 +191,10 @@ class AuthHandler:
             # and wait this time before polling again in next loop iteration.
             # From all the pending authorizations, we take the greatest Retry-After value
             # to avoid polling an authorization before its relevant Retry-After value.
+            # (by construction resp cannot be None at that time, but mypy do not know it).
             retry_after = max(self.acme.retry_after(resp, 3)
-                              for _, resp in authzrs_to_check.values())
+                              for _, resp in authzrs_to_check.values()
+                              if resp is not None)
             sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
 
         # In case of failed authzrs, create a report to the user.
@@ -181,12 +208,16 @@ class AuthHandler:
             # Here authzrs_to_check is still not empty, meaning we exceeded the max polling attempt.
             raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
 
-    def _choose_challenges(self, authzrs):
+    def _choose_challenges(self, authzrs: Iterable[messages.AuthorizationResource]
+                           ) -> List[achallenges.AnnotatedChallenge]:
         """
         Retrieve necessary and pending challenges to satisfy server.
         NB: Necessary and already validated challenges are not retrieved,
         as they can be reused for a certificate issuance.
         """
+        if not self.acme:
+            raise errors.Error("No ACME client defined, cannot choose the challenges.")
+
         pending_authzrs = [authzr for authzr in authzrs
                            if authzr.body.status != messages.STATUS_VALID]
         achalls: List[achallenges.AnnotatedChallenge] = []
@@ -208,7 +239,7 @@ class AuthHandler:
 
         return achalls
 
-    def _get_chall_pref(self, domain):
+    def _get_chall_pref(self, domain: str) -> List[Type[challenges.Challenge]]:
         """Return list of challenge preferences.
 
         :param str domain: domain for which you are requesting preferences
@@ -230,7 +261,7 @@ class AuthHandler:
         chall_prefs.extend(plugin_pref)
         return chall_prefs
 
-    def _cleanup_challenges(self, achalls):
+    def _cleanup_challenges(self, achalls: List[achallenges.AnnotatedChallenge]) -> None:
         """Cleanup challenges.
 
         :param achalls: annotated challenges to cleanup
@@ -240,7 +271,8 @@ class AuthHandler:
         logger.info("Cleaning up challenges")
         self.auth.cleanup(achalls)
 
-    def _challenge_factory(self, authzr, path):
+    def _challenge_factory(self, authzr: messages.AuthorizationResource,
+                           path: List[int]) -> List[achallenges.AnnotatedChallenge]:
         """Construct Namedtuple Challenges
 
         :param messages.AuthorizationResource authzr: authorization
@@ -248,12 +280,14 @@ class AuthHandler:
         :param list path: List of indices from `challenges`.
 
         :returns: achalls, list of challenge type
-            :class:`certbot.achallenges.Indexed`
+            :class:`certbot.achallenges.AnnotatedChallenge`
         :rtype: list
 
         :raises .errors.Error: if challenge type is not recognized
 
         """
+        if not self.account:
+            raise errors.Error("Account is not set.")
         achalls = []
 
         for index in path:
@@ -265,6 +299,8 @@ class AuthHandler:
 
     def _report_failed_authzrs(self, failed_authzrs: List[messages.AuthorizationResource]) -> None:
         """Notifies the user about failed authorizations."""
+        if not self.account:
+            raise errors.Error("Account is not set.")
         problems: Dict[str, List[achallenges.AnnotatedChallenge]] = {}
         failed_achalls = [challb_to_achall(challb, self.account.key, authzr.body.identifier.value)
                         for authzr in failed_authzrs for challb in authzr.body.challenges
@@ -273,8 +309,9 @@ class AuthHandler:
         for achall in failed_achalls:
             problems.setdefault(achall.error.typ, []).append(achall)
 
-        msg = [f"\nCertbot failed to authenticate some domains (authenticator: {self.auth.name})."
-            " The Certificate Authority reported these problems:"]
+        msg = ["\nCertbot failed to authenticate some domains "
+               f"(authenticator: {self.auth.name})."
+               " The Certificate Authority reported these problems:"]
 
         for _, achalls in sorted(problems.items(), key=lambda item: item[0]):
             msg.append(_generate_failed_chall_msg(achalls))
@@ -287,7 +324,8 @@ class AuthHandler:
         display_util.notify("".join(msg))
 
 
-def challb_to_achall(challb, account_key, domain):
+def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
+                     domain: str) -> achallenges.AnnotatedChallenge:
     """Converts a ChallengeBody object to an AnnotatedChallenge.
 
     :param .ChallengeBody challb: ChallengeBody
@@ -310,7 +348,9 @@ def challb_to_achall(challb, account_key, domain):
         "Received unsupported challenge of type: {0}".format(chall.typ))
 
 
-def gen_challenge_path(challbs, preferences, combinations):
+def gen_challenge_path(challbs: List[messages.ChallengeBody],
+                       preferences: List[Type[challenges.Challenge]],
+                       combinations: Tuple[List[int], ...]) -> List[int]:
     """Generate a plan to get authority over the identity.
 
     .. todo:: This can be possibly be rewritten to use resolved_combinations.
@@ -328,8 +368,8 @@ def gen_challenge_path(challbs, preferences, combinations):
         :class:`acme.messages.Challenge`, each of which would
         be sufficient to prove possession of the identifier.
 
-    :returns: tuple of indices from ``challenges``.
-    :rtype: tuple
+    :returns: list of indices from ``challenges``.
+    :rtype: list
 
     :raises certbot.errors.AuthorizationError: If a
         path cannot be created that satisfies the CA given the preferences and
@@ -341,7 +381,10 @@ def gen_challenge_path(challbs, preferences, combinations):
     return _find_dumb_path(challbs, preferences)
 
 
-def _find_smart_path(challbs, preferences, combinations):
+def _find_smart_path(challbs: List[messages.ChallengeBody],
+                     preferences: List[Type[challenges.Challenge]],
+                     combinations: Tuple[List[int], ...]
+                     ) -> List[int]:
     """Find challenge path with server hints.
 
     Can be called if combinations is included. Function uses a simple
@@ -356,7 +399,7 @@ def _find_smart_path(challbs, preferences, combinations):
 
     # max_cost is now equal to sum(indices) + 1
 
-    best_combo = None
+    best_combo: Optional[List[int]] = None
     # Set above completing all of the available challenges
     best_combo_cost = max_cost
 
@@ -373,12 +416,13 @@ def _find_smart_path(challbs, preferences, combinations):
         combo_total = 0
 
     if not best_combo:
-        _report_no_chall_path(challbs)
+        raise _report_no_chall_path(challbs)
 
     return best_combo
 
 
-def _find_dumb_path(challbs, preferences):
+def _find_dumb_path(challbs: List[messages.ChallengeBody],
+                    preferences: List[Type[challenges.Challenge]]) -> List[int]:
     """Find challenge path without server hints.
 
     Should be called if the combinations hint is not included by the
@@ -394,15 +438,18 @@ def _find_dumb_path(challbs, preferences):
         if supported:
             path.append(i)
         else:
-            _report_no_chall_path(challbs)
+            raise _report_no_chall_path(challbs)
 
     return path
 
 
-def _report_no_chall_path(challbs):
-    """Logs and raises an error that no satisfiable chall path exists.
+def _report_no_chall_path(challbs: List[messages.ChallengeBody]) -> errors.AuthorizationError:
+    """Logs and return a raisable error reporting that no satisfiable chall path exists.
 
     :param challbs: challenges from the authorization that can't be satisfied
+
+    :returns: An authorization error
+    :rtype: certbot.errors.AuthorizationError
 
     """
     msg = ("Client with the currently selected authenticator does not support "
@@ -412,7 +459,7 @@ def _report_no_chall_path(challbs):
             " You may need to use an authenticator "
             "plugin that can do challenges over DNS.")
     logger.critical(msg)
-    raise errors.AuthorizationError(msg)
+    return errors.AuthorizationError(msg)
 
 
 def _generate_failed_chall_msg(failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
