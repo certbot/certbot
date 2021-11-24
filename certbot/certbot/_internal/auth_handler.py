@@ -2,13 +2,12 @@
 import datetime
 import logging
 import time
-from typing import cast
 from typing import Dict
+from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
-from typing import Union
 
 import josepy
 from requests.models import Response
@@ -142,7 +141,7 @@ class AuthHandler:
 
         return (deactivated, failed)
 
-    def _poll_authorizations(self, authzrs: messages.AuthorizationResource, max_retries: int,
+    def _poll_authorizations(self, authzrs: List[messages.AuthorizationResource], max_retries: int,
                              best_effort: bool) -> None:
         """
         Poll the ACME CA server, to wait for confirmation that authorizations have their challenges
@@ -157,7 +156,7 @@ class AuthHandler:
                             for index, authzr in enumerate(authzrs)}
         authzrs_failed_to_report = []
         # Give an initial second to the ACME CA server to check the authorizations
-        sleep_seconds: Union[float, int] = 1
+        sleep_seconds: float = 1
         for _ in range(max_retries):
             # Wait for appropriate time (from Retry-After, initial wait, or no wait)
             if sleep_seconds > 0:
@@ -193,8 +192,9 @@ class AuthHandler:
             # From all the pending authorizations, we take the greatest Retry-After value
             # to avoid polling an authorization before its relevant Retry-After value.
             # (by construction resp cannot be None at that time, but mypy do not know it).
-            retry_after = max(self.acme.retry_after(cast(Response, resp), 3)
-                              for _, resp in authzrs_to_check.values())
+            retry_after = max(self.acme.retry_after(resp, 3)
+                              for _, resp in authzrs_to_check.values()
+                              if resp is not None)
             sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
 
         # In case of failed authzrs, create a report to the user.
@@ -208,7 +208,7 @@ class AuthHandler:
             # Here authzrs_to_check is still not empty, meaning we exceeded the max polling attempt.
             raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
 
-    def _choose_challenges(self, authzrs: messages.AuthorizationResource
+    def _choose_challenges(self, authzrs: Iterable[messages.AuthorizationResource]
                            ) -> List[achallenges.AnnotatedChallenge]:
         """
         Retrieve necessary and pending challenges to satisfy server.
@@ -309,8 +309,9 @@ class AuthHandler:
         for achall in failed_achalls:
             problems.setdefault(achall.error.typ, []).append(achall)
 
-        msg = [f"\nCertbot failed to authenticate some domains (authenticator: {self.auth.name})."
-            " The Certificate Authority reported these problems:"]
+        msg = ["\nCertbot failed to authenticate some domains "
+               f"(authenticator: {self.auth.name})."
+               " The Certificate Authority reported these problems:"]
 
         for _, achalls in sorted(problems.items(), key=lambda item: item[0]):
             msg.append(_generate_failed_chall_msg(achalls))

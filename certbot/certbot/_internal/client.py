@@ -9,6 +9,7 @@ from typing import Dict
 from typing import IO
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Union
 import warnings
@@ -252,7 +253,7 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
             raise errors.Error("The ACME client must be an instance of "
                                "acme.client.BackwardsCompatibleClientV2")
     except messages.Error as e:
-        if e.code == "invalidEmail" or e.code == "invalidContact":
+        if e.code in ('invalidEmail', 'invalidContact'):
             if config.noninteractive_mode:
                 msg = ("The ACME server believes %s is an invalid email address. "
                        "Please ensure it is a valid email and attempt "
@@ -413,7 +414,8 @@ class Client:
                 elliptic_curve=elliptic_curve,
                 strict_permissions=self.config.strict_permissions,
             )
-            csr = crypto_util.generate_csr(key, domains, self.config.csr_dir,
+            # TODO: Remove the cast once certbot package is fully typed
+            csr = crypto_util.generate_csr(key, cast(Set[str], domains), self.config.csr_dir,
                                            self.config.must_staple, self.config.strict_permissions)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
@@ -664,7 +666,8 @@ class Client:
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
             for dom in domains:
                 try:
-                    self.installer.enhance(dom, enhancement, options)
+                    # TODO: Remove the cast once certbot package is fully typed
+                    self.installer.enhance(dom, enhancement, cast(Optional[List[str]], options))
                 except errors.PluginEnhancementAlreadyPresent:
                     logger.info("Enhancement %s was already set.", enh_label)
                 except errors.PluginError:
@@ -683,9 +686,6 @@ class Client:
             self.installer.recovery_routine()
             if success_msg:
                 display_util.notify(success_msg)
-        else:
-            display_util.notify("No installer plugin as been set, "
-                                "so no recovery routing has been executed.")
 
     def _rollback_and_restart(self, success_msg: str) -> None:
         """Rollback the most recent checkpoint and restart the webserver
@@ -707,9 +707,6 @@ class Client:
                 )
                 raise
             display_util.notify(success_msg)
-        else:
-            display_util.notify("No installer plugin has been set, "
-                                "so no rollback has been executed.")
 
 
 def validate_key_csr(privkey: util.Key, csr: Optional[util.CSR] = None) -> None:

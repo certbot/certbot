@@ -363,9 +363,8 @@ def verify_renewable_cert_sig(renewable_cert: interfaces.RenewableCert) -> None:
         with open(renewable_cert.cert_path, 'rb') as cert_file:
             cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
         pk = chain.public_key()
-        with warnings.catch_warnings():
-            verify_signed_payload(pk, cert.signature, cert.tbs_certificate_bytes,
-                                  cert.signature_hash_algorithm)
+        verify_signed_payload(pk, cert.signature, cert.tbs_certificate_bytes,
+                                cert.signature_hash_algorithm)
     except (IOError, ValueError, InvalidSignature) as e:
         error_str = "verifying the signature of the certificate located at {0} has failed. \
                 Details: {1}".format(renewable_cert.cert_path, e)
@@ -387,22 +386,16 @@ def verify_signed_payload(public_key: Union[DSAPublicKey, 'Ed25519PublicKey', 'E
     :raises InvalidSignature: If signature verification fails.
     :raises errors.Error: If public key type is not supported
     """
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        if isinstance(public_key, RSAPublicKey):
-            verifier = public_key.verifier(
-                signature, PKCS1v15(), signature_hash_algorithm
-            )
-            verifier.update(payload)
-            verifier.verify()
-        elif isinstance(public_key, EllipticCurvePublicKey):
-            verifier = public_key.verifier(
-                signature, ECDSA(signature_hash_algorithm)
-            )
-            verifier.update(payload)
-            verifier.verify()
-        else:
-            raise errors.Error("Unsupported public key type.")
+    if isinstance(public_key, RSAPublicKey):
+        public_key.verify(
+            signature, payload, PKCS1v15(), signature_hash_algorithm
+        )
+    elif isinstance(public_key, EllipticCurvePublicKey):
+        public_key.verify(
+            signature, payload, ECDSA(signature_hash_algorithm)
+        )
+    else:
+        raise errors.Error("Unsupported public key type.")
 
 
 def verify_cert_matches_priv_key(cert_path: str, key_path: str) -> None:

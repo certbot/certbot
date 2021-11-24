@@ -137,7 +137,7 @@ def choose_names(installer: Optional[interfaces.Installer],
     return []
 
 
-def get_valid_domains(domains: List[str]) -> List[str]:
+def get_valid_domains(domains: Iterable[str]) -> List[str]:
     """Helper method for choose_names that implements basic checks
      on domain names
 

@@ -230,7 +230,7 @@ to serve all files under specified web root ({0})."""
                 if os.path.exists(web_config_path):
                     logger.info("A web.config file has not been created in "
                                 "%s because another one already exists.", self.full_roots[name])
-                    return
+                    continue
                 logger.info("Creating a web.config file in %s to allow IIS "
                             "to serve challenge files.", self.full_roots[name])
                 with safe_open(web_config_path, mode="w", chmod=0o644) as web_config:
