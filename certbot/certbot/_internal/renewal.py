@@ -7,8 +7,13 @@ import random
 import sys
 import time
 import traceback
+from typing import Any
+from typing import Dict
+from typing import Iterable
 from typing import List
+from typing import Mapping
 from typing import Optional
+from typing import Union
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -50,7 +55,8 @@ CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
 
 
-def _reconstitute(config, full_path):
+def _reconstitute(config: configuration.NamespaceConfig,
+                  full_path: str) -> Optional[storage.RenewableCert]:
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
@@ -108,7 +114,8 @@ def _reconstitute(config, full_path):
     return renewal_candidate
 
 
-def _restore_webroot_config(config, renewalparams):
+def _restore_webroot_config(config: configuration.NamespaceConfig,
+                            renewalparams: Mapping[str, Any]) -> None:
     """
     webroot_map is, uniquely, a dict, and the general-purpose configuration
     restoring logic is not able to correctly parse it from the serialized
@@ -125,7 +132,8 @@ def _restore_webroot_config(config, renewalparams):
         config.webroot_path = wp
 
 
-def _restore_plugin_configs(config, renewalparams):
+def _restore_plugin_configs(config: configuration.NamespaceConfig,
+                            renewalparams: Mapping[str, Any]) -> None:
     """Sets plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
@@ -168,7 +176,8 @@ def _restore_plugin_configs(config, renewalparams):
                     setattr(config, config_item, cast(config_value))
 
 
-def restore_required_config_elements(config, renewalparams):
+def restore_required_config_elements(config: configuration.NamespaceConfig,
+                                     renewalparams: Mapping[str, Any]) -> None:
     """Sets non-plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
@@ -189,7 +198,7 @@ def restore_required_config_elements(config, renewalparams):
             setattr(config.namespace, item_name, value)
 
 
-def _remove_deprecated_config_elements(renewalparams):
+def _remove_deprecated_config_elements(renewalparams: Mapping[str, Any]) -> Dict[str, Any]:
     """Removes deprecated config options from the parsed renewalparams.
 
     :param dict renewalparams: list of parsed renewalparams
@@ -202,7 +211,7 @@ def _remove_deprecated_config_elements(renewalparams):
         if option_name not in cli.DEPRECATED_OPTIONS}
 
 
-def _restore_pref_challs(unused_name, value):
+def _restore_pref_challs(unused_name: str, value: Union[List[str], str]) -> List[str]:
     """Restores preferred challenges from a renewal config file.
 
     If value is a `str`, it should be a single challenge type.
@@ -224,7 +233,7 @@ def _restore_pref_challs(unused_name, value):
     return cli.parse_preferred_challenges(value)
 
 
-def _restore_bool(name, value):
+def _restore_bool(name: str, value: str) -> bool:
     """Restores a boolean key-value pair from a renewal config file.
 
     :param str name: option name
@@ -243,7 +252,7 @@ def _restore_bool(name, value):
     return lowercase_value == "true"
 
 
-def _restore_int(name, value):
+def _restore_int(name: str, value: str) -> int:
     """Restores an integer key-value pair from a renewal config file.
 
     :param str name: option name
@@ -265,7 +274,7 @@ def _restore_int(name, value):
         raise errors.Error("Expected a numeric value for {0}".format(name))
 
 
-def _restore_str(name, value):
+def _restore_str(name: str, value: str) -> Optional[str]:
     """Restores a string key-value pair from a renewal config file.
 
     :param str name: option name
@@ -290,7 +299,7 @@ def _restore_str(name, value):
     return None if value == "None" else value
 
 
-def should_renew(config, lineage):
+def should_renew(config: configuration.NamespaceConfig, lineage: storage.RenewableCert) -> bool:
     """Return true if any of the circumstances for automatic renewal apply."""
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
@@ -305,7 +314,8 @@ def should_renew(config, lineage):
     return False
 
 
-def _avoid_invalidating_lineage(config, lineage, original_server):
+def _avoid_invalidating_lineage(config: configuration.NamespaceConfig,
+                                lineage: storage.RenewableCert, original_server: str) -> None:
     """Do not renew a valid cert with one from a staging server!"""
     if util.is_staging(config.server):
         if not util.is_staging(original_server):
@@ -344,7 +354,7 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str
     hooks.renew_hook(config, domains, lineage.live_dir)
 
 
-def report(msgs, category):
+def report(msgs: Iterable[str], category: str) -> str:
     """Format a results report for a category of renewal outcomes"""
     lines = ("%s (%s)" % (m, category) for m in msgs)
     return "  " + "\n  ".join(lines)
@@ -398,7 +408,7 @@ def _renew_describe_results(config: configuration.NamespaceConfig, renew_success
     notify(display_obj.SIDE_FRAME)
 
 
-def handle_renewal_request(config):
+def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
@@ -448,7 +458,7 @@ def handle_renewal_request(config):
             continue
 
         try:
-            if renewal_candidate is None:
+            if not renewal_candidate:
                 parse_failures.append(renewal_file)
             else:
                 # This call is done only for retro-compatibility purposes.
@@ -490,7 +500,8 @@ def handle_renewal_request(config):
                 lineagename, e
             )
             logger.debug("Traceback was:\n%s", traceback.format_exc())
-            renew_failures.append(renewal_candidate.fullchain)
+            if renewal_candidate:
+                renew_failures.append(renewal_candidate.fullchain)
 
     # Describe all the results
     _renew_describe_results(config, renew_successes, renew_failures,
