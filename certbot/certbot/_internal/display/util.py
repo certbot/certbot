@@ -1,7 +1,6 @@
 """Internal Certbot display utilities."""
 import sys
 import textwrap
-from typing import cast
 from typing import List
 from typing import Optional
 
