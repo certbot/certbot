@@ -211,7 +211,7 @@ class AuthHandler:
             # Here authzrs_to_check is still not empty, meaning we exceeded the max polling attempt.
             raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
 
-    def _choose_challenges(self, authzrs: messages.AuthorizationResource
+    def _choose_challenges(self, authzrs: Iterable[messages.AuthorizationResource]
                            ) -> List[achallenges.AnnotatedChallenge]:
         """
         Retrieve necessary and pending challenges to satisfy server.
