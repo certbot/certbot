@@ -2,14 +2,13 @@
 import datetime
 import logging
 import platform
+from typing import cast
 from typing import Any
 from typing import Callable
-from typing import cast
 from typing import Dict
 from typing import IO
 from typing import List
 from typing import Optional
-from typing import Set
 from typing import Tuple
 from typing import Union
 import warnings
@@ -241,10 +240,8 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
             raise errors.Error(msg)
 
     try:
-        # TODO: Remove the cast once certbot package is fully typed
         newreg = messages.NewRegistration.from_data(
-            email=config.email,
-            external_account_binding=cast(Optional[messages.ExternalAccountBinding], eab))
+            email=config.email, external_account_binding=eab)
         # Until ACME v1 support is removed from Certbot, we actually need the provided
         # ACME client to be a wrapper of type BackwardsCompatibleClientV2.
         # TODO: Remove this cast and rewrite the logic when the client is actually a ClientV2
@@ -416,8 +413,7 @@ class Client:
                 elliptic_curve=elliptic_curve,
                 strict_permissions=self.config.strict_permissions,
             )
-            # TODO: Remove the cast once certbot package is fully typed
-            csr = crypto_util.generate_csr(key, cast(Set[str], domains), self.config.csr_dir,
+            csr = crypto_util.generate_csr(key, domains, self.config.csr_dir,
                                            self.config.must_staple, self.config.strict_permissions)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
@@ -668,8 +664,7 @@ class Client:
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
             for dom in domains:
                 try:
-                    # TODO: Remove the cast once certbot package is fully typed
-                    self.installer.enhance(dom, enhancement, cast(Optional[List[str]], options))
+                    self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
                     logger.info("Enhancement %s was already set.", enh_label)
                 except errors.PluginError:
