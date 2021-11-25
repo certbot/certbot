@@ -35,7 +35,7 @@ class Completer:
     """
 
     def __init__(self) -> None:
-        self._iter: Iterator[Optional[str]]
+        self._iter: Iterator[str]
         self._original_completer: Optional[Callable]
         self._original_delims: str
 

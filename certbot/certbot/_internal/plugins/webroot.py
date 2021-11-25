@@ -91,8 +91,7 @@ to serve all files under specified web root ({0})."""
                 "the provided --webroot-path/-w and that files created there can be downloaded "
                 "from the internet.")
 
-    def get_chall_pref(self,
-                       domain: str) -> Iterable[Type[challenges.Challenge]]:  # pragma: no cover
+    def get_chall_pref(self, domain: str) -> Iterable[Type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01]
 

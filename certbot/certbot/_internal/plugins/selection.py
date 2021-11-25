@@ -19,7 +19,7 @@ from certbot.display import util as display_util
 logger = logging.getLogger(__name__)
 
 
-def pick_configurator(config: configuration.NamespaceConfig, default: str,
+def pick_configurator(config: configuration.NamespaceConfig, default: Optional[str],
                       plugins: disco.PluginsRegistry,
                       question: str = "How would you like to authenticate and install "
                                       "certificates?") -> Optional[interfaces.Plugin]:
@@ -29,7 +29,7 @@ def pick_configurator(config: configuration.NamespaceConfig, default: str,
         (interfaces.Authenticator, interfaces.Installer))
 
 
-def pick_installer(config: configuration.NamespaceConfig, default: str,
+def pick_installer(config: configuration.NamespaceConfig, default: Optional[str],
                    plugins: disco.PluginsRegistry,
                    question: str = "How would you like to install certificates?"
                    ) -> Optional[interfaces.Installer]:
@@ -37,7 +37,7 @@ def pick_installer(config: configuration.NamespaceConfig, default: str,
     return pick_plugin(config, default, plugins, question, (interfaces.Installer,))
 
 
-def pick_authenticator(config: configuration.NamespaceConfig, default: str,
+def pick_authenticator(config: configuration.NamespaceConfig, default: Optional[str],
                        plugins: disco.PluginsRegistry,
                        question: str = "How would you "
                                        "like to authenticate with the ACME CA?"
@@ -81,8 +81,9 @@ def get_unprepared_installer(config: configuration.NamespaceConfig,
 P = TypeVar('P', bound=interfaces.Plugin)
 
 
-def pick_plugin(config: configuration.NamespaceConfig, default: str, plugins: disco.PluginsRegistry,
-                question: str, ifaces: Iterable[Type]) -> Optional[P]:
+def pick_plugin(config: configuration.NamespaceConfig, default: Optional[str],
+                plugins: disco.PluginsRegistry, question: str,
+                ifaces: Iterable[Type]) -> Optional[P]:
     """Pick plugin.
 
     :param certbot.configuration.NamespaceConfig config: Configuration
@@ -260,7 +261,7 @@ def choose_configurator_plugins(config: configuration.NamespaceConfig,
     return installer, authenticator
 
 
-def set_configurator(previously: str, now: str) -> str:
+def set_configurator(previously: Optional[str], now: Optional[str]) -> Optional[str]:
     """
     Setting configurators multiple ways is okay, as long as they all agree
     :param str previously: previously identified request for the installer/authenticator
@@ -276,7 +277,8 @@ def set_configurator(previously: str, now: str) -> str:
     return now
 
 
-def cli_plugin_requests(config: configuration.NamespaceConfig) -> Tuple[str, str]:
+def cli_plugin_requests(config: configuration.NamespaceConfig
+                        ) -> Tuple[Optional[str], Optional[str]]:
     """
     Figure out which plugins the user requested with CLI and config options
 
@@ -331,7 +333,7 @@ def cli_plugin_requests(config: configuration.NamespaceConfig) -> Tuple[str, str
     return req_auth, req_inst
 
 
-def diagnose_configurator_problem(cfg_type: str, requested: str,
+def diagnose_configurator_problem(cfg_type: str, requested: Optional[str],
                                   plugins: disco.PluginsRegistry) -> None:
     """
     Raise the most helpful error message about a plugin being unavailable

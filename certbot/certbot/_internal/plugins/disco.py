@@ -65,7 +65,7 @@ class PluginEntryPoint:
         self._hidden = False
         self._long_description: Optional[str] = None
 
-    def check_name(self, name: str) -> bool:
+    def check_name(self, name: Optional[str]) -> bool:
         """Check if the name refers to this plugin."""
         if name == self.name:
             if self.warning_message:
@@ -79,7 +79,7 @@ class PluginEntryPoint:
         """Unique plugin name for an ``entry_point``"""
         if with_prefix:
             if not entry_point.dist:
-                raise errors.Error(f"Entrypoint {entry_point.name} as no distribution!")
+                raise errors.Error(f"Entrypoint {entry_point.name} has no distribution!")
             return entry_point.dist.key + ":" + entry_point.name
         return entry_point.name
 

@@ -33,7 +33,7 @@ class Installer(common.Plugin, interfaces.Installer):
         return []
 
     def deploy_cert(self, domain: str, cert_path: str, key_path: str,
-                    chain_path: Optional[str] = None, fullchain_path: Optional[str] = None) -> None:
+                    chain_path: str, fullchain_path: str) -> None:
         pass  # pragma: no cover
 
     def enhance(self, domain: str, enhancement: str,
