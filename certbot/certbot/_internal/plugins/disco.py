@@ -79,7 +79,7 @@ class PluginEntryPoint:
         """Unique plugin name for an ``entry_point``"""
         if with_prefix:
             if not entry_point.dist:
-                raise errors.Error(f"Entrypoint {entry_point.name} as no distribution!")
+                raise errors.Error(f"Entrypoint {entry_point.name} has no distribution!")
             return entry_point.dist.key + ":" + entry_point.name
         return entry_point.name
 
