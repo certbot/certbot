@@ -65,7 +65,7 @@ class PluginEntryPoint:
         self._hidden = False
         self._long_description: Optional[str] = None
 
-    def check_name(self, name: str) -> bool:
+    def check_name(self, name: Optional[str]) -> bool:
         """Check if the name refers to this plugin."""
         if name == self.name:
             if self.warning_message:
