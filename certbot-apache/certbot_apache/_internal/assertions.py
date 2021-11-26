@@ -2,11 +2,12 @@
 import fnmatch
 
 from certbot_apache._internal import interfaces
+from certbot_apache._internal.interfaces import ParserNode
 
 PASS = "CERTBOT_PASS_ASSERT"
 
 
-def assertEqual(first, second):
+def assertEqual(first: ParserNode, second: ParserNode):
     """ Equality assertion """
 
     if isinstance(first, interfaces.CommentNode):

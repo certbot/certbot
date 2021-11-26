@@ -470,10 +470,11 @@ class ApacheConfigurator(common.Configurator):
         """Initializes the ParserNode parser root instance."""
 
         if HAS_APACHECONFIG:
-            apache_vars = {}
-            apache_vars["defines"] = apache_util.parse_defines(self.options.ctl)
-            apache_vars["includes"] = apache_util.parse_includes(self.options.ctl)
-            apache_vars["modules"] = apache_util.parse_modules(self.options.ctl)
+            apache_vars = {
+                "defines": apache_util.parse_defines(self.options.ctl),
+                "includes": apache_util.parse_includes(self.options.ctl),
+                "modules": apache_util.parse_modules(self.options.ctl)
+            }
             metadata["apache_vars"] = apache_vars
 
             with open(self.parser.loc["root"]) as f:
