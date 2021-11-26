@@ -3,10 +3,13 @@ import re
 import subprocess
 import time
 import unittest
+from typing import Any
+
+import pytest
 
 
 @unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
-def test_it(request):
+def test_it(request: pytest.FixtureRequest) -> None:
     try:
         subprocess.check_call(['certbot', '--version'])
     except (subprocess.CalledProcessError, OSError):
@@ -56,6 +59,7 @@ def test_it(request):
         pass
 
 
-def _ps(powershell_str, capture_stdout=False):
+def _ps(powershell_str: str, capture_stdout: bool = False) -> Any:
     fn = subprocess.check_output if capture_stdout else subprocess.check_call
-    return fn(['powershell.exe', '-c', powershell_str], universal_newlines=True)
+    return fn(['powershell.exe', '-c', powershell_str],  # type: ignore[operator]
+              universal_newlines=True)
