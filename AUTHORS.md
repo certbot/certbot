@@ -187,6 +187,7 @@ Authors
 * [mrstanwell](https://github.com/mrstanwell)
 * [Nav Aulakh](https://github.com/Nav)
 * [Nelson Elhage](https://github.com/nelhage)
+* [Nicholas Cioli](https://github.com/nicholascioli)
 * [Nick Fong](https://github.com/nickfong)
 * [Nick Le Mouton](https://github.com/NoodlesNZ)
 * [Nikos Roussos](https://github.com/comzeradd)
