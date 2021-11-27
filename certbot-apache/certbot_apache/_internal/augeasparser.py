@@ -64,7 +64,7 @@ Translates over to:
     "/files/etc/apache2/apache2.conf/bLoCk[1]",
 ]
 """
-from typing import Any
+from typing import Any, List, Iterable, Tuple, Sequence, Optional
 from typing import Set
 
 from certbot import errors
@@ -101,7 +101,7 @@ class AugeasParserNode(interfaces.ParserNode):
     def save(self, msg: str) -> None:
         self.parser.save(msg)
 
-    def find_ancestors(self, name):
+    def find_ancestors(self, name: str) -> List["AugeasParserNode"]:
         """
         Searches for ancestor BlockNodes with a given name.
 
@@ -111,7 +111,7 @@ class AugeasParserNode(interfaces.ParserNode):
         :rtype: list of AugeasBlockNode
         """
 
-        ancestors = []
+        ancestors: List["AugeasParserNode"] = []
 
         parent = self.metadata["augeaspath"]
         while True:
@@ -126,7 +126,7 @@ class AugeasParserNode(interfaces.ParserNode):
 
         return ancestors
 
-    def _create_blocknode(self, path):
+    def _create_blocknode(self, path: str) -> "AugeasBlockNode":
         """
         Helper function to create a BlockNode from Augeas path. This is used by
         AugeasParserNode.find_ancestors and AugeasBlockNode.
@@ -148,7 +148,7 @@ class AugeasParserNode(interfaces.ParserNode):
                                filepath=apache_util.get_file_path(path),
                                metadata=metadata)
 
-    def _aug_get_name(self, path):
+    def _aug_get_name(self, path: str) -> str:
         """
         Helper function to get name of a configuration block or variable from path.
         """
@@ -169,13 +169,13 @@ class AugeasParserNode(interfaces.ParserNode):
 class AugeasCommentNode(AugeasParserNode):
     """ Augeas implementation of CommentNode interface """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         comment, kwargs = util.commentnode_kwargs(kwargs)  # pylint: disable=unused-variable
         super().__init__(**kwargs)
         # self.comment = comment
         self.comment = comment
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
             return (self.comment == other.comment and
                     self.filepath == other.filepath and
@@ -188,7 +188,7 @@ class AugeasCommentNode(AugeasParserNode):
 class AugeasDirectiveNode(AugeasParserNode):
     """ Augeas implementation of DirectiveNode interface """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         name, parameters, enabled, kwargs = util.directivenode_kwargs(kwargs)
         super().__init__(**kwargs)
         self.name = name
@@ -196,7 +196,7 @@ class AugeasDirectiveNode(AugeasParserNode):
         if parameters:
             self.set_parameters(parameters)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
             return (self.name == other.name and
                     self.filepath == other.filepath and
@@ -207,7 +207,7 @@ class AugeasDirectiveNode(AugeasParserNode):
                     self.metadata == other.metadata)
         return False
 
-    def set_parameters(self, parameters):
+    def set_parameters(self, parameters: Iterable[str]) -> None:
         """
         Sets parameters of a DirectiveNode or BlockNode object.
 
@@ -226,7 +226,7 @@ class AugeasDirectiveNode(AugeasParserNode):
             self.parser.aug.set(param_path, param)
 
     @property
-    def parameters(self):
+    def parameters(self) -> Tuple[Optional[str], ...]:
         """
         Fetches the parameters from Augeas tree, ensuring that the sequence always
         represents the current state
@@ -236,7 +236,7 @@ class AugeasDirectiveNode(AugeasParserNode):
         """
         return tuple(self._aug_get_params(self.metadata["augeaspath"]))
 
-    def _aug_get_params(self, path):
+    def _aug_get_params(self, path: str) -> List[Optional[str]]:
         """Helper function to get parameters for DirectiveNodes and BlockNodes"""
 
         arg_paths = self.parser.aug.match(path + "/arg")
@@ -246,11 +246,11 @@ class AugeasDirectiveNode(AugeasParserNode):
 class AugeasBlockNode(AugeasDirectiveNode):
     """ Augeas implementation of BlockNode interface """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.children = ()
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
             return (self.name == other.name and
                     self.filepath == other.filepath and
@@ -263,7 +263,9 @@ class AugeasBlockNode(AugeasDirectiveNode):
         return False
 
     # pylint: disable=unused-argument
-    def add_child_block(self, name, parameters=None, position=None):  # pragma: no cover
+    def add_child_block(self, name: str,  # pragma: no cover
+                        parameters: Optional[Sequence[str]] = None,
+                        position: Optional[int] = None) -> "AugeasBlockNode":
         """Adds a new BlockNode to the sequence of children"""
 
         insertpath, realpath, before = self._aug_resolve_child_position(
@@ -289,7 +291,9 @@ class AugeasBlockNode(AugeasDirectiveNode):
         return new_block
 
     # pylint: disable=unused-argument
-    def add_child_directive(self, name, parameters=None, position=None):  # pragma: no cover
+    def add_child_directive(self, name: str,  # pragma: no cover
+                            parameters: Optional[Sequence[str]] = None,
+                            position: Optional[int] = None) -> AugeasDirectiveNode:
         """Adds a new DirectiveNode to the sequence of children"""
 
         if not parameters:
@@ -318,7 +322,8 @@ class AugeasBlockNode(AugeasDirectiveNode):
                                       metadata=new_metadata)
         return new_dir
 
-    def add_child_comment(self, comment="", position=None):
+    def add_child_comment(self, comment: str = "",
+                          position: Optional[int] = None) -> AugeasCommentNode:
         """Adds a new CommentNode to the sequence of children"""
 
         insertpath, realpath, before = self._aug_resolve_child_position(
@@ -338,7 +343,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
                                         metadata=new_metadata)
         return new_comment
 
-    def find_blocks(self, name, exclude=True):
+    def find_blocks(self, name: str, exclude: bool = True) -> List["AugeasBlockNode"]:
         """Recursive search of BlockNodes from the sequence of children"""
 
         nodes = []
@@ -350,7 +355,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
         return nodes
 
-    def find_directives(self, name, exclude=True):
+    def find_directives(self, name: str, exclude: bool = True) -> List["AugeasDirectiveNode"]:
         """Recursive search of DirectiveNodes from the sequence of children"""
 
         nodes = []
@@ -369,7 +374,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
         return nodes
 
-    def find_comments(self, comment):
+    def find_comments(self, comment: str) -> List[AugeasCommentNode]:
         """
         Recursive search of DirectiveNodes from the sequence of children.
 
@@ -385,11 +390,11 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
         return nodes
 
-    def delete_child(self, child):
+    def delete_child(self, child: AugeasParserNode) -> None:
         """
         Deletes a ParserNode from the sequence of children, and raises an
         exception if it's unable to do so.
-        :param AugeasParserNode: child: A node to delete.
+        :param AugeasParserNode child: A node to delete.
         """
         if not self.parser.aug.remove(child.metadata["augeaspath"]):
 
@@ -398,11 +403,11 @@ class AugeasBlockNode(AugeasDirectiveNode):
                  "seem to exist.").format(child.metadata["augeaspath"])
             )
 
-    def unsaved_files(self):
+    def unsaved_files(self) -> Set[str]:
         """Returns a list of unsaved filepaths"""
         return self.parser.unsaved_files()
 
-    def parsed_paths(self):
+    def parsed_paths(self) -> List[str]:
         """
         Returns a list of file paths that have currently been parsed into the parser
         tree. The returned list may include paths with wildcard characters, for
@@ -422,7 +427,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
         return res_paths
 
-    def _create_commentnode(self, path):
+    def _create_commentnode(self, path: str) -> AugeasCommentNode:
         """Helper function to create a CommentNode from Augeas path"""
 
         comment = self.parser.aug.get(path)
@@ -435,7 +440,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
                                  filepath=apache_util.get_file_path(path),
                                  metadata=metadata)
 
-    def _create_directivenode(self, path):
+    def _create_directivenode(self, path: str) -> AugeasDirectiveNode:
         """Helper function to create a DirectiveNode from Augeas path"""
 
         name = self.parser.get_arg(path)
@@ -451,7 +456,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
                                    filepath=apache_util.get_file_path(path),
                                    metadata=metadata)
 
-    def _aug_find_blocks(self, name):
+    def _aug_find_blocks(self, name: str) -> Set[str]:
         """Helper function to perform a search to Augeas DOM tree to search
         configuration blocks with a given name"""
 
@@ -465,7 +470,8 @@ class AugeasBlockNode(AugeasDirectiveNode):
                               name.lower() in os.path.basename(path).lower()])
         return blk_paths
 
-    def _aug_resolve_child_position(self, name, position):
+    def _aug_resolve_child_position(self, name: str,
+                                    position: Optional[int]) -> Tuple[str, str, bool]:
         """
         Helper function that iterates through the immediate children and figures
         out the insertion path for a new AugeasParserNode.
@@ -532,7 +538,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
                 position
             )
 
-        return (insert_path, resulting_path, before)
+        return insert_path, resulting_path, before
 
 
 interfaces.CommentNode.register(AugeasCommentNode)

@@ -5,11 +5,13 @@ from typing import List
 from typing import Set
 from typing import TYPE_CHECKING
 
+from acme.challenges import KeyAuthorizationChallengeResponse
 from certbot import errors
+from certbot.achallenges import AnnotatedChallenge, KeyAuthorizationAnnotatedChallenge
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
-from certbot_apache._internal.obj import VirtualHost  # pylint: disable=unused-import
+from certbot_apache._internal.obj import VirtualHost
 from certbot_apache._internal.parser import get_aug_path
 
 if TYPE_CHECKING:
@@ -64,7 +66,7 @@ class ApacheHttp01(common.ChallengePerformer):
             "http_challenges")
         self.moded_vhosts: Set[VirtualHost] = set()
 
-    def perform(self):
+    def perform(self) -> List[KeyAuthorizationChallengeResponse]:
         """Perform all HTTP-01 challenges."""
         if not self.achalls:
             return []
@@ -84,7 +86,7 @@ class ApacheHttp01(common.ChallengePerformer):
 
         return responses
 
-    def prepare_http01_modules(self):
+    def prepare_http01_modules(self) -> None:
         """Make sure that we have the needed modules available for http01"""
 
         if self.configurator.conf("handle-modules"):
@@ -97,7 +99,7 @@ class ApacheHttp01(common.ChallengePerformer):
                 if mod + "_module" not in self.configurator.parser.modules:
                     self.configurator.enable_mod(mod, temp=True)
 
-    def _mod_config(self):
+    def _mod_config(self) -> None:
         selected_vhosts: List[VirtualHost] = []
         http_port = str(self.configurator.config.http01_port)
 
@@ -146,7 +148,7 @@ class ApacheHttp01(common.ChallengePerformer):
         with open(self.challenge_conf_post, "w") as new_conf:
             new_conf.write(config_text_post)
 
-    def _matching_vhosts(self, domain):
+    def _matching_vhosts(self, domain: str) -> List[VirtualHost]:
         """Return all VirtualHost objects that have the requested domain name or
         a wildcard name that would match the domain in ServerName or ServerAlias
         directive.
@@ -160,7 +162,7 @@ class ApacheHttp01(common.ChallengePerformer):
 
         return matching_vhosts
 
-    def _relevant_vhosts(self):
+    def _relevant_vhosts(self) -> List[VirtualHost]:
         http01_port = str(self.configurator.config.http01_port)
         relevant_vhosts = []
         for vhost in self.configurator.vhosts:
@@ -180,7 +182,7 @@ class ApacheHttp01(common.ChallengePerformer):
         """Return all VirtualHost objects with no ServerName"""
         return [vh for vh in self.configurator.vhosts if vh.name is None]
 
-    def _set_up_challenges(self):
+    def _set_up_challenges(self) -> List[KeyAuthorizationChallengeResponse]:
         if not os.path.isdir(self.challenge_dir):
             old_umask = filesystem.umask(0o022)
             try:
@@ -198,7 +200,8 @@ class ApacheHttp01(common.ChallengePerformer):
 
         return responses
 
-    def _set_up_challenge(self, achall):
+    def _set_up_challenge(self, achall: KeyAuthorizationAnnotatedChallenge
+                          ) -> KeyAuthorizationChallengeResponse:
         response, validation = achall.response_and_validation()
 
         name = os.path.join(self.challenge_dir, achall.chall.encode("token"))
@@ -210,7 +213,7 @@ class ApacheHttp01(common.ChallengePerformer):
 
         return response
 
-    def _set_up_include_directives(self, vhost):
+    def _set_up_include_directives(self, vhost: VirtualHost) -> None:
         """Includes override configuration to the beginning and to the end of
         VirtualHost. Note that this include isn't added to Augeas search tree"""
 

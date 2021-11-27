@@ -122,8 +122,8 @@ class VirtualHost:
     # ?: is used for not returning enclosed characters
     strip_name = re.compile(r"^(?:.+://)?([^ :$]*)")
 
-    def __init__(self, filep: str, path: Optional[str], addrs: Set["Addr"], ssl: bool, enabled: bool,
-                 name: Optional[str] = None, aliases: Optional[Sequence[str]] = None,
+    def __init__(self, filep: str, path: Optional[str], addrs: Set["Addr"], ssl: bool,
+                 enabled: bool, name: Optional[str] = None, aliases: Optional[Sequence[str]] = None,
                  modmacro: bool = False, ancestor: Optional["VirtualHost"] = None,
                  node: Optional[ParserNode] = None) -> None:
 

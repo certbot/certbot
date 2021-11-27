@@ -117,7 +117,7 @@ def isPassNodeList(nodelist: List[Union[DirectiveNode, CommentNode]]) -> bool:  
     return isPassComment(node)
 
 
-def assertEqualSimple(first: ParserNode, second: ParserNode) -> None:
+def assertEqualSimple(first: Any, second: Any) -> None:
     """ Simple assertion """
     if not isPass(first) and not isPass(second):
         assert first == second

@@ -30,7 +30,7 @@ class ApacheParserNode(interfaces.ParserNode):
     def save(self, msg: str) -> None:  # pragma: no cover
         pass
 
-    def find_ancestors(self, name: str) -> List[ParserNode]:  # pylint: disable=unused-variable
+    def find_ancestors(self, name: str) -> List["ApacheParserNode"]:  # pylint: disable=unused-variable
         """Find ancestor BlockNodes with a given name"""
         return [ApacheBlockNode(name=assertions.PASS,
                                 parameters=assertions.PASS,

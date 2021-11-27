@@ -1,14 +1,16 @@
 """Contains UI methods for Apache operations."""
 import logging
+from typing import Iterable, List, Optional, Tuple, Sequence
 
 from certbot import errors
 from certbot.compat import os
 from certbot.display import util as display_util
+from certbot_apache._internal.obj import VirtualHost
 
 logger = logging.getLogger(__name__)
 
 
-def select_vhost_multiple(vhosts):
+def select_vhost_multiple(vhosts: Iterable[VirtualHost]) -> List[VirtualHost]:
     """Select multiple Vhosts to install the certificate for
 
     :param vhosts: Available Apache VirtualHosts
@@ -32,7 +34,7 @@ def select_vhost_multiple(vhosts):
     return []
 
 
-def _reversemap_vhosts(names, vhosts):
+def _reversemap_vhosts(names: Iterable[str], vhosts: Iterable[VirtualHost]) -> List[VirtualHost]:
     """Helper function for select_vhost_multiple for mapping string
     representations back to actual vhost objects"""
     return_vhosts = []
@@ -44,8 +46,10 @@ def _reversemap_vhosts(names, vhosts):
     return return_vhosts
 
 
-def select_vhost(domain, vhosts):
+def select_vhost(domain: str, vhosts: Sequence[VirtualHost]) -> Optional[VirtualHost]:
     """Select an appropriate Apache Vhost.
+
+    :param str domain: Domain for vhost selection
 
     :param vhosts: Available Apache VirtualHosts
     :type vhosts: :class:`list` of type `~obj.Vhost`
@@ -62,7 +66,7 @@ def select_vhost(domain, vhosts):
     return None
 
 
-def _vhost_menu(domain, vhosts):
+def _vhost_menu(domain: str, vhosts: Iterable[VirtualHost]) -> Tuple[str, int]:
     """Select an appropriate Apache Vhost.
 
     :param vhosts: Available Apache Virtual Hosts

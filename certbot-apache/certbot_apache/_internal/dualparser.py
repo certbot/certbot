@@ -1,20 +1,36 @@
 """ Dual ParserNode implementation """
-from certbot_apache._internal import apacheparser
+import abc
+from typing import Any, Type, TypeVar, List, Generic, TYPE_CHECKING, Iterable, Optional, Sequence, \
+    Tuple, Set
+
+from certbot_apache._internal import apacheparser, interfaces
 from certbot_apache._internal import assertions
 from certbot_apache._internal import augeasparser
 
+if TYPE_CHECKING:
+    from certbot_apache._internal.apacheparser import ApacheParserNode
+    from certbot_apache._internal.augeasparser import AugeasParserNode
 
-class DualNodeBase:
+AnyAugeasParserNode = TypeVar("AnyAugeasParserNode", bound="AugeasParserNode")
+AnyApacheParserNode = TypeVar("AnyApacheParserNode", bound="ApacheParserNode")
+AnyDualNode = TypeVar("AnyDualNode", bound="DualNodeBase")
+
+
+class DualNodeBase(Generic[AnyAugeasParserNode, AnyApacheParserNode]):
     """ Dual parser interface for in development testing. This is used as the
     base class for dual parser interface classes. This class handles runtime
     attribute value assertions."""
 
-    def save(self, msg):  # pragma: no cover
+    def __init__(self, primary: AnyAugeasParserNode, secondary: AnyApacheParserNode) -> None:
+        self.primary = primary
+        self.secondary = secondary
+
+    def save(self, msg: str) -> None:  # pragma: no cover
         """ Call save for both parsers """
         self.primary.save(msg)
         self.secondary.save(msg)
 
-    def __getattr__(self, aname):
+    def __getattr__(self, aname: str) -> Any:
         """ Attribute value assertion """
         firstval = getattr(self.primary, aname)
         secondval = getattr(self.secondary, aname)
@@ -28,11 +44,12 @@ class DualNodeBase:
             assertions.assertEqualSimple(firstval, secondval)
         return firstval
 
-    def find_ancestors(self, name):
+    def find_ancestors(self, name) -> List["DualNodeBase"]:
         """ Traverses the ancestor tree and returns ancestors matching name """
         return self._find_helper(DualBlockNode, "find_ancestors", name)
 
-    def _find_helper(self, nodeclass, findfunc, search, **kwargs):
+    def _find_helper(self, nodeclass: Type[AnyDualNode], findfunc: str, search: str,
+                     **kwargs: Any) -> List[AnyDualNode]:
         """A helper for find_* functions. The function specific attributes should
         be passed as keyword arguments.
 
@@ -72,10 +89,11 @@ class DualNodeBase:
         return new_nodes
 
 
-class DualCommentNode(DualNodeBase):
+class DualCommentNode(DualNodeBase[augeasparser.AugeasCommentNode,
+                                   apacheparser.ApacheCommentNode]):
     """ Dual parser implementation of CommentNode interface """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """ This initialization implementation allows ordinary initialization
         of CommentNode objects as well as creating a DualCommentNode object
         using precreated or fetched CommentNode objects if provided as optional
@@ -95,19 +113,19 @@ class DualCommentNode(DualNodeBase):
 
         if primary or secondary:
             assert primary and secondary
-            self.primary = primary
-            self.secondary = secondary
+            super().__init__(primary, secondary)
         else:
-            self.primary = augeasparser.AugeasCommentNode(**kwargs)
-            self.secondary = apacheparser.ApacheCommentNode(**kwargs)
+            super().__init__(augeasparser.AugeasCommentNode(**kwargs),
+                             apacheparser.ApacheCommentNode(**kwargs))
 
         assertions.assertEqual(self.primary, self.secondary)
 
 
-class DualDirectiveNode(DualNodeBase):
+class DualDirectiveNode(DualNodeBase[augeasparser.AugeasDirectiveNode,
+                                     apacheparser.ApacheDirectiveNode]):
     """ Dual parser implementation of DirectiveNode interface """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """ This initialization implementation allows ordinary initialization
         of DirectiveNode objects as well as creating a DualDirectiveNode object
         using precreated or fetched DirectiveNode objects if provided as optional
@@ -129,15 +147,14 @@ class DualDirectiveNode(DualNodeBase):
 
         if primary or secondary:
             assert primary and secondary
-            self.primary = primary
-            self.secondary = secondary
+            super().__init__(primary, secondary)
         else:
-            self.primary = augeasparser.AugeasDirectiveNode(**kwargs)
-            self.secondary = apacheparser.ApacheDirectiveNode(**kwargs)
+            super().__init__(augeasparser.AugeasDirectiveNode(**kwargs),
+                             apacheparser.ApacheDirectiveNode(**kwargs))
 
         assertions.assertEqual(self.primary, self.secondary)
 
-    def set_parameters(self, parameters):
+    def set_parameters(self, parameters: Iterable[str]) -> None:
         """ Sets parameters and asserts that both implementation successfully
         set the parameter sequence """
 
@@ -146,10 +163,11 @@ class DualDirectiveNode(DualNodeBase):
         assertions.assertEqual(self.primary, self.secondary)
 
 
-class DualBlockNode(DualNodeBase):
+class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
+                                 apacheparser.ApacheBlockNode]):
     """ Dual parser implementation of BlockNode interface """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """ This initialization implementation allows ordinary initialization
         of BlockNode objects as well as creating a DualBlockNode object
         using precreated or fetched BlockNode objects if provided as optional
@@ -169,15 +187,15 @@ class DualBlockNode(DualNodeBase):
 
         if primary or secondary:
             assert primary and secondary
-            self.primary = primary
-            self.secondary = secondary
+            super().__init__(primary, secondary)
         else:
-            self.primary = augeasparser.AugeasBlockNode(**kwargs)
-            self.secondary = apacheparser.ApacheBlockNode(**kwargs)
+            super().__init__(augeasparser.AugeasBlockNode(**kwargs),
+                             apacheparser.ApacheBlockNode(**kwargs))
 
         assertions.assertEqual(self.primary, self.secondary)
 
-    def add_child_block(self, name, parameters=None, position=None):
+    def add_child_block(self, name: str, parameters: Optional[Sequence[str]] = None,
+                        position: Optional[int] = None) -> "DualBlockNode":
         """ Creates a new child BlockNode, asserts that both implementations
         did it in a similar way, and returns a newly created DualBlockNode object
         encapsulating both of the newly created objects """
@@ -188,7 +206,8 @@ class DualBlockNode(DualNodeBase):
         new_block = DualBlockNode(primary=primary_new, secondary=secondary_new)
         return new_block
 
-    def add_child_directive(self, name, parameters=None, position=None):
+    def add_child_directive(self, name: str, parameters: Optional[Sequence[str]] = None,
+                            position: Optional[int] = None) -> DualDirectiveNode:
         """ Creates a new child DirectiveNode, asserts that both implementations
         did it in a similar way, and returns a newly created DualDirectiveNode
         object encapsulating both of the newly created objects """
@@ -199,7 +218,8 @@ class DualBlockNode(DualNodeBase):
         new_dir = DualDirectiveNode(primary=primary_new, secondary=secondary_new)
         return new_dir
 
-    def add_child_comment(self, comment="", position=None):
+    def add_child_comment(self, comment: str = "",
+                          position: Optional[int] = None) -> DualCommentNode:
         """ Creates a new child CommentNode, asserts that both implementations
         did it in a similar way, and returns a newly created DualCommentNode
         object encapsulating both of the newly created objects """
@@ -210,7 +230,9 @@ class DualBlockNode(DualNodeBase):
         new_comment = DualCommentNode(primary=primary_new, secondary=secondary_new)
         return new_comment
 
-    def _create_matching_list(self, primary_list, secondary_list):
+    def _create_matching_list(self, primary_list: Iterable[interfaces.ParserNode],
+                              secondary_list: Iterable[interfaces.ParserNode]
+                              ) -> List[Tuple[interfaces.ParserNode, interfaces.ParserNode]]:
         """ Matches the list of primary_list to a list of secondary_list and
         returns a list of tuples. This is used to create results for find_
         methods.
@@ -237,7 +259,7 @@ class DualBlockNode(DualNodeBase):
                 raise AssertionError("Could not find a matching node.")
         return matched
 
-    def find_blocks(self, name, exclude=True):
+    def find_blocks(self, name: str, exclude: bool = True) -> List["DualBlockNode"]:
         """
         Performs a search for BlockNodes using both implementations and does simple
         checks for results. This is built upon the assumption that unimplemented
@@ -249,7 +271,7 @@ class DualBlockNode(DualNodeBase):
         return self._find_helper(DualBlockNode, "find_blocks", name,
                                  exclude=exclude)
 
-    def find_directives(self, name, exclude=True):
+    def find_directives(self, name: str, exclude: bool = True) -> List[DualDirectiveNode]:
         """
         Performs a search for DirectiveNodes using both implementations and
         checks the results. This is built upon the assumption that unimplemented
@@ -261,7 +283,7 @@ class DualBlockNode(DualNodeBase):
         return self._find_helper(DualDirectiveNode, "find_directives", name,
                                  exclude=exclude)
 
-    def find_comments(self, comment):
+    def find_comments(self, comment: str) -> List[DualCommentNode]:
         """
         Performs a search for CommentNodes using both implementations and
         checks the results. This is built upon the assumption that unimplemented
@@ -272,7 +294,7 @@ class DualBlockNode(DualNodeBase):
 
         return self._find_helper(DualCommentNode, "find_comments", comment)
 
-    def delete_child(self, child):
+    def delete_child(self, child: "DualBlockNode") -> None:
         """Deletes a child from the ParserNode implementations. The actual
         ParserNode implementations are used here directly in order to be able
         to match a child to the list of children."""
@@ -280,7 +302,7 @@ class DualBlockNode(DualNodeBase):
         self.primary.delete_child(child.primary)
         self.secondary.delete_child(child.secondary)
 
-    def unsaved_files(self):
+    def unsaved_files(self) -> Set[str]:
         """ Fetches the list of unsaved file paths and asserts that the lists
         match """
         primary_files = self.primary.unsaved_files()
@@ -289,7 +311,7 @@ class DualBlockNode(DualNodeBase):
 
         return primary_files
 
-    def parsed_paths(self):
+    def parsed_paths(self) -> List[str]:
         """
         Returns a list of file paths that have currently been parsed into the parser
         tree. The returned list may include paths with wildcard characters, for

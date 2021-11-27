@@ -367,7 +367,7 @@ class ApacheParser:
             for i, arg in enumerate(args):
                 self.aug.set("%s/arg[%d]" % (nvh_path, i + 1), arg)
 
-    def get_ifmod(self, aug_conf_path, mod, beginning=False):
+    def get_ifmod(self, aug_conf_path: str, mod: str, beginning: bool = False) -> str:
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
 
         :param str aug_conf_path: Augeas configuration path
@@ -389,7 +389,7 @@ class ApacheParser:
         # Strip off "arg" at end of first ifmod path
         return if_mods[0].rpartition("arg")[0]
 
-    def create_ifmod(self, aug_conf_path, mod, beginning=False):
+    def create_ifmod(self, aug_conf_path: str, mod: str, beginning: bool = False) -> str:
         """Creates a new <IfMod mod> and returns its path.
 
         :param str aug_conf_path: Augeas configuration path
@@ -416,7 +416,7 @@ class ApacheParser:
         self.aug.set(c_path_arg, mod)
         return retpath
 
-    def add_dir(self, aug_conf_path, directive, args):
+    def add_dir(self, aug_conf_path: str, directive: str, args: Union[List[str], str]) -> None:
         """Appends directive to the end fo the file given by aug_conf_path.
 
         .. note:: Not added to AugeasConfigurator because it may depend
@@ -436,7 +436,8 @@ class ApacheParser:
         else:
             self.aug.set(aug_conf_path + "/directive[last()]/arg", args)
 
-    def add_dir_beginning(self, aug_conf_path, dirname, args):
+    def add_dir_beginning(self, aug_conf_path: str, dirname: str,
+                          args: Union[List[str], str]) -> None:
         """Adds the directive to the beginning of defined aug_conf_path.
 
         :param str aug_conf_path: Augeas configuration path to add directive
@@ -457,7 +458,7 @@ class ApacheParser:
         else:
             self.aug.set(first_dir + "/arg", args)
 
-    def add_comment(self, aug_conf_path, comment):
+    def add_comment(self, aug_conf_path: str, comment: str) -> None:
         """Adds the comment to the augeas path
 
         :param str aug_conf_path: Augeas configuration path to add directive
@@ -466,7 +467,7 @@ class ApacheParser:
         """
         self.aug.set(aug_conf_path + "/#comment[last() + 1]", comment)
 
-    def find_comments(self, arg, start=None):
+    def find_comments(self, arg: str, start: Optional[str] = None) -> List[str]:
         """Finds a comment with specified content from the provided DOM path
 
         :param str arg: Comment content to search
@@ -488,7 +489,8 @@ class ApacheParser:
                 results.append(comment)
         return results
 
-    def find_dir(self, directive, arg=None, start=None, exclude=True):
+    def find_dir(self, directive: str, arg: Optional[str] = None, start: Optional[str] = None,
+                 exclude: bool = True) -> List[str]:
         """Finds directive in the configuration.
 
         Recursively searches through config files to find directives
@@ -564,7 +566,7 @@ class ApacheParser:
 
         return ordered_matches
 
-    def get_all_args(self, match):
+    def get_all_args(self, match: str) -> List[Optional[str]]:
         """
         Tries to fetch all arguments for a directive. See get_arg.
 
@@ -578,7 +580,7 @@ class ApacheParser:
         allargs = self.aug.match(match + '*')
         return [self.get_arg(arg) for arg in allargs]
 
-    def get_arg(self, match):
+    def get_arg(self, match: str) -> Optional[str]:
         """Uses augeas.get to get argument value and interprets result.
 
         This also converts all variables and parameters appropriately.

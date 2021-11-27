@@ -99,12 +99,15 @@ however, for example the parameters of a conditional statement may be case sensi
 For this reason the internal representation of data should not ignore the case.
 """
 import abc
-from typing import Any
+from typing import Any, TypeVar, Type
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
+
+
+AnyParserNode = TypeVar("AnyParserNode", bound="ParserNode")
 
 
 class ParserNode(metaclass=abc.ABCMeta):
@@ -198,7 +201,7 @@ class ParserNode(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_ancestors(self, name: str) -> List["ParserNode"]:
+    def find_ancestors(self: AnyParserNode, name: str) -> List[AnyParserNode]:
         """
         Traverses the ancestor tree up, searching for BlockNodes with a specific
         name.
