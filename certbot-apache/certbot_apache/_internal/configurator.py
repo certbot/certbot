@@ -463,8 +463,7 @@ class ApacheConfigurator(common.Configurator):
         """Initializes the ApacheParser"""
         # If user provided vhost_root value in command line, use it
         return parser.ApacheParser(
-            self.options.server_root, self.conf("vhost-root"),
-            self.version, configurator=self)
+            self.options.server_root, self, self.conf("vhost-root"), version=self.version)
 
     def get_parsernode_root(self, metadata):
         """Initializes the ParserNode parser root instance."""

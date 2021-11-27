@@ -3,7 +3,8 @@ import copy
 import fnmatch
 import logging
 import re
-from typing import Dict
+from typing import TYPE_CHECKING
+from typing import Dict, Tuple, Union, Set, Iterable, Sequence
 from typing import List
 from typing import Optional
 
@@ -11,6 +12,9 @@ from certbot import errors
 from certbot.compat import os
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
+
+if TYPE_CHECKING:
+    from certbot_apache._internal.configurator import ApacheConfigurator
 
 try:
     from augeas import Augeas
@@ -35,8 +39,8 @@ class ApacheParser:
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = {"*", "?", "\\", "[", "]"}
 
-    def __init__(self, root, vhostroot=None, version=(2, 4),
-                 configurator=None):
+    def __init__(self, root: str, configurator: "ApacheConfigurator",
+                 vhostroot: Optional[str] = None, version: Tuple[int, ...] = (2, 4)) -> None:
         # Note: Order is important here.
 
         # Needed for calling save() with reverter functionality that resides in
@@ -88,7 +92,7 @@ class ApacheParser:
             if self.find_dir("Define", exclude=False):
                 raise errors.PluginError("Error parsing runtime variables")
 
-    def check_parsing_errors(self, lens):
+    def check_parsing_errors(self, lens: str) -> None:
         """Verify Augeas can parse all of the lens files.
 
         :param str lens: lens to check for errors
@@ -114,7 +118,7 @@ class ApacheParser:
                     self.aug.get(path + "/message")))
                 raise errors.PluginError(msg)
 
-    def check_aug_version(self):
+    def check_aug_version(self) -> Union[bool, List[bytes]]:
         """ Checks that we have recent enough version of libaugeas.
         If augeas version is recent enough, it will support case insensitive
         regexp matching"""
@@ -129,7 +133,7 @@ class ApacheParser:
         self.aug.remove("/test/path")
         return matches
 
-    def unsaved_files(self):
+    def unsaved_files(self) -> Set[str]:
         """Lists files that have modified Augeas DOM but the changes have not
         been written to the filesystem yet, used by `self.save()` and
         ApacheConfigurator to check the file state.
@@ -168,7 +172,7 @@ class ApacheParser:
                 save_files.add(self.aug.get(path)[6:])
         return save_files
 
-    def ensure_augeas_state(self):
+    def ensure_augeas_state(self) -> None:
         """Makes sure that all Augeas dom changes are written to files to avoid
         loss of configuration directives when doing additional augeas parsing,
         causing a possible augeas.load() resulting dom reset
@@ -178,7 +182,7 @@ class ApacheParser:
             self.configurator.save_notes += "(autosave)"
             self.configurator.save()
 
-    def save(self, save_files):
+    def save(self, save_files: Iterable[str]) -> None:
         """Saves all changes to the configuration files.
 
         save() is called from ApacheConfigurator to handle the parser specific
@@ -197,7 +201,7 @@ class ApacheParser:
                 self.aug.remove("/files/"+sf)
             self.aug.load()
 
-    def _log_save_errors(self, ex_errs):
+    def _log_save_errors(self, ex_errs: Iterable[bytes]) -> None:
         """Log errors due to bad Augeas save.
 
         :param list ex_errs: Existing errors before save
@@ -211,7 +215,7 @@ class ApacheParser:
                                # Only new errors caused by recent save
                                if err not in ex_errs), self.configurator.save_notes)
 
-    def add_include(self, main_config, inc_path):
+    def add_include(self, main_config: str, inc_path: str) -> None:
         """Add Include for a new configuration file if one does not exist
 
         :param str main_config: file path to main Apache config file
@@ -230,21 +234,21 @@ class ApacheParser:
             new_file = os.path.basename(inc_path)
             self.existing_paths.setdefault(new_dir, []).append(new_file)
 
-    def add_mod(self, mod_name):
+    def add_mod(self, mod_name: str) -> None:
         """Shortcut for updating parser modules."""
         if mod_name + "_module" not in self.modules:
             self.modules[mod_name + "_module"] = None
         if "mod_" + mod_name + ".c" not in self.modules:
             self.modules["mod_" + mod_name + ".c"] = None
 
-    def reset_modules(self):
+    def reset_modules(self) -> None:
         """Reset the loaded modules list. This is called from cleanup to clear
         temporarily loaded modules."""
         self.modules = {}
         self.update_modules()
         self.parse_modules()
 
-    def parse_modules(self):
+    def parse_modules(self) -> None:
         """Iterates on the configuration until no new modules are loaded.
 
         ..todo:: This should be attempted to be done with a binary to avoid
@@ -272,19 +276,19 @@ class ApacheParser:
                                  match_name[6:])
         self.modules.update(mods)
 
-    def update_runtime_variables(self):
+    def update_runtime_variables(self) -> None:
         """Update Includes, Defines and Includes from httpd config dump data"""
 
         self.update_defines()
         self.update_includes()
         self.update_modules()
 
-    def update_defines(self):
+    def update_defines(self) -> None:
         """Updates the dictionary of known variables in the configuration"""
 
         self.variables = apache_util.parse_defines(self.configurator.options.ctl)
 
-    def update_includes(self):
+    def update_includes(self) -> None:
         """Get includes from httpd process, and add them to DOM if needed"""
 
         # Find_dir iterates over configuration for Include and IncludeOptional
@@ -298,14 +302,14 @@ class ApacheParser:
                 if not self.parsed_in_current(i):
                     self.parse_file(i)
 
-    def update_modules(self):
+    def update_modules(self) -> None:
         """Get loaded modules from httpd process, and add them to DOM"""
 
         matches = apache_util.parse_modules(self.configurator.options.ctl)
         for mod in matches:
             self.add_mod(mod.strip())
 
-    def filter_args_num(self, matches, args):
+    def filter_args_num(self, matches: str, args: int) -> List[str]:
         """Filter out directives with specific number of arguments.
 
         This function makes the assumption that all related arguments are given
@@ -336,7 +340,8 @@ class ApacheParser:
 
         return filtered
 
-    def add_dir_to_ifmodssl(self, aug_conf_path, directive, args):
+    def add_dir_to_ifmodssl(self, aug_conf_path: str, directive: str,
+                            args: Union[str, Sequence[str]]) -> None:
         """Adds directive and value to IfMod ssl block.
 
         Adds given directive and value along configuration path within

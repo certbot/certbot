@@ -98,7 +98,7 @@ class AugeasParserNode(interfaces.ParserNode):
         except KeyError:
             raise errors.PluginError("Augeas path is required")
 
-    def save(self, msg):
+    def save(self, msg: str) -> None:
         self.parser.save(msg)
 
     def find_ancestors(self, name):

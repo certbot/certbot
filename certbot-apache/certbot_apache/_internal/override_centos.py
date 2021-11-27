@@ -75,8 +75,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
     def get_parser(self):
         """Initializes the ApacheParser"""
         return CentOSParser(
-            self.options.server_root, self.options.vhost_root,
-            self.version, configurator=self)
+            self.options.server_root, self, self.options.vhost_root, self.version)
 
     def _deploy_cert(self, *args, **kwargs):  # pylint: disable=arguments-differ
         """
