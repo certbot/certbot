@@ -13,6 +13,8 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import Tuple
+from typing import Type
+from typing import TypeVar
 
 import pkg_resources
 
@@ -244,6 +246,9 @@ class Configurator(Installer, interfaces.Authenticator, metaclass=ABCMeta):
     """
 
 
+AnyAddr = TypeVar("AnyAddr", bound="Addr")
+
+
 class Addr:
     r"""Represents an virtual host address.
 
@@ -256,7 +261,7 @@ class Addr:
         self.ipv6 = ipv6
 
     @classmethod
-    def fromstring(cls, str_addr: str) -> 'Addr':
+    def fromstring(cls: Type[AnyAddr], str_addr: str) -> AnyAddr:
         """Initialize Addr from string."""
         if str_addr.startswith('['):
             # ipv6 addresses starts with [

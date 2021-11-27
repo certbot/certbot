@@ -64,6 +64,7 @@ Translates over to:
     "/files/etc/apache2/apache2.conf/bLoCk[1]",
 ]
 """
+from typing import Any
 from typing import Set
 
 from certbot import errors
@@ -73,19 +74,20 @@ from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
 from certbot_apache._internal import parser
 from certbot_apache._internal import parsernode_util as util
+from certbot_apache._internal.parser import ApacheParser
 
 
 class AugeasParserNode(interfaces.ParserNode):
     """ Augeas implementation of ParserNode interface """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
         super().__init__(**kwargs)
         self.ancestor = ancestor
         self.filepath = filepath
         self.dirty = dirty
         self.metadata = metadata
-        self.parser = self.metadata.get("augeasparser")
+        self.parser: ApacheParser = self.metadata["augeasparser"]
         try:
             if self.metadata["augeaspath"].endswith("/"):
                 raise errors.PluginError(

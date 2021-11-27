@@ -957,7 +957,7 @@ class ApacheConfigurator(common.Configurator):
         :rtype: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         """
-        addrs = set()
+        addrs: Set[obj.Addr] = set()
         try:
             args = self.parser.aug.match(path + "/arg")
         except RuntimeError:

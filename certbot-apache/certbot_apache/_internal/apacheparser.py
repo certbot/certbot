@@ -8,7 +8,7 @@ from typing import Tuple
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
 from certbot_apache._internal import parsernode_util as util
-from certbot_apache._internal.interfaces import ParserNode
+from certbot_apache._internal.interfaces import ParserNode, BlockNode
 
 
 class ApacheParserNode(interfaces.ParserNode):
@@ -30,7 +30,7 @@ class ApacheParserNode(interfaces.ParserNode):
     def save(self, msg: str) -> None:  # pragma: no cover
         pass
 
-    def find_ancestors(self, name: str) -> List["ApacheBlockNode"]:  # pylint: disable=unused-variable
+    def find_ancestors(self, name: str) -> List[ParserNode]:  # pylint: disable=unused-variable
         """Find ancestor BlockNodes with a given name"""
         return [ApacheBlockNode(name=assertions.PASS,
                                 parameters=assertions.PASS,
