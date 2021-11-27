@@ -92,9 +92,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         help=argparse.SUPPRESS
     )
     helpful.add(
-        None, "--timeout", type=int,
-        dest="timeout",
-        default=flag_default("timeout"),help=config_help("timeout"))
+        None, "--issuance-timeout", type=int,
+        dest="issuance_timeout",
+        default=flag_default("issuance_timeout"),
+        help=config_help("issuance_timeout"))
     helpful.add(
         [None, "automation", "run", "certonly", "enhance"],
         "-n", "--non-interactive", "--noninteractive",

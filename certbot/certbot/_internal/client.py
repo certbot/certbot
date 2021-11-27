@@ -302,9 +302,10 @@ class Client:
         if orderr is None:
             orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
 
-        current_time = datetime.datetime.now()
-        deadline = current_time + datetime.timedelta(seconds=self.config.timeout)
-        logger.debug("current time: %s and deadline: %s", current_time, deadline)
+        deadline = datetime.datetime.now() + datetime.timedelta(
+            seconds=self.config.issuance_timeout)
+
+        logger.debug("Will poll for certificate issuance until %s", deadline)
 
         get_alt_chains = self.config.preferred_chain is not None
         orderr = self.acme.finalize_order(orderr, deadline,

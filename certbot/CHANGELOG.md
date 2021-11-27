@@ -11,6 +11,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   strings in the same way as the now deprecated distutils.version.LooseVersion
   class from the Python standard library.
 
+* Added `--issuance-timeout`. This option specifies how long (in seconds) Certbot will wait
+  for the server to issue a certificate.
+
 ### Changed
 
 * The function certbot.util.get_strict_version was deprecated and will be
@@ -55,9 +58,6 @@ More details about these changes can be found on our GitHub repo.
 
 * Added `--no-reuse-key`. This remains the default behavior, but the flag may be
   useful to unset the `--reuse-key` option on existing certificates.
-
-* Added `--timeout`. This option specifies the timeout value in seconds
-  for obtaining a certificate from Certificate Authority.
 
 ### Changed
 

@@ -294,9 +294,11 @@ class NamespaceConfig:
                             constants.RENEWAL_POST_HOOKS_DIR)
 
     @property
-    def timeout(self) -> int:
-        """Timeout value in seconds for the obtaining certificate."""
-        return self.namespace.timeout
+    def issuance_timeout(self) -> int:
+        """This option specifies how long (in seconds) Certbot will wait
+        for the server to issue a certificate.
+        """
+        return self.namespace.issuance_timeout
 
     # Magic methods
 

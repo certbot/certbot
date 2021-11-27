@@ -76,7 +76,7 @@ CLI_DEFAULTS = dict(
     random_sleep_on_renew=True,
     eab_hmac_key=None,
     eab_kid=None,
-    timeout=90,
+    issuance_timeout=90,
 
     # Subparsers
     num=None,
