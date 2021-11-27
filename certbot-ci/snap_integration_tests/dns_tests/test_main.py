@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Module executing integration tests against certbot snap."""
 import glob
 import os
 import re
@@ -10,6 +11,7 @@ import pytest
 
 @pytest.fixture(autouse=True, scope="module")
 def install_certbot_snap(request: pytest.FixtureRequest) -> Generator[None, None, None]:
+    """Fixture ensuring the certbot snap is installed before each test."""
     with pytest.raises(Exception):
         subprocess.check_call(['certbot', '--version'])
     try:

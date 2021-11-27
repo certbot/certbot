@@ -1,3 +1,4 @@
+"""Module executing integration tests for the windows installer."""
 import os
 import re
 import subprocess
@@ -23,10 +24,12 @@ def test_it(request: pytest.FixtureRequest) -> None:
 
         # Assert certbot is installed and runnable
         output = subprocess.check_output(['certbot', '--version'], universal_newlines=True)
-        assert re.match(r'^certbot \d+\.\d+\.\d+.*$', output), 'Flag --version does not output a version.'
+        assert re.match(r'^certbot \d+\.\d+\.\d+.*$',
+                        output), 'Flag --version does not output a version.'
 
         # Assert renew task is installed and ready
-        output = _ps('(Get-ScheduledTask -TaskName "Certbot Renew Task").State', capture_stdout=True)
+        output = _ps('(Get-ScheduledTask -TaskName "Certbot Renew Task").State',
+                     capture_stdout=True)
         assert output.strip() == 'Ready'
 
         # Assert renew task is working
@@ -35,7 +38,8 @@ def test_it(request: pytest.FixtureRequest) -> None:
 
         status = 'Running'
         while status != 'Ready':
-            status = _ps('(Get-ScheduledTask -TaskName "Certbot Renew Task").State', capture_stdout=True).strip()
+            status = _ps('(Get-ScheduledTask -TaskName "Certbot Renew Task").State',
+                         capture_stdout=True).strip()
             time.sleep(1)
 
         log_path = os.path.join('C:\\', 'Certbot', 'log', 'letsencrypt.log')
@@ -48,9 +52,10 @@ def test_it(request: pytest.FixtureRequest) -> None:
         assert 'no renewal failures' in data, 'Renew task did not execute properly.'
 
     finally:
-        # Sadly this command cannot work in non interactive mode: uninstaller will ask explicitly permission in an UAC prompt
+        # Sadly this command cannot work in non interactive mode: uninstaller will
+        # ask explicitly permission in an UAC prompt
         # print('Uninstalling Certbot ...')
-        # uninstall_path = _ps('(gci "HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"'
+        # uninstall_path = _ps('(gci "HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"'  # pylint: disable=line-too-long
         #                      ' | foreach { gp $_.PSPath }'
         #                      ' | ? { $_ -match "Certbot" }'
         #                      ' | select UninstallString)'

@@ -14,7 +14,6 @@ import time
 from types import TracebackType
 from typing import Any
 from typing import Dict
-from typing import Iterable
 from typing import List
 from typing import Mapping
 from typing import Optional

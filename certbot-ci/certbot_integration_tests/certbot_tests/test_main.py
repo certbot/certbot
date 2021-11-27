@@ -1,5 +1,4 @@
 """Module executing integration tests against certbot core."""
-
 import os
 from os.path import exists
 from os.path import join
@@ -35,7 +34,7 @@ from certbot_integration_tests.utils import misc
 
 @pytest.fixture(name='context')
 def test_context(request: pytest.FixtureRequest) -> Generator[IntegrationTestsContext, None, None]:
-    # pylint: disable=missing-function-docstring
+    """Fixture providing the integration test context."""
     # Fixture request is a built-in pytest fixture describing current test request.
     integration_test_context = IntegrationTestsContext(request)
     try:

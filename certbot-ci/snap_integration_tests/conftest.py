@@ -19,9 +19,10 @@ def pytest_addoption(parser):
     parser.addoption('--snap-folder', required=True,
                      help='set the folder path where snaps to test are located')
     parser.addoption('--snap-arch', default='amd64',
-                    help='set the architecture do test (default: amd64)')
+                     help='set the architecture do test (default: amd64)')
     parser.addoption('--allow-persistent-changes', action='store_true',
-                     help='needs to be set, and confirm that the test will make persistent changes on this machine')
+                     help='needs to be set, and confirm that the test will make persistent '
+                          'changes on this machine')
 
 
 def pytest_configure(config):
@@ -31,7 +32,8 @@ def pytest_configure(config):
     """
     if not config.option.allow_persistent_changes:
         raise RuntimeError('This integration test would install the Certbot snap on your machine. '
-                           'Please run it again with the `--allow-persistent-changes` flag set to acknowledge.')
+                           'Please run it again with the `--allow-persistent-changes` flag set '
+                           'to acknowledge.')
 
 
 def pytest_generate_tests(metafunc):
