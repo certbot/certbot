@@ -14,6 +14,7 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
+from cryptography.x509 import ocsp
 import pytz
 import requests
 
@@ -22,14 +23,6 @@ from certbot import errors
 from certbot import util
 from certbot.compat.os import getenv
 from certbot.interfaces import RenewableCert  # pylint: disable=unused-import
-
-try:
-    # Only cryptography>=2.5 has ocsp module
-    # and signature_hash_algorithm attribute in OCSPResponse class
-    from cryptography.x509 import ocsp  # pylint: disable=ungrouped-imports
-    getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
-except (ImportError, AttributeError):  # pragma: no cover
-    ocsp = None  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +33,7 @@ class RevocationChecker:
 
     def __init__(self, enforce_openssl_binary_usage: bool = False) -> None:
         self.broken = False
-        self.use_openssl_binary = enforce_openssl_binary_usage or not ocsp
+        self.use_openssl_binary = enforce_openssl_binary_usage
 
         if self.use_openssl_binary:
             if not util.exe_exists("openssl"):

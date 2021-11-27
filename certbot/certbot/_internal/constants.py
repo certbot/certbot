@@ -1,5 +1,7 @@
 """Certbot constants."""
 import logging
+from typing import Any
+from typing import Dict
 
 import pkg_resources
 
@@ -13,7 +15,7 @@ SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 """Plugins Setuptools entry point before rename."""
 
-CLI_DEFAULTS = dict(
+CLI_DEFAULTS: Dict[str, Any] = dict(
     config_files=[
         os.path.join(misc.get_default_folder('config'), 'cli.ini'),
         # https://freedesktop.org/wiki/Software/xdg-user-dirs/
