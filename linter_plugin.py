@@ -17,7 +17,7 @@ WHITELIST_PATHS = [
     '/acme/acme/',
     '/certbot-ci/',
     '/certbot-compatibility-test/',
-    '/tests/lock_test'
+    '/tests/lock_test',
 ]
 
 
