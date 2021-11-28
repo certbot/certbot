@@ -2,7 +2,7 @@
 # Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
 import copy
 import logging
-from typing import Any
+from typing import Any, List, Iterator
 from typing import IO
 
 from pyparsing import Combine
@@ -14,6 +14,7 @@ from pyparsing import QuotedString
 from pyparsing import Regex
 from pyparsing import restOfLine
 from pyparsing import stringEnd
+from pyparsing import ParseResults
 from pyparsing import White
 from pyparsing import ZeroOrMore
 
@@ -59,23 +60,24 @@ class RawNginxParser:
     script = ZeroOrMore(contents) + space + stringEnd
     script.parseWithTabs().leaveWhitespace()
 
-    def __init__(self, source):
+    def __init__(self, source: str) -> None:
         self.source = source
 
-    def parse(self):
+    def parse(self) -> ParseResults:
         """Returns the parsed tree."""
         return self.script.parseString(self.source)
 
-    def as_list(self):
+    def as_list(self) -> List[str]:
         """Returns the parsed tree as a list."""
         return self.parse().asList()
 
+
 class RawNginxDumper:
     """A class that dumps nginx configuration from the provided tree."""
-    def __init__(self, blocks):
+    def __init__(self, blocks: List[Any]) -> None:
         self.blocks = blocks
 
-    def __iter__(self, blocks=None):
+    def __iter__(self, blocks: Optional[List[Any]] = None) -> Iterator[str]:
         """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
         for b0 in blocks:

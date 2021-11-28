@@ -52,7 +52,8 @@ ALL_SSL_OPTIONS_HASHES = [
 ]
 """SHA256 hashes of the contents of all versions of MOD_SSL_CONF_SRC"""
 
-def os_constant(key):
+
+def os_constant(key: str) -> Any:
     # XXX TODO: In the future, this could return different constants
     #           based on what OS we are running under.  To see an
     #           approach to how to handle different OSes, see the
@@ -61,10 +62,11 @@ def os_constant(key):
     """
     Get a constant value for operating system
 
-    :param key: name of cli constant
+    :param str key: name of cli constant
     :return: value of constant for active os
     """
     return CLI_DEFAULTS[key]
+
 
 HSTS_ARGS = ['\"max-age=31536000\"', ' ', 'always']
 
