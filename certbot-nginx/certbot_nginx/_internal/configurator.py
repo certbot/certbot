@@ -1163,7 +1163,7 @@ class NginxConfigurator(common.Configurator):
 
         """
         self._chall_out += len(achalls)
-        responses = [None] * len(achalls)
+        responses: List[Optional[challenges.HTTP01Response]] = [None] * len(achalls)
         http_doer = http_01.NginxHttp01(self)
 
         for i, achall in enumerate(achalls):
