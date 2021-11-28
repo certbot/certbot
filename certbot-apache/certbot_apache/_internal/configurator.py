@@ -7,7 +7,7 @@ import logging
 import re
 import socket
 import time
-from typing import DefaultDict
+from typing import DefaultDict, Callable, Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -52,23 +52,23 @@ class OsOptions:
     that the Apache configurator needs to be aware to operate properly.
     """
     def __init__(self,
-                 server_root="/etc/apache2",
-                 vhost_root="/etc/apache2/sites-available",
-                 vhost_files="*",
-                 logs_root="/var/log/apache2",
-                 ctl="apache2ctl",
+                 server_root: str = "/etc/apache2",
+                 vhost_root: str = "/etc/apache2/sites-available",
+                 vhost_files: str = "*",
+                 logs_root: str = "/var/log/apache2",
+                 ctl: str = "apache2ctl",
                  version_cmd: Optional[List[str]] = None,
                  restart_cmd: Optional[List[str]] = None,
                  restart_cmd_alt: Optional[List[str]] = None,
                  conftest_cmd: Optional[List[str]] = None,
                  enmod: Optional[str] = None,
                  dismod: Optional[str] = None,
-                 le_vhost_ext="-le-ssl.conf",
-                 handle_modules=False,
-                 handle_sites=False,
-                 challenge_location="/etc/apache2",
+                 le_vhost_ext: str = "-le-ssl.conf",
+                 handle_modules: bool = False,
+                 handle_sites: bool = False,
+                 challenge_location: str = "/etc/apache2",
                  apache_bin: Optional[str] = None,
-                 ):
+                 ) -> None:
         self.server_root = server_root
         self.vhost_root = vhost_root
         self.vhost_files = vhost_files
@@ -141,7 +141,7 @@ class ApacheConfigurator(common.Configurator):
 
     OS_DEFAULTS = OsOptions()
 
-    def pick_apache_config(self, warn_on_no_mod_ssl=True):
+    def pick_apache_config(self, warn_on_no_mod_ssl: bool = True) -> str:
         """
         Pick the appropriate TLS Apache configuration file for current version of Apache and OS.
 
@@ -159,7 +159,7 @@ class ApacheConfigurator(common.Configurator):
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 
-    def _prepare_options(self):
+    def _prepare_options(self) -> None:
         """
         Set the values possibly changed by command line parameters to
         OS_DEFAULTS constant dictionary
@@ -180,7 +180,7 @@ class ApacheConfigurator(common.Configurator):
         self.options.conftest_cmd[0] = self.options.ctl
 
     @classmethod
-    def add_parser_arguments(cls, add):
+    def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         # When adding, modifying or deleting command line arguments, be sure to
         # include the changes in the list used in method _prepare_options() to
         # ensure consistent behavior.
@@ -218,7 +218,7 @@ class ApacheConfigurator(common.Configurator):
         add("bin", default=DEFAULTS.bin,
             help="Full path to apache2/httpd binary")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize an Apache Configurator.
 
         :param tup version: version of Apache as a tuple (2, 4, 7)
@@ -261,16 +261,16 @@ class ApacheConfigurator(common.Configurator):
                               "staple-ocsp": self._enable_ocsp_stapling}
 
     @property
-    def mod_ssl_conf(self):
+    def mod_ssl_conf(self) -> str:
         """Full absolute path to SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
 
     @property
-    def updated_mod_ssl_conf_digest(self):
+    def updated_mod_ssl_conf_digest(self) -> str:
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
 
-    def _open_module_file(self, ssl_module_location):
+    def _open_module_file(self, ssl_module_location: str) -> Optional[bytes]:
         """Extract the open lines of openssl_version for testing purposes"""
         try:
             with open(ssl_module_location, mode="rb") as f:
@@ -280,7 +280,7 @@ class ApacheConfigurator(common.Configurator):
             return None
         return contents
 
-    def openssl_version(self, warn_on_no_mod_ssl=True):
+    def openssl_version(self, warn_on_no_mod_ssl: bool = True) -> Optional[str]:
         """Lazily retrieve openssl version
 
         :param bool warn_on_no_mod_ssl: `True` if we should warn if mod_ssl is not found. Set to
@@ -323,7 +323,7 @@ class ApacheConfigurator(common.Configurator):
         self._openssl_version = matches[0].decode('UTF-8')
         return self._openssl_version
 
-    def prepare(self):
+    def prepare(self) -> None:
         """Prepare the authenticator/installer.
 
         :raises .errors.NoInstallationError: If Apache configs cannot be found
@@ -391,7 +391,7 @@ class ApacheConfigurator(common.Configurator):
                 " Apache configuration?".format(self.options.server_root))
         self._prepared = True
 
-    def save(self, title=None, temporary=False):
+    def save(self, title: Optional[str] = None, temporary: bool = False) -> None:
         """Saves all changes to the configuration files.
 
         This function first checks for save errors, if none are found,
@@ -416,7 +416,7 @@ class ApacheConfigurator(common.Configurator):
         if title and not temporary:
             self.finalize_checkpoint(title)
 
-    def recovery_routine(self):
+    def recovery_routine(self) -> None:
         """Revert all previously modified files.
 
         Reverts all modified files that have not been saved as a checkpoint
@@ -431,7 +431,7 @@ class ApacheConfigurator(common.Configurator):
             # TODO: wrap into non-implementation specific  parser interface
             self.parser.aug.load()
 
-    def revert_challenge_config(self):
+    def revert_challenge_config(self) -> None:
         """Used to cleanup challenge configurations.
 
         :raises .errors.PluginError: If unable to revert the challenge config.
@@ -440,7 +440,7 @@ class ApacheConfigurator(common.Configurator):
         self.revert_temporary_config()
         self.parser.aug.load()
 
-    def rollback_checkpoints(self, rollback=1):
+    def rollback_checkpoints(self, rollback: int = 1) -> None:
         """Rollback saved checkpoints.
 
         :param int rollback: Number of checkpoints to revert
@@ -452,14 +452,14 @@ class ApacheConfigurator(common.Configurator):
         super().rollback_checkpoints(rollback)
         self.parser.aug.load()
 
-    def _verify_exe_availability(self, exe):
+    def _verify_exe_availability(self, exe: str) -> None:
         """Checks availability of Apache executable"""
         if not util.exe_exists(exe):
             if not path_surgery(exe):
                 raise errors.NoInstallationError(
                     'Cannot find Apache executable {0}'.format(exe))
 
-    def get_parser(self):
+    def get_parser(self) -> parser.ApacheParser:
         """Initializes the ApacheParser"""
         # If user provided vhost_root value in command line, use it
         return parser.ApacheParser(

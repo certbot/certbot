@@ -3,7 +3,7 @@ import copy
 import fnmatch
 import logging
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Collection, Mapping
 from typing import Dict, Tuple, Union, Set, Iterable, Sequence
 from typing import List
 from typing import Optional
@@ -611,13 +611,13 @@ class ApacheParser:
 
         return value
 
-    def get_root_augpath(self):
+    def get_root_augpath(self) -> str:
         """
         Returns the Augeas path of root configuration.
         """
         return get_aug_path(self.loc["root"])
 
-    def exclude_dirs(self, matches):
+    def exclude_dirs(self, matches: Iterable[str]) -> List[str]:
         """Exclude directives that are not loaded into the configuration."""
         filters = [("ifmodule", self.modules.keys()), ("ifdefine", self.variables)]
 
@@ -631,7 +631,7 @@ class ApacheParser:
                 valid_matches.append(match)
         return valid_matches
 
-    def _pass_filter(self, match, filter_):
+    def _pass_filter(self, match: str, filter_: Tuple[str, Collection[str]]) -> bool:
         """Determine if directive passes a filter.
 
         :param str match: Augeas path
@@ -660,7 +660,7 @@ class ApacheParser:
 
         return True
 
-    def standard_path_from_server_root(self, arg):
+    def standard_path_from_server_root(self, arg: str) -> str:
         """Ensure paths are consistent and absolute
 
         :param str arg: Argument of directive
@@ -679,7 +679,7 @@ class ApacheParser:
             arg = os.path.normpath(arg)
         return arg
 
-    def _get_include_path(self, arg):
+    def _get_include_path(self, arg: Optional[str]) -> Optional[str]:
         """Converts an Apache Include directive into Augeas path.
 
         Converts an Apache Include directive argument into an Augeas
@@ -699,6 +699,8 @@ class ApacheParser:
         # if matchObj.group() != arg:
         #     logger.error("Error: Invalid regexp characters in %s", arg)
         #     return []
+        if not arg:
+            return None
         arg = self.standard_path_from_server_root(arg)
 
         # Attempts to add a transform to the file if one does not already exist
@@ -723,7 +725,7 @@ class ApacheParser:
 
         return get_aug_path(arg)
 
-    def fnmatch_to_re(self, clean_fn_match):
+    def fnmatch_to_re(self, clean_fn_match: str) -> str:
         """Method converts Apache's basic fnmatch to regular expression.
 
         Assumption - Configs are assumed to be well-formed and only writable by
@@ -740,7 +742,7 @@ class ApacheParser:
         # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
         return fnmatch.translate(clean_fn_match)[4:-3]  # pragma: no cover
 
-    def parse_file(self, filepath):
+    def parse_file(self, filepath: str) -> None:
         """Parse file with Augeas
 
         Checks to see if file_path is parsed by Augeas
@@ -767,7 +769,7 @@ class ApacheParser:
                 self._add_httpd_transform(filepath)
                 self.aug.load()
 
-    def parsed_in_current(self, filep):
+    def parsed_in_current(self, filep: Optional[str]) -> bool:
         """Checks if the file path is parsed by current Augeas parser config
         ie. returns True if the file is found on a path that's found in live
         Augeas configuration.
@@ -777,9 +779,11 @@ class ApacheParser:
         :returns: True if file is parsed in existing configuration tree
         :rtype: bool
         """
+        if not filep:
+            return False
         return self._parsed_by_parser_paths(filep, self.parser_paths)
 
-    def parsed_in_original(self, filep):
+    def parsed_in_original(self, filep: Optional[str]) -> bool:
         """Checks if the file path is parsed by existing Apache config.
         ie. returns True if the file is found on a path that matches Include or
         IncludeOptional statement in the Apache configuration.
@@ -789,9 +793,11 @@ class ApacheParser:
         :returns: True if file is parsed in existing configuration tree
         :rtype: bool
         """
+        if not filep:
+            return False
         return self._parsed_by_parser_paths(filep, self.existing_paths)
 
-    def _parsed_by_parser_paths(self, filep, paths):
+    def _parsed_by_parser_paths(self, filep: str, paths: Mapping[str, Sequence[str]]) -> bool:
         """Helper function that searches through provided paths and returns
         True if file path is found in the set"""
         for directory in paths:
@@ -800,7 +806,7 @@ class ApacheParser:
                     return True
         return False
 
-    def _check_path_actions(self, filepath):
+    def _check_path_actions(self, filepath: str) -> Tuple[bool, bool]:
         """Determine actions to take with a new augeas path
 
         This helper function will return a tuple that defines
@@ -840,7 +846,7 @@ class ApacheParser:
             self.aug.remove(remove_inc[0])
         self.parser_paths.pop(remove_dirname)
 
-    def _add_httpd_transform(self, incl):
+    def _add_httpd_transform(self, incl: str) -> None:
         """Add a transform to Augeas.
 
         This function will correctly add a transform to augeas
@@ -868,7 +874,7 @@ class ApacheParser:
             self.parser_paths[os.path.dirname(incl)] = [
                 os.path.basename(incl)]
 
-    def standardize_excl(self):
+    def standardize_excl(self) -> None:
         """Standardize the excl arguments for the Httpd lens in Augeas.
 
         Note: Hack!
@@ -900,7 +906,7 @@ class ApacheParser:
 
         self.aug.load()
 
-    def _set_locations(self):
+    def _set_locations(self) -> Dict[str, str]:
         """Set default location for directives.
 
         Locations are given as file_paths
@@ -928,7 +934,7 @@ class ApacheParser:
         raise errors.NoInstallationError("Could not find configuration root")
 
 
-def case_i(string):
+def case_i(string: str) -> str:
     """Returns case insensitive regex.
 
     Returns a sloppy, but necessary version of a case insensitive regex.
@@ -944,7 +950,7 @@ def case_i(string):
                     if c.isalpha() else c for c in re.escape(string))
 
 
-def get_aug_path(file_path):
+def get_aug_path(file_path: str) -> str:
     """Return augeas path for full filepath.
 
     :param str file_path: Full filepath

@@ -347,7 +347,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         """Recursive search of BlockNodes from the sequence of children"""
 
         nodes = []
-        paths = self._aug_find_blocks(name)
+        paths: Iterable[str] = self._aug_find_blocks(name)
         if exclude:
             paths = self.parser.exclude_dirs(paths)
         for path in paths:
