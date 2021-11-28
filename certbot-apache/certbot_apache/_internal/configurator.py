@@ -549,14 +549,15 @@ class ApacheConfigurator(common.Configurator):
 
         return list(matched)
 
-    def _raise_no_suitable_vhost_error(self, target_name: str):
+    def _error_no_suitable_vhost_error(self, target_name: str) -> errors.PluginError:
         """
-        Notifies the user that Certbot could not find a vhost to secure
-        and raises an error.
+        Prepare an error to notify the user that Certbot could not find a vhost
+        to secure.
         :param str target_name: The server name that could not be mapped
-        :raises errors.PluginError: Raised unconditionally
+        :return: An instance of PluginError
+        :rtype: errors.PluginError
         """
-        raise errors.PluginError(
+        return errors.PluginError(
             "Certbot could not find a VirtualHost for {0} in the Apache "
             "configuration. Please create a VirtualHost with a ServerName "
             "matching {0} and try again.".format(target_name)
@@ -599,7 +600,7 @@ class ApacheConfigurator(common.Configurator):
         dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
 
         if not dialog_output:
-            self._raise_no_suitable_vhost_error(domain)
+            raise self._error_no_suitable_vhost_error(domain)
 
         # Make sure we create SSL vhosts for the ones that are HTTP only
         # if requested.
@@ -721,16 +722,18 @@ class ApacheConfigurator(common.Configurator):
 
     def _choose_vhost_from_list(self, target_name, temp=False):
         # Select a vhost from a list
-        vhost = display_ops.select_vhost(target_name, self.vhosts)
-        if vhost is None:
-            self._raise_no_suitable_vhost_error(target_name)
+        opt_vhost = display_ops.select_vhost(target_name, self.vhosts)
+        if opt_vhost is None:
+            raise self._error_no_suitable_vhost_error(target_name)
+        vhost = opt_vhost
+
         if temp:
             return vhost
         if not vhost.ssl:
             addrs = self._get_proposed_addrs(vhost, "443")
             # TODO: Conflicts is too conservative
-            if not any(vhost.enabled and vhost.conflicts(addrs) for
-                       vhost in self.vhosts):
+            if not any(one_vhost.enabled and vhost.conflicts(addrs) for
+                       one_vhost in self.vhosts):
                 vhost = self.make_vhost_ssl(vhost)
             else:
                 logger.error(
@@ -963,7 +966,9 @@ class ApacheConfigurator(common.Configurator):
             logger.warning("Encountered a problem while parsing file: %s, skipping", path)
             return None
         for arg in args:
-            addrs.add(obj.Addr.fromstring(self.parser.get_arg(arg)))
+            addr_str = self.parser.get_arg(arg)
+            if addr_str:
+                addrs.add(obj.Addr.fromstring(addr_str))
         is_ssl = False
 
         if self.parser.find_dir("SSLEngine", "on", start=path, exclude=False):
@@ -1216,8 +1221,8 @@ class ApacheConfigurator(common.Configurator):
 
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
-        listens = [self.parser.get_arg(x).split()[0] for
-                   x in self.parser.find_dir("Listen")]
+        extracted = [self.parser.get_arg(x) for x in self.parser.find_dir("Listen")]
+        listens = [arg.split()[0] for arg in extracted if arg]
 
         # Listen already in place
         if self._has_port_already(listens, port):
@@ -1790,7 +1795,7 @@ class ApacheConfigurator(common.Configurator):
         if id_comment:
             # Use the first value, multiple ones shouldn't exist
             comment = self.parser.get_arg(id_comment[0])
-            return comment.split(" ")[-1]
+            return comment.split(" ")[-1] if comment else None
         return None
 
     def add_vhost_id(self, vhost):

@@ -109,14 +109,14 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
                            "use, and run Certbot again.")
                     raise MisconfigurationError(msg)
             else:
-                loadmod_args = path_args
+                loadmod_args = [arg for arg in path_args if arg]
 
             centos_parser: CentOSParser = cast(CentOSParser, self.parser)
             if centos_parser.not_modssl_ifmodule(noarg_path):
                 if centos_parser.loc["default"] in noarg_path:
                     # LoadModule already in the main configuration file
                     if ("ifmodule/" in noarg_path.lower() or
-                        "ifmodule[1]" in noarg_path.lower()):
+                            "ifmodule[1]" in noarg_path.lower()):
                         # It's the first or only IfModule in the file
                         return
                 # Populate the list of known !mod_ssl.c IfModules
