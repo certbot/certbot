@@ -5,7 +5,7 @@ import glob
 import io
 import logging
 import re
-from typing import Dict
+from typing import Any, Callable, Dict, Iterable
 from typing import List
 from typing import Optional
 from typing import Set
@@ -32,7 +32,7 @@ class NginxParser:
 
     """
 
-    def __init__(self, root):
+    def __init__(self, root: str) -> None:
         self.parsed: Dict[str, Union[List, nginxparser.UnspacedList]] = {}
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
@@ -42,14 +42,14 @@ class NginxParser:
         # not enable sites from there.
         self.load()
 
-    def load(self):
+    def load(self) -> None:
         """Loads Nginx files into a parsed tree.
 
         """
         self.parsed = {}
         self._parse_recursively(self.config_root)
 
-    def _parse_recursively(self, filepath):
+    def _parse_recursively(self, filepath: str) -> None:
         """Parses nginx config files recursively by looking at 'include'
         directives inside 'http' and 'server' blocks. Note that this only
         reads Nginx files that potentially declare a virtual host.
@@ -77,7 +77,7 @@ class NginxParser:
                                 if _is_include_directive(server_entry):
                                     self._parse_recursively(server_entry[1])
 
-    def abs_path(self, path):
+    def abs_path(self, path: str) -> str:
         """Converts a relative path to an absolute path relative to the root.
         Does nothing for paths that are already absolute.
 
@@ -90,7 +90,7 @@ class NginxParser:
             return os.path.normpath(os.path.join(self.root, path))
         return os.path.normpath(path)
 
-    def _build_addr_to_ssl(self):
+    def _build_addr_to_ssl(self) -> Dict[Tuple[str, str], bool]:
         """Builds a map from address to whether it listens on ssl in any server block
         """
         servers = self._get_raw_servers()
@@ -107,11 +107,11 @@ class NginxParser:
                     addr_to_ssl[addr_tuple] = addr.ssl or addr_to_ssl[addr_tuple]
         return addr_to_ssl
 
-    def _get_raw_servers(self) -> Dict:
+    def _get_raw_servers(self) -> Dict[str, Union[List[Any], nginxparser.UnspacedList]]:
         # pylint: disable=cell-var-from-loop
         """Get a map of unparsed all server blocks
         """
-        servers: Dict[str, Union[List, nginxparser.UnspacedList]] = {}
+        servers: Dict[str, Union[List[Any], nginxparser.UnspacedList]] = {}
         for filename, tree in self.parsed.items():
             servers[filename] = []
             srv = servers[filename]  # workaround undefined loop var in lambdas
@@ -126,7 +126,7 @@ class NginxParser:
                 servers[filename][i] = (new_server, path)
         return servers
 
-    def get_vhosts(self):
+    def get_vhosts(self) -> List[obj.VirtualHost]:
         """Gets list of all 'virtual hosts' found in Nginx configuration.
         Technically this is a misnomer because Nginx does not have virtual
         hosts, it has 'server blocks'.
@@ -158,7 +158,7 @@ class NginxParser:
 
         return vhosts
 
-    def _update_vhosts_addrs_ssl(self, vhosts):
+    def _update_vhosts_addrs_ssl(self, vhosts: Iterable[obj.VirtualHost]) -> None:
         """Update a list of raw parsed vhosts to include global address sslishness
         """
         addr_to_ssl = self._build_addr_to_ssl()
@@ -168,7 +168,7 @@ class NginxParser:
                 if addr.ssl:
                     vhost.ssl = True
 
-    def _get_included_directives(self, block):
+    def _get_included_directives(self, block: List[Any]) -> List[Any]:
         """Returns array with the "include" directives expanded out by
         concatenating the contents of the included file to the block.
 
@@ -188,7 +188,7 @@ class NginxParser:
                         pass
         return result
 
-    def _parse_files(self, filepath, override=False):
+    def _parse_files(self, filepath: str, override: bool = False) -> List[UnspacedList]:
         """Parse files from a glob
 
         :param str filepath: Nginx config file path
@@ -219,7 +219,7 @@ class NginxParser:
                 logger.warning("Could not parse file: %s due to %s", item, err)
         return trees
 
-    def _find_config_root(self):
+    def _find_config_root(self) -> str:
         """Return the Nginx Configuration Root file."""
         location = ['nginx.conf']
 
@@ -230,7 +230,7 @@ class NginxParser:
         raise errors.NoInstallationError(
             "Could not find Nginx root configuration file (nginx.conf)")
 
-    def filedump(self, ext='tmp', lazy=True):
+    def filedump(self, ext: str = 'tmp', lazy: bool = True) -> None:
         """Dumps parsed configurations into files.
 
         :param str ext: The file extension to use for the dumped files. If
@@ -255,7 +255,7 @@ class NginxParser:
             except IOError:
                 logger.error("Could not open file for writing: %s", filename)
 
-    def parse_server(self, server):
+    def parse_server(self, server: Iterable[UnspacedList]) -> Dict[str, Any]:
         """Parses a list of server directives, accounting for global address sslishness.
 
         :param list server: list of directives in a server block
@@ -266,7 +266,7 @@ class NginxParser:
         _apply_global_addr_ssl(addr_to_ssl, parsed_server)
         return parsed_server
 
-    def has_ssl_on_directive(self, vhost):
+    def has_ssl_on_directive(self, vhost: obj.VirtualHost) -> bool:
         """Does vhost have ssl on for all ports?
 
         :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost: The vhost in question
@@ -284,7 +284,8 @@ class NginxParser:
 
         return False
 
-    def add_server_directives(self, vhost, directives, insert_at_top=False):
+    def add_server_directives(self, vhost: obj.VirtualHost, directives: List[Any],
+                              insert_at_top: bool = False) -> None:
         """Add directives to the server block identified by vhost.
 
         This method modifies vhost to be fully consistent with the new directives.
@@ -305,7 +306,8 @@ class NginxParser:
         self._modify_server_directives(vhost,
             functools.partial(_add_directives, directives, insert_at_top))
 
-    def update_or_add_server_directives(self, vhost, directives, insert_at_top=False):
+    def update_or_add_server_directives(self, vhost: obj.VirtualHost, directives: List[Any],
+                                        insert_at_top: bool = False) -> None:
         """Add or replace directives in the server block identified by vhost.
 
         This method modifies vhost to be fully consistent with the new directives.
@@ -327,7 +329,8 @@ class NginxParser:
         self._modify_server_directives(vhost,
             functools.partial(_update_or_add_directives, directives, insert_at_top))
 
-    def remove_server_directives(self, vhost, directive_name, match_func=None):
+    def remove_server_directives(self, vhost: obj.VirtualHost, directive_name: str,
+                                 match_func: Optional[Callable[[Any], bool]] = None) -> None:
         """Remove all directives of type directive_name.
 
         :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost: The vhost
@@ -339,7 +342,8 @@ class NginxParser:
         self._modify_server_directives(vhost,
             functools.partial(_remove_directives, directive_name, match_func))
 
-    def _update_vhost_based_on_new_directives(self, vhost, directives_list):
+    def _update_vhost_based_on_new_directives(self, vhost: obj.VirtualHost,
+                                              directives_list: List[Any]) -> None:
         new_server = self._get_included_directives(directives_list)
         parsed_server = self.parse_server(new_server)
         vhost.addrs = parsed_server['addrs']
@@ -347,7 +351,8 @@ class NginxParser:
         vhost.names = parsed_server['names']
         vhost.raw = new_server
 
-    def _modify_server_directives(self, vhost, block_func):
+    def _modify_server_directives(self, vhost: obj.VirtualHost,
+                                  block_func: Callable[[List[Any]], None]) -> None:
         filename = vhost.filep
         try:
             result = self.parsed[filename]
@@ -364,7 +369,7 @@ class NginxParser:
 
     def duplicate_vhost(self, vhost_template: obj.VirtualHost,
                         remove_singleton_listen_params: bool = False,
-                        only_directives: Optional[List] = None) -> obj.VirtualHost:
+                        only_directives: Optional[List[Any]] = None) -> obj.VirtualHost:
         """Duplicate the vhost in the configuration files.
 
         :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost_template: The vhost
@@ -417,7 +422,7 @@ class NginxParser:
         return new_vhost
 
 
-def _parse_ssl_options(ssl_options):
+def _parse_ssl_options(ssl_options: Optional[str]) -> List[Any]:
     if ssl_options is not None:
         try:
             with io.open(ssl_options, "r", encoding="utf-8") as _file:
@@ -540,7 +545,7 @@ def _regex_match(target_name, name):
         return False
 
 
-def _is_include_directive(entry):
+def _is_include_directive(entry: Any) -> bool:
     """Checks if an nginx parsed entry is an 'include' directive.
 
     :param list entry: the parsed entry
@@ -734,7 +739,7 @@ def _apply_global_addr_ssl(addr_to_ssl, parsed_server):
         if addr.ssl:
             parsed_server['ssl'] = True
 
-def _parse_server_raw(server):
+def _parse_server_raw(server: Iterable[UnspacedList]) -> Dict[str, Any]:
     """Parses a list of server directives.
 
     :param list server: list of directives in a server block

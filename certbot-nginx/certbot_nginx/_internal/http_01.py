@@ -120,7 +120,7 @@ class NginxHttp01(common.ChallengePerformer):
         :returns: list of :class:`certbot_nginx._internal.Addr` to apply
         :rtype: list
         """
-        addresses: List[Addr] = []
+        addresses: List[Optional[Addr]] = []
         default_addr = "%s" % self.configurator.config.http01_port
         ipv6_addr = "[::]:{0}".format(
             self.configurator.config.http01_port)
@@ -142,7 +142,8 @@ class NginxHttp01(common.ChallengePerformer):
             addresses = [Addr.fromstring(default_addr)]
             logger.debug("Using default address %s for authentication.",
                         default_addr)
-        return addresses
+            
+        return [address for address in addresses if address]
 
     def _get_validation_path(self, achall: KeyAuthorizationAnnotatedChallenge) -> str:
         return os.sep + os.path.join(challenges.HTTP01.URI_ROOT_PATH, achall.chall.encode("token"))

@@ -1,5 +1,6 @@
 """Module contains classes used by the Nginx Configurator."""
 import re
+from typing import Any, List, Optional, Sequence, Set, Union
 
 from certbot.plugins import common
 
@@ -34,7 +35,8 @@ class Addr(common.Addr):
     UNSPECIFIED_IPV4_ADDRESSES = ('', '*', '0.0.0.0')
     CANONICAL_UNSPECIFIED_ADDRESS = UNSPECIFIED_IPV4_ADDRESSES[0]
 
-    def __init__(self, host, port, ssl, default, ipv6, ipv6only):
+    def __init__(self, host: str, port: str, ssl: bool, default: bool,
+                 ipv6: bool, ipv6only: bool) -> None:
         super().__init__((host, port))
         self.ssl = ssl
         self.default = default
@@ -43,7 +45,7 @@ class Addr(common.Addr):
         self.unspecified_address = host in self.UNSPECIFIED_IPV4_ADDRESSES
 
     @classmethod
-    def fromstring(cls, str_addr):
+    def fromstring(cls, str_addr: str) -> Optional["Addr"]:
         """Initialize Addr from string."""
         parts = str_addr.split(' ')
         ssl = False
@@ -94,7 +96,7 @@ class Addr(common.Addr):
 
         return cls(host, port, ssl, default, ipv6, ipv6only)
 
-    def to_string(self, include_default=True):
+    def to_string(self, include_default: bool = True) -> str:
         """Return string representation of Addr"""
         parts = ''
         if self.tup[0] and self.tup[1]:
@@ -111,18 +113,18 @@ class Addr(common.Addr):
 
         return parts
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.to_string()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Addr(" + self.__str__() + ")"
 
-    def __hash__(self):  # pylint: disable=useless-super-delegation
+    def __hash__(self) -> int:  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__
         # See certbot-apache/certbot_apache/_internal/obj.py for more information
         return super().__hash__()
 
-    def super_eq(self, other):
+    def super_eq(self, other: "Addr") -> bool:
         """Check ip/port equality, with IPv6 support.
         """
         # If both addresses got an unspecified address, then make sure the
@@ -134,7 +136,7 @@ class Addr(common.Addr):
                                 other.tup[1]), other.ipv6)
         return super().__eq__(other)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
             return (self.super_eq(other) and
                     self.ssl == other.ssl and
@@ -158,7 +160,8 @@ class VirtualHost:
 
     """
 
-    def __init__(self, filep, addrs, ssl, enabled, names, raw, path):
+    def __init__(self, filep: str, addrs: Sequence[Addr], ssl: bool, enabled: bool,
+                 names: Set[str], raw: List[Any], path: List[Any]) -> None:
         """Initialize a VH."""
         self.filep = filep
         self.addrs = addrs
@@ -168,7 +171,7 @@ class VirtualHost:
         self.raw = raw
         self.path = path
 
-    def __str__(self):
+    def __str__(self) -> str:
         addr_str = ", ".join(str(addr) for addr in sorted(self.addrs, key=str))
         # names might be a set, and it has different representations in Python
         # 2 and 3. Force it to be a list here for consistent outputs
@@ -179,10 +182,10 @@ class VirtualHost:
                 "enabled: %s" % (self.filep, addr_str,
                                  list(self.names), self.ssl, self.enabled))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "VirtualHost(" + self.__str__().replace("\n", ", ") + ")\n"
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
             return (self.filep == other.filep and
                     sorted(self.addrs, key=str) == sorted(other.addrs, key=str) and
@@ -193,12 +196,12 @@ class VirtualHost:
 
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.filep, tuple(self.path),
                      tuple(self.addrs), tuple(self.names),
                      self.ssl, self.enabled))
 
-    def has_header(self, header_name):
+    def has_header(self, header_name: str) -> bool:
         """Determine if this server block has a particular header set.
         :param str header_name: The name of the header to check for, e.g.
             'Strict-Transport-Security'
@@ -206,7 +209,7 @@ class VirtualHost:
         found = _find_directive(self.raw, ADD_HEADER_DIRECTIVE, header_name)
         return found is not None
 
-    def contains_list(self, test):
+    def contains_list(self, test: List[Any]) -> bool:
         """Determine if raw server block contains test list at top level
         """
         for i in range(0, len(self.raw) - len(test) + 1):
@@ -214,7 +217,7 @@ class VirtualHost:
                 return True
         return False
 
-    def ipv6_enabled(self):
+    def ipv6_enabled(self) -> bool:
         """Return true if one or more of the listen directives in vhost supports
         IPv6"""
         for a in self.addrs:
@@ -222,7 +225,7 @@ class VirtualHost:
                 return True
         return False
 
-    def ipv4_enabled(self):
+    def ipv4_enabled(self) -> bool:
         """Return true if one or more of the listen directives in vhost are IPv4
         only"""
         if not self.addrs:
@@ -232,7 +235,7 @@ class VirtualHost:
                 return True
         return False
 
-    def display_repr(self):
+    def display_repr(self) -> str:
         """Return a representation of VHost to be used in dialog"""
         return (
             "File: {filename}\n"
@@ -244,7 +247,8 @@ class VirtualHost:
                 names=", ".join(self.names),
                 https="Yes" if self.ssl else "No"))
 
-def _find_directive(directives, directive_name, match_content=None):
+def _find_directive(directives: Optional[Union[str, List[Any]]], directive_name: str,
+                    match_content: Optional[Any] = None) -> Optional[Any]:
     """Find a directive of type directive_name in directives. If match_content is given,
        Searches for `match_content` in the directive arguments.
     """
