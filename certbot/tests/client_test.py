@@ -327,7 +327,7 @@ class ClientTest(ClientTestCommon):
             datetime.datetime.now() + datetime.timedelta(
                 seconds=constants.CLI_DEFAULTS["issuance_timeout"])
         self.client.obtain_certificate_from_csr(test_csr, orderr=orderr)
-        (_, deadline) = self.client.acme.finalize_order.call_args.args
+        ((_, deadline), _) = self.client.acme.finalize_order.call_args
         self.assertTrue(
             abs(expected_deadline - deadline) <= datetime.timedelta(seconds=1))
 
@@ -336,7 +336,7 @@ class ClientTest(ClientTestCommon):
             datetime.datetime.now() + datetime.timedelta(seconds=300)
         self.config.issuance_timeout = 300
         self.client.obtain_certificate_from_csr(test_csr, orderr=orderr)
-        (_, deadline) = self.client.acme.finalize_order.call_args.args
+        ((_, deadline), _) = self.client.acme.finalize_order.call_args
         self.assertTrue(
             abs(expected_deadline - deadline) <= datetime.timedelta(seconds=1))
 
