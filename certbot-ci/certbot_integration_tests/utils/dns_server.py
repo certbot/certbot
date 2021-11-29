@@ -9,7 +9,7 @@ import sys
 import tempfile
 import time
 from types import TracebackType
-from typing import Any
+from typing import Any, Sequence
 from typing import Dict
 from typing import Optional
 from typing import Type
@@ -34,7 +34,7 @@ class DNSServer:
     future to support parallelization (https://github.com/certbot/certbot/issues/8455).
     """
 
-    def __init__(self, unused_nodes: Any, show_output: bool = False) -> None:
+    def __init__(self, unused_nodes: Sequence[str], show_output: bool = False) -> None:
         """
         Create an DNSServer instance.
         :param list nodes: list of node names that will be setup by pytest xdist

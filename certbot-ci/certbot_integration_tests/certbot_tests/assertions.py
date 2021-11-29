@@ -1,7 +1,6 @@
 """This module contains advanced assertions for the certbot integration tests."""
 import io
 import os
-from typing import Tuple
 from typing import Type
 
 from cryptography.hazmat.backends import default_backend
