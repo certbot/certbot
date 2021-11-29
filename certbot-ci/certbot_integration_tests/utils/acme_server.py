@@ -239,7 +239,7 @@ class ACMEServer:
     def _prepare_http_proxy(self) -> None:
         """Configure and launch an HTTP proxy"""
         print('=> Configuring the HTTP proxy...')
-        http_port_map = self.acme_xdist['http_port']
+        http_port_map = cast(Dict[str, int], self.acme_xdist['http_port'])
         mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
                    for node, port in http_port_map.items()}  # type: ignore[attr-defined]
         command = [sys.executable, proxy.__file__, str(DEFAULT_HTTP_01_PORT), json.dumps(mapping)]
