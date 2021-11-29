@@ -190,8 +190,3 @@ def assert_world_read_permissions(file: str) -> None:
         assert not mode & ntsecuritycon.FILE_GENERIC_WRITE
         assert not mode & ntsecuritycon.FILE_GENERIC_EXECUTE
         assert mode & ntsecuritycon.FILE_GENERIC_READ == ntsecuritycon.FILE_GENERIC_READ
-
-
-def _get_current_user() -> Tuple["win32api.PySID", str, int]:
-    account_name = win32api.GetUserNameEx(win32api.NameSamCompatible)
-    return win32security.LookupAccountName(None, account_name)[0]
