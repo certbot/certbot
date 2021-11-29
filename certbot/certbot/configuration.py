@@ -293,6 +293,13 @@ class NamespaceConfig:
         return os.path.join(self.renewal_hooks_dir,
                             constants.RENEWAL_POST_HOOKS_DIR)
 
+    @property
+    def issuance_timeout(self) -> int:
+        """This option specifies how long (in seconds) Certbot will wait
+        for the server to issue a certificate.
+        """
+        return self.namespace.issuance_timeout
+
     # Magic methods
 
     def __deepcopy__(self, _memo: Any) -> 'NamespaceConfig':

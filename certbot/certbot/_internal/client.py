@@ -330,9 +330,14 @@ class Client:
         if orderr is None:
             orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
 
-        deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
+        deadline = datetime.datetime.now() + datetime.timedelta(
+            seconds=self.config.issuance_timeout)
+
+        logger.debug("Will poll for certificate issuance until %s", deadline)
+
         orderr = self.acme.finalize_order(
             orderr, deadline, fetch_alternative_chains=self.config.preferred_chain is not None)
+
         fullchain = orderr.fullchain_pem
         if self.config.preferred_chain and orderr.alternative_fullchains_pem:
             fullchain = crypto_util.find_chain_with_issuer(
