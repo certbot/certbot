@@ -96,11 +96,6 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         help=argparse.SUPPRESS
     )
     helpful.add(
-        None, "--issuance-timeout", type=int,
-        dest="issuance_timeout",
-        default=flag_default("issuance_timeout"),
-        help=config_help("issuance_timeout"))
-    helpful.add(
         [None, "automation", "run", "certonly", "enhance"],
         "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
@@ -369,6 +364,11 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
              'ACME Challenges are versioned, but if you pick "http" rather '
              'than "http-01", Certbot will select the latest version '
              'automatically.')
+    helpful.add(
+        [None, "certonly", "run"], "--issuance-timeout", type=nonnegative_int,
+        dest="issuance_timeout",
+        default=flag_default("issuance_timeout"),
+        help=config_help("issuance_timeout"))
     helpful.add(
         "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
