@@ -1,3 +1,4 @@
+# type: ignore
 """
 General conftest for pytest execution of all integration tests lying
 in the certbot_integration tests package.
