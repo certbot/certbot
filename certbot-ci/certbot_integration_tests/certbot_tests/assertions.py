@@ -12,7 +12,6 @@ try:
     import grp
     POSIX_MODE = True
 except ImportError:
-    import win32api
     import win32security
     import ntsecuritycon
     POSIX_MODE = False

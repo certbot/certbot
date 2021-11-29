@@ -242,7 +242,7 @@ class ACMEServer:
         print('=> Configuring the HTTP proxy...')
         http_port_map = cast(Dict[str, int], self.acme_xdist['http_port'])
         mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
-                   for node, port in http_port_map.items()}  # type: ignore[attr-defined]
+                   for node, port in http_port_map.items()}
         command = [sys.executable, proxy.__file__, str(DEFAULT_HTTP_01_PORT), json.dumps(mapping)]
         self._launch_process(command)
         print('=> Finished configuring the HTTP proxy.')
