@@ -486,7 +486,7 @@ class ApacheConfigurator(common.Installer, interfaces.Authenticator):
             name=assertions.PASS,
             ancestor=None,
             filepath=self.parser.loc["root"],
-            metadata=metadata
+            metadata=metadata,
         )
 
     def deploy_cert(self, domain, cert_path, key_path,

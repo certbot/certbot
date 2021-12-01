@@ -160,8 +160,7 @@ class AugeasParserNode(interfaces.ParserNode):
 
         # remove [...], it's not allowed in Apache configuration and is used
         # for indexing within Augeas
-        name = name.split("[")[0]
-        return name
+        return name.split("[")[0]
 
 
 class AugeasCommentNode(AugeasParserNode):
