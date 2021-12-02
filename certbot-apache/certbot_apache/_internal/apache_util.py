@@ -242,6 +242,7 @@ def _get_runtime_cfg(command):
 
     return stdout
 
+
 def find_ssl_apache_conf(prefix):
     """
     Find a TLS Apache config file in the dedicated storage.
