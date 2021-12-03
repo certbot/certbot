@@ -28,7 +28,7 @@ COVER_THRESHOLDS = {
     'certbot_dns_luadns': {'linux': 98, 'windows': 98},
     'certbot_dns_nsone': {'linux': 99, 'windows': 99},
     'certbot_dns_ovh': {'linux': 97, 'windows': 97},
-    'certbot_dns_rfc2136': {'linux': 99, 'windows': 99},
+    'certbot_dns_rfc2136': {'linux': 92, 'windows': 92},
     'certbot_dns_route53': {'linux': 92, 'windows': 92},
     'certbot_dns_sakuracloud': {'linux': 97, 'windows': 97},
     'certbot_nginx': {'linux': 97, 'windows': 97},
