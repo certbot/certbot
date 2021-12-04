@@ -124,6 +124,22 @@ class ClientTest(unittest.TestCase):
                                 }
                             }
 
+    FOO_EXAMPLE_COM_A_RR = {
+                                "Name": "foo.example.com.",
+                                "Type": "A",
+                                "TTL": 300,
+                                "ResourceRecords": [{
+                                    "Value": "10.10.10.10" }]
+                            }
+
+    FOO_EXAMPLE_COM_CNAME_RR = {
+                                "Name": "foo.example.com.",
+                                "Type": "CNAME",
+                                "TTL": 300,
+                                "ResourceRecords": [{
+                                    "Value": "example.net" }]
+                            }
+
     def setUp(self):
         from certbot_dns_route53._internal.dns_route53 import Authenticator
 
@@ -195,6 +211,51 @@ class ClientTest(unittest.TestCase):
 
         self.assertRaises(errors.PluginError,
                           self.client._find_zone_id_for_domain,
+                          "foo.example.com")
+
+    def test_find_zone_id_for_domain_or_alias(self):
+        self.client._find_zone_id_for_domain = mock.MagicMock(side_effect=[1, 2])
+        self.client.r53.get_paginator = mock.MagicMock()
+        self.client.r53.get_paginator().paginate.return_value = [
+            {
+                "ResourceRecordSets": [
+                    self.FOO_EXAMPLE_COM_A_RR,
+                    self.FOO_EXAMPLE_COM_CNAME_RR
+                ]
+            }
+        ]
+
+        result = self.client._find_zone_id_for_domain_or_alias("foo.example.com")
+        self.assertEqual(result, (2, "example.net"))
+
+    def test_find_zone_id_for_domain_or_alias_no_results(self):
+        self.client._find_zone_id_for_domain = mock.MagicMock(side_effect=[1, 2])
+        self.client.r53.get_paginator = mock.MagicMock()
+        self.client.r53.get_paginator().paginate.return_value = [
+            {
+                "ResourceRecordSets": [
+                    self.FOO_EXAMPLE_COM_A_RR
+                ]
+            }
+        ]
+
+        result = self.client._find_zone_id_for_domain_or_alias("foo.example.com")
+        self.assertEqual(result, (1, "foo.example.com"))
+
+    def test_find_zone_id_for_domain_or_alias_with_bad_delegated_zone(self):
+        self.client._find_zone_id_for_domain = mock.MagicMock(
+            side_effect=[1, errors.PluginError])
+        self.client.r53.get_paginator = mock.MagicMock()
+        self.client.r53.get_paginator().paginate.return_value = [
+            {
+                "ResourceRecordSets": [
+                    self.FOO_EXAMPLE_COM_CNAME_RR
+                ]
+            }
+        ]
+
+        self.assertRaises(errors.PluginError,
+                          self.client._find_zone_id_for_domain_or_alias,
                           "foo.example.com")
 
     def test_change_txt_record(self):

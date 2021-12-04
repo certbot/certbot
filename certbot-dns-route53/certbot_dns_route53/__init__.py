@@ -64,6 +64,45 @@ the required permissions <https://docs.aws.amazon.com/Route53/latest
        ]
    }
 
+.. code-block:: json
+   :name: sample-aws-delegated-policy.json
+   :caption: Example AWS policy file for a delegated zone:
+
+   {
+       "Version": "2012-10-17",
+       "Id": "certbot-dns-route53 sample policy",
+       "Statement": [
+           {
+               "Effect": "Allow",
+               "Action": [
+                   "route53:ListHostedZones",
+                   "route53:GetChange"
+               ],
+               "Resource": [
+                   "*"
+               ]
+           },
+           {
+               "Effect" : "Allow",
+               "Action" : [
+                   "route53:ListResourceRecordSets"
+               ],
+               "Resource" : [
+                   "arn:aws:route53:::hostedzone/YOURHOSTEDZONEID"
+               ]
+           },
+           {
+               "Effect" : "Allow",
+               "Action" : [
+                   "route53:ChangeResourceRecordSets"
+               ],
+               "Resource" : [
+                   "arn:aws:route53:::hostedzone/YOURDELEGATEDZONEID"
+               ]
+           }
+       ]
+   }
+
 The `access keys <https://docs.aws.amazon.com/general/latest/gr
 /aws-sec-cred-types.html#access-keys-and-secret-access-keys>`_ for an account
 with these permissions must be supplied in one of the following ways, which are
