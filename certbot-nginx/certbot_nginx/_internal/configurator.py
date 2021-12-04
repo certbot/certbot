@@ -6,7 +6,7 @@ import socket
 import subprocess
 import tempfile
 import time
-from typing import Dict, Callable, Any, Union, Mapping, Sequence, Iterable
+from typing import Dict, Callable, Any, Union, Mapping, Sequence, Iterable, Type
 from typing import List
 from typing import Optional
 from typing import Set
@@ -18,7 +18,7 @@ import pkg_resources
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
-from certbot import crypto_util
+from certbot import crypto_util, achallenges
 from certbot import errors
 from certbot import util
 from certbot.display import util as display_util
@@ -775,11 +775,11 @@ class NginxConfigurator(common.Configurator):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
 
-    def _has_certbot_redirect(self, vhost, domain):
+    def _has_certbot_redirect(self, vhost: obj.VirtualHost, domain: str) -> bool:
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
         return vhost.contains_list(test_redirect_block)
 
-    def _set_http_header(self, domain, header_substring):
+    def _set_http_header(self, domain: str, header_substring: Union[str, List[str], None]) -> None:
         """Enables header identified by header_substring on domain.
 
         If the vhost is listening plaintextishly, separates out the relevant
@@ -793,7 +793,10 @@ class NginxConfigurator(common.Configurator):
         :raises .errors.PluginError: If no viable HTTPS host can be created or
             set with header header_substring.
         """
-        if not header_substring in constants.HEADER_ARGS:
+        if not isinstance(header_substring, str):
+            raise errors.NotSupportedError("Invalid header_substring type "
+                                           f"{type(header_substring)}, expected a str.")
+        if header_substring not in constants.HEADER_ARGS:
             raise errors.NotSupportedError(
                 f"{header_substring} is not supported by the nginx plugin.")
 
@@ -817,7 +820,7 @@ class NginxConfigurator(common.Configurator):
                 ['\n']]
             self.parser.add_server_directives(vhost, header_directives)
 
-    def _add_redirect_block(self, vhost, domain):
+    def _add_redirect_block(self, vhost: obj.VirtualHost, domain: str) -> None:
         """Add redirect directive to vhost
         """
         redirect_block = _redirect_block_for_domain(domain)
@@ -825,7 +828,8 @@ class NginxConfigurator(common.Configurator):
         self.parser.add_server_directives(
             vhost, redirect_block, insert_at_top=True)
 
-    def _split_block(self, vhost, only_directives=None):
+    def _split_block(self, vhost: obj.VirtualHost, only_directives: Optional[List[str]] = None
+                     ) -> Tuple[obj.VirtualHost, obj.VirtualHost]:
         """Splits this "virtual host" (i.e. this nginx server block) into
         separate HTTP and HTTPS blocks.
 
@@ -838,13 +842,13 @@ class NginxConfigurator(common.Configurator):
         """
         http_vhost = self.parser.duplicate_vhost(vhost, only_directives=only_directives)
 
-        def _ssl_match_func(directive):
+        def _ssl_match_func(directive: str) -> bool:
             return 'ssl' in directive
 
-        def _ssl_config_match_func(directive):
+        def _ssl_config_match_func(directive: str) -> bool:
             return self.mod_ssl_conf in directive
 
-        def _no_ssl_match_func(directive):
+        def _no_ssl_match_func(directive: str) -> bool:
             return 'ssl' not in directive
 
         # remove all ssl addresses and related directives from the new block
@@ -858,7 +862,8 @@ class NginxConfigurator(common.Configurator):
         self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
         return http_vhost, vhost
 
-    def _enable_redirect(self, domain, unused_options):
+    def _enable_redirect(self, domain: str,
+                         unused_options: Optional[Union[str, List[str]]]) -> None:
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         If the vhost is listening plaintextishly, separate out the
@@ -885,7 +890,7 @@ class NginxConfigurator(common.Configurator):
         for vhost in vhosts:
             self._enable_redirect_single(domain, vhost)
 
-    def _enable_redirect_single(self, domain, vhost):
+    def _enable_redirect_single(self, domain: str, vhost: obj.VirtualHost) -> None:
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         If the vhost is listening plaintextishly, separate out the
@@ -914,7 +919,7 @@ class NginxConfigurator(common.Configurator):
             logger.info("Redirecting all traffic on port %s to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
 
-    def _enable_ocsp_stapling(self, domain, chain_path):
+    def _enable_ocsp_stapling(self, domain: str, chain_path: Union[str, List[str], None]) -> None:
         """Include OCSP response in TLS handshake
 
         :param str domain: domain to enable OCSP response for
@@ -922,11 +927,15 @@ class NginxConfigurator(common.Configurator):
         :type chain_path: `str` or `None`
 
         """
+        if not isinstance(chain_path, str) and chain_path is not None:
+            raise errors.NotSupportedError(f"Invalid chain_path type {type(chain_path)}, "
+                                           "expected a str or None.")
         vhosts = self.choose_vhosts(domain)
         for vhost in vhosts:
             self._enable_ocsp_stapling_single(vhost, chain_path)
 
-    def _enable_ocsp_stapling_single(self, vhost, chain_path):
+    def _enable_ocsp_stapling_single(self, vhost: obj.VirtualHost,
+                                     chain_path: Optional[str]) -> None:
         """Include OCSP response in TLS handshake
 
         :param str vhost: vhost to enable OCSP response for
@@ -966,7 +975,7 @@ class NginxConfigurator(common.Configurator):
     ######################################
     # Nginx server management (Installer)
     ######################################
-    def restart(self):
+    def restart(self) -> None:
         """Restarts nginx server.
 
         :raises .errors.MisconfigurationError: If either the reload fails.
@@ -974,7 +983,7 @@ class NginxConfigurator(common.Configurator):
         """
         nginx_restart(self.conf('ctl'), self.nginx_conf, self.conf('sleep-seconds'))
 
-    def config_test(self):
+    def config_test(self) -> None:
         """Check the configuration of Nginx for errors.
 
         :raises .errors.MisconfigurationError: If config_test fails
@@ -985,7 +994,7 @@ class NginxConfigurator(common.Configurator):
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
-    def _nginx_version(self):
+    def _nginx_version(self) -> str:
         """Return results of nginx -V
 
         :returns: version text
@@ -1009,7 +1018,7 @@ class NginxConfigurator(common.Configurator):
                 "Unable to run %s -V" % self.conf('ctl'))
         return text
 
-    def get_version(self):
+    def get_version(self) -> Tuple[int, ...]:
         """Return version of Nginx Server.
 
         Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
@@ -1054,7 +1063,7 @@ class NginxConfigurator(common.Configurator):
 
         return nginx_version
 
-    def _get_openssl_version(self):
+    def _get_openssl_version(self) -> str:
         """Return version of OpenSSL linked to Nginx.
 
         Version is returned as string. If no version can be found, empty string is returned.
@@ -1076,7 +1085,7 @@ class NginxConfigurator(common.Configurator):
                 return ""
         return matches[0]
 
-    def more_info(self):
+    def more_info(self) -> str:
         """Human-readable string to help understand the module"""
         return (
             "Configures Nginx to authenticate and install HTTPS.{0}"
@@ -1086,7 +1095,8 @@ class NginxConfigurator(common.Configurator):
                 version=".".join(str(i) for i in self.version))
         )
 
-    def auth_hint(self, failed_achalls): # pragma: no cover
+    def auth_hint(self,  # pragma: no cover
+                  failed_achalls: Iterable[achallenges.AnnotatedChallenge]):
         return (
             "The Certificate Authority failed to verify the temporary nginx configuration changes "
             "made by Certbot. Ensure the listed domains point to this nginx server and that it is "
@@ -1096,7 +1106,7 @@ class NginxConfigurator(common.Configurator):
     ###################################################
     # Wrapper functions for Reverter class (Installer)
     ###################################################
-    def save(self, title=None, temporary=False):
+    def save(self, title: str = None, temporary: bool = False) -> None:
         """Saves all changes to the configuration files.
 
         :param str title: The title of the save. If a title is given, the
@@ -1120,7 +1130,7 @@ class NginxConfigurator(common.Configurator):
         if title and not temporary:
             self.finalize_checkpoint(title)
 
-    def recovery_routine(self):
+    def recovery_routine(self) -> None:
         """Revert all previously modified files.
 
         Reverts all modified files that have not been saved as a checkpoint
@@ -1132,7 +1142,7 @@ class NginxConfigurator(common.Configurator):
         self.new_vhost = None
         self.parser.load()
 
-    def revert_challenge_config(self):
+    def revert_challenge_config(self) -> None:
         """Used to cleanup challenge configurations.
 
         :raises .errors.PluginError: If unable to revert the challenge config.
@@ -1142,7 +1152,7 @@ class NginxConfigurator(common.Configurator):
         self.new_vhost = None
         self.parser.load()
 
-    def rollback_checkpoints(self, rollback=1):
+    def rollback_checkpoints(self, rollback: int = 1) -> None:
         """Rollback saved checkpoints.
 
         :param int rollback: Number of checkpoints to revert
@@ -1158,12 +1168,13 @@ class NginxConfigurator(common.Configurator):
     ###########################################################################
     # Challenges Section for Authenticator
     ###########################################################################
-    def get_chall_pref(self, unused_domain):
+    def get_chall_pref(self, unused_domain: str) -> List[Type[challenges.Challenge]]:
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 
     # Entry point in main.py for performing challenges
-    def perform(self, achalls):
+    def perform(self, achalls: Sequence[achallenges.AnnotatedChallenge]
+                ) -> List[challenges.HTTP01Response]:
         """Perform the configuration related challenge.
 
         This function currently assumes all challenges will be fulfilled.
@@ -1192,10 +1203,10 @@ class NginxConfigurator(common.Configurator):
         for i, resp in enumerate(http_response):
             responses[http_doer.indices[i]] = resp
 
-        return responses
+        return [response for response in responses if response]
 
     # called after challenges are performed
-    def cleanup(self, achalls):
+    def cleanup(self, achalls: Sequence[achallenges.AnnotatedChallenge]) -> None:
         """Revert all challenges."""
         self._chall_out -= len(achalls)
 
@@ -1205,13 +1216,13 @@ class NginxConfigurator(common.Configurator):
             self.restart()
 
 
-def _test_block_from_block(block):
+def _test_block_from_block(block: List[Any]) -> List[Any]:
     test_block = nginxparser.UnspacedList(block)
     parser.comment_directive(test_block, 0)
     return test_block[:-1]
 
 
-def _redirect_block_for_domain(domain):
+def _redirect_block_for_domain(domain: str) -> List[Any]:
     updated_domain = domain
     match_symbol = '='
     if util.is_wildcard_domain(domain):
@@ -1227,7 +1238,7 @@ def _redirect_block_for_domain(domain):
     return redirect_block
 
 
-def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
+def nginx_restart(nginx_ctl: str, nginx_conf: str, sleep_duration: int) -> None:
     """Restarts the Nginx Server.
 
     .. todo:: Nginx restart is fatal if the configuration references
@@ -1272,10 +1283,10 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
         time.sleep(sleep_duration)
 
 
-def _determine_default_server_root():
+def _determine_default_server_root() -> str:
     if os.environ.get("CERTBOT_DOCS") == "1":
-        default_server_root = "%s or %s" % (constants.LINUX_SERVER_ROOT,
-            constants.FREEBSD_DARWIN_SERVER_ROOT)
+        default_server_root = (f"{constants.LINUX_SERVER_ROOT} "
+                               f"or {constants.FREEBSD_DARWIN_SERVER_ROOT}")
     else:
         default_server_root = constants.CLI_DEFAULTS["server_root"]
     return default_server_root
