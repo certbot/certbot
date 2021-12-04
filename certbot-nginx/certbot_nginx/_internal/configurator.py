@@ -6,7 +6,7 @@ import socket
 import subprocess
 import tempfile
 import time
-from typing import Dict
+from typing import Dict, Callable, Any, Union, Mapping, Sequence, Iterable
 from typing import List
 from typing import Optional
 from typing import Set
@@ -70,7 +70,7 @@ class NginxConfigurator(common.Configurator):
     SSL_DIRECTIVES = ['ssl_certificate', 'ssl_certificate_key', 'ssl_dhparam']
 
     @classmethod
-    def add_parser_arguments(cls, add):
+    def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         default_server_root = _determine_default_server_root()
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Nginx server root directory. (default: %s)" % default_server_root)
@@ -82,11 +82,11 @@ class NginxConfigurator(common.Configurator):
             "to apply when reloading.")
 
     @property
-    def nginx_conf(self):
+    def nginx_conf(self) -> str:
         """Nginx config file path."""
         return os.path.join(self.conf("server_root"), "nginx.conf")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize an Nginx Configurator.
 
         :param tup version: version of Nginx as a tuple (1, 4, 7)
@@ -125,7 +125,7 @@ class NginxConfigurator(common.Configurator):
         self.parser: parser.NginxParser
 
     @property
-    def mod_ssl_conf_src(self):
+    def mod_ssl_conf_src(self) -> str:
         """Full absolute path to SSL configuration file source."""
 
         # Why all this complexity? Well, we want to support Mozilla's intermediate
@@ -159,22 +159,23 @@ class NginxConfigurator(common.Configurator):
             "certbot_nginx", os.path.join("_internal", "tls_configs", config_filename))
 
     @property
-    def mod_ssl_conf(self):
+    def mod_ssl_conf(self) -> str:
         """Full absolute path to SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
 
     @property
-    def updated_mod_ssl_conf_digest(self):
+    def updated_mod_ssl_conf_digest(self) -> str:
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
 
-    def install_ssl_options_conf(self, options_ssl, options_ssl_digest):
+    def install_ssl_options_conf(self, options_ssl: str, options_ssl_digest: str) -> None:
         """Copy Certbot's SSL options file into the system's config dir if required."""
-        return common.install_version_controlled_file(options_ssl, options_ssl_digest,
+        common.install_version_controlled_file(
+            options_ssl, options_ssl_digest,
             self.mod_ssl_conf_src, constants.ALL_SSL_OPTIONS_HASHES)
 
     # This is called in determine_authenticator and determine_installer
-    def prepare(self):
+    def prepare(self) -> None:
         """Prepare the authenticator/installer.
 
         :raises .errors.NoInstallationError: If Nginx ctl cannot be found
@@ -210,8 +211,8 @@ class NginxConfigurator(common.Configurator):
             raise errors.PluginError('Unable to lock {0}'.format(self.conf('server-root')))
 
     # Entry point in main.py for installing cert
-    def deploy_cert(self, domain, cert_path, key_path,
-                    chain_path=None, fullchain_path=None):
+    def deploy_cert(self, domain: str, cert_path: str, key_path: str,
+                    chain_path: Optional[str] = None, fullchain_path: Optional[str] = None) -> None:
         """Deploys certificate to specified virtual host.
 
         .. note:: Aborts if the vhost is missing ssl_certificate or
@@ -234,7 +235,8 @@ class NginxConfigurator(common.Configurator):
             display_util.notify("Successfully deployed certificate for {} to {}"
                                 .format(domain, vhost.filep))
 
-    def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):  # pylint: disable=unused-argument
+    def _deploy_cert(self, vhost: obj.VirtualHost, _cert_path: str, key_path: str,
+                     _chain_path: Optional[str], fullchain_path: Optional[str]) -> None:
         """
         Helper function for deploy_cert() that handles the actual deployment
         this exists because we might want to do multiple deployments per
@@ -244,8 +246,7 @@ class NginxConfigurator(common.Configurator):
         cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
                            ['\n    ', 'ssl_certificate_key', ' ', key_path]]
 
-        self.parser.update_or_add_server_directives(vhost,
-                                          cert_directives)
+        self.parser.update_or_add_server_directives(vhost, cert_directives)
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
@@ -254,7 +255,8 @@ class NginxConfigurator(common.Configurator):
         self.save_notes += "\tssl_certificate %s\n" % fullchain_path
         self.save_notes += "\tssl_certificate_key %s\n" % key_path
 
-    def _choose_vhosts_wildcard(self, domain, prefer_ssl, no_ssl_filter_port=None):
+    def _choose_vhosts_wildcard(self, domain: str, prefer_ssl: bool,
+                                no_ssl_filter_port: Optional[str] = None) -> List[obj.VirtualHost]:
         """Prompts user to choose vhosts to install a wildcard certificate for"""
         if prefer_ssl:
             vhosts_cache = self._wildcard_vhosts
@@ -303,12 +305,13 @@ class NginxConfigurator(common.Configurator):
     #######################
     # Vhost parsing methods
     #######################
-    def _choose_vhost_single(self, target_name):
+    def _choose_vhost_single(self, target_name: str) -> List[obj.VirtualHost]:
         matches = self._get_ranked_matches(target_name)
         vhosts = [x for x in [self._select_best_name_match(matches)] if x is not None]
         return vhosts
 
-    def choose_vhosts(self, target_name, create_if_no_match=False):
+    def choose_vhosts(self, target_name: str,
+                      create_if_no_match: bool = False) -> List[obj.VirtualHost]:
         """Chooses a virtual host based on the given domain name.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
@@ -352,7 +355,7 @@ class NginxConfigurator(common.Configurator):
 
         return vhosts
 
-    def ipv6_info(self, port):
+    def ipv6_info(self, port: Union[str, int]) -> Tuple[bool, bool]:
         """Returns tuple of booleans (ipv6_active, ipv6only_present)
         ipv6_active is true if any server block listens ipv6 address in any port
 
@@ -377,10 +380,10 @@ class NginxConfigurator(common.Configurator):
                     ipv6_active = True
                 if addr.ipv6only and addr.get_port() == port:
                     ipv6only_present = True
-        return (ipv6_active, ipv6only_present)
+        return ipv6_active, ipv6only_present
 
-    def _vhost_from_duplicated_default(self, domain: str, allow_port_mismatch: bool, port: str
-                                       ) -> obj.VirtualHost:
+    def _vhost_from_duplicated_default(self, domain: str, allow_port_mismatch: bool,
+                                       port: str) -> obj.VirtualHost:
         """if allow_port_mismatch is False, only server blocks with matching ports will be
            used as a default server block template.
         """
@@ -395,7 +398,7 @@ class NginxConfigurator(common.Configurator):
         self._add_server_name_to_vhost(self.new_vhost, domain)
         return self.new_vhost
 
-    def _add_server_name_to_vhost(self, vhost, domain):
+    def _add_server_name_to_vhost(self, vhost: obj.VirtualHost, domain: str) -> None:
         vhost.names.add(domain)
         name_block = [['\n    ', 'server_name']]
         for name in vhost.names:
@@ -403,7 +406,8 @@ class NginxConfigurator(common.Configurator):
             name_block[0].append(name)
         self.parser.update_or_add_server_directives(vhost, name_block)
 
-    def _get_default_vhost(self, domain, allow_port_mismatch, port):
+    def _get_default_vhost(self, domain: str, allow_port_mismatch: bool,
+                           port: str) -> obj.VirtualHost:
         """Helper method for _vhost_from_duplicated_default; see argument documentation there"""
         vhost_list = self.parser.get_vhosts()
         # if one has default_server set, return that one
@@ -424,10 +428,11 @@ class NginxConfigurator(common.Configurator):
 
         # TODO: present a list of vhosts for user to choose from
 
-        raise errors.MisconfigurationError("Could not automatically find a matching server"
-            " block for %s. Set the `server_name` directive to use the Nginx installer." % domain)
+        raise errors.MisconfigurationError("Could not automatically find a matching server "
+                                           f"block for {domain}. Set the `server_name` directive "
+                                           "to use the Nginx installer.")
 
-    def _get_ranked_matches(self, target_name):
+    def _get_ranked_matches(self, target_name: str) -> List[Dict[str, Any]]:
         """Returns a ranked list of vhosts that match target_name.
         The ranking gives preference to SSL vhosts.
 
@@ -440,7 +445,8 @@ class NginxConfigurator(common.Configurator):
         vhost_list = self.parser.get_vhosts()
         return self._rank_matches_by_name_and_ssl(vhost_list, target_name)
 
-    def _select_best_name_match(self, matches):
+    def _select_best_name_match(self,
+                                matches: Sequence[Mapping[str, Any]]) -> Optional[obj.VirtualHost]:
         """Returns the best name match of a ranked list of vhosts.
 
         :param list matches: list of dicts containing the vhost, the matching name,
@@ -460,7 +466,8 @@ class NginxConfigurator(common.Configurator):
         # Exact or regex match
         return matches[0]['vhost']
 
-    def _rank_matches_by_name(self, vhost_list, target_name):
+    def _rank_matches_by_name(self, vhost_list: Iterable[obj.VirtualHost],
+                              target_name: str) -> List[Dict[str, Any]]:
         """Returns a ranked list of vhosts from vhost_list that match target_name.
         This method should always be followed by a call to _select_best_name_match.
 
@@ -497,7 +504,8 @@ class NginxConfigurator(common.Configurator):
                                 'rank': REGEX_RANK})
         return sorted(matches, key=lambda x: x['rank'])
 
-    def _rank_matches_by_name_and_ssl(self, vhost_list, target_name):
+    def _rank_matches_by_name_and_ssl(self, vhost_list: Iterable[obj.VirtualHost],
+                                      target_name: str) -> List[Dict[str, Any]]:
         """Returns a ranked list of vhosts from vhost_list that match target_name.
         The ranking gives preference to SSLishness before name match level.
 
@@ -610,7 +618,7 @@ class NginxConfigurator(common.Configurator):
     def _vhost_listening_on_port_no_ssl(self, vhost: obj.VirtualHost, port: str) -> bool:
         return self._vhost_listening(vhost, port, False)
 
-    def _get_redirect_ranked_matches(self, target_name, port):
+    def _get_redirect_ranked_matches(self, target_name: str, port: str) -> List[Dict[str, Any]]:
         """Gets a ranked list of plaintextish port-listening vhosts matching target_name
 
         Filter all hosts for those listening on port without using ssl.
@@ -632,7 +640,7 @@ class NginxConfigurator(common.Configurator):
 
         return self._rank_matches_by_name(matching_vhosts, target_name)
 
-    def get_all_names(self):
+    def get_all_names(self) -> Set[str]:
         """Returns all names found in the Nginx Configuration.
 
         :returns: All ServerNames, ServerAliases, and reverse DNS entries for
@@ -670,7 +678,7 @@ class NginxConfigurator(common.Configurator):
 
         return util.get_filtered_names(all_names)
 
-    def _get_snakeoil_paths(self):
+    def _get_snakeoil_paths(self) -> Tuple[str, str]:
         """Generate invalid certs that let us create ssl directives for Nginx"""
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
@@ -688,7 +696,7 @@ class NginxConfigurator(common.Configurator):
             cert_file.write(cert_pem)
         return cert_path, le_key.file
 
-    def _make_server_ssl(self, vhost):
+    def _make_server_ssl(self, vhost: obj.VirtualHost) -> None:
         """Make a server SSL.
 
         Make a server SSL by adding new listen and SSL directives.
@@ -745,11 +753,12 @@ class NginxConfigurator(common.Configurator):
     ##################################
     # enhancement methods (Installer)
     ##################################
-    def supported_enhancements(self):
+    def supported_enhancements(self) -> List[str]:
         """Returns currently supported enhancements."""
         return ['redirect', 'ensure-http-header', 'staple-ocsp']
 
-    def enhance(self, domain, enhancement, options=None):
+    def enhance(self, domain: str, enhancement: str,
+                options: Optional[Union[str, List[str]]] = None) -> None:
         """Enhance configuration.
 
         :param str domain: domain to enhance
@@ -761,7 +770,7 @@ class NginxConfigurator(common.Configurator):
 
         """
         try:
-            return self._enhance_func[enhancement](domain, options)
+            self._enhance_func[enhancement](domain, options)
         except (KeyError, ValueError):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
