@@ -2,7 +2,7 @@
 # Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
 import copy
 import logging
-from typing import Any, List, Iterator
+from typing import Any, List, Iterator, Iterable, Union, Tuple, Callable, SupportsIndex
 from typing import IO
 
 from pyparsing import Combine
@@ -110,10 +110,10 @@ class RawNginxDumper:
 spacey = lambda x: (isinstance(x, str) and x.isspace()) or x == ''
 
 
-class UnspacedList(list):
+class UnspacedList(List[Optional[Union[str, "UnspacedList"]]]):
     """Wrap a list [of lists], making any whitespace entries magically invisible"""
 
-    def __init__(self, list_source):
+    def __init__(self, list_source: Iterable[Optional[Union[str, List[Any]]]]) -> None:
         # ensure our argument is not a generator, and duplicate any sublists
         self.spaced = copy.deepcopy(list(list_source))
         self.dirty = False
@@ -131,7 +131,8 @@ class UnspacedList(list):
                 if "#" not in self[:i]:
                     list.__delitem__(self, i)
 
-    def _coerce(self, inbound):
+    def _coerce(self, inbound: Optional[Union[str, List[Any]]]
+                ) -> Tuple[Optional[Union[str, "UnspacedList"]], Optional[Union[str, List[Any]]]]:
         """
         Coerce some inbound object to be appropriately usable in this object
 
@@ -147,7 +148,7 @@ class UnspacedList(list):
                 inbound = UnspacedList(inbound)
             return inbound, inbound.spaced
 
-    def insert(self, i, x):
+    def insert(self, i: int, x: Optional[Union[str, List[Any]]]) -> None:
         item, spaced_item = self._coerce(x)
         slicepos = self._spaced_position(i) if i < len(self) else len(self.spaced)
         self.spaced.insert(slicepos, spaced_item)
@@ -155,37 +156,42 @@ class UnspacedList(list):
             list.insert(self, i, item)
         self.dirty = True
 
-    def append(self, x):
+    def append(self, x: Optional[Union[str, List[Any]]]) -> None:
         item, spaced_item = self._coerce(x)
         self.spaced.append(spaced_item)
         if not spacey(item):
             list.append(self, item)
         self.dirty = True
 
-    def extend(self, x):
+    def extend(self, x: Optional[Union[str, List[Any]]]) -> None:
         item, spaced_item = self._coerce(x)
         self.spaced.extend(spaced_item)
         list.extend(self, item)
         self.dirty = True
 
-    def __add__(self, other):
-        l = copy.deepcopy(self)
-        l.extend(other)
-        l.dirty = True
-        return l
+    def __add__(self, other: Optional[Union[str, List[Any]]]) -> "UnspacedList":
+        new_list = copy.deepcopy(self)
+        new_list.extend(other)
+        new_list.dirty = True
+        return new_list
 
-    def pop(self, _i=None):
+    def pop(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError("UnspacedList.pop() not yet implemented")
-    def remove(self, _):
+
+    def remove(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError("UnspacedList.remove() not yet implemented")
-    def reverse(self):
+
+    def reverse(self) -> None:
         raise NotImplementedError("UnspacedList.reverse() not yet implemented")
-    def sort(self, _cmp=None, _key=None, _Rev=None):
+
+    def sort(self, *args: Any, **kwargs: Any) -> None:
+        super().sort()
         raise NotImplementedError("UnspacedList.sort() not yet implemented")
-    def __setslice__(self, _i, _j, _newslice):
+
+    def __setslice__(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
 
-    def __setitem__(self, i, value):
+    def __setitem__(self, i: Union[SupportsIndex, slice], value: Any) -> None:
         if isinstance(i, slice):
             raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
         item, spaced_item = self._coerce(value)
@@ -194,46 +200,49 @@ class UnspacedList(list):
             list.__setitem__(self, i, item)
         self.dirty = True
 
-    def __delitem__(self, i):
+    def __delitem__(self, i: Union[SupportsIndex, slice]) -> None:
+        if isinstance(i, slice):
+            raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
         self.spaced.__delitem__(self._spaced_position(i))
         list.__delitem__(self, i)
         self.dirty = True
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: Any) -> "UnspacedList":
         new_spaced = copy.deepcopy(self.spaced, memo=memo)
-        l = UnspacedList(new_spaced)
-        l.dirty = self.dirty
-        return l
+        new_list = UnspacedList(new_spaced)
+        new_list.dirty = self.dirty
+        return new_list
 
-    def is_dirty(self):
+    def is_dirty(self) -> bool:
         """Recurse through the parse tree to figure out if any sublists are dirty"""
         if self.dirty:
             return True
         return any((isinstance(x, UnspacedList) and x.is_dirty() for x in self))
 
-    def _spaced_position(self, idx):
-        "Convert from indexes in the unspaced list to positions in the spaced one"
+    def _spaced_position(self, idx: SupportsIndex):
+        """Convert from indexes in the unspaced list to positions in the spaced one"""
+        int_idx = idx.__index__()
         pos = spaces = 0
         # Normalize indexes like list[-1] etc, and save the result
-        if idx < 0:
-            idx = len(self) + idx
-        if not 0 <= idx < len(self):
+        if int_idx < 0:
+            int_idx = len(self) + int_idx
+        if not 0 <= int_idx < len(self):
             raise IndexError("list index out of range")
-        idx0 = idx
-        # Count the number of spaces in the spaced list before idx in the unspaced one
-        while idx != -1:
+        int_idx0 = int_idx
+        # Count the number of spaces in the spaced list before int_idx in the unspaced one
+        while int_idx != -1:
             if spacey(self.spaced[pos]):
                 spaces += 1
             else:
-                idx -= 1
+                int_idx -= 1
             pos += 1
-        return idx0 + spaces
+        return int_idx0 + spaces
 
 
 # Shortcut functions to respect Python's serialization interface
 # (like pyyaml, picker or json)
 
-def loads(source):
+def loads(source: str) -> UnspacedList:
     """Parses from a string.
 
     :param str source: The string to parse
@@ -244,34 +253,34 @@ def loads(source):
     return UnspacedList(RawNginxParser(source).as_list())
 
 
-def load(_file):
+def load(file_: IO[Any]) -> UnspacedList:
     """Parses from a file.
 
-    :param file _file: The file to parse
+    :param file file_: The file to parse
     :returns: The parsed tree
     :rtype: list
 
     """
-    return loads(_file.read())
+    return loads(file_.read())
 
 
 def dumps(blocks: UnspacedList) -> str:
     """Dump to a Unicode string.
 
-    :param UnspacedList block: The parsed tree
+    :param UnspacedList blocks: The parsed tree
     :rtype: six.text_type
 
     """
     return str(RawNginxDumper(blocks.spaced))
 
 
-def dump(blocks: UnspacedList, _file: IO[Any]) -> None:
+def dump(blocks: UnspacedList, file_: IO[Any]) -> None:
     """Dump to a file.
 
-    :param UnspacedList block: The parsed tree
-    :param IO[Any] _file: The file stream to dump to. It must be opened with
+    :param UnspacedList blocks: The parsed tree
+    :param IO[Any] file_: The file stream to dump to. It must be opened with
                           Unicode encoding.
     :rtype: None
 
     """
-    _file.write(dumps(blocks))
+    file_.write(dumps(blocks))

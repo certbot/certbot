@@ -6,6 +6,7 @@ from certbot.plugins import common
 
 ADD_HEADER_DIRECTIVE = 'add_header'
 
+
 class Addr(common.Addr):
     r"""Represents an Nginx address, i.e. what comes after the 'listen'
     directive.
@@ -246,6 +247,7 @@ class VirtualHost:
                 addrs=", ".join(str(addr) for addr in self.addrs),
                 names=", ".join(self.names),
                 https="Yes" if self.ssl else "No"))
+
 
 def _find_directive(directives: Optional[Union[str, List[Any]]], directive_name: str,
                     match_content: Optional[Any] = None) -> Optional[Any]:

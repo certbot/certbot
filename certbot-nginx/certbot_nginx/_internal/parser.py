@@ -5,7 +5,7 @@ import glob
 import io
 import logging
 import re
-from typing import Any, Callable, Dict, Iterable
+from typing import Any, Callable, Dict, Iterable, Sequence, cast, Mapping
 from typing import List
 from typing import Optional
 from typing import Set
@@ -557,7 +557,8 @@ def _is_include_directive(entry: Any) -> bool:
             len(entry) == 2 and entry[0] == 'include' and
             isinstance(entry[1], str))
 
-def _is_ssl_on_directive(entry):
+
+def _is_ssl_on_directive(entry: Any) -> bool:
     """Checks if an nginx parsed entry is an 'ssl on' directive.
 
     :param list entry: the parsed entry
@@ -569,14 +570,18 @@ def _is_ssl_on_directive(entry):
             len(entry) == 2 and entry[0] == 'ssl' and
             entry[1] == 'on')
 
-def _add_directives(directives, insert_at_top, block):
+
+def _add_directives(directives: List[Any], insert_at_top: bool,
+                    block: UnspacedList) -> None:
     """Adds directives to a config block."""
     for directive in directives:
         _add_directive(block, directive, insert_at_top)
     if block and '\n' not in block[-1]:  # could be "   \n  " or ["\n"] !
         block.append(nginxparser.UnspacedList('\n'))
 
-def _update_or_add_directives(directives, insert_at_top, block):
+
+def _update_or_add_directives(directives: List[Any], insert_at_top: bool,
+                              block: UnspacedList) -> None:
     """Adds or replaces directives in a config block."""
     for directive in directives:
         _update_or_add_directive(block, directive, insert_at_top)
@@ -589,7 +594,8 @@ REPEATABLE_DIRECTIVES = {'server_name', 'listen', INCLUDE, 'rewrite', 'add_heade
 COMMENT = ' managed by Certbot'
 COMMENT_BLOCK = [' ', '#', COMMENT]
 
-def comment_directive(block, location):
+
+def comment_directive(block: UnspacedList, location: int) -> None:
     """Add a ``#managed by Certbot`` comment to the end of the line at location.
 
     :param list block: The block containing the directive to be commented
@@ -608,40 +614,45 @@ def comment_directive(block, location):
     if next_entry is not None and "\n" not in next_entry:
         block.insert(location + 2, '\n')
 
-def _comment_out_directive(block, location, include_location):
+
+def _comment_out_directive(block: UnspacedList, location: int, include_location: str) -> None:
     """Comment out the line at location, with a note of explanation."""
     comment_message = ' duplicated in {0}'.format(include_location)
     # add the end comment
     # create a dumpable object out of block[location] (so it includes the ;)
     directive = block[location]
-    new_dir_block = nginxparser.UnspacedList([]) # just a wrapper
+    new_dir_block = nginxparser.UnspacedList([])  # just a wrapper
     new_dir_block.append(directive)
     dumped = nginxparser.dumps(new_dir_block)
-    commented = dumped + ' #' + comment_message # add the comment directly to the one-line string
-    new_dir = nginxparser.loads(commented) # reload into UnspacedList
+    commented = dumped + ' #' + comment_message  # add the comment directly to the one-line string
+    new_dir = nginxparser.loads(commented)  # reload into UnspacedList
 
     # add the beginning comment
     insert_location = 0
-    if new_dir[0].spaced[0] != new_dir[0][0]: # if there's whitespace at the beginning
+    if new_dir[0].spaced[0] != new_dir[0][0]:  # if there's whitespace at the beginning
         insert_location = 1
-    new_dir[0].spaced.insert(insert_location, "# ") # comment out the line
-    new_dir[0].spaced.append(";") # directly add in the ;, because now dumping won't work properly
+    new_dir[0].spaced.insert(insert_location, "# ")  # comment out the line
+    new_dir[0].spaced.append(";")  # directly add in the ;, because now dumping won't work properly
     dumped = nginxparser.dumps(new_dir)
-    new_dir = nginxparser.loads(dumped) # reload into an UnspacedList
+    new_dir = nginxparser.loads(dumped)  # reload into an UnspacedList
 
     block[location] = new_dir[0] # set the now-single-line-comment directive back in place
 
-def _find_location(block, directive_name, match_func=None):
+
+def _find_location(block: UnspacedList, directive_name: str,
+                   match_func: Optional[Callable[[Any], bool]] = None) -> Optional[int]:
     """Finds the index of the first instance of directive_name in block.
        If no line exists, use None."""
-    return next((index for index, line in enumerate(block) \
-        if line and line[0] == directive_name and (match_func is None or match_func(line))), None)
+    return next((index for index, line in enumerate(block) if (
+        line and line[0] == directive_name and (match_func is None or match_func(line)))), None)
 
-def _is_whitespace_or_comment(directive):
+
+def _is_whitespace_or_comment(directive: Sequence[Any]) -> bool:
     """Is this directive either a whitespace or comment directive?"""
     return len(directive) == 0 or directive[0] == '#'
 
-def _add_directive(block, directive, insert_at_top):
+
+def _add_directive(block: UnspacedList, directive: Sequence[Any], insert_at_top: bool) -> None:
     if not isinstance(directive, nginxparser.UnspacedList):
         directive = nginxparser.UnspacedList(directive)
     if _is_whitespace_or_comment(directive):
@@ -658,10 +669,11 @@ def _add_directive(block, directive, insert_at_top):
     # handle flat include files
 
     directive_name = directive[0]
-    def can_append(loc, dir_name):
+
+    def can_append(loc: Optional[int], dir_name: str) -> bool:
         """ Can we append this directive to the block? """
         return loc is None or (isinstance(dir_name, str)
-            and dir_name in REPEATABLE_DIRECTIVES)
+                               and dir_name in REPEATABLE_DIRECTIVES)
 
     err_fmt = 'tried to insert directive "{0}" but found conflicting "{1}".'
 
@@ -674,6 +686,8 @@ def _add_directive(block, directive, insert_at_top):
 
         for included_directive in included_directives:
             included_dir_loc = _find_location(block, included_directive[0])
+            if not included_dir_loc:
+                raise errors.Error(f"Could not find directive {included_directive[0]}")
             included_dir_name = included_directive[0]
             if (not _is_whitespace_or_comment(included_directive)
                     and not can_append(included_dir_loc, included_dir_name)):
@@ -692,14 +706,22 @@ def _add_directive(block, directive, insert_at_top):
         else:
             block.append(directive)
             comment_directive(block, len(block) - 1)
-    elif block[location] != directive:
-        raise errors.MisconfigurationError(err_fmt.format(directive, block[location]))
+        return
 
-def _update_directive(block, directive, location):
+    # By construction of can_append(), location cannot be None at that point
+    resolved_location = cast(int, location)
+
+    if block[resolved_location] != directive:
+        raise errors.MisconfigurationError(err_fmt.format(directive, block[resolved_location]))
+
+
+def _update_directive(block: UnspacedList, directive: Sequence[Any], location: int) -> None:
     block[location] = directive
     comment_directive(block, location)
 
-def _update_or_add_directive(block, directive, insert_at_top):
+
+def _update_or_add_directive(block: UnspacedList, directive: Sequence[Any],
+                             insert_at_top: bool) -> None:
     if not isinstance(directive, nginxparser.UnspacedList):
         directive = nginxparser.UnspacedList(directive)
     if _is_whitespace_or_comment(directive):
@@ -716,10 +738,13 @@ def _update_or_add_directive(block, directive, insert_at_top):
 
     _add_directive(block, directive, insert_at_top)
 
-def _is_certbot_comment(directive):
+
+def _is_certbot_comment(directive: Sequence[Any]):
     return '#' in directive and COMMENT in directive
 
-def _remove_directives(directive_name, match_func, block):
+
+def _remove_directives(directive_name: str, match_func: Callable[[Any], bool],
+                       block: UnspacedList) -> None:
     """Removes directives of name directive_name from a config block if match_func matches.
     """
     while True:
@@ -731,13 +756,16 @@ def _remove_directives(directive_name, match_func, block):
             del block[location + 1]
         del block[location]
 
-def _apply_global_addr_ssl(addr_to_ssl, parsed_server):
+
+def _apply_global_addr_ssl(addr_to_ssl: Mapping[Tuple[str, str], bool],
+                           parsed_server: UnspacedList) -> None:
     """Apply global sslishness information to the parsed server block
     """
     for addr in parsed_server['addrs']:
         addr.ssl = addr_to_ssl[addr.normalized_tuple()]
         if addr.ssl:
             parsed_server['ssl'] = True
+
 
 def _parse_server_raw(server: Iterable[UnspacedList]) -> Dict[str, Any]:
     """Parses a list of server directives.
