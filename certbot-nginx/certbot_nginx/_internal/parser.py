@@ -33,7 +33,7 @@ class NginxParser:
     """
 
     def __init__(self, root: str) -> None:
-        self.parsed: Dict[str, Union[List, nginxparser.UnspacedList]] = {}
+        self.parsed: Dict[str, UnspacedList] = {}
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
 
@@ -168,7 +168,7 @@ class NginxParser:
                 if addr.ssl:
                     vhost.ssl = True
 
-    def _get_included_directives(self, block: List[Any]) -> List[Any]:
+    def _get_included_directives(self, block: UnspacedList) -> UnspacedList:
         """Returns array with the "include" directives expanded out by
         concatenating the contents of the included file to the block.
 
@@ -255,7 +255,7 @@ class NginxParser:
             except IOError:
                 logger.error("Could not open file for writing: %s", filename)
 
-    def parse_server(self, server: Iterable[UnspacedList]) -> Dict[str, Any]:
+    def parse_server(self, server: UnspacedList) -> Dict[str, Any]:
         """Parses a list of server directives, accounting for global address sslishness.
 
         :param list server: list of directives in a server block
@@ -343,7 +343,7 @@ class NginxParser:
             functools.partial(_remove_directives, directive_name, match_func))
 
     def _update_vhost_based_on_new_directives(self, vhost: obj.VirtualHost,
-                                              directives_list: List[Any]) -> None:
+                                              directives_list: UnspacedList) -> None:
         new_server = self._get_included_directives(directives_list)
         parsed_server = self.parse_server(new_server)
         vhost.addrs = parsed_server['addrs']
@@ -758,7 +758,7 @@ def _remove_directives(directive_name: str, match_func: Callable[[Any], bool],
 
 
 def _apply_global_addr_ssl(addr_to_ssl: Mapping[Tuple[str, str], bool],
-                           parsed_server: UnspacedList) -> None:
+                           parsed_server: Dict[str, Any]) -> None:
     """Apply global sslishness information to the parsed server block
     """
     for addr in parsed_server['addrs']:
@@ -767,7 +767,7 @@ def _apply_global_addr_ssl(addr_to_ssl: Mapping[Tuple[str, str], bool],
             parsed_server['ssl'] = True
 
 
-def _parse_server_raw(server: Iterable[UnspacedList]) -> Dict[str, Any]:
+def _parse_server_raw(server: UnspacedList) -> Dict[str, Any]:
     """Parses a list of server directives.
 
     :param list server: list of directives in a server block
