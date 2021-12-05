@@ -8,9 +8,9 @@ from typing import IO
 from typing import Iterable
 from typing import Iterator
 from typing import List
-from typing import SupportsIndex
 from typing import Tuple
 from typing import Union
+from typing_extensions import SupportsIndex  # typing.SupportsIndex not supported on Python 3.6
 
 from pyparsing import Combine
 from pyparsing import Forward
