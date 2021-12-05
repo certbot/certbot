@@ -1,9 +1,12 @@
 """Contains UI methods for Nginx operations."""
 import logging
-from typing import Optional, List, Iterable
+from typing import Iterable
+from typing import List
+from typing import Optional
+
+from certbot_nginx._internal.obj import VirtualHost
 
 from certbot.display import util as display_util
-from certbot_nginx._internal.obj import VirtualHost
 
 logger = logging.getLogger(__name__)
 

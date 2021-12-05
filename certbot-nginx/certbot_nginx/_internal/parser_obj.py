@@ -5,7 +5,14 @@ raw lists of tokens from pyparsing. """
 
 import abc
 import logging
-from typing import List, Optional, Any, Tuple, Type, Iterator, Sequence, Callable
+from typing import Any
+from typing import Callable
+from typing import Iterator
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import Type
 
 from certbot import errors
 

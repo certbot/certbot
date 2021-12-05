@@ -5,20 +5,26 @@ import glob
 import io
 import logging
 import re
-from typing import Any, Callable, Dict, Iterable, Sequence, cast, Mapping
+from typing import Any
+from typing import Callable
+from typing import cast
+from typing import Dict
+from typing import Iterable
 from typing import List
+from typing import Mapping
 from typing import Optional
+from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
 
+from certbot_nginx._internal import nginxparser
+from certbot_nginx._internal import obj
+from certbot_nginx._internal.nginxparser import UnspacedList
 import pyparsing
 
 from certbot import errors
 from certbot.compat import os
-from certbot_nginx._internal import nginxparser
-from certbot_nginx._internal import obj
-from certbot_nginx._internal.nginxparser import UnspacedList
 
 logger = logging.getLogger(__name__)
 

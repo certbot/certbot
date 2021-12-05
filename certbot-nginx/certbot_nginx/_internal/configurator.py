@@ -6,30 +6,38 @@ import socket
 import subprocess
 import tempfile
 import time
-from typing import Dict, Callable, Any, Union, Mapping, Sequence, Iterable, Type
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Iterable
 from typing import List
+from typing import Mapping
 from typing import Optional
+from typing import Sequence
 from typing import Set
 from typing import Text
 from typing import Tuple
+from typing import Type
+from typing import Union
 
-import OpenSSL
-import pkg_resources
-
-from acme import challenges
-from acme import crypto_util as acme_crypto_util
-from certbot import crypto_util, achallenges
-from certbot import errors
-from certbot import util
-from certbot.display import util as display_util
-from certbot.compat import os
-from certbot.plugins import common
 from certbot_nginx._internal import constants
 from certbot_nginx._internal import display_ops
 from certbot_nginx._internal import http_01
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj  # pylint: disable=unused-import
 from certbot_nginx._internal import parser
+import OpenSSL
+import pkg_resources
+
+from acme import challenges
+from acme import crypto_util as acme_crypto_util
+from certbot import achallenges
+from certbot import crypto_util
+from certbot import errors
+from certbot import util
+from certbot.compat import os
+from certbot.display import util as display_util
+from certbot.plugins import common
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1

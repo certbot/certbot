@@ -3,19 +3,25 @@
 import copy
 import logging
 import typing
-from typing import Any, List, Iterator, Iterable, Union, Tuple, SupportsIndex
+from typing import Any
 from typing import IO
+from typing import Iterable
+from typing import Iterator
+from typing import List
+from typing import SupportsIndex
+from typing import Tuple
+from typing import Union
 
 from pyparsing import Combine
 from pyparsing import Forward
 from pyparsing import Group
 from pyparsing import Literal
 from pyparsing import Optional
+from pyparsing import ParseResults
 from pyparsing import QuotedString
 from pyparsing import Regex
 from pyparsing import restOfLine
 from pyparsing import stringEnd
-from pyparsing import ParseResults
 from pyparsing import White
 from pyparsing import ZeroOrMore
 
