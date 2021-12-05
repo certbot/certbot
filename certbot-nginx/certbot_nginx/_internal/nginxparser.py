@@ -2,8 +2,8 @@
 # Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
 import copy
 import logging
+import typing
 from typing import Any, List, Iterator, Iterable, Union, Tuple, SupportsIndex
-from typing import Optional as TypeOptional
 from typing import IO
 
 from pyparsing import Combine
@@ -78,7 +78,7 @@ class RawNginxDumper:
     def __init__(self, blocks: List[Any]) -> None:
         self.blocks = blocks
 
-    def __iter__(self, blocks: TypeOptional[List[Any]] = None) -> Iterator[str]:
+    def __iter__(self, blocks: typing.Optional[List[Any]] = None) -> Iterator[str]:
         """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
         for b0 in blocks:
@@ -111,30 +111,29 @@ class RawNginxDumper:
 spacey = lambda x: (isinstance(x, str) and x.isspace()) or x == ''
 
 
-class UnspacedList(List[TypeOptional[Union[str, "UnspacedList"]]]):
+class UnspacedList(List[Any]):
     """Wrap a list [of lists], making any whitespace entries magically invisible"""
 
-    def __init__(self, list_source: Iterable[TypeOptional[Union[str, List[Any]]]]) -> None:
+    def __init__(self, list_source: Iterable[Any]) -> None:
         # ensure our argument is not a generator, and duplicate any sublists
         self.spaced = copy.deepcopy(list(list_source))
         self.dirty = False
 
         # Turn self into a version of the source list that has spaces removed
         # and all sub-lists also UnspacedList()ed
-        list.__init__(self, list_source)
+        super().__init__(list_source)
         for i, entry in reversed(list(enumerate(self))):
             if isinstance(entry, list):
                 sublist = UnspacedList(entry)
-                list.__setitem__(self, i, sublist)
+                super().__setitem__(i, sublist)
                 self.spaced[i] = sublist.spaced
             elif spacey(entry):
                 # don't delete comments
                 if "#" not in self[:i]:
-                    list.__delitem__(self, i)
+                    super().__delitem__(i)
 
-    def _coerce(self, inbound: TypeOptional[Union[str, List[Any]]]
-                ) -> Tuple[TypeOptional[Union[str, "UnspacedList"]],
-                           TypeOptional[Union[str, List[Any]]]]:
+    def _coerce(self, inbound: Any) -> Union[Tuple[List[Any], List[Any]],
+                                             Tuple["UnspacedList", List[Any]]]:
         """
         Coerce some inbound object to be appropriately usable in this object
 
@@ -150,28 +149,28 @@ class UnspacedList(List[TypeOptional[Union[str, "UnspacedList"]]]):
                 inbound = UnspacedList(inbound)
             return inbound, inbound.spaced
 
-    def insert(self, i: int, x: TypeOptional[Union[str, List[Any]]]) -> None:
+    def insert(self, i: int, x: Any) -> None:
         item, spaced_item = self._coerce(x)
         slicepos = self._spaced_position(i) if i < len(self) else len(self.spaced)
         self.spaced.insert(slicepos, spaced_item)
         if not spacey(item):
-            list.insert(self, i, item)
+            super().insert(i, item)
         self.dirty = True
 
-    def append(self, x: TypeOptional[Union[str, List[Any]]]) -> None:
+    def append(self, x: Any) -> None:
         item, spaced_item = self._coerce(x)
         self.spaced.append(spaced_item)
         if not spacey(item):
-            list.append(self, item)
+            super().append(item)
         self.dirty = True
 
-    def extend(self, x: TypeOptional[Union[str, List[Any]]]) -> None:
+    def extend(self, x: Any) -> None:
         item, spaced_item = self._coerce(x)
         self.spaced.extend(spaced_item)
-        list.extend(self, item)
+        super().extend(item)
         self.dirty = True
 
-    def __add__(self, other: TypeOptional[Union[str, List[Any]]]) -> "UnspacedList":
+    def __add__(self, other: Any) -> "UnspacedList":
         new_list = copy.deepcopy(self)
         new_list.extend(other)
         new_list.dirty = True
@@ -199,14 +198,14 @@ class UnspacedList(List[TypeOptional[Union[str, "UnspacedList"]]]):
         item, spaced_item = self._coerce(value)
         self.spaced.__setitem__(self._spaced_position(i), spaced_item)
         if not spacey(item):
-            list.__setitem__(self, i, item)
+            super().__setitem__(i, item)
         self.dirty = True
 
     def __delitem__(self, i: Union[SupportsIndex, slice]) -> None:
         if isinstance(i, slice):
             raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
         self.spaced.__delitem__(self._spaced_position(i))
-        list.__delitem__(self, i)
+        super().__delitem__(i)
         self.dirty = True
 
     def __deepcopy__(self, memo: Any) -> "UnspacedList":
