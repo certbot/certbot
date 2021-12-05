@@ -1,7 +1,9 @@
 """DNS Authenticator for Linode."""
 import logging
 import re
-from typing import Optional, Any, Callable
+from typing import Any
+from typing import Callable
+from typing import Optional
 from typing import Union
 
 from lexicon.providers import linode

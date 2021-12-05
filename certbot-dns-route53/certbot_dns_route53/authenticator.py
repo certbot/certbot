@@ -1,6 +1,6 @@
 """Shim around `~certbot_dns_route53._internal.dns_route53` for backwards compatibility."""
-import warnings
 from typing import Any
+import warnings
 
 from certbot_dns_route53._internal import dns_route53
 

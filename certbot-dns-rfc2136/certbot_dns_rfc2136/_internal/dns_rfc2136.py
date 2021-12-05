@@ -1,6 +1,8 @@
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
 import logging
-from typing import Optional, Any, Callable
+from typing import Any
+from typing import Callable
+from typing import Optional
 
 import dns.flags
 import dns.message

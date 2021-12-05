@@ -1,6 +1,8 @@
 """DNS Authenticator for CloudXNS DNS."""
 import logging
-from typing import Optional, Any, Callable
+from typing import Any
+from typing import Callable
+from typing import Optional
 
 from lexicon.providers import cloudxns
 from requests import HTTPError

@@ -1,6 +1,8 @@
 """DNS Authenticator for Sakura Cloud DNS."""
 import logging
-from typing import Optional, Any, Callable
+from typing import Any
+from typing import Callable
+from typing import Optional
 
 from lexicon.providers import sakuracloud
 from requests import HTTPError

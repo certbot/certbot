@@ -1,6 +1,8 @@
 """DNS Authenticator for Gehirn Infrastructure Service DNS."""
 import logging
-from typing import Optional, Any, Callable
+from typing import Any
+from typing import Callable
+from typing import Optional
 
 from lexicon.providers import gehirn
 from requests import HTTPError

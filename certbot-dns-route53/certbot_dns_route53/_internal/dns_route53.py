@@ -2,8 +2,10 @@
 import collections
 import logging
 import time
-from typing import DefaultDict, Any, Iterable
+from typing import Any
+from typing import DefaultDict
 from typing import Dict
+from typing import Iterable
 from typing import List
 
 import boto3

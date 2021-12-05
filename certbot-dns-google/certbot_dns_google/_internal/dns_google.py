@@ -1,7 +1,10 @@
 """DNS Authenticator for Google Cloud DNS."""
 import json
 import logging
-from typing import Callable, Optional, Any, Dict
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Optional
 
 from googleapiclient import discovery
 from googleapiclient import errors as googleapiclient_errors
