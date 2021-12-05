@@ -633,7 +633,7 @@ class NginxConfigurator(common.Configurator):
         """
         all_vhosts = self.parser.get_vhosts()
 
-        def _vhost_matches(vhost, port):
+        def _vhost_matches(vhost: obj.VirtualHost, port: str) -> bool:
             return self._vhost_listening_on_port_no_ssl(vhost, port)
 
         matching_vhosts = [vhost for vhost in all_vhosts if _vhost_matches(vhost, port)]
@@ -1096,7 +1096,7 @@ class NginxConfigurator(common.Configurator):
         )
 
     def auth_hint(self,  # pragma: no cover
-                  failed_achalls: Iterable[achallenges.AnnotatedChallenge]):
+                  failed_achalls: Iterable[achallenges.AnnotatedChallenge]) -> str:
         return (
             "The Certificate Authority failed to verify the temporary nginx configuration changes "
             "made by Certbot. Ensure the listed domains point to this nginx server and that it is "

@@ -103,7 +103,7 @@ class RawNginxDumper:
                     semicolon = ""
                 yield "".join(item) + semicolon
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return the parsed block as a string."""
         return ''.join(self)
 
@@ -220,7 +220,7 @@ class UnspacedList(List[Any]):
             return True
         return any((isinstance(x, UnspacedList) and x.is_dirty() for x in self))
 
-    def _spaced_position(self, idx: SupportsIndex):
+    def _spaced_position(self, idx: SupportsIndex) -> int:
         """Convert from indexes in the unspaced list to positions in the spaced one"""
         int_idx = idx.__index__()
         pos = spaces = 0

@@ -436,7 +436,10 @@ def _parse_ssl_options(ssl_options: Optional[str]) -> List[Any]:
             logger.warning("Could not parse file: %s due to %s", ssl_options, err)
     return []
 
-def _do_for_subarray(entry, condition, func, path=None):
+
+def _do_for_subarray(entry: List[Any], condition: Callable[[List[Any]], bool],
+                     func: Callable[[List[Any], List[int]], None],
+                     path: Optional[List[int]] = None) -> None:
     """Executes a function for a subarray of a nested array if it matches
     the given condition.
 
@@ -455,7 +458,7 @@ def _do_for_subarray(entry, condition, func, path=None):
                 _do_for_subarray(item, condition, func, path + [index])
 
 
-def get_best_match(target_name, names):
+def get_best_match(target_name: str, names: Iterable[str]) -> Tuple[Optional[str], Optional[str]]:
     """Finds the best match for target_name out of names using the Nginx
     name-matching rules (exact > longest wildcard starting with * >
     longest wildcard ending with * > regex).
@@ -484,29 +487,29 @@ def get_best_match(target_name, names):
     if exact:
         # There can be more than one exact match; e.g. eff.org, .eff.org
         match = min(exact, key=len)
-        return ('exact', match)
+        return 'exact', match
     if wildcard_start:
         # Return the longest wildcard
         match = max(wildcard_start, key=len)
-        return ('wildcard_start', match)
+        return 'wildcard_start', match
     if wildcard_end:
         # Return the longest wildcard
         match = max(wildcard_end, key=len)
-        return ('wildcard_end', match)
+        return 'wildcard_end', match
     if regex:
         # Just return the first one for now
         match = regex[0]
-        return ('regex', match)
+        return 'regex', match
 
-    return (None, None)
+    return None, None
 
 
-def _exact_match(target_name, name):
+def _exact_match(target_name: str, name: str) -> bool:
     target_lower = target_name.lower()
     return name.lower() in (target_lower, '.' + target_lower)
 
 
-def _wildcard_match(target_name, name, start):
+def _wildcard_match(target_name: str, name: str, start: bool) -> bool:
     # Degenerate case
     if name == '*':
         return True
@@ -531,7 +534,7 @@ def _wildcard_match(target_name, name, start):
     return target_name_lower.endswith('.' + name_lower)
 
 
-def _regex_match(target_name, name):
+def _regex_match(target_name: str, name: str) -> bool:
     # Must start with a tilde
     if len(name) < 2 or name[0] != '~':
         return False
@@ -539,7 +542,7 @@ def _regex_match(target_name, name):
     # After tilde is a perl-compatible regex
     try:
         regex = re.compile(name[1:])
-        return re.match(regex, target_name)
+        return bool(re.match(regex, target_name))
     except re.error:  # pragma: no cover
         # perl-compatible regexes are sometimes not recognized by python
         return False
@@ -741,7 +744,7 @@ def _update_or_add_directive(block: UnspacedList, directive: Sequence[Any],
     _add_directive(block, directive, insert_at_top)
 
 
-def _is_certbot_comment(directive: Sequence[Any]):
+def _is_certbot_comment(directive: Sequence[Any]) -> bool:
     return '#' in directive and COMMENT in directive
 
 
