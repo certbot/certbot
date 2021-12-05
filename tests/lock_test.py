@@ -9,7 +9,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Tuple, List, Sequence, Iterable
+from typing import Iterable
+from typing import List
+from typing import Sequence
+from typing import Tuple
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
