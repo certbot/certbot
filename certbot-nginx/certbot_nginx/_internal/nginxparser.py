@@ -9,8 +9,11 @@ from typing import Iterable
 from typing import Iterator
 from typing import List
 from typing import Tuple
+from typing import TYPE_CHECKING
 from typing import Union
-from typing_extensions import SupportsIndex  # typing.SupportsIndex not supported on Python 3.6
+
+if TYPE_CHECKING:
+    from typing_extensions import SupportsIndex  # typing.SupportsIndex not supported on Python 3.6
 
 from pyparsing import Combine
 from pyparsing import Forward
@@ -205,7 +208,7 @@ class UnspacedList(List[Any]):
     def __setslice__(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
 
-    def __setitem__(self, i: Union[SupportsIndex, slice], value: Any) -> None:
+    def __setitem__(self, i: Union["SupportsIndex", slice], value: Any) -> None:
         if isinstance(i, slice):
             raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
         item, spaced_item = self._coerce(value)
@@ -214,7 +217,7 @@ class UnspacedList(List[Any]):
             super().__setitem__(i, item)
         self.dirty = True
 
-    def __delitem__(self, i: Union[SupportsIndex, slice]) -> None:
+    def __delitem__(self, i: Union["SupportsIndex", slice]) -> None:
         if isinstance(i, slice):
             raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
         self.spaced.__delitem__(self._spaced_position(i))
@@ -233,7 +236,7 @@ class UnspacedList(List[Any]):
             return True
         return any((isinstance(x, UnspacedList) and x.is_dirty() for x in self))
 
-    def _spaced_position(self, idx: SupportsIndex) -> int:
+    def _spaced_position(self, idx: "SupportsIndex") -> int:
         """Convert from indexes in the unspaced list to positions in the spaced one"""
         int_idx = idx.__index__()
         pos = spaces = 0
