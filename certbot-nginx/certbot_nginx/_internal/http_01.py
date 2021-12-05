@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 from acme import challenges
 from acme.challenges import HTTP01Response
-from certbot import achallenges
 from certbot import errors
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
 from certbot.compat import os
@@ -142,7 +141,7 @@ class NginxHttp01(common.ChallengePerformer):
             addresses = [Addr.fromstring(default_addr)]
             logger.debug("Using default address %s for authentication.",
                         default_addr)
-            
+
         return [address for address in addresses if address]
 
     def _get_validation_path(self, achall: KeyAuthorizationAnnotatedChallenge) -> str:

@@ -142,7 +142,7 @@ class UnspacedList(List[Any]):
         :rtype: tuple
 
         """
-        if not isinstance(inbound, list):                      # str or None
+        if not isinstance(inbound, list):  # str or None
             return inbound, inbound
         else:
             if not hasattr(inbound, "spaced"):
@@ -150,6 +150,7 @@ class UnspacedList(List[Any]):
             return inbound, inbound.spaced
 
     def insert(self, i: int, x: Any) -> None:
+        """Insert object before index."""
         item, spaced_item = self._coerce(x)
         slicepos = self._spaced_position(i) if i < len(self) else len(self.spaced)
         self.spaced.insert(slicepos, spaced_item)
@@ -158,6 +159,7 @@ class UnspacedList(List[Any]):
         self.dirty = True
 
     def append(self, x: Any) -> None:
+        """Append object to the end of the list."""
         item, spaced_item = self._coerce(x)
         self.spaced.append(spaced_item)
         if not spacey(item):
@@ -165,6 +167,7 @@ class UnspacedList(List[Any]):
         self.dirty = True
 
     def extend(self, x: Any) -> None:
+        """Extend list by appending elements from the iterable."""
         item, spaced_item = self._coerce(x)
         self.spaced.extend(spaced_item)
         super().extend(item)
@@ -177,15 +180,19 @@ class UnspacedList(List[Any]):
         return new_list
 
     def pop(self, *args: Any, **kwargs: Any) -> None:
+        """Function pop() is not implemented for UnspacedList"""
         raise NotImplementedError("UnspacedList.pop() not yet implemented")
 
     def remove(self, *args: Any, **kwargs: Any) -> None:
+        """Function remove() is not implemented for UnspacedList"""
         raise NotImplementedError("UnspacedList.remove() not yet implemented")
 
     def reverse(self) -> None:
+        """Function reverse() is not implemented for UnspacedList"""
         raise NotImplementedError("UnspacedList.reverse() not yet implemented")
 
-    def sort(self, *args: Any, **kwargs: Any) -> None:
+    def sort(self, *_args: Any, **_kwargs: Any) -> None:
+        """Function sort() is not implemented for UnspacedList"""
         super().sort()
         raise NotImplementedError("UnspacedList.sort() not yet implemented")
 
