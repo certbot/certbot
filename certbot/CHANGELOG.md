@@ -10,6 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The function certbot.util.parse_loose_version was added to parse version
   strings in the same way as the now deprecated distutils.version.LooseVersion
   class from the Python standard library.
+* Added `--issuance-timeout`. This option specifies how long (in seconds) Certbot will wait
+  for the server to issue a certificate.
 
 ### Changed
 
