@@ -686,15 +686,17 @@ def _add_directive(block: UnspacedList, directive: Sequence[Any], insert_at_top:
 
         for included_directive in included_directives:
             included_dir_loc = _find_location(block, included_directive[0])
-            if not included_dir_loc:
-                raise errors.Error(f"Could not find directive {included_directive[0]}")
             included_dir_name = included_directive[0]
             if (not _is_whitespace_or_comment(included_directive)
                     and not can_append(included_dir_loc, included_dir_name)):
-                if block[included_dir_loc] != included_directive:
-                    raise errors.MisconfigurationError(err_fmt.format(included_directive,
-                        block[included_dir_loc]))
-                _comment_out_directive(block, included_dir_loc, directive[1])
+
+                # By construction of can_append(), included_dir_loc cannot be None at that point
+                resolved_included_dir_loc = cast(int, included_dir_loc)
+
+                if block[resolved_included_dir_loc] != included_directive:
+                    raise errors.MisconfigurationError(err_fmt.format(
+                        included_directive, block[resolved_included_dir_loc]))
+                _comment_out_directive(block, resolved_included_dir_loc, directive[1])
 
     if can_append(location, directive_name):
         if insert_at_top:
