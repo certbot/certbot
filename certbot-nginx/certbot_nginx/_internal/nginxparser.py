@@ -12,9 +12,6 @@ from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
 
-if TYPE_CHECKING:
-    from typing_extensions import SupportsIndex  # typing.SupportsIndex not supported on Python 3.6
-
 from pyparsing import Combine
 from pyparsing import Forward
 from pyparsing import Group
@@ -27,6 +24,9 @@ from pyparsing import restOfLine
 from pyparsing import stringEnd
 from pyparsing import White
 from pyparsing import ZeroOrMore
+
+if TYPE_CHECKING:
+    from typing_extensions import SupportsIndex  # typing.SupportsIndex not supported on Python 3.6
 
 logger = logging.getLogger(__name__)
 
