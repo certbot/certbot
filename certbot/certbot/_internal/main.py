@@ -921,6 +921,55 @@ def update_account(config: configuration.NamespaceConfig,
     return None
 
 
+def fetch_account(config: configuration.NamespaceConfig,
+                   unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
+    """Fetch account info on the server.
+
+    :param config: Configuration object
+    :type config: configuration.NamespaceConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: plugins_disco.PluginsRegistry
+
+    :returns: `None`
+    :rtype: None
+
+    """
+    # Portion of _determine_account logic to see whether accounts already
+    # exist or not.
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+
+    if not accounts:
+        return "Could not find an existing account to fetch."
+
+    acc, acme = _determine_account(config)
+    cb_client = client.Client(config, acc, None, None, acme=acme)
+
+    if not cb_client.acme:
+        raise errors.Error("ACME client is not set.")
+
+    regr = cb_client.acme.query_registration(acc.regr)
+
+    phones = []
+    emails = []
+
+    for contact in regr.body.contact:
+        if contact.startswith('tel:'):
+            phones.append(contact[4:])
+        if contact.startswith('mailto:'):
+            emails.append(contact[7:])
+
+    display_util.notify("Phone number{} associated with account: {}".format(
+                            "s" if len(phones) > 1 else "",
+                            ", ".join(phones) if len(phones) > 0 else "none"))
+    display_util.notify("Email address{} associated with account: {}".format(
+                            "es" if len(emails) > 1 else "",
+                            ", ".join(emails) if len(emails) > 0 else "none"))
+
+    return None
+
+
 def _cert_name_from_config_or_lineage(config: configuration.NamespaceConfig,
                                       lineage: Optional[storage.RenewableCert]) -> Optional[str]:
     if lineage:
