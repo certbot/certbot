@@ -2070,5 +2070,133 @@ class UpdateAccountTest(test_util.ConfigTestCase):
             'Your e-mail address was updated to user@example.com,user@example.org.')
 
 
+class FetchAccountTest(test_util.ConfigTestCase):
+    """Tests for certbot._internal.main.fetch_account"""
+
+    def setUp(self):
+        patches = {
+            'account': mock.patch('certbot._internal.main.account'),
+            'atexit': mock.patch('certbot.util.atexit'),
+            'client': mock.patch('certbot._internal.main.client'),
+            'determine_account': mock.patch('certbot._internal.main._determine_account'),
+            'notify': mock.patch('certbot._internal.main.display_util.notify'),
+            'util': test_util.patch_display_util()
+        }
+        self.mocks = { k: patches[k].start() for k in patches }
+        for patch in patches.values():
+            self.addCleanup(patch.stop)
+
+        return super().setUp()
+
+    def _call(self, args):
+        with mock.patch('certbot._internal.main.sys.stdout'), \
+             mock.patch('certbot._internal.main.sys.stderr'):
+            args = ['--config-dir', self.config.config_dir,
+                    '--work-dir', self.config.work_dir,
+                    '--logs-dir', self.config.logs_dir, '--text'] + args
+            return main.main(args[:]) # NOTE: parser can alter its args!
+
+    def _prepare_mock_account(self):
+        mock_storage = mock.MagicMock()
+        mock_account = mock.MagicMock()
+        mock_regr = mock.MagicMock()
+        mock_storage.find_all.return_value = [mock_account]
+        self.mocks['account'].AccountFileStorage.return_value = mock_storage
+        mock_account.regr.body = mock_regr.body
+        self.mocks['determine_account'].return_value = (mock_account, mock.MagicMock())
+
+    def _test_fetch_account(self, contact):
+        self._prepare_mock_account()
+        mock_client = mock.MagicMock()
+        mock_regr = mock.MagicMock()
+        mock_regr.body.contact = contact
+        mock_client.acme.query_registration.return_value = mock_regr
+        self.mocks['client'].Client.return_value = mock_client
+
+        self._call(['fetch_account'])
+
+        self.assertEqual(mock_client.acme.query_registration.call_count, 1)
+
+    def test_no_existing_accounts(self):
+        """Test that no existing account is handled correctly"""
+        mock_storage = mock.MagicMock()
+        mock_storage.find_all.return_value = []
+        self.mocks['account'].AccountFileStorage.return_value = mock_storage
+        self.assertEqual(self._call(['fetch_account']),
+                         'Could not find an existing account to fetch.')
+
+    def test_no_contacts(self):
+        self._test_fetch_account(())
+
+        self.mocks['notify'].assert_has_calls([
+            mock.call('Phone number associated with account: none'),
+            mock.call('Email address associated with account: none')])
+
+    def test_single_email(self):
+        contact = ('mailto:foo@example.com',)
+        self._test_fetch_account(contact)
+
+        self.mocks['notify'].assert_has_calls([
+            mock.call('Phone number associated with account: none'),
+            mock.call('Email address associated with account: foo@example.com')])
+
+    def test_double_email(self):
+        contact = ('mailto:foo@example.com', 'mailto:bar@example.com')
+        self._test_fetch_account(contact)
+
+        self.mocks['notify'].assert_has_calls([
+            mock.call('Phone number associated with account: none'),
+            mock.call('Email addresses associated with account: foo@example.com, bar@example.com')])
+
+    def test_single_phone(self):
+        contact = ('tel:+1-415-555-0101',)
+        self._test_fetch_account(contact)
+
+        self.mocks['notify'].assert_has_calls([
+            mock.call('Phone number associated with account: +1-415-555-0101'),
+            mock.call('Email address associated with account: none')])
+
+    def test_double_phone(self):
+        contact = ('tel:+1-415-555-0101', 'tel:+1-415-555-0102')
+        self._test_fetch_account(contact)
+
+        self.mocks['notify'].assert_has_calls([
+            mock.call('Phone numbers associated with account: +1-415-555-0101, +1-415-555-0102'),
+            mock.call('Email address associated with account: none')])
+
+    def test_combined_single_mail_and_single_phone(self):
+        contact = ('mailto:foo@example.com', 'tel:+1-415-555-0101')
+        self._test_fetch_account(contact)
+
+        self.mocks['notify'].assert_has_calls([
+            mock.call('Phone number associated with account: +1-415-555-0101'),
+            mock.call('Email address associated with account: foo@example.com')])
+
+    def test_combined_double_mail_and_single_phone(self):
+        contact = ('mailto:foo@example.com', 'mailto:bar@example.com', 'tel:+1-415-555-0101')
+        self._test_fetch_account(contact)
+
+        self.mocks['notify'].assert_has_calls([
+            mock.call('Phone number associated with account: +1-415-555-0101'),
+            mock.call('Email addresses associated with account: foo@example.com, bar@example.com')])
+
+    def test_combined_single_mail_and_double_phone(self):
+        contact = ('mailto:foo@example.com', 'tel:+1-415-555-0101', 'tel:+1-415-555-0102')
+        self._test_fetch_account(contact)
+
+        self.mocks['notify'].assert_has_calls([
+            mock.call('Phone numbers associated with account: +1-415-555-0101, +1-415-555-0102'),
+            mock.call('Email address associated with account: foo@example.com')])
+
+    def test_combined_double_mail_and_double_phone(self):
+        contact = ('mailto:foo@example.com', 'mailto:bar@example.com',
+                   'tel:+1-415-555-0101', 'tel:+1-415-555-0102')
+        self._test_fetch_account(contact)
+
+        self.mocks['notify'].assert_has_calls([
+            mock.call('Phone numbers associated with account: +1-415-555-0101, +1-415-555-0102'),
+            mock.call('Email addresses associated with account: foo@example.com, bar@example.com')])
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
