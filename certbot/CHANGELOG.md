@@ -12,6 +12,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   class from the Python standard library.
 * Added `--issuance-timeout`. This option specifies how long (in seconds) Certbot will wait
   for the server to issue a certificate.
+* Added `fetch_account` subcommand, which will fetch the account information from the ACME
+  server and display the stored contact information.
 
 ### Changed
 
