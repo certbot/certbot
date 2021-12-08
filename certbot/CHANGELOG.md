@@ -6,7 +6,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added `fetch_account` subcommand, which will fetch the account information from the ACME
+  server. By default it will display the contact information associated with the ACME account.
+  When the `--verbose` option is used, it will also show the ACME account URI and the ACME
+  account thumbprint.
 
 ### Changed
 
@@ -28,8 +31,6 @@ More details about these changes can be found on our GitHub repo.
   class from the Python standard library.
 * Added `--issuance-timeout`. This option specifies how long (in seconds) Certbot will wait
   for the server to issue a certificate.
-* Added `fetch_account` subcommand, which will fetch the account information from the ACME
-  server and display the stored contact information.
 
 ### Changed
 
