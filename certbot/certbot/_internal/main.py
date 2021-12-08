@@ -15,6 +15,7 @@ from typing import TypeVar
 from typing import Union
 
 import configobj
+from cryptography.hazmat.primitives.hashes import SHA256
 import josepy as jose
 import zope.component
 import zope.interface
@@ -950,6 +951,13 @@ def fetch_account(config: configuration.NamespaceConfig,
         raise errors.Error("ACME client is not set.")
 
     regr = cb_client.acme.query_registration(acc.regr)
+
+    if config.verbose_count > 0:
+        display_util.notify(f"Account URI: {regr.uri}")
+
+        thumbprint = jose.b64encode(regr.body.key.thumbprint(
+            hash_function=SHA256)).decode()
+        display_util.notify(f"Account thumbprint: {thumbprint}")
 
     phones = []
     emails = []
