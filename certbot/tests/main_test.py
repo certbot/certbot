@@ -2105,15 +2105,22 @@ class FetchAccountTest(test_util.ConfigTestCase):
         mock_account.regr.body = mock_regr.body
         self.mocks['determine_account'].return_value = (mock_account, mock.MagicMock())
 
-    def _test_fetch_account(self, contact):
+    def _test_fetch_account(self, contact, verbose=False):
         self._prepare_mock_account()
         mock_client = mock.MagicMock()
         mock_regr = mock.MagicMock()
         mock_regr.body.contact = contact
+        mock_regr.uri = 'https://www.letsencrypt-demo.org/acme/reg/1'
+        mock_regr.body.key.thumbprint.return_value = b'foobarbaz'
         mock_client.acme.query_registration.return_value = mock_regr
         self.mocks['client'].Client.return_value = mock_client
 
-        self._call(['fetch_account'])
+        args = ['fetch_account']
+
+        if verbose:
+            args.append('-v')
+
+        self._call(args)
 
         self.assertEqual(mock_client.acme.query_registration.call_count, 1)
 
@@ -2128,6 +2135,7 @@ class FetchAccountTest(test_util.ConfigTestCase):
     def test_no_contacts(self):
         self._test_fetch_account(())
 
+        self.assertEqual(self.mocks['notify'].call_count, 2)
         self.mocks['notify'].assert_has_calls([
             mock.call('Phone number associated with account: none'),
             mock.call('Email address associated with account: none')])
@@ -2136,6 +2144,7 @@ class FetchAccountTest(test_util.ConfigTestCase):
         contact = ('mailto:foo@example.com',)
         self._test_fetch_account(contact)
 
+        self.assertEqual(self.mocks['notify'].call_count, 2)
         self.mocks['notify'].assert_has_calls([
             mock.call('Phone number associated with account: none'),
             mock.call('Email address associated with account: foo@example.com')])
@@ -2144,6 +2153,7 @@ class FetchAccountTest(test_util.ConfigTestCase):
         contact = ('mailto:foo@example.com', 'mailto:bar@example.com')
         self._test_fetch_account(contact)
 
+        self.assertEqual(self.mocks['notify'].call_count, 2)
         self.mocks['notify'].assert_has_calls([
             mock.call('Phone number associated with account: none'),
             mock.call('Email addresses associated with account: foo@example.com, bar@example.com')])
@@ -2152,6 +2162,7 @@ class FetchAccountTest(test_util.ConfigTestCase):
         contact = ('tel:+1-415-555-0101',)
         self._test_fetch_account(contact)
 
+        self.assertEqual(self.mocks['notify'].call_count, 2)
         self.mocks['notify'].assert_has_calls([
             mock.call('Phone number associated with account: +1-415-555-0101'),
             mock.call('Email address associated with account: none')])
@@ -2160,6 +2171,7 @@ class FetchAccountTest(test_util.ConfigTestCase):
         contact = ('tel:+1-415-555-0101', 'tel:+1-415-555-0102')
         self._test_fetch_account(contact)
 
+        self.assertEqual(self.mocks['notify'].call_count, 2)
         self.mocks['notify'].assert_has_calls([
             mock.call('Phone numbers associated with account: +1-415-555-0101, +1-415-555-0102'),
             mock.call('Email address associated with account: none')])
@@ -2168,6 +2180,7 @@ class FetchAccountTest(test_util.ConfigTestCase):
         contact = ('mailto:foo@example.com', 'tel:+1-415-555-0101')
         self._test_fetch_account(contact)
 
+        self.assertEqual(self.mocks['notify'].call_count, 2)
         self.mocks['notify'].assert_has_calls([
             mock.call('Phone number associated with account: +1-415-555-0101'),
             mock.call('Email address associated with account: foo@example.com')])
@@ -2176,6 +2189,7 @@ class FetchAccountTest(test_util.ConfigTestCase):
         contact = ('mailto:foo@example.com', 'mailto:bar@example.com', 'tel:+1-415-555-0101')
         self._test_fetch_account(contact)
 
+        self.assertEqual(self.mocks['notify'].call_count, 2)
         self.mocks['notify'].assert_has_calls([
             mock.call('Phone number associated with account: +1-415-555-0101'),
             mock.call('Email addresses associated with account: foo@example.com, bar@example.com')])
@@ -2184,6 +2198,7 @@ class FetchAccountTest(test_util.ConfigTestCase):
         contact = ('mailto:foo@example.com', 'tel:+1-415-555-0101', 'tel:+1-415-555-0102')
         self._test_fetch_account(contact)
 
+        self.assertEqual(self.mocks['notify'].call_count, 2)
         self.mocks['notify'].assert_has_calls([
             mock.call('Phone numbers associated with account: +1-415-555-0101, +1-415-555-0102'),
             mock.call('Email address associated with account: foo@example.com')])
@@ -2193,9 +2208,20 @@ class FetchAccountTest(test_util.ConfigTestCase):
                    'tel:+1-415-555-0101', 'tel:+1-415-555-0102')
         self._test_fetch_account(contact)
 
+        self.assertEqual(self.mocks['notify'].call_count, 2)
         self.mocks['notify'].assert_has_calls([
             mock.call('Phone numbers associated with account: +1-415-555-0101, +1-415-555-0102'),
             mock.call('Email addresses associated with account: foo@example.com, bar@example.com')])
+
+    def test_account_uri_thumbprint(self):
+        self._test_fetch_account((), verbose=True)
+
+        self.assertEqual(self.mocks['notify'].call_count, 4)
+        self.mocks['notify'].assert_has_calls([
+            mock.call('Account URI: https://www.letsencrypt-demo.org/acme/reg/1'),
+            mock.call('Account thumbprint: Zm9vYmFyYmF6'),
+            mock.call('Phone number associated with account: none'),
+            mock.call('Email address associated with account: none')])
 
 
 if __name__ == '__main__':
