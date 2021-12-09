@@ -1,9 +1,15 @@
 """New interface style Certbot enhancements"""
 import abc
 from typing import Any
+from typing import Callable
 from typing import Dict
+from typing import Generator
+from typing import Iterable
 from typing import List
+from typing import Optional
 
+from certbot import configuration
+from certbot import interfaces
 from certbot._internal import constants
 
 ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]
@@ -17,7 +23,9 @@ List of expected options parameters:
 
 """
 
-def enabled_enhancements(config):
+
+def enabled_enhancements(
+        config: configuration.NamespaceConfig) -> Generator[Dict[str, Any], None, None]:
     """
     Generator to yield the enabled new style enhancements.
 
@@ -28,7 +36,8 @@ def enabled_enhancements(config):
         if getattr(config, enh["cli_dest"]):
             yield enh
 
-def are_requested(config):
+
+def are_requested(config: configuration.NamespaceConfig) -> bool:
     """
     Checks if one or more of the requested enhancements are those of the new
     enhancement interfaces.
@@ -38,7 +47,9 @@ def are_requested(config):
     """
     return any(enabled_enhancements(config))
 
-def are_supported(config, installer):
+
+def are_supported(config: configuration.NamespaceConfig,
+                  installer: Optional[interfaces.Installer]) -> bool:
     """
     Checks that all of the requested enhancements are supported by the
     installer.
@@ -57,7 +68,10 @@ def are_supported(config, installer):
             return False
     return True
 
-def enable(lineage, domains, installer, config):
+
+def enable(lineage: Optional[interfaces.RenewableCert], domains: Iterable[str],
+           installer: Optional[interfaces.Installer],
+           config: configuration.NamespaceConfig) -> None:
     """
     Run enable method for each requested enhancement that is supported.
 
@@ -73,10 +87,12 @@ def enable(lineage, domains, installer, config):
     :param config: Configuration.
     :type config: certbot.configuration.NamespaceConfig
     """
-    for enh in enabled_enhancements(config):
-        getattr(installer, enh["enable_function"])(lineage, domains)
+    if installer:
+        for enh in enabled_enhancements(config):
+            getattr(installer, enh["enable_function"])(lineage, domains)
 
-def populate_cli(add):
+
+def populate_cli(add: Callable[..., None]) -> None:
     """
     Populates the command line flags for certbot._internal.cli.HelpfulParser
 
@@ -116,7 +132,7 @@ class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def update_autohsts(self, lineage, *args, **kwargs):
+    def update_autohsts(self, lineage: interfaces.RenewableCert, *args: Any, **kwargs: Any) -> None:
         """
         Gets called for each lineage every time Certbot is run with 'renew' verb.
         Implementation of this method should increase the max-age value.
@@ -130,7 +146,7 @@ class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def deploy_autohsts(self, lineage, *args, **kwargs):
+    def deploy_autohsts(self, lineage: interfaces.RenewableCert, *args: Any, **kwargs: Any) -> None:
         """
         Gets called for a lineage when its certificate is successfully renewed.
         Long max-age value should be set in implementation of this method.
@@ -140,7 +156,8 @@ class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def enable_autohsts(self, lineage, domains, *args, **kwargs):
+    def enable_autohsts(self, lineage: Optional[interfaces.RenewableCert], domains: Iterable[str],
+                        *args: Any, **kwargs: Any) -> None:
         """
         Enables the AutoHSTS enhancement, installing
         Strict-Transport-Security header with a low initial value to be increased
@@ -152,6 +169,7 @@ class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
         :param domains: List of domains in certificate to enhance
         :type domains: `list` of `str`
         """
+
 
 # This is used to configure internal new style enhancements in Certbot. These
 # enhancement interfaces need to be defined in this file. Please do not modify

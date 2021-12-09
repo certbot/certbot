@@ -4,6 +4,7 @@ import io
 import logging
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 
 from acme import challenges
 from certbot import achallenges
@@ -12,6 +13,9 @@ from certbot.compat import os
 from certbot.plugins import common
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
+
+if TYPE_CHECKING:
+    from certbot_nginx._internal.configurator import NginxConfigurator
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +40,9 @@ class NginxHttp01(common.ChallengePerformer):
 
     """
 
-    def __init__(self, configurator):
+    def __init__(self, configurator: "NginxConfigurator") -> None:
         super().__init__(configurator)
+        self.configurator: "NginxConfigurator"
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
 

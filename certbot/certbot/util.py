@@ -123,7 +123,7 @@ def run_script(params: List[str], log: Callable[[str], None]=logger.error) -> Tu
     return proc.stdout, proc.stderr
 
 
-def exe_exists(exe: Optional[str]) -> bool:
+def exe_exists(exe: str) -> bool:
     """Determine whether path/name refers to an executable.
 
     :param str exe: Executable path or name
@@ -132,9 +132,6 @@ def exe_exists(exe: Optional[str]) -> bool:
     :rtype: bool
 
     """
-    if exe is None:
-        return False
-
     path, _ = os.path.split(exe)
     if path:
         return filesystem.is_executable(exe)

@@ -2,7 +2,7 @@
 # that script.
 apacheconfig==0.3.2
 asn1crypto==0.24.0
-astroid==2.8.5; python_version >= "3.6" and python_version < "4.0"
+astroid==2.8.6; python_version >= "3.6" and python_version < "4.0"
 atomicwrites==1.4.0; python_version >= "3.6" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.6" and python_full_version >= "3.4.0"
 attrs==21.2.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 backports.entry-points-selectable==1.1.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
@@ -17,7 +17,7 @@ colorama==0.4.4; python_version >= "3.6" and python_full_version < "3.0.0" and s
 configargparse==0.10.0
 configobj==5.0.6
 coverage==6.1.2; python_version >= "3.6" or python_version >= "3.6"
-cryptography==2.1.4
+cryptography==3.2.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 cython==0.29.24; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
 distlib==0.3.3; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0"
 distro==1.0.1
@@ -28,7 +28,7 @@ docker-pycreds==0.4.0; python_version >= "3.6" and python_full_version < "3.0.0"
 docker==3.7.3; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 dockerpty==0.4.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 docopt==0.6.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
-docutils==0.18; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
+docutils==0.18.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 execnet==1.9.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 filelock==3.4.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_version >= "3.6" and python_full_version >= "3.5.0" or python_version >= "3.6"
 funcsigs==0.4
@@ -53,7 +53,7 @@ mypy==0.910; python_version >= "3.6"
 ndg-httpsclient==0.3.2
 oauth2client==4.0.0
 packaging==21.2; python_version >= "3.6"
-paramiko==2.4.3; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
+paramiko==2.8.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 parsedatetime==2.4
 pbr==1.8.0
 pip==21.3.1; python_version >= "3.6"
@@ -83,7 +83,7 @@ pyyaml==3.13; python_version >= "3.6" and python_full_version < "3.0.0" or pytho
 requests-file==1.5.1; python_version >= "3.6"
 requests-toolbelt==0.9.1; python_version >= "3.6"
 requests==2.14.2
-rsa==4.7.2; python_version >= "3.6" and python_version < "4"
+rsa==4.8; python_version >= "3.6" and python_version < "4"
 s3transfer==0.1.13; python_version >= "3.6"
 setuptools==39.0.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
 six==1.11.0

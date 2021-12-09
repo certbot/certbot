@@ -10,6 +10,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from cryptography.x509 import ocsp as ocsp_lib
 import pytz
 
 from certbot import errors
@@ -19,15 +20,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
-
-
-try:
-    # Only cryptography>=2.5 has ocsp module
-    # and signature_hash_algorithm attribute in OCSPResponse class
-    from cryptography.x509 import ocsp as ocsp_lib  # pylint: disable=import-error
-    getattr(ocsp_lib.OCSPResponse, 'signature_hash_algorithm')
-except (ImportError, AttributeError):  # pragma: no cover
-    ocsp_lib = None  # type: ignore
 
 
 out = """Missing = in header key=value
@@ -139,8 +131,6 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(mock_log.info.call_count, 1)
 
 
-@unittest.skipIf(not ocsp_lib,
-                 reason='This class tests functionalities available only on cryptography>=2.5.0')
 class OSCPTestCryptography(unittest.TestCase):
     """
     OCSP revokation tests using Cryptography >= 2.4.0
