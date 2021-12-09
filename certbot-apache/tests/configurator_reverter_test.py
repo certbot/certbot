@@ -48,7 +48,7 @@ class ConfiguratorReverterTest(util.ApacheTest):
         self.config.reverter = mock_finalize
         self.config.save("Example Title")
 
-        self.assertTrue(mock_finalize.is_called)
+        self.assertIs(mock_finalize.is_called, True)
 
     def test_revert_challenge_config(self):
         mock_load = mock.Mock()

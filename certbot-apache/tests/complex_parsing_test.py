@@ -11,8 +11,7 @@ class ComplexParserTest(util.ParserTest):
     """Apache Parser Test."""
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super().setUp(
-            "complex_parsing", "complex_parsing")
+        super().setUp("complex_parsing", "complex_parsing")
 
         self.setup_variables()
         # This needs to happen after due to setup_variables not being run
@@ -78,12 +77,12 @@ class ComplexParserTest(util.ParserTest):
 
     def test_load_modules(self):
         """If only first is found, there is bad variable parsing."""
-        self.assertTrue("status_module" in self.parser.modules)
-        self.assertTrue("mod_status.c" in self.parser.modules)
+        self.assertIn("status_module", self.parser.modules)
+        self.assertIn("mod_status.c", self.parser.modules)
 
         # This is in an IfDefine
-        self.assertTrue("ssl_module" in self.parser.modules)
-        self.assertTrue("mod_ssl.c" in self.parser.modules)
+        self.assertIn("ssl_module", self.parser.modules)
+        self.assertIn("mod_ssl.c", self.parser.modules)
 
     def verify_fnmatch(self, arg, hit=True):
         """Test if Include was correctly parsed."""
@@ -91,9 +90,9 @@ class ComplexParserTest(util.ParserTest):
         self.parser.add_dir(parser.get_aug_path(self.parser.loc["default"]),
                             "Include", [arg])
         if hit:
-            self.assertTrue(self.parser.find_dir("FNMATCH_DIRECTIVE"))
+            self.assertIs(self.parser.find_dir("FNMATCH_DIRECTIVE"), True)
         else:
-            self.assertFalse(self.parser.find_dir("FNMATCH_DIRECTIVE"))
+            self.assertIs(self.parser.find_dir("FNMATCH_DIRECTIVE"), False)
 
     # NOTE: Only run one test per function otherwise you will have
     # inf recursion

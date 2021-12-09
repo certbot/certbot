@@ -51,7 +51,7 @@ class ApacheHttp01Test(util.ApacheTest):
         self.http = ApacheHttp01(self.config)
 
     def test_empty_perform(self):
-        self.assertFalse(self.http.perform())
+        self.assertIs(self.http.perform(), False)
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_2(self, mock_enmod):
@@ -77,7 +77,7 @@ class ApacheHttp01Test(util.ApacheTest):
 
         self.http.prepare_http01_modules()
 
-        self.assertTrue(mock_enmod.called)
+        self.assertIs(mock_enmod.called, True)
         calls = mock_enmod.call_args_list
         other_calls = []
         for call in calls:
@@ -186,7 +186,7 @@ class ApacheHttp01Test(util.ApacheTest):
     def common_perform_test(self, achalls, vhosts):
         """Tests perform with the given achalls."""
         challenge_dir = self.http.challenge_dir
-        self.assertFalse(os.path.exists(challenge_dir))
+        self.assertIs(os.path.exists(challenge_dir), False)
         for achall in achalls:
             self.http.add_chall(achall)
 
@@ -194,8 +194,8 @@ class ApacheHttp01Test(util.ApacheTest):
             achall.response(self.account_key) for achall in achalls]
         self.assertEqual(self.http.perform(), expected_response)
 
-        self.assertTrue(os.path.isdir(self.http.challenge_dir))
-        self.assertTrue(filesystem.has_min_permissions(self.http.challenge_dir, 0o755))
+        self.assertIs(os.path.isdir(self.http.challenge_dir), True)
+        self.assertIs(filesystem.has_min_permissions(self.http.challenge_dir, 0o755), True)
         self._test_challenge_conf()
 
         for achall in achalls:
@@ -211,7 +211,7 @@ class ApacheHttp01Test(util.ApacheTest):
                                                 vhost.path)
             self.assertEqual(len(matches), 1)
 
-        self.assertTrue(os.path.exists(challenge_dir))
+        self.assertIs(os.path.exists(challenge_dir), True)
 
     @mock.patch("certbot_apache._internal.http_01.filesystem.makedirs")
     def test_failed_makedirs(self, mock_makedirs):
@@ -226,20 +226,20 @@ class ApacheHttp01Test(util.ApacheTest):
         with open(self.http.challenge_conf_post) as f:
             post_conf_contents = f.read()
 
-        self.assertTrue("RewriteEngine on" in pre_conf_contents)
-        self.assertTrue("RewriteRule" in pre_conf_contents)
+        self.assertIn("RewriteEngine on", pre_conf_contents)
+        self.assertIn("RewriteRule", pre_conf_contents)
 
-        self.assertTrue(self.http.challenge_dir in post_conf_contents)
+        self.assertIn(self.http.challenge_dir, post_conf_contents)
         if self.config.version < (2, 4):
-            self.assertTrue("Allow from all" in post_conf_contents)
+            self.assertIn("Allow from all", post_conf_contents)
         else:
-            self.assertTrue("Require all granted" in post_conf_contents)
+            self.assertIn("Require all granted", post_conf_contents)
 
     def _test_challenge_file(self, achall):
         name = os.path.join(self.http.challenge_dir, achall.chall.encode("token"))
         validation = achall.validation(self.account_key)
 
-        self.assertTrue(filesystem.has_min_permissions(name, 0o644))
+        self.assertIs(filesystem.has_min_permissions(name, 0o644), True)
         with open(name, 'rb') as f:
             self.assertEqual(f.read(), validation.encode())
 
