@@ -5,13 +5,24 @@ import filecmp
 import logging
 import os
 import shutil
+import socket
 import sys
 import tempfile
 import time
+from typing import Any
+from typing import Generator
+from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Tuple
 
-import OpenSSL
+from certbot_compatibility_test import errors
+from certbot_compatibility_test import util
+from certbot_compatibility_test import validator
+from certbot_compatibility_test.configurators import common
+from certbot_compatibility_test.configurators.apache import common as a_common
+from certbot_compatibility_test.configurators.nginx import common as n_common
+from OpenSSL import crypto
 from urllib3.util import connection
 
 from acme import challenges
@@ -19,14 +30,10 @@ from acme import crypto_util
 from acme import messages
 from certbot import achallenges
 from certbot import errors as le_errors
-from certbot.display import util as display_util
 from certbot._internal.display import obj as display_obj
+from certbot.configuration import NamespaceConfig
+from certbot.display import util as display_util
 from certbot.tests import acme_util
-from certbot_compatibility_test import errors
-from certbot_compatibility_test import util
-from certbot_compatibility_test import validator
-from certbot_compatibility_test.configurators.apache import common as a_common
-from certbot_compatibility_test.configurators.nginx import common as n_common
 
 DESCRIPTION = """
 Tests Certbot plugins against different server configurations. It is
@@ -41,7 +48,7 @@ PLUGINS = {"apache": a_common.Proxy, "nginx": n_common.Proxy}
 logger = logging.getLogger(__name__)
 
 
-def test_authenticator(plugin, config, temp_dir):
+def test_authenticator(plugin: common.Proxy, config: str, temp_dir: str) -> bool:
     """Tests authenticator, returning True if the tests are successful"""
     backup = _create_backup(config, temp_dir)
 
@@ -96,7 +103,7 @@ def test_authenticator(plugin, config, temp_dir):
     return success
 
 
-def _create_achalls(plugin):
+def _create_achalls(plugin: common.Proxy) -> List[achallenges.AnnotatedChallenge]:
     """Returns a list of annotated challenges to test on plugin"""
     achalls = []
     names = plugin.get_testable_domain_names()
@@ -117,7 +124,7 @@ def _create_achalls(plugin):
     return achalls
 
 
-def test_installer(args, plugin, config, temp_dir):
+def test_installer(args: NamespaceConfig, plugin: common.Proxy, config: str, temp_dir: str) -> bool:
     """Tests plugin as an installer"""
     backup = _create_backup(config, temp_dir)
 
@@ -137,13 +144,12 @@ def test_installer(args, plugin, config, temp_dir):
     return names_match and success and good_rollback
 
 
-def test_deploy_cert(plugin, temp_dir, domains):
+def test_deploy_cert(plugin: common.Proxy, temp_dir: str, domains: List[str]) -> bool:
     """Tests deploy_cert returning True if the tests are successful"""
     cert = crypto_util.gen_ss_cert(util.KEY, domains)
     cert_path = os.path.join(temp_dir, "cert.pem")
     with open(cert_path, "wb") as f:
-        f.write(OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, cert))
+        f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
 
     for domain in domains:
         try:
@@ -171,7 +177,7 @@ def test_deploy_cert(plugin, temp_dir, domains):
     return success
 
 
-def test_enhancements(plugin, domains):
+def test_enhancements(plugin: common.Proxy, domains: Iterable[str]) -> bool:
     """Tests supported enhancements returning True if successful"""
     supported = plugin.supported_enhancements()
 
@@ -216,7 +222,7 @@ def test_enhancements(plugin, domains):
     return success
 
 
-def _save_and_restart(plugin, title=None):
+def _save_and_restart(plugin: common.Proxy, title: Optional[str] = None) -> bool:
     """Saves and restart the plugin, returning True if no errors occurred"""
     try:
         plugin.save(title)
@@ -227,7 +233,7 @@ def _save_and_restart(plugin, title=None):
         return False
 
 
-def test_rollback(plugin, config, backup):
+def test_rollback(plugin: common.Proxy, config: str, backup: str) -> bool:
     """Tests the rollback checkpoints function"""
     try:
         plugin.rollback_checkpoints(1337)
@@ -242,7 +248,7 @@ def test_rollback(plugin, config, backup):
     return True
 
 
-def _create_backup(config, temp_dir):
+def _create_backup(config: str, temp_dir: str) -> str:
     """Creates a backup of config in temp_dir"""
     backup = os.path.join(temp_dir, "backup")
     shutil.rmtree(backup, ignore_errors=True)
@@ -251,7 +257,7 @@ def _create_backup(config, temp_dir):
     return backup
 
 
-def _dirs_are_unequal(dir1, dir2):
+def _dirs_are_unequal(dir1: str, dir2: str) -> bool:
     """Returns True if dir1 and dir2 are unequal"""
     dircmps = [filecmp.dircmp(dir1, dir2)]
     while dircmps:
@@ -283,7 +289,7 @@ def _dirs_are_unequal(dir1, dir2):
     return False
 
 
-def get_args():
+def get_args() -> NamespaceConfig:
     """Returns parsed command line arguments."""
     parser = argparse.ArgumentParser(
         description=DESCRIPTION,
@@ -317,10 +323,10 @@ def get_args():
     elif not (args.auth or args.install):
         args.auth = args.install = args.enhance = True
 
-    return args
+    return NamespaceConfig(args)
 
 
-def setup_logging(args):
+def setup_logging(args: NamespaceConfig) -> None:
     """Prepares logging for the program"""
     handler = logging.StreamHandler()
 
@@ -329,13 +335,13 @@ def setup_logging(args):
     root_logger.addHandler(handler)
 
 
-def setup_display():
+def setup_display() -> None:
     """"Prepares a display utility instance for the Certbot plugins """
     displayer = display_util.NoninteractiveDisplay(sys.stdout)
     display_obj.set_display(displayer)
 
 
-def main():
+def main() -> None:
     """Main test script execution."""
     args = get_args()
     setup_logging(args)
@@ -379,11 +385,12 @@ def main():
 
 
 @contextlib.contextmanager
-def _fake_dns_resolution(resolved_ip):
+def _fake_dns_resolution(resolved_ip: str) -> Generator[None, None, None]:
     """Monkey patch urllib3 to make any hostname be resolved to the provided IP"""
     _original_create_connection = connection.create_connection
 
-    def _patched_create_connection(address, *args, **kwargs):
+    def _patched_create_connection(address: Tuple[str, str],
+                                   *args: Any, **kwargs: Any) -> socket.socket:
         _, port = address
         return _original_create_connection((resolved_ip, port), *args, **kwargs)
 
