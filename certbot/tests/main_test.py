@@ -2132,6 +2132,17 @@ class FetchAccountTest(test_util.ConfigTestCase):
         self.assertEqual(self._call(['fetch_account']),
                          'Could not find an existing account to fetch.')
 
+    def test_no_existing_client(self):
+        """Test that issues with the ACME client are handled correctly"""
+        self._prepare_mock_account()
+        mock_client = mock.MagicMock()
+        mock_client.acme = None
+        self.mocks['client'].Client.return_value = mock_client
+        try:
+            self._call(['fetch_account'])
+        except errors.Error as e:
+            self.assertEqual('ACME client is not set.', str(e))
+
     def test_no_contacts(self):
         self._test_fetch_account(())
 
