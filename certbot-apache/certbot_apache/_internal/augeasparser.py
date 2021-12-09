@@ -531,7 +531,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
                 position
             )
 
-        return (insert_path, resulting_path, before)
+        return insert_path, resulting_path, before
 
 
 interfaces.CommentNode.register(AugeasCommentNode)
