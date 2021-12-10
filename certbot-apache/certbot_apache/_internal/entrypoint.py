@@ -1,6 +1,4 @@
 """ Entry point for Apache Plugin """
-from distutils.version import LooseVersion
-
 from certbot import util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import override_arch
@@ -47,7 +45,8 @@ def get_configurator():
     override_class = None
 
     # Special case for older Fedora versions
-    if os_name == 'fedora' and LooseVersion(os_version) < LooseVersion('29'):
+    min_version = util.parse_loose_version('29')
+    if os_name == 'fedora' and util.parse_loose_version(os_version) < min_version:
         os_name = 'fedora_old'
 
     try:
@@ -57,8 +56,7 @@ def get_configurator():
         os_like = util.get_systemd_os_like()
         if os_like:
             for os_name in os_like:
-                if os_name in OVERRIDE_CLASSES.keys():
-                    override_class = OVERRIDE_CLASSES[os_name]
+                override_class = OVERRIDE_CLASSES.get(os_name)
         if not override_class:
             # No override class found, return the generic configurator
             override_class = configurator.ApacheConfigurator

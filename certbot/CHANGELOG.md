@@ -2,13 +2,48 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 11.1.2021 - 2021-11-01
+## 1.23.0 - master
 
 ### Added
 
-* Added code signing server workflow to `tools/finish_release.py`
+*
 
-## 1.21.0 - master
+### Changed
+
+*
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.22.0 - 2021-12-07
+
+### Added
+
+* Support for Python 3.10 was added to Certbot and all of its components.
+* The function certbot.util.parse_loose_version was added to parse version
+  strings in the same way as the now deprecated distutils.version.LooseVersion
+  class from the Python standard library.
+* Added `--issuance-timeout`. This option specifies how long (in seconds) Certbot will wait
+  for the server to issue a certificate.
+
+### Changed
+
+* The function certbot.util.get_strict_version was deprecated and will be
+  removed in a future release.
+
+### Fixed
+
+* Fixed an issue on Windows where the `web.config` created by Certbot would sometimes
+  conflict with preexisting configurations (#9088).
+* Fixed an issue on Windows where the `webroot` plugin would crash when multiple domains
+  had the same webroot. This affected Certbot 1.21.0.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.21.0 - 2021-11-02
 
 ### Added
 

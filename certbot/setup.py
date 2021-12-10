@@ -1,9 +1,9 @@
 import codecs
-from distutils.version import LooseVersion
 import os
 import re
 import sys
 
+from pkg_resources import parse_version
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
@@ -11,7 +11,7 @@ from setuptools import setup
 min_setuptools_version='39.0.1'
 # This conditional isn't necessary, but it provides better error messages to
 # people who try to install this package with older versions of setuptools.
-if LooseVersion(setuptools_version) < LooseVersion(min_setuptools_version):
+if parse_version(setuptools_version) < parse_version(min_setuptools_version):
     raise RuntimeError(f'setuptools {min_setuptools_version}+ is required')
 
 # Workaround for https://bugs.python.org/issue8876, see
@@ -50,7 +50,7 @@ install_requires = [
     # in which we added 2.6 support (see #2243), so we relax the requirement.
     'ConfigArgParse>=0.9.3',
     'configobj>=5.0.6',
-    'cryptography>=2.1.4',
+    'cryptography>=2.5.0',
     'distro>=1.0.1',
     'josepy>=1.9.0',
     'parsedatetime>=2.4',
@@ -132,6 +132,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',

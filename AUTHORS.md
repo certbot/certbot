@@ -139,6 +139,7 @@ Authors
 * [Joubin Jabbari](https://github.com/joubin)
 * [Juho Juopperi](https://github.com/jkjuopperi)
 * [Kane York](https://github.com/riking)
+* [Katsuyoshi Ozaki](https://github.com/moratori)
 * [Kenichi Maehashi](https://github.com/kmaehashi)
 * [Kenneth Skovhede](https://github.com/kenkendk)
 * [Kevin Burke](https://github.com/kevinburke)

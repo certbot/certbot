@@ -2,7 +2,6 @@
 # pylint: disable=too-many-lines
 from collections import defaultdict
 import copy
-from distutils.version import LooseVersion
 import fnmatch
 import logging
 import re
@@ -17,9 +16,8 @@ from typing import Union
 
 from acme import challenges
 from certbot import errors
-from certbot import interfaces
 from certbot import util
-from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -117,7 +115,7 @@ class OsOptions:
 # TODO: Add directives to sites-enabled... not sites-available.
 #     sites-available doesn't allow immediate find_dir search even with save()
 #     and load()
-class ApacheConfigurator(common.Installer, interfaces.Authenticator):
+class ApacheConfigurator(common.Configurator):
     """Apache configurator.
 
     :ivar config: Configuration.
@@ -154,9 +152,10 @@ class ApacheConfigurator(common.Installer, interfaces.Authenticator):
         """
         # Disabling TLS session tickets is supported by Apache 2.4.11+ and OpenSSL 1.0.2l+.
         # So for old versions of Apache we pick a configuration without this option.
+        min_openssl_version = util.parse_loose_version('1.0.2l')
         openssl_version = self.openssl_version(warn_on_no_mod_ssl)
         if self.version < (2, 4, 11) or not openssl_version or\
-            LooseVersion(openssl_version) < LooseVersion('1.0.2l'):
+            util.parse_loose_version(openssl_version) < min_openssl_version:
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 
@@ -486,7 +485,7 @@ class ApacheConfigurator(common.Installer, interfaces.Authenticator):
             name=assertions.PASS,
             ancestor=None,
             filepath=self.parser.loc["root"],
-            metadata=metadata
+            metadata=metadata,
         )
 
     def deploy_cert(self, domain, cert_path, key_path,
@@ -2437,10 +2436,9 @@ class ApacheConfigurator(common.Installer, interfaces.Authenticator):
         except errors.SubprocessError as err:
             logger.warning("Unable to restart apache using %s",
                         self.options.restart_cmd)
-            alt_restart = self.options.restart_cmd_alt
-            if alt_restart:
+            if self.options.restart_cmd_alt:
                 logger.debug("Trying alternative restart command: %s",
-                             alt_restart)
+                             self.options.restart_cmd_alt)
                 # There is an alternative restart command available
                 # This usually is "restart" verb while original is "graceful"
                 try:

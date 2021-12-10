@@ -4,7 +4,7 @@ jobs:
       - name: IMAGE_NAME
         value: ubuntu-18.04
       - name: PYTHON_VERSION
-        value: 3.9
+        value: 3.10
       - group: certbot-common
     strategy:
       matrix:
@@ -17,6 +17,9 @@ jobs:
         linux-py38:
           PYTHON_VERSION: 3.8
           TOXENV: py38
+        linux-py39:
+          PYTHON_VERSION: 3.9
+          TOXENV: py39
         linux-py37-nopin:
           PYTHON_VERSION: 3.7
           TOXENV: py37
@@ -69,6 +72,14 @@ jobs:
           ACME_SERVER: boulder-v1
         linux-boulder-v2-py39-integration:
           PYTHON_VERSION: 3.9
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v1-py310-integration:
+          PYTHON_VERSION: 3.10
+          TOXENV: integration
+          ACME_SERVER: boulder-v1
+        linux-boulder-v2-py310-integration:
+          PYTHON_VERSION: 3.10
           TOXENV: integration
           ACME_SERVER: boulder-v2
         nginx-compat:
