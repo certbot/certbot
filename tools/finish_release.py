@@ -30,7 +30,7 @@ import re
 import subprocess
 import sys
 import tempfile
-import userpass
+import getpass
 from zipfile import ZipFile
 
 from azure.devops.connection import Connection
@@ -129,11 +129,20 @@ def create_github_release(github_access_token, tempdir, version, css):
                                      release_notes,
                                      draft=True)
 
-    # SSH into CSS and sign executable, then retrieve
-    username = getpass.getuser()
+
+
+    # Upload unsigned executable to CSS, ssh into CSS and sign executable, then upload signed release
+
+    # This assumes that your username on your local envionement is the same as the one on the css
+    username = getpass.getuser() 
     host = css
-    css_path = username + '@' + host + ':~/signed-exes/certbot-beta-installer-win32-signed.exe'
-    subprocess.run(["scp", css_path , tempdir + '/windows-installer/'])
+    command = 'ssh ' + username + '@' + css + ' ./sign'
+    unsigned_css_path = username + '@' + host + ':~/unsigned-exes/'
+    signed_css_path = username + '@' + host + ':~/signed-exes/certbot-beta-installer-win32-signed.exe'
+
+    subprocess.run(["scp", tempdir + '/windows-installer/certbot-beta-installer-win32.exe' , unsigned_css_path])
+    subprocess.run(command.split())
+    subprocess.run(["scp", signed_css_path , tempdir + '/windows-installer/'])
 
     # Upload windows installer to release
     print("Uploading windows installer")
