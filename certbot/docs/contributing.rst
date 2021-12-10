@@ -31,13 +31,11 @@ running:
 
    git clone https://github.com/certbot/certbot
 
-If you're on macOS, we recommend you skip the rest of this section and instead
-run Certbot in Docker. You can find instructions for how to do this :ref:`here
-<docker-dev>`. If you're running on Linux, you can run the following commands to
+If you're running on a UNIX-like OS, you can run the following commands to
 install dependencies and set up a virtual environment where you can run
 Certbot.
 
-Install the OS system dependencies required to run Certbot.
+Install and configure the OS system dependencies required to run Certbot.
 
 .. code-block:: shell
 
@@ -50,6 +48,14 @@ Install the OS system dependencies required to run Certbot.
    # NB2: RHEL-based distributions use python3X-devel instead of python3-devel (e.g. python36-devel)
    sudo dnf install python3-devel gcc augeas-libs openssl-devel libffi-devel \
                     redhat-rpm-config ca-certificates openssl
+   # For macOS installations with Homebrew already installed and configured
+   # NB: If you also run `brew install python` you don't need the ~/lib
+   #     directory created below, however, Certbot's Apache plugin won't work
+   #     if you use Python installed from other sources such as pyenv or the
+   #     version provided by Apple.
+   brew install augeas
+   mkdir ~/lib
+   ln -s $(brew --prefix)/lib/libaugeas* ~/lib
 
 Set up the Python virtual environment that will host your Certbot local instance.
 
