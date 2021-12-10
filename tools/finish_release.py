@@ -129,8 +129,6 @@ def create_github_release(github_access_token, tempdir, version, css):
                                      release_notes,
                                      draft=True)
 
-
-
     # Upload unsigned executable to CSS, ssh into CSS and sign executable, then upload signed release
 
     # This assumes that your username on your local envionement is the same as the one on the css
