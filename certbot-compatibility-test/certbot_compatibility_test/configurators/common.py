@@ -22,7 +22,6 @@ from acme import challenges
 from acme.challenges import Challenge
 from certbot._internal import constants
 from certbot.achallenges import AnnotatedChallenge
-from certbot.configuration import NamespaceConfig
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ class Proxy(interfaces.ConfiguratorProxy):
     def add_parser_arguments(cls, parser: argparse.ArgumentParser) -> None:
         """Adds command line arguments needed by the plugin"""
 
-    def __init__(self, args: NamespaceConfig) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initializes the plugin with the given command line args"""
         super().__init__(args)
         self._temp_dir = tempfile.mkdtemp()

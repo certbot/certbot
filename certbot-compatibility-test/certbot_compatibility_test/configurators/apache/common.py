@@ -1,4 +1,5 @@
 """Provides a common base for Apache proxies"""
+import argparse
 import os
 import shutil
 import subprocess
@@ -14,13 +15,12 @@ from certbot_compatibility_test.configurators import common as configurators_com
 from certbot import configuration
 from certbot import errors as le_errors
 from certbot import util as certbot_util
-from certbot.configuration import NamespaceConfig
 
 
 class Proxy(configurators_common.Proxy):
     """A common base for Apache test configurators"""
 
-    def __init__(self, args: NamespaceConfig) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initializes the plugin with the given command line args"""
         super().__init__(args)
         self.le_config.apache_le_vhost_ext = "-le-ssl.conf"

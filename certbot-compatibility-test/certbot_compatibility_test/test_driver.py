@@ -31,7 +31,6 @@ from acme import messages
 from certbot import achallenges
 from certbot import errors as le_errors
 from certbot._internal.display import obj as display_obj
-from certbot.configuration import NamespaceConfig
 from certbot.display import util as display_util
 from certbot.tests import acme_util
 
@@ -124,7 +123,8 @@ def _create_achalls(plugin: common.Proxy) -> List[achallenges.AnnotatedChallenge
     return achalls
 
 
-def test_installer(args: NamespaceConfig, plugin: common.Proxy, config: str, temp_dir: str) -> bool:
+def test_installer(args: argparse.Namespace, plugin: common.Proxy, config: str,
+                   temp_dir: str) -> bool:
     """Tests plugin as an installer"""
     backup = _create_backup(config, temp_dir)
 
@@ -289,7 +289,7 @@ def _dirs_are_unequal(dir1: str, dir2: str) -> bool:
     return False
 
 
-def get_args() -> NamespaceConfig:
+def get_args() -> argparse.Namespace:
     """Returns parsed command line arguments."""
     parser = argparse.ArgumentParser(
         description=DESCRIPTION,
@@ -323,10 +323,10 @@ def get_args() -> NamespaceConfig:
     elif not (args.auth or args.install):
         args.auth = args.install = args.enhance = True
 
-    return NamespaceConfig(args)
+    return args
 
 
-def setup_logging(args: NamespaceConfig) -> None:
+def setup_logging(args: argparse.Namespace) -> None:
     """Prepares logging for the program"""
     handler = logging.StreamHandler()
 

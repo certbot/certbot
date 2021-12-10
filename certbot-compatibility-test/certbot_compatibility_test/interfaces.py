@@ -2,6 +2,7 @@
 from abc import ABCMeta
 from abc import abstractmethod
 import argparse
+from typing import cast
 from typing import Set
 
 from certbot import interfaces
@@ -23,9 +24,9 @@ class PluginProxy(interfaces.Plugin, metaclass=ABCMeta):
         """Adds command line arguments needed by the parser"""
 
     @abstractmethod
-    def __init__(self, args: NamespaceConfig) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initializes the plugin with the given command line args"""
-        super().__init__(args, 'proxy')
+        super().__init__(cast(NamespaceConfig, args), 'proxy')
 
     @abstractmethod
     def cleanup_from_tests(self) -> None:
