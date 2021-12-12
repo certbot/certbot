@@ -52,10 +52,8 @@ def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
     """Wrangle ACME client construction"""
     if key.typ in ('EC', 'OKP'):
         alg = ES256
-    elif key.typ == 'RSA':
-        alg = RS256
     else:
-        raise NotImplementedError(f'Key type {key.typ} not support')
+        alg = RS256
     net = acme_client.ClientNetwork(key, alg=alg, account=regr,
                                     verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))

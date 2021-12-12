@@ -1036,7 +1036,6 @@ class ClientNetwork:
                  source_address: Optional[Union[str, Tuple[str, int]]] = None) -> None:
         self.key = key
         self.account = account
-        # ACME: RS256 for RSA keys, ES256 for Elliptic Curve keys (also OKP)
         self.alg = alg
         self.verify_ssl = verify_ssl
         self._nonces: Set[Text] = set()
