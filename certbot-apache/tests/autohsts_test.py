@@ -170,7 +170,7 @@ class AutoHSTSTest(util.ApacheTest):
         # Make sure it's removed from the pluginstorage file as well
         self.config._autohsts = None
         self.config._autohsts_fetch_state()
-        self.assertIs(self.config._autohsts, False)
+        self.assertFalse(self.config._autohsts)
 
     def test_autohsts_make_permanent_vhost_not_found(self):
         # pylint: disable=protected-access

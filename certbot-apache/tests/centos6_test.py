@@ -208,7 +208,7 @@ class CentOS6Tests(util.ApacheTest):
         post_loadmods = self.config.parser.find_dir("LoadModule",
                                                     "ssl_module",
                                                     exclude=False)
-        self.assertIs(post_loadmods, False)
+        self.assertEqual(post_loadmods, [])
 
     def test_no_ifmod_search_false(self):
         #pylint: disable=no-member

@@ -105,7 +105,7 @@ class AddrTest(unittest.TestCase):
         self.assertIs(self.addr.conflicts(self.addr1), True)
         self.assertIs(self.addr.conflicts(self.addr2), True)
         self.assertIs(self.addr.conflicts(self.addr_defined), True)
-        self.assertNotIs(self.addr.conflicts(self.addr_default))
+        self.assertIs(self.addr.conflicts(self.addr_default), False)
 
         self.assertIs(self.addr1.conflicts(self.addr), False)
         self.assertIs(self.addr1.conflicts(self.addr_defined), True)
@@ -123,7 +123,7 @@ class AddrTest(unittest.TestCase):
         # Self test
         self.assertIs(self.addr.conflicts(self.addr), True)
         self.assertIs(self.addr1.conflicts(self.addr1), True)
-        # This, a tricky one...
+        # This is a tricky one...
         self.assertIs(self.addr1.conflicts(self.addr2), True)
 
     def test_equal(self):

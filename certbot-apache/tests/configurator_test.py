@@ -445,23 +445,21 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.deploy_cert(
             "random.demo",
             "two/cert.pem", "two/key.pem", "two/cert_chain.pem")
-        self.assertIs(self.config.parser.find_dir(
+        self.assertTrue(self.config.parser.find_dir(
             "SSLCertificateChainFile", "two/cert_chain.pem",
-            self.vh_truth[1].path), True)
+            self.vh_truth[1].path))
 
     def test_is_name_vhost(self):
         addr = obj.Addr.fromstring("*:80")
         self.assertIs(self.config.is_name_vhost(addr), True)
         self.config.version = (2, 2)
-        self.assertIs(self.config.is_name_vhost(addr), False)
+        self.assertEqual(self.config.is_name_vhost(addr), [])
 
     def test_add_name_vhost(self):
         self.config.add_name_vhost(obj.Addr.fromstring("*:443"))
         self.config.add_name_vhost(obj.Addr.fromstring("*:80"))
-        self.assertIs(self.config.parser.find_dir(
-            "NameVirtualHost", "*:443", exclude=False))
-        self.assertIs(self.config.parser.find_dir(
-            "NameVirtualHost", "*:80"), True)
+        self.assertTrue(self.config.parser.find_dir("NameVirtualHost", "*:443", exclude=False))
+        self.assertTrue(self.config.parser.find_dir("NameVirtualHost", "*:80"))
 
     def test_add_listen_80(self):
         mock_find = mock.Mock()
@@ -837,7 +835,7 @@ class MultipleVhostsTest(util.ApacheTest):
                           self.config.config_test)
 
     def test_more_info(self):
-        self.assertIs(self.config.more_info(), True)
+        self.assertTrue(self.config.more_info())
 
     def test_get_chall_pref(self):
         self.assertIsInstance(self.config.get_chall_pref(""), list)
@@ -1103,7 +1101,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.add_dir(
             self.vh_truth[3].path, "RewriteEngine", "on")
         # pylint: disable=protected-access
-        self.assertIs(self.config._is_rewrite_engine_on(self.vh_truth[3]), True)
+        self.assertTrue(self.config._is_rewrite_engine_on(self.vh_truth[3]))
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
@@ -1274,13 +1272,11 @@ class MultipleVhostsTest(util.ApacheTest):
         vhost = self.vh_truth[0]
         vhost.enabled = False
         vhost.filep = inc_path
-        self.assertIs(self.config.parser.find_dir("Include", inc_path), False)
-        self.assertNotIn(
-            os.path.dirname(inc_path), self.config.parser.existing_paths)
+        self.assertEqual(self.config.parser.find_dir("Include", inc_path), [])
+        self.assertNotIn(os.path.dirname(inc_path), self.config.parser.existing_paths)
         self.config.enable_site(vhost)
         self.assertIs(self.config.parser.find_dir("Include", inc_path), True)
-        self.assertIn(
-            os.path.dirname(inc_path), self.config.parser.existing_paths)
+        self.assertIn(os.path.dirname(inc_path), self.config.parser.existing_paths)
         self.assertIn(
             os.path.basename(inc_path), self.config.parser.existing_paths[
                 os.path.dirname(inc_path)])
@@ -1607,8 +1603,7 @@ class MultiVhostsTest(util.ApacheTest):
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[4])
 
-        self.assertIs(self.config.parser.find_dir(
-            "RewriteEngine", "on", ssl_vhost.path, False), True)
+        self.assertTrue(self.config.parser.find_dir("RewriteEngine", "on", ssl_vhost.path, False))
 
         with open(ssl_vhost.filep) as the_file:
             conf_text = the_file.read()

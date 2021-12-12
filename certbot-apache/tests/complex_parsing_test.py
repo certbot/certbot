@@ -90,9 +90,9 @@ class ComplexParserTest(util.ParserTest):
         self.parser.add_dir(parser.get_aug_path(self.parser.loc["default"]),
                             "Include", [arg])
         if hit:
-            self.assertIs(self.parser.find_dir("FNMATCH_DIRECTIVE"), True)
+            self.assertTrue(self.parser.find_dir("FNMATCH_DIRECTIVE"))
         else:
-            self.assertIs(self.parser.find_dir("FNMATCH_DIRECTIVE"), False)
+            self.assertFalse(self.parser.find_dir("FNMATCH_DIRECTIVE"))
 
     # NOTE: Only run one test per function otherwise you will have
     # inf recursion

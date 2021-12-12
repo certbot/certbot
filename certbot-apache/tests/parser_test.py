@@ -66,7 +66,7 @@ class BasicParserTest(util.ParserTest):
         matches = self.parser.aug.match(
             "/augeas/load/Httpd/incl [. ='%s']" % file_path)
 
-        self.assertIs(matches, True)
+        self.assertTrue(matches)
 
     def test_find_dir(self):
         test = self.parser.find_dir("Listen", "80")
@@ -80,7 +80,7 @@ class BasicParserTest(util.ParserTest):
         aug_default = "/files" + self.parser.loc["default"]
         self.parser.add_dir(aug_default, "AddDirective", "test")
 
-        self.assertIs(self.parser.find_dir("AddDirective", "test", aug_default), True)
+        self.assertTrue(self.parser.find_dir("AddDirective", "test", aug_default))
 
         self.parser.add_dir(aug_default, "AddList", ["1", "2", "3", "4"])
         matches = self.parser.find_dir("AddList", None, aug_default)
@@ -93,9 +93,7 @@ class BasicParserTest(util.ParserTest):
                                       "AddDirectiveBeginning",
                                       "testBegin")
 
-        self.assertIs(
-            self.parser.find_dir("AddDirectiveBeginning", "testBegin", aug_default), True
-        )
+        self.assertTrue(self.parser.find_dir("AddDirectiveBeginning", "testBegin", aug_default))
 
         self.assertEqual(self.parser.aug.get(aug_default+"/directive[1]"), "AddDirectiveBeginning")
         self.parser.add_dir_beginning(aug_default, "AddList", ["1", "2", "3", "4"])

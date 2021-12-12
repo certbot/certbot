@@ -51,7 +51,7 @@ class ApacheHttp01Test(util.ApacheTest):
         self.http = ApacheHttp01(self.config)
 
     def test_empty_perform(self):
-        self.assertIs(self.http.perform(), False)
+        self.assertEqual(len(self.http.perform()), [])
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_2(self, mock_enmod):

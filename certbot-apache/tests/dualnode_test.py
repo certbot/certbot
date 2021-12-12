@@ -343,7 +343,7 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         for block in blocks:
             with self.subTest(block=block):
                 self.assertEqual(block.primary, block.secondary)
-                self.assertNotEqual(block.primary, block.secondary)
+                self.assertIsNot(block.primary, block.secondary)
 
     def test_find_dirs_no_pass_equal(self):
         notpassing1 = [augeasparser.AugeasDirectiveNode(name="notpassing",
@@ -363,7 +363,7 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         for directive in directives:
             with self.subTest(directive=directive):
                 self.assertEqual(directive.primary, directive.secondary)
-                self.assertNotEqual(directive.primary, directive.secondary)
+                self.assertIsNot(directive.primary, directive.secondary)
 
     def test_find_comments_no_pass_equal(self):
         notpassing1 = [augeasparser.AugeasCommentNode(comment="notpassing",
