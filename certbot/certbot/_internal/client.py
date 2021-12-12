@@ -13,9 +13,12 @@ from typing import Tuple
 import warnings
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import rsa
 import josepy as jose
 import OpenSSL
+from josepy.jwk import JWKEC
+from josepy.util import ComparableECKey
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -190,11 +193,24 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
         config.email = None
 
     # Each new registration shall use a fresh new key
-    rsa_key = generate_private_key(
+    key: Optional[jose.JWK] = None
+    if config.key_type == "rsa":
+        rsa_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=config.rsa_key_size,
             backend=default_backend())
-    key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
+        key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
+    elif config.key_type == "ecdsa":
+        # TODO try to keep it more DRY ...
+        # code taken from crypto_util
+        if config.elliptic_curve in ('SECP256R1', 'SECP384R1', 'SECP521R1'):
+            ec_key = ec.generate_private_key(
+                curve=getattr(ec, config.elliptic_curve.upper(), None)(),
+                backend=default_backend()
+            )
+        else:
+            raise errors.Error("Unsupported elliptic curve: {}".format(config.elliptic_curve))
+        key = JWKEC(key=ComparableECKey(ec_key))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
     regr = perform_registration(acme, config, tos_cb)
@@ -403,7 +419,6 @@ class Client:
                     bits=key_size,
                     elliptic_curve=elliptic_curve,
                     key_type=self.config.key_type,
-
                 ),
             )
             csr = util.CSR(file=None, form="pem",
