@@ -82,7 +82,7 @@ class _CloudXNSLexiconClient(dns_common_lexicon.LexiconClient):
 
         self.provider = cloudxns.Provider(config)
 
-    def _handle_http_error(self, e: HTTPError, domain_name: str) -> errors.PluginError:
+    def _handle_http_error(self, e: HTTPError, domain_name: str) -> Optional[errors.PluginError]:
         hint = None
         if str(e).startswith('400 Client Error:'):
             hint = 'Are your API key and Secret key values correct?'
