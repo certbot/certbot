@@ -10,11 +10,13 @@ import sys
 import tempfile
 import time
 from typing import Any
+from typing import Dict
 from typing import Generator
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Type
 
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
@@ -41,7 +43,7 @@ tests that the plugin supports are performed.
 
 """
 
-PLUGINS = {"apache": a_common.Proxy, "nginx": n_common.Proxy}
+PLUGINS: Dict[str, Type[common.Proxy]] = {"apache": a_common.Proxy, "nginx": n_common.Proxy}
 
 
 logger = logging.getLogger(__name__)
