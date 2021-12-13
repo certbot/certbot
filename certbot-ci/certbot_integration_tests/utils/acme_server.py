@@ -47,7 +47,7 @@ class ACMEServer:
                  http_01_port: int = DEFAULT_HTTP_01_PORT) -> None:
         """
         Create an ACMEServer instance.
-        :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
+        :param str acme_server: the type of acme server used (boulder-v2 or pebble)
         :param list nodes: list of node names that will be setup by pytest xdist
         :param bool http_proxy: if False do not start the HTTP proxy
         :param bool stdout: if True stream all subprocesses stdout to standard stdout
@@ -130,8 +130,7 @@ class ACMEServer:
         if acme_server == 'pebble':
             acme_xdist['directory_url'] = PEBBLE_DIRECTORY_URL
         else:  # boulder
-            acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL \
-                if acme_server == 'boulder-v2' else BOULDER_V1_DIRECTORY_URL
+            acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL
 
         acme_xdist['http_port'] = {
             node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
@@ -267,9 +266,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description='CLI tool to start a local instance of Pebble or Boulder CA server.')
     parser.add_argument('--server-type', '-s',
-                        choices=['pebble', 'boulder-v1', 'boulder-v2'], default='pebble',
-                        help='type of CA server to start: can be Pebble or Boulder '
-                             '(in ACMEv1 or ACMEv2 mode), Pebble is used if not set.')
+                        choices=['pebble', 'boulder-v2'], default='pebble',
+                        help='type of CA server to start: can be Pebble or Boulder. '
+                             'Pebble is used if not set.')
     parser.add_argument('--dns-server', '-d',
                         help='specify the DNS server as `IP:PORT` to use by '
                              'Pebble; if not specified, a local mock DNS server will be used to '
