@@ -50,7 +50,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _perform(self, domain: str, validation_name: str, validation: str) -> None:
         pass
 
-    def perform(self, achalls: Iterable[AnnotatedChallenge]) -> List[ChallengeResponse]:
+    def perform(self, achalls: List[AnnotatedChallenge]) -> List[ChallengeResponse]:
         self._attempt_cleanup = True
 
         try:
