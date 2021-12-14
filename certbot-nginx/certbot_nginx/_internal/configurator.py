@@ -24,7 +24,7 @@ from certbot_nginx._internal import constants
 from certbot_nginx._internal import display_ops
 from certbot_nginx._internal import http_01
 from certbot_nginx._internal import nginxparser
-from certbot_nginx._internal import obj  # pylint: disable=unused-import
+from certbot_nginx._internal import obj
 from certbot_nginx._internal import parser
 import OpenSSL
 import pkg_resources
@@ -927,7 +927,8 @@ class NginxConfigurator(common.Configurator):
             logger.info("Redirecting all traffic on port %s to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
 
-    def _enable_ocsp_stapling(self, domain: str, chain_path: Union[str, List[str], None]) -> None:
+    def _enable_ocsp_stapling(self, domain: str,
+                              chain_path: Optional[Union[str, List[str]]]) -> None:
         """Include OCSP response in TLS handshake
 
         :param str domain: domain to enable OCSP response for
