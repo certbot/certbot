@@ -428,7 +428,7 @@ class NginxParser:
         return new_vhost
 
 
-def _parse_ssl_options(ssl_options: Optional[str]) -> List[Any]:
+def _parse_ssl_options(ssl_options: Optional[str]) -> List[UnspacedList]:
     if ssl_options is not None:
         try:
             with io.open(ssl_options, "r", encoding="utf-8") as _file:
@@ -440,7 +440,7 @@ def _parse_ssl_options(ssl_options: Optional[str]) -> List[Any]:
                            "Only UTF-8 encoding is supported.", ssl_options)
         except pyparsing.ParseBaseException as err:
             logger.warning("Could not parse file: %s due to %s", ssl_options, err)
-    return []
+    return UnspacedList([])
 
 
 def _do_for_subarray(entry: List[Any], condition: Callable[[List[Any]], bool],
