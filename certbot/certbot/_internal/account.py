@@ -125,6 +125,7 @@ class AccountMemoryStorage(interfaces.AccountStorage):
         except KeyError:
             raise errors.AccountNotFound(account_id)
 
+
 class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
     """A backwards-compatible RegistrationResource with a new-authz URI.
 
@@ -135,6 +136,7 @@ class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
        clients don't crash in that scenario.
     """
     new_authzr_uri = jose.Field('new_authzr_uri')
+
 
 class AccountFileStorage(interfaces.AccountStorage):
     """Accounts file storage.

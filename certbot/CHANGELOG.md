@@ -6,7 +6,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Support for registering with [EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography) key
+  when creating a new account on LetsEncrypt. You need to edit the `cli.ini` before requesting a
+  new certificate.
 
 ### Changed
 
