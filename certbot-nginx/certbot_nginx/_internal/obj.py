@@ -167,7 +167,7 @@ class VirtualHost:
     """
 
     def __init__(self, filep: str, addrs: Sequence[Addr], ssl: bool, enabled: bool,
-                 names: Set[str], raw: List[Any], path: List[Any]) -> None:
+                 names: Set[str], raw: List[Any], path: List[int]) -> None:
         """Initialize a VH."""
         self.filep = filep
         self.addrs = addrs
