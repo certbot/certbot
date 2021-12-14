@@ -1181,7 +1181,7 @@ class NginxConfigurator(common.Configurator):
         return [challenges.HTTP01]
 
     # Entry point in main.py for performing challenges
-    def perform(self, achalls: Sequence[achallenges.AnnotatedChallenge]
+    def perform(self, achalls: List[achallenges.AnnotatedChallenge]
                 ) -> List[challenges.HTTP01Response]:
         """Perform the configuration related challenge.
 
@@ -1214,7 +1214,7 @@ class NginxConfigurator(common.Configurator):
         return [response for response in responses if response]
 
     # called after challenges are performed
-    def cleanup(self, achalls: Sequence[achallenges.AnnotatedChallenge]) -> None:
+    def cleanup(self, achalls: List[achallenges.AnnotatedChallenge]) -> None:
         """Revert all challenges."""
         self._chall_out -= len(achalls)
 
