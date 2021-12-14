@@ -113,7 +113,7 @@ class NginxParser:
                     addr_to_ssl[addr_tuple] = addr.ssl or addr_to_ssl[addr_tuple]
         return addr_to_ssl
 
-    def _get_raw_servers(self) -> Dict[str, Union[List[Any], nginxparser.UnspacedList]]:
+    def _get_raw_servers(self) -> Dict[str, Union[List[Any], UnspacedList]]:
         # pylint: disable=cell-var-from-loop
         """Get a map of unparsed all server blocks
         """
