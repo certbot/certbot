@@ -109,7 +109,7 @@ class LexiconClient:
         raise errors.PluginError('Unable to determine zone identifier for {0} using zone names: {1}'
                                  .format(domain, domain_name_guesses))
 
-    def _handle_http_error(self, e: HTTPError, domain_name: str) -> errors.PluginError:
+    def _handle_http_error(self, e: HTTPError, domain_name: str) -> Optional[errors.PluginError]:
         return errors.PluginError('Error determining zone identifier for {0}: {1}.'
                                   .format(domain_name, e))
 

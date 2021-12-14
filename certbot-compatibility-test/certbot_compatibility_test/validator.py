@@ -2,7 +2,11 @@
 import logging
 import socket
 from typing import cast
+from typing import Mapping
+from typing import Optional
+from typing import Union
 
+from OpenSSL import crypto
 import requests
 
 from acme import crypto_util
@@ -14,10 +18,12 @@ logger = logging.getLogger(__name__)
 class Validator:
     """Collection of functions to test a live webserver's configuration"""
 
-    def certificate(self, cert, name, alt_host=None, port=443):
+    def certificate(self, cert: crypto.X509, name: Union[str, bytes],
+                    alt_host: Optional[str] = None, port: int = 443) -> bool:
         """Verifies the certificate presented at name is cert"""
         if alt_host is None:
-            host = socket.gethostbyname(name).encode()
+            # In fact, socket.gethostbyname accepts both bytes and str, but types do not know that.
+            host = socket.gethostbyname(cast(str, name)).encode()
         elif isinstance(alt_host, bytes):
             host = alt_host
         else:
@@ -31,9 +37,10 @@ class Validator:
             return False
 
         # Despite documentation saying that bytes are expected for digest(), we must provide a str.
-        return presented_cert.digest(cast(bytes, "sha256")) == cert.digest("sha256")
+        return presented_cert.digest(cast(bytes, "sha256")) == cert.digest(cast(bytes, "sha256"))
 
-    def redirect(self, name, port=80, headers=None):
+    def redirect(self, name: str, port: int = 80,
+                 headers: Optional[Mapping[str, str]] = None) -> bool:
         """Test whether webserver redirects to secure connection."""
         url = "http://{0}:{1}".format(name, port)
         if headers:
@@ -54,7 +61,8 @@ class Validator:
 
         return True
 
-    def any_redirect(self, name, port=80, headers=None):
+    def any_redirect(self, name: str, port: int = 80,
+                     headers: Optional[Mapping[str, str]] = None) -> bool:
         """Test whether webserver redirects."""
         url = "http://{0}:{1}".format(name, port)
         if headers:
@@ -64,7 +72,7 @@ class Validator:
 
         return response.status_code in range(300, 309)
 
-    def hsts(self, name):
+    def hsts(self, name: str) -> bool:
         """Test for HTTP Strict Transport Security header"""
         headers = requests.get("https://" + name).headers
         hsts_header = headers.get("strict-transport-security")
@@ -93,6 +101,6 @@ class Validator:
 
         return True
 
-    def ocsp_stapling(self, name):
+    def ocsp_stapling(self, name: str) -> None:
         """Verify ocsp stapling for domain."""
         raise NotImplementedError()
