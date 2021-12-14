@@ -512,7 +512,7 @@ def test_default_curve_type(context: IntegrationTestsContext) -> None:
     # Curve name, Curve class, ACME servers to skip
     ('secp256r1', SECP256R1, []),
     ('secp384r1', SECP384R1, []),
-    ('secp521r1', SECP521R1, ['boulder-v1', 'boulder-v2'])]
+    ('secp521r1', SECP521R1, ['boulder-v2'])]
 )
 def test_ecdsa_curves(context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve],
                       skip_servers: Iterable[str]) -> None:
@@ -689,9 +689,6 @@ def test_revoke_multiple_lineages(context: IntegrationTestsContext) -> None:
 
 def test_wildcard_certificates(context: IntegrationTestsContext) -> None:
     """Test wildcard certificate issuance."""
-    if context.acme_server == 'boulder-v1':
-        pytest.skip('Wildcard certificates are not supported on ACME v1')
-
     certname = context.get_domain('wild')
 
     context.certbot([
