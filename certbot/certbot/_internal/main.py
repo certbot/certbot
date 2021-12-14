@@ -699,8 +699,7 @@ def _determine_account(config: configuration.NamespaceConfig
             if config.email is None and not config.register_unsafely_without_email:
                 config.email = display_ops.get_email()
             try:
-                acc, acme = client.register(
-                    config, account_storage, tos_cb=_tos_cb)
+                acc, acme = client.register(config, account_storage, tos_cb=_tos_cb)
                 display_util.notify("Account registered.")
             except errors.MissingCommandlineFlag:
                 raise

@@ -74,7 +74,6 @@ class FlagDefaultTest(unittest.TestCase):
 class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
-
     def setUp(self):
         reload_module(cli)
 
@@ -483,7 +482,6 @@ class ParseTest(unittest.TestCase):
 class DefaultTest(unittest.TestCase):
     """Tests for certbot._internal.cli._Default."""
 
-
     def setUp(self):
         # pylint: disable=protected-access
         self.default1 = cli._Default()
@@ -502,7 +500,6 @@ class DefaultTest(unittest.TestCase):
 
 class SetByCliTest(unittest.TestCase):
     """Tests for certbot.set_by_cli and related functions."""
-
 
     def setUp(self):
         reload_module(cli)

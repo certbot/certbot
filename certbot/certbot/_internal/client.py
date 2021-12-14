@@ -203,7 +203,7 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
     elif config.key_type == "ecdsa":
         # TODO try to keep it more DRY ...
         # code taken from crypto_util
-        if config.elliptic_curve in ('SECP256R1', 'SECP384R1', 'SECP521R1'):
+        if config.elliptic_curve.upper() in ('SECP256R1', 'SECP384R1', 'SECP521R1'):
             ec_key = ec.generate_private_key(
                 curve=getattr(ec, config.elliptic_curve.upper(), None)(),
                 backend=default_backend()

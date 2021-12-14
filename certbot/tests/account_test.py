@@ -4,6 +4,8 @@ import json
 import unittest
 
 import josepy as jose
+from josepy.jwk import JWKEC
+
 try:
     import mock
 except ImportError: # pragma: no cover
@@ -29,8 +31,8 @@ class AccountTest(unittest.TestCase):
         self.regr = mock.MagicMock()
         self.meta = Account.Meta(
             creation_host="test.certbot.org",
-            creation_dt=datetime.datetime(
-                2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
+            creation_dt=datetime.datetime(2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC),
+        )
         self.acc = Account(self.regr, KEY, self.meta)
         self.regr.__repr__ = mock.MagicMock(return_value="i_am_a_regr")
 
@@ -46,12 +48,10 @@ class AccountTest(unittest.TestCase):
         self.assertEqual(self.meta, self.acc_no_meta.meta)
 
     def test_id(self):
-        self.assertEqual(
-            self.acc.id, "7adac10320f585ddf118429c0c4af2cd")
+        self.assertEqual(self.acc.id, "7adac10320f585ddf118429c0c4af2cd")
 
     def test_slug(self):
-        self.assertEqual(
-            self.acc.slug, "test.certbot.org@2015-07-04T14:04:10Z (7ada)")
+        self.assertEqual(self.acc.slug, "test.certbot.org@2015-07-04T14:04:10Z (7ada)")
 
     def test_repr(self):
         self.assertTrue(repr(self.acc).startswith(
@@ -112,19 +112,31 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self.storage = AccountFileStorage(self.config)
 
         from certbot._internal.account import Account
-        new_authzr_uri = "hi"
-        meta = Account.Meta(
+        self.new_authzr_uri = "hi"
+        self.meta = Account.Meta(
             creation_host="test.example.org",
-            creation_dt=datetime.datetime(
-                2021, 1, 5, 14, 4, 10, tzinfo=pytz.UTC))
+            creation_dt=datetime.datetime(2021, 1, 5, 14, 4, 10, tzinfo=pytz.UTC),
+        )
         self.acc = Account(
             regr=messages.RegistrationResource(
                 uri=None, body=messages.Registration(),
-                new_authzr_uri=new_authzr_uri),
+                new_authzr_uri=self.new_authzr_uri),
             key=KEY,
-            meta=meta)
+            meta=self.meta)
         self.mock_client = mock.MagicMock()
-        self.mock_client.directory.new_authz = new_authzr_uri
+        self.mock_client.directory.new_authz = self.new_authzr_uri
+
+    def test_ec_key(self):
+        from certbot._internal.account import Account
+        key = JWKEC.load(test_util.load_vector("ec_secp384r1_key.pem"))
+        self.acc = Account(
+            regr=messages.RegistrationResource(
+                uri=None, body=messages.Registration(),
+                new_authzr_uri=self.new_authzr_uri),
+            key=key,
+            meta=self.meta,
+        )
+        self.assertEqual(self.acc.key.typ, "EC")
 
     def test_init_creates_dir(self):
         self.assertTrue(os.path.isdir(
