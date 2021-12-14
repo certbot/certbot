@@ -219,8 +219,8 @@ class NginxConfigurator(common.Configurator):
             raise errors.PluginError('Unable to lock {0}'.format(self.conf('server-root')))
 
     # Entry point in main.py for installing cert
-    def deploy_cert(self, domain: str, cert_path: str, key_path: str,
-                    chain_path: Optional[str] = None, fullchain_path: Optional[str] = None) -> None:
+    def deploy_cert(self, domain: str, cert_path: str, key_path: str, chain_path: str,
+                    fullchain_path: str) -> None:
         """Deploys certificate to specified virtual host.
 
         .. note:: Aborts if the vhost is missing ssl_certificate or
@@ -244,7 +244,7 @@ class NginxConfigurator(common.Configurator):
                                 .format(domain, vhost.filep))
 
     def _deploy_cert(self, vhost: obj.VirtualHost, _cert_path: str, key_path: str,
-                     _chain_path: Optional[str], fullchain_path: Optional[str]) -> None:
+                     _chain_path: str, fullchain_path: str) -> None:
         """
         Helper function for deploy_cert() that handles the actual deployment
         this exists because we might want to do multiple deployments per
