@@ -8,6 +8,7 @@ from typing import IO
 from typing import Iterable
 from typing import Iterator
 from typing import List
+from typing import overload
 from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
@@ -141,8 +142,16 @@ class UnspacedList(List[Any]):
                 if "#" not in self[:i]:
                     super().__delitem__(i)
 
-    def _coerce(self, inbound: Any) -> Union[Tuple[List[Any], List[Any]],
-                                             Tuple["UnspacedList", List[Any]]]:
+    @overload
+    def _coerce(self, inbound: None) -> Tuple[None, None]: ...
+
+    @overload
+    def _coerce(self, inbound: str) -> Tuple[str, str]: ...
+
+    @overload
+    def _coerce(self, inbound: List[Any]) -> Tuple["UnspacedList", List[Any]]: ...
+
+    def _coerce(self, inbound: Any) -> Tuple[Any, Any]:
         """
         Coerce some inbound object to be appropriately usable in this object
 
