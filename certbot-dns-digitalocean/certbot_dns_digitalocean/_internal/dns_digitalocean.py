@@ -82,6 +82,7 @@ class _DigitalOceanClient:
 
         try:
             domain = self._find_domain(domain_name)
+            domain.ttl = None
         except digitalocean.Error as e:
             hint = None
 
