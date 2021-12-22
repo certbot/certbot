@@ -1,3 +1,4 @@
+# type: ignore
 """
 General conftest for pytest execution of all integration tests lying
 in the certbot_integration tests package.
@@ -20,9 +21,9 @@ def pytest_addoption(parser):
     :param parser: current pytest parser that will be used on the CLI
     """
     parser.addoption('--acme-server', default='pebble',
-                     choices=['boulder-v1', 'boulder-v2', 'pebble'],
-                     help='select the ACME server to use (boulder-v1, boulder-v2, '
-                          'pebble), defaulting to pebble')
+                     choices=['boulder-v2', 'pebble'],
+                     help='select the ACME server to use (boulder-v2, pebble), '
+                          'defaulting to pebble')
     parser.addoption('--dns-server', default='challtestsrv',
                      choices=['bind', 'challtestsrv'],
                      help='select the DNS server to use (bind, challtestsrv), '

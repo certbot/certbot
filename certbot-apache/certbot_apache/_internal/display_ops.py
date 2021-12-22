@@ -103,7 +103,7 @@ def _vhost_menu(domain, vhosts):
                 https="HTTPS" if vhost.ssl else "",
                 active="Enabled" if vhost.enabled else "",
                 fn_size=filename_size,
-                name_size=disp_name_size)
+                name_size=disp_name_size),
         )
 
     try:

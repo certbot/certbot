@@ -9,6 +9,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Iterable
+from typing import List
+from typing import Sequence
+from typing import Tuple
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -24,7 +28,7 @@ from certbot.tests import util as test_util
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main() -> None:
     """Run the lock tests."""
     dirs, base_cmd = set_up()
     for subcommand in ('certonly', 'install', 'renew', 'run',):
@@ -33,7 +37,7 @@ def main():
     logger.info('Lock test ran successfully.')
 
 
-def set_up():
+def set_up() -> Tuple[List[str], List[str]]:
     """Prepare tests to be run.
 
     Logging is set up and temporary directories are set up to contain a
@@ -65,7 +69,7 @@ def set_up():
     return dirs, command
 
 
-def set_up_dirs():
+def set_up_dirs() -> Tuple[str, str, str, str]:
     """Set up directories for tests.
 
     A temporary directory is created to contain the config, log, work,
@@ -96,7 +100,7 @@ def set_up_dirs():
     return config_dir, logs_dir, work_dir, nginx_dir
 
 
-def set_up_nginx_dir(root_path):
+def set_up_nginx_dir(root_path: str) -> None:
     """Create a basic Nginx configuration in nginx_dir.
 
     :param str root_path: where the Nginx server root should be placed
@@ -113,7 +117,7 @@ def set_up_nginx_dir(root_path):
         f.write(check_call(['/bin/sh', conf_script, root_path, key_path, cert_path]))
 
 
-def set_up_command(config_dir, logs_dir, work_dir, nginx_dir):
+def set_up_command(config_dir: str, logs_dir: str, work_dir: str, nginx_dir: str) -> List[str]:
     """Build the Certbot command to run for testing.
 
     You can test different subcommands by appending the desired command
@@ -137,7 +141,7 @@ def set_up_command(config_dir, logs_dir, work_dir, nginx_dir):
             config_dir, logs_dir, work_dir, nginx_dir).split())
 
 
-def setup_certificate(workspace):
+def setup_certificate(workspace: str) -> Tuple[str, str]:
     """Generate a self-signed certificate for nginx.
     :param workspace: path of folder where to put the certificate
     :return: tuple containing the key path and certificate path
@@ -181,7 +185,7 @@ def setup_certificate(workspace):
     return key_path, cert_path
 
 
-def test_command(command, directories):
+def test_command(command: Sequence[str], directories: Iterable[str]) -> None:
     """Assert Certbot acquires locks in a specific order.
 
     command is run repeatedly testing that Certbot acquires locks on
@@ -198,7 +202,7 @@ def test_command(command, directories):
         dir_lock.release()
 
 
-def check_error(command, dir_path):
+def check_error(command: Sequence[str], dir_path: str) -> None:
     """Run command and verify it fails to acquire the lock for dir_path.
 
     :param str command: certbot command to run
@@ -223,7 +227,7 @@ def check_error(command, dir_path):
         report_failure(err_msg, out, err)
 
 
-def check_call(args):
+def check_call(args: Sequence[str]) -> str:
     """Simple imitation of subprocess.check_call.
 
     This function is only available in subprocess in Python 2.7+.
@@ -240,7 +244,7 @@ def check_call(args):
     return out
 
 
-def report_failure(err_msg, out, err):
+def report_failure(err_msg: str, out: str, err: str) -> None:
     """Report a subprocess failure and exit.
 
     :param str err_msg: error message to report
@@ -253,7 +257,7 @@ def report_failure(err_msg, out, err):
     sys.exit(err_msg)
 
 
-def subprocess_call(args):
+def subprocess_call(args: Sequence[str]) -> Tuple[int, str, str]:
     """Run a command with subprocess and return the result.
 
     :param list args: program and it's arguments to be run
@@ -270,7 +274,7 @@ def subprocess_call(args):
     return process.returncode, out, err
 
 
-def log_output(level, out, err):
+def log_output(level: int, out: str, err: str) -> None:
     """Logs stdout and stderr output at the requested level.
 
     :param int level: logging level to use

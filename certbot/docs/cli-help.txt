@@ -39,70 +39,6 @@ optional arguments:
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
                         and ~/.config/letsencrypt/cli.ini)
-  -v, --verbose         This flag can be used multiple times to incrementally
-                        increase the verbosity of output, e.g. -vvv. (default:
-                        0)
-  --max-log-backups MAX_LOG_BACKUPS
-                        Specifies the maximum number of backup logs that
-                        should be kept by Certbot's built in log rotation.
-                        Setting this flag to 0 disables log rotation entirely,
-                        causing Certbot to always append to the same log file.
-                        (default: 1000)
-  -n, --non-interactive, --noninteractive
-                        Run without ever asking for user input. This may
-                        require additional command line flags; the client will
-                        try to explain which ones are required if it finds one
-                        missing (default: False)
-  --force-interactive   Force Certbot to be interactive even if it detects
-                        it's not being run in a terminal. This flag cannot be
-                        used with the renew subcommand. (default: False)
-  -d DOMAIN, --domains DOMAIN, --domain DOMAIN
-                        Domain names to apply. For multiple domains you can
-                        use multiple -d flags or enter a comma separated list
-                        of domains as a parameter. The first domain provided
-                        will be the subject CN of the certificate, and all
-                        domains will be Subject Alternative Names on the
-                        certificate. The first domain will also be used in
-                        some software user interfaces and as the file paths
-                        for the certificate and related material unless
-                        otherwise specified or you already have a certificate
-                        with the same name. In the case of a name collision it
-                        will append a number like 0001 to the file path name.
-                        (default: Ask)
-  --eab-kid EAB_KID     Key Identifier for External Account Binding (default:
-                        None)
-  --eab-hmac-key EAB_HMAC_KEY
-                        HMAC key for External Account Binding (default: None)
-  --cert-name CERTNAME  Certificate name to apply. This name is used by
-                        Certbot for housekeeping and in file paths; it doesn't
-                        affect the content of the certificate itself. To see
-                        certificate names, run 'certbot certificates'. When
-                        creating a new certificate, specifies the new
-                        certificate's name. (default: the first provided
-                        domain or the name of an existing certificate on your
-                        system for the same domains)
-  --dry-run             Perform a test run of the client, obtaining test
-                        (invalid) certificates but not saving them to disk.
-                        This can currently only be used with the 'certonly'
-                        and 'renew' subcommands. Note: Although --dry-run
-                        tries to avoid making any persistent changes on a
-                        system, it is not completely side-effect free: if used
-                        with webserver authenticator plugins like apache and
-                        nginx, it makes and then reverts temporary config
-                        changes in order to obtain test certificates, and
-                        reloads webservers to deploy and then roll back those
-                        changes. It also calls --pre-hook and --post-hook
-                        commands if they are defined because they may be
-                        necessary to accurately simulate renewal. --deploy-
-                        hook commands are not called. (default: False)
-  --debug-challenges    After setting up challenges, wait for user input
-                        before submitting to CA (default: False)
-  --preferred-chain PREFERRED_CHAIN
-                        Set the preferred certificate chain. If the CA offers
-                        multiple certificate chains, prefer the chain whose
-                        topmost certificate was issued from this Subject
-                        Common Name. If no match, the default offered chain
-                        will be used. (default: None)
   --preferred-challenges PREF_CHALLS
                         A sorted, comma delimited list of the preferred
                         challenge to use during authorization with the most
@@ -112,25 +48,6 @@ optional arguments:
                         for details. ACME Challenges are versioned, but if you
                         pick "http" rather than "http-01", Certbot will select
                         the latest version automatically. (default: [])
-  --user-agent USER_AGENT
-                        Set a custom user agent string for the client. User
-                        agent strings allow the CA to collect high level
-                        statistics about success rates by OS, plugin and use
-                        case, and to know when to deprecate support for past
-                        Python versions and flags. If you wish to hide this
-                        information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.21.0 (certbot;
-                        OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
-                        (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
-                        The flags encoded in the user agent are: --duplicate,
-                        --force-renew, --allow-subset-of-names, -n, and
-                        whether any hooks are set.
-  --user-agent-comment USER_AGENT_COMMENT
-                        Add a comment to the default user agent string. May be
-                        used when repackaging Certbot or calling it from
-                        another tool to allow additional statistical data to
-                        be collected. Ignored if --user-agent is set.
-                        (Example: Foo-Wrapper/1.0) (default: None)
 
 automation:
   Flags for automating execution & other tweaks

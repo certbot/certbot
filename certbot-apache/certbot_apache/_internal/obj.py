@@ -176,7 +176,6 @@ class VirtualHost:
                 names=", ".join(self.get_names()),
                 https="Yes" if self.ssl else "No"))
 
-
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.filep == other.filep and self.path == other.path and

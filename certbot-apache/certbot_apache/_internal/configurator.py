@@ -16,9 +16,8 @@ from typing import Union
 
 from acme import challenges
 from certbot import errors
-from certbot import interfaces
 from certbot import util
-from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -116,7 +115,7 @@ class OsOptions:
 # TODO: Add directives to sites-enabled... not sites-available.
 #     sites-available doesn't allow immediate find_dir search even with save()
 #     and load()
-class ApacheConfigurator(common.Installer, interfaces.Authenticator):
+class ApacheConfigurator(common.Configurator):
     """Apache configurator.
 
     :ivar config: Configuration.
@@ -486,7 +485,7 @@ class ApacheConfigurator(common.Installer, interfaces.Authenticator):
             name=assertions.PASS,
             ancestor=None,
             filepath=self.parser.loc["root"],
-            metadata=metadata
+            metadata=metadata,
         )
 
     def deploy_cert(self, domain, cert_path, key_path,

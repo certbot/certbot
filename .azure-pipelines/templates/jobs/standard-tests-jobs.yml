@@ -4,14 +4,14 @@ jobs:
       PYTHON_VERSION: 3.10
     strategy:
       matrix:
-        macos-py36:
+        macos-py36-cover:
           IMAGE_NAME: macOS-10.15
           PYTHON_VERSION: 3.6
-          TOXENV: py36
-        macos-py310:
+          TOXENV: py36-cover
+        macos-py310-cover:
           IMAGE_NAME: macOS-10.15
           PYTHON_VERSION: 3.10
-          TOXENV: py39
+          TOXENV: py310-cover
         windows-py36:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.6

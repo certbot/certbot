@@ -1,5 +1,4 @@
 """Module executing integration tests against certbot core."""
-
 import os
 from os.path import exists
 from os.path import join
@@ -7,14 +6,18 @@ import re
 import shutil
 import subprocess
 import time
+from typing import Iterable
+from typing import Generator
+from typing import Type
 
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
 from cryptography.hazmat.primitives.asymmetric.ec import SECP384R1
 from cryptography.hazmat.primitives.asymmetric.ec import SECP521R1
 from cryptography.x509 import NameOID
 import pytest
 
-from certbot_integration_tests.certbot_tests import context as certbot_context
+from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
 from certbot_integration_tests.certbot_tests.assertions import assert_elliptic_key
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_owner
@@ -30,17 +33,17 @@ from certbot_integration_tests.utils import misc
 
 
 @pytest.fixture(name='context')
-def test_context(request):
-    # pylint: disable=missing-function-docstring
+def test_context(request: pytest.FixtureRequest) -> Generator[IntegrationTestsContext, None, None]:
+    """Fixture providing the integration test context."""
     # Fixture request is a built-in pytest fixture describing current test request.
-    integration_test_context = certbot_context.IntegrationTestsContext(request)
+    integration_test_context = IntegrationTestsContext(request)
     try:
         yield integration_test_context
     finally:
         integration_test_context.cleanup()
 
 
-def test_basic_commands(context):
+def test_basic_commands(context: IntegrationTestsContext) -> None:
     """Test simple commands on Certbot CLI."""
     # TMPDIR env variable is set to workspace for the certbot subprocess.
     # So tempdir module will create any temporary files/dirs in workspace,
@@ -58,7 +61,7 @@ def test_basic_commands(context):
     assert initial_count_tmpfiles == new_count_tmpfiles
 
 
-def test_hook_dirs_creation(context):
+def test_hook_dirs_creation(context: IntegrationTestsContext) -> None:
     """Test all hooks directory are created during Certbot startup."""
     context.certbot(['register'])
 
@@ -66,7 +69,7 @@ def test_hook_dirs_creation(context):
         assert os.path.isdir(hook_dir)
 
 
-def test_registration_override(context):
+def test_registration_override(context: IntegrationTestsContext) -> None:
     """Test correct register/unregister, and registration override."""
     context.certbot(['register'])
     context.certbot(['unregister'])
@@ -76,14 +79,14 @@ def test_registration_override(context):
     context.certbot(['update_account', '--email', 'ex1@domain.org,ex2@domain.org'])
 
 
-def test_prepare_plugins(context):
+def test_prepare_plugins(context: IntegrationTestsContext) -> None:
     """Test that plugins are correctly instantiated and displayed."""
     stdout, _ = context.certbot(['plugins', '--init', '--prepare'])
 
     assert 'webroot' in stdout
 
 
-def test_http_01(context):
+def test_http_01(context: IntegrationTestsContext) -> None:
     """Test the HTTP-01 challenge using standalone plugin."""
     # We start a server listening on the port for the
     # TLS-SNI challenge to prevent regressions in #3601.
@@ -101,7 +104,7 @@ def test_http_01(context):
     assert_saved_renew_hook(context.config_dir, certname)
 
 
-def test_manual_http_auth(context):
+def test_manual_http_auth(context: IntegrationTestsContext) -> None:
     """Test the HTTP-01 challenge using manual plugin."""
     with misc.create_http_server(context.http_01_port) as webroot,\
             misc.manual_http_hooks(webroot, context.http_01_port) as scripts:
@@ -122,7 +125,7 @@ def test_manual_http_auth(context):
     assert_saved_renew_hook(context.config_dir, certname)
 
 
-def test_manual_dns_auth(context):
+def test_manual_dns_auth(context: IntegrationTestsContext) -> None:
     """Test the DNS-01 challenge using manual plugin."""
     certname = context.get_domain('dns')
     context.certbot([
@@ -144,14 +147,14 @@ def test_manual_dns_auth(context):
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
 
 
-def test_certonly(context):
+def test_certonly(context: IntegrationTestsContext) -> None:
     """Test the certonly verb on certbot."""
     context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname')])
 
     assert_cert_count_for_lineage(context.config_dir, 'newname', 1)
 
 
-def test_certonly_webroot(context):
+def test_certonly_webroot(context: IntegrationTestsContext) -> None:
     """Test the certonly verb with webroot plugin"""
     with misc.create_http_server(context.http_01_port) as webroot:
         certname = context.get_domain('webroot')
@@ -160,7 +163,7 @@ def test_certonly_webroot(context):
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
 
-def test_auth_and_install_with_csr(context):
+def test_auth_and_install_with_csr(context: IntegrationTestsContext) -> None:
     """Test certificate issuance and install using an existing CSR."""
     certname = context.get_domain('le3')
     key_path = join(context.workspace, 'key.pem')
@@ -187,7 +190,7 @@ def test_auth_and_install_with_csr(context):
     ])
 
 
-def test_renew_files_permissions(context):
+def test_renew_files_permissions(context: IntegrationTestsContext) -> None:
     """Test proper certificate file permissions upon renewal"""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
@@ -207,7 +210,7 @@ def test_renew_files_permissions(context):
     assert_equals_group_permissions(privkey1, privkey2)
 
 
-def test_renew_with_hook_scripts(context):
+def test_renew_with_hook_scripts(context: IntegrationTestsContext) -> None:
     """Test certificate renewal with script hooks."""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
@@ -221,7 +224,7 @@ def test_renew_with_hook_scripts(context):
     assert_hook_execution(context.hook_probe, 'deploy')
 
 
-def test_renew_files_propagate_permissions(context):
+def test_renew_files_propagate_permissions(context: IntegrationTestsContext) -> None:
     """Test proper certificate renewal with custom permissions propagated on private key."""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
@@ -263,7 +266,7 @@ def test_renew_files_propagate_permissions(context):
         assert_world_no_permissions(privkey2)
 
 
-def test_graceful_renew_it_is_not_time(context):
+def test_graceful_renew_it_is_not_time(context: IntegrationTestsContext) -> None:
     """Test graceful renew is not done when it is not due time."""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
@@ -278,7 +281,7 @@ def test_graceful_renew_it_is_not_time(context):
         assert_hook_execution(context.hook_probe, 'deploy')
 
 
-def test_graceful_renew_it_is_time(context):
+def test_graceful_renew_it_is_time(context: IntegrationTestsContext) -> None:
     """Test graceful renew is done when it is due time."""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
@@ -298,7 +301,7 @@ def test_graceful_renew_it_is_time(context):
     assert_hook_execution(context.hook_probe, 'deploy')
 
 
-def test_renew_with_changed_private_key_complexity(context):
+def test_renew_with_changed_private_key_complexity(context: IntegrationTestsContext) -> None:
     """Test proper renew with updated private key complexity."""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname, '--rsa-key-size', '4096'])
@@ -320,7 +323,7 @@ def test_renew_with_changed_private_key_complexity(context):
     assert os.stat(key3).st_size < 1800  # 2048 bits keys takes less than 1800 bytes
 
 
-def test_renew_ignoring_directory_hooks(context):
+def test_renew_ignoring_directory_hooks(context: IntegrationTestsContext) -> None:
     """Test hooks are ignored during renewal with relevant CLI flag."""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
@@ -335,7 +338,7 @@ def test_renew_ignoring_directory_hooks(context):
         assert_hook_execution(context.hook_probe, 'deploy')
 
 
-def test_renew_empty_hook_scripts(context):
+def test_renew_empty_hook_scripts(context: IntegrationTestsContext) -> None:
     """Test proper renew with empty hook scripts."""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
@@ -353,7 +356,7 @@ def test_renew_empty_hook_scripts(context):
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
 
 
-def test_renew_hook_override(context):
+def test_renew_hook_override(context: IntegrationTestsContext) -> None:
     """Test correct hook override on renew."""
     certname = context.get_domain('override')
     context.certbot([
@@ -398,7 +401,7 @@ def test_renew_hook_override(context):
     assert_hook_execution(context.hook_probe, 'deploy_override')
 
 
-def test_invalid_domain_with_dns_challenge(context):
+def test_invalid_domain_with_dns_challenge(context: IntegrationTestsContext) -> None:
     """Test certificate issuance failure with DNS-01 challenge."""
     # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
     domains = ','.join([context.get_domain('dns1'), context.get_domain('fail-dns1')])
@@ -415,7 +418,7 @@ def test_invalid_domain_with_dns_challenge(context):
     assert context.get_domain('fail-dns1') not in stdout
 
 
-def test_reuse_key(context):
+def test_reuse_key(context: IntegrationTestsContext) -> None:
     """Test various scenarios where a key is reused."""
     certname = context.get_domain('reusekey')
     context.certbot(['--domains', certname, '--reuse-key'])
@@ -458,12 +461,12 @@ def test_reuse_key(context):
     assert len({cert1, cert2, cert3}) == 3
 
 
-def test_incorrect_key_type(context):
+def test_incorrect_key_type(context: IntegrationTestsContext) -> None:
     with pytest.raises(subprocess.CalledProcessError):
         context.certbot(['--key-type="failwhale"'])
 
 
-def test_ecdsa(context):
+def test_ecdsa(context: IntegrationTestsContext) -> None:
     """Test issuance for ECDSA CSR based request (legacy supported mode)."""
     key_path = join(context.workspace, 'privkey-p384.pem')
     csr_path = join(context.workspace, 'csr-p384.der')
@@ -484,7 +487,7 @@ def test_ecdsa(context):
     assert 'ASN1 OID: secp384r1' in certificate
 
 
-def test_default_key_type(context):
+def test_default_key_type(context: IntegrationTestsContext) -> None:
     """Test default key type is RSA"""
     certname = context.get_domain('renew')
     context.certbot([
@@ -495,7 +498,7 @@ def test_default_key_type(context):
     assert_rsa_key(filename)
 
 
-def test_default_curve_type(context):
+def test_default_curve_type(context: IntegrationTestsContext) -> None:
     """test that the curve used when not specifying any is secp256r1"""
     certname = context.get_domain('renew')
     context.certbot([
@@ -509,9 +512,10 @@ def test_default_curve_type(context):
     # Curve name, Curve class, ACME servers to skip
     ('secp256r1', SECP256R1, []),
     ('secp384r1', SECP384R1, []),
-    ('secp521r1', SECP521R1, ['boulder-v1', 'boulder-v2'])]
+    ('secp521r1', SECP521R1, ['boulder-v2'])]
 )
-def test_ecdsa_curves(context, curve, curve_cls, skip_servers):
+def test_ecdsa_curves(context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve],
+                      skip_servers: Iterable[str]) -> None:
     """Test issuance for each supported ECDSA curve"""
     if context.acme_server in skip_servers:
         pytest.skip('ACME server {} does not support ECDSA curve {}'
@@ -527,7 +531,7 @@ def test_ecdsa_curves(context, curve, curve_cls, skip_servers):
     assert_elliptic_key(key, curve_cls)
 
 
-def test_renew_with_ec_keys(context):
+def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
     """Test proper renew with updated private key complexity."""
     certname = context.get_domain('renew')
     context.certbot([
@@ -567,7 +571,7 @@ def test_renew_with_ec_keys(context):
     assert_rsa_key(key3)
 
 
-def test_ocsp_must_staple(context):
+def test_ocsp_must_staple(context: IntegrationTestsContext) -> None:
     """Test that OCSP Must-Staple is correctly set in the generated certificate."""
     if context.acme_server == 'pebble':
         pytest.skip('Pebble does not support OCSP Must-Staple.')
@@ -580,7 +584,7 @@ def test_ocsp_must_staple(context):
     assert 'status_request' in certificate or '1.3.6.1.5.5.7.1.24' in certificate
 
 
-def test_revoke_simple(context):
+def test_revoke_simple(context: IntegrationTestsContext) -> None:
     """Test various scenarios that revokes a certificate."""
     # Default action after revoke is to delete the certificate.
     certname = context.get_domain()
@@ -611,7 +615,7 @@ def test_revoke_simple(context):
     context.certbot(['revoke', '--cert-path', cert_path, '--key-path', key_path])
 
 
-def test_revoke_and_unregister(context):
+def test_revoke_and_unregister(context: IntegrationTestsContext) -> None:
     """Test revoke with a reason then unregister."""
     cert1 = context.get_domain('le1')
     cert2 = context.get_domain('le2')
@@ -639,7 +643,7 @@ def test_revoke_and_unregister(context):
     assert cert3 in stdout
 
 
-def test_revoke_mutual_exclusive_flags(context):
+def test_revoke_mutual_exclusive_flags(context: IntegrationTestsContext) -> None:
     """Test --cert-path and --cert-name cannot be used during revoke."""
     cert = context.get_domain('le1')
     context.certbot(['-d', cert])
@@ -651,7 +655,7 @@ def test_revoke_mutual_exclusive_flags(context):
     assert 'Exactly one of --cert-path or --cert-name must be specified' in error.value.stderr
 
 
-def test_revoke_multiple_lineages(context):
+def test_revoke_multiple_lineages(context: IntegrationTestsContext) -> None:
     """Test revoke does not delete certs if multiple lineages share the same dir."""
     cert1 = context.get_domain('le1')
     context.certbot(['-d', cert1])
@@ -683,11 +687,8 @@ def test_revoke_multiple_lineages(context):
         assert 'Not deleting revoked certificates due to overlapping archive dirs' in f.read()
 
 
-def test_wildcard_certificates(context):
+def test_wildcard_certificates(context: IntegrationTestsContext) -> None:
     """Test wildcard certificate issuance."""
-    if context.acme_server == 'boulder-v1':
-        pytest.skip('Wildcard certificates are not supported on ACME v1')
-
     certname = context.get_domain('wild')
 
     context.certbot([
@@ -700,7 +701,7 @@ def test_wildcard_certificates(context):
     assert exists(join(context.config_dir, 'live', certname, 'fullchain.pem'))
 
 
-def test_ocsp_status_stale(context):
+def test_ocsp_status_stale(context: IntegrationTestsContext) -> None:
     """Test retrieval of OCSP statuses for staled config"""
     sample_data_path = misc.load_sample_data_path(context.workspace)
     stdout, _ = context.certbot(['certificates', '--config-dir', sample_data_path])
@@ -711,7 +712,7 @@ def test_ocsp_status_stale(context):
                                           .format(stdout.count('EXPIRED')))
 
 
-def test_ocsp_status_live(context):
+def test_ocsp_status_live(context: IntegrationTestsContext) -> None:
     """Test retrieval of OCSP statuses for live config"""
     cert = context.get_domain('ocsp-check')
 
@@ -733,7 +734,7 @@ def test_ocsp_status_live(context):
     assert stdout.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
 
 
-def test_ocsp_renew(context):
+def test_ocsp_renew(context: IntegrationTestsContext) -> None:
     """Test that revoked certificates are renewed."""
     # Obtain a certificate
     certname = context.get_domain('ocsp-renew')
@@ -750,7 +751,7 @@ def test_ocsp_renew(context):
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
 
 
-def test_dry_run_deactivate_authzs(context):
+def test_dry_run_deactivate_authzs(context: IntegrationTestsContext) -> None:
     """Test that Certbot deactivates authorizations when performing a dry run"""
 
     name = context.get_domain('dry-run-authz-deactivation')
@@ -768,7 +769,7 @@ def test_dry_run_deactivate_authzs(context):
         assert log_line in f.read(), 'Second order should have been recreated due to authz reuse'
 
 
-def test_preferred_chain(context):
+def test_preferred_chain(context: IntegrationTestsContext) -> None:
     """Test that --preferred-chain results in the correct chain.pem being produced"""
     try:
         issuers = misc.get_acme_issuers(context)

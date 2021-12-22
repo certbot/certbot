@@ -6,11 +6,11 @@ import re
 import shutil
 import tarfile
 
+from certbot_compatibility_test import errors
 import josepy as jose
 
 from certbot._internal import constants
 from certbot.tests import util as test_util
-from certbot_compatibility_test import errors
 
 _KEY_BASE = "rsa2048_key.pem"
 KEY_PATH = test_util.vector_path(_KEY_BASE)
@@ -19,7 +19,7 @@ JWK = jose.JWKRSA(key=test_util.load_rsa_private_key(_KEY_BASE))
 IP_REGEX = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
 
 
-def create_le_config(parent_dir):
+def create_le_config(parent_dir: str) -> argparse.Namespace:
     """Sets up LE dirs in parent_dir and returns the config dict"""
     config = copy.deepcopy(constants.CLI_DEFAULTS)
 
@@ -36,7 +36,7 @@ def create_le_config(parent_dir):
     return argparse.Namespace(**config)
 
 
-def extract_configs(configs, parent_dir):
+def extract_configs(configs: str, parent_dir: str) -> str:
     """Extracts configs to a new dir under parent_dir and returns it"""
     config_dir = os.path.join(parent_dir, "configs")
 
