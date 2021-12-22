@@ -41,14 +41,6 @@ from certbot._internal.plugins import selection as plug_sel
 from certbot.compat import os
 from certbot.display import util as display_util
 
-try:
-    # Only cryptography>=2.5 has ocsp module
-    # and signature_hash_algorithm attribute in OCSPResponse class
-    from cryptography.x509 import ocsp  # pylint: disable=ungrouped-imports
-    getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
-except (ImportError, AttributeError):  # pragma: no cover
-    ocsp = None  # type: ignore
-
 
 logger = logging.getLogger(__name__)
 
@@ -338,34 +330,20 @@ def _ari_should_renew(
     time within the Suggested Window, and returns True if the selected time is
     in the past.
     """
-    # We need to use OCSP, so if we failed to import it, just bail out now.
-    if ocsp is None:
-        logger.info("Skipping ARI check because can't compute ARI path")
-        return False
-
-    # Compute an OCSP request using the given certificate and its issuer.
-    with open(lineage.cert_path, 'rb') as cert_file:
-        cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
-    with open(lineage.chain_path, 'rb') as chain_file:
-        issuer = x509.load_pem_x509_certificate(chain_file.read(), default_backend())
-    builder = ocsp.OCSPRequestBuilder()
-    builder = builder.add_certificate(cert, issuer, hashes.SHA1())
-    ocspRequest = builder.build()
-
-    # Construct the ARI path from the OCSP CertID sequence.
-    key_hash = ocspRequest.issuer_key_hash.hex()
-    name_hash = ocspRequest.issuer_name_hash.hex()
-    serial = hex(ocspRequest.serial_number)[2:]
-    path = f"{key_hash}/{name_hash}/{serial}"
-
     # Construct an ACME client, violating like three layers of abstraction to do so.
     plugins = plugins_disco.PluginsRegistry.find_all()
     installer, authenticator = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     from certbot._internal import main
     le_client = main._init_le_client(config, authenticator, installer)
 
+    # Load the cert and its issuer so the ari request can be constructed.
+    with open(lineage.cert_path, 'rb') as cert_file:
+        cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
+    with open(lineage.chain_path, 'rb') as chain_file:
+        issuer = x509.load_pem_x509_certificate(chain_file.read(), default_backend())
+
     # Query ACME for the suggested window and pick a time within it, inclusive.
-    ari = le_client.acme.get_renewal_info(path)
+    ari = le_client.acme.get_renewal_info(cert, issuer)
     window_secs = ari.window.end + datetime.timedelta(seconds=1) - ari.window.start
     rand_offset = random.randrange(int(window_secs.total_seconds()))
     instant = ari.window.start + datetime.timedelta(seconds=rand_offset)

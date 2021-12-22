@@ -26,6 +26,8 @@ from typing import Tuple
 from typing import Union
 import warnings
 
+from cryptography.hazmat.primitives import hashes
+from cryptography.x509 import ocsp
 import josepy as jose
 import OpenSSL
 import requests
@@ -807,13 +809,26 @@ class ClientV2(ClientBase):
                 return orderr
         raise errors.TimeoutError()
 
-    def get_renewal_info(self, certIDPath: str) -> messages.RenewalInfoResource:
+    def get_renewal_info(self, cert: jose.ComparableX509, issuer: jose.ComparableX509) -> messages.RenewalInfoResource:
         """Fetch ACME Renewal Information for certificate.
 
-        :param str certIDPath: The path (consisting of hex-encoded issuer key
-            hash, issuer name hash, and serial) which uniquely identifies the cert.
+        :param .ComparableX509 cert: The cert whose renewal info should be fetched.
+        :param .ComparableX509 issuer: The intermediate which issued the above cert,
+            which will be used to uniquely identify the cert in the ARI request.
         """
-        return self.net.get(self.directory['renewalInfo'].rstrip('/') + '/' + certIDPath)
+        # Rather than compute the serial, issuer key hash, and issuer name hash
+        # ourselves, we instead build an OCSP Request and extract those fields.
+        builder = ocsp.OCSPRequestBuilder()
+        builder = builder.add_certificate(cert, issuer, hashes.SHA1())
+        ocspRequest = builder.build()
+
+        # Construct the ARI path from the OCSP CertID sequence.
+        key_hash = ocspRequest.issuer_key_hash.hex()
+        name_hash = ocspRequest.issuer_name_hash.hex()
+        serial = hex(ocspRequest.serial_number)[2:]
+        path = f"{key_hash}/{name_hash}/{serial}"
+
+        return self.net.get(self.directory['renewalInfo'].rstrip('/') + '/' + path)
 
     def revoke(self, cert: jose.ComparableX509, rsn: int) -> None:
         """Revoke certificate.
