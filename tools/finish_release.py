@@ -110,6 +110,29 @@ def download_azure_artifacts(tempdir):
 
     version = build_client.get_build('certbot', build_id).source_branch.split('v')[1]
     return version
+def sign_windows_installer(tempdir, css):
+    """Create a github release, including uploading additional assets
+
+    :param str path: path to a temporary directory where azure artifacts are located
+    :param css path: path to code signing server
+
+    """
+    # This assumes that your username on your local envionement is the same as the one on the css
+    username = getpass.getuser() 
+    host = css
+    command = 'ssh ' + username + '@' + css + ' ./sign'
+    unsigned_css_path = username + '@' + host + ':~'
+    signed_css_path = username + '@' + host + ':~certbot-beta-installer-win32-signed.exe'
+
+    # Upload unsigned executable to CSS, ssh into CSS and sign executable, then upload signed release
+
+    print("Copy unsigned installer to css")
+    subprocess.run(["scp", tempdir + '/windows-installer/certbot-beta-installer-win32.exe' , unsigned_css_path])
+    print("Signing installer")
+    subprocess.run(command.split())
+    print("Copy signed installer to local path")
+    subprocess.run(["scp", signed_css_path , tempdir + '/windows-installer/'])
+
 
 def create_github_release(github_access_token, tempdir, version, css):
     """Use build artifacts to create a github release, including uploading additional assets
@@ -128,19 +151,6 @@ def create_github_release(github_access_token, tempdir, version, css):
                                      'Certbot {0}'.format(version),
                                      release_notes,
                                      draft=True)
-
-    # Upload unsigned executable to CSS, ssh into CSS and sign executable, then upload signed release
-
-    # This assumes that your username on your local envionement is the same as the one on the css
-    username = getpass.getuser() 
-    host = css
-    command = 'ssh ' + username + '@' + css + ' ./sign'
-    unsigned_css_path = username + '@' + host + ':~/unsigned-exes/'
-    signed_css_path = username + '@' + host + ':~/signed-exes/certbot-beta-installer-win32-signed.exe'
-
-    subprocess.run(["scp", tempdir + '/windows-installer/certbot-beta-installer-win32.exe' , unsigned_css_path])
-    subprocess.run(command.split())
-    subprocess.run(["scp", signed_css_path , tempdir + '/windows-installer/'])
 
     # Upload windows installer to release
     print("Uploading windows installer")
@@ -237,11 +247,13 @@ def main(args):
         # Once the GitHub release has been published, trying to publish it
         # again fails. Publishing the snaps can be done multiple times though
         # so we do that first to make it easier to run the script again later
-        # if something goes wrong.
+        # if something goes wrong.        
+        if parsed_args.publish_windows:
+            sign_windows_installer(tempdir, css)
         if parsed_args.publish_snaps:
             promote_snaps(version)
         if parsed_args.publish_windows:
-            create_github_release(github_access_token, tempdir, version, css)
+            create_github_release(github_access_token, tempdir, version)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
