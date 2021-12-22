@@ -22,6 +22,7 @@ import pkg_resources
 import pytz
 
 import certbot
+from certbot import ari
 from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
@@ -964,6 +965,22 @@ class RenewableCert(interfaces.RenewableCert):
             logger.debug(str(e))
             return False
 
+    def ari_shouldrenew(self, version: int) -> bool:
+        """Should the specified cert version be renewed according to ARI?
+
+        :param int version: the desired version number
+
+        :returns: True if the certificate should be renewed, otherwise False
+        :rtype: bool
+        """
+        # Only try to check ARI if we're talking to a staging server.
+        if not self.is_test_cert():
+            return False
+
+        cert_path = self.version("cert", version)
+        chain_path = self.version("chain", version)
+        return ari.AriChecker("FIXME").should_renew_by_paths(cert_path, chain_path)
+
     def autorenewal_is_enabled(self) -> bool:
         """Is automatic renewal enabled for this cert?
 
@@ -992,26 +1009,30 @@ class RenewableCert(interfaces.RenewableCert):
         :rtype: bool
 
         """
-        if self.autorenewal_is_enabled():
-            # Consider whether to attempt to autorenew this cert now
+        if not self.autorenewal_is_enabled():
+            return False
 
-            # Renewals on the basis of revocation
-            if self.ocsp_revoked(self.latest_common_version()):
-                logger.debug("Should renew, certificate is revoked.")
-                return True
+        # Renewals on the basis of revocation
+        if self.ocsp_revoked(self.latest_common_version()):
+            logger.debug("Should renew, certificate is revoked.")
+            return True
 
-            # Renews some period before expiry time
-            default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
-            interval = self.configuration.get("renew_before_expiry", default_interval)
-            expiry = crypto_util.notAfter(self.version(
-                "cert", self.latest_common_version()))
-            now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-            if expiry < add_time_interval(now, interval):
-                logger.debug("Should renew, less than %s before certificate "
-                             "expiry %s.", interval,
-                             expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
-                return True
-        return False
+        # Renewals on the basis on ACME Renewal Info
+        if self.ari_shouldrenew():
+            logger.debug("Should renew, ARI renewal window in past.")
+            return True
+
+        # Renews some period before expiry time
+        default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
+        interval = self.configuration.get("renew_before_expiry", default_interval)
+        expiry = crypto_util.notAfter(self.version(
+            "cert", self.latest_common_version()))
+        now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+        if expiry < add_time_interval(now, interval):
+            logger.debug("Should renew, less than %s before certificate "
+                            "expiry %s.", interval,
+                            expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
+            return True
 
     @classmethod
     def new_lineage(cls, lineagename: str, cert: bytes, privkey: bytes, chain: bytes,

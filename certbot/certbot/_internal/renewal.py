@@ -312,42 +312,11 @@ def should_renew(config: configuration.NamespaceConfig, lineage: storage.Renewab
     if lineage.should_autorenew():
         logger.info("Certificate is due for renewal, auto-renewing...")
         return True
-    if util.is_staging(config.server) and _ari_should_renew(config, lineage):
-        logger.info("Suggested renewal time in the past, renewing...")
-        return True
     if config.dry_run:
         logger.info("Certificate not due for renewal, but simulating renewal for dry run")
         return True
     display_util.notify("Certificate not yet due for renewal")
     return False
-
-
-def _ari_should_renew(
-    config: configuration.NamespaceConfig, lineage: storage.RenewableCert) -> bool:
-    """Return true if ARI says the certificate should be renewed.
-
-    Queries the ACME server for the certificate's Renewal Info, picks a random
-    time within the Suggested Window, and returns True if the selected time is
-    in the past.
-    """
-    # Construct an ACME client, violating like three layers of abstraction to do so.
-    plugins = plugins_disco.PluginsRegistry.find_all()
-    installer, authenticator = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-    from certbot._internal import main
-    le_client = main._init_le_client(config, authenticator, installer)
-
-    # Load the cert and its issuer so the ari request can be constructed.
-    with open(lineage.cert_path, 'rb') as cert_file:
-        cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
-    with open(lineage.chain_path, 'rb') as chain_file:
-        issuer = x509.load_pem_x509_certificate(chain_file.read(), default_backend())
-
-    # Query ACME for the suggested window and pick a time within it, inclusive.
-    ari = le_client.acme.get_renewal_info(cert, issuer)
-    window_secs = ari.window.end + datetime.timedelta(seconds=1) - ari.window.start
-    rand_offset = random.randrange(int(window_secs.total_seconds()))
-    instant = ari.window.start + datetime.timedelta(seconds=rand_offset)
-    return instant <= datetime.datetime.now()
 
 
 def _avoid_invalidating_lineage(config: configuration.NamespaceConfig,
