@@ -289,23 +289,17 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_findbest_continues_on_short_domain(self):
         # pylint: disable=protected-access
-        chosen_vhost = self.config._find_best_vhost("purple.com")
-        self.assertEqual(None, chosen_vhost)
+        self.assertIsNone(self.config._find_best_vhost("purple.com"))
 
     def test_findbest_continues_on_long_domain(self):
         # pylint: disable=protected-access
-        chosen_vhost = self.config._find_best_vhost("green.red.purple.com")
-        self.assertEqual(None, chosen_vhost)
+        self.assertIsNone(self.config._find_best_vhost("green.red.purple.com"))
 
     def test_find_best_vhost(self):
         # pylint: disable=protected-access
-        self.assertEqual(
-            self.vh_truth[3], self.config._find_best_vhost("certbot.demo"))
-        self.assertEqual(
-            self.vh_truth[0],
-            self.config._find_best_vhost("encryption-example.demo"))
-        self.assertEqual(
-            self.config._find_best_vhost("does-not-exist.com"), None)
+        self.assertEqual(self.vh_truth[3], self.config._find_best_vhost("certbot.demo"))
+        self.assertEqual(self.vh_truth[0], self.config._find_best_vhost("encryption-example.demo"))
+        self.assertEqual(self.config._find_best_vhost("does-not-exist.com"), None)
 
     def test_find_best_vhost_variety(self):
         # pylint: disable=protected-access

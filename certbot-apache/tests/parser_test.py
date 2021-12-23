@@ -107,8 +107,7 @@ class BasicParserTest(util.ParserTest):
             self.assertIs(self.parser.find_dir("AddDirectiveBeginning", "testBegin", conf), True)
 
     def test_empty_arg(self):
-        self.assertEqual(None,
-                          self.parser.get_arg("/files/whatever/nonexistent"))
+        self.assertIsNone(self.parser.get_arg("/files/whatever/nonexistent"))
 
     def test_add_dir_to_ifmodssl(self):
         """test add_dir_to_ifmodssl.

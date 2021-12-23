@@ -76,7 +76,7 @@ class SelectVhostTest(unittest.TestCase):
             (display_util.CANCEL, -1),
         ]
 
-        self.assertEqual(None, self._call(self.vhosts))
+        self.assertIsNone(self._call(self.vhosts))
 
     def test_no_vhosts(self):
         self.assertIsNone(self._call([]))

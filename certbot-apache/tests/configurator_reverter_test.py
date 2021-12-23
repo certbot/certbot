@@ -14,7 +14,6 @@ import util
 class ConfiguratorReverterTest(util.ApacheTest):
     """Test for ApacheConfigurator reverter methods"""
 
-
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
 
@@ -48,7 +47,7 @@ class ConfiguratorReverterTest(util.ApacheTest):
         self.config.reverter = mock_finalize
         self.config.save("Example Title")
 
-        self.assertTrue(mock_finalize.is_called, True)
+        self.assertIs(mock_finalize.is_called, True)
 
     def test_revert_challenge_config(self):
         mock_load = mock.Mock()
