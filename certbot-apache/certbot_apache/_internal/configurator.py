@@ -1709,20 +1709,11 @@ class ApacheConfigurator(common.Configurator):
 
     def _deduplicate_directives(self, vh_path, directives):
         """
-        _deduplicate_directives(self, vh_path, directives)
         Remove duplicate or extraneous server directives from an SSL vhost.
-        Parameters:
-            self (Certbot):
-        This plugin class.
-            vh_path (str): Path to the Apache config file for the VH that should be cleaned up.  This is relative to the Apache root
-        configuration directory and typically will end in ``sites-available/`` or similar.  It may refer to a file outside of this directory if it is included
-        via a symlink within this directory tree; however, any such symlinks must already exist as directories on disk at specified locations in order for
-        Certbot's normal operation to function correctly; thus plugins should take care when using this path not to modify its contents outside of Certbot's
-        scope without understanding and applying that consequence in full detail!  Note also that files referenced by VirtualHosts are generally subject to
-        per-directory path rewriting rules so paths within them are not necessarily valid references outside their containing VirtualHost even if they appear
-        valid there!  The only absolute reference here is `/`, which can always be used reliably regardless of context!
-            directives (list): A list of
-        directive names which should only appear once
+        
+        :param self: This plugin class.
+        :param vh_path: Path to the Apache config file for the VH that should be cleaned up.
+        :param directives: A list of directive names
         """
         for directive in directives:
             while len(self.parser.find_dir(directive, None,
@@ -1735,14 +1726,10 @@ class ApacheConfigurator(common.Configurator):
         """
         Removes directives from the Apache config file.
 
-        Parameters:
-            vh_path (str): Path to the relevant <VirtualHost> block within the Apache
+        :param vh_path: Path to the relevant <VirtualHost> block within the Apache
         configuration.
 
-            directives (list): A list of directive names that should be removed from the <VirtualHost> block.
-
-                Example:
-        ["SSLCertificateFile", "SSLCertificateKeyFile"]
+        :param directives: A list of directive names that should be removed from the <VirtualHost> block.
         """
         for directive in directives:
             while self.parser.find_dir(directive, None, vh_path, False):
@@ -1754,21 +1741,6 @@ class ApacheConfigurator(common.Configurator):
         """
         Adds directives to the VirtualHost in ``vh_path`` that implement a dummy SSL
         configuration.
-
-        The function adds:
-
-          * ``SSLCertificateFile`` with the
-        value of :data:`constants.CLI_DEFAULTS["ssl_cert"]` (i.e., :file:`/etc/ssl/certs/ssl-cert-snakeoil.pem`).
-          * ``SSLCertificateKeyFile`` with the value
-        of :data:`constants.CLI_DEFAULTS["ssl_key"]`. (i.e., :file:`/etc/ssl/private/ssl-cert-snakeoil.key)`.
-
-            .. note The file paths are relative to the
-        default Apache configuration directory, which is usually located at /etc/. If you have your own custom configuration directory, then you need to run
-        this command from within that directory as well since it will not be able to find those files otherwise and will fail silently!
-
-            .. warning This
-        function does not check for existing SSL directives or other values set in your VirtualHost config! It just blindly adds whatever values it has been
-        given without checking if they're already present or not -
         """
         self.parser.add_dir(vh_path, "SSLCertificateFile",
                             "insert_cert_file_path")
@@ -1781,17 +1753,10 @@ class ApacheConfigurator(common.Configurator):
 
     def _add_servername_alias(self, target_name, vhost):
         """
-        Adds an alias to a VirtualHost in Apache 2.4 and 2.2
+        Adds an alias to a VirtualHost
 
         If the vhost already has an ServerAlias directive, adds `target_name` to the value for that
         directive. If `target_name` is already included in the ServerAlias directives, this function does nothing.
-
-        If the vhost file doesn't exist or isn't
-        recognized by Certbot as a valid vhost file, Certbot will add a new VirtualHost file with just one ServerName line - it will be added at
-        /etc/letsencrypt/options-ssl-apache[2].conf:443 (with no leading '*.') and at /etc/letsencrypt/options-ssl-apache[2]-le[3].conf:443 (with leading
-        '*.'). The former is only used when there are no matches for target_name in any of those files; if there are matches then target_name will be added to
-        each match instead of creating a new virtual host entry. If you have other virtual hosts with addresses on different IPs that all match your target
-        domain name using wildcard certificates from Lets Encrypt, they'll all get target_names assigned to them after this runs! You can use mod_macro
         """
         vh_path = vhost.path
         sname, saliases = self._get_vhost_names(vh_path)
@@ -2391,20 +2356,6 @@ class ApacheConfigurator(common.Configurator):
                             (new_vhost.filep, ssl_vhost.filep))
 
     def _get_redirect_config_str(self, ssl_vhost):
-        """
-        .. autofunc :: _get_redirect_config_str
-           :noindex:
-
-           .. note ::
-              This function is not intended to be called directly. Use
-        :func:`~certbot_apache._internal.configurator.ApacheConfigurator._get_http_vhost` instead, as it has extra error handling functionality.
-        Otherwise, this function creates a new VirtualHost block for redirecting HTTP traffic to HTTPS, and applies the correct ServerName and ServerAlias
-        values so they don't need to be manually configured by the user in their web browser (as recommended by `The Webmaster's Guide
-        <http://webmastersguide.nethostingtalk.com/index.php?title=HTTP:301_-_Redirects>`__). It then sets up logging for that VirtualHost block using the
-        specified log root directory (defaults to ``/var/log/apache2`` on Debian systems), and finally returns a string representation of that VirtualHost
-        block which can later be inserted into an Apache configuration file or appended as part of :func:`~certbot_apache._internal.configurator._deploy`. The
-        returned string includes comments identifying where each piece of information
-        """
         # get servernames and serveraliases
         serveralias = ""
         servername = ""
@@ -2439,17 +2390,11 @@ class ApacheConfigurator(common.Configurator):
 
     def _write_out_redirect(self, ssl_vhost, text):
         """
-        Creates a redirect for the `ssl_vhost` provided. Redirects from port 80
-        to port 443.
-
-        A separate file is created because Nginx does not allow
-        redirection
-        within the server{} block of a server.conf file (the `return 301` line
-        will be commented out).
+        Creates a redirect for the `ssl_vhost` provided.
 
          :param ssl_vhost: vhost to redirect to
         TLS
-         :type ssl_vhost: :class:`~certbot_nginx._internal.obj.VirtualHost` or None
+         :type ssl_vhost: :class:`VirtualHost` or None
         """
         # This is the default name
         redirect_filename = "le-redirect.conf"
