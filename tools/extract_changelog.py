@@ -11,6 +11,11 @@ NEW_SECTION_PATTERN = re.compile(r'^##\s*[\d.]+\s*-\s*[\d-]+$')
 
 
 def main():
+    """
+    .. function: main()
+
+        Prints the changelog for the given version.
+    """
     version = sys.argv[1]
 
     section_pattern = re.compile(r'^##\s*{0}\s*-\s*[\d-]+$'

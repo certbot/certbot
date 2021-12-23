@@ -172,6 +172,41 @@ class AugeasCommentNode(AugeasParserNode):
         self.comment = comment
 
     def __eq__(self, other):
+        """
+        :param name: The name of the node.
+        :type name: str
+
+        :param filepath: The path to the file containing this node. This is used for loading and saving
+        the tree from/to disk, so it must be set correctly in order for a tree to be saved and loaded correctly. It should also contain any necessary
+        subdirectories (e.g., ``/my_dir/my_subdir``). If not specified, defaults to ``None`` (i.e., no filepath).
+        """
+        """
+        :param name: The name of the node.
+        :type name: str
+
+        :param filepath: The path to the file containing this node. This is used for loading and saving
+        data, so it should be a relative path from where the program that uses this library is being run (e.g., ``"../my_node/my_node"``). It may contain
+        environment variables which will be expanded when data is saved or loaded (e.g., ``"$HOME/somewhere/in/home"``). If :attr`filepath` contains an
+        absolute directory, then it will be replaced with a relative one when saving or loading data; however, if an absolute directory appears in
+        :attr`name`, then it will not be replaced with a relative one during save or load operations. If :attr`filepath` does not exist on disk at time of
+        save or load operation, appropriate directories are created automatically and saved along with other attributes; however, if no valid parent
+        directories exist at time of creation (i.e., all parents do not exist), then initialization fails and attribute assignment raises IOError exception..
+        """
+        """
+        __eq__(self, other)
+            Returns whether the two instances are equal.
+
+            Two instances are considered equal if they have the same name, filepath,
+        parameters and children. The enabled and dirty attributes do not affect equality. The ancestor attribute is ignored as it only serves to provide a
+        useful error message in case of inequality (see below).
+
+            Parameters:
+                other (:obj:`Node`): another instance to compare with self for
+        equality
+
+            Returns:
+                :obj:`bool` indicating whether self is equal to other or not
+        """
         if isinstance(other, self.__class__):
             return (self.comment == other.comment and
                     self.filepath == other.filepath and
@@ -193,6 +228,41 @@ class AugeasDirectiveNode(AugeasParserNode):
             self.set_parameters(parameters)
 
     def __eq__(self, other):
+        """
+        :param name: The name of the node.
+        :type name: str
+
+        :param filepath: The path to the file containing this node. This is used for loading and saving
+        the tree from/to disk, so it must be set correctly in order for a tree to be saved and loaded correctly. It should also contain any necessary
+        subdirectories (e.g., ``/my_dir/my_subdir``). If not specified, defaults to ``None`` (i.e., no filepath).
+        """
+        """
+        :param name: The name of the node.
+        :type name: str
+
+        :param filepath: The path to the file containing this node. This is used for loading and saving
+        data, so it should be a relative path from where the program that uses this library is being run (e.g., ``"../my_node/my_node"``). It may contain
+        environment variables which will be expanded when data is saved or loaded (e.g., ``"$HOME/somewhere/in/home"``). If :attr`filepath` contains an
+        absolute directory, then it will be replaced with a relative one when saving or loading data; however, if an absolute directory appears in
+        :attr`name`, then it will not be replaced with a relative one during save or load operations. If :attr`filepath` does not exist on disk at time of
+        save or load operation, appropriate directories are created automatically and saved along with other attributes; however, if no valid parent
+        directories exist at time of creation (i.e., all parents do not exist), then initialization fails and attribute assignment raises IOError exception..
+        """
+        """
+        __eq__(self, other)
+            Returns whether the two instances are equal.
+
+            Two instances are considered equal if they have the same name, filepath,
+        parameters and children. The enabled and dirty attributes do not affect equality. The ancestor attribute is ignored as it only serves to provide a
+        useful error message in case of inequality (see below).
+
+            Parameters:
+                other (:obj:`Node`): another instance to compare with self for
+        equality
+
+            Returns:
+                :obj:`bool` indicating whether self is equal to other or not
+        """
         if isinstance(other, self.__class__):
             return (self.name == other.name and
                     self.filepath == other.filepath and
@@ -227,6 +297,15 @@ class AugeasDirectiveNode(AugeasParserNode):
         Fetches the parameters from Augeas tree, ensuring that the sequence always
         represents the current state
 
+
+        :returns: Tuple of parameters for this
+        DirectiveNode
+        :rtype: tuple:
+        """
+        """
+        Fetches the parameters from Augeas tree, ensuring that the sequence always
+        represents the current state
+
         :returns: Tuple of parameters for this DirectiveNode
         :rtype: tuple:
         """
@@ -247,6 +326,41 @@ class AugeasBlockNode(AugeasDirectiveNode):
         self.children = ()
 
     def __eq__(self, other):
+        """
+        :param name: The name of the node.
+        :type name: str
+
+        :param filepath: The path to the file containing this node. This is used for loading and saving
+        the tree from/to disk, so it must be set correctly in order for a tree to be saved and loaded correctly. It should also contain any necessary
+        subdirectories (e.g., ``/my_dir/my_subdir``). If not specified, defaults to ``None`` (i.e., no filepath).
+        """
+        """
+        :param name: The name of the node.
+        :type name: str
+
+        :param filepath: The path to the file containing this node. This is used for loading and saving
+        data, so it should be a relative path from where the program that uses this library is being run (e.g., ``"../my_node/my_node"``). It may contain
+        environment variables which will be expanded when data is saved or loaded (e.g., ``"$HOME/somewhere/in/home"``). If :attr`filepath` contains an
+        absolute directory, then it will be replaced with a relative one when saving or loading data; however, if an absolute directory appears in
+        :attr`name`, then it will not be replaced with a relative one during save or load operations. If :attr`filepath` does not exist on disk at time of
+        save or load operation, appropriate directories are created automatically and saved along with other attributes; however, if no valid parent
+        directories exist at time of creation (i.e., all parents do not exist), then initialization fails and attribute assignment raises IOError exception..
+        """
+        """
+        __eq__(self, other)
+            Returns whether the two instances are equal.
+
+            Two instances are considered equal if they have the same name, filepath,
+        parameters and children. The enabled and dirty attributes do not affect equality. The ancestor attribute is ignored as it only serves to provide a
+        useful error message in case of inequality (see below).
+
+            Parameters:
+                other (:obj:`Node`): another instance to compare with self for
+        equality
+
+            Returns:
+                :obj:`bool` indicating whether self is equal to other or not
+        """
         if isinstance(other, self.__class__):
             return (self.name == other.name and
                     self.filepath == other.filepath and

@@ -111,6 +111,13 @@ def find_python_executable() -> str:
 
 
 def _check_version(version_str):
+    """
+    Checks the version of python used by Certbot.
+
+    :param str version_str: The version string to be parsed.
+    :returns bool: True if the current python is
+    greater than or equal to 3.6, False otherwise.
+    """
     search = VERSION_PATTERN.search(version_str)
 
     if not search:
@@ -140,6 +147,20 @@ def subprocess_output_with_print(cmd, env=None, shell=False):
 
 
 def get_venv_python_path(venv_path):
+    """
+    Returns the absolute path to the python executable in a virtual environment.
+
+    Args:
+        venv_path (str): The absolute or relative path to the virtual
+    environment.
+
+    Raises:
+        ValueError: If no python executable is found in venv_path, raises an error.
+
+    Returns:
+        str : Absolute path to python
+    executable in virtual environment.
+    """
     python_linux = os.path.join(venv_path, 'bin/python')
     if os.path.isfile(python_linux):
         return os.path.abspath(python_linux)

@@ -30,6 +30,13 @@ class Parsable:
 
     @classmethod
     def parsing_hooks(cls):
+        """
+        Returns a list of Parsable classes that this class should be able to `parse` recusrively.
+        The order of the objects indicates the order in which the
+        parser should try to parse each subitem.
+        :returns: A list of Parsable classes.
+        :rtype list:
+        """
         """Returns object types that this class should be able to `parse` recusrively.
         The order of the objects indicates the order in which the parser should
         try to parse each subitem.
@@ -41,6 +48,30 @@ class Parsable:
     @staticmethod
     @abc.abstractmethod
     def should_parse(lists):
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
         """ Returns whether the contents of `lists` can be parsed into this object.
 
         :returns: Whether `lists` can be parsed as this object.
@@ -129,6 +160,30 @@ class Statements(Parsable):
 
     @staticmethod
     def should_parse(lists):
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
         return isinstance(lists, list)
 
     def set_tabs(self, tabs="    "):
@@ -198,6 +253,30 @@ class Sentence(Parsable):
 
     @staticmethod
     def should_parse(lists):
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
         """ Returns True if `lists` can be parseable as a `Sentence`-- that is,
         every element is a string type.
 
@@ -277,6 +356,30 @@ class Block(Parsable):
 
     @staticmethod
     def should_parse(lists):
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
+        """
+        Returns True if `lists` can be parseable as a `Block`-- that is,
+        it's got a length of 2, the first element is a `Sentence` and the second can be
+        a
+        `Statements`.
+        """
         """ Returns True if `lists` can be parseable as a `Block`-- that is,
         it's got a length of 2, the first element is a `Sentence` and the second can be
         a `Statements`.

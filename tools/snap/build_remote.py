@@ -203,6 +203,25 @@ def _dump_results(archs: Set[str], status: Dict[str, Dict[str, str]]) -> None:
 
 
 def main():
+    """
+    Builds the snaps for certbot and its plugins.
+
+    :param targets: The list of snaps to build. Defaults to ``['certbot', 'DNS_PLUGINS']`` if ``'ALL'`` is
+    in the list, otherwise defaults to just ``['certbot']``.
+    :type targets: List[str]
+
+        :param archs: The architectures for which snaps are built.
+    Defaults to only amd64 if not provided or empty, otherwise defaults to all three architectures (amd64, armhf, arm64).
+        :type archs: List[str]
+    :param timeout_secs: Build process will fail after the provided timeout (in seconds) is reached without a result from `running`. If this value is None
+    then there will be no timeout on the build process and it may take as long as needed until it completes successfully or fails due an error in one of
+    its processes. Default value is None meaning that there will be no time out on this function's processes at all even though they may run indefinitely
+    without completing successfully or failing with an error first in any of their subprocesses/threads within themselfes..  This argument has type
+    `Optional[int]` meaning that it can also be passed as a regular integer 0 meaning that there should be no time out at all on this function's processes
+    even though they may run indefinitely without completing successfully or failing with an error first in any of their subprocesses/threads within
+    themselfes..  This argument has default value set by `timeout_sec` parameter defined above which itself defaults ot None so that there would be no
+    time out at all on this function's processes even though they may run indefinitely
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('targets', nargs='+', choices=['ALL', 'DNS_PLUGINS', 'certbot', *PLUGINS],
                         help='the list of snaps to build')

@@ -13,6 +13,12 @@ NSIS_VERSION = '3.06.1'
 
 
 def main():
+    """
+    Builds the NSIS installer for the Python `pynsist` package.
+
+    The script must be run with administrator privileges under Windows, and must be invoked
+    from a 64-bit version of Python.
+    """
     if os.name != 'nt':
         raise RuntimeError('This script must be run under Windows.')
 
@@ -47,6 +53,23 @@ def _build_installer(installer_cfg_path):
 
 
 def _compile_wheels(repo_path, build_path, venv_python):
+    """
+    Compile wheels
+
+        :param repo_path: Path to the repository containing the Certbot packages
+        :type repo_path: str
+        :param build_path: Path to a
+    directory in which wheels will be compiled
+        :type build_path: str
+        :param venv_python: Absolute path of the Python executable within a virtual
+    environment whose packages will be used for compilation. This should be passed explicitly from ``create-venv`` so that we can reliably determine
+    whether Docker is being used or not. If this is `None`, it's assumed that Docker isn't being used and system Python will be targeted instead. (This
+    option might change in the future.)  # noqarD, line too long (131 > 120 characters)  # noqarD, line too long (131 > 120 characters)# noqarD, line too
+    long (131 > 120 characters)# noqarD, line too long (131 > 120 characters)# noqarD, line too long (131 > 120 chara...s[:-1] + '\n' + s[-1]
+
+            ..
+    note :: When using Docker for Windows or MacOS Homebrew's Python 3 version must use
+    """
     print('Compile wheels')
 
     wheels_path = os.path.join(build_path, 'wheels')
@@ -66,6 +89,16 @@ def _compile_wheels(repo_path, build_path, venv_python):
 
 
 def _prepare_build_tools(venv_path, venv_python, repo_path):
+    """
+    Prepare build tools
+
+    :param str venv_path: Path to the virtual environment that will be used for building.
+    :param str venv_python: Path to the Python
+    executable in the virtual environment.
+    :param str repo_path: Path to this repository on disk. This is needed so that pipstrap can be called with
+    ``sys.executable`` set to this repository's Python executable, rather than whichever Python interpreter happens to be running this function
+    (presumably a system-wide or other non-repo Python).
+    """
     print('Prepare build tools')
     subprocess.check_call([sys.executable, '-m', 'venv', venv_path])
     subprocess.check_call([venv_python, os.path.join(repo_path, 'tools', 'pipstrap.py')])
@@ -73,6 +106,12 @@ def _prepare_build_tools(venv_path, venv_python, repo_path):
 
 
 def _copy_assets(build_path, repo_path):
+    """
+    Copy assets to build directory.
+
+    :param str build_path: Path to the build directory.
+    :param str repo_path: Path to the repository root.
+    """
     print('Copy assets')
     if os.path.exists(build_path):
         os.rename(build_path, '{0}.{1}.bak'.format(build_path, int(time.time())))
@@ -86,6 +125,19 @@ def _copy_assets(build_path, repo_path):
 
 
 def _generate_pynsist_config(repo_path, build_path):
+    """
+    Generate pynsist configuration
+
+    :param repo_path: Path to the certbot repo containing certbot/certbot
+    :type repo_path: `str` or `pathlib.Path`
+    :param build_path: Path to the build directory where we'll dump files for pynsist to compile into an installer. This is also where our wheels are
+    located.
+        :type build_path: `str` or `pathlib.Path`
+
+        :returns installer_cfg_file -- The path of the generated ``installer.cfg`` file that
+    pynsist will use for building an installer with this configuration and ``wheels`` from this function's return value as local wheels in the installer's
+    Python environment.
+    """
     print('Generate pynsist configuration')
 
     installer_cfg_path = os.path.join(build_path, 'installer.cfg')
@@ -132,6 +184,11 @@ extra_preamble=preamble.py
 
 
 def _prepare_environment():
+    """
+    Prepare environment
+
+    :raises RuntimeError: Error: Chocolatey (http://chocolatey.org/) needs to be installed to run this script.
+    """
     print('Prepare environment')
     try:
         subprocess.check_output(['choco', '--version'])

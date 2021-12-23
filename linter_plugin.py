@@ -40,11 +40,17 @@ class ForbidStandardOsModule(BaseChecker):
     priority = -1
 
     def visit_import(self, node):
+        """
+        This function checks if the ``os`` module is used in a module that is not allowed to import it.
+        """
         os_used = any(name for name in node.names if name[0] == 'os' or name[0].startswith('os.'))
         if os_used and not _check_disabled(node):
             self.add_message('os-module-forbidden', node=node)
 
     def visit_importfrom(self, node):
+        """
+        This function checks if the os module is imported.
+        """
         if node.modname == 'os' or node.modname.startswith('os.') and not _check_disabled(node):
             self.add_message('os-module-forbidden', node=node)
 

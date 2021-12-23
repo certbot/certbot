@@ -181,6 +181,26 @@ class ApacheConfigurator(common.Configurator):
 
     @classmethod
     def add_parser_arguments(cls, add):
+        """
+        Adds the following command line arguments to the argument parser:
+
+        - ``--enmod``, which gives the path to `a2enmod` binary.
+        - ``--dismod``, which
+        gives the path to `a2dismod` binary.
+        - ``--le-vhost-ext``, which gives SSL vhost configuration extension. Default is "-le-ssl.conf".
+          This can be
+        changed by setting :const:`~letsencrypt_apache._internal.constants.CLI_DEFAULTS["le_vhost_ext"]`.
+
+          .. warning :: Using -le-ssl as a vhost extension
+        might conflict with default Apache configurations that use a VirtualHost with an ServerName or ServerAlias of "localhost".
+
+            For example, if
+        localhost.$vh_truth[1].name == 'localhost' and localhost.$vh_truth[1].aliases contains '-' (i.e., ['-', ...]), then there will be a conflict because
+        $vh has been replaced by local host in this case due to wildcard matching rules explained below in _getVHUnusedWildcardPortSection()!
+
+            To avoid
+        such conflicts you
+        """
         # When adding, modifying or deleting command line arguments, be sure to
         # include the changes in the list used in method _prepare_options() to
         # ensure consistent behavior.
@@ -267,6 +287,14 @@ class ApacheConfigurator(common.Configurator):
 
     @property
     def updated_mod_ssl_conf_digest(self):
+        """
+        Full absolute path to digest of updated SSL configuration file.
+
+        This is the hash of the contents of :file:`/etc/letsencrypt/options-ssl-nginx.conf`
+        after :func:`_update_ssl_config`. This can be used to detect whether or not a reload is necessary, by comparing it with ``self._previous_ssl_options``
+        when updating ``self._previous_ssl_options`` in :meth:`~certbot.plugins.common.AbstractPluginManager._setUp`. The result can also be used as an
+        argument for :func:`hashlib.sha256`, which will provide a digest that may be more useful programmatically.
+        """
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
 
@@ -1643,6 +1671,12 @@ class ApacheConfigurator(common.Configurator):
                 break
 
     def _update_ssl_vhosts_addrs(self, vh_path):
+        """
+        .. autofunc :: _update_ssl_vhosts_addrs
+           :module: ApacheParser._update_ssl_vhosts_addrs
+
+           .. private-include :: /converter/parser.py
+        """
         ssl_addrs = set()
         ssl_addr_p = self.parser.aug.match(vh_path + "/arg")
 
@@ -1656,6 +1690,16 @@ class ApacheConfigurator(common.Configurator):
         return ssl_addrs
 
     def _clean_vhost(self, vhost):
+        """
+        .. function: _clean_vhost(self, vhost)
+
+            :param vhost: VirtualHost object to clean
+            :type vhost:
+        :class:`~letsencrypt.client.plugins.apache.obj.VirtualHost`
+
+            .. note: This function is not guaranteed to produce desirable output, see description
+        above and the associated unit test for details
+        """
         # remove duplicated or conflicting ssl directives
         self._deduplicate_directives(vhost.path,
                                      ["SSLCertificateFile",
@@ -1664,6 +1708,22 @@ class ApacheConfigurator(common.Configurator):
         self._remove_directives(vhost.path, ["SSLCertificateChainFile"])
 
     def _deduplicate_directives(self, vh_path, directives):
+        """
+        _deduplicate_directives(self, vh_path, directives)
+        Remove duplicate or extraneous server directives from an SSL vhost.
+        Parameters:
+            self (Certbot):
+        This plugin class.
+            vh_path (str): Path to the Apache config file for the VH that should be cleaned up.  This is relative to the Apache root
+        configuration directory and typically will end in ``sites-available/`` or similar.  It may refer to a file outside of this directory if it is included
+        via a symlink within this directory tree; however, any such symlinks must already exist as directories on disk at specified locations in order for
+        Certbot's normal operation to function correctly; thus plugins should take care when using this path not to modify its contents outside of Certbot's
+        scope without understanding and applying that consequence in full detail!  Note also that files referenced by VirtualHosts are generally subject to
+        per-directory path rewriting rules so paths within them are not necessarily valid references outside their containing VirtualHost even if they appear
+        valid there!  The only absolute reference here is `/`, which can always be used reliably regardless of context!
+            directives (list): A list of
+        directive names which should only appear once
+        """
         for directive in directives:
             while len(self.parser.find_dir(directive, None,
                                            vh_path, False)) > 1:
@@ -1672,6 +1732,18 @@ class ApacheConfigurator(common.Configurator):
                 self.parser.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
 
     def _remove_directives(self, vh_path, directives):
+        """
+        Removes directives from the Apache config file.
+
+        Parameters:
+            vh_path (str): Path to the relevant <VirtualHost> block within the Apache
+        configuration.
+
+            directives (list): A list of directive names that should be removed from the <VirtualHost> block.
+
+                Example:
+        ["SSLCertificateFile", "SSLCertificateKeyFile"]
+        """
         for directive in directives:
             while self.parser.find_dir(directive, None, vh_path, False):
                 directive_path = self.parser.find_dir(directive, None,
@@ -1679,6 +1751,25 @@ class ApacheConfigurator(common.Configurator):
                 self.parser.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
 
     def _add_dummy_ssl_directives(self, vh_path):
+        """
+        Adds directives to the VirtualHost in ``vh_path`` that implement a dummy SSL
+        configuration.
+
+        The function adds:
+
+          * ``SSLCertificateFile`` with the
+        value of :data:`constants.CLI_DEFAULTS["ssl_cert"]` (i.e., :file:`/etc/ssl/certs/ssl-cert-snakeoil.pem`).
+          * ``SSLCertificateKeyFile`` with the value
+        of :data:`constants.CLI_DEFAULTS["ssl_key"]`. (i.e., :file:`/etc/ssl/private/ssl-cert-snakeoil.key)`.
+
+            .. note The file paths are relative to the
+        default Apache configuration directory, which is usually located at /etc/. If you have your own custom configuration directory, then you need to run
+        this command from within that directory as well since it will not be able to find those files otherwise and will fail silently!
+
+            .. warning This
+        function does not check for existing SSL directives or other values set in your VirtualHost config! It just blindly adds whatever values it has been
+        given without checking if they're already present or not -
+        """
         self.parser.add_dir(vh_path, "SSLCertificateFile",
                             "insert_cert_file_path")
         self.parser.add_dir(vh_path, "SSLCertificateKeyFile",
@@ -1689,6 +1780,19 @@ class ApacheConfigurator(common.Configurator):
             self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
     def _add_servername_alias(self, target_name, vhost):
+        """
+        Adds an alias to a VirtualHost in Apache 2.4 and 2.2
+
+        If the vhost already has an ServerAlias directive, adds `target_name` to the value for that
+        directive. If `target_name` is already included in the ServerAlias directives, this function does nothing.
+
+        If the vhost file doesn't exist or isn't
+        recognized by Certbot as a valid vhost file, Certbot will add a new VirtualHost file with just one ServerName line - it will be added at
+        /etc/letsencrypt/options-ssl-apache[2].conf:443 (with no leading '*.') and at /etc/letsencrypt/options-ssl-apache[2]-le[3].conf:443 (with leading
+        '*.'). The former is only used when there are no matches for target_name in any of those files; if there are matches then target_name will be added to
+        each match instead of creating a new virtual host entry. If you have other virtual hosts with addresses on different IPs that all match your target
+        domain name using wildcard certificates from Lets Encrypt, they'll all get target_names assigned to them after this runs! You can use mod_macro
+        """
         vh_path = vhost.path
         sname, saliases = self._get_vhost_names(vh_path)
         if target_name == sname or target_name in saliases:
@@ -1815,6 +1919,14 @@ class ApacheConfigurator(common.Configurator):
         return id_string
 
     def _escape(self, fp):
+        """
+        Replace special characters in a file path with their escaped equivalents.
+
+        :param fp: The file path to escape
+        :type fp: str
+        :returns: The escaped file
+        path
+        """
         fp = fp.replace(",", "\\,")
         fp = fp.replace("[", "\\[")
         fp = fp.replace("]", "\\]")
@@ -2157,6 +2269,15 @@ class ApacheConfigurator(common.Configurator):
                         general_vh.filep, ssl_vhost.filep)
 
     def _set_https_redirection_rewrite_rule(self, vhost):
+        """
+        Adds a rewrite rule that makes any request with 'http' in the path
+        to be rewritten in order to redirect to the equivalent HTTPS resource.
+        This will
+        allow many clients who do not support HTTPs or who have
+        various bugs preventing them from doing so, to still access your website correctly.
+        Note that
+        this sets up a rewrite rule with two arguments, so it must be added after you've set up any existing rewrite rules with more than one argument.
+        """
         if self.get_version() >= (2, 3, 9):
             self.parser.add_dir(vhost.path, "RewriteRule",
                     constants.REWRITE_HTTPS_ARGS_WITH_END)
@@ -2270,6 +2391,20 @@ class ApacheConfigurator(common.Configurator):
                             (new_vhost.filep, ssl_vhost.filep))
 
     def _get_redirect_config_str(self, ssl_vhost):
+        """
+        .. autofunc :: _get_redirect_config_str
+           :noindex:
+
+           .. note ::
+              This function is not intended to be called directly. Use
+        :func:`~certbot_apache._internal.configurator.ApacheConfigurator._get_http_vhost` instead, as it has extra error handling functionality.
+        Otherwise, this function creates a new VirtualHost block for redirecting HTTP traffic to HTTPS, and applies the correct ServerName and ServerAlias
+        values so they don't need to be manually configured by the user in their web browser (as recommended by `The Webmaster's Guide
+        <http://webmastersguide.nethostingtalk.com/index.php?title=HTTP:301_-_Redirects>`__). It then sets up logging for that VirtualHost block using the
+        specified log root directory (defaults to ``/var/log/apache2`` on Debian systems), and finally returns a string representation of that VirtualHost
+        block which can later be inserted into an Apache configuration file or appended as part of :func:`~certbot_apache._internal.configurator._deploy`. The
+        returned string includes comments identifying where each piece of information
+        """
         # get servernames and serveraliases
         serveralias = ""
         servername = ""
@@ -2303,6 +2438,19 @@ class ApacheConfigurator(common.Configurator):
                    self.options.logs_root))
 
     def _write_out_redirect(self, ssl_vhost, text):
+        """
+        Creates a redirect for the `ssl_vhost` provided. Redirects from port 80
+        to port 443.
+
+        A separate file is created because Nginx does not allow
+        redirection
+        within the server{} block of a server.conf file (the `return 301` line
+        will be commented out).
+
+         :param ssl_vhost: vhost to redirect to
+        TLS
+         :type ssl_vhost: :class:`~certbot_nginx._internal.obj.VirtualHost` or None
+        """
         # This is the default name
         redirect_filename = "le-redirect.conf"
 

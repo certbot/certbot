@@ -146,6 +146,12 @@ class UnspacedList(list):
             return inbound, inbound.spaced
 
     def insert(self, i, x):
+        """
+        Inserts an item into the list at a given position.
+
+        If the item is not spacey, it is inserted directly into the list. Otherwise, it is wrapped in a
+        SpacedItem and inserted instead.
+        """
         item, spaced_item = self._coerce(x)
         slicepos = self._spaced_position(i) if i < len(self) else len(self.spaced)
         self.spaced.insert(slicepos, spaced_item)
@@ -154,6 +160,26 @@ class UnspacedList(list):
         self.dirty = True
 
     def append(self, x):
+        """
+        Append an item to a SpacedList.
+
+        :Parameters:
+          - `x` (object): The object to append. If it is not a string, it will be converted into one by calling
+        str(x).
+
+          >>> from spacedlist import SpacedList
+          >>> l = SpacedList() # Create an empty list with spacey=False and spaced=[]
+
+          >>> l.append('a') #
+        Append 'a' as-is, without adding spaces around it
+
+          >>> print(l) # Print the result of appending 'a' to the list (without using print())
+            ['a']
+        >>> l.append('b') # Append 'b', which is converted into " b " by str() before being added to the list because spacey=False for this instance of
+        SpacedList and no spaces were specified in between items when creating this instance of SpacedList with spaced=[]. This results in ['b'] being
+        appended instead of [" b "] because there are no spaces specified between items in the constructor call for this instance of SpacedLIst so all items
+        are simply concatenated together when they're added as-is without any spacing applied at all
+        """
         item, spaced_item = self._coerce(x)
         self.spaced.append(spaced_item)
         if not spacey(item):
@@ -184,6 +210,24 @@ class UnspacedList(list):
         raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
 
     def __setitem__(self, i, value):
+        """
+        __setitem__(i, value)
+            If `i` is a slice, raise NotImplementedError. Otherwise, if the coerced value
+            is not spacey (see below), set the
+        corresponding list item to its coerced
+            value. Then set the corresponding spaced item to its coerced value.
+
+            Coercing `value` consists of two
+        steps:
+
+                1) If `value` has no __spaced__ method or any other discrepancy that would prevent it from being converted into a SpacedListItem
+        instance, convert it into one by calling its __spacey__ method and converting this result into an equivalent SpacedListItem instance; see
+        :meth:~spacy.parts_of_speech.SpacyPartOfSpeechBase._spacey for details on how this conversion works and what exactly gets converted into what (e.g.,
+        strings are left alone while lists are recursively mapped using their first element).
+
+                2) Convert whatever was produced in step 1 above back
+        into a valid Python object that can be assigned as an index position in self's underlying list representation.
+        """
         if isinstance(i, slice):
             raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
         item, spaced_item = self._coerce(value)

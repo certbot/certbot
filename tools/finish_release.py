@@ -218,6 +218,10 @@ def promote_snaps(version):
 
 
 def main(args):
+    """
+    :param args: The command line arguments passed to the script.
+    :type args: list[str]
+    """
     parsed_args = parse_args(args)
 
     github_access_token_file = parsed_args.githubpat

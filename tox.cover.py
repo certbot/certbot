@@ -38,6 +38,27 @@ SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache']
 
 
 def cover(package):
+    """
+    .. function: cover(package)
+       :platform: Unix, Windows
+       :synopsis: Run tests and coverage on a given package.
+
+       **cover(package)** runs tests and
+    coverage on the given *package*. The test suite is run with ``pytest``, and the code coverage is measured using ``coverage``. If the code coverage
+    does not meet a threshold defined in `COVER_THRESHOLDS`, this function will exit with an error message.
+
+       .. warning :: This function may be removed
+    in future versions of |project| without notice or warning.
+
+        Args:
+           package (str): A string representing a project name to test/cover e.g.,
+    'datalad_neuroimaging'.  It must be installed as a Python package e.g., via `pip install`.  If it isn't installed as a Python package, use `install`
+    instead of `develop` when running setup script so that it gets installed into your current environment's site-packages directory for import by
+    |project| itself (e.g., if you are using Anaconda).
+
+        Returns:
+           None
+    """
     threshold = COVER_THRESHOLDS.get(package)['windows' if os.name == 'nt' else 'linux']
 
     pkg_dir = package.replace('_', '-')
@@ -63,6 +84,11 @@ def cover(package):
 
 
 def main():
+    """
+    Generate coverage statistics for the package ``package``.
+
+    The generated stats are saved in a file named ``coverage-{package}.xml``.
+    """
     description = """
 This script is used by tox.ini (and thus by Travis CI and Azure Pipelines) in
 order to generate separate stats for each package. It should be removed once

@@ -169,6 +169,18 @@ class NginxHttp01(common.ChallengePerformer):
         return [['server'], block]
 
     def _location_directive_for_achall(self, achall):
+        """
+        Sets up a location block for an ACME challenge response.
+
+        :param list(list) location_directive: A directive that tells Nginx how to set up the
+        challenge response. This is a list of lists, where each inner list contains strings representing the directives to be included in the outer list's
+        `location` directive. The first item in each inner list should be one of `['location', '=', PATH]`, with any number of items following it (in this
+        case, two). The last item should be one or more strings representing what Nginx should do when performing this directive; in this case, return 200 and
+        some text as the body of the request.
+        :returns: A string representation of a Nginx configuration file containing all directives necessary for setting
+        up an ACME challenge response at a given path on your server according to your domain name system (e.g., "example" becomes "example." if you are using
+        subdomains).
+        """
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 

@@ -340,6 +340,18 @@ class NginxParser:
             functools.partial(_remove_directives, directive_name, match_func))
 
     def _update_vhost_based_on_new_directives(self, vhost, directives_list):
+        """
+        .. function: _update_vhost_based_on_new_directives(self, vhost, directives)
+           :param self: A reference to the moded class instance.
+           :param vhost:
+        The VirtualHost object that is being updated.
+           :param directives: A list of directives that will be used to update the VirtualHost object's
+        attributes.
+
+            This function takes a list of new server level configuration lines and updates a specific VirtualHost object with them by setting its
+        addrs, ssl and names attributes accordingly. It also sets the raw attribute which contains all server level configuration lines in case they are
+        needed for other purposes like debugging or backups.
+        """
         new_server = self._get_included_directives(directives_list)
         parsed_server = self.parse_server(new_server)
         vhost.addrs = parsed_server['addrs']
@@ -348,6 +360,24 @@ class NginxParser:
         vhost.raw = new_server
 
     def _modify_server_directives(self, vhost, block_func):
+        """
+        Modifies the directives of a server block identified by vhost.
+
+        Parameters:
+            vhost (obj): An object representing an Apache VirtualHost. The
+        following attributes are used to find the server block to modify:
+
+                * "name" (str): The name of the virtual host, e.g., "localhost". If no file
+        path is provided, this will be used to determine which configuration file should be modified
+
+                * "filep" (str): The full path of the
+        configuration file that contains this virtual host
+
+            block_func(list) -> None: A function that takes a list and modifies it in place; i.e., mutates
+        it without returning anything
+
+            Returns: None; updates ``vhost`` with new directives instead
+        """
         filename = vhost.filep
         try:
             result = self.parsed[filename]
@@ -418,6 +448,12 @@ class NginxParser:
 
 
 def _parse_ssl_options(ssl_options):
+    """
+    Parses the provided file as an Nginx TLS options file and returns its contents.
+
+    :param str ssl_options: Path to the TLS options file. If ``None``,
+    then no configuration will be read from disk (and ``[]`` will be returned).
+    """
     if ssl_options is not None:
         try:
             with io.open(ssl_options, "r", encoding="utf-8") as _file:
@@ -502,6 +538,25 @@ def _exact_match(target_name, name):
 
 
 def _wildcard_match(target_name, name, start):
+    """
+    Given a domain name, does it end with the given name as a suffix (domain.com), or any subdomain thereof (sub1.sub2.domain.com)?
+
+    :param str
+    target_name: The domain to check for matching against `name`
+    :param str name: A wildcard-able domain suffix without initial '.' character, e.g.,
+    'eff.org' or '*.eff.org'
+            If this is an exact match (not a wildcard) then the function returns False if start=False and True otherwise
+
+        >>>
+    _wildcard_match('abcde', 'a.*e', True)  # No match because abcde != a.*e even though * matches single characters in regexp notation ('a[^.]*e')
+    False
+
+        >>> _wildcard_match('abcde', '.bc..*e.', True)  # No match because of multiple characters between periods in pattern string (.bc..*.e.)
+    that are not matched literally by regexp ('[^.]*')
+
+        >>> _wildcard_match('abcde', '.bcd.', True)  # Matches exactly because .bcd is literal and
+    matches 5
+    """
     # Degenerate case
     if name == '*':
         return True
@@ -527,6 +582,11 @@ def _wildcard_match(target_name, name, start):
 
 
 def _regex_match(target_name, name):
+    """
+    :param target_name: A string that is a target name to be matched by the regex.
+    :param name: A string that is a regular expression to match the target
+    name. The first character of `name` must be an ASCII tilde (~).
+    """
     # Must start with a tilde
     if len(name) < 2 or name[0] != '~':
         return False
@@ -637,6 +697,13 @@ def _is_whitespace_or_comment(directive):
     return len(directive) == 0 or directive[0] == '#'
 
 def _add_directive(block, directive, insert_at_top):
+    """
+    Adds the directive to the block.
+
+    If ``insert_at_top`` is True, ``directive`` will be added to the top of the block. If False, it will be added at the
+    bottom. If there are already directives with this name in this block and they aren't comments or whitespace, an error will be raised (unless they're a
+    repeatable directive). In that case, you can set ``force=True`` to override this behavior.
+    """
     if not isinstance(directive, nginxparser.UnspacedList):
         directive = nginxparser.UnspacedList(directive)
     if _is_whitespace_or_comment(directive):
@@ -695,6 +762,29 @@ def _update_directive(block, directive, location):
     comment_directive(block, location)
 
 def _update_or_add_directive(block, directive, insert_at_top):
+    """
+    Adds the directive to the block. If `insert_at_top` is True, it prepends
+    the directive to the beginning of its section, otherwise appends it at
+    the
+    end. Existing directives are updated if they share a name and a
+    section. Otherwise, an error is raised (this prevents accidental
+    replacement of
+    existing directives). A ValueError is raised if there are
+    no sections in the config_block that can accept `directive`.
+
+        Args:
+
+            block
+    (list): The nginx config section containing one or more directives with similar names but different arguments. For example: server { listen 80; }
+    server { listen 443 ssl; }
+
+            directive (list): An nginx configuration directive including its argument(s). For example: ['server', '{',
+    'listen', '80'] or ['ssl_certificate', '/etc/nginx/fullchain.pem']
+
+            insert_at_top (bool): Whether to add this new directive at top of its
+    config section ("prepend") or bottom ("append"). Useful when adding new blocks with unique names such as VirtualHosts or Locations for maximum clarity
+    and maintainability in large configurations.. Defaults to False which means "
+    """
     if not isinstance(directive, nginxparser.UnspacedList):
         directive = nginxparser.UnspacedList(directive)
     if _is_whitespace_or_comment(directive):

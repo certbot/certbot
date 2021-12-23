@@ -172,6 +172,21 @@ class ParserNode(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def save(self, msg):
         """
+        Save traverses the children, and attempts to write the AST to disk for all
+        the objects that are marked dirty. The actual operation of course depends
+        on
+        the underlying implementation. save() shouldn't be called from the Configurator
+        outside of its designated save() method in order to ensure that the
+        Reverter
+        checkpoints are created properly.
+
+            Note: this approach of keeping internal structure of the configuration within
+            the ParserNode tree
+        does not represent the file inclusion structure of actual configuration files that reside in 
+            filesystem. To handle file writes properly,
+        temporary trees should be extracted from full ParserNode tree where necessary when writing to disk.
+        """
+        """
         Save traverses the children, and attempts to write the AST to disk for
         all the objects that are marked dirty. The actual operation of course
         depends on the underlying implementation. save() shouldn't be called
@@ -190,6 +205,15 @@ class ParserNode(object, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def find_ancestors(self, name):
+        """
+        Finds the ancestors of a BlockNode with a specific name.
+
+        :param str name: Name of the ancestor BlockNode to search for
+
+        :returns: A list of ancestor
+        BlockNodes that match the name
+            :rtype: list of BlockNode
+        """
         """
         Traverses the ancestor tree up, searching for BlockNodes with a specific
         name.
@@ -309,6 +333,14 @@ class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def set_parameters(self, parameters):
+        """
+        Sets the sequence of parameters for this ParserNode object without whitespaces.
+        While the whitespaces for parameters are discarded when using this
+        method,
+        the whitespacing preceding the ParserNode itself should be kept intact.
+
+            :param list parameters: sequence of parameters
+        """
         """
         Sets the sequence of parameters for this ParserNode object without
         whitespaces. While the whitespaces for parameters are discarded when using
@@ -461,6 +493,18 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
         Find comments with value containing the search term.
 
+        This method walks the child tree of ParserNodes under the instance it was called from. This way
+        it is possible to search for the whole configuration tree, when starting from root node, or to do a partial search when starting from a specified
+        branch. The lookup should be case sensitive.
+
+            :param str comment: The content of comment to search for
+
+            :returns: A list of found CommentNode
+        objects.
+        """
+        """
+        Find comments with value containing the search term.
+
         This method walks the child tree of ParserNodes under the instance it was
         called from. This way it is possible to search for the whole configuration
         tree, when starting from root node, or to do a partial search when starting
@@ -478,12 +522,30 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         Remove a specified child node from the list of children of the called
         BlockNode object.
 
+        :param ParserNode child: Child ParserNode object to remove
+        from the list of 
+        children of the callee.
+        """
+        """
+        Remove a specified child node from the list of children of the called
+        BlockNode object.
+
         :param ParserNode child: Child ParserNode object to remove from the list
             of children of the callee.
         """
 
     @abc.abstractmethod
     def unsaved_files(self):
+        """
+        Returns a list of file paths that have been changed since the last save (or
+        the initial configuration parse). The intended use for this method is to
+        tell
+        the Reverter which files need to be included in a checkpoint. This is typically
+        called for the root of the ParserNode tree.
+
+            :returns: list
+        of file paths of files that have been changed but not yet saved to disk.
+        """
         """
         Returns a list of file paths that have been changed since the last save
         (or the initial configuration parse). The intended use for this method
@@ -497,6 +559,12 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def parsed_paths(self):
+        """
+        Returns a list of file paths that have currently been parsed into the parser tree. The returned list may include paths with wildcard characters, for
+        example: ['/etc/apache2/conf.d/*.load']
+
+        This is typically called on the root node of the ParserNode tree.
+        """
         """
         Returns a list of file paths that have currently been parsed into the parser
         tree. The returned list may include paths with wildcard characters, for

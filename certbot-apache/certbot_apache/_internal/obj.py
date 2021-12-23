@@ -146,6 +146,17 @@ class VirtualHost:
         return all_names
 
     def __str__(self):
+        """
+        Returns a string representation of the specified vhost, including its file path,
+        addresses (if any), names and TLS status.
+
+        :param vhost: The vhost to
+        get information from.
+        :type vhpath: :class:`~certbot_apache._internal.obj.VirtualHost`
+
+        :returns: A string representation of the specified VH object,
+        or "None" if no VH is provided..
+        """
         return (
             "File: {filename}\n"
             "Vhost path: {vhpath}\n"
@@ -188,6 +199,41 @@ class VirtualHost:
         return False
 
     def __hash__(self):
+        """
+        :param filep: The full path to the file that contains this VirtualHost
+        :param path: The context of the VirtualHost (ie. /, /some/dir, etc.)
+        :param
+        addrs: A list of server IP addresses or FQDNs for this vhost.
+                      This *may* contain wildcards at the zeroth element in case a non-IP is
+        specified as first argument to ``add_ip_list``.  See :func`~add_ip_list`.
+                       If no IPs are present in this list then all IPs assigned to
+        this machine are assumed by default.  This means that if you want a particular vhost to be available only on one interface but available via both
+        interfaces then you must specify only one address here and not ``get_virtualhost`` will return None unless it finds an exact match for your domain
+        name and port number combination across all interfaces rather than just your intended interface.  In other words, if you have multiple interfaces
+        configured with static addresses then do not use any wildcard entries here because get_virtualhost will find a match on these entries across all
+        interfaces rather than just your intended interface resulting in None being returned instead of the correct virtual host entry object
+        """
+        """
+        :param filep: A string containing the full path of the configuration file
+                      (e.g. ``/etc/apache2/apache2.conf``) that this line belongs to
+        :param path: A string containing the directive's path (e.g. ``Listen``, or ``NameVirtualHost``)
+                     This is also used as variable name in
+        :py:meth`get_names`.
+                     If it contains a space, it will be replaced by an underscore '_' character; e.g.:
+
+                       * Listen 8080
+        becomes Listen_8080
+
+                     This makes it possible to use :py:meth`get_names` for finding all directives with a specific name, without needing
+        complex regular expressions; e.g.:
+
+                       * get_names('Listen') returns ['Listen', 'Listen 443', ...]
+
+                       *
+        get_names('NameVirtualHost') returns ['NameVirtualHost', ...] and not only those that have "name" in their paths like most other directives do!  #
+        noqadocskip
+                addrs = An array of strings representing IP addresses where this directive can be found ("[ip1|host1 ip2|host2]" syntax
+        """
         return hash((self.filep, self.path,
                      tuple(self.addrs), tuple(self.get_names()),
                      self.ssl, self.enabled, self.modmacro))

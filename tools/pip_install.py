@@ -33,6 +33,12 @@ def pip_install_with_print(args_str, env=None):
 
 
 def main(args):
+    """
+    Install the Certbot dependencies from PyPI.
+
+    This script is intended to be used by automation tools such as the `Travis CI <travis-ci.org>`_ build
+    matrix. For more details, see :doc:`../dev/installation`.
+    """
     tools_path = find_tools_path()
 
     with tempfile.TemporaryDirectory() as working_dir:

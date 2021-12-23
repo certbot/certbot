@@ -71,6 +71,28 @@ class NginxConfigurator(common.Configurator):
 
     @classmethod
     def add_parser_arguments(cls, add):
+        """
+        Adds the following arguments to *parser* (provided as a :class:`argparse.ArgumentParser` instance):
+
+        - ``--server-root``, with default value of
+        :data:`constants.CLI_DEFAULTS["server_root"]`. The Nginx server root directory. (default: %s)
+        - ``--ctl``, with default value of
+        :data:`constants.CLI_DEFAULTS["ctl"]`. The path to the "nginx" binary, used for "configtest" and retrieving nginx version number..
+        - ``--sleep-
+        seconds``, with default value of :data:`constants.CLI_DEFAULTS["sleep_seconds"]`. Number of seconds to wait for nginx configuration changes to apply
+        when reloading..
+
+            .. note ::
+
+                This function is automatically added by `entry points
+        <http://peak.telecommunity.com/DevCenter/setuptools#entry-points>__ in setup scripts and so does not need calling before using this module's classes
+        or functions in an entry point script; it is included here simply for reference purposes.]
+
+            .. warning ::
+
+                This function should only be
+        called from within
+        """
         default_server_root = _determine_default_server_root()
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Nginx server root directory. (default: %s)" % default_server_root)
@@ -126,6 +148,16 @@ class NginxConfigurator(common.Configurator):
 
     @property
     def mod_ssl_conf_src(self):
+        """
+        Full absolute path to the SSL configuration file source.
+
+        :param certbot_nginx.configurator.NginxConfigurator nginx_configurator: This module's Nginx
+        configurator instance, which contains helpful information and functions for Nginx-related tasks such as retrieving or creating a new SSL certificate
+        on an already-existing Nginx server.
+        :param bool use_tls13: Whether or not to enable TLS 1.3 support (requires OpenSSL 1.0.1+ or LibreSSL 2+).
+        Defaults to ``True`` if supported by the version of OpenSSL/LibreSSL being used; otherwise ``False`` is returned instead of raising an exception (see
+        :func:`certbot_nginx._internal..constants._USE_TLS13`). See :ref:`tls-intro`.
+        """
         """Full absolute path to SSL configuration file source."""
 
         # Why all this complexity? Well, we want to support Mozilla's intermediate
@@ -165,6 +197,21 @@ class NginxConfigurator(common.Configurator):
 
     @property
     def updated_mod_ssl_conf_digest(self):
+        """
+        Full absolute path to digest of updated SSL configuration file.
+
+        This is the SHA256 hash of the concatenation of all non-empty lines in
+        ``/etc/letsencrypt/options-ssl-nginx.conf`` except for:
+
+          * empty lines;
+          * lines starting with ``# --key---`` or ``# --cert---``; and
+          * any line
+        where the first non-space character is a comment character (i.e., one of ``(`' # `)``).
+
+           The purpose of this digest is to detect when an update has
+        been made, so that it can be used by :func:`updated_mod_ssl_conf`. This function should only be called after :func:`updated_mod_ssl_conf`, which
+        updates the contents and timestamp on disk for this file.
+        """
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
 
@@ -304,6 +351,25 @@ class NginxConfigurator(common.Configurator):
     # Vhost parsing methods
     #######################
     def _choose_vhost_single(self, target_name):
+        """
+        .. function: choose_vhost(target_name)
+
+            Chooses a virtual host based on the given domain name, which is first
+            parsed and validated. The
+        following steps are used to find a match:
+
+              * If the domain resolves to an :class:`~certbot_apache._internal.obj.VirtualHost`
+                object,
+        that object is immediately returned. Domain name resolution is
+                not performed in this step if possible for performance reasons, and it
+        is recommended that the user ensure that any IP addresses returned by `resolve()` are valid ips before proceeding with any SSL workflows (see
+        :ref:`validation-is-not-accomplished-by-choosevhosts <validation>`, below).
+
+              * Otherwise, if there exists at least one matching vhost with
+        servername or alias of target name or exact ip address match then all such vhosts are filtered and ranked according to their matching scores (highest
+        score wins): For exact ip address matches , only one VirtualHost can be chosen so it need not be ranked; otherwise ranking occurs as follows: The best
+        ranking is of a serveralias match > servername > exact ip address . There can
+        """
         matches = self._get_ranked_matches(target_name)
         vhosts = [x for x in [self._select_best_name_match(matches)] if x is not None]
         return vhosts
@@ -396,6 +462,13 @@ class NginxConfigurator(common.Configurator):
         return self.new_vhost
 
     def _add_server_name_to_vhost(self, vhost, domain):
+        """
+        Adds a `server_name` directive to the vhost in :param:`vhost`.
+
+        The `server_name` is taken from :param:`domain`, which should be a domain name or list
+        of domain names. It should be specified in the same way as you would specify them for the other directives. For example, if you wanted to use this
+        function to add `server_name example.com www.example.com`, then :param:`domain` would be ``['example.com', ' www.example.com']`` (a list of strings).
+        """
         vhost.names.add(domain)
         name_block = [['\n    ', 'server_name']]
         for name in vhost.names:
@@ -767,6 +840,19 @@ class NginxConfigurator(common.Configurator):
                 "Unsupported enhancement: {0}".format(enhancement))
 
     def _has_certbot_redirect(self, vhost, domain):
+        """
+        .. function: _has_certbot_redirect(vhost, domain)
+
+           :param vhost: The vhost to check for redirects
+           :type vhost:
+        :class:`~letsencrypt.client.apache.obj.VirtualHost`
+
+           :param str domain: Domain name to test for certbot redirect on the VHost
+        example .. "example.com" or "example2.com".
+
+           Returns True if a `Redirect` block is found matching certbot's redirection rules (elements in list are
+        present).
+        """
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
         return vhost.contains_list(test_redirect_block)
 
@@ -1203,6 +1289,20 @@ def _test_block_from_block(block):
 
 
 def _redirect_block_for_domain(domain):
+    """
+    Returns a list of lists that contain the following:
+        A list containing:
+            The string 'if' followed by a space, then:
+                The string
+    '($host' followed by a space, then:
+                    Either the string match_symbol (which is either = or ~) followed by a space and domain. If
+    match_symbol is =, it will be preceeded with one less instance of the escape character \\ because in regex terms this sequence means escape the first
+    forward slash. If match_symbol is ~ it will not be escaped at all. Then there will be another instance of the escape character \\ and then domain
+    which has any dots replaced with \\.\+\? to mean any non-dot characters can replace those dots (this replacement happens whether or not there are
+    actual wildcard * characters in domain). Then after all that we have an expression to denote that this entire thing must end with $domain where
+    $domain has been replaced with \\.\*\\\.\\* for reasons explained above. Finally we have another instance of our delimiter \\$host\\$request_uri which
+    means insert whatever follows as literal text into our final output file at this point in time. This text should include both host
+    """
     updated_domain = domain
     match_symbol = '='
     if util.is_wildcard_domain(domain):
@@ -1264,6 +1364,13 @@ def nginx_restart(nginx_ctl, nginx_conf, sleep_duration):
 
 
 def _determine_default_server_root():
+    """
+    Determines the default server root directory by examining the operating system type and whether certain files exist in
+    /etc or /usr/local. If either
+    of these files exist, they are checked for a 'certbot' subdirectory to determine if it is
+    a certbot-installed server root. Otherwise,
+    '/var/packages/certbotd' is used as a fallback.
+    """
     if os.environ.get("CERTBOT_DOCS") == "1":
         default_server_root = "%s or %s" % (constants.LINUX_SERVER_ROOT,
             constants.FREEBSD_DARWIN_SERVER_ROOT)
