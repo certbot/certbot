@@ -229,6 +229,13 @@ class AugeasDirectiveNode(AugeasParserNode):
 
     @property
     def parameters(self):
+        """
+        Fetches the parameters from Augeas tree, ensuring that the sequence always
+        represents the current state
+        
+        :returns: Tuple of parameters for this DirectiveNode
+        :rtype: tuple:
+        """
         return tuple(self._aug_get_params(self.metadata["augeaspath"]))
 
     def _aug_get_params(self, path):
