@@ -104,7 +104,10 @@ class BasicParserTest(util.ParserTest):
         for name in ("empty.conf", "no-directives.conf"):
             conf = "/files" + os.path.join(self.parser.root, "sites-available", name)
             self.parser.add_dir_beginning(conf, "AddDirectiveBeginning", "testBegin")
-            self.assertIs(self.parser.find_dir("AddDirectiveBeginning", "testBegin", conf), True)
+            self.assertGreater(
+                len(self.parser.find_dir("AddDirectiveBeginning", "testBegin", conf)),
+                0
+            )
 
     def test_empty_arg(self):
         self.assertIsNone(self.parser.get_arg("/files/whatever/nonexistent"))

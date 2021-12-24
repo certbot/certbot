@@ -23,7 +23,7 @@ class SelectVhostMultiTest(unittest.TestCase):
             self.base_dir, "debian_apache_2_4/multiple_vhosts")
 
     def test_select_no_input(self):
-        self.assertIs(select_vhost_multiple([]), False)
+        self.assertEqual(len(select_vhost_multiple([])), 0)
 
     @certbot_util.patch_display_util()
     def test_select_correct(self, mock_util):

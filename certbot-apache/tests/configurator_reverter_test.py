@@ -20,8 +20,7 @@ class ConfiguratorReverterTest(util.ApacheTest):
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
 
-        self.vh_truth = util.get_vh_truth(
-            self.temp_dir, "debian_apache_2_4/multiple_vhosts")
+        self.vh_truth = util.get_vh_truth(self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
     def tearDown(self):
         shutil.rmtree(self.config_dir)
@@ -29,17 +28,13 @@ class ConfiguratorReverterTest(util.ApacheTest):
         shutil.rmtree(self.temp_dir)
 
     def test_bad_save_checkpoint(self):
-        self.config.reverter.add_to_checkpoint = mock.Mock(
-            side_effect=errors.ReverterError)
-        self.config.parser.add_dir(
-            self.vh_truth[0].path, "Test", "bad_save_ckpt")
+        self.config.reverter.add_to_checkpoint = mock.Mock(side_effect=errors.ReverterError)
+        self.config.parser.add_dir(self.vh_truth[0].path, "Test", "bad_save_ckpt")
         self.assertRaises(errors.PluginError, self.config.save)
 
     def test_bad_save_finalize_checkpoint(self):
-        self.config.reverter.finalize_checkpoint = mock.Mock(
-            side_effect=errors.ReverterError)
-        self.config.parser.add_dir(
-            self.vh_truth[0].path, "Test", "bad_save_ckpt")
+        self.config.reverter.finalize_checkpoint = mock.Mock(side_effect=errors.ReverterError)
+        self.config.parser.add_dir(self.vh_truth[0].path, "Test", "bad_save_ckpt")
         self.assertRaises(errors.PluginError, self.config.save, "Title")
 
     def test_finalize_save(self):
@@ -47,7 +42,7 @@ class ConfiguratorReverterTest(util.ApacheTest):
         self.config.reverter = mock_finalize
         self.config.save("Example Title")
 
-        self.assertIs(mock_finalize.is_called, True)
+        self.assertTrue(mock_finalize.is_called)
 
     def test_revert_challenge_config(self):
         mock_load = mock.Mock()
@@ -71,8 +66,7 @@ class ConfiguratorReverterTest(util.ApacheTest):
         self.assertEqual(mock_load.call_count, 1)
 
     def test_rollback_error(self):
-        self.config.reverter.rollback_checkpoints = mock.Mock(
-            side_effect=errors.ReverterError)
+        self.config.reverter.rollback_checkpoints = mock.Mock(side_effect=errors.ReverterError)
         self.assertRaises(errors.PluginError, self.config.rollback_checkpoints)
 
     def test_recovery_routine_reload(self):

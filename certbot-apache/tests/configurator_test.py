@@ -1269,7 +1269,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(self.config.parser.find_dir("Include", inc_path), [])
         self.assertNotIn(os.path.dirname(inc_path), self.config.parser.existing_paths)
         self.config.enable_site(vhost)
-        self.assertIs(self.config.parser.find_dir("Include", inc_path), True)
+        self.assertGreaterEqual(len(self.config.parser.find_dir("Include", inc_path)), 1)
         self.assertIn(os.path.dirname(inc_path), self.config.parser.existing_paths)
         self.assertIn(
             os.path.basename(inc_path), self.config.parser.existing_paths[

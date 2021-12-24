@@ -383,7 +383,7 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         for comment in comments:
             with self.subTest(comment=comment):
                 self.assertEqual(comment.primary, comment.secondary)
-                self.assertNotEqual(comment.primary, comment.secondary)
+                self.assertIsNot(comment.primary, comment.secondary)
 
     def test_find_blocks_no_pass_notequal(self):
         notpassing1 = [augeasparser.AugeasBlockNode(name="notpassing",
