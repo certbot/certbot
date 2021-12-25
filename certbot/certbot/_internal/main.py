@@ -846,7 +846,7 @@ def register(config: configuration.NamespaceConfig,
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None` or a string indicating and error
+    :returns: `None` or a string indicating an error
     :rtype: None or str
 
     """
@@ -877,7 +877,7 @@ def update_account(config: configuration.NamespaceConfig,
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None` or a string indicating and error
+    :returns: `None` or a string indicating an error
     :rtype: None or str
 
     """
@@ -931,7 +931,7 @@ def show_account(config: configuration.NamespaceConfig,
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None` or a string indicating and error
+    :returns: `None` or a string indicating an error
     :rtype: None or str
 
     """

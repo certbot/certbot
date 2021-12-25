@@ -2071,7 +2071,7 @@ class UpdateAccountTest(test_util.ConfigTestCase):
 
 
 class ShowAccountTest(test_util.ConfigTestCase):
-    """Tests for certbot._internal.main.fetch_account"""
+    """Tests for certbot._internal.main.show_account"""
 
     def setUp(self):
         patches = {
@@ -2105,7 +2105,7 @@ class ShowAccountTest(test_util.ConfigTestCase):
         mock_account.regr.body = mock_regr.body
         self.mocks['determine_account'].return_value = (mock_account, mock.MagicMock())
 
-    def _test_fetch_account(self, contact):
+    def _test_show_account(self, contact):
         self._prepare_mock_account()
         mock_client = mock.MagicMock()
         mock_regr = mock.MagicMock()
@@ -2141,7 +2141,7 @@ class ShowAccountTest(test_util.ConfigTestCase):
             self.assertEqual('ACME client is not set.', str(e))
 
     def test_no_contacts(self):
-        self._test_fetch_account(())
+        self._test_show_account(())
 
         self.assertEqual(self.mocks['notify'].call_count, 1)
         self.mocks['notify'].assert_has_calls([
@@ -2151,7 +2151,7 @@ class ShowAccountTest(test_util.ConfigTestCase):
 
     def test_single_email(self):
         contact = ('mailto:foo@example.com',)
-        self._test_fetch_account(contact)
+        self._test_show_account(contact)
 
         self.assertEqual(self.mocks['notify'].call_count, 1)
         self.mocks['notify'].assert_has_calls([
@@ -2161,7 +2161,7 @@ class ShowAccountTest(test_util.ConfigTestCase):
 
     def test_double_email(self):
         contact = ('mailto:foo@example.com', 'mailto:bar@example.com')
-        self._test_fetch_account(contact)
+        self._test_show_account(contact)
 
         self.assertEqual(self.mocks['notify'].call_count, 1)
         self.mocks['notify'].assert_has_calls([
