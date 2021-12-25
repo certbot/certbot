@@ -1595,10 +1595,11 @@ class UnregisterTest(unittest.TestCase):
         self.mocks['client'].Client.return_value = cb_client
 
         config = mock.MagicMock()
+        config.server = "https://acme.example.com/directory"
         unused_plugins = mock.MagicMock()
 
         res = main.unregister(config, unused_plugins)
-        m = "Could not find existing account to deactivate."
+        m = "Could not find existing account for server https://acme.example.com/directory."
         self.assertEqual(res, m)
         self.assertIs(cb_client.acme.deactivate_registration.called, False)
 
@@ -2025,7 +2026,8 @@ class UpdateAccountTest(test_util.ConfigTestCase):
         mock_storage.find_all.return_value = []
         self.mocks['account'].AccountFileStorage.return_value = mock_storage
         self.assertEqual(self._call(['update_account', '--email', 'user@example.org']),
-                         'Could not find an existing account to update.')
+                         'Could not find an existing account for server'
+                         ' https://acme-v02.api.letsencrypt.org/directory.')
 
     def test_update_account_remove_email(self):
         """Test that --register-unsafely-without-email is handled as no email"""
@@ -2127,7 +2129,8 @@ class ShowAccountTest(test_util.ConfigTestCase):
         mock_storage.find_all.return_value = []
         self.mocks['account'].AccountFileStorage.return_value = mock_storage
         self.assertEqual(self._call(['show_account']),
-                         'Could not find an existing account to show.')
+                         'Could not find an existing account for server'
+                         ' https://acme-v02.api.letsencrypt.org/directory.')
 
     def test_no_existing_client(self):
         """Test that issues with the ACME client are handled correctly"""

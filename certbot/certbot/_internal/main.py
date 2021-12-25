@@ -811,7 +811,7 @@ def unregister(config: configuration.NamespaceConfig,
     accounts = account_storage.find_all()
 
     if not accounts:
-        return "Could not find existing account to deactivate."
+        return f"Could not find existing account for server {config.server}."
     prompt = ("Are you sure you would like to irrevocably deactivate "
               "your account?")
     wants_deactivate = display_util.yesno(prompt, yes_label='Deactivate', no_label='Abort',
@@ -887,7 +887,7 @@ def update_account(config: configuration.NamespaceConfig,
     accounts = account_storage.find_all()
 
     if not accounts:
-        return "Could not find an existing account to update."
+        return f"Could not find an existing account for server {config.server}."
     if config.email is None and not config.register_unsafely_without_email:
         config.email = display_ops.get_email(optional=False)
 
@@ -941,7 +941,7 @@ def show_account(config: configuration.NamespaceConfig,
     accounts = account_storage.find_all()
 
     if not accounts:
-        return "Could not find an existing account to show."
+        return f"Could not find an existing account for server {config.server}."
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
