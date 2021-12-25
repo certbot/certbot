@@ -6,10 +6,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-* Added `fetch_account` subcommand, which will fetch the account information from the ACME
-  server. By default it will display the contact information associated with the ACME account.
-  When the `--verbose` option is used, it will also show the ACME account URI and the ACME
-  account thumbprint.
+* Added `show_account` subcommand, which will fetch the account information
+  from the ACME server and show the account details (account URL and, if
+  applicable, email address or addresses)
 
 ### Changed
 
