@@ -2070,7 +2070,7 @@ class UpdateAccountTest(test_util.ConfigTestCase):
             'Your e-mail address was updated to user@example.com,user@example.org.')
 
 
-class FetchAccountTest(test_util.ConfigTestCase):
+class ShowAccountTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.main.fetch_account"""
 
     def setUp(self):
@@ -2105,7 +2105,7 @@ class FetchAccountTest(test_util.ConfigTestCase):
         mock_account.regr.body = mock_regr.body
         self.mocks['determine_account'].return_value = (mock_account, mock.MagicMock())
 
-    def _test_fetch_account(self, contact, verbose=False):
+    def _test_fetch_account(self, contact):
         self._prepare_mock_account()
         mock_client = mock.MagicMock()
         mock_regr = mock.MagicMock()
@@ -2115,10 +2115,7 @@ class FetchAccountTest(test_util.ConfigTestCase):
         mock_client.acme.query_registration.return_value = mock_regr
         self.mocks['client'].Client.return_value = mock_client
 
-        args = ['fetch_account']
-
-        if verbose:
-            args.append('-v')
+        args = ['show_account']
 
         self._call(args)
 
@@ -2129,8 +2126,8 @@ class FetchAccountTest(test_util.ConfigTestCase):
         mock_storage = mock.MagicMock()
         mock_storage.find_all.return_value = []
         self.mocks['account'].AccountFileStorage.return_value = mock_storage
-        self.assertEqual(self._call(['fetch_account']),
-                         'Could not find an existing account to fetch.')
+        self.assertEqual(self._call(['show_account']),
+                         'Could not find an existing account to show.')
 
     def test_no_existing_client(self):
         """Test that issues with the ACME client are handled correctly"""
@@ -2139,100 +2136,38 @@ class FetchAccountTest(test_util.ConfigTestCase):
         mock_client.acme = None
         self.mocks['client'].Client.return_value = mock_client
         try:
-            self._call(['fetch_account'])
+            self._call(['show_account'])
         except errors.Error as e:
             self.assertEqual('ACME client is not set.', str(e))
 
     def test_no_contacts(self):
         self._test_fetch_account(())
 
-        self.assertEqual(self.mocks['notify'].call_count, 2)
+        self.assertEqual(self.mocks['notify'].call_count, 1)
         self.mocks['notify'].assert_has_calls([
-            mock.call('Phone number associated with account: none'),
-            mock.call('Email address associated with account: none')])
+            mock.call('Account details for server https://acme-v02.api.letsencr'
+                      'ypt.org/directory:\n  Account URL: https://www.letsencry'
+                      'pt-demo.org/acme/reg/1\n  Email contact: none')])
 
     def test_single_email(self):
         contact = ('mailto:foo@example.com',)
         self._test_fetch_account(contact)
 
-        self.assertEqual(self.mocks['notify'].call_count, 2)
+        self.assertEqual(self.mocks['notify'].call_count, 1)
         self.mocks['notify'].assert_has_calls([
-            mock.call('Phone number associated with account: none'),
-            mock.call('Email address associated with account: foo@example.com')])
+            mock.call('Account details for server https://acme-v02.api.letsencr'
+                      'ypt.org/directory:\n  Account URL: https://www.letsencry'
+                      'pt-demo.org/acme/reg/1\n  Email contact: foo@example.com')])
 
     def test_double_email(self):
         contact = ('mailto:foo@example.com', 'mailto:bar@example.com')
         self._test_fetch_account(contact)
 
-        self.assertEqual(self.mocks['notify'].call_count, 2)
+        self.assertEqual(self.mocks['notify'].call_count, 1)
         self.mocks['notify'].assert_has_calls([
-            mock.call('Phone number associated with account: none'),
-            mock.call('Email addresses associated with account: foo@example.com, bar@example.com')])
-
-    def test_single_phone(self):
-        contact = ('tel:+1-415-555-0101',)
-        self._test_fetch_account(contact)
-
-        self.assertEqual(self.mocks['notify'].call_count, 2)
-        self.mocks['notify'].assert_has_calls([
-            mock.call('Phone number associated with account: +1-415-555-0101'),
-            mock.call('Email address associated with account: none')])
-
-    def test_double_phone(self):
-        contact = ('tel:+1-415-555-0101', 'tel:+1-415-555-0102')
-        self._test_fetch_account(contact)
-
-        self.assertEqual(self.mocks['notify'].call_count, 2)
-        self.mocks['notify'].assert_has_calls([
-            mock.call('Phone numbers associated with account: +1-415-555-0101, +1-415-555-0102'),
-            mock.call('Email address associated with account: none')])
-
-    def test_combined_single_mail_and_single_phone(self):
-        contact = ('mailto:foo@example.com', 'tel:+1-415-555-0101')
-        self._test_fetch_account(contact)
-
-        self.assertEqual(self.mocks['notify'].call_count, 2)
-        self.mocks['notify'].assert_has_calls([
-            mock.call('Phone number associated with account: +1-415-555-0101'),
-            mock.call('Email address associated with account: foo@example.com')])
-
-    def test_combined_double_mail_and_single_phone(self):
-        contact = ('mailto:foo@example.com', 'mailto:bar@example.com', 'tel:+1-415-555-0101')
-        self._test_fetch_account(contact)
-
-        self.assertEqual(self.mocks['notify'].call_count, 2)
-        self.mocks['notify'].assert_has_calls([
-            mock.call('Phone number associated with account: +1-415-555-0101'),
-            mock.call('Email addresses associated with account: foo@example.com, bar@example.com')])
-
-    def test_combined_single_mail_and_double_phone(self):
-        contact = ('mailto:foo@example.com', 'tel:+1-415-555-0101', 'tel:+1-415-555-0102')
-        self._test_fetch_account(contact)
-
-        self.assertEqual(self.mocks['notify'].call_count, 2)
-        self.mocks['notify'].assert_has_calls([
-            mock.call('Phone numbers associated with account: +1-415-555-0101, +1-415-555-0102'),
-            mock.call('Email address associated with account: foo@example.com')])
-
-    def test_combined_double_mail_and_double_phone(self):
-        contact = ('mailto:foo@example.com', 'mailto:bar@example.com',
-                   'tel:+1-415-555-0101', 'tel:+1-415-555-0102')
-        self._test_fetch_account(contact)
-
-        self.assertEqual(self.mocks['notify'].call_count, 2)
-        self.mocks['notify'].assert_has_calls([
-            mock.call('Phone numbers associated with account: +1-415-555-0101, +1-415-555-0102'),
-            mock.call('Email addresses associated with account: foo@example.com, bar@example.com')])
-
-    def test_account_uri_thumbprint(self):
-        self._test_fetch_account((), verbose=True)
-
-        self.assertEqual(self.mocks['notify'].call_count, 4)
-        self.mocks['notify'].assert_has_calls([
-            mock.call('Account URI: https://www.letsencrypt-demo.org/acme/reg/1'),
-            mock.call('Account thumbprint: Zm9vYmFyYmF6'),
-            mock.call('Phone number associated with account: none'),
-            mock.call('Email address associated with account: none')])
+            mock.call('Account details for server https://acme-v02.api.letsencr'
+                      'ypt.org/directory:\n  Account URL: https://www.letsencry'
+                      'pt-demo.org/acme/reg/1\n  Email contacts: foo@example.com, bar@example.com')])
 
 
 if __name__ == '__main__':

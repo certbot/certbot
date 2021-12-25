@@ -15,7 +15,6 @@ from typing import TypeVar
 from typing import Union
 
 import configobj
-from cryptography.hazmat.primitives.hashes import SHA256
 import josepy as jose
 import zope.component
 import zope.interface
@@ -922,9 +921,9 @@ def update_account(config: configuration.NamespaceConfig,
     return None
 
 
-def fetch_account(config: configuration.NamespaceConfig,
+def show_account(config: configuration.NamespaceConfig,
                    unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
-    """Fetch account info on the server.
+    """Fetch account info from the ACME server and show it to the user.
 
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
@@ -932,8 +931,8 @@ def fetch_account(config: configuration.NamespaceConfig,
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None`
-    :rtype: None
+    :returns: `None` or a string indicating and error
+    :rtype: None or str
 
     """
     # Portion of _determine_account logic to see whether accounts already
@@ -942,7 +941,7 @@ def fetch_account(config: configuration.NamespaceConfig,
     accounts = account_storage.find_all()
 
     if not accounts:
-        return "Could not find an existing account to fetch."
+        return "Could not find an existing account to show."
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
@@ -951,29 +950,26 @@ def fetch_account(config: configuration.NamespaceConfig,
         raise errors.Error("ACME client is not set.")
 
     regr = cb_client.acme.query_registration(acc.regr)
+    output = [f"Account details for server {config.server}:",
+              f"  Account URL: {regr.uri}"]
 
-    if config.verbose_count > 0:
-        display_util.notify(f"Account URI: {regr.uri}")
-
-        thumbprint = jose.b64encode(regr.body.key.thumbprint(
-            hash_function=SHA256)).decode()
-        display_util.notify(f"Account thumbprint: {thumbprint}")
-
-    phones = []
+    #phones = []
     emails = []
 
     for contact in regr.body.contact:
-        if contact.startswith('tel:'):
-            phones.append(contact[4:])
+        #if contact.startswith('tel:'):
+        #    phones.append(contact[4:])
         if contact.startswith('mailto:'):
             emails.append(contact[7:])
 
-    display_util.notify("Phone number{} associated with account: {}".format(
-                            "s" if len(phones) > 1 else "",
-                            ", ".join(phones) if len(phones) > 0 else "none"))
-    display_util.notify("Email address{} associated with account: {}".format(
-                            "es" if len(emails) > 1 else "",
+    #output.append("Phone number{} associated with account: {}".format(
+    #                        "s" if len(phones) > 1 else "",
+    #                        ", ".join(phones) if len(phones) > 0 else "none"))
+    output.append("  Email contact{}: {}".format(
+                            "s" if len(emails) > 1 else "",
                             ", ".join(emails) if len(emails) > 0 else "none"))
+
+    display_util.notify("\n".join(output))
 
     return None
 

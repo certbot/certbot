@@ -43,7 +43,7 @@ manage your account:
     register        Create an ACME account
     unregister      Deactivate an ACME account
     update_account  Update an ACME account
-    fetch_account   Fetch ACME account data from server and print the contact info
+    show_account    Display account details
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 """

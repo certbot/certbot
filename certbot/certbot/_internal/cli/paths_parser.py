@@ -46,5 +46,5 @@ def _paths_parser(helpful: "helpful.HelpfulArgumentParser") -> None:
         help=config_help("work_dir"))
     add("paths", "--logs-dir", default=flag_default("logs_dir"),
         help="Logs directory.")
-    add("paths", "--server", default=flag_default("server"),
+    add(["paths", "show_account"], "--server", default=flag_default("server"),
         help=config_help("server"))
