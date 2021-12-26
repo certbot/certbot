@@ -953,18 +953,12 @@ def show_account(config: configuration.NamespaceConfig,
     output = [f"Account details for server {config.server}:",
               f"  Account URL: {regr.uri}"]
 
-    #phones = []
     emails = []
 
     for contact in regr.body.contact:
-        #if contact.startswith('tel:'):
-        #    phones.append(contact[4:])
         if contact.startswith('mailto:'):
             emails.append(contact[7:])
 
-    #output.append("Phone number{} associated with account: {}".format(
-    #                        "s" if len(phones) > 1 else "",
-    #                        ", ".join(phones) if len(phones) > 0 else "none"))
     output.append("  Email contact{}: {}".format(
                             "s" if len(emails) > 1 else "",
                             ", ".join(emails) if len(emails) > 0 else "none"))
