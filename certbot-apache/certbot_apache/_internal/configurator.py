@@ -977,7 +977,7 @@ class ApacheConfigurator(common.Configurator):
                 is_ssl = True
 
         filename = apache_util.get_file_path(
-            self.parser.aug.get("/augeas/files%s/path" % apache_util.get_file_path(path)))
+            self.parser.aug.get(f"/augeas/files{apache_util.get_file_path(path)}/path"))
         if filename is None:
             return None
 
@@ -1129,10 +1129,8 @@ class ApacheConfigurator(common.Configurator):
         :type host: :class:`~certbot_apache.obj.VirtualHost`
         """
 
-        servername_match = vhost.node.find_directives("ServerName",
-                                                      exclude=False)
-        serveralias_match = vhost.node.find_directives("ServerAlias",
-                                                       exclude=False)
+        servername_match = vhost.node.find_directives("ServerName", exclude=False)
+        serveralias_match = vhost.node.find_directives("ServerAlias", exclude=False)
 
         servername = None
         if servername_match:
@@ -1143,7 +1141,6 @@ class ApacheConfigurator(common.Configurator):
                 for serveralias in alias.parameters:
                     vhost.aliases.add(serveralias)
             vhost.name = servername
-
 
     def is_name_vhost(self, target_addr):
         """Returns if vhost is a name based vhost
@@ -1211,7 +1208,7 @@ class ApacheConfigurator(common.Configurator):
 
         # If HTTPS requested for nonstandard port, add service definition
         if https and port != "443":
-            port_service = "%s %s" % (port, "https")
+            port_service = f"{port} https"
         else:
             port_service = port
 
@@ -1263,15 +1260,15 @@ class ApacheConfigurator(common.Configurator):
             # We have wildcard, skip the rest
             self.parser.add_dir(parser.get_aug_path(self.parser.loc["listen"]),
                                 "Listen", port)
-            self.save_notes += "Added Listen %s directive to %s\n" % (
-                port, self.parser.loc["listen"])
+            self.save_notes += (
+                f"Added Listen {port} directive to {self.parser.loc['listen']}\n"
+            )
         else:
             for listen in new_listens:
                 self.parser.add_dir(parser.get_aug_path(
                     self.parser.loc["listen"]), "Listen", listen.split(" "))
-                self.save_notes += ("Added Listen %s directive to "
-                                    "%s\n") % (listen,
-                                               self.parser.loc["listen"])
+                self.save_notes += (f"Added Listen {listen} directive to "
+                                    f"{self.parser.loc['listen']}\n")
 
     def _add_listens_https(self, listens, listens_orig, port):
         """Helper method for ensure_listen to figure out which new
@@ -1284,7 +1281,7 @@ class ApacheConfigurator(common.Configurator):
 
         # Add service definition for non-standard ports
         if port != "443":
-            port_service = "%s %s" % (port, "https")
+            port_service = f"{port} https"
         else:
             port_service = port
 
@@ -1295,16 +1292,16 @@ class ApacheConfigurator(common.Configurator):
             self.parser.add_dir_to_ifmodssl(
                 parser.get_aug_path(self.parser.loc["listen"]),
                 "Listen", port_service.split(" "))
-            self.save_notes += "Added Listen %s directive to %s\n" % (
-                port_service, self.parser.loc["listen"])
+            self.save_notes += (
+                f"Added Listen {port_service} directive to {self.parser.loc['listen']}\n"
+            )
         else:
             for listen in new_listens:
                 self.parser.add_dir_to_ifmodssl(
                     parser.get_aug_path(self.parser.loc["listen"]),
                     "Listen", listen.split(" "))
-                self.save_notes += ("Added Listen %s directive to "
-                                    "%s\n") % (listen,
-                                               self.parser.loc["listen"])
+                self.save_notes += (f"Added Listen {listen} directive to "
+                                    f"{self.parser.loc['listen']}\n")
 
     def _has_port_already(self, listens, port):
         """Helper method for prepare_server_https to find out if user
@@ -1744,8 +1741,7 @@ class ApacheConfigurator(common.Configurator):
             for test_vh in self.vhosts:
                 if (vhost.filep != test_vh.filep and
                     any(test_addr in addrs for
-                        test_addr in test_vh.addrs) and
-                    not self.is_name_vhost(addr)):
+                        test_addr in test_vh.addrs) and not self.is_name_vhost(addr)):
                     self.add_name_vhost(addr)
                     logger.info("Enabling NameVirtualHosts on %s", addr)
                     need_to_save = True
@@ -1941,10 +1937,7 @@ class ApacheConfigurator(common.Configurator):
         Searches AutoHSTS managed VirtualHosts that belong to the lineage.
         Matches the private key path.
         """
-
-        return bool(
-            self.parser.find_dir("SSLCertificateKeyFile",
-                                 lineage.key_path, vhost.path))
+        return bool(self.parser.find_dir("SSLCertificateKeyFile", lineage.key_path, vhost.path))
 
     def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
         """Enables OCSP Stapling
@@ -2285,7 +2278,20 @@ class ApacheConfigurator(common.Configurator):
             rewrite_rule_args = constants.REWRITE_HTTPS_ARGS_WITH_END
         else:
             rewrite_rule_args = constants.REWRITE_HTTPS_ARGS
-        return rewrite_rule_args
+
+        return (
+            f"<VirtualHost {' '.join(str(addr) for addr in self._get_proposed_addrs(ssl_vhost))}>\n"
+            f"{servername} \n"
+            f"{serveralias} \n"
+            f"ServerSignature Off\n"
+            f"\n"
+            f"RewriteEngine On\n"
+            f"RewriteRule {' '.join(rewrite_rule_args)}\n"
+            "\n"
+            f"ErrorLog {self.options.logs_root}/redirect.error.log\n"
+            f"LogLevel warn\n"
+            f"</VirtualHost>\n"
+        )
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
@@ -2394,11 +2400,13 @@ class ApacheConfigurator(common.Configurator):
             generic fashion.
 
         """
-        mod_message = ("Apache needs to have module  \"{0}\" active for the " +
-            "requested installation options. Unfortunately Certbot is unable " +
-            "to install or enable it for you. Please install the module, and " +
-            "run Certbot again.")
-        raise errors.MisconfigurationError(mod_message.format(mod_name))
+        mod_message = (
+            f"Apache needs to have module  \"{mod_name}\" active for the "
+            "requested installation options. Unfortunately Certbot is unable "
+            "to install or enable it for you. Please install the module, and "
+            "run Certbot again."
+        )
+        raise errors.MisconfigurationError(mod_message)
 
     def restart(self):
         """Runs a config test and reloads the Apache server.
