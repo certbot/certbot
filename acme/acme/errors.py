@@ -6,7 +6,6 @@ from typing import Mapping
 from typing import Set
 
 from josepy import errors as jose_errors
-import requests
 
 # We import acme.messages only during type check to avoid circular dependencies. Type references
 # to acme.message.* must be quoted to be lazily initialized and avoid compilation errors.
@@ -56,17 +55,17 @@ class MissingNonce(NonceError):
     Replay-Nonce header field in each successful response to a POST it
     provides to a client (...)".
 
-    :ivar requests.Response ~.response: HTTP Response
+    :ivar headers: Mapping of HTTP headers
 
     """
-    def __init__(self, response: requests.Response, *args: Any) -> None:
+    def __init__(self, headers: Mapping, *args: Any) -> None:
         super().__init__(*args)
-        self.response = response
+        self.headers = dict(headers)
 
     def __str__(self) -> str:
-        return ('Server {0} response did not include a replay '
-                'nonce, headers: {1} (This may be a service outage)'.format(
-                    self.response.request.method, self.response.headers))
+        return ('Server response did not include a replay '
+                'nonce, headers: {0} (This may be a service outage)'.format(
+                    self.headers))
 
 
 class PollError(ClientError):

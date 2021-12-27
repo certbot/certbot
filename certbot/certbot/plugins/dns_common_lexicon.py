@@ -6,9 +6,6 @@ from typing import Mapping
 from typing import Optional
 from typing import Union
 
-from requests.exceptions import HTTPError
-from requests.exceptions import RequestException
-
 from certbot import errors
 from certbot.plugins import dns_common
 
@@ -20,9 +17,12 @@ from certbot.plugins import dns_common
 try:
     from lexicon.config import ConfigResolver
     from lexicon.providers.base import Provider
+    from requests.exceptions import HTTPError
+    from requests.exceptions import RequestException
 except ImportError:
     ConfigResolver = None
     Provider = None
+    HTTPError, RequestException = None
 
 logger = logging.getLogger(__name__)
 

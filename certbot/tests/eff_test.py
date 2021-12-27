@@ -1,5 +1,6 @@
 """Tests for certbot._internal.eff."""
 import datetime
+import json
 import unittest
 
 try:
@@ -8,7 +9,6 @@ except ImportError:  # pragma: no cover
     from unittest import mock
 import josepy
 import pytz
-import requests
 
 from acme import messages
 from certbot._internal import account
@@ -121,12 +121,12 @@ class SubscribeTest(unittest.TestCase):
         self.email = 'certbot@example.org'
         self.json = {'status': True}
         self.response = mock.Mock(ok=True)
-        self.response.json.return_value = self.json
+        self.response.body = json.dumps(self.json).encode('utf-8')
         patcher = mock.patch("certbot._internal.eff.display_util.notify")
         self.mock_notify = patcher.start()
         self.addCleanup(patcher.stop)
 
-    @mock.patch('certbot._internal.eff.requests.post')
+    @mock.patch('certbot._internal.eff.mureq.post')
     def _call(self, mock_post):
         mock_post.return_value = self.response
 
@@ -139,12 +139,13 @@ class SubscribeTest(unittest.TestCase):
         call_args, call_kwargs = mock_post.call_args
         self.assertEqual(call_args[0], constants.EFF_SUBSCRIBE_URI)
 
-        data = call_kwargs.get('data')
+        data = call_kwargs.get('form')
         self.assertIsNotNone(data)
         self.assertEqual(data.get('email'), self.email)
 
     def test_bad_status(self):
         self.json['status'] = False
+        self.response.body = json.dumps(self.json).encode('utf-8')
         self._call()
         actual = self._get_reported_message()
         expected_part = 'because your e-mail address appears to be invalid.'
@@ -152,14 +153,13 @@ class SubscribeTest(unittest.TestCase):
 
     def test_not_ok(self):
         self.response.ok = False
-        self.response.raise_for_status.side_effect = requests.exceptions.HTTPError
         self._call()
         actual = self._get_reported_message()
         unexpected_part = 'because'
         self.assertNotIn(unexpected_part, actual)
 
     def test_response_not_json(self):
-        self.response.json.side_effect = ValueError()
+        self.response.body = b'invalid json'
         self._call()
         actual = self._get_reported_message()
         expected_part = 'problem'
@@ -167,6 +167,7 @@ class SubscribeTest(unittest.TestCase):
 
     def test_response_json_missing_status_element(self):
         self.json.clear()
+        self.response.body = json.dumps(self.json).encode('utf-8')
         self._call()
         actual = self._get_reported_message()
         expected_part = 'problem'

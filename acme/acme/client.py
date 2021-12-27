@@ -8,8 +8,10 @@ import datetime
 from email.utils import parsedate_tz
 import heapq
 import http.client as http_client
+import json
 import logging
-import re
+import os
+import ssl
 import sys
 import time
 from types import ModuleType
@@ -28,15 +30,14 @@ import warnings
 
 import josepy as jose
 import OpenSSL
-import requests
-from requests.adapters import HTTPAdapter
-from requests.utils import parse_header_links
-from requests_toolbelt.adapters.source import SourceAddressAdapter
 
+from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
+from acme import mureq
+from acme import util
 from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
@@ -66,14 +67,13 @@ class ClientBase:
         self.acme_version = acme_version
 
     @classmethod
-    def _regr_from_response(cls, response: requests.Response, uri: Optional[str] = None,
+    def _regr_from_response(cls, response: mureq.Response, uri: Optional[str] = None,
                             terms_of_service: Optional[str] = None
                             ) -> messages.RegistrationResource:
-        if 'terms-of-service' in response.links:
-            terms_of_service = response.links['terms-of-service']['url']
+        terms_of_service = util.extract_links(response).get('terms-of-service')
 
         return messages.RegistrationResource(
-            body=messages.Registration.from_json(response.json()),
+            body=messages.Registration.from_json(json.loads(response.body)),
             uri=response.headers.get('Location', uri),
             terms_of_service=terms_of_service)
 
@@ -91,14 +91,14 @@ class ClientBase:
             response, uri=regr.uri,
             terms_of_service=regr.terms_of_service)
 
-    def _post(self, *args: Any, **kwargs: Any) -> requests.Response:
+    def _post(self, uri: Text, body: Any, **kwargs: Any) -> mureq.Response:
         """Wrapper around self.net.post that adds the acme_version.
 
         """
         kwargs.setdefault('acme_version', self.acme_version)
         if hasattr(self.directory, 'newNonce'):
             kwargs.setdefault('new_nonce_url', getattr(self.directory, 'newNonce'))
-        return self.net.post(*args, **kwargs)
+        return self.net.post(uri, body, **kwargs)
 
     def update_registration(self, regr: messages.RegistrationResource,
                             update: Optional[messages.Registration] = None
@@ -150,17 +150,17 @@ class ClientBase:
         return self._authzr_from_response(response,
             authzr.body.identifier, authzr.uri)
 
-    def _authzr_from_response(self, response: requests.Response,
+    def _authzr_from_response(self, response: mureq.Response,
                               identifier: Optional[messages.Identifier] = None,
                               uri: Optional[str] = None) -> messages.AuthorizationResource:
         authzr = messages.AuthorizationResource(
-            body=messages.Authorization.from_json(response.json()),
+            body=messages.Authorization.from_json(json.loads(response.body)),
             uri=response.headers.get('Location', uri))
         if identifier is not None and authzr.body.identifier != identifier:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def answer_challenge(self, challb: messages.ChallengeBody, response: requests.Response
+    def answer_challenge(self, challb: messages.ChallengeBody, response: challenges.ChallengeResponse
                          ) -> messages.ChallengeResource:
         """Answer challenge.
 
@@ -178,25 +178,25 @@ class ClientBase:
         """
         response = self._post(challb.uri, response)
         try:
-            authzr_uri = response.links['up']['url']
+            authzr_uri = util.extract_links(response)['up']['url']
         except KeyError:
             raise errors.ClientError('"up" Link header missing')
         challr = messages.ChallengeResource(
             authzr_uri=authzr_uri,
-            body=messages.ChallengeBody.from_json(response.json()))
+            body=messages.ChallengeBody.from_json(json.loads(response.body)))
         # TODO: check that challr.uri == response.headers['Location']?
         if challr.uri != challb.uri:
             raise errors.UnexpectedUpdate(challr.uri)
         return challr
 
     @classmethod
-    def retry_after(cls, response: requests.Response, default: int) -> datetime.datetime:
+    def retry_after(cls, response: mureq.Response, default: int) -> datetime.datetime:
         """Compute next `poll` time based on response ``Retry-After`` header.
 
         Handles integers and various datestring formats per
         https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
 
-        :param requests.Response response: Response from `poll`.
+        :param mureq.Response response: Response from `poll`.
         :param int default: Default value (in seconds), used when
             ``Retry-After`` header is not present or invalid.
 
@@ -278,7 +278,7 @@ class Client(ClientBase):
 
         if isinstance(directory, str):
             directory = messages.Directory.from_json(
-                net.get(directory).json())
+                json.loads(net.get(directory).body))
         super().__init__(directory=directory,
                          net=net, acme_version=1)
 
@@ -401,7 +401,7 @@ class Client(ClientBase):
             content_type=content_type,
             headers={'Accept': content_type})
 
-        cert_chain_uri = response.links.get('up', {}).get('url')
+        cert_chain_uri = util.extract_links(response).get('up', {}).get('url')
 
         try:
             uri = response.headers['Location']
@@ -414,7 +414,7 @@ class Client(ClientBase):
                 OpenSSL.crypto.FILETYPE_ASN1, response.content)))
 
     def poll(self, authzr: messages.AuthorizationResource
-             ) -> Tuple[messages.AuthorizationResource, requests.Response]:
+             ) -> Tuple[messages.AuthorizationResource, mureq.Response]:
         """Poll Authorization Resource for status.
 
         :param authzr: Authorization Resource
@@ -422,7 +422,7 @@ class Client(ClientBase):
 
         :returns: Updated Authorization Resource and HTTP response.
 
-        :rtype: (`.AuthorizationResource`, `requests.Response`)
+        :rtype: (`.AuthorizationResource`, `mureq.Response`)
 
         """
         response = self.net.get(authzr.uri)
@@ -508,7 +508,7 @@ class Client(ClientBase):
         updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
         return self.request_issuance(csr, updated_authzrs), updated_authzrs
 
-    def _get_cert(self, uri: str) -> Tuple[requests.Response, jose.ComparableX509]:
+    def _get_cert(self, uri: str) -> Tuple[mureq.Response, jose.ComparableX509]:
         """Returns certificate from URI.
 
         :param str uri: URI of certificate
@@ -540,7 +540,7 @@ class Client(ClientBase):
         if 'Location' not in response.headers:
             raise errors.ClientError('Location header missing')
         if response.headers['Location'] != certr.uri:
-            raise errors.UnexpectedUpdate(response.text)
+            raise errors.UnexpectedUpdate(response.body.decode('utf-8'))
         return certr.update(body=cert)
 
     def refresh(self, certr: messages.CertificateResource) -> messages.CertificateResource:
@@ -581,7 +581,7 @@ class Client(ClientBase):
         uri = certr.cert_chain_uri
         while uri is not None and len(chain) < max_length:
             response, cert = self._get_cert(uri)
-            uri = response.links.get('up', {}).get('url')
+            uri = util.extract_links(response).get('up', {}).get('url')
             chain.append(cert)
         if uri is not None:
             raise errors.Error(
@@ -700,7 +700,7 @@ class ClientV2(ClientBase):
                 value=ips))
         order = messages.NewOrder(identifiers=identifiers)
         response = self._post(self.directory['newOrder'], order)
-        body = messages.Order.from_json(response.json())
+        body = messages.Order.from_json(json.loads(response.body))
         authorizations = []
         # pylint has trouble understanding our josepy based objects which use
         # things like custom metaclass logic. body.authorizations should be a
@@ -714,7 +714,7 @@ class ClientV2(ClientBase):
             csr_pem=csr_pem)
 
     def poll(self, authzr: messages.AuthorizationResource
-             ) -> Tuple[messages.AuthorizationResource, requests.Response]:
+             ) -> Tuple[messages.AuthorizationResource, mureq.Response]:
         """Poll Authorization Resource for status.
 
         :param authzr: Authorization Resource
@@ -722,7 +722,7 @@ class ClientV2(ClientBase):
 
         :returns: Updated Authorization Resource and HTTP response.
 
-        :rtype: (`.AuthorizationResource`, `requests.Response`)
+        :rtype: (`.AuthorizationResource`, `mureq.Response`)
 
         """
         response = self._post_as_get(authzr.uri)
@@ -794,15 +794,15 @@ class ClientV2(ClientBase):
         while datetime.datetime.now() < deadline:
             time.sleep(1)
             response = self._post_as_get(orderr.uri)
-            body = messages.Order.from_json(response.json())
+            body = messages.Order.from_json(json.loads(response.body))
             if body.error is not None:
                 raise errors.IssuanceError(body.error)
             if body.certificate is not None:
                 certificate_response = self._post_as_get(body.certificate)
-                orderr = orderr.update(body=body, fullchain_pem=certificate_response.text)
+                orderr = orderr.update(body=body, fullchain_pem=certificate_response.body.decode('utf-8'))
                 if fetch_alternative_chains:
                     alt_chains_urls = self._get_links(certificate_response, 'alternate')
-                    alt_chains = [self._post_as_get(url).text for url in alt_chains_urls]
+                    alt_chains = [self._post_as_get(url).body.decode('utf-8') for url in alt_chains_urls]
                     orderr = orderr.update(alternative_fullchains_pem=alt_chains)
                 return orderr
         raise errors.TimeoutError()
@@ -824,27 +824,26 @@ class ClientV2(ClientBase):
         """Checks if ACME server requires External Account Binding authentication."""
         return hasattr(self.directory, 'meta') and self.directory.meta.external_account_required
 
-    def _post_as_get(self, *args: Any, **kwargs: Any) -> requests.Response:
+    def _post_as_get(self, uri: str, **kwargs) -> mureq.Response:
         """
         Send GET request using the POST-as-GET protocol.
         :param args:
         :param kwargs:
         :return:
         """
-        new_args = args[:1] + (None,) + args[1:]
-        return self._post(*new_args, **kwargs)
+        return self._post(uri, body=None, **kwargs)
 
-    def _get_links(self, response: requests.Response, relation_type: str) -> List[str]:
+    def _get_links(self, response: mureq.Response, relation_type: str) -> List[str]:
         """
         Retrieves all Link URIs of relation_type from the response.
-        :param requests.Response response: The requests HTTP response.
+        :param mureq.Response response: The HTTP response.
         :param str relation_type: The relation type to filter by.
         """
         # Can't use response.links directly because it drops multiple links
         # of the same relation type, which is possible in RFC8555 responses.
         if 'Link' not in response.headers:
             return []
-        links = parse_header_links(response.headers['Link'])
+        links = util.parse_header_links(response.headers['Link'])
         return [l['url'] for l in links
                 if 'rel' in l and 'url' in l and l['rel'] == relation_type]
 
@@ -872,7 +871,7 @@ class BackwardsCompatibleClientV2:
     """
 
     def __init__(self, net: 'ClientNetwork', key: jose.JWK, server: str) -> None:
-        directory = messages.Directory.from_json(net.get(server).json())
+        directory = messages.Directory.from_json(json.loads(net.get(server).body))
         self.acme_version = self._acme_version_from_directory(directory)
         self.client: Union[Client, ClientV2]
         if self.acme_version == 1:
@@ -1005,7 +1004,7 @@ class BackwardsCompatibleClientV2:
 
 
 class ClientNetwork:
-    """Wrapper around requests that signs POSTs for authentication.
+    """HTTP wrapper that signs POSTs for authentication.
 
     Also adds user agent, and handles Content-Type.
     """
@@ -1037,15 +1036,8 @@ class ClientNetwork:
         self.verify_ssl = verify_ssl
         self._nonces: Set[Text] = set()
         self.user_agent = user_agent
-        self.session = requests.Session()
         self._default_timeout = timeout
-        adapter = HTTPAdapter()
-
-        if source_address is not None:
-            adapter = SourceAddressAdapter(source_address)
-
-        self.session.mount("http://", adapter)
-        self.session.mount("https://", adapter)
+        self._source_address = source_address
 
     def __del__(self) -> None:
         # Try to close the session, but don't show exceptions to the
@@ -1085,8 +1077,8 @@ class ClientNetwork:
         return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
 
     @classmethod
-    def _check_response(cls, response: requests.Response,
-                        content_type: Optional[str] = None) -> requests.Response:
+    def _check_response(cls, response: mureq.Response,
+                        content_type: Optional[str] = None) -> mureq.Response:
         """Check response content and its type.
 
         .. note::
@@ -1109,9 +1101,9 @@ class ClientNetwork:
         if response_ct:
             response_ct = response_ct.split(';')[0].strip()
         try:
-            # TODO: response.json() is called twice, once here, and
+            # TODO: JSON is deserialized twice, once here, and
             # once in _get and _post clients
-            jobj = response.json()
+            jobj = json.loads(response.body)
         except ValueError:
             jobj = None
 
@@ -1144,12 +1136,12 @@ class ClientNetwork:
 
         return response
 
-    def _send_request(self, method: str, url: str, *args: Any, **kwargs: Any) -> requests.Response:
+    def _send_request(self, method: str, url: str, **kwargs: Any) -> mureq.Response:
         """Send HTTP request.
 
         Makes sure that `verify_ssl` is respected. Logs request and
         response (with headers). For allowed parameters please see
-        `requests.request`.
+        `mureq.request`.
 
         :param str method: method for the new `requests.Request` object
         :param str url: URL for the new `requests.Request` object
@@ -1157,61 +1149,55 @@ class ClientNetwork:
         :raises requests.exceptions.RequestException: in case of any problems
 
         :returns: HTTP Response
-        :rtype: `requests.Response`
+        :rtype: `mureq.Response`
 
 
         """
         if method == "POST":
             logger.debug('Sending POST request to %s:\n%s',
-                          url, kwargs['data'])
+                          url, kwargs.get('body'))
         else:
             logger.debug('Sending %s request to %s.', method, url)
         kwargs['verify'] = self.verify_ssl
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
         kwargs.setdefault('timeout', self._default_timeout)
-        try:
-            response = self.session.request(method, url, *args, **kwargs)
-        except requests.exceptions.RequestException as e:
-            # pylint: disable=pointless-string-statement
-            """Requests response parsing
+        kwargs.setdefault('source_address', self._source_address)
 
-            The requests library emits exceptions with a lot of extra text.
-            We parse them with a regexp to raise a more readable exceptions.
+        body = kwargs.pop('body', None)
+        if isinstance(body, bytes):
+            pass # nothing to do
+        elif isinstance(body, str):
+            body = body.encode('utf-8')
+        elif body is not None:
+            body = json.dumps(body).encode('utf-8')
+            kwargs['headers'].setdefault('Content-Type', 'application/json')
 
-            Example:
-            HTTPSConnectionPool(host='acme-v01.api.letsencrypt.org',
-            port=443): Max retries exceeded with url: /directory
-            (Caused by NewConnectionError('
-            <requests.packages.urllib3.connection.VerifiedHTTPSConnection
-            object at 0x108356c50>: Failed to establish a new connection:
-            [Errno 65] No route to host',))"""
+        # handle REQUESTS_CA_BUNDLE and CURL_CA_BUNDLE
+        # https://github.com/certbot/certbot/issues/9100
+        verify = kwargs.get('verify')
+        if verify in (None, True):
+            override_bundle = os.environ.get('REQUESTS_CA_BUNDLE') or os.environ.get('CURL_CA_BUNDLE')
+            if override_bundle:
+                ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                ssl_context.load_verify_locations(override_bundle)
+                kwargs.pop('verify', None)
+                kwargs['ssl_context'] = ssl_context
 
-            # pylint: disable=line-too-long
-            err_regex = r".*host='(\S*)'.*Max retries exceeded with url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
-            m = re.match(err_regex, str(e))
-            if m is None:
-                raise  # pragma: no cover
-            host, path, _err_no, err_msg = m.groups()
-            raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
+        response = mureq.request(method, url, body=body, **kwargs)
 
         # If the Content-Type is DER or an Accept header was sent in the
         # request, the response may not be UTF-8 encoded. In this case, we
-        # don't set response.encoding and log the base64 response instead of
+        # log the base64 response instead of
         # raw bytes to keep binary data out of the logs. This code can be
         # simplified to only check for an Accept header in the request when
         # ACMEv1 support is dropped.
         debug_content: Union[bytes, str]
         if (response.headers.get("Content-Type") == DER_CONTENT_TYPE or
                 "Accept" in kwargs["headers"]):
-            debug_content = base64.b64encode(response.content)
+            debug_content = base64.b64encode(response.body)
         else:
-            # We set response.encoding so response.text knows the response is
-            # UTF-8 encoded instead of trying to guess the encoding that was
-            # used which is error prone. This setting affects all future
-            # accesses of .text made on the returned response object as well.
-            response.encoding = "utf-8"
-            debug_content = response.text
+            debug_content = response.body.decode('utf-8')
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
                      "\n".join("{0}: {1}".format(k, v)
@@ -1219,7 +1205,7 @@ class ClientNetwork:
                      debug_content)
         return response
 
-    def head(self, *args: Any, **kwargs: Any) -> requests.Response:
+    def head(self, url: str, **kwargs: Any) -> mureq.Response:
         """Send HEAD request without checking the response.
 
         Note, that `_check_response` is not called, as it is expected
@@ -1227,15 +1213,15 @@ class ClientNetwork:
         messages2.Error will be raised by the server.
 
         """
-        return self._send_request('HEAD', *args, **kwargs)
+        return self._send_request('HEAD', url, **kwargs)
 
     def get(self, url: str, content_type: str = JSON_CONTENT_TYPE,
-            **kwargs: Any) -> requests.Response:
+            **kwargs: Any) -> mureq.Response:
         """Send GET request and check response."""
         return self._check_response(
             self._send_request('GET', url, **kwargs), content_type=content_type)
 
-    def _add_nonce(self, response: requests.Response) -> None:
+    def _add_nonce(self, response: mureq.Response) -> None:
         if self.REPLAY_NONCE_HEADER in response.headers:
             nonce = response.headers[self.REPLAY_NONCE_HEADER]
             try:
@@ -1245,7 +1231,7 @@ class ClientNetwork:
             logger.debug('Storing nonce: %s', nonce)
             self._nonces.add(decoded_nonce)
         else:
-            raise errors.MissingNonce(response)
+            raise errors.MissingNonce(dict(response.headers))
 
     def _get_nonce(self, url: str, new_nonce_url: str) -> str:
         if not self._nonces:
@@ -1258,7 +1244,7 @@ class ClientNetwork:
             self._add_nonce(response)
         return self._nonces.pop()
 
-    def post(self, *args: Any, **kwargs: Any) -> requests.Response:
+    def post(self, url: str, body: Any, **kwargs: Any) -> mureq.Response:
         """POST object wrapped in `.JWS` and check response.
 
         If the server responded with a badNonce error, the request will
@@ -1266,20 +1252,20 @@ class ClientNetwork:
 
         """
         try:
-            return self._post_once(*args, **kwargs)
+            return self._post_once(url, body, **kwargs)
         except messages.Error as error:
             if error.code == 'badNonce':
                 logger.debug('Retrying request after error:\n%s', error)
-                return self._post_once(*args, **kwargs)
+                return self._post_once(url, body, **kwargs)
             raise
 
     def _post_once(self, url: str, obj: jose.JSONDeSerializable,
                    content_type: str = JOSE_CONTENT_TYPE, acme_version: int = 1,
-                   **kwargs: Any) -> requests.Response:
+                   **kwargs: Any) -> mureq.Response:
         new_nonce_url = kwargs.pop('new_nonce_url', None)
         data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
-        response = self._send_request('POST', url, data=data, **kwargs)
+        response = self._send_request('POST', url, body=data, **kwargs)
         response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
         return response

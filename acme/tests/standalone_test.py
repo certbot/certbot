@@ -8,11 +8,11 @@ from typing import Set
 from unittest import mock
 
 import josepy as jose
-import requests
 
 from acme import challenges
 from acme import crypto_util
 from acme import errors
+from acme import mureq
 
 import test_util
 
@@ -56,14 +56,14 @@ class HTTP01ServerTest(unittest.TestCase):
         self.thread.join()
 
     def test_index(self):
-        response = requests.get(
+        response = mureq.get(
             'http://localhost:{0}'.format(self.port), verify=False)
         self.assertEqual(
-            response.text, 'ACME client standalone challenge solver')
+            response.body.decode('utf-8'), 'ACME client standalone challenge solver')
         self.assertTrue(response.ok)
 
     def test_404(self):
-        response = requests.get(
+        response = mureq.get(
             'http://localhost:{0}/foo'.format(self.port), verify=False)
         self.assertEqual(response.status_code, http_client.NOT_FOUND)
 
@@ -237,14 +237,14 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
         self.servers.shutdown_and_server_close()
 
     def test_index(self):
-        response = requests.get(
+        response = mureq.get(
             'http://localhost:{0}'.format(self.port), verify=False)
         self.assertEqual(
-            response.text, 'ACME client standalone challenge solver')
+            response.body.decode('utf-8'), 'ACME client standalone challenge solver')
         self.assertTrue(response.ok)
 
     def test_404(self):
-        response = requests.get(
+        response = mureq.get(
             'http://localhost:{0}/foo'.format(self.port), verify=False)
         self.assertEqual(response.status_code, http_client.NOT_FOUND)
 

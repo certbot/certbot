@@ -5,8 +5,8 @@ from unittest import mock
 
 import josepy as jose
 import OpenSSL
-import requests
 
+import acme.mureq
 from acme import errors
 
 import test_util
@@ -178,37 +178,37 @@ class HTTP01ResponseTest(unittest.TestCase):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
         self.response.simple_verify(self.chall, "local", key2.public_key())
 
-    @mock.patch("acme.challenges.requests.get")
+    @mock.patch("acme.mureq.get")
     def test_simple_verify_good_validation(self, mock_get):
         validation = self.chall.validation(KEY)
-        mock_get.return_value = mock.MagicMock(text=validation)
+        mock_get.return_value = mock.MagicMock(body=validation.encode('utf-8'))
         self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
         mock_get.assert_called_once_with(self.chall.uri("local"), verify=False)
 
-    @mock.patch("acme.challenges.requests.get")
+    @mock.patch("acme.mureq.get")
     def test_simple_verify_bad_validation(self, mock_get):
-        mock_get.return_value = mock.MagicMock(text="!")
+        mock_get.return_value = mock.MagicMock(body=b'!')
         self.assertFalse(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
 
-    @mock.patch("acme.challenges.requests.get")
+    @mock.patch("acme.mureq.get")
     def test_simple_verify_whitespace_validation(self, mock_get):
         from acme.challenges import HTTP01Response
         mock_get.return_value = mock.MagicMock(
-            text=(self.chall.validation(KEY) +
-                  HTTP01Response.WHITESPACE_CUTSET))
+            body=(self.chall.validation(KEY) +
+                  HTTP01Response.WHITESPACE_CUTSET).encode('utf-8'))
         self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
         mock_get.assert_called_once_with(self.chall.uri("local"), verify=False)
 
-    @mock.patch("acme.challenges.requests.get")
+    @mock.patch("acme.mureq.get")
     def test_simple_verify_connection_error(self, mock_get):
-        mock_get.side_effect = requests.exceptions.RequestException
+        mock_get.side_effect = acme.mureq.HTTPException
         self.assertFalse(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
 
-    @mock.patch("acme.challenges.requests.get")
+    @mock.patch("acme.mureq.get")
     def test_simple_verify_port(self, mock_get):
         self.response.simple_verify(
             self.chall, domain="local",

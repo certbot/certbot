@@ -19,13 +19,10 @@ class MissingNonceTest(unittest.TestCase):
 
     def setUp(self):
         from acme.errors import MissingNonce
-        self.response = mock.MagicMock(headers={})
-        self.response.request.method = 'FOO'
-        self.error = MissingNonce(self.response)
+        self.error = MissingNonce({'X-Test': 'FOO', 'Content-Type': 'application/json'})
 
     def test_str(self):
         self.assertIn("FOO", str(self.error))
-        self.assertIn("{}", str(self.error))
 
 
 class PollErrorTest(unittest.TestCase):

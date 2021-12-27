@@ -17,11 +17,11 @@ from cryptography.hazmat.primitives import hashes
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL
-import requests
 
 from acme import crypto_util
 from acme import errors
 from acme import fields
+from acme import mureq
 from acme.mixins import ResourceMixin
 from acme.mixins import TypeMixin
 
@@ -318,23 +318,17 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         uri = chall.uri(domain)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
-            http_response = requests.get(uri, verify=False)
-        except requests.exceptions.RequestException as error:
+            response = mureq.get(uri, verify=False)
+        except mureq.HTTPException as error:
             logger.error("Unable to reach %s: %s", uri, error)
             return False
-        # By default, http_response.text will try to guess the encoding to use
-        # when decoding the response to Python unicode strings. This guesswork
-        # is error prone. RFC 8555 specifies that HTTP-01 responses should be
-        # key authorizations with possible trailing whitespace. Since key
-        # authorizations must be composed entirely of the base64url alphabet
-        # plus ".", we tell requests that the response should be ASCII. See
-        # https://datatracker.ietf.org/doc/html/rfc8555#section-8.3 for more
-        # info.
-        http_response.encoding = "ascii"
-        logger.debug("Received %s: %s. Headers: %s", http_response,
-                     http_response.text, http_response.headers)
+        # RFC 8555 entails that HTTP-01 responses will be ASCII, see here:
+        # https://datatracker.ietf.org/doc/html/rfc8555#section-8.3
+        text = response.body.decode('ascii')
+        logger.debug("Received %s: %s. Headers: %s", response.status_code,
+                     text, dict(response.headers))
 
-        challenge_response = http_response.text.rstrip(self.WHITESPACE_CUTSET)
+        challenge_response = text.rstrip(self.WHITESPACE_CUTSET)
         if self.key_authorization != challenge_response:
             logger.debug("Key authorization from response (%r) doesn't match "
                          "HTTP response (%r)", self.key_authorization,

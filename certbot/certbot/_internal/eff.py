@@ -1,15 +1,16 @@
 """Subscribes users to the EFF newsletter."""
+import json
 import logging
 from typing import cast
 from typing import Optional
-
-import requests
 
 from certbot import configuration
 from certbot._internal import constants
 from certbot._internal.account import Account
 from certbot._internal.account import AccountFileStorage
 from certbot.display import util as display_util
+
+from acme import mureq
 
 logger = logging.getLogger(__name__)
 
@@ -93,25 +94,24 @@ def subscribe(email: str) -> None:
             'form_id': 'eff_supporters_library_subscribe_form'}
     logger.info('Subscribe to the EFF mailing list (email: %s).', email)
     logger.debug('Sending POST request to %s:\n%s', url, data)
-    _check_response(requests.post(url, data=data))
+    _check_response(mureq.post(url, form=data))
 
 
-def _check_response(response: requests.Response) -> None:
+def _check_response(response: mureq.Response) -> None:
     """Check for errors in the server's response.
 
     If an error occurred, it will be reported to the user.
 
-    :param requests.Response response: the server's response to the
+    :param mureq.Response response: the server's response to the
         subscription request
 
     """
-    logger.debug('Received response:\n%s', response.content)
+    logger.debug('Received response:\n%s', response.body)
     try:
-        response.raise_for_status()
-        if not response.json()['status']:
+        if not response.ok:
+            _report_failure()
+        elif not json.loads(response.body)['status']:
             _report_failure('your e-mail address appears to be invalid')
-    except requests.exceptions.HTTPError:
-        _report_failure()
     except (ValueError, KeyError):
         _report_failure('there was a problem with the server response')
 

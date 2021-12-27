@@ -1,5 +1,3 @@
-import sys
-
 from setuptools import find_packages
 from setuptools import setup
 
@@ -11,8 +9,6 @@ install_requires = [
     'PyOpenSSL>=17.3.0',
     'pyrfc3339',
     'pytz',
-    'requests>=2.14.2',
-    'requests-toolbelt>=0.3.0',
     'setuptools>=39.0.1',
 ]
 

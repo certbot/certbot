@@ -3,7 +3,6 @@
 import copy
 import datetime
 import http.client as http_client
-import ipaddress
 import json
 import unittest
 from typing import Dict
@@ -11,12 +10,12 @@ from unittest import mock
 
 import josepy as jose
 import OpenSSL
-import requests
 
 from acme import challenges
 from acme import errors
 from acme import jws as acme_jws
 from acme import messages
+from acme import mureq
 from acme.mixins import VersionedLEACMEMixin
 import messages_test
 import test_util
@@ -137,7 +136,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.assertEqual(client.acme_version, 2)
 
     def test_query_registration_client_v2(self):
-        self.response.json.return_value = DIRECTORY_V2.to_json()
+        self.response.body.return_value = json.dumps(DIRECTORY_V2.to_json()).encode('utf-8')
         client = self._init()
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, client.query_registration(self.regr))
@@ -1057,9 +1056,9 @@ class ClientNetworkTest(unittest.TestCase):
         self.net.session.request.return_value = self.response
         # pylint: disable=protected-access
         self.assertEqual(self.response, self.net._send_request(
-            'HEAD', 'http://example.com/', 'foo', bar='baz'))
+            'HEAD', 'http://example.com/', bar='baz'))
         self.net.session.request.assert_called_once_with(
-            'HEAD', 'http://example.com/', 'foo',
+            'HEAD', 'http://example.com/',
             headers=mock.ANY, verify=mock.ANY, timeout=mock.ANY, bar='baz')
 
     @mock.patch('acme.client.logger')
@@ -1070,51 +1069,54 @@ class ClientNetworkTest(unittest.TestCase):
             headers={"Content-Type": "application/pkix-cert"},
             content=b"hi")
         # pylint: disable=protected-access
-        self.net._send_request('HEAD', 'http://example.com/', 'foo',
+        self.net._send_request('HEAD', 'http://example.com/',
           timeout=mock.ANY, bar='baz')
         mock_logger.debug.assert_called_with(
             'Received response:\nHTTP %d\n%s\n\n%s', 200,
             'Content-Type: application/pkix-cert', b'aGk=')
 
-    def test_send_request_post(self):
-        self.net.session = mock.MagicMock()
-        self.net.session.request.return_value = self.response
+    @mock.patch.object(mureq, 'request')
+    def test_send_request_post(self, mock_request):
+        mock_request.return_value = self.response
         # pylint: disable=protected-access
         self.assertEqual(self.response, self.net._send_request(
-            'POST', 'http://example.com/', 'foo', data='qux', bar='baz'))
-        self.net.session.request.assert_called_once_with(
-            'POST', 'http://example.com/', 'foo',
-            headers=mock.ANY, verify=mock.ANY, timeout=mock.ANY, data='qux', bar='baz')
+            'POST', 'http://example.com/', body='qux'))
+        mock_request.assert_called_once_with(
+            'POST', 'http://example.com/',
+            headers=mock.ANY, verify=mock.ANY, timeout=mock.ANY, body=b'qux', source_address=None)
 
     def test_send_request_verify_ssl(self):
         # pylint: disable=protected-access
         for verify in True, False:
-            self.net.session = mock.MagicMock()
-            self.net.session.request.return_value = self.response
-            self.net.verify_ssl = verify
-            # pylint: disable=protected-access
-            self.assertEqual(
-                self.response,
-                self.net._send_request('GET', 'http://example.com/'))
-            self.net.session.request.assert_called_once_with(
-                'GET', 'http://example.com/', verify=verify,
-                timeout=mock.ANY, headers=mock.ANY)
+            with mock.patch.object(mureq, 'request') as mock_request:
+                mock_request.return_value = self.response
+                self.net.verify_ssl = verify
+                # pylint: disable=protected-access
+                self.assertEqual(
+                    self.response,
+                    self.net._send_request('GET', 'http://example.com/'))
+                mock_request.assert_called_once_with(
+                    'GET', 'http://example.com/', verify=verify,
+                    timeout=mock.ANY, headers=mock.ANY,
+                    body=None, source_address=None)
 
-    def test_send_request_user_agent(self):
-        self.net.session = mock.MagicMock()
+    @mock.patch.object(mureq, 'request')
+    def test_send_request_user_agent(self, mock_request):
         # pylint: disable=protected-access
         self.net._send_request('GET', 'http://example.com/',
                                headers={'bar': 'baz'})
-        self.net.session.request.assert_called_once_with(
+        mock_request.assert_called_once_with(
             'GET', 'http://example.com/', verify=mock.ANY,
             timeout=mock.ANY,
-            headers={'User-Agent': 'acme-python-test', 'bar': 'baz'})
+            headers={'User-Agent': 'acme-python-test', 'bar': 'baz'},
+            body=None, source_address=None)
 
         self.net._send_request('GET', 'http://example.com/',
                                headers={'User-Agent': 'foo2'})
-        self.net.session.request.assert_called_with(
+        mock_request.assert_called_with(
             'GET', 'http://example.com/',
-            verify=mock.ANY, timeout=mock.ANY, headers={'User-Agent': 'foo2'})
+            verify=mock.ANY, timeout=mock.ANY, headers={'User-Agent': 'foo2'},
+            body=None, source_address=None)
 
     def test_send_request_timeout(self):
         self.net.session = mock.MagicMock()
@@ -1138,12 +1140,11 @@ class ClientNetworkTest(unittest.TestCase):
     def test_del_error(self):
         self.test_del(ReferenceError)
 
-    @mock.patch('acme.client.requests')
-    def test_requests_error_passthrough(self, mock_requests):
-        mock_requests.exceptions = requests.exceptions
-        mock_requests.request.side_effect = requests.exceptions.RequestException
+    @mock.patch('acme.client.mureq')
+    def test_requests_error_passthrough(self, mock_mureq):
+        mock_mureq.request.side_effect = mureq.HTTPException
         # pylint: disable=protected-access
-        self.assertRaises(requests.exceptions.RequestException,
+        self.assertRaises(mureq.HTTPException,
                           self.net._send_request, 'GET', 'uri')
 
     def test_urllib_error(self):
@@ -1158,8 +1159,8 @@ class ClientNetworkTest(unittest.TestCase):
                              "Connection refused", str(y))
 
         # Requests Library Exceptions
-        except requests.exceptions.ConnectionError as z: #pragma: no cover
-            self.assertTrue("'Connection aborted.'" in str(z) or "[WinError 10061]" in str(z))
+        except mureq.HTTPException as z: #pragma: no cover
+            self.assertTrue("Connection refused" in str(z) or "[WinError 10061]" in str(z))
 
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
@@ -1219,15 +1220,15 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
     def test_head(self):
         self.assertEqual(self.acmev1_nonce_response, self.net.head(
-            'http://example.com/', 'foo', bar='baz'))
+            'http://example.com/', bar='baz'))
         self.send_request.assert_called_once_with(
-            'HEAD', 'http://example.com/', 'foo', bar='baz')
+            'HEAD', 'http://example.com/', bar='baz')
 
     def test_head_v2(self):
         self.assertEqual(self.response, self.net.head(
-            'new_nonce_uri', 'foo', bar='baz'))
+            'new_nonce_uri', bar='baz'))
         self.send_request.assert_called_once_with(
-            'HEAD', 'new_nonce_uri', 'foo', bar='baz')
+            'HEAD', 'new_nonce_uri', bar='baz')
 
     def test_get(self):
         self.assertEqual(self.response, self.net.get(
@@ -1294,12 +1295,12 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
             'uri', self.obj, content_type=self.content_type))
 
     def test_head_get_post_error_passthrough(self):
-        self.send_request.side_effect = requests.exceptions.RequestException
+        self.send_request.side_effect = mureq.HTTPException
         for method in self.net.head, self.net.get:
             self.assertRaises(
-                requests.exceptions.RequestException, method, 'GET', 'uri')
-        self.assertRaises(requests.exceptions.RequestException,
-                          self.net.post, 'uri', obj=self.obj)
+                mureq.HTTPException, method, 'uri')
+        self.assertRaises(mureq.HTTPException,
+                          self.net.post, 'uri', body=self.obj)
 
     def test_post_bad_nonce_head(self):
         # pylint: disable=protected-access
@@ -1325,27 +1326,27 @@ class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
     """Tests that if ClientNetwork has a source IP set manually, the underlying library has
     used the provided source address."""
 
-    def setUp(self):
-        self.source_address = "8.8.8.8"
+    def test_source_address_not_set(self):
+        from acme.client import ClientNetwork
+        net = ClientNetwork(key=None, alg=None)
+
+        with mock.patch.object(mureq, 'request') as mock_request:
+            try:
+                net.get('https://www.example.com', body=b'hi')
+            except:
+                pass
+            self.assertEqual(mock_request.call_args.kwargs['source_address'], None)
 
     def test_source_address_set(self):
         from acme.client import ClientNetwork
-        net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
-        for adapter in net.session.adapters.values():
-            self.assertIn(self.source_address, adapter.source_address)
+        net = ClientNetwork(key=None, alg=None, source_address='8.8.8.8')
 
-    def test_behavior_assumption(self):
-        """This is a test that guardrails the HTTPAdapter behavior so that if the default for
-        a Session() changes, the assumptions here aren't violated silently."""
-        from acme.client import ClientNetwork
-        # Source address not specified, so the default adapter type should be bound -- this
-        # test should fail if the default adapter type is changed by requests
-        net = ClientNetwork(key=None, alg=None)
-        session = requests.Session()
-        for scheme in session.adapters:
-            client_network_adapter = net.session.adapters.get(scheme)
-            default_adapter = session.adapters.get(scheme)
-            self.assertEqual(client_network_adapter.__class__, default_adapter.__class__)
+        with mock.patch.object(mureq, 'request') as mock_request:
+            try:
+                net.get('https://www.example.com', body=b'hi')
+            except:
+                pass
+            self.assertEqual(mock_request.call_args.kwargs['source_address'], '8.8.8.8')
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

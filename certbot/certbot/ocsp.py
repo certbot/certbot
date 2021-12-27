@@ -16,7 +16,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.x509 import ocsp
 import pytz
-import requests
+
+from acme import mureq
 
 from certbot import crypto_util
 from certbot import errors
@@ -170,10 +171,10 @@ def _check_ocsp_cryptography(cert_path: str, chain_path: str, url: str, timeout:
     request = builder.build()
     request_binary = request.public_bytes(serialization.Encoding.DER)
     try:
-        response = requests.post(url, data=request_binary,
+        response = mureq.post(url, body=request_binary,
                                  headers={'Content-Type': 'application/ocsp-request'},
                                  timeout=timeout)
-    except requests.exceptions.RequestException:
+    except mureq.HTTPException:
         logger.info("OCSP check failed for %s (are we offline?)", cert_path, exc_info=True)
         return False
     if response.status_code != 200:

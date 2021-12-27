@@ -297,7 +297,7 @@ def _ocsp_mock(certificate_status, response_status,
     with mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response') as mock_response:
         mock_response.return_value = _construct_mock_ocsp_response(
             certificate_status, response_status)
-        with mock.patch('certbot.ocsp.requests.post') as mock_post:
+        with mock.patch('certbot.ocsp.mureq.post') as mock_post:
             mock_post.return_value = mock.Mock(status_code=http_status_code)
             with mock.patch('certbot.ocsp.crypto_util.verify_signed_payload') \
                 as mock_check:

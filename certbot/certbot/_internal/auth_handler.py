@@ -10,12 +10,12 @@ from typing import Tuple
 from typing import Type
 
 import josepy
-from requests.models import Response
 
 from acme import challenges
 from acme import client
 from acme import errors as acme_errors
 from acme import messages
+from acme import mureq
 from certbot import achallenges
 from certbot import configuration
 from certbot import errors
@@ -152,7 +152,7 @@ class AuthHandler:
             raise errors.Error("No ACME client defined, cannot poll authorizations.")
 
         authzrs_to_check: Dict[int, Tuple[messages.AuthorizationResource,
-                                          Optional[Response]]] = {index: (authzr, None)
+                                          Optional[mureq.Response]]] = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
         authzrs_failed_to_report = []
         # Give an initial second to the ACME CA server to check the authorizations
