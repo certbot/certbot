@@ -367,6 +367,7 @@ class Client:
 
         `.register` must be called before `.obtain_certificate`
 
+        :param str old_keypath: keypath to the old key.
         :param list domains: domains to get a certificate
 
         :returns: certificate as PEM string, chain as PEM string,
