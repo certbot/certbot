@@ -2,6 +2,7 @@
 import datetime
 import logging
 import platform
+from typing import Union
 from typing import cast
 from typing import Any
 from typing import Callable
@@ -572,6 +573,7 @@ class Client:
         :param list domains: list of domains to install the certificate
         :param str privkey_path: path to certificate private key
         :param str cert_path: certificate file path (optional)
+        :param str fullchain_path: path to the full chain of the certificate
         :param str chain_path: chain file path
 
         """
@@ -642,13 +644,13 @@ class Client:
                     "Option %s is not supported by the selected installer. "
                     "Skipping enhancement.", config_name)
 
-        msg = ("We were unable to restart web server")
+        msg = "We were unable to restart web server"
         if enhanced:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
     def apply_enhancement(self, domains: List[str], enhancement: str,
-                          options: Optional[List[str]] = None) -> None:
+                          options: Optional[str] = None) -> None:
         """Applies an enhancement on all domains.
 
         :param list domains: list of ssl_vhosts (as strings)

@@ -3,6 +3,7 @@ import logging
 from typing import Callable
 from typing import List
 from typing import Optional
+from typing import Union
 
 from certbot import interfaces
 from certbot.plugins import common
@@ -36,7 +37,7 @@ class Installer(common.Plugin, interfaces.Installer):
         pass  # pragma: no cover
 
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[List[str]] = None) -> None:
+                options: Optional[Union[List[str], str]] = None) -> None:
         pass  # pragma: no cover
 
     def supported_enhancements(self) -> List[str]:

@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 import sys
 from types import ModuleType
 from typing import Any
+from typing import Union
 from typing import cast
 from typing import Iterable
 from typing import List
@@ -275,7 +276,7 @@ class Installer(Plugin):
 
     @abstractmethod
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[List[str]] = None) -> None:
+                options: Optional[Union[List[str], str]] = None) -> None:
         """Perform a configuration enhancement.
 
         :param str domain: domain for which to provide enhancement

@@ -8,6 +8,7 @@ import tempfile
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Union
 from typing import overload
 from typing import Set
 from typing import Tuple
@@ -121,7 +122,7 @@ class Proxy(interfaces.ConfiguratorProxy):
         self._configurator.config_test()
 
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[List[str]] = None) -> None:
+                options: Optional[Union[List[str], str]] = None) -> None:
         self._configurator.enhance(domain, enhancement, options)
 
     def get_all_names(self) -> Iterable[str]:

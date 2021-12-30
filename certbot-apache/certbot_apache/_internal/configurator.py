@@ -499,7 +499,8 @@ class ApacheConfigurator(common.Configurator):
         )
 
     def deploy_cert(
-        self, domain: str, cert_path: str, key_path: str, chain_path: str, fullchain_path: str
+        self, domain: str, cert_path: str, key_path: str,
+        chain_path: Optional[str] = None, fullchain_path: Optional[str] = None
     ) -> None:
         """Deploys certificate to specified virtual host.
 
@@ -1554,7 +1555,7 @@ class ApacheConfigurator(common.Configurator):
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")
 
-    def _sift_rewrite_rules(self, contents: List[str]) -> Tuple[List[str], bool]:
+    def _sift_rewrite_rules(self, contents: Iterable[str]) -> Tuple[List[str], bool]:
         """ Helper function for _copy_create_ssl_vhost_skeleton to prepare the
         new HTTPS VirtualHost contents. Currently disabling the rewrites """
 
@@ -1803,7 +1804,7 @@ class ApacheConfigurator(common.Configurator):
         id_comment = self.parser.find_comments(search_comment, vhost.path)
         if id_comment:
             # Use the first value, multiple ones shouldn't exist
-            comment = self.parser.get_arg(id_comment[0])
+            comment: str = self.parser.get_arg(id_comment[0])
             return comment.split(" ")[-1]
         return None
 
@@ -1824,7 +1825,7 @@ class ApacheConfigurator(common.Configurator):
             return vh_id
 
         id_string = apache_util.unique_id()
-        comment = constants.MANAGED_COMMENT_ID.format(id_string)
+        comment: str = constants.MANAGED_COMMENT_ID.format(id_string)
         self.parser.add_comment(vhost.path, comment)
         return id_string
 
@@ -1846,8 +1847,8 @@ class ApacheConfigurator(common.Configurator):
         """Returns currently supported enhancements."""
         return ["redirect", "ensure-http-header", "staple-ocsp"]
 
-    def enhance(self, domain: str, enhancement: Optional[Union[List[str], str]],
-                options: Optional[str] = None) -> None:
+    def enhance(self, domain: str, enhancement: str,
+                options: Optional[Union[List[str], str]] = None) -> None:
         """Enhance configuration.
 
         :param str domain: domain to enhance
@@ -1877,7 +1878,7 @@ class ApacheConfigurator(common.Configurator):
                         "enhancement was not configured.")
             msg_enhancement = enhancement
             if options:
-                msg_enhancement += ": " + options
+                msg_enhancement += ": " + str(options)
             msg = msg_tmpl.format(domain, msg_enhancement)
             logger.error(msg)
             raise errors.PluginError(msg)
@@ -2353,7 +2354,7 @@ class ApacheConfigurator(common.Configurator):
 
         return None
 
-    def _get_proposed_addrs(self, vhost: obj.VirtualHost, port: str = "80") -> Set[Addr]:
+    def _get_proposed_addrs(self, vhost: obj.VirtualHost, port: str = "80") -> Iterable[Addr]:
         """Return all addrs of vhost with the port replaced with the specified.
 
         :param obj.VirtualHost ssl_vhost: Original Vhost

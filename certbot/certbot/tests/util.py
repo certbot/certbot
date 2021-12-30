@@ -9,6 +9,7 @@ import sys
 import tempfile
 from typing import Any
 from typing import Callable
+from typing import Union
 from typing import cast
 from typing import IO
 from typing import Iterable
@@ -59,7 +60,7 @@ class DummyInstaller(common.Installer):
         pass
 
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[List[str]] = None) -> None:
+                options: Optional[Union[List[str], str]] = None) -> None:
         pass
 
     def supported_enhancements(self) -> List[str]:

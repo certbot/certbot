@@ -127,7 +127,7 @@ class VirtualHost:
     strip_name: Pattern = re.compile(r"^(?:.+://)?([^ :$]*)")
 
     def __init__(
-        self, filepath: str, path: Optional[str], addrs: AbstractSet["Addr"],
+        self, filepath: str, path: str, addrs: Set["Addr"],
         ssl: bool, enabled: bool, name: Optional[str] = None,
         aliases: Optional[Set[str]] = None, modmacro: bool = False,
         ancestor: Optional["VirtualHost"] = None, node = None):
