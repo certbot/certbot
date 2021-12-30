@@ -242,7 +242,7 @@ class AugeasDirectiveNode(AugeasParserNode):
         """
         return tuple(self._aug_get_params(self.metadata["augeaspath"]))
 
-    def _aug_get_params(self, path: str) -> List[str]:
+    def _aug_get_params(self, path: str) -> List[Optional[str]]:
         """Helper function to get parameters for DirectiveNodes and BlockNodes"""
 
         arg_paths = self.parser.aug.match(path + "/arg")

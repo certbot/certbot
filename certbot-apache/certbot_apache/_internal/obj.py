@@ -1,6 +1,5 @@
 """Module contains classes used by the Apache Configurator."""
 import re
-from typing import AbstractSet
 from typing import Any
 from typing import Iterable
 from typing import Optional
@@ -127,7 +126,7 @@ class VirtualHost:
     strip_name: Pattern = re.compile(r"^(?:.+://)?([^ :$]*)")
 
     def __init__(
-        self, filepath: str, path: str, addrs: Set["Addr"],
+        self, filepath: str, path: Optional[str], addrs: Set[Addr],
         ssl: bool, enabled: bool, name: Optional[str] = None,
         aliases: Optional[Set[str]] = None, modmacro: bool = False,
         ancestor: Optional["VirtualHost"] = None, node = None):

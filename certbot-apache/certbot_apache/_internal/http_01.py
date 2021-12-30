@@ -3,6 +3,8 @@ import errno
 import logging
 from typing import Any
 from typing import List
+from typing import Optional
+from typing import Sequence
 from typing import Set
 from typing import TYPE_CHECKING
 
@@ -67,7 +69,7 @@ class ApacheHttp01(common.ChallengePerformer):
             "http_challenges")
         self.moded_vhosts: Set[VirtualHost] = set()
 
-    def perform(self) -> List[HTTP01Response]:
+    def perform(self) -> Sequence[Optional[HTTP01Response]]:
         """Perform all HTTP-01 challenges."""
         if not self.achalls:
             return []

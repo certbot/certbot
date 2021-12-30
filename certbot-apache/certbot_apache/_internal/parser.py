@@ -3,6 +3,7 @@ import copy
 import fnmatch
 import logging
 import re
+from typing import Collection
 from typing import Dict
 from typing import Iterable
 from typing import KeysView
@@ -436,7 +437,7 @@ class ApacheParser:
         :type args: list or str
 
         """
-        self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
+        self.aug.set(aug_conf_path or "" + "/directive[last() + 1]", directive)
         if isinstance(args, list):
             for i, value in enumerate(args, 1):
                 self.aug.set(
@@ -637,9 +638,7 @@ class ApacheParser:
                 valid_matches.append(match)
         return valid_matches
 
-    def _pass_filter(
-        self, match: str, filter_: Union[Tuple[str, KeysView[str]], Tuple[str, Dict[str, str]]]
-    ) -> bool:
+    def _pass_filter(self, match: str, filter_: Tuple[str, Collection[str]]) -> bool:
         """Determine if directive passes a filter.
 
         :param str match: Augeas path

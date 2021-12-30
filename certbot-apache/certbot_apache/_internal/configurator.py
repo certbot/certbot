@@ -31,7 +31,6 @@ from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.interfaces import RenewableCert
 from certbot.plugins import common
-from certbot.plugins.common import Addr
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 from certbot.plugins.util import path_surgery
 from certbot_apache._internal import apache_util
@@ -258,7 +257,6 @@ class ApacheConfigurator(common.Configurator):
         # These will be set in the prepare function
         self._prepared: bool = False
         self.parser_root: Optional[dualparser.DualBlockNode] = None
-        self.parser: parser.ApacheParser
         self.version = version
         self._openssl_version = openssl_version
         self.vhosts: List[obj.VirtualHost]
@@ -628,8 +626,7 @@ class ApacheConfigurator(common.Configurator):
 
     def _deploy_cert(
         self, vhost: obj.VirtualHost, cert_path: str, key_path: str,
-        chain_path: str,
-        fullchain_path: str
+        chain_path: Optional[str] = None, fullchain_path: Optional[str] = None,
     ) -> None:
         """
         Helper function for deploy_cert() that handles the actual deployment
@@ -904,7 +901,7 @@ class ApacheConfigurator(common.Configurator):
 
         return util.get_filtered_names(all_names)
 
-    def get_name_from_ip(self, addr: Addr) -> str:
+    def get_name_from_ip(self, addr: obj.Addr) -> str:
         """Returns a reverse dns name if available.
 
         :param addr: IP Address
@@ -976,7 +973,7 @@ class ApacheConfigurator(common.Configurator):
         :rtype: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         """
-        addrs: Set[Addr] = set()
+        addrs: Set[obj.Addr] = set()
         try:
             args = self.parser.aug.match(path + "/arg")
         except RuntimeError:
@@ -1658,8 +1655,8 @@ class ApacheConfigurator(common.Configurator):
                     vh_contents[content_index] = line[:line_index]
                 break
 
-    def _update_ssl_vhosts_addrs(self, vh_path: str) -> Set[Addr]:
-        ssl_addrs: Set[Addr] = set()
+    def _update_ssl_vhosts_addrs(self, vh_path: str) -> Set[obj.Addr]:
+        ssl_addrs: Set[obj.Addr] = set()
         ssl_addr_p: List[str] = self.parser.aug.match(vh_path + "/arg")
 
         for addr in ssl_addr_p:
@@ -1890,7 +1887,7 @@ class ApacheConfigurator(common.Configurator):
             raise
 
     def _autohsts_increase(
-        self, vhost: Optional[obj.VirtualHost], id_str: str, nextstep: Union[int, float]
+        self, vhost: obj.VirtualHost, id_str: str, nextstep: Union[int, float]
     ) -> None:
         """Increase the AutoHSTS max-age value
 
@@ -2236,15 +2233,14 @@ class ApacheConfigurator(common.Configurator):
             "RewriteRule", None, start=vhost.path)
         return bool(rewrite_path)
 
-    def _is_rewrite_engine_on(self, vhost: obj.VirtualHost) -> Union[str, bool]:
+    def _is_rewrite_engine_on(self, vhost: obj.VirtualHost) -> Optional[Union[str, bool]]:
         """Checks if a RewriteEngine directive is on
 
         :param vhost: vhost to check
         :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         """
-        rewrite_engine_path_list = self.parser.find_dir("RewriteEngine", "on",
-                                                        start=vhost.path)
+        rewrite_engine_path_list = self.parser.find_dir("RewriteEngine", "on", start=vhost.path)
         if rewrite_engine_path_list:
             for re_path in rewrite_engine_path_list:
                 # A RewriteEngine directive may also be included in per
@@ -2265,7 +2261,9 @@ class ApacheConfigurator(common.Configurator):
 
         self.parser.aug.load()
         # Make a new vhost data structure and add it to the lists
-        new_vhost = self._create_vhost(parser.get_aug_path(self._escape(redirect_filepath)))
+        new_vhost: obj.VirtualHost = self._create_vhost(parser.get_aug_path(
+            self._escape(redirect_filepath))
+        )
         self.vhosts.append(new_vhost)
         self._enhanced_vhosts["redirect"].add(new_vhost)
 
@@ -2354,7 +2352,7 @@ class ApacheConfigurator(common.Configurator):
 
         return None
 
-    def _get_proposed_addrs(self, vhost: obj.VirtualHost, port: str = "80") -> Iterable[Addr]:
+    def _get_proposed_addrs(self, vhost: obj.VirtualHost, port: str = "80") -> Iterable[obj.Addr]:
         """Return all addrs of vhost with the port replaced with the specified.
 
         :param obj.VirtualHost ssl_vhost: Original Vhost
@@ -2553,7 +2551,7 @@ class ApacheConfigurator(common.Configurator):
 
     def _update_responses(
         self,
-        responses: List[Optional[challenges.HTTP01Response]],
+        responses: Sequence[challenges.HTTP01Response],
         chall_response: List[Challenge],
         chall_doer: http_01.ApacheHttp01
     ) -> None:
