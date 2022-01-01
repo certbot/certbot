@@ -14,7 +14,8 @@ class ApacheParserNode(interfaces.ParserNode):
     """
 
     def __init__(self, **kwargs):
-        ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)  # pylint: disable=unused-variable
+        ancestor, dirty, filepath, metadata = util.parsernode_kwargs(
+            kwargs)  # pylint: disable=unused-variable
         super().__init__(**kwargs)
         self.ancestor = ancestor
         self.filepath = filepath

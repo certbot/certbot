@@ -19,6 +19,14 @@ Setup:
 Run:
 
 python tools/finish_release.py ~/.ssh/githubpat.txt
+
+Testing:
+
+This script can be safely run between releases. When this is done, the script
+should execute successfully until the final step when it tries to set draft
+equal to false on the GitHub release. This step should fail because a published
+release with that name already exists.
+
 """
 
 import argparse

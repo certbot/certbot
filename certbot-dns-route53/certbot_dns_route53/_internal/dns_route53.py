@@ -2,6 +2,7 @@
 import collections
 import logging
 import time
+from typing import Any
 from typing import DefaultDict
 from typing import Dict
 from typing import List
@@ -10,7 +11,9 @@ import boto3
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
 
+from acme.challenges import ChallengeResponse
 from certbot import errors
+from certbot.achallenges import AnnotatedChallenge
 from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
@@ -32,21 +35,21 @@ class Authenticator(dns_common.DNSAuthenticator):
                    "DNS).")
     ttl = 10
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
         self._resource_records: DefaultDict[str, List[Dict[str, str]]] = collections.defaultdict(list)
 
-    def more_info(self):  # pylint: disable=missing-function-docstring
+    def more_info(self) -> str:
         return "Solve a DNS01 challenge using AWS Route53"
 
-    def _setup_credentials(self):
+    def _setup_credentials(self) -> None:
         pass
 
-    def _perform(self, domain, validation_name, validation):
+    def _perform(self, domain: str, validation_name: str, validation: str) -> None:
         pass
 
-    def perform(self, achalls):
+    def perform(self, achalls: List[AnnotatedChallenge]) -> List[ChallengeResponse]:
         self._attempt_cleanup = True
 
         try:
@@ -64,13 +67,13 @@ class Authenticator(dns_common.DNSAuthenticator):
             raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
         return [achall.response(achall.account_key) for achall in achalls]
 
-    def _cleanup(self, domain, validation_name, validation):
+    def _cleanup(self, domain: str, validation_name: str, validation: str) -> None:
         try:
             self._change_txt_record("DELETE", validation_name, validation)
         except (NoCredentialsError, ClientError) as e:
             logger.debug('Encountered error during cleanup: %s', e, exc_info=True)
 
-    def _find_zone_id_for_domain(self, domain):
+    def _find_zone_id_for_domain(self, domain: str) -> str:
         """Find the zone id responsible a given FQDN.
 
            That is, the id for the zone whose name is the longest parent of the
@@ -100,7 +103,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         zones.sort(key=lambda z: len(z[0]), reverse=True)
         return zones[0][1]
 
-    def _change_txt_record(self, action, validation_domain_name, validation):
+    def _change_txt_record(self, action: str, validation_domain_name: str, validation: str) -> str:
         zone_id = self._find_zone_id_for_domain(validation_domain_name)
 
         rrecords = self._resource_records[validation_domain_name]
@@ -136,7 +139,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
         return response["ChangeInfo"]["Id"]
 
-    def _wait_for_change(self, change_id):
+    def _wait_for_change(self, change_id: str) -> None:
         """Wait for a change to be propagated to all Route53 DNS servers.
            https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html
         """

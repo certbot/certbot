@@ -1,21 +1,26 @@
 """Provides a common base for Apache proxies"""
+import argparse
 import os
 import shutil
 import subprocess
+from typing import Set
+from typing import Tuple
 from unittest import mock
 
-from certbot import errors as le_errors, configuration
-from certbot import util as certbot_util
 from certbot_apache._internal import entrypoint
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 from certbot_compatibility_test.configurators import common as configurators_common
 
+from certbot import configuration
+from certbot import errors as le_errors
+from certbot import util as certbot_util
+
 
 class Proxy(configurators_common.Proxy):
     """A common base for Apache test configurators"""
 
-    def __init__(self, args):
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initializes the plugin with the given command line args"""
         super().__init__(args)
         self.le_config.apache_le_vhost_ext = "-le-ssl.conf"
@@ -27,7 +32,7 @@ class Proxy(configurators_common.Proxy):
         mock_display.side_effect = le_errors.PluginError(
             "Unable to determine vhost")
 
-    def load_config(self):
+    def load_config(self) -> str:
         """Loads the next configuration for the plugin to test"""
         config = super().load_config()
         self._all_names, self._test_names = _get_names(config)
@@ -47,7 +52,7 @@ class Proxy(configurators_common.Proxy):
 
         return config
 
-    def _prepare_configurator(self):
+    def _prepare_configurator(self) -> None:
         """Prepares the Apache plugin for testing"""
         for k in entrypoint.ENTRYPOINT.OS_DEFAULTS.__dict__.keys():
             setattr(self.le_config, "apache_" + k,
@@ -58,13 +63,13 @@ class Proxy(configurators_common.Proxy):
             name="apache")
         self._configurator.prepare()
 
-    def cleanup_from_tests(self):
+    def cleanup_from_tests(self) -> None:
         """Performs any necessary cleanup from running plugin tests"""
         super().cleanup_from_tests()
         mock.patch.stopall()
 
 
-def _get_server_root(config):
+def _get_server_root(config: str) -> str:
     """Returns the server root directory in config"""
     subdirs = [
         name for name in os.listdir(config)
@@ -76,7 +81,7 @@ def _get_server_root(config):
     return os.path.join(config, subdirs[0].rstrip())
 
 
-def _get_names(config):
+def _get_names(config: str) -> Tuple[Set[str], Set[str]]:
     """Returns all and testable domain names in config"""
     all_names = set()
     non_ip_names = set()
