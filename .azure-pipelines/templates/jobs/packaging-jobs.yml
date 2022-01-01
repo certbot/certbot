@@ -54,8 +54,12 @@ jobs:
           done
         displayName: Run integration tests for Docker images
   - job: installer_build
-    pool:
-      vmImage: vs2017-win2016
+    strategy:
+      matrix:
+        win-2019:
+          vmImage: windows-2019
+        win-2022:
+          vmImage: windows-2022
     steps:
       - task: UsePythonVersion@0
         inputs:
@@ -87,17 +91,11 @@ jobs:
       matrix:
         win2019:
           imageName: windows-2019
-        win2016:
-          imageName: vs2017-win2016
+        win2022:
+          imageName: windows-2022
     pool:
       vmImage: $(imageName)
     steps:
-      - powershell: |
-          if ($PSVersionTable.PSVersion.Major -ne 5) {
-              throw "Powershell version is not 5.x"
-          }
-        condition: eq(variables['imageName'], 'vs2017-win2016')
-        displayName: Check Powershell 5.x is used in vs2017-win2016
       - task: UsePythonVersion@0
         inputs:
           versionSpec: 3.9
