@@ -19,35 +19,35 @@ class AddrTest(unittest.TestCase):
     def test_fromstring(self):
         self.assertEqual(self.addr1.get_addr(), "192.168.1.1")
         self.assertEqual(self.addr1.get_port(), "")
-        self.assertFalse(self.addr1.ssl)
-        self.assertFalse(self.addr1.default)
+        self.assertIs(self.addr1.ssl, False)
+        self.assertIs(self.addr1.default, False)
 
         self.assertEqual(self.addr2.get_addr(), "192.168.1.1")
         self.assertEqual(self.addr2.get_port(), "*")
-        self.assertTrue(self.addr2.ssl)
-        self.assertFalse(self.addr2.default)
+        self.assertIs(self.addr2.ssl, True)
+        self.assertIs(self.addr2.default, False)
 
         self.assertEqual(self.addr3.get_addr(), "192.168.1.1")
         self.assertEqual(self.addr3.get_port(), "80")
-        self.assertFalse(self.addr3.ssl)
-        self.assertFalse(self.addr3.default)
+        self.assertIs(self.addr3.ssl, False)
+        self.assertIs(self.addr3.default, False)
 
         self.assertEqual(self.addr4.get_addr(), "*")
         self.assertEqual(self.addr4.get_port(), "80")
-        self.assertTrue(self.addr4.ssl)
-        self.assertTrue(self.addr4.default)
+        self.assertIs(self.addr4.ssl, True)
+        self.assertIs(self.addr4.default, True)
 
         self.assertEqual(self.addr5.get_addr(), "myhost")
         self.assertEqual(self.addr5.get_port(), "")
-        self.assertFalse(self.addr5.ssl)
-        self.assertFalse(self.addr5.default)
+        self.assertIs(self.addr5.ssl, False)
+        self.assertIs(self.addr5.default, False)
 
         self.assertEqual(self.addr6.get_addr(), "")
         self.assertEqual(self.addr6.get_port(), "80")
-        self.assertFalse(self.addr6.ssl)
-        self.assertTrue(self.addr6.default)
+        self.assertIs(self.addr6.ssl, False)
+        self.assertIs(self.addr6.default, True)
 
-        self.assertTrue(self.addr8.default)
+        self.assertIs(self.addr8.default, True)
 
         self.assertIsNone(self.addr7)
 

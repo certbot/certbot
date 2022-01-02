@@ -451,7 +451,7 @@ class NginxParserTest(util.NginxTest):
         nparser.filedump(ext='')
 
         # check properties of new vhost
-        self.assertFalse(next(iter(new_vhost.addrs)).default)
+        self.assertIs(next(iter(new_vhost.addrs)).default, False)
         self.assertNotEqual(new_vhost.path, default.path)
 
         # check that things are written to file correctly
@@ -460,7 +460,7 @@ class NginxParserTest(util.NginxTest):
         new_defaults = [x for x in new_vhosts if 'default' in x.filep]
         self.assertEqual(len(new_defaults), 2)
         new_vhost_parsed = new_defaults[1]
-        self.assertFalse(next(iter(new_vhost_parsed.addrs)).default)
+        self.assertIs(next(iter(new_vhost_parsed.addrs)).default, False)
         self.assertEqual(next(iter(default.names)), next(iter(new_vhost_parsed.names)))
         self.assertEqual(len(default.raw), len(new_vhost_parsed.raw))
         self.assertTrue(next(iter(default.addrs)).super_eq(next(iter(new_vhost_parsed.addrs))))
