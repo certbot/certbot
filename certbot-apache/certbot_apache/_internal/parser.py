@@ -55,7 +55,7 @@ class ApacheParser:
         # Needed for calling save() with reverter functionality that resides in
         # AugeasConfigurator superclass of ApacheConfigurator. This resolves
         # issues with aug.load() after adding new files / defines to parse tree
-        self.configurator: "ApacheConfigurator" = configurator
+        self.configurator = configurator
 
         # Initialize augeas
         self.aug: Augeas = init_augeas()
@@ -424,7 +424,7 @@ class ApacheParser:
         return retpath
 
     def add_dir(
-        self, aug_conf_path: Optional[str], directive: Optional[str], args: Union[List[str], str]
+        self, aug_conf_path: str, directive: Optional[str], args: Union[List[str], str]
     ) -> None:
         """Appends directive to the end fo the file given by aug_conf_path.
 
@@ -437,7 +437,7 @@ class ApacheParser:
         :type args: list or str
 
         """
-        self.aug.set(aug_conf_path or "" + "/directive[last() + 1]", directive)
+        self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
         if isinstance(args, list):
             for i, value in enumerate(args, 1):
                 self.aug.set(
@@ -590,7 +590,7 @@ class ApacheParser:
         allargs = self.aug.match(match + '*')
         return [self.get_arg(arg) for arg in allargs]
 
-    def get_arg(self, match: Optional[str]) -> Optional[str]:
+    def get_arg(self, match: Optional[str]) -> str:
         """Uses augeas.get to get argument value and interprets result.
 
         This also converts all variables and parameters appropriately.
@@ -624,7 +624,7 @@ class ApacheParser:
         """
         return get_aug_path(self.loc["root"])
 
-    def exclude_dirs(self, matches: Set[str]):
+    def exclude_dirs(self, matches: Set[str]) -> List[str]:
         """Exclude directives that are not loaded into the configuration."""
         filters = [("ifmodule", self.modules.keys()), ("ifdefine", self.variables)]
 
@@ -786,7 +786,7 @@ class ApacheParser:
         """
         return self._parsed_by_parser_paths(filep, self.parser_paths)
 
-    def parsed_in_original(self, filep: Optional[str]) -> bool:
+    def parsed_in_original(self, filep: str) -> bool:
         """Checks if the file path is parsed by existing Apache config.
         ie. returns True if the file is found on a path that matches Include or
         IncludeOptional statement in the Apache configuration.

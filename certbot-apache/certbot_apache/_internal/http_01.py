@@ -69,7 +69,7 @@ class ApacheHttp01(common.ChallengePerformer):
             "http_challenges")
         self.moded_vhosts: Set[VirtualHost] = set()
 
-    def perform(self) -> Sequence[Optional[HTTP01Response]]:
+    def perform(self) -> List[KeyAuthorizationAnnotatedChallenge]:
         """Perform all HTTP-01 challenges."""
         if not self.achalls:
             return []

@@ -31,6 +31,7 @@ from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.interfaces import RenewableCert
 from certbot.plugins import common
+from certbot.plugins.common import Addr
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 from certbot.plugins.util import path_surgery
 from certbot_apache._internal import apache_util
@@ -735,7 +736,7 @@ class ApacheConfigurator(common.Configurator):
 
     def _choose_vhost_from_list(self, target_name: str, temp: bool = False) -> obj.VirtualHost:
         # Select a vhost from a list
-        vhost: obj.VirtualHost = display_ops.select_vhost(target_name, self.vhosts)
+        vhost = display_ops.select_vhost(target_name, self.vhosts)
         if vhost is None:
             self._raise_no_suitable_vhost_error(target_name)
         if temp:
@@ -973,7 +974,7 @@ class ApacheConfigurator(common.Configurator):
         :rtype: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         """
-        addrs: Set[obj.Addr] = set()
+        addrs: Set[Addr] = set()
         try:
             args = self.parser.aug.match(path + "/arg")
         except RuntimeError:
@@ -1691,7 +1692,7 @@ class ApacheConfigurator(common.Configurator):
                                                       vh_path, False)
                 self.parser.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
 
-    def _add_dummy_ssl_directives(self, vh_path: Optional[str]) -> None:
+    def _add_dummy_ssl_directives(self, vh_path: str) -> None:
         self.parser.add_dir(vh_path, "SSLCertificateFile",
                             "insert_cert_file_path")
         self.parser.add_dir(vh_path, "SSLCertificateKeyFile",
@@ -2516,7 +2517,7 @@ class ApacheConfigurator(common.Configurator):
 
     def perform(
         self, achalls: List[KeyAuthorizationAnnotatedChallenge]
-    ) -> Sequence[Optional[challenges.HTTP01Response]]:
+    ) -> List[Challenge]:
         """Perform the configuration related challenge.
 
         This function currently assumes all challenges will be fulfilled.
@@ -2551,7 +2552,7 @@ class ApacheConfigurator(common.Configurator):
 
     def _update_responses(
         self,
-        responses: Sequence[challenges.HTTP01Response],
+        responses: Iterable[challenges.HTTP01Response],
         chall_response: List[Challenge],
         chall_doer: http_01.ApacheHttp01
     ) -> None:

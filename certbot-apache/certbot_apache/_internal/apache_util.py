@@ -82,7 +82,7 @@ def _split_aug_path(vhost_path: str) -> Tuple[str, str]:
 
     """
     # Strip off /files
-    file_path: str = vhost_path[6:]
+    file_path = vhost_path[6:]
     internal_path: List[str] = []
 
     # Remove components from the end of file_path until it becomes valid

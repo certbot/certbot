@@ -83,7 +83,7 @@ class Addr(common.Addr):
         """Returns if address has a wildcard port."""
         return self.tup[1] == "*" or not self.tup[1]
 
-    def get_sni_addr(self, port: str) -> "Addr":
+    def get_sni_addr(self, port: str) -> common.Addr:
         """Returns the least specific address that resolves on the port.
 
         Examples:
@@ -126,7 +126,7 @@ class VirtualHost:
     strip_name: Pattern = re.compile(r"^(?:.+://)?([^ :$]*)")
 
     def __init__(
-        self, filepath: str, path: Optional[str], addrs: Set[Addr],
+        self, filepath: str, path: str, addrs: Set["Addr"],
         ssl: bool, enabled: bool, name: Optional[str] = None,
         aliases: Optional[Set[str]] = None, modmacro: bool = False,
         ancestor: Optional["VirtualHost"] = None, node = None):
