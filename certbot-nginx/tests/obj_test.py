@@ -49,7 +49,7 @@ class AddrTest(unittest.TestCase):
 
         self.assertTrue(self.addr8.default)
 
-        self.assertEqual(None, self.addr7)
+        self.assertIsNone(self.addr7)
 
     def test_str(self):
         self.assertEqual(str(self.addr1), "192.168.1.1")
@@ -177,10 +177,10 @@ class VirtualHostTest(unittest.TestCase):
         self.assertEqual(stringified, str(self.vhost1))
 
     def test_has_header(self):
-        self.assertTrue(self.vhost_has_hsts.has_header('Strict-Transport-Security'))
-        self.assertFalse(self.vhost_has_hsts.has_header('Bogus-Header'))
-        self.assertFalse(self.vhost1.has_header('Strict-Transport-Security'))
-        self.assertFalse(self.vhost1.has_header('Bogus-Header'))
+        self.assertIs(self.vhost_has_hsts.has_header('Strict-Transport-Security'), True)
+        self.assertIs(self.vhost_has_hsts.has_header('Bogus-Header'), False)
+        self.assertIs(self.vhost1.has_header('Strict-Transport-Security'), False)
+        self.assertIs(self.vhost1.has_header('Bogus-Header'), False)
 
     def test_contains_list(self):
         from certbot_nginx._internal.obj import VirtualHost
@@ -223,6 +223,7 @@ class VirtualHostTest(unittest.TestCase):
             {'localhost'}, test_bad_haystack, [])
         self.assertTrue(vhost_haystack.contains_list(test_needle))
         self.assertFalse(vhost_bad_haystack.contains_list(test_needle))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

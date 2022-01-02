@@ -23,6 +23,7 @@ SECRET = 'SSB3b25kZXIgd2hvIHdpbGwgYm90aGVyIHRvIGRlY29kZSB0aGlzIHRleHQK'
 VALID_CONFIG = {"rfc2136_server": SERVER, "rfc2136_name": NAME, "rfc2136_secret": SECRET}
 TIMEOUT = 45
 
+
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
 
     def setUp(self):
@@ -113,7 +114,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.rfc2136_client.add_txt_record("bar", "baz", 42)
 
         query_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
-        self.assertTrue("bar. 42 IN TXT \"baz\"" in str(query_mock.call_args[0][0]))
+        self.assertIn('bar. 42 IN TXT "baz"', str(query_mock.call_args[0][0]))
 
     @mock.patch("dns.query.tcp")
     def test_add_txt_record_wraps_errors(self, query_mock):
@@ -146,7 +147,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.rfc2136_client.del_txt_record("bar", "baz")
 
         query_mock.assert_called_with(mock.ANY, SERVER, TIMEOUT, PORT)
-        self.assertTrue("bar. 0 NONE TXT \"baz\"" in str(query_mock.call_args[0][0]))
+        self.assertIn('bar. 0 NONE TXT "baz"', str(query_mock.call_args[0][0]))
 
     @mock.patch("dns.query.tcp")
     def test_del_txt_record_wraps_errors(self, query_mock):

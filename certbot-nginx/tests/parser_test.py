@@ -203,8 +203,7 @@ class NginxParserTest(util.NginxTest):
         mock_vhost.raw = [['listen', '80'],
                           ['ssl', 'on'],
                           ['server_name', '*.www.foo.com', '*.www.example.com']]
-        self.assertTrue(nparser.has_ssl_on_directive(mock_vhost))
-
+        self.assertIs(nparser.has_ssl_on_directive(mock_vhost), True)
 
     def test_remove_server_directives(self):
         nparser = parser.NginxParser(self.config_path)
@@ -532,6 +531,7 @@ class NginxParserTest(util.NginxTest):
             ('invalid character' in output) and ('UTF-8' in output)
             for output in log.output
         ))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
