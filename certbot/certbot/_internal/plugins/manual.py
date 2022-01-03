@@ -98,7 +98,7 @@ permitted by DNS standards.)
         super().__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
-        self.env: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]] = {}
+        self.env: Dict[achallenges.AnnotatedChallenge, Dict[str, str]] = {}
         self.subsequent_dns_challenge = False
         self.subsequent_any_challenge = False
 

@@ -316,6 +316,9 @@ class ExternalAccountBinding:
         return eab.to_partial_json()
 
 
+T = TypeVar('T', bound='Registration')
+
+
 class Registration(ResourceBody):
     """Registration Resource Body.
 
@@ -343,9 +346,9 @@ class Registration(ResourceBody):
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls, phone: Optional[str] = None, email: Optional[str] = None,
+    def from_data(cls: Type[T], phone: Optional[str] = None, email: Optional[str] = None,
                   external_account_binding: Optional[Dict[str, Any]] = None,
-                  **kwargs: Any) -> 'Registration':
+                  **kwargs: Any) -> T:
         """
         Create registration resource from contact details.
 
@@ -679,9 +682,9 @@ class OrderResource(ResourceWithURI):
     body: Order = jose.field('body', decoder=Order.from_json)
     csr_pem: bytes = jose.field('csr_pem', omitempty=True)
     authorizations: List[AuthorizationResource] = jose.field('authorizations')
-    fullchain_pem: bytes = jose.field('fullchain_pem', omitempty=True)
-    alternative_fullchains_pem: List[bytes] = jose.field('alternative_fullchains_pem',
-                                                         omitempty=True)
+    fullchain_pem: str = jose.field('fullchain_pem', omitempty=True)
+    alternative_fullchains_pem: List[str] = jose.field('alternative_fullchains_pem',
+                                                       omitempty=True)
 
 
 @Directory.register

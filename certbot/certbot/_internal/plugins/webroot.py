@@ -20,7 +20,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import cli
-from certbot.achallenges import KeyAuthorizationAnnotatedChallenge as AnnotatedChallenge
+from certbot.achallenges import AnnotatedChallenge
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import ops
