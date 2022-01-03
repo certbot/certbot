@@ -34,6 +34,7 @@ from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
 from requests_toolbelt.adapters.source import SourceAddressAdapter
 
+from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import jws
@@ -161,8 +162,8 @@ class ClientBase:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def answer_challenge(self, challb: messages.ChallengeBody, response: requests.Response
-                         ) -> messages.ChallengeResource:
+    def answer_challenge(self, challb: messages.ChallengeBody,
+                         response: challenges.ChallengeResponse) -> messages.ChallengeResource:
         """Answer challenge.
 
         :param challb: Challenge Resource body.
@@ -177,15 +178,15 @@ class ClientBase:
         :raises .UnexpectedUpdate:
 
         """
-        response = self._post(challb.uri, response)
+        resp = self._post(challb.uri, response)
         try:
-            authzr_uri = response.links['up']['url']
+            authzr_uri = resp.links['up']['url']
         except KeyError:
             raise errors.ClientError('"up" Link header missing')
         challr = messages.ChallengeResource(
             authzr_uri=authzr_uri,
-            body=messages.ChallengeBody.from_json(response.json()))
-        # TODO: check that challr.uri == response.headers['Location']?
+            body=messages.ChallengeBody.from_json(resp.json()))
+        # TODO: check that challr.uri == resp.headers['Location']?
         if challr.uri != challb.uri:
             raise errors.UnexpectedUpdate(challr.uri)
         return challr

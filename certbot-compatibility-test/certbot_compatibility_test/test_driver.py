@@ -106,7 +106,7 @@ def test_authenticator(plugin: common.Proxy, config: str, temp_dir: str) -> bool
 
 def _create_achalls(plugin: common.Proxy) -> List[achallenges.AnnotatedChallenge]:
     """Returns a list of annotated challenges to test on plugin"""
-    achalls = []
+    achalls: List[achallenges.AnnotatedChallenge] = []
     names = plugin.get_testable_domain_names()
     for domain in names:
         prefs = plugin.get_chall_pref(domain)

@@ -7,7 +7,6 @@ import josepy as jose
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
-from acme.challenges import Challenge
 from certbot import errors
 from certbot.achallenges import AnnotatedChallenge
 from certbot.plugins import dns_test_common
