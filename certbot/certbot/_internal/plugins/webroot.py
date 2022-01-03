@@ -85,7 +85,7 @@ to serve all files under specified web root ({0})."""
                  "file, it needs to be on a single line, like: webroot-map = "
                  '{"example.com":"/var/www"}.')
 
-    def auth_hint(self, failed_achalls: Iterable[AnnotatedChallenge]) -> str:  # pragma: no cover
+    def auth_hint(self, failed_achalls: List[AnnotatedChallenge]) -> str:  # pragma: no cover
         return ("The Certificate Authority failed to download the temporary challenge files "
                 "created by Certbot. Ensure that the listed domains serve their content from "
                 "the provided --webroot-path/-w and that files created there can be downloaded "
@@ -105,7 +105,7 @@ to serve all files under specified web root ({0})."""
     def prepare(self) -> None:  # pylint: disable=missing-function-docstring
         pass
 
-    def perform(self, achalls: Iterable[AnnotatedChallenge]) -> List[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
+    def perform(self, achalls: List[AnnotatedChallenge]) -> List[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
         self._set_webroots(achalls)
 
         self._create_challenge_dirs()
@@ -257,7 +257,7 @@ to serve all files under specified web root ({0})."""
         self.performed[root_path].add(achall)
         return response
 
-    def cleanup(self, achalls: Iterable[AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
+    def cleanup(self, achalls: List[AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
         for achall in achalls:
             root_path = self.full_roots.get(achall.domain, None)
             if root_path is not None:

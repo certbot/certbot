@@ -350,7 +350,7 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
 
 def gen_challenge_path(challbs: List[messages.ChallengeBody],
                        preferences: List[Type[challenges.Challenge]],
-                       combinations: Tuple[List[int], ...]) -> List[int]:
+                       combinations: Tuple[Tuple[int, ...], ...]) -> List[int]:
     """Generate a plan to get authority over the identity.
 
     .. todo:: This can be possibly be rewritten to use resolved_combinations.
@@ -383,7 +383,7 @@ def gen_challenge_path(challbs: List[messages.ChallengeBody],
 
 def _find_smart_path(challbs: List[messages.ChallengeBody],
                      preferences: List[Type[challenges.Challenge]],
-                     combinations: Tuple[List[int], ...]
+                     combinations: Tuple[Tuple[int, ...], ...]
                      ) -> List[int]:
     """Find challenge path with server hints.
 
@@ -399,7 +399,7 @@ def _find_smart_path(challbs: List[messages.ChallengeBody],
 
     # max_cost is now equal to sum(indices) + 1
 
-    best_combo: Optional[List[int]] = None
+    best_combo: Optional[Tuple[int, ...]] = None
     # Set above completing all of the available challenges
     best_combo_cost = max_cost
 
@@ -418,7 +418,7 @@ def _find_smart_path(challbs: List[messages.ChallengeBody],
     if not best_combo:
         raise _report_no_chall_path(challbs)
 
-    return best_combo
+    return [item for item in best_combo]
 
 
 def _find_dumb_path(challbs: List[messages.ChallengeBody],

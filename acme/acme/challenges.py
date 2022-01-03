@@ -52,7 +52,7 @@ class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields
     """ACME challenge response."""
     TYPES: Dict[str, Type['ChallengeResponse']] = {}
     resource_type = 'challenge'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
 
 
 class UnrecognizedChallenge(Challenge):

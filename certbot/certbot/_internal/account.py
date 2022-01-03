@@ -54,7 +54,7 @@ class Account:
             cross-machine migration scenarios.
 
         """
-        creation_dt = acme_fields.RFC3339Field("creation_dt")
+        creation_dt: datetime.datetime = acme_fields.rfc3339("creation_dt")
         creation_host: str = jose.field("creation_host")
         register_to_eff: str = jose.field("register_to_eff", omitempty=True)
 

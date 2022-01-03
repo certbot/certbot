@@ -1,4 +1,5 @@
 """ACME protocol messages."""
+import datetime
 from collections.abc import Hashable
 import json
 from typing import Any
@@ -427,13 +428,13 @@ class Registration(ResourceBody):
 class NewRegistration(ResourceMixin, Registration):
     """New registration."""
     resource_type = 'new-reg'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
 
 
 class UpdateRegistration(ResourceMixin, Registration):
     """Update registration."""
     resource_type = 'reg'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
 
 
 class RegistrationResource(ResourceWithURI):
@@ -475,7 +476,7 @@ class ChallengeBody(ResourceBody):
     _url: str = jose.field('url', omitempty=True, default=None)
     status: Status = jose.field('status', decoder=Status.from_json,
                         omitempty=True, default=STATUS_PENDING)
-    validated = fields.RFC3339Field('validated', omitempty=True)
+    validated: datetime.datetime = fields.rfc3339('validated', omitempty=True)
     error: Error = jose.field('error', decoder=Error.from_json,
                        omitempty=True, default=None)
 
@@ -551,7 +552,7 @@ class Authorization(ResourceBody):
     # general, but for Key Authorization '[t]he "expires" field MUST
     # be absent'... then acme-spec gives example with 'expires'
     # present... That's confusing!
-    expires = fields.RFC3339Field('expires', omitempty=True)
+    expires: datetime.datetime = fields.rfc3339('expires', omitempty=True)
     wildcard: bool = jose.field('wildcard', omitempty=True)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
@@ -571,13 +572,13 @@ class Authorization(ResourceBody):
 class NewAuthorization(ResourceMixin, Authorization):
     """New authorization."""
     resource_type = 'new-authz'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
 
 
 class UpdateAuthorization(ResourceMixin, Authorization):
     """Update authorization."""
     resource_type = 'authz'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
 
 
 class AuthorizationResource(ResourceWithURI):
@@ -600,7 +601,7 @@ class CertificateRequest(ResourceMixin, jose.JSONObjectWithFields):
 
     """
     resource_type = 'new-cert'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
     csr: jose.ComparableX509 = jose.field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
 
 
@@ -626,7 +627,7 @@ class Revocation(ResourceMixin, jose.JSONObjectWithFields):
 
     """
     resource_type = 'revoke-cert'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
     certificate: jose.ComparableX509 = jose.field(
         'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
     reason: str = jose.field('reason')
@@ -651,7 +652,7 @@ class Order(ResourceBody):
     authorizations: List[str] = jose.field('authorizations', omitempty=True)
     certificate: str = jose.field('certificate', omitempty=True)
     finalize: str = jose.field('finalize', omitempty=True)
-    expires = fields.RFC3339Field('expires', omitempty=True)
+    expires: datetime.datetime = fields.rfc3339('expires', omitempty=True)
     error: Error = jose.field('error', omitempty=True, decoder=Error.from_json)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
