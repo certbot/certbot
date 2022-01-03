@@ -27,6 +27,8 @@ CSR_SAN_PEM = test_util.load_vector('csr-san.pem')
 CSR_MIXED_PEM = test_util.load_vector('csr-mixed.pem')
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 KEY2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
+# TODO change to JWKEC when josepy is released with __init__ import patch
+KEY3 = jose.JWK.load(test_util.load_vector('ec_secp384r1_key.pem'))
 
 DIRECTORY_V1 = messages.Directory({
     messages.NewRegistration:
@@ -62,8 +64,7 @@ class ClientTestBase(unittest.TestCase):
 
         # Registration
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
-        reg = messages.Registration(
-            contact=self.contact, key=KEY.public_key())
+        reg = messages.Registration(contact=self.contact, key=KEY.public_key())
         the_arg: Dict = dict(reg)
         self.new_reg = messages.NewRegistration(**the_arg)
         self.regr = messages.RegistrationResource(
@@ -141,6 +142,15 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         client = self._init()
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, client.query_registration(self.regr))
+
+    def test_query_registration_client_v2_ecdsa(self):
+        from acme.client import Client
+        reg = messages.Registration(contact=self.contact, key=KEY3.public_key())
+        the_arg: Dict = dict(reg)
+        self.client = Client(
+            directory=the_arg, key=KEY3, alg=jose.ES256, net=self.net  # type: ignore
+        )
+        self.net.get.assert_called_once_with(the_arg)
 
     def test_forwarding(self):
         self.response.json.return_value = DIRECTORY_V1.to_json()
