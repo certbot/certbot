@@ -78,7 +78,7 @@ class RawNginxParser:
         """Returns the parsed tree."""
         return self.script.parseString(self.source)
 
-    def as_list(self) -> List[str]:
+    def as_list(self) -> List[Any]:
         """Returns the parsed tree as a list."""
         return self.parse().asList()
 
