@@ -118,7 +118,7 @@ class NginxHttp01(common.ChallengePerformer):
 
     def _default_listen_addresses(self) -> List[Addr]:
         """Finds addresses for a challenge block to listen on.
-        :returns: list of :class:`certbot_nginx._internal.Addr` to apply
+        :returns: list of :class:`certbot_nginx._internal.obj.Addr` to apply
         :rtype: list
         """
         addresses: List[Optional[Addr]] = []
