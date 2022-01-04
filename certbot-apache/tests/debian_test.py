@@ -45,8 +45,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
     def test_enable_mod_unsupported_dirs(self):
         shutil.rmtree(os.path.join(self.config.parser.root, "mods-enabled"))
-        self.assertRaises(
-            errors.NotSupportedError, self.config.enable_mod, "ssl")
+        self.assertRaises(errors.NotSupportedError, self.config.enable_mod, "ssl")
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
@@ -58,29 +57,29 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         mock_exe_exists.return_value = True
 
         self.config.enable_mod("ssl")
-        self.assertTrue("ssl_module" in self.config.parser.modules)
-        self.assertTrue("mod_ssl.c" in self.config.parser.modules)
+        self.assertIn("ssl_module", self.config.parser.modules)
+        self.assertIn("mod_ssl.c", self.config.parser.modules)
 
-        self.assertTrue(mock_run_script.called)
+        self.assertIs(mock_run_script.called, True)
 
     def test_deploy_cert_enable_new_vhost(self):
         # Create
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
         self.config.parser.modules["ssl_module"] = None
         self.config.parser.modules["mod_ssl.c"] = None
-        self.assertFalse(ssl_vhost.enabled)
+        self.assertIs(ssl_vhost.enabled, False)
         with certbot_util.patch_display_util():
             self.config.deploy_cert(
                 "encryption-example.demo", "example/cert.pem", "example/key.pem",
                 "example/cert_chain.pem", "example/fullchain.pem")
-            self.assertTrue(ssl_vhost.enabled)
+            self.assertIs(ssl_vhost.enabled, True)
             # Make sure that we don't error out if symlink already exists
             ssl_vhost.enabled = False
-            self.assertFalse(ssl_vhost.enabled)
+            self.assertIs(ssl_vhost.enabled, False)
             self.config.deploy_cert(
                 "encryption-example.demo", "example/cert.pem", "example/key.pem",
                 "example/cert_chain.pem", "example/fullchain.pem")
-            self.assertTrue(ssl_vhost.enabled)
+            self.assertIs(ssl_vhost.enabled, True)
 
     def test_enable_site_failure(self):
         self.config.parser.root = "/tmp/nonexistent"
@@ -110,8 +109,8 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         self.config.save()
 
         # Verify ssl_module was enabled.
-        self.assertTrue(self.vh_truth[1].enabled)
-        self.assertTrue("ssl_module" in self.config.parser.modules)
+        self.assertIs(self.vh_truth[1].enabled, True)
+        self.assertIn("ssl_module", self.config.parser.modules)
 
         loc_cert = self.config.parser.find_dir(
             "sslcertificatefile", "example/fullchain.pem",
@@ -170,7 +169,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         # This will create an ssl vhost for certbot.demo
         self.config.choose_vhost("certbot.demo")
         self.config.enhance("certbot.demo", "staple-ocsp")
-        self.assertTrue("socache_shmcb_module" in self.config.parser.modules)
+        self.assertIn("socache_shmcb_module", self.config.parser.modules)
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
@@ -183,7 +182,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         self.config.choose_vhost("certbot.demo")
         self.config.enhance("certbot.demo", "ensure-http-header",
                             "Strict-Transport-Security")
-        self.assertTrue("headers_module" in self.config.parser.modules)
+        self.assertIn("headers_module", self.config.parser.modules)
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
@@ -194,10 +193,10 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         # This will create an ssl vhost for certbot.demo
         self.config.choose_vhost("certbot.demo")
         self.config.enhance("certbot.demo", "redirect")
-        self.assertTrue("rewrite_module" in self.config.parser.modules)
+        self.assertIn("rewrite_module", self.config.parser.modules)
 
     def test_enable_site_already_enabled(self):
-        self.assertTrue(self.vh_truth[1].enabled)
+        self.assertIs(self.vh_truth[1].enabled, True)
         self.config.enable_site(self.vh_truth[1])
 
     def test_enable_site_call_parent(self):
@@ -207,7 +206,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
             vh = self.vh_truth[0]
             vh.enabled = False
             self.config.enable_site(vh)
-            self.assertTrue(e_s.called)
+            self.assertIs(e_s.called, True)
 
     @mock.patch("certbot.util.exe_exists")
     def test_enable_mod_no_disable(self, mock_exe_exists):

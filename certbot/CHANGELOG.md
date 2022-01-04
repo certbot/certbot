@@ -6,7 +6,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added `show_account` subcommand, which will fetch the account information
+  from the ACME server and show the account details (account URL and, if
+  applicable, email address or addresses)
 
 ### Changed
 

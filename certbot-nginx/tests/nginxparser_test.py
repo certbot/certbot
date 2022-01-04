@@ -432,15 +432,15 @@ class TestUnspacedList(unittest.TestCase):
         self.assertEqual(ul3, ["some", "things", "why", "did", "whether"])
 
     def test_is_dirty(self):
-        self.assertEqual(False, self.ul2.is_dirty())
+        self.assertIs(self.ul2.is_dirty(), False)
         ul3 = UnspacedList([])
         ul3.append(self.ul)
-        self.assertEqual(False, self.ul.is_dirty())
-        self.assertEqual(True, ul3.is_dirty())
+        self.assertIs(self.ul.is_dirty(), False)
+        self.assertIs(ul3.is_dirty(), True)
         ul4 = UnspacedList([[1], [2, 3, 4]])
-        self.assertEqual(False, ul4.is_dirty())
+        self.assertIs(ul4.is_dirty(), False)
         ul4[1][2] = 5
-        self.assertEqual(True, ul4.is_dirty())
+        self.assertIs(ul4.is_dirty(), True)
 
 
 if __name__ == '__main__':

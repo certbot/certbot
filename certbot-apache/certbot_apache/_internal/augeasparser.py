@@ -388,7 +388,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         """
         Deletes a ParserNode from the sequence of children, and raises an
         exception if it's unable to do so.
-        :param AugeasParserNode: child: A node to delete.
+        :param AugeasParserNode child: A node to delete.
         """
         if not self.parser.aug.remove(child.metadata["augeaspath"]):
 
@@ -531,7 +531,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
                 position
             )
 
-        return (insert_path, resulting_path, before)
+        return insert_path, resulting_path, before
 
 
 interfaces.CommentNode.register(AugeasCommentNode)
