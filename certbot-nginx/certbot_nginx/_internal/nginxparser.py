@@ -191,7 +191,7 @@ class UnspacedList(List[Any]):
         super().extend(item)
         self.dirty = True
 
-    def __add__(self, other: Any) -> "UnspacedList":
+    def __add__(self, other: List[Any]) -> "UnspacedList":
         new_list = copy.deepcopy(self)
         new_list.extend(other)
         new_list.dirty = True
