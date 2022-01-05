@@ -211,7 +211,6 @@ class UnspacedList(List[Any]):
 
     def sort(self, *_args: Any, **_kwargs: Any) -> None:
         """Function sort() is not implemented for UnspacedList"""
-        super().sort()
         raise NotImplementedError("UnspacedList.sort() not yet implemented")
 
     def __setslice__(self, *args: Any, **kwargs: Any) -> None:
