@@ -19,12 +19,10 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-import zope.component
 
 from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot._internal import cli
 from certbot._internal import client
@@ -460,9 +458,6 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
             if not renewal_candidate:
                 parse_failures.append(renewal_file)
             else:
-                # This call is done only for retro-compatibility purposes.
-                # TODO: Remove this call once zope dependencies are removed from Certbot.
-                zope.component.provideUtility(lineage_config, interfaces.IConfig)
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main
                 plugins = plugins_disco.PluginsRegistry.find_all()

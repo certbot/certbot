@@ -2,8 +2,6 @@
 import logging
 import unittest
 
-import certbot.util
-
 try:
     import mock
 except ImportError:  # pragma: no cover

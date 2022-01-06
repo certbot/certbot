@@ -70,8 +70,7 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
         self.tos_cb = mock.MagicMock()
-        with mock.patch("zope.component.provideUtility"):
-            display_obj.set_display(MagicMock())
+        display_obj.set_display(MagicMock())
 
     def _call(self):
         from certbot._internal.client import register
