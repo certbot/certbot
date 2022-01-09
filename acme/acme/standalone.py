@@ -198,7 +198,7 @@ class HTTP01Server(HTTPServer, ACMEServerMixin):
     def __init__(self, server_address: Tuple[str, int], resources: Set[challenges.HTTP01],
                  ipv6: bool = False, timeout: int = 30) -> None:
         super().__init__(
-            self, server_address, HTTP01RequestHandler.partial_init(
+            server_address, HTTP01RequestHandler.partial_init(
                 simple_http_resources=resources, timeout=timeout), ipv6=ipv6)
 
 
