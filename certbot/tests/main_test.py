@@ -18,7 +18,7 @@ import pytz
 
 from certbot import crypto_util, configuration
 from certbot import errors
-from certbot import interfaces  # pylint: disable=unused-import
+from certbot import interfaces
 from certbot import util
 from certbot._internal import account
 from certbot._internal import cli
