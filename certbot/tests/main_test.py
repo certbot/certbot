@@ -529,7 +529,6 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     def test_opt_in_deletion(self, mock_get_utility, mock_delete,
             mock_cert_path_to_lineage, mock_full_archive_dir,
             mock_match_and_check_overlaps, mock_renewal_file_for_certname):
-        # pylint: disable = unused-argument
         config = self.config
         config.namespace.delete_after_revoke = True
         config.cert_path = "/some/reasonable/path"
