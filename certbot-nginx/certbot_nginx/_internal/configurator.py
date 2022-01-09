@@ -28,7 +28,7 @@ from certbot_nginx._internal import constants
 from certbot_nginx._internal import display_ops
 from certbot_nginx._internal import http_01
 from certbot_nginx._internal import nginxparser
-from certbot_nginx._internal import obj  # pylint: disable=unused-import
+from certbot_nginx._internal import obj
 from certbot_nginx._internal import parser
 
 NAME_RANK = 0

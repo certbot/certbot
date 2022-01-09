@@ -22,7 +22,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import util
 from certbot.compat.os import getenv
-from certbot.interfaces import RenewableCert  # pylint: disable=unused-import
+from certbot.interfaces import RenewableCert
 
 
 logger = logging.getLogger(__name__)

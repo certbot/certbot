@@ -18,7 +18,7 @@ import pytz
 
 from certbot import crypto_util, configuration
 from certbot import errors
-from certbot import interfaces  # pylint: disable=unused-import
+from certbot import interfaces
 from certbot import util
 from certbot._internal import account
 from certbot._internal import cli
@@ -529,7 +529,6 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     def test_opt_in_deletion(self, mock_get_utility, mock_delete,
             mock_cert_path_to_lineage, mock_full_archive_dir,
             mock_match_and_check_overlaps, mock_renewal_file_for_certname):
-        # pylint: disable = unused-argument
         config = self.config
         config.namespace.delete_after_revoke = True
         config.cert_path = "/some/reasonable/path"
