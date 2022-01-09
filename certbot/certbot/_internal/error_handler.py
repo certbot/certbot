@@ -167,6 +167,7 @@ class ErrorHandler:
             logger.debug("Calling signal %s", signum)
             os.kill(os.getpid(), signum)
 
+
 class ExitHandler(ErrorHandler):
     """Context manager for running code that must be cleaned up.
 
@@ -175,5 +176,5 @@ class ExitHandler(ErrorHandler):
     regular exit.
     """
     def __init__(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
-        ErrorHandler.__init__(self, func, *args, **kwargs)
+        super().__init__(func, *args, **kwargs)
         self.call_on_regular_exit = True

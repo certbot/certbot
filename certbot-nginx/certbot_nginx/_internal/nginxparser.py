@@ -118,7 +118,7 @@ class UnspacedList(list):
 
         # Turn self into a version of the source list that has spaces removed
         # and all sub-lists also UnspacedList()ed
-        list.__init__(self, list_source)
+        super().__init__(list_source)
         for i, entry in reversed(list(enumerate(self))):
             if isinstance(entry, list):
                 sublist = UnspacedList(entry)
