@@ -84,7 +84,7 @@ Examples
      --dns-digitalocean \\
      --dns-digitalocean-credentials ~/.secrets/certbot/digitalocean.ini \\
      -d example.com \\
-     -d *.example.com
+     -d '*.example.com'
 
 .. code-block:: bash
    :caption: To acquire a certificate for ``example.com``, waiting 60 seconds
