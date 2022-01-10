@@ -363,7 +363,7 @@ class NginxConfigurator(common.Configurator):
 
         return vhosts
 
-    def ipv6_info(self, port: Union[str, int]) -> Tuple[bool, bool]:
+    def ipv6_info(self, port: str) -> Tuple[bool, bool]:
         """Returns tuple of booleans (ipv6_active, ipv6only_present)
         ipv6_active is true if any server block listens ipv6 address in any port
 
@@ -376,9 +376,6 @@ class NginxConfigurator(common.Configurator):
             configuration, and existence of ipv6only directive for specified port
         :rtype: tuple of type (bool, bool)
         """
-        # port should be a string, but it's easy to mess up, so let's
-        # make sure it is one
-        port = str(port)
         vhosts = self.parser.get_vhosts()
         ipv6_active = False
         ipv6only_present = False
@@ -714,7 +711,7 @@ class NginxConfigurator(common.Configurator):
 
         """
         https_port = self.config.https_port
-        ipv6info = self.ipv6_info(https_port)
+        ipv6info = self.ipv6_info(str(https_port))
         ipv6_block = ['']
         ipv4_block = ['']
 

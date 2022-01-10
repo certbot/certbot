@@ -127,7 +127,7 @@ class NginxHttp01(common.ChallengePerformer):
             self.configurator.config.http01_port)
         port = self.configurator.config.http01_port
 
-        ipv6, ipv6only = self.configurator.ipv6_info(port)
+        ipv6, ipv6only = self.configurator.ipv6_info(str(port))
 
         if ipv6:
             # If IPv6 is active in Nginx configuration
