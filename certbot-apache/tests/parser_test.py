@@ -45,8 +45,8 @@ class BasicParserTest(util.ParserTest):
         mock_logger.error.assert_called_with(
             'Unable to save files: %s.%s', '/non/existent/path.conf', mock.ANY)
         mock_logger.debug.assert_called_with(
-            "Error %s saving %s: %s", "/non/existent/path.conf",
-            "mk_augtemp", "No such file or directory")
+            "Error %s saving %s: %s", "mk_augtemp",
+            "/non/existent/path.conf", "No such file or directory")
 
     def test_aug_version(self):
         mock_match = mock.Mock(return_value=["something"])

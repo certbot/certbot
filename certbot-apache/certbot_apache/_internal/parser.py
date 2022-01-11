@@ -214,7 +214,7 @@ class ApacheParser:
 
         for err in new_errs:
             logger.debug(
-                "Error %s saving %s: %s", err[13:len(err) - 6], self.aug.get(err),
+                "Error %s saving %s: %s", self.aug.get(err), err[13:len(err) - 6],
                 self.aug.get(f"{err}/message"))
         logger.error(
             "Unable to save files: %s.%s", ", ".join(err[13:len(err) - 6] for err in new_errs),
