@@ -13,7 +13,7 @@ from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
 
 try:
-    from augeas import Augeas, AugeasIOError
+    from augeas import Augeas
 except ImportError:  # pragma: no cover
     Augeas = None
 
@@ -192,7 +192,7 @@ class ApacheParser:
         ex_errs = self.aug.match("/augeas//error")
         try:
             self.aug.save()
-        except AugeasIOError as e:
+        except IOError:
             self._log_save_errors(ex_errs)
             raise
 
