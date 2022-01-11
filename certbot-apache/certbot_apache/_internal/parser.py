@@ -13,7 +13,7 @@ from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
 
 try:
-    from augeas import Augeas
+    from augeas import Augeas, AugeasIOError
 except ImportError:  # pragma: no cover
     Augeas = None
 
@@ -188,7 +188,13 @@ class ApacheParser:
 
         """
         self.configurator.save_notes = ""
-        self.aug.save()
+
+        ex_errs = self.aug.match("/augeas//error")
+        try:
+            self.aug.save()
+        except AugeasIOError as e:
+            self._log_save_errors(ex_errs)
+            raise
 
         # Force reload if files were modified
         # This is needed to recalculate augeas directive span
@@ -204,12 +210,15 @@ class ApacheParser:
 
         """
         # Check for the root of save problems
-        new_errs = self.aug.match("/augeas//error")
-        # logger.error("During Save - %s", mod_conf)
-        logger.error("Unable to save files: %s. Attempted Save Notes: %s",
-                     ", ".join(err[13:len(err) - 6] for err in new_errs
-                               # Only new errors caused by recent save
-                               if err not in ex_errs), self.configurator.save_notes)
+        new_errs = [e for e in self.aug.match("/augeas//error") if e not in ex_errs]
+
+        for err in new_errs:
+            logger.debug(
+                "Error %s saving %s: %s", err[13:len(err) - 6], self.aug.get(err),
+                self.aug.get(f"{err}/message"))
+        logger.error(
+            "Unable to save files: %s.%s", ", ".join(err[13:len(err) - 6] for err in new_errs),
+            f"Save Notes: {self.configurator.save_notes}" if self.configurator.save_notes else "")
 
     def add_include(self, main_config, inc_path):
         """Add Include for a new configuration file if one does not exist
