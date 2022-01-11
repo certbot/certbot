@@ -37,12 +37,11 @@ class BasicParserTest(util.ParserTest):
 
     @mock.patch("certbot_apache._internal.parser.logger")
     def test_bad_save_errors(self, mock_logger):
-        from augeas import AugeasIOError
         nx_path = "/non/existent/path.conf"
         self.parser.aug.set("/augeas/load/Httpd/incl[last()]", nx_path)
         self.parser.add_dir(f"/files{nx_path}", "AddDirective", "test")
 
-        self.assertRaises(AugeasIOError, self.parser.save, {})
+        self.assertRaises(IOError, self.parser.save, {})
         mock_logger.error.assert_called_with(
             'Unable to save files: %s.%s', '/non/existent/path.conf', mock.ANY)
         mock_logger.debug.assert_called_with(
