@@ -217,13 +217,8 @@ More details about these changes can be found on our GitHub repo.
 ### Fixed
 
 * Fix TypeError due to incompatibility with lexicon >= v3.6.0
-<<<<<<< HEAD
 * Installers (e.g. nginx, Apache) were being restarted unnecessarily after dry-run renewals.
 * Colors and bold text should properly render in all supported versions of Windows.
-=======
-* Revoking a certificate based on an ECDSA key can now be done with `--key-path`.
-  See [GH #8569](https://github.com/certbot/certbot/issues/8569).
->>>>>>> log
 
 More details about these changes can be found on our GitHub repo.
 
@@ -255,7 +250,6 @@ More details about these changes can be found on our GitHub repo.
 * The module `acme.magic_typing` is deprecated and will be removed in a future release.
   Please use the built-in module `typing` instead.
 * The DigitalOcean plugin now creates TXT records for the DNS-01 challenge with a lower 30s TTL.
-* Certbot and its acme module now depend on josepy>=1.7.0 to support ECDSA keys better.
 
 ### Fixed
 

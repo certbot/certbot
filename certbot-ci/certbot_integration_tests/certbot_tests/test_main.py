@@ -658,9 +658,26 @@ def test_revoke_ecdsa_cert_key(context: IntegrationTestsContext) -> None:
         'revoke', '--cert-path', cert_path, '--key-path', key,
         '--no-delete-after-revoke',
     ])
-    output = context.certbot(['certificates'])
+    stdout, _ = context.certbot(['certificates'])
+    assert stdout.count('INVALID: REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
 
-    assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
+
+def test_revoke_ecdsa_cert_key_delete(context: IntegrationTestsContext) -> None:
+    """Test revoking a certificate """
+    cert: str = context.get_domain('curve')
+    context.certbot([
+        'certonly',
+        '--key-type', 'ecdsa', '--elliptic-curve', 'secp256r1',
+        '-d', cert,
+    ])
+    key = join(context.config_dir, "live", cert, 'privkey.pem')
+    cert_path = join(context.config_dir, "live", cert, 'cert.pem')
+    assert_elliptic_key(key, SECP256R1)
+    context.certbot([
+        'revoke', '--cert-path', cert_path, '--key-path', key,
+        '--delete-after-revoke',
+    ])
+    assert not exists(cert_path)
 
 
 def test_revoke_mutual_exclusive_flags(context: IntegrationTestsContext) -> None:
