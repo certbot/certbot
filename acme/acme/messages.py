@@ -11,6 +11,7 @@ from typing import MutableMapping
 from typing import Optional
 from typing import Tuple
 from typing import Type
+from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
 
@@ -22,6 +23,11 @@ from acme import fields
 from acme import jws
 from acme import util
 from acme.mixins import ResourceMixin
+
+if TYPE_CHECKING:
+    from typing_extensions import Protocol
+else:
+    Protocol = object
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
@@ -200,13 +206,17 @@ class Identifier(jose.JSONObjectWithFields):
     value: str = jose.field('value')
 
 
-GenericResourceMixin = TypeVar('GenericResourceMixin', bound=ResourceMixin)
+class HasResourceType(Protocol):
+    resource_type: str = NotImplemented
+
+
+GenericHasResourceType = TypeVar("GenericHasResourceType", bound=HasResourceType)
 
 
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES: Dict[str, Type[ResourceMixin]] = {}
+    _REGISTERED_TYPES: Dict[str, Type[HasResourceType]] = {}
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
@@ -235,13 +245,14 @@ class Directory(jose.JSONDeSerializable):
             return '_' + name if name == 'terms_of_service' else name
 
     @classmethod
-    def _canon_key(cls, key: Union[str, ResourceMixin, Type[ResourceMixin]]) -> str:
+    def _canon_key(cls, key: Union[str, HasResourceType, Type[HasResourceType]]) -> str:
         if isinstance(key, str):
             return key
         return key.resource_type
 
     @classmethod
-    def register(cls, resource_body_cls: Type[GenericResourceMixin]) -> Type[GenericResourceMixin]:
+    def register(cls,
+                 resource_body_cls: Type[GenericHasResourceType]) -> Type[GenericHasResourceType]:
         """Register resource."""
         resource_type = resource_body_cls.resource_type
         assert resource_type not in cls._REGISTERED_TYPES
@@ -260,7 +271,7 @@ class Directory(jose.JSONDeSerializable):
         except KeyError as error:
             raise AttributeError(str(error))
 
-    def __getitem__(self, name: Union[str, ResourceMixin, Type[ResourceMixin]]) -> Any:
+    def __getitem__(self, name: Union[str, HasResourceType, Type[HasResourceType]]) -> Any:
         try:
             return self._jobj[self._canon_key(name)]
         except KeyError:
@@ -673,7 +684,7 @@ class OrderResource(ResourceWithURI):
     :ivar bytes csr_pem: The CSR this Order will be finalized with.
     :ivar authorizations: Fully-fetched AuthorizationResource objects.
     :vartype authorizations: `list` of `acme.messages.AuthorizationResource`
-    :ivar bytes fullchain_pem: The fetched contents of the certificate URL
+    :ivar str fullchain_pem: The fetched contents of the certificate URL
         produced once the order was finalized, if it's present.
     :ivar alternative_fullchains_pem: The fetched contents of alternative certificate
         chain URLs produced once the order was finalized, if present and requested during
@@ -689,6 +700,6 @@ class OrderResource(ResourceWithURI):
 
 
 @Directory.register
-class NewOrder(ResourceMixin, Order):
+class NewOrder(Order):
     """New order."""
     resource_type = 'new-order'
