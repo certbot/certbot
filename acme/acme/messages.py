@@ -335,7 +335,7 @@ class Registration(ResourceBody):
 
     @classmethod
     def from_data(cls, phone: Optional[str] = None, email: Optional[str] = None,
-                  external_account_binding: Optional[ExternalAccountBinding] = None,
+                  external_account_binding: Optional[Dict[str, Any]] = None,
                   **kwargs: Any) -> 'Registration':
         """
         Create registration resource from contact details.

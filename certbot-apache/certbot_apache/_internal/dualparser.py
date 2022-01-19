@@ -185,8 +185,7 @@ class DualBlockNode(DualNodeBase):
         primary_new = self.primary.add_child_block(name, parameters, position)
         secondary_new = self.secondary.add_child_block(name, parameters, position)
         assertions.assertEqual(primary_new, secondary_new)
-        new_block = DualBlockNode(primary=primary_new, secondary=secondary_new)
-        return new_block
+        return DualBlockNode(primary=primary_new, secondary=secondary_new)
 
     def add_child_directive(self, name, parameters=None, position=None):
         """ Creates a new child DirectiveNode, asserts that both implementations
@@ -196,8 +195,7 @@ class DualBlockNode(DualNodeBase):
         primary_new = self.primary.add_child_directive(name, parameters, position)
         secondary_new = self.secondary.add_child_directive(name, parameters, position)
         assertions.assertEqual(primary_new, secondary_new)
-        new_dir = DualDirectiveNode(primary=primary_new, secondary=secondary_new)
-        return new_dir
+        return DualDirectiveNode(primary=primary_new, secondary=secondary_new)
 
     def add_child_comment(self, comment="", position=None):
         """ Creates a new child CommentNode, asserts that both implementations
@@ -207,8 +205,7 @@ class DualBlockNode(DualNodeBase):
         primary_new = self.primary.add_child_comment(comment, position)
         secondary_new = self.secondary.add_child_comment(comment, position)
         assertions.assertEqual(primary_new, secondary_new)
-        new_comment = DualCommentNode(primary=primary_new, secondary=secondary_new)
-        return new_comment
+        return DualCommentNode(primary=primary_new, secondary=secondary_new)
 
     def _create_matching_list(self, primary_list, secondary_list):
         """ Matches the list of primary_list to a list of secondary_list and

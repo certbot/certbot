@@ -103,22 +103,22 @@ def _vhost_menu(domain, vhosts):
                 https="HTTPS" if vhost.ssl else "",
                 active="Enabled" if vhost.enabled else "",
                 fn_size=filename_size,
-                name_size=disp_name_size)
+                name_size=disp_name_size),
         )
 
     try:
         code, tag = display_util.menu(
-            "We were unable to find a vhost with a ServerName "
-            "or Address of {0}.{1}Which virtual host would you "
-            "like to choose?".format(domain, os.linesep),
+            f"We were unable to find a vhost with a ServerName "
+            f"or Address of {domain}.{os.linesep}Which virtual host would you "
+            f"like to choose?",
             choices, force_interactive=True)
     except errors.MissingCommandlineFlag:
         msg = (
-            "Encountered vhost ambiguity when trying to find a vhost for "
-            "{0} but was unable to ask for user "
-            "guidance in non-interactive mode. Certbot may need "
-            "vhosts to be explicitly labelled with ServerName or "
-            "ServerAlias directives.".format(domain))
+            f"Encountered vhost ambiguity when trying to find a vhost for "
+            f"{domain} but was unable to ask for user "
+            f"guidance in non-interactive mode. Certbot may need "
+            f"vhosts to be explicitly labelled with ServerName or "
+            f"ServerAlias directives.")
         logger.error(msg)
         raise errors.MissingCommandlineFlag(msg)
 

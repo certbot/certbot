@@ -50,7 +50,7 @@ install_requires = [
     # in which we added 2.6 support (see #2243), so we relax the requirement.
     'ConfigArgParse>=0.9.3',
     'configobj>=5.0.6',
-    'cryptography>=2.1.4',
+    'cryptography>=2.5.0',
     'distro>=1.0.1',
     'josepy>=1.9.0',
     'parsedatetime>=2.4',

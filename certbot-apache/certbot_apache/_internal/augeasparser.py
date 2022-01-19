@@ -160,8 +160,7 @@ class AugeasParserNode(interfaces.ParserNode):
 
         # remove [...], it's not allowed in Apache configuration and is used
         # for indexing within Augeas
-        name = name.split("[")[0]
-        return name
+        return name.split("[")[0]
 
 
 class AugeasCommentNode(AugeasParserNode):
@@ -170,7 +169,6 @@ class AugeasCommentNode(AugeasParserNode):
     def __init__(self, **kwargs):
         comment, kwargs = util.commentnode_kwargs(kwargs)  # pylint: disable=unused-variable
         super().__init__(**kwargs)
-        # self.comment = comment
         self.comment = comment
 
     def __eq__(self, other):
@@ -278,13 +276,14 @@ class AugeasBlockNode(AugeasDirectiveNode):
         )
 
         # Parameters will be set at the initialization of the new object
-        new_block = AugeasBlockNode(name=name,
-                                    parameters=parameters,
-                                    enabled=enabled,
-                                    ancestor=assertions.PASS,
-                                    filepath=apache_util.get_file_path(realpath),
-                                    metadata=new_metadata)
-        return new_block
+        return AugeasBlockNode(
+            name=name,
+            parameters=parameters,
+            enabled=enabled,
+            ancestor=assertions.PASS,
+            filepath=apache_util.get_file_path(realpath),
+            metadata=new_metadata,
+        )
 
     # pylint: disable=unused-argument
     def add_child_directive(self, name, parameters=None, position=None):  # pragma: no cover
@@ -308,13 +307,14 @@ class AugeasBlockNode(AugeasDirectiveNode):
             apache_util.get_file_path(realpath)
         )
 
-        new_dir = AugeasDirectiveNode(name=name,
-                                      parameters=parameters,
-                                      enabled=enabled,
-                                      ancestor=assertions.PASS,
-                                      filepath=apache_util.get_file_path(realpath),
-                                      metadata=new_metadata)
-        return new_dir
+        return AugeasDirectiveNode(
+            name=name,
+            parameters=parameters,
+            enabled=enabled,
+            ancestor=assertions.PASS,
+            filepath=apache_util.get_file_path(realpath),
+            metadata=new_metadata,
+        )
 
     def add_child_comment(self, comment="", position=None):
         """Adds a new CommentNode to the sequence of children"""
@@ -330,11 +330,12 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # Set the comment content
         self.parser.aug.set(realpath, comment)
 
-        new_comment = AugeasCommentNode(comment=comment,
-                                        ancestor=assertions.PASS,
-                                        filepath=apache_util.get_file_path(realpath),
-                                        metadata=new_metadata)
-        return new_comment
+        return AugeasCommentNode(
+            comment=comment,
+            ancestor=assertions.PASS,
+            filepath=apache_util.get_file_path(realpath),
+            metadata=new_metadata,
+        )
 
     def find_blocks(self, name, exclude=True):
         """Recursive search of BlockNodes from the sequence of children"""
@@ -387,7 +388,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         """
         Deletes a ParserNode from the sequence of children, and raises an
         exception if it's unable to do so.
-        :param AugeasParserNode: child: A node to delete.
+        :param AugeasParserNode child: A node to delete.
         """
         if not self.parser.aug.remove(child.metadata["augeaspath"]):
 
@@ -530,7 +531,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
                 position
             )
 
-        return (insert_path, resulting_path, before)
+        return insert_path, resulting_path, before
 
 
 interfaces.CommentNode.register(AugeasCommentNode)

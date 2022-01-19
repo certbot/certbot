@@ -4,7 +4,10 @@ import argparse
 import logging
 import logging.handlers
 import sys
+from typing import Any
+from typing import List
 from typing import Optional
+from typing import Type
 
 import certbot
 from certbot._internal import constants
@@ -40,9 +43,9 @@ from certbot._internal.cli.plugins_parsing import _plugins_parsing
 from certbot._internal.cli.subparsers import _create_subparsers
 from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
-from certbot.plugins import enhancements
 from certbot._internal.plugins import disco as plugins_disco
 import certbot._internal.plugins.selection as plugin_selection
+from certbot.plugins import enhancements
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +54,8 @@ logger = logging.getLogger(__name__)
 helpful_parser: Optional[HelpfulArgumentParser] = None
 
 
-def prepare_and_parse_args(plugins, args, detect_defaults=False):
+def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[str],
+                           detect_defaults: bool = False) -> argparse.Namespace:
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -361,6 +365,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              'than "http-01", Certbot will select the latest version '
              'automatically.')
     helpful.add(
+        [None, "certonly", "run"], "--issuance-timeout", type=nonnegative_int,
+        dest="issuance_timeout",
+        default=flag_default("issuance_timeout"),
+        help=config_help("issuance_timeout"))
+    helpful.add(
         "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
         " Intended primarily for renewal, where it can be used to temporarily"
@@ -443,7 +452,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     return helpful.parse_args()
 
 
-def set_by_cli(var):
+def set_by_cli(var: str) -> bool:
     """
     Return True if a particular config variable has been set by the user
     (CLI or config file) including if the user explicitly set it to the
@@ -487,7 +496,7 @@ def set_by_cli(var):
 set_by_cli.detector = None  # type: ignore
 
 
-def has_default_value(option, value):
+def has_default_value(option: str, value: Any) -> bool:
     """Does option have the default value?
 
     If the default value of option is not known, False is returned.
@@ -505,7 +514,7 @@ def has_default_value(option, value):
     return False
 
 
-def option_was_set(option, value):
+def option_was_set(option: str, value: Any) -> bool:
     """Was option set by the user or does it differ from the default?
 
     :param str option: configuration variable being considered
@@ -521,7 +530,7 @@ def option_was_set(option, value):
     return set_by_cli(option) or not has_default_value(option, value)
 
 
-def argparse_type(variable):
+def argparse_type(variable: Any) -> Type:
     """Return our argparse type function for a config variable (default: str)"""
     # pylint: disable=protected-access
     if helpful_parser is not None:

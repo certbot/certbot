@@ -14,6 +14,7 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
+from cryptography.x509 import ocsp
 import pytz
 import requests
 
@@ -21,15 +22,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import util
 from certbot.compat.os import getenv
-from certbot.interfaces import RenewableCert  # pylint: disable=unused-import
-
-try:
-    # Only cryptography>=2.5 has ocsp module
-    # and signature_hash_algorithm attribute in OCSPResponse class
-    from cryptography.x509 import ocsp  # pylint: disable=ungrouped-imports
-    getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
-except (ImportError, AttributeError):  # pragma: no cover
-    ocsp = None  # type: ignore
+from certbot.interfaces import RenewableCert
 
 
 logger = logging.getLogger(__name__)
@@ -38,9 +31,9 @@ logger = logging.getLogger(__name__)
 class RevocationChecker:
     """This class figures out OCSP checking on this system, and performs it."""
 
-    def __init__(self, enforce_openssl_binary_usage=False):
+    def __init__(self, enforce_openssl_binary_usage: bool = False) -> None:
         self.broken = False
-        self.use_openssl_binary = enforce_openssl_binary_usage or not ocsp
+        self.use_openssl_binary = enforce_openssl_binary_usage
 
         if self.use_openssl_binary:
             if not util.exe_exists("openssl"):
@@ -215,7 +208,8 @@ def _check_ocsp_cryptography(cert_path: str, chain_path: str, url: str, timeout:
     return False
 
 
-def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
+def _check_ocsp_response(response_ocsp: 'ocsp.OCSPResponse', request_ocsp: 'ocsp.OCSPRequest',
+                         issuer_cert: x509.Certificate, cert_path: str) -> None:
     """Verify that the OCSP is valid for several criteria"""
     # Assert OCSP response corresponds to the certificate we are talking about
     if response_ocsp.serial_number != request_ocsp.serial_number:
@@ -249,13 +243,14 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
         raise AssertionError('param nextUpdate is in the past.')
 
 
-def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
+def _check_ocsp_response_signature(response_ocsp: 'ocsp.OCSPResponse',
+                                   issuer_cert: x509.Certificate, cert_path: str) -> None:
     """Verify an OCSP response signature against certificate issuer or responder"""
-    def _key_hash(cert):
+    def _key_hash(cert: x509.Certificate) -> bytes:
         return x509.SubjectKeyIdentifier.from_public_key(cert.public_key()).digest
 
-    if response_ocsp.responder_name == issuer_cert.subject or \
-       response_ocsp.responder_key_hash == _key_hash(issuer_cert):
+    if (response_ocsp.responder_name == issuer_cert.subject
+            or response_ocsp.responder_key_hash == _key_hash(issuer_cert)):
         # Case where the OCSP responder is also the certificate issuer
         logger.debug('OCSP response for certificate %s is signed by the certificate\'s issuer.',
                      cert_path)
@@ -289,21 +284,23 @@ def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
             raise AssertionError('responder is not authorized by issuer to sign OCSP responses')
 
         # Following line may raise UnsupportedAlgorithm
-        chosen_hash = responder_cert.signature_hash_algorithm
+        chosen_cert_hash = responder_cert.signature_hash_algorithm
         # For a delegate OCSP responder, we need first check that its certificate is effectively
         # signed by the certificate issuer.
         crypto_util.verify_signed_payload(issuer_cert.public_key(), responder_cert.signature,
-                                          responder_cert.tbs_certificate_bytes, chosen_hash)
+                                          responder_cert.tbs_certificate_bytes, chosen_cert_hash)
 
     # Following line may raise UnsupportedAlgorithm
-    chosen_hash = response_ocsp.signature_hash_algorithm
+    chosen_response_hash = response_ocsp.signature_hash_algorithm
     # We check that the OSCP response is effectively signed by the responder
     # (an authorized delegate one or the certificate issuer itself).
+    if not chosen_response_hash:
+        raise AssertionError("no signature hash algorithm defined")
     crypto_util.verify_signed_payload(responder_cert.public_key(), response_ocsp.signature,
-                                      response_ocsp.tbs_response_bytes, chosen_hash)
+                                      response_ocsp.tbs_response_bytes, chosen_response_hash)
 
 
-def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
+def _translate_ocsp_query(cert_path: str, ocsp_output: str, ocsp_errors: str) -> bool:
     """Parse openssl's weird output to work out what it means."""
 
     states = ("good", "revoked", "unknown")

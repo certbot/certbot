@@ -19,37 +19,37 @@ class AddrTest(unittest.TestCase):
     def test_fromstring(self):
         self.assertEqual(self.addr1.get_addr(), "192.168.1.1")
         self.assertEqual(self.addr1.get_port(), "")
-        self.assertFalse(self.addr1.ssl)
-        self.assertFalse(self.addr1.default)
+        self.assertIs(self.addr1.ssl, False)
+        self.assertIs(self.addr1.default, False)
 
         self.assertEqual(self.addr2.get_addr(), "192.168.1.1")
         self.assertEqual(self.addr2.get_port(), "*")
-        self.assertTrue(self.addr2.ssl)
-        self.assertFalse(self.addr2.default)
+        self.assertIs(self.addr2.ssl, True)
+        self.assertIs(self.addr2.default, False)
 
         self.assertEqual(self.addr3.get_addr(), "192.168.1.1")
         self.assertEqual(self.addr3.get_port(), "80")
-        self.assertFalse(self.addr3.ssl)
-        self.assertFalse(self.addr3.default)
+        self.assertIs(self.addr3.ssl, False)
+        self.assertIs(self.addr3.default, False)
 
         self.assertEqual(self.addr4.get_addr(), "*")
         self.assertEqual(self.addr4.get_port(), "80")
-        self.assertTrue(self.addr4.ssl)
-        self.assertTrue(self.addr4.default)
+        self.assertIs(self.addr4.ssl, True)
+        self.assertIs(self.addr4.default, True)
 
         self.assertEqual(self.addr5.get_addr(), "myhost")
         self.assertEqual(self.addr5.get_port(), "")
-        self.assertFalse(self.addr5.ssl)
-        self.assertFalse(self.addr5.default)
+        self.assertIs(self.addr5.ssl, False)
+        self.assertIs(self.addr5.default, False)
 
         self.assertEqual(self.addr6.get_addr(), "")
         self.assertEqual(self.addr6.get_port(), "80")
-        self.assertFalse(self.addr6.ssl)
-        self.assertTrue(self.addr6.default)
+        self.assertIs(self.addr6.ssl, False)
+        self.assertIs(self.addr6.default, True)
 
-        self.assertTrue(self.addr8.default)
+        self.assertIs(self.addr8.default, True)
 
-        self.assertEqual(None, self.addr7)
+        self.assertIsNone(self.addr7)
 
     def test_str(self):
         self.assertEqual(str(self.addr1), "192.168.1.1")
@@ -177,10 +177,10 @@ class VirtualHostTest(unittest.TestCase):
         self.assertEqual(stringified, str(self.vhost1))
 
     def test_has_header(self):
-        self.assertTrue(self.vhost_has_hsts.has_header('Strict-Transport-Security'))
-        self.assertFalse(self.vhost_has_hsts.has_header('Bogus-Header'))
-        self.assertFalse(self.vhost1.has_header('Strict-Transport-Security'))
-        self.assertFalse(self.vhost1.has_header('Bogus-Header'))
+        self.assertIs(self.vhost_has_hsts.has_header('Strict-Transport-Security'), True)
+        self.assertIs(self.vhost_has_hsts.has_header('Bogus-Header'), False)
+        self.assertIs(self.vhost1.has_header('Strict-Transport-Security'), False)
+        self.assertIs(self.vhost1.has_header('Bogus-Header'), False)
 
     def test_contains_list(self):
         from certbot_nginx._internal.obj import VirtualHost
@@ -223,6 +223,7 @@ class VirtualHostTest(unittest.TestCase):
             {'localhost'}, test_bad_haystack, [])
         self.assertTrue(vhost_haystack.contains_list(test_needle))
         self.assertFalse(vhost_bad_haystack.contains_list(test_needle))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

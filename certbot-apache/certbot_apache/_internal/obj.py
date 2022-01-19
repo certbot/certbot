@@ -21,7 +21,7 @@ class Addr(common.Addr):
         return False
 
     def __repr__(self):
-        return "certbot_apache._internal.obj.Addr(" + repr(self.tup) + ")"
+        return f"certbot_apache._internal.obj.Addr({repr(self.tup)})"
 
     def __hash__(self):  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__ if __eq__ or
@@ -147,35 +147,24 @@ class VirtualHost:
 
     def __str__(self):
         return (
-            "File: {filename}\n"
-            "Vhost path: {vhpath}\n"
-            "Addresses: {addrs}\n"
-            "Name: {name}\n"
-            "Aliases: {aliases}\n"
-            "TLS Enabled: {tls}\n"
-            "Site Enabled: {active}\n"
-            "mod_macro Vhost: {modmacro}".format(
-                filename=self.filep,
-                vhpath=self.path,
-                addrs=", ".join(str(addr) for addr in self.addrs),
-                name=self.name if self.name is not None else "",
-                aliases=", ".join(name for name in self.aliases),
-                tls="Yes" if self.ssl else "No",
-                active="Yes" if self.enabled else "No",
-                modmacro="Yes" if self.modmacro else "No"))
+            f"File: {self.filep}\n"
+            f"Vhost path: {self.path}\n"
+            f"Addresses: {', '.join(str(addr) for addr in self.addrs)}\n"
+            f"Name: {self.name if self.name is not None else ''}\n"
+            f"Aliases: {', '.join(name for name in self.aliases)}\n"
+            f"TLS Enabled: {'Yes' if self.ssl else 'No'}\n"
+            f"Site Enabled: {'Yes' if self.enabled else 'No'}\n"
+            f"mod_macro Vhost: {'Yes' if self.modmacro else 'No'}"
+        )
 
     def display_repr(self):
         """Return a representation of VHost to be used in dialog"""
         return (
-            "File: {filename}\n"
-            "Addresses: {addrs}\n"
-            "Names: {names}\n"
-            "HTTPS: {https}\n".format(
-                filename=self.filep,
-                addrs=", ".join(str(addr) for addr in self.addrs),
-                names=", ".join(self.get_names()),
-                https="Yes" if self.ssl else "No"))
-
+            f"File: {self.filep}\n"
+            f"Addresses: {', '.join(str(addr) for addr in self.addrs)}\n"
+            f"Names: {', '.join(self.get_names())}\n"
+            f"HTTPS: {'Yes' if self.ssl else 'No'}\n"
+        )
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):

@@ -89,10 +89,10 @@ class _BaseLockMechanism:
         """
         return self._fd is not None
 
-    def acquire(self):  # pylint: disable=missing-function-docstring
+    def acquire(self) -> None:  # pylint: disable=missing-function-docstring
         pass  # pragma: no cover
 
-    def release(self):  # pylint: disable=missing-function-docstring
+    def release(self) -> None:  # pylint: disable=missing-function-docstring
         pass  # pragma: no cover
 
 
@@ -143,7 +143,8 @@ class _UnixLockMechanism(_BaseLockMechanism):
         # Normally os module should not be imported in certbot codebase except in certbot.compat
         # for the sake of compatibility over Windows and Linux.
         # We make an exception here, since _lock_success is private and called only on Linux.
-        from os import stat, fstat  # pylint: disable=os-module-forbidden
+        from os import fstat  # pylint: disable=os-module-forbidden
+        from os import stat  # pylint: disable=os-module-forbidden
         try:
             stat1 = stat(self._path)
         except OSError as err:
@@ -196,7 +197,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     Consequently, mscvrt.locking is sufficient to obtain an effective lock, and the race
     condition encountered on Linux is not possible on Windows, leading to a simpler workflow.
     """
-    def acquire(self):
+    def acquire(self) -> None:
         """Acquire the lock"""
         open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
 
@@ -220,7 +221,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
 
         self._fd = fd
 
-    def release(self):
+    def release(self) -> None:
         """Release the lock."""
         try:
             if not self._fd:

@@ -3,13 +3,17 @@ import errno
 import logging
 from typing import List
 from typing import Set
+from typing import TYPE_CHECKING
 
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
-from certbot_apache._internal.obj import VirtualHost  # pylint: disable=unused-import
+from certbot_apache._internal.obj import VirtualHost
 from certbot_apache._internal.parser import get_aug_path
+
+if TYPE_CHECKING:
+    from certbot_apache._internal.configurator import ApacheConfigurator  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +50,9 @@ class ApacheHttp01(common.ChallengePerformer):
         </Location>
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, configurator: "ApacheConfigurator") -> None:
+        super().__init__(configurator)
+        self.configurator: "ApacheConfigurator"
         self.challenge_conf_pre = os.path.join(
             self.configurator.conf("challenge-location"),
             "le_http_01_challenge_pre.conf")

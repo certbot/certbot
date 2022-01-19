@@ -3,10 +3,13 @@ import functools
 import logging
 import signal
 import traceback
+from types import TracebackType
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
+from typing import Optional
+from typing import Type
 from typing import Union
 
 from certbot import errors
@@ -74,7 +77,7 @@ class ErrorHandler:
     deferred until they finish.
 
     """
-    def __init__(self, func, *args, **kwargs):
+    def __init__(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         self.call_on_regular_exit = False
         self.body_executed = False
         self.funcs: List[Callable[[], Any]] = []
@@ -83,11 +86,13 @@ class ErrorHandler:
         if func is not None:
             self.register(func, *args, **kwargs)
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.body_executed = False
         self._set_signal_handlers()
 
-    def __exit__(self, exec_type, exec_value, trace):
+    def __exit__(self, exec_type: Optional[Type[BaseException]],
+                 exec_value: Optional[BaseException],
+                 trace: Optional[TracebackType]) -> bool:
         self.body_executed = True
         retval = False
         # SystemExit is ignored to properly handle forks that don't exec
@@ -108,7 +113,7 @@ class ErrorHandler:
         self._call_signals()
         return retval
 
-    def register(self, func: Callable, *args: Any, **kwargs: Any) -> None:
+    def register(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         """Sets func to be run with the given arguments during cleanup.
 
         :param function func: function to be called in case of an error
@@ -116,7 +121,7 @@ class ErrorHandler:
         """
         self.funcs.append(functools.partial(func, *args, **kwargs))
 
-    def _call_registered(self):
+    def _call_registered(self) -> None:
         """Calls all registered functions"""
         logger.debug("Calling registered functions")
         while self.funcs:
@@ -128,7 +133,7 @@ class ErrorHandler:
                              ''.join(output).rstrip())
             self.funcs.pop()
 
-    def _set_signal_handlers(self):
+    def _set_signal_handlers(self) -> None:
         """Sets signal handlers for signals in _SIGNALS."""
         for signum in _SIGNALS:
             prev_handler = signal.getsignal(signum)
@@ -137,13 +142,13 @@ class ErrorHandler:
                 self.prev_handlers[signum] = prev_handler
                 signal.signal(signum, self._signal_handler)
 
-    def _reset_signal_handlers(self):
+    def _reset_signal_handlers(self) -> None:
         """Resets signal handlers for signals in _SIGNALS."""
         for signum, handler in self.prev_handlers.items():
             signal.signal(signum, handler)
         self.prev_handlers.clear()
 
-    def _signal_handler(self, signum, unused_frame):
+    def _signal_handler(self, signum: int, unused_frame: Any) -> None:
         """Replacement function for handling received signals.
 
         Store the received signal. If we are executing the code block in
@@ -156,11 +161,12 @@ class ErrorHandler:
         if not self.body_executed:
             raise errors.SignalExit
 
-    def _call_signals(self):
+    def _call_signals(self) -> None:
         """Finally call the deferred signals."""
         for signum in self.received_signals:
             logger.debug("Calling signal %s", signum)
             os.kill(os.getpid(), signum)
+
 
 class ExitHandler(ErrorHandler):
     """Context manager for running code that must be cleaned up.
@@ -169,6 +175,6 @@ class ExitHandler(ErrorHandler):
     In addition to cleaning up on all signals, also cleans up on
     regular exit.
     """
-    def __init__(self, func, *args, **kwargs):
-        ErrorHandler.__init__(self, func, *args, **kwargs)
+    def __init__(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
+        super().__init__(func, *args, **kwargs)
         self.call_on_regular_exit = True

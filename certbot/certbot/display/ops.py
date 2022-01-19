@@ -1,9 +1,18 @@
 """Contains UI methods for LE user operations."""
 import logging
 from textwrap import indent
+from typing import Any
+from typing import Callable
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
 
 from certbot import errors
+from certbot import interfaces
 from certbot import util
+from certbot._internal import account
 from certbot._internal.display import util as internal_display_util
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -11,7 +20,7 @@ from certbot.display import util as display_util
 logger = logging.getLogger(__name__)
 
 
-def get_email(invalid=False, optional=True):
+def get_email(invalid: bool = False, optional: bool = True) -> str:
     """Prompt for valid email address.
 
     :param bool invalid: True if an invalid address was provided by the user
@@ -65,7 +74,7 @@ def get_email(invalid=False, optional=True):
         invalid = bool(email)
 
 
-def choose_account(accounts):
+def choose_account(accounts: List[account.Account]) -> Optional[account.Account]:
     """Choose an account.
 
     :param list accounts: Containing at least one
@@ -81,22 +90,25 @@ def choose_account(accounts):
     return None
 
 
-def choose_values(values, question=None):
+def choose_values(values: List[str], question: Optional[str] = None) -> List[str]:
     """Display screen to let user pick one or multiple values from the provided
     list.
 
     :param list values: Values to select from
+    :param str question: Question to ask to user while choosing values
 
     :returns: List of selected values
     :rtype: list
     """
-    code, items = display_util.checklist(question, tags=values, force_interactive=True)
+    code, items = display_util.checklist(question if question else "", tags=values,
+                                         force_interactive=True)
     if code == display_util.OK and items:
         return items
     return []
 
 
-def choose_names(installer, question=None):
+def choose_names(installer: Optional[interfaces.Installer],
+                 question: Optional[str] = None) -> List[str]:
     """Display screen to select domains to validate.
 
     :param installer: An installer object
@@ -125,7 +137,7 @@ def choose_names(installer, question=None):
     return []
 
 
-def get_valid_domains(domains):
+def get_valid_domains(domains: Iterable[str]) -> List[str]:
     """Helper method for choose_names that implements basic checks
      on domain names
 
@@ -133,7 +145,7 @@ def get_valid_domains(domains):
     :return: List of valid domains
     :rtype: list
     """
-    valid_domains = []
+    valid_domains: List[str] = []
     for domain in domains:
         try:
             valid_domains.append(util.enforce_domain_sanity(domain))
@@ -142,7 +154,7 @@ def get_valid_domains(domains):
     return valid_domains
 
 
-def _sort_names(FQDNs):
+def _sort_names(FQDNs: Iterable[str]) -> List[str]:
     """Sort FQDNs by SLD (and if many, by their subdomains)
 
     :param list FQDNs: list of domain names
@@ -153,7 +165,8 @@ def _sort_names(FQDNs):
     return sorted(FQDNs, key=lambda fqdn: fqdn.split('.')[::-1][1:])
 
 
-def _filter_names(names, override_question=None):
+def _filter_names(names: Iterable[str],
+                  override_question: Optional[str] = None) -> Tuple[str, List[str]]:
     """Determine which names the user would like to select from a list.
 
     :param list names: domain names
@@ -175,7 +188,7 @@ def _filter_names(names, override_question=None):
     return code, [str(s) for s in names]
 
 
-def _choose_names_manually(prompt_prefix=""):
+def _choose_names_manually(prompt_prefix: str = "") -> List[str]:
     """Manually input names for those without an installer.
 
     :param str prompt_prefix: string to prepend to prompt for domains
@@ -229,7 +242,7 @@ def _choose_names_manually(prompt_prefix=""):
     return []
 
 
-def success_installation(domains):
+def success_installation(domains: Sequence[str]) -> None:
     """Display a box confirming the installation of HTTPS.
 
     :param list domains: domain names which were enabled
@@ -241,7 +254,7 @@ def success_installation(domains):
     )
 
 
-def success_renewal(unused_domains):
+def success_renewal(unused_domains: Sequence[str]) -> None:
     """Display a box confirming the renewal of an existing certificate.
 
     :param list domains: domain names which were renewed
@@ -253,7 +266,7 @@ def success_renewal(unused_domains):
     )
 
 
-def success_revocation(cert_path):
+def success_revocation(cert_path: str) -> None:
     """Display a message confirming a certificate has been revoked.
 
     :param list cert_path: path to certificate which was revoked.
@@ -283,7 +296,7 @@ def report_executed_command(command_name: str, returncode: int, stdout: str, std
         logger.warning("%s ran with error output:\n%s", command_name, indent(err_s, ' '))
 
 
-def _gen_https_names(domains):
+def _gen_https_names(domains: Sequence[str]) -> str:
     """Returns a string of the https domains.
 
     Domains are formatted nicely with ``https://`` prepended to each.
@@ -304,7 +317,9 @@ def _gen_https_names(domains):
     return ""
 
 
-def _get_validated(method, validator, message, default=None, **kwargs):
+def _get_validated(method: Callable[..., Tuple[str, str]],
+                   validator: Callable[[str], Any], message: str,
+                   default: Optional[str] = None, **kwargs: Any) -> Tuple[str, str]:
     if default is not None:
         try:
             validator(default)
@@ -331,7 +346,8 @@ def _get_validated(method, validator, message, default=None, **kwargs):
             return code, raw
 
 
-def validated_input(validator, *args, **kwargs):
+def validated_input(validator: Callable[[str], Any],
+                    *args: Any, **kwargs: Any) -> Tuple[str, str]:
     """Like `~certbot.display.util.input_text`, but with validation.
 
     :param callable validator: A method which will be called on the
@@ -345,7 +361,8 @@ def validated_input(validator, *args, **kwargs):
     return _get_validated(display_util.input_text, validator, *args, **kwargs)
 
 
-def validated_directory(validator, *args, **kwargs):
+def validated_directory(validator: Callable[[str], Any],
+                        *args: Any, **kwargs: Any) -> Tuple[str, str]:
     """Like `~certbot.display.util.directory_select`, but with validation.
 
     :param callable validator: A method which will be called on the

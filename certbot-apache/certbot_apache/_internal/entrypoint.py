@@ -56,8 +56,7 @@ def get_configurator():
         os_like = util.get_systemd_os_like()
         if os_like:
             for os_name in os_like:
-                if os_name in OVERRIDE_CLASSES.keys():
-                    override_class = OVERRIDE_CLASSES[os_name]
+                override_class = OVERRIDE_CLASSES.get(os_name)
         if not override_class:
             # No override class found, return the generic configurator
             override_class = configurator.ApacheConfigurator

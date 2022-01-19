@@ -172,8 +172,7 @@ def parse_includes(apachectl):
     :rtype: list of str
     """
 
-    inc_cmd = [apachectl, "-t", "-D",
-               "DUMP_INCLUDES"]
+    inc_cmd = [apachectl, "-t", "-D", "DUMP_INCLUDES"]
     return parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
 
 
@@ -188,8 +187,7 @@ def parse_modules(apachectl):
     :rtype: list of str
     """
 
-    mod_cmd = [apachectl, "-t", "-D",
-               "DUMP_MODULES"]
+    mod_cmd = [apachectl, "-t", "-D", "DUMP_MODULES"]
     return parse_from_subprocess(mod_cmd, r"(.*)_module")
 
 
@@ -241,6 +239,7 @@ def _get_runtime_cfg(command):
             "loaded because Apache is misconfigured.")
 
     return stdout
+
 
 def find_ssl_apache_conf(prefix):
     """

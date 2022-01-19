@@ -2,7 +2,25 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.22.0 - master
+## 1.23.0 - master
+
+### Added
+
+* Added `show_account` subcommand, which will fetch the account information
+  from the ACME server and show the account details (account URL and, if
+  applicable, email address or addresses)
+
+### Changed
+
+*
+
+### Fixed
+
+* GCP Permission list for certbot-dns-google in plugin documentation
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.22.0 - 2021-12-07
 
 ### Added
 
@@ -10,6 +28,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The function certbot.util.parse_loose_version was added to parse version
   strings in the same way as the now deprecated distutils.version.LooseVersion
   class from the Python standard library.
+* Added `--issuance-timeout`. This option specifies how long (in seconds) Certbot will wait
+  for the server to issue a certificate.
 
 ### Changed
 
@@ -18,7 +38,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-* GCP Permission list for certbot-dns-google in plugin documentation
+* Fixed an issue on Windows where the `web.config` created by Certbot would sometimes
+  conflict with preexisting configurations (#9088).
+* Fixed an issue on Windows where the `webroot` plugin would crash when multiple domains
+  had the same webroot. This affected Certbot 1.21.0.
 
 More details about these changes can be found on our GitHub repo.
 

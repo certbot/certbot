@@ -1,4 +1,5 @@
 """Tests for certbot._internal.client."""
+import datetime
 import contextlib
 import platform
 import shutil
@@ -12,6 +13,7 @@ from certbot import errors
 from certbot import util
 from certbot._internal.display import obj as display_obj
 from certbot._internal import account
+from certbot._internal import constants
 from certbot.compat import os
 import certbot.tests.util as test_util
 
@@ -319,6 +321,24 @@ class ClientTest(ClientTestCommon):
             [orderr.fullchain_pem] + orderr.alternative_fullchains_pem,
             "some issuer", True)
         self.config.preferred_chain = None
+
+        # Test for default issuance_timeout
+        expected_deadline = \
+            datetime.datetime.now() + datetime.timedelta(
+                seconds=constants.CLI_DEFAULTS["issuance_timeout"])
+        self.client.obtain_certificate_from_csr(test_csr, orderr=orderr)
+        ((_, deadline), _) = self.client.acme.finalize_order.call_args
+        self.assertTrue(
+            abs(expected_deadline - deadline) <= datetime.timedelta(seconds=1))
+
+        # Test for specific issuance_timeout (300 seconds)
+        expected_deadline = \
+            datetime.datetime.now() + datetime.timedelta(seconds=300)
+        self.config.issuance_timeout = 300
+        self.client.obtain_certificate_from_csr(test_csr, orderr=orderr)
+        ((_, deadline), _) = self.client.acme.finalize_order.call_args
+        self.assertTrue(
+            abs(expected_deadline - deadline) <= datetime.timedelta(seconds=1))
 
         # Test for orderr=None
         self.assertEqual(

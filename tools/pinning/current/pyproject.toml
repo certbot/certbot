@@ -51,6 +51,10 @@ awscli = ">=1.19.62"
 # as a dependency here to ensure a version of cython is pinned for extra
 # stability.
 cython = "*"
+# Due to better type annotations in new versions, mypy tests currently fail
+# with new versions of josepy so we pin it back for now. Fixing this is being
+# tracked by https://github.com/certbot/certbot/issues/9113.
+josepy = "1.9.0"
 # We install mock in our "external-mock" tox environment to test that we didn't
 # break Certbot's test API which used to always use mock objects from the 3rd
 # party mock library. We list the mock dependency here so that is pinned, but
@@ -63,6 +67,10 @@ mock = "*"
 # here in addition to certbot/setup.py because otherwise the pre-release
 # version of poetry will not be installed.
 poetry = ">=1.2.0a1"
+# setuptools-rust 1.0+ causes some of our tests to fail. In the long term, this
+# should be fixed, but this is a quick fix to get tests passing again. See
+# https://github.com/certbot/certbot/issues/9111 for more info.
+setuptools-rust = "<1"
 # Library traitlets is a transitive dependency of ipdb (traitlets -> ipython -> ipdb).
 # Version 5.x is incompatible with Python 3.6 but for some reasons, poetry fails to
 # add the appropriate marker and allows this version to be installed under Python 3.6.

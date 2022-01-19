@@ -2,10 +2,14 @@
 import datetime
 import logging
 import platform
+from typing import cast
 from typing import Any
+from typing import Callable
 from typing import Dict
+from typing import IO
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 import warnings
 
@@ -19,8 +23,10 @@ from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
 import certbot
+from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
+from certbot import interfaces
 from certbot import util
 from certbot._internal import account
 from certbot._internal import auth_handler
@@ -29,15 +35,20 @@ from certbot._internal import constants
 from certbot._internal import eff
 from certbot._internal import error_handler
 from certbot._internal import storage
+from certbot._internal.plugins import disco as plugin_disco
 from certbot._internal.plugins import selection as plugin_selection
 from certbot.compat import os
 from certbot.display import ops as display_ops
 from certbot.display import util as display_util
+from certbot.interfaces import AccountStorage
 
 logger = logging.getLogger(__name__)
 
-def acme_from_config_key(config, key, regr=None):
-    "Wrangle ACME client construction"
+
+def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
+                         regr: Optional[messages.RegistrationResource] = None
+                         ) -> acme_client.ClientV2:
+    """Wrangle ACME client construction"""
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
@@ -51,10 +62,10 @@ def acme_from_config_key(config, key, regr=None):
                 "Certbot is configured to use an ACMEv1 server (%s). ACMEv1 support is deprecated"
                 " and will soon be removed. See https://community.letsencrypt.org/t/143839 for "
                 "more information.", config.server)
-        return client
+        return cast(acme_client.ClientV2, client)
 
 
-def determine_user_agent(config):
+def determine_user_agent(config: configuration.NamespaceConfig) -> str:
     """
     Set a user_agent string in the config based on the choice of plugins.
     (this wasn't knowable at construction time)
@@ -85,8 +96,9 @@ def determine_user_agent(config):
         ua = config.user_agent
     return ua
 
-def ua_flags(config):
-    "Turn some very important CLI flags into clues in the user agent."
+
+def ua_flags(config: configuration.NamespaceConfig) -> str:
+    """Turn some very important CLI flags into clues in the user agent."""
     if isinstance(config, DummyConfig):
         return "FLAGS"
     flags = []
@@ -104,25 +116,30 @@ def ua_flags(config):
         flags.append("hook")
     return " ".join(flags)
 
+
 class DummyConfig:
-    "Shim for computing a sample user agent."
-    def __init__(self):
+    """Shim for computing a sample user agent."""
+    def __init__(self) -> None:
         self.authenticator = "XXX"
         self.installer = "YYY"
         self.user_agent = None
         self.verb = "SUBCOMMAND"
 
-    def __getattr__(self, name):
-        "Any config properties we might have are None."
+    def __getattr__(self, name: str) -> Any:
+        """Any config properties we might have are None."""
         return None
 
-def sample_user_agent():
-    "Document what this Certbot's user agent string will be like."
 
-    return determine_user_agent(DummyConfig())
+def sample_user_agent() -> str:
+    """Document what this Certbot's user agent string will be like."""
+    # DummyConfig is designed to mock certbot.configuration.NamespaceConfig.
+    # Let mypy accept that.
+    return determine_user_agent(cast(configuration.NamespaceConfig, DummyConfig()))
 
 
-def register(config, account_storage, tos_cb=None):
+def register(config: configuration.NamespaceConfig, account_storage: AccountStorage,
+             tos_cb: Optional[Callable[[str], None]] = None
+             ) -> Tuple[account.Account, acme_client.ClientV2]:
     """Register new account with an ACME CA.
 
     This function takes care of generating fresh private key,
@@ -142,13 +159,11 @@ def register(config, account_storage, tos_cb=None):
         Service before registering account, client action is
         necessary. For example, a CLI tool would prompt the user
         acceptance. `tos_cb` must be a callable that should accept
-        `.RegistrationResource` and return a `bool`: ``True`` iff the
-        Terms of Service present in the contained
-        `.Registration.terms_of_service` is accepted by the client, and
-        ``False`` otherwise. ``tos_cb`` will be called only if the
-        client action is necessary, i.e. when ``terms_of_service is not
-        None``. This argument is optional, if not supplied it will
-        default to automatic acceptance!
+        a Term of Service URL as a string, and raise an exception
+        if the TOS is not accepted by the client. ``tos_cb`` will be
+        called only if the client action is necessary, i.e. when
+        ``terms_of_service is not None``. This argument is optional,
+        if not supplied it will default to automatic acceptance!
 
     :raises certbot.errors.Error: In case of any client problems, in
         particular registration failure, or unaccepted Terms of Service.
@@ -193,12 +208,13 @@ def register(config, account_storage, tos_cb=None):
     return acc, acme
 
 
-def perform_registration(acme, config, tos_cb):
+def perform_registration(acme: acme_client.ClientV2, config: configuration.NamespaceConfig,
+                         tos_cb: Optional[Callable[[str], None]]) -> messages.RegistrationResource:
     """
     Actually register new account, trying repeatedly if there are email
     problems
 
-    :param acme.client.Client client: ACME client object.
+    :param acme.client.Client acme: ACME client object.
     :param certbot.configuration.NamespaceConfig config: Client configuration.
     :param Callable tos_cb: a callback to handle Term of Service agreement.
 
@@ -209,11 +225,11 @@ def perform_registration(acme, config, tos_cb):
     eab_credentials_supplied = config.eab_kid and config.eab_hmac_key
     eab: Optional[Dict[str, Any]]
     if eab_credentials_supplied:
-        account_public_key = acme.client.net.key.public_key()
+        account_public_key = acme.net.key.public_key()
         eab = messages.ExternalAccountBinding.from_data(account_public_key=account_public_key,
                                                         kid=config.eab_kid,
                                                         hmac_key=config.eab_hmac_key,
-                                                        directory=acme.client.directory)
+                                                        directory=acme.directory)
     else:
         eab = None
 
@@ -224,11 +240,19 @@ def perform_registration(acme, config, tos_cb):
             raise errors.Error(msg)
 
     try:
-        newreg = messages.NewRegistration.from_data(email=config.email,
-                                                    external_account_binding=eab)
-        return acme.new_account_and_tos(newreg, tos_cb)
+        newreg = messages.NewRegistration.from_data(
+            email=config.email, external_account_binding=eab)
+        # Until ACME v1 support is removed from Certbot, we actually need the provided
+        # ACME client to be a wrapper of type BackwardsCompatibleClientV2.
+        # TODO: Remove this cast and rewrite the logic when the client is actually a ClientV2
+        try:
+            return cast(acme_client.BackwardsCompatibleClientV2,
+                        acme).new_account_and_tos(newreg, tos_cb)
+        except AttributeError:
+            raise errors.Error("The ACME client must be an instance of "
+                               "acme.client.BackwardsCompatibleClientV2")
     except messages.Error as e:
-        if e.code == "invalidEmail" or e.code == "invalidContact":
+        if e.code in ('invalidEmail', 'invalidContact'):
             if config.noninteractive_mode:
                 msg = ("The ACME server believes %s is an invalid email address. "
                        "Please ensure it is a valid email and attempt "
@@ -255,7 +279,10 @@ class Client:
 
     """
 
-    def __init__(self, config, account_, auth, installer, acme=None):
+    def __init__(self, config: configuration.NamespaceConfig, account_: Optional[account.Account],
+                 auth: Optional[interfaces.Authenticator],
+                 installer: Optional[interfaces.Installer],
+                 acme: Optional[acme_client.ClientV2] = None) -> None:
         """Initialize a client."""
         self.config = config
         self.account = account_
@@ -274,7 +301,9 @@ class Client:
         else:
             self.auth_handler = None
 
-    def obtain_certificate_from_csr(self, csr, orderr=None):
+    def obtain_certificate_from_csr(self, csr: util.CSR,
+                                    orderr: Optional[messages.OrderResource] = None
+                                    ) -> Tuple[bytes, bytes]:
         """Obtain certificate.
 
         :param .util.CSR csr: PEM-encoded Certificate Signing
@@ -291,28 +320,34 @@ class Client:
                    "not set.")
             logger.error(msg)
             raise errors.Error(msg)
-        if self.account.regr is None:
+        if self.account is None or self.account.regr is None:
             raise errors.Error("Please register with the ACME server first.")
+        if self.acme is None:
+            raise errors.Error("ACME client is not set.")
 
         logger.debug("CSR: %s", csr)
 
         if orderr is None:
             orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
 
-        deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
-        get_alt_chains = self.config.preferred_chain is not None
-        orderr = self.acme.finalize_order(orderr, deadline,
-                                          fetch_alternative_chains=get_alt_chains)
+        deadline = datetime.datetime.now() + datetime.timedelta(
+            seconds=self.config.issuance_timeout)
+
+        logger.debug("Will poll for certificate issuance until %s", deadline)
+
+        orderr = self.acme.finalize_order(
+            orderr, deadline, fetch_alternative_chains=self.config.preferred_chain is not None)
+
         fullchain = orderr.fullchain_pem
-        if get_alt_chains and orderr.alternative_fullchains_pem:
-            fullchain = crypto_util.find_chain_with_issuer([fullchain] + \
-                                                           orderr.alternative_fullchains_pem,
-                                                           self.config.preferred_chain,
-                                                           not self.config.dry_run)
+        if self.config.preferred_chain and orderr.alternative_fullchains_pem:
+            fullchain = crypto_util.find_chain_with_issuer(
+                [fullchain] + orderr.alternative_fullchains_pem,
+                self.config.preferred_chain, not self.config.dry_run)
         cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 
-    def obtain_certificate(self, domains, old_keypath=None):
+    def obtain_certificate(self, domains: List[str], old_keypath: Optional[str] = None
+                           ) -> Tuple[bytes, bytes, util.Key, util.CSR]:
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
@@ -405,11 +440,11 @@ class Client:
             cert, chain = self.obtain_certificate_from_csr(csr, orderr)
             return cert, chain, key, csr
 
-    def _get_order_and_authorizations(self, csr_pem: str,
+    def _get_order_and_authorizations(self, csr_pem: bytes,
                                       best_effort: bool) -> messages.OrderResource:
         """Request a new order and complete its authorizations.
 
-        :param str csr_pem: A CSR in PEM format.
+        :param bytes csr_pem: A CSR in PEM format.
         :param bool best_effort: True if failing to complete all
             authorizations should not raise an exception
 
@@ -417,6 +452,8 @@ class Client:
         :rtype: acme.messages.OrderResource
 
         """
+        if not self.acme:
+            raise errors.Error("ACME client is not set.")
         try:
             orderr = self.acme.new_order(csr_pem)
         except acme_errors.WildcardUnsupportedError:
@@ -439,7 +476,8 @@ class Client:
         authzr = self.auth_handler.handle_authorizations(orderr, self.config, best_effort)
         return orderr.update(authorizations=authzr)
 
-    def obtain_and_enroll_certificate(self, domains, certname):
+    def obtain_and_enroll_certificate(self, domains: List[str], certname: Optional[str]
+                                      ) -> Optional[storage.RenewableCert]:
         """Obtain and enroll certificate.
 
         Get a new certificate for the specified domains using the specified
@@ -452,8 +490,7 @@ class Client:
         :type certname: `str` or `None`
 
         :returns: A new :class:`certbot._internal.storage.RenewableCert` instance
-            referred to the enrolled cert lineage, False if the cert could not
-            be obtained, or None if doing a successful dry run.
+            referred to the enrolled cert lineage, or None if doing a successful dry run.
 
         """
         cert, chain, key, _ = self.obtain_certificate(domains)
@@ -467,15 +504,14 @@ class Client:
         new_name = self._choose_lineagename(domains, certname)
 
         if self.config.dry_run:
-            logger.debug("Dry run: Skipping creating new lineage for %s",
-                        new_name)
+            logger.debug("Dry run: Skipping creating new lineage for %s", new_name)
             return None
         return storage.RenewableCert.new_lineage(
             new_name, cert,
             key.pem, chain,
             self.config)
 
-    def _choose_lineagename(self, domains, certname):
+    def _choose_lineagename(self, domains: List[str], certname: Optional[str]) -> str:
         """Chooses a name for the new lineage.
 
         :param domains: domains in certificate request
@@ -494,12 +530,13 @@ class Client:
             return domains[0][2:]
         return domains[0]
 
-    def save_certificate(self, cert_pem, chain_pem,
-                         cert_path, chain_path, fullchain_path):
+    def save_certificate(self, cert_pem: bytes, chain_pem: bytes,
+                         cert_path: str, chain_path: str, fullchain_path: str
+                         ) -> Tuple[str, str, str]:
         """Saves the certificate received from the ACME server.
 
-        :param str cert_pem:
-        :param str chain_pem:
+        :param bytes cert_pem:
+        :param bytes chain_pem:
         :param str cert_path: Candidate path to a certificate.
         :param str chain_path: Candidate path to a certificate chain.
         :param str fullchain_path: Candidate path to a full cert chain.
@@ -514,7 +551,6 @@ class Client:
         for path in cert_path, chain_path, fullchain_path:
             util.make_or_verify_dir(os.path.dirname(path), 0o755, self.config.strict_permissions)
 
-
         cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
 
         try:
@@ -522,17 +558,16 @@ class Client:
         finally:
             cert_file.close()
 
-        chain_file, abs_chain_path =\
-                _open_pem_file('chain_path', chain_path)
-        fullchain_file, abs_fullchain_path =\
-                _open_pem_file('fullchain_path', fullchain_path)
+        chain_file, abs_chain_path = _open_pem_file('chain_path', chain_path)
+        fullchain_file, abs_fullchain_path = _open_pem_file('fullchain_path', fullchain_path)
 
         _save_chain(chain_pem, chain_file)
         _save_chain(cert_pem + chain_pem, fullchain_file)
 
         return abs_cert_path, abs_chain_path, abs_fullchain_path
 
-    def deploy_certificate(self, domains, privkey_path, cert_path, chain_path, fullchain_path):
+    def deploy_certificate(self, domains: List[str], privkey_path: str, cert_path: str,
+                           chain_path: str, fullchain_path: str) -> None:
         """Install certificate
 
         :param list domains: list of domains to install the certificate
@@ -569,7 +604,8 @@ class Client:
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains, chain_path, redirect_default=True):
+    def enhance_config(self, domains: List[str], chain_path: str,
+                       redirect_default: bool = True) -> None:
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
@@ -627,6 +663,8 @@ class Client:
 
 
         """
+        if not self.installer:
+            raise errors.Error("No installer plugin has been set.")
         enh_label = options if enhancement == "ensure-http-header" else enhancement
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
             for dom in domains:
@@ -646,32 +684,34 @@ class Client:
         :param str success_msg: message to show on successful recovery
 
         """
-        self.installer.recovery_routine()
-        if success_msg:
-            display_util.notify(success_msg)
+        if self.installer:
+            self.installer.recovery_routine()
+            if success_msg:
+                display_util.notify(success_msg)
 
-    def _rollback_and_restart(self, success_msg):
+    def _rollback_and_restart(self, success_msg: str) -> None:
         """Rollback the most recent checkpoint and restart the webserver
 
         :param str success_msg: message to show on successful rollback
 
         """
-        logger.info("Rolling back to previous server configuration...")
-        try:
-            self.installer.rollback_checkpoints()
-            self.installer.restart()
-        except:
-            logger.error(
-                "An error occurred and we failed to restore your config and "
-                "restart your server. Please post to "
-                "https://community.letsencrypt.org/c/help "
-                "with details about your configuration and this error you received."
-            )
-            raise
-        display_util.notify(success_msg)
+        if self.installer:
+            logger.info("Rolling back to previous server configuration...")
+            try:
+                self.installer.rollback_checkpoints()
+                self.installer.restart()
+            except:
+                logger.error(
+                    "An error occurred and we failed to restore your config and "
+                    "restart your server. Please post to "
+                    "https://community.letsencrypt.org/c/help "
+                    "with details about your configuration and this error you received."
+                )
+                raise
+            display_util.notify(success_msg)
 
 
-def validate_key_csr(privkey, csr=None):
+def validate_key_csr(privkey: util.Key, csr: Optional[util.CSR] = None) -> None:
     """Validate Key and CSR files.
 
     Verifies that the client key and csr arguments are valid and correspond to
@@ -717,13 +757,16 @@ def validate_key_csr(privkey, csr=None):
                 raise errors.Error("The key and CSR do not match")
 
 
-def rollback(default_installer, checkpoints, config, plugins):
+def rollback(default_installer: str, checkpoints: int,
+             config: configuration.NamespaceConfig, plugins: plugin_disco.PluginsRegistry) -> None:
     """Revert configuration the specified number of checkpoints.
 
+    :param str default_installer: Default installer name to use for the rollback
     :param int checkpoints: Number of checkpoints to revert.
-
     :param config: Configuration.
     :type config: :class:`certbot.configuration.NamespaceConfiguration`
+    :param plugins: Plugins available
+    :type plugins: :class:`certbot._internal.plugins.disco.PluginsRegistry`
 
     """
     # Misconfigurations are only a slight problems... allow the user to rollback
@@ -738,7 +781,8 @@ def rollback(default_installer, checkpoints, config, plugins):
         installer.rollback_checkpoints(checkpoints)
         installer.restart()
 
-def _open_pem_file(cli_arg_path, pem_path):
+
+def _open_pem_file(cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
     """Open a pem file.
 
     If cli_arg_path was set by the client, open that.
@@ -756,10 +800,11 @@ def _open_pem_file(cli_arg_path, pem_path):
     uniq = util.unique_file(pem_path, 0o644, "wb")
     return uniq[0], os.path.abspath(uniq[1])
 
-def _save_chain(chain_pem, chain_file):
+
+def _save_chain(chain_pem: bytes, chain_file: IO) -> None:
     """Saves chain_pem at a unique path based on chain_path.
 
-    :param str chain_pem: certificate chain in PEM format
+    :param bytes chain_pem: certificate chain in PEM format
     :param str chain_file: chain file object
 
     """

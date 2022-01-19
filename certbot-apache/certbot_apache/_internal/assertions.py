@@ -29,6 +29,7 @@ def assertEqual(first, second):
         # (but identical) directory structures.
         assert first.filepath == second.filepath
 
+
 def assertEqualComment(first, second): # pragma: no cover
     """ Equality assertion for CommentNode """
 
@@ -37,6 +38,7 @@ def assertEqualComment(first, second): # pragma: no cover
 
     if not isPass(first.comment) and not isPass(second.comment):  # type: ignore
         assert first.comment == second.comment  # type: ignore
+
 
 def _assertEqualDirectiveComponents(first, second): # pragma: no cover
     """ Handles assertion for instance variables for DirectiveNode and BlockNode"""
@@ -50,6 +52,7 @@ def _assertEqualDirectiveComponents(first, second): # pragma: no cover
     if not isPass(first.parameters) and not isPass(second.parameters):
         assert first.parameters == second.parameters
 
+
 def assertEqualDirective(first, second):
     """ Equality assertion for DirectiveNode """
 
@@ -57,11 +60,13 @@ def assertEqualDirective(first, second):
     assert isinstance(second, interfaces.DirectiveNode)
     _assertEqualDirectiveComponents(first, second)
 
+
 def isPass(value): # pragma: no cover
     """Checks if the value is set to PASS"""
     if isinstance(value, bool):
         return True
     return PASS in value
+
 
 def isPassDirective(block):
     """ Checks if BlockNode or DirectiveNode should pass the assertion """
@@ -74,6 +79,7 @@ def isPassDirective(block):
         return True
     return False
 
+
 def isPassComment(comment):
     """ Checks if CommentNode should pass the assertion """
 
@@ -82,6 +88,7 @@ def isPassComment(comment):
     if isPass(comment.filepath): # pragma: no cover
         return True
     return False
+
 
 def isPassNodeList(nodelist): # pragma: no cover
     """ Checks if a ParserNode in the nodelist should pass the assertion,
@@ -101,10 +108,12 @@ def isPassNodeList(nodelist): # pragma: no cover
         return isPassDirective(node)
     return isPassComment(node)
 
+
 def assertEqualSimple(first, second):
     """ Simple assertion """
     if not isPass(first) and not isPass(second):
         assert first == second
+
 
 def isEqualVirtualHost(first, second):
     """
@@ -125,6 +134,7 @@ def isEqualVirtualHost(first, second):
         first.modmacro == second.modmacro and
         first.ancestor == second.ancestor
     )
+
 
 def assertEqualPathsList(first, second):  # pragma: no cover
     """

@@ -1,5 +1,7 @@
 """Certbot user-supplied configuration."""
+import argparse
 import copy
+from typing import Any
 from typing import List
 from typing import Optional
 from urllib import parse
@@ -38,7 +40,9 @@ class NamespaceConfig:
 
     """
 
-    def __init__(self, namespace):
+    def __init__(self, namespace: argparse.Namespace) -> None:
+        self.namespace: argparse.Namespace
+        # Avoid recursion loop because of the delegation defined in __setattr__
         object.__setattr__(self, 'namespace', namespace)
 
         self.namespace.config_dir = os.path.abspath(self.namespace.config_dir)
@@ -50,16 +54,20 @@ class NamespaceConfig:
 
     # Delegate any attribute not explicitly defined to the underlying namespace object.
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         return getattr(self.namespace, name)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         setattr(self.namespace, name, value)
 
     @property
     def server(self) -> str:
         """ACME Directory Resource URI."""
         return self.namespace.server
+
+    @server.setter
+    def server(self, server_: str) -> None:
+        self.namespace.server = server_
 
     @property
     def email(self) -> Optional[str]:
@@ -69,6 +77,10 @@ class NamespaceConfig:
         ex: u1@example.com,u2@example.com. (default: Ask).
         """
         return self.namespace.email
+
+    @email.setter
+    def email(self, mail: str) -> None:
+        self.namespace.email = mail
 
     @property
     def rsa_key_size(self) -> int:
@@ -126,32 +138,32 @@ class NamespaceConfig:
         return self.namespace.work_dir
 
     @property
-    def accounts_dir(self):
+    def accounts_dir(self) -> str:
         """Directory where all account information is stored."""
         return self.accounts_dir_for_server_path(self.server_path)
 
     @property
-    def backup_dir(self):
+    def backup_dir(self) -> str:
         """Configuration backups directory."""
         return os.path.join(self.namespace.work_dir, constants.BACKUP_DIR)
 
     @property
-    def csr_dir(self):
+    def csr_dir(self) -> str:
         """Directory where new Certificate Signing Requests (CSRs) are saved."""
         return os.path.join(self.namespace.config_dir, constants.CSR_DIR)
 
     @property
-    def in_progress_dir(self):
+    def in_progress_dir(self) -> str:
         """Directory used before a permanent checkpoint is finalized."""
         return os.path.join(self.namespace.work_dir, constants.IN_PROGRESS_DIR)
 
     @property
-    def key_dir(self):
+    def key_dir(self) -> str:
         """Keys storage."""
         return os.path.join(self.namespace.config_dir, constants.KEY_DIR)
 
     @property
-    def temp_checkpoint_dir(self):
+    def temp_checkpoint_dir(self) -> str:
         """Temporary checkpoint directory."""
         return os.path.join(
             self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
@@ -233,64 +245,71 @@ class NamespaceConfig:
         return self.namespace.preferred_chain
 
     @property
-    def server_path(self):
+    def server_path(self) -> str:
         """File path based on ``server``."""
         parsed = parse.urlparse(self.namespace.server)
         return (parsed.netloc + parsed.path).replace('/', os.path.sep)
 
-    def accounts_dir_for_server_path(self, server_path):
+    def accounts_dir_for_server_path(self, server_path: str) -> str:
         """Path to accounts directory based on server_path"""
         server_path = misc.underscores_for_unsupported_characters_in_path(server_path)
         return os.path.join(
             self.namespace.config_dir, constants.ACCOUNTS_DIR, server_path)
 
     @property
-    def default_archive_dir(self):  # pylint: disable=missing-function-docstring
+    def default_archive_dir(self) -> str:  # pylint: disable=missing-function-docstring
         return os.path.join(self.namespace.config_dir, constants.ARCHIVE_DIR)
 
     @property
-    def live_dir(self):  # pylint: disable=missing-function-docstring
+    def live_dir(self) -> str:  # pylint: disable=missing-function-docstring
         return os.path.join(self.namespace.config_dir, constants.LIVE_DIR)
 
     @property
-    def renewal_configs_dir(self):  # pylint: disable=missing-function-docstring
+    def renewal_configs_dir(self) -> str:  # pylint: disable=missing-function-docstring
         return os.path.join(
             self.namespace.config_dir, constants.RENEWAL_CONFIGS_DIR)
 
     @property
-    def renewal_hooks_dir(self):
+    def renewal_hooks_dir(self) -> str:
         """Path to directory with hooks to run with the renew subcommand."""
         return os.path.join(self.namespace.config_dir,
                             constants.RENEWAL_HOOKS_DIR)
 
     @property
-    def renewal_pre_hooks_dir(self):
+    def renewal_pre_hooks_dir(self) -> str:
         """Path to the pre-hook directory for the renew subcommand."""
         return os.path.join(self.renewal_hooks_dir,
                             constants.RENEWAL_PRE_HOOKS_DIR)
 
     @property
-    def renewal_deploy_hooks_dir(self):
+    def renewal_deploy_hooks_dir(self) -> str:
         """Path to the deploy-hook directory for the renew subcommand."""
         return os.path.join(self.renewal_hooks_dir,
                             constants.RENEWAL_DEPLOY_HOOKS_DIR)
 
     @property
-    def renewal_post_hooks_dir(self):
+    def renewal_post_hooks_dir(self) -> str:
         """Path to the post-hook directory for the renew subcommand."""
         return os.path.join(self.renewal_hooks_dir,
                             constants.RENEWAL_POST_HOOKS_DIR)
 
+    @property
+    def issuance_timeout(self) -> int:
+        """This option specifies how long (in seconds) Certbot will wait
+        for the server to issue a certificate.
+        """
+        return self.namespace.issuance_timeout
+
     # Magic methods
 
-    def __deepcopy__(self, _memo):
+    def __deepcopy__(self, _memo: Any) -> 'NamespaceConfig':
         # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
         # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
         new_ns = copy.deepcopy(self.namespace)
         return type(self)(new_ns)
 
 
-def _check_config_sanity(config):
+def _check_config_sanity(config: NamespaceConfig) -> None:
     """Validate command line options and display error message if
     requirements are not met.
 
