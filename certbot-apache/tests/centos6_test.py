@@ -48,8 +48,7 @@ class CentOS6Tests(util.ApacheTest):
             self.temp_dir, "centos6_apache/apache")
 
     def test_get_parser(self):
-        self.assertTrue(isinstance(self.config.parser,
-                                   override_centos.CentOSParser))
+        self.assertIsInstance(self.config.parser, override_centos.CentOSParser)
 
     def test_get_virtual_hosts(self):
         """Make sure all vhosts are being properly found."""
@@ -72,9 +71,9 @@ class CentOS6Tests(util.ApacheTest):
             "LoadModule", "ssl_module", exclude=False)
         self.assertEqual(len(ssl_loadmods), 1)
         # Make sure the LoadModule ssl_module is in ssl.conf (default)
-        self.assertTrue("ssl.conf" in ssl_loadmods[0])
+        self.assertIn("ssl.conf", ssl_loadmods[0])
         # ...and that it's not inside of <IfModule>
-        self.assertFalse("IfModule" in ssl_loadmods[0])
+        self.assertNotIn("IfModule", ssl_loadmods[0])
 
         # Get the example vhost
         self.config.assoc["test.example.com"] = self.vh_truth[0]
@@ -95,7 +94,7 @@ class CentOS6Tests(util.ApacheTest):
             # ...and both of them should be wrapped in <IfModule !mod_ssl.c>
             # lm[:-17] strips off /directive/arg[1] from the path.
             ifmod_args = self.config.parser.get_all_args(lm[:-17])
-            self.assertTrue("!mod_ssl.c" in ifmod_args)
+            self.assertIn("!mod_ssl.c", ifmod_args)
 
     @mock.patch("certbot_apache._internal.configurator.display_util.notify")
     def test_loadmod_multiple(self, unused_mock_notify):
@@ -107,7 +106,7 @@ class CentOS6Tests(util.ApacheTest):
         pre_loadmods = self.config.parser.find_dir(
             "LoadModule", "ssl_module", exclude=False)
         # LoadModules are not within IfModule blocks
-        self.assertFalse(any("ifmodule" in m.lower() for m in pre_loadmods))
+        self.assertIs(any("ifmodule" in m.lower() for m in pre_loadmods), False)
         self.config.assoc["test.example.com"] = self.vh_truth[0]
         self.config.deploy_cert(
             "random.demo", "example/cert.pem", "example/key.pem",
@@ -116,7 +115,9 @@ class CentOS6Tests(util.ApacheTest):
             "LoadModule", "ssl_module", exclude=False)
 
         for mod in post_loadmods:
-            self.assertTrue(self.config.parser.not_modssl_ifmodule(mod))  #pylint: disable=no-member
+            with self.subTest(mod=mod):
+                # pylint: disable=no-member
+                self.assertIs(self.config.parser.not_modssl_ifmodule(mod), True)
 
     @mock.patch("certbot_apache._internal.configurator.display_util.notify")
     def test_loadmod_rootconf_exists(self, unused_mock_notify):
@@ -207,20 +208,20 @@ class CentOS6Tests(util.ApacheTest):
         post_loadmods = self.config.parser.find_dir("LoadModule",
                                                     "ssl_module",
                                                     exclude=False)
-        self.assertFalse(post_loadmods)
+        self.assertEqual(post_loadmods, [])
 
     def test_no_ifmod_search_false(self):
         #pylint: disable=no-member
 
-        self.assertFalse(self.config.parser.not_modssl_ifmodule(
+        self.assertIs(self.config.parser.not_modssl_ifmodule(
             "/path/does/not/include/ifmod"
-        ))
-        self.assertFalse(self.config.parser.not_modssl_ifmodule(
+        ), False)
+        self.assertIs(self.config.parser.not_modssl_ifmodule(
             ""
-        ))
-        self.assertFalse(self.config.parser.not_modssl_ifmodule(
+        ), False)
+        self.assertIs(self.config.parser.not_modssl_ifmodule(
             "/path/includes/IfModule/but/no/arguments"
-        ))
+        ), False)
 
 
 if __name__ == "__main__":

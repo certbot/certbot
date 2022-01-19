@@ -9,7 +9,7 @@ from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
-from certbot_apache._internal.obj import VirtualHost  # pylint: disable=unused-import
+from certbot_apache._internal.obj import VirtualHost
 from certbot_apache._internal.parser import get_aug_path
 
 if TYPE_CHECKING:

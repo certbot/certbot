@@ -964,7 +964,9 @@ class ApacheConfigurator(common.Configurator):
             logger.warning("Encountered a problem while parsing file: %s, skipping", path)
             return None
         for arg in args:
-            addrs.add(obj.Addr.fromstring(self.parser.get_arg(arg)))
+            addr = obj.Addr.fromstring(self.parser.get_arg(arg))
+            if addr:
+                addrs.add(addr)
         is_ssl = False
 
         if self.parser.find_dir("SSLEngine", "on", start=path, exclude=False):
@@ -1094,7 +1096,9 @@ class ApacheConfigurator(common.Configurator):
         """
         addrs = set()
         for param in node.parameters:
-            addrs.add(obj.Addr.fromstring(param))
+            addr = obj.Addr.fromstring(param)
+            if addr:
+                addrs.add(addr)
 
         is_ssl = False
         # Exclusion to match the behavior in get_virtual_hosts_v2
@@ -1647,9 +1651,10 @@ class ApacheConfigurator(common.Configurator):
         for addr in ssl_addr_p:
             old_addr = obj.Addr.fromstring(
                 str(self.parser.get_arg(addr)))
-            ssl_addr = old_addr.get_addr_obj("443")
-            self.parser.aug.set(addr, str(ssl_addr))
-            ssl_addrs.add(ssl_addr)
+            if old_addr:
+                ssl_addr = old_addr.get_addr_obj("443")
+                self.parser.aug.set(addr, str(ssl_addr))
+                ssl_addrs.add(ssl_addr)
 
         return ssl_addrs
 
