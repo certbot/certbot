@@ -200,7 +200,7 @@ class Identifier(jose.JSONObjectWithFields):
     value: str = jose.field('value')
 
 
-R = TypeVar('R', bound=ResourceMixin)
+GenericResourceMixin = TypeVar('GenericResourceMixin', bound=ResourceMixin)
 
 
 class Directory(jose.JSONDeSerializable):
@@ -241,7 +241,7 @@ class Directory(jose.JSONDeSerializable):
         return key.resource_type
 
     @classmethod
-    def register(cls, resource_body_cls: Type[R]) -> Type[R]:
+    def register(cls, resource_body_cls: Type[GenericResourceMixin]) -> Type[GenericResourceMixin]:
         """Register resource."""
         resource_type = resource_body_cls.resource_type
         assert resource_type not in cls._REGISTERED_TYPES
@@ -316,7 +316,7 @@ class ExternalAccountBinding:
         return eab.to_partial_json()
 
 
-T = TypeVar('T', bound='Registration')
+GenericRegistration = TypeVar('GenericRegistration', bound='Registration')
 
 
 class Registration(ResourceBody):
@@ -346,9 +346,10 @@ class Registration(ResourceBody):
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls: Type[T], phone: Optional[str] = None, email: Optional[str] = None,
+    def from_data(cls: Type[GenericRegistration], phone: Optional[str] = None,
+                  email: Optional[str] = None,
                   external_account_binding: Optional[Dict[str, Any]] = None,
-                  **kwargs: Any) -> T:
+                  **kwargs: Any) -> GenericRegistration:
         """
         Create registration resource from contact details.
 
