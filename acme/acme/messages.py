@@ -633,7 +633,7 @@ class Revocation(ResourceMixin, jose.JSONObjectWithFields):
     resource: str = fields.resource(resource_type)
     certificate: jose.ComparableX509 = jose.field(
         'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
-    reason: str = jose.field('reason')
+    reason: int = jose.field('reason')
 
 
 class Order(ResourceBody):
