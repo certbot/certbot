@@ -65,6 +65,7 @@ Translates over to:
 ]
 """
 from typing import Any
+from typing import cast
 from typing import Dict
 from typing import Iterable
 from typing import List
@@ -93,7 +94,8 @@ class AugeasParserNode(interfaces.ParserNode):
         self.filepath: str = filepath
         self.dirty: bool = dirty
         self.metadata: Dict[str, Any] = metadata
-        self.parser: parser.ApacheParser = self.metadata.get("augeasparser")
+        self.parser: parser.ApacheParser = cast(parser.ApacheParser,
+                                                self.metadata.get("augeasparser"))
         try:
             if self.metadata["augeaspath"].endswith("/"):
                 raise errors.PluginError(
@@ -146,14 +148,16 @@ class AugeasParserNode(interfaces.ParserNode):
         }
 
         # Check if the file was included from the root config or initial state
-        enabled = self.parser.parsed_in_original(
-            apache_util.get_file_path(path)
-        )
+        file_path = apache_util.get_file_path(path)
+        if file_path is None:
+            raise ValueError(f"No file path found for vhost: {path}.")
+
+        enabled = self.parser.parsed_in_original(file_path)
 
         return AugeasBlockNode(name=name,
                                enabled=enabled,
                                ancestor=assertions.PASS,
-                               filepath=apache_util.get_file_path(path),
+                               filepath=file_path,
                                metadata=metadata)
 
     def _aug_get_name(self, path: str) -> str:
@@ -232,7 +236,7 @@ class AugeasDirectiveNode(AugeasParserNode):
             self.parser.aug.set(param_path, param)
 
     @property
-    def parameters(self) -> Tuple[str, ...]:
+    def parameters(self) -> Tuple[Optional[str], ...]:
         """
         Fetches the parameters from Augeas tree, ensuring that the sequence always
         represents the current state
@@ -283,9 +287,10 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # Create the new block
         self.parser.aug.insert(insertpath, name, before)
         # Check if the file was included from the root config or initial state
-        enabled = self.parser.parsed_in_original(
-            apache_util.get_file_path(realpath)
-        )
+        file_path = apache_util.get_file_path(realpath)
+        if file_path is None:
+            raise errors.Error(f"No file path found for vhost: {realpath}")
+        enabled = self.parser.parsed_in_original(file_path)
 
         # Parameters will be set at the initialization of the new object
         return AugeasBlockNode(
@@ -293,7 +298,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
             parameters=parameters,
             enabled=enabled,
             ancestor=assertions.PASS,
-            filepath=apache_util.get_file_path(realpath),
+            filepath=file_path,
             metadata=new_metadata,
         )
 
@@ -317,16 +322,17 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # Set the directive key
         self.parser.aug.set(realpath, name)
         # Check if the file was included from the root config or initial state
-        enabled = self.parser.parsed_in_original(
-            apache_util.get_file_path(realpath)
-        )
+        file_path = apache_util.get_file_path(realpath)
+        if file_path is None:
+            raise errors.Error(f"No file path found for vhost: {realpath}")
+        enabled = self.parser.parsed_in_original(file_path)
 
         return AugeasDirectiveNode(
             name=name,
             parameters=parameters,
             enabled=enabled,
             ancestor=assertions.PASS,
-            filepath=apache_util.get_file_path(realpath),
+            filepath=file_path,
             metadata=new_metadata,
         )
 
@@ -359,7 +365,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         """Recursive search of BlockNodes from the sequence of children"""
 
         nodes: List["AugeasBlockNode"] = []
-        paths = self._aug_find_blocks(name)
+        paths: Iterable[str] = self._aug_find_blocks(name)
         if exclude:
             paths = self.parser.exclude_dirs(paths)
         for path in paths:

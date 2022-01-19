@@ -38,8 +38,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
     def get_parser(self) -> "FedoraParser":
         """Initializes the ApacheParser"""
         return FedoraParser(
-            self.options.server_root, self.options.vhost_root,
-            self.version, configurator=self)
+            self.options.server_root, self, self.options.vhost_root, self.version)
 
     def _try_restart_fedora(self) -> None:
         """

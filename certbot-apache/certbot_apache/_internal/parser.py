@@ -47,9 +47,8 @@ class ApacheParser:
     arg_var_interpreter: Pattern = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars: Set[str] = {"*", "?", "\\", "[", "]"}
 
-    def __init__(self, root: str, vhostroot: Optional[str] = None,
-                 version: Tuple[int, ...] = (2, 4),
-                 configurator: Optional["ApacheConfigurator"] = None) -> None:
+    def __init__(self, root: str, configurator: "ApacheConfigurator",
+                 vhostroot: str, version: Tuple[int, ...] = (2, 4)) -> None:
         # Note: Order is important here.
 
         # Needed for calling save() with reverter functionality that resides in
@@ -445,7 +444,8 @@ class ApacheParser:
         else:
             self.aug.set(aug_conf_path + "/directive[last()]/arg", args)
 
-    def add_dir_beginning(self, aug_conf_path: str, dirname: str, args: List[str]) -> None:
+    def add_dir_beginning(self, aug_conf_path: str, dirname: str,
+                          args: Union[List[str], str]) -> None:
         """Adds the directive to the beginning of defined aug_conf_path.
 
         :param str aug_conf_path: Augeas configuration path to add directive
@@ -590,7 +590,7 @@ class ApacheParser:
         allargs = self.aug.match(match + '*')
         return [self.get_arg(arg) for arg in allargs]
 
-    def get_arg(self, match: Optional[str]) -> str:
+    def get_arg(self, match: Optional[str]) -> Optional[str]:
         """Uses augeas.get to get argument value and interprets result.
 
         This also converts all variables and parameters appropriately.
@@ -605,6 +605,7 @@ class ApacheParser:
         # e.g. strip now, not later
         if not value:
             return None
+
         value = value.strip("'\"")
 
         variables = ApacheParser.arg_var_interpreter.findall(value)
@@ -624,7 +625,7 @@ class ApacheParser:
         """
         return get_aug_path(self.loc["root"])
 
-    def exclude_dirs(self, matches: Set[str]) -> List[str]:
+    def exclude_dirs(self, matches: Iterable[str]) -> List[str]:
         """Exclude directives that are not loaded into the configuration."""
         filters = [("ifmodule", self.modules.keys()), ("ifdefine", self.variables)]
 
@@ -686,7 +687,7 @@ class ApacheParser:
             arg = os.path.normpath(arg)
         return arg
 
-    def _get_include_path(self, arg: str) -> str:
+    def _get_include_path(self, arg: Optional[str]) -> Optional[str]:
         """Converts an Apache Include directive into Augeas path.
 
         Converts an Apache Include directive argument into an Augeas
@@ -706,6 +707,8 @@ class ApacheParser:
         # if matchObj.group() != arg:
         #     logger.error("Error: Invalid regexp characters in %s", arg)
         #     return []
+        if arg is None:
+            return None
         arg = self.standard_path_from_server_root(arg)
 
         # Attempts to add a transform to the file if one does not already exist
@@ -774,7 +777,7 @@ class ApacheParser:
                 self._add_httpd_transform(filepath)
                 self.aug.load()
 
-    def parsed_in_current(self, filep: str) -> bool:
+    def parsed_in_current(self, filep: Optional[str]) -> bool:
         """Checks if the file path is parsed by current Augeas parser config
         ie. returns True if the file is found on a path that's found in live
         Augeas configuration.
@@ -784,9 +787,11 @@ class ApacheParser:
         :returns: True if file is parsed in existing configuration tree
         :rtype: bool
         """
+        if not filep:
+            return False
         return self._parsed_by_parser_paths(filep, self.parser_paths)
 
-    def parsed_in_original(self, filep: str) -> bool:
+    def parsed_in_original(self, filep: Optional[str]) -> bool:
         """Checks if the file path is parsed by existing Apache config.
         ie. returns True if the file is found on a path that matches Include or
         IncludeOptional statement in the Apache configuration.
@@ -796,6 +801,8 @@ class ApacheParser:
         :returns: True if file is parsed in existing configuration tree
         :rtype: bool
         """
+        if not filep:
+            return False
         return self._parsed_by_parser_paths(filep, self.existing_paths)
 
     def _parsed_by_parser_paths(self, filep: str, paths: Mapping[str, List[str]]) -> bool:

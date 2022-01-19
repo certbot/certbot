@@ -3,6 +3,7 @@ import logging
 from typing import Any
 from typing import cast
 from typing import List
+from typing import Optional
 
 from certbot import errors
 from certbot import util
@@ -76,8 +77,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
     def get_parser(self) -> "CentOSParser":
         """Initializes the ApacheParser"""
         return CentOSParser(
-            self.options.server_root, self.options.vhost_root,
-            self.version, configurator=self)
+            self.options.server_root, self, self.options.vhost_root, self.version)
 
     def _deploy_cert(self, *args: Any, **kwargs: Any):  # pylint: disable=arguments-differ
         """
@@ -111,7 +111,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
                            "use, and run Certbot again.")
                     raise MisconfigurationError(msg)
             else:
-                loadmod_args = path_args
+                loadmod_args = [arg for arg in path_args if arg]
 
             centos_parser: CentOSParser = cast(CentOSParser, self.parser)
             if centos_parser.not_modssl_ifmodule(noarg_path):

@@ -133,8 +133,8 @@ class DualDirectiveNode(DualNodeBase):
 
         kwargs.setdefault("primary", None)
         kwargs.setdefault("secondary", None)
-        primary: Optional[DualDirectiveNode] = kwargs.pop("primary")
-        secondary: Optional[apacheparser.ApacheDirectiveNode] = kwargs.pop("secondary")
+        primary = kwargs.pop("primary")
+        secondary = kwargs.pop("secondary")
 
         if primary or secondary:
             assert primary and secondary
@@ -282,7 +282,7 @@ class DualBlockNode(DualNodeBase):
         return self._find_helper(DualDirectiveNode, "find_directives", name,
                                  exclude=exclude)
 
-    def find_comments(self, comment: DualCommentNode) -> Sequence[apacheparser.ApacheParserNode]:
+    def find_comments(self, comment: str) -> Sequence[apacheparser.ApacheParserNode]:
         """
         Performs a search for CommentNodes using both implementations and
         checks the results. This is built upon the assumption that unimplemented

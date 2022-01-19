@@ -9,6 +9,7 @@ import time
 from collections import defaultdict
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import DefaultDict
 from typing import Dict
 from typing import Iterable
@@ -471,8 +472,7 @@ class ApacheConfigurator(common.Configurator):
         """Initializes the ApacheParser"""
         # If user provided vhost_root value in command line, use it
         return parser.ApacheParser(
-            self.options.server_root, self.conf("vhost-root"),
-            self.version, configurator=self)
+            self.options.server_root, self, self.conf("vhost-root"), version=self.version)
 
     def get_parsernode_root(self, metadata: Dict[str, Any]) -> dualparser.DualBlockNode:
         """Initializes the ParserNode parser root instance."""
@@ -560,14 +560,14 @@ class ApacheConfigurator(common.Configurator):
 
         return list(matched)
 
-    def _raise_no_suitable_vhost_error(self, target_name: str) -> None:
+    def _generate_no_suitable_vhost_error(self, target_name: str) -> errors.PluginError:
         """
         Notifies the user that Certbot could not find a vhost to secure
         and raises an error.
         :param str target_name: The server name that could not be mapped
         :raises errors.PluginError: Raised unconditionally
         """
-        raise errors.PluginError(
+        return errors.PluginError(
             "Certbot could not find a VirtualHost for {0} in the Apache "
             "configuration. Please create a VirtualHost with a ServerName "
             "matching {0} and try again.".format(target_name)
@@ -611,7 +611,7 @@ class ApacheConfigurator(common.Configurator):
         dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
 
         if not dialog_output:
-            self._raise_no_suitable_vhost_error(domain)
+            raise self._generate_no_suitable_vhost_error(domain)
 
         # Make sure we create SSL vhosts for the ones that are HTTP only
         # if requested.
@@ -734,11 +734,12 @@ class ApacheConfigurator(common.Configurator):
         # to get created if a non-ssl vhost is selected.
         return self._choose_vhost_from_list(target_name, temp=not create_if_no_ssl)
 
-    def _choose_vhost_from_list(self, target_name: str, temp: bool = False) -> obj.VirtualHost:
+    def _choose_vhost_from_list(self, target_name: str,
+                                temp: bool = False) -> obj.VirtualHost:
         # Select a vhost from a list
         vhost = display_ops.select_vhost(target_name, self.vhosts)
         if vhost is None:
-            self._raise_no_suitable_vhost_error(target_name)
+            raise self._generate_no_suitable_vhost_error(target_name)
         if temp:
             return vhost
         if not vhost.ssl:
@@ -922,7 +923,7 @@ class ApacheConfigurator(common.Configurator):
 
         return ""
 
-    def _get_vhost_names(self, path: Optional[str]) -> Tuple[str, List[str]]:
+    def _get_vhost_names(self, path: Optional[str]) -> Tuple[Optional[str], List[Optional[str]]]:
         """Helper method for getting the ServerName and
         ServerAlias values from vhost in path
 
@@ -959,7 +960,7 @@ class ApacheConfigurator(common.Configurator):
         servername, serveraliases = self._get_vhost_names(host.path)
 
         for alias in serveraliases:
-            if not host.modmacro:
+            if not host.modmacro and alias is not None:
                 host.aliases.add(alias)
 
         if not host.modmacro:
@@ -974,14 +975,16 @@ class ApacheConfigurator(common.Configurator):
         :rtype: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         """
-        addrs: Set[Addr] = set()
+        addrs: Set[obj.Addr] = set()
         try:
             args = self.parser.aug.match(path + "/arg")
         except RuntimeError:
             logger.warning("Encountered a problem while parsing file: %s, skipping", path)
             return None
         for arg in args:
-            addrs.add(obj.Addr.fromstring(self.parser.get_arg(arg)))
+            arg_value = self.parser.get_arg(arg)
+            if arg_value is not None:
+                addrs.add(obj.Addr.fromstring(arg_value))
         is_ssl = False
 
         if self.parser.find_dir("SSLEngine", "on", start=path, exclude=False):
@@ -1134,8 +1137,11 @@ class ApacheConfigurator(common.Configurator):
         # Check if the VirtualHost is contained in a mod_macro block
         if node.find_ancestors("Macro"):
             macro = True
+        # VirtualHost V2 is part of migration to the pure-Python Apache parser project. It is not
+        # used on production as of now.
+        # TODO: Use a meaning full value for augeas path instead of an empty string
         vhost = obj.VirtualHost(
-            node.filepath, None, addrs, is_ssl, enabled, modmacro=macro, node=node
+            node.filepath, "", addrs, is_ssl, enabled, modmacro=macro, node=node
         )
         self._populate_vhost_names_v2(vhost)
         return vhost
@@ -1231,8 +1237,8 @@ class ApacheConfigurator(common.Configurator):
 
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
-        listens = [self.parser.get_arg(x).split()[0] for
-                   x in self.parser.find_dir("Listen")]
+        directives = [self.parser.get_arg(x) for x in self.parser.find_dir("Listen")]
+        listens = [directive.split()[0] for directive in directives if directive]
 
         # Listen already in place
         if self._has_port_already(listens, port):
@@ -1421,7 +1427,10 @@ class ApacheConfigurator(common.Configurator):
 
         # We know the length is one because of the assertion above
         # Create the Vhost object
-        ssl_vhost: obj.VirtualHost = self._create_vhost(vh_p)
+        vhost = self._create_vhost(vh_p)
+        if not vhost:
+            raise errors.Error("Could not create a vhost")
+        ssl_vhost: obj.VirtualHost = vhost
         ssl_vhost.ancestor = nonssl_vhost
 
         self.vhosts.append(ssl_vhost)
@@ -1716,7 +1725,7 @@ class ApacheConfigurator(common.Configurator):
             self.parser.add_dir(vh_path, "ServerAlias", target_name)
         self._add_servernames(vhost)
 
-    def _has_matching_wildcard(self, vh_path: Optional[str], target_name: Optional[str]) -> bool:
+    def _has_matching_wildcard(self, vh_path: str, target_name: str) -> bool:
         """Is target_name already included in a wildcard in the vhost?
 
         :param str vh_path: Augeas path to the vhost
@@ -1766,14 +1775,14 @@ class ApacheConfigurator(common.Configurator):
         if need_to_save:
             self.save()
 
-    def find_vhost_by_id(self, id_str: str) -> Optional[obj.VirtualHost]:
+    def find_vhost_by_id(self, id_str: str) -> obj.VirtualHost:
         """
         Searches through VirtualHosts and tries to match the id in a comment
 
         :param str id_str: Id string for matching
 
-        :returns: The matched VirtualHost or None
-        :rtype: :class:`~certbot_apache._internal.obj.VirtualHost` or None
+        :returns: The matched VirtualHost
+        :rtype: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         :raises .errors.PluginError: If no VirtualHost is found
         """
@@ -1802,8 +1811,9 @@ class ApacheConfigurator(common.Configurator):
         id_comment = self.parser.find_comments(search_comment, vhost.path)
         if id_comment:
             # Use the first value, multiple ones shouldn't exist
-            comment: str = self.parser.get_arg(id_comment[0])
-            return comment.split(" ")[-1]
+            comment = self.parser.get_arg(id_comment[0])
+            if comment is not None:
+                return comment.split(" ")[-1]
         return None
 
     def add_vhost_id(self, vhost: obj.VirtualHost) -> Optional[str]:
@@ -1888,7 +1898,7 @@ class ApacheConfigurator(common.Configurator):
             raise
 
     def _autohsts_increase(
-        self, vhost: obj.VirtualHost, id_str: str, nextstep: Union[int, float]
+        self, vhost: obj.VirtualHost, id_str: str, nextstep: int
     ) -> None:
         """Increase the AutoHSTS max-age value
 
@@ -2262,9 +2272,11 @@ class ApacheConfigurator(common.Configurator):
 
         self.parser.aug.load()
         # Make a new vhost data structure and add it to the lists
-        new_vhost: obj.VirtualHost = self._create_vhost(parser.get_aug_path(
+        new_vhost = self._create_vhost(parser.get_aug_path(
             self._escape(redirect_filepath))
         )
+        if new_vhost is None:
+            raise errors.Error("Could not create a new vhost")
         self.vhosts.append(new_vhost)
         self._enhanced_vhosts["redirect"].add(new_vhost)
 
@@ -2526,7 +2538,7 @@ class ApacheConfigurator(common.Configurator):
 
         """
         self._chall_out.update(achalls)
-        responses = [None] * len(achalls)
+        responses: List[Optional[Challenge]] = [None] * len(achalls)
         http_doer = http_01.ApacheHttp01(self)
 
         for i, achall in enumerate(achalls):
@@ -2548,11 +2560,12 @@ class ApacheConfigurator(common.Configurator):
 
             self._update_responses(responses, http_response, http_doer)
 
-        return responses
+        # We assume all challenges has been fulfilled as described in the function documentation.
+        return cast(List[Challenge], responses)
 
     def _update_responses(
         self,
-        responses: Iterable[challenges.HTTP01Response],
+        responses: List[Optional[challenges.HTTP01Response]],
         chall_response: List[Challenge],
         chall_doer: http_01.ApacheHttp01
     ) -> None:
@@ -2653,6 +2666,8 @@ class ApacheConfigurator(common.Configurator):
 
         # Add ID to the VirtualHost for mapping back to it later
         uniq_id = self.add_vhost_id(ssl_vhost)
+        if uniq_id is None:
+            raise errors.Error("Could not generate a unique id")
         self.save_notes += "Adding unique ID {0} to VirtualHost in {1}\n".format(
             uniq_id, ssl_vhost.filep)
         # Add the actual HSTS header
@@ -2684,7 +2699,7 @@ class ApacheConfigurator(common.Configurator):
             if config["timestamp"] + constants.AUTOHSTS_FREQ > curtime:
                 # Skip if last increase was < AUTOHSTS_FREQ ago
                 continue
-            nextstep = config["laststep"] + 1
+            nextstep = cast(int, config["laststep"]) + 1
             if nextstep < len(constants.AUTOHSTS_STEPS):
                 # If installer hasn't been prepared yet, do it now
                 if not self._prepared:

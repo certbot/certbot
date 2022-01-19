@@ -345,8 +345,8 @@ class ParserInitTest(util.ApacheTest):
         self.config.config_test = mock.Mock()
         self.assertRaises(
             errors.NoInstallationError, ApacheParser,
-            os.path.relpath(self.config_path), "/dummy/vhostpath",
-            version=(2, 4, 22), configurator=self.config)
+            os.path.relpath(self.config_path), self.config,
+            "/dummy/vhostpath", version=(2, 4, 22))
 
     def test_init_old_aug(self):
         from certbot_apache._internal.parser import ApacheParser
@@ -354,8 +354,8 @@ class ParserInitTest(util.ApacheTest):
             mock_c.return_value = False
             self.assertRaises(
                 errors.NotSupportedError,
-                ApacheParser, os.path.relpath(self.config_path),
-                "/dummy/vhostpath", version=(2, 4, 22), configurator=self.config)
+                ApacheParser, os.path.relpath(self.config_path), self.config,
+                "/dummy/vhostpath", version=(2, 4, 22))
 
     @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
     def test_unparseable(self, mock_cfg):
@@ -363,8 +363,8 @@ class ParserInitTest(util.ApacheTest):
         mock_cfg.return_value = ('Define: TEST')
         self.assertRaises(
             errors.PluginError,
-            ApacheParser, os.path.relpath(self.config_path),
-            "/dummy/vhostpath", version=(2, 2, 22), configurator=self.config)
+            ApacheParser, os.path.relpath(self.config_path), self.config,
+            "/dummy/vhostpath", version=(2, 2, 22))
 
     def test_root_normalized(self):
         from certbot_apache._internal.parser import ApacheParser
@@ -375,7 +375,7 @@ class ParserInitTest(util.ApacheTest):
                 self.temp_dir,
                 "debian_apache_2_4/////multiple_vhosts/../multiple_vhosts/apache2")
 
-            parser = ApacheParser(path, "/dummy/vhostpath", configurator=self.config)
+            parser = ApacheParser(path, self.config, "/dummy/vhostpath")
 
         self.assertEqual(parser.root, self.config_path)
 
@@ -384,8 +384,7 @@ class ParserInitTest(util.ApacheTest):
         with mock.patch("certbot_apache._internal.parser.ApacheParser."
                         "update_runtime_variables"):
             parser = ApacheParser(
-                os.path.relpath(self.config_path),
-                "/dummy/vhostpath", configurator=self.config)
+                os.path.relpath(self.config_path), self.config, "/dummy/vhostpath")
 
         self.assertEqual(parser.root, self.config_path)
 
@@ -394,8 +393,7 @@ class ParserInitTest(util.ApacheTest):
         with mock.patch("certbot_apache._internal.parser.ApacheParser."
                         "update_runtime_variables"):
             parser = ApacheParser(
-                self.config_path + os.path.sep,
-                "/dummy/vhostpath", configurator=self.config)
+                self.config_path + os.path.sep, self.config, "/dummy/vhostpath")
         self.assertEqual(parser.root, self.config_path)
 
 

@@ -31,8 +31,7 @@ class GentooConfigurator(configurator.ApacheConfigurator):
     def get_parser(self) -> "GentooParser":
         """Initializes the ApacheParser"""
         return GentooParser(
-            self.options.server_root, self.options.vhost_root,
-            self.version, configurator=self)
+            self.options.server_root, self, self.options.vhost_root, self.version)
 
 
 class GentooParser(parser.ApacheParser):
