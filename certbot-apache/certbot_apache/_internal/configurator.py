@@ -984,7 +984,9 @@ class ApacheConfigurator(common.Configurator):
         for arg in args:
             arg_value = self.parser.get_arg(arg)
             if arg_value is not None:
-                addrs.add(obj.Addr.fromstring(arg_value))
+                addr = obj.Addr.fromstring(arg_value)
+                if addr is not None:
+                    addrs.add(addr)
         is_ssl = False
 
         if self.parser.find_dir("SSLEngine", "on", start=path, exclude=False):

@@ -261,7 +261,7 @@ class Addr:
         self.ipv6 = ipv6
 
     @classmethod
-    def fromstring(cls: Type[GenericAddr], str_addr: str) -> GenericAddr:
+    def fromstring(cls: Type[GenericAddr], str_addr: str) -> Optional[GenericAddr]:
         """Initialize Addr from string."""
         if str_addr.startswith('['):
             # ipv6 addresses starts with [
