@@ -6,6 +6,7 @@ from unittest import mock
 import josepy as jose
 import OpenSSL
 import requests
+from josepy.jwk import JWKEC
 
 from acme import errors
 
@@ -401,8 +402,11 @@ class DNSTest(unittest.TestCase):
         hash(DNS.from_json(self.jmsg))
 
     def test_gen_check_validation(self):
-        self.assertTrue(self.msg.check_validation(
-            self.msg.gen_validation(KEY), KEY.public_key()))
+        ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
+        for key in [KEY, ec_key_secp384r1]:
+            with self.subTest(key=key):
+                self.assertTrue(self.msg.check_validation(
+                    self.msg.gen_validation(key), key.public_key()))
 
     def test_gen_check_validation_wrong_key(self):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa1024_key.pem'))
@@ -437,6 +441,12 @@ class DNSTest(unittest.TestCase):
     def test_validation_domain_name(self):
         self.assertEqual(
             '_acme-challenge.le.wtf', self.msg.validation_domain_name('le.wtf'))
+
+    def test_validation_domain_name_ecdsa(self):
+        ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
+        self.assertTrue(self.msg.check_validation(
+            self.msg.gen_validation(ec_key_secp384r1), ec_key_secp384r1.public_key())
+        )
 
 
 class DNSResponseTest(unittest.TestCase):
@@ -474,8 +484,7 @@ class DNSResponseTest(unittest.TestCase):
         hash(DNSResponse.from_json(self.jmsg_from))
 
     def test_check_validation(self):
-        self.assertTrue(
-            self.msg.check_validation(self.chall, KEY.public_key()))
+        self.assertTrue(self.msg.check_validation(self.chall, KEY.public_key()))
 
 
 class JWSPayloadRFC8555Compliant(unittest.TestCase):
