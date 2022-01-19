@@ -1,6 +1,7 @@
 """Very low-level nginx config parser based on pyparsing."""
 # Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
 import copy
+from distutils.log import error
 import logging
 import typing
 from typing import Any
@@ -167,8 +168,10 @@ class UnspacedList(List[Any]):
                 inbound = UnspacedList(inbound)
             return inbound, inbound.spaced
 
-    def insert(self, i: int, x: Any) -> None:
+    def insert(self, i: SupportsIndex, x: Any) -> None:
         """Insert object before index."""
+        if not isinstance(i, int):
+            raise ValueError("Only integers are supported")
         item, spaced_item = self._coerce(x)
         slicepos = self._spaced_position(i) if i < len(self) else len(self.spaced)
         self.spaced.insert(slicepos, spaced_item)

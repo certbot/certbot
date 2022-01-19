@@ -16,6 +16,8 @@ from typing import Tuple
 
 import pkg_resources
 
+from acme import challenges
+
 from certbot import achallenges
 from certbot import configuration
 from certbot import crypto_util
@@ -372,7 +374,7 @@ class ChallengePerformer:
         if idx is not None:
             self.indices.append(idx)
 
-    def perform(self) -> List[achallenges.KeyAuthorizationAnnotatedChallenge]:
+    def perform(self) -> List[challenges.KeyAuthorizationChallengeResponse]:
         """Perform all added challenges.
 
         :returns: challenge responses
