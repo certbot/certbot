@@ -3,7 +3,6 @@ import logging
 from typing import Any
 from typing import cast
 from typing import List
-from typing import Optional
 
 from certbot import errors
 from certbot import util

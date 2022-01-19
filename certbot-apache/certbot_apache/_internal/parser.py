@@ -6,7 +6,6 @@ import re
 from typing import Collection
 from typing import Dict
 from typing import Iterable
-from typing import KeysView
 from typing import List
 from typing import Mapping
 from typing import Optional
@@ -22,7 +21,7 @@ from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
 
 if TYPE_CHECKING:
-    from certbot_apache._internal.configurator import ApacheConfigurator
+    from certbot_apache._internal.configurator import ApacheConfigurator  # pragma: no cover
 
 try:
     from augeas import Augeas
@@ -708,7 +707,7 @@ class ApacheParser:
         #     logger.error("Error: Invalid regexp characters in %s", arg)
         #     return []
         if arg is None:
-            return None
+            return None  # pragma: no cover
         arg = self.standard_path_from_server_root(arg)
 
         # Attempts to add a transform to the file if one does not already exist
@@ -788,7 +787,7 @@ class ApacheParser:
         :rtype: bool
         """
         if not filep:
-            return False
+            return False  # pragma: no cover
         return self._parsed_by_parser_paths(filep, self.parser_paths)
 
     def parsed_in_original(self, filep: Optional[str]) -> bool:
@@ -802,7 +801,7 @@ class ApacheParser:
         :rtype: bool
         """
         if not filep:
-            return False
+            return False  # pragma: no cover
         return self._parsed_by_parser_paths(filep, self.existing_paths)
 
     def _parsed_by_parser_paths(self, filep: str, paths: Mapping[str, List[str]]) -> bool:

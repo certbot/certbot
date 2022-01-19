@@ -32,7 +32,6 @@ from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.interfaces import RenewableCert
 from certbot.plugins import common
-from certbot.plugins.common import Addr
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 from certbot.plugins.util import path_surgery
 from certbot_apache._internal import apache_util
@@ -258,6 +257,7 @@ class ApacheConfigurator(common.Configurator):
         self.parsed_paths: List[str] = []
         # These will be set in the prepare function
         self._prepared: bool = False
+        self.parser: parser.ApacheParser
         self.parser_root: Optional[dualparser.DualBlockNode] = None
         self.version = version
         self._openssl_version = openssl_version
@@ -365,7 +365,7 @@ class ApacheConfigurator(common.Configurator):
         # correct parse tree from the get go.
         self.recovery_routine()
         # Perform the actual Augeas initialization to be able to react
-        self.parser: parser.ApacheParser = self.get_parser()
+        self.parser = self.get_parser()
 
         # Set up ParserNode root
         pn_meta = {"augeasparser": self.parser,
@@ -1433,7 +1433,7 @@ class ApacheConfigurator(common.Configurator):
         # Create the Vhost object
         vhost = self._create_vhost(vh_p)
         if not vhost:
-            raise errors.Error("Could not create a vhost")
+            raise errors.Error("Could not create a vhost")  # pragma: no cover
         ssl_vhost: obj.VirtualHost = vhost
         ssl_vhost.ancestor = nonssl_vhost
 
@@ -2281,7 +2281,7 @@ class ApacheConfigurator(common.Configurator):
             self._escape(redirect_filepath))
         )
         if new_vhost is None:
-            raise errors.Error("Could not create a new vhost")
+            raise errors.Error("Could not create a new vhost")  # pragma: no cover
         self.vhosts.append(new_vhost)
         self._enhanced_vhosts["redirect"].add(new_vhost)
 
@@ -2672,7 +2672,7 @@ class ApacheConfigurator(common.Configurator):
         # Add ID to the VirtualHost for mapping back to it later
         uniq_id = self.add_vhost_id(ssl_vhost)
         if uniq_id is None:
-            raise errors.Error("Could not generate a unique id")
+            raise errors.Error("Could not generate a unique id")  # pragma: no cover
         self.save_notes += "Adding unique ID {0} to VirtualHost in {1}\n".format(
             uniq_id, ssl_vhost.filep)
         # Add the actual HSTS header

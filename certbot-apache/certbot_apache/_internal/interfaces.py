@@ -241,7 +241,7 @@ class CommentNode(ParserNode, metaclass=abc.ABCMeta):
             created or changed after the last save. Default: False.
         :type dirty: bool
         """
-        super().__init__(
+        super().__init__(  # pragma: no cover
             ancestor=kwargs['ancestor'],
             dirty=kwargs.get('dirty', False),
             filepath=kwargs['filepath'],
@@ -307,7 +307,7 @@ class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
         :type enabled: bool
 
         """
-        super().__init__(
+        super().__init__(  # pragma: no cover
             ancestor=kwargs['ancestor'],
             dirty=kwargs.get('dirty', False),
             filepath=kwargs['filepath'],

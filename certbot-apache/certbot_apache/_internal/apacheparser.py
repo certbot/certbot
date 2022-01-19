@@ -26,8 +26,8 @@ class ApacheParserNode(interfaces.ParserNode):
         self.metadata: Any = metadata
         self._raw: Any = self.metadata["ac_ast"]
 
-    def save(self, msg: str) -> None:  # pragma: no cover
-        pass
+    def save(self, msg: str) -> None:
+        pass  # pragma: no cover
 
     # pylint: disable=unused-variable
     def find_ancestors(self, name: str) -> List["ApacheBlockNode"]:
@@ -47,14 +47,14 @@ class ApacheCommentNode(ApacheParserNode):
         super().__init__(**kwargs)
         self.comment = comment
 
-    def __eq__(self, other: Any):  # pragma: no cover
+    def __eq__(self, other: Any):
         if isinstance(other, self.__class__):
             return (self.comment == other.comment and
                     self.dirty == other.dirty and
                     self.ancestor == other.ancestor and
                     self.metadata == other.metadata and
                     self.filepath == other.filepath)
-        return False
+        return False  # pragma: no cover
 
 
 class ApacheDirectiveNode(ApacheParserNode):
@@ -68,7 +68,7 @@ class ApacheDirectiveNode(ApacheParserNode):
         self.enabled: bool = enabled
         self.include: Optional[str] = None
 
-    def __eq__(self, other: Any) -> bool:  # pragma: no cover
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
             return (self.name == other.name and
                     self.filepath == other.filepath and
@@ -77,11 +77,11 @@ class ApacheDirectiveNode(ApacheParserNode):
                     self.dirty == other.dirty and
                     self.ancestor == other.ancestor and
                     self.metadata == other.metadata)
-        return False
+        return False  # pragma: no cover
 
-    def set_parameters(self, _parameters):  # pragma: no cover
+    def set_parameters(self, _parameters):
         """Sets the parameters for DirectiveNode"""
-        return
+        return  # pragma: no cover
 
 
 class ApacheBlockNode(ApacheDirectiveNode):
@@ -91,7 +91,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         super().__init__(**kwargs)
         self.children: Tuple[ApacheParserNode, ...] = ()
 
-    def __eq__(self, other):  # pragma: no cover
+    def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.name == other.name and
                     self.filepath == other.filepath and
@@ -101,7 +101,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
                     self.dirty == other.dirty and
                     self.ancestor == other.ancestor and
                     self.metadata == other.metadata)
-        return False
+        return False  # pragma: no cover
 
     # pylint: disable=unused-argument
     def add_child_block(
@@ -162,22 +162,21 @@ class ApacheBlockNode(ApacheDirectiveNode):
 
     # pylint: disable=unused-argument
     def find_comments(self, comment: str, exact: bool = False) -> List[ApacheCommentNode]:
-        # praqma: no cover
         """Recursive search of DirectiveNodes from the sequence of children"""
-        return [ApacheCommentNode(comment=assertions.PASS,
+        return [ApacheCommentNode(comment=assertions.PASS,  # pragma: no cover
                                   ancestor=self,
                                   filepath=assertions.PASS,
                                   metadata=self.metadata)]
 
-    def delete_child(self, child: "ApacheBlockNode") -> None:  # pragma: no cover
+    def delete_child(self, child: "ApacheBlockNode") -> None:
         """Deletes a ParserNode from the sequence of children"""
-        return
+        return  # pragma: no cover
 
-    def unsaved_files(self) -> List[str]:  # pragma: no cover
+    def unsaved_files(self) -> List[str]:
         """Returns a list of unsaved filepaths"""
-        return [assertions.PASS]
+        return [assertions.PASS]  # pragma: no cover
 
-    def parsed_paths(self) -> List[str]:  # pragma: no cover
+    def parsed_paths(self) -> List[str]:
         """Returns a list of parsed configuration file paths"""
         return [assertions.PASS]
 

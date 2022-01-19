@@ -150,7 +150,7 @@ class AugeasParserNode(interfaces.ParserNode):
         # Check if the file was included from the root config or initial state
         file_path = apache_util.get_file_path(path)
         if file_path is None:
-            raise ValueError(f"No file path found for vhost: {path}.")
+            raise ValueError(f"No file path found for vhost: {path}.")  # pragma: no cover
 
         enabled = self.parser.parsed_in_original(file_path)
 

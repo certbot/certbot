@@ -2,7 +2,6 @@
 import datetime
 import logging
 import platform
-from typing import Union
 from typing import cast
 from typing import Any
 from typing import Callable
