@@ -403,10 +403,10 @@ class DNSTest(unittest.TestCase):
 
     def test_gen_check_validation(self):
         ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
-        for key in [KEY, ec_key_secp384r1]:
-            with self.subTest(key=key):
+        for key, alg in [(KEY, jose.RS256), (ec_key_secp384r1, jose.ES384)]:
+            with self.subTest(key=key, alg=alg):
                 self.assertTrue(self.msg.check_validation(
-                    self.msg.gen_validation(key), key.public_key()))
+                    self.msg.gen_validation(key, alg=alg), key.public_key()))
 
     def test_gen_check_validation_wrong_key(self):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa1024_key.pem'))
@@ -427,8 +427,7 @@ class DNSTest(unittest.TestCase):
             payload=self.msg.update(
                 token=b'x' * 20).json_dumps().encode('utf-8'),
             alg=jose.RS256, key=KEY)
-        self.assertFalse(self.msg.check_validation(
-            bad_validation, KEY.public_key()))
+        self.assertFalse(self.msg.check_validation(bad_validation, KEY.public_key()))
 
     def test_gen_response(self):
         with mock.patch('acme.challenges.DNS.gen_validation') as mock_gen:
@@ -439,13 +438,13 @@ class DNSTest(unittest.TestCase):
         self.assertEqual(response.validation, mock.sentinel.validation)
 
     def test_validation_domain_name(self):
-        self.assertEqual(
-            '_acme-challenge.le.wtf', self.msg.validation_domain_name('le.wtf'))
+        self.assertEqual('_acme-challenge.le.wtf', self.msg.validation_domain_name('le.wtf'))
 
     def test_validation_domain_name_ecdsa(self):
         ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
         self.assertTrue(self.msg.check_validation(
-            self.msg.gen_validation(ec_key_secp384r1), ec_key_secp384r1.public_key())
+            self.msg.gen_validation(ec_key_secp384r1, alg=jose.ES512),
+            ec_key_secp384r1.public_key())
         )
 
 
