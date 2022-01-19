@@ -339,8 +339,8 @@ class Registration(ResourceBody):
     status: Status = jose.field('status', omitempty=True)
     terms_of_service_agreed: bool = jose.field('termsOfServiceAgreed', omitempty=True)
     only_return_existing: bool = jose.field('onlyReturnExisting', omitempty=True)
-    external_account_binding: ExternalAccountBinding = jose.field('externalAccountBinding',
-                                                                  omitempty=True)
+    external_account_binding: Dict[str, Any] = jose.field('externalAccountBinding',
+                                                          omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
