@@ -278,7 +278,7 @@ def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) 
     :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
 
     :returns: A list of Subject Alternative Names that is DNS.
-    :rtype: `list` of `unicode`
+    :rtype: `list` of `str`
 
     """
     # This function finds SANs with dns name
@@ -300,7 +300,7 @@ def _pyopenssl_cert_or_req_san_ip(cert_or_req: Union[crypto.X509, crypto.X509Req
     :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
 
     :returns: A list of Subject Alternative Names that are IP Addresses.
-    :rtype: `list` of `unicode`. note that this returns as string, not IPaddress object
+    :rtype: `list` of `str`. note that this returns as string, not IPaddress object
 
     """
 
@@ -320,7 +320,7 @@ def _pyopenssl_extract_san_list_raw(cert_or_req: Union[crypto.X509, crypto.X509R
     :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
 
     :returns: raw san strings, parsed byte as utf-8
-    :rtype: `list` of `unicode`
+    :rtype: `list` of `str`
 
     """
     # This function finds SANs by dumping the certificate/CSR to text and
@@ -352,7 +352,7 @@ def gen_ss_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
                 ) -> crypto.X509:
     """Generate new self-signed certificate.
 
-    :type domains: `list` of `unicode`
+    :type domains: `list` of `str`
     :param OpenSSL.crypto.PKey key:
     :param bool force_san:
     :param extensions: List of additional extensions to include in the cert.

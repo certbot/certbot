@@ -1191,7 +1191,7 @@ class NginxConfigurator(common.Configurator):
         self._chall_out += len(achalls)
         responses: List[Optional[challenges.ChallengeResponse]] = [None] * len(achalls)
         http_doer = http_01.NginxHttp01(self)
-        
+
         key_achalls = [achall for achall in achalls
                        if isinstance(achall, achallenges.KeyAuthorizationAnnotatedChallenge)]
 

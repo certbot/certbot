@@ -2,10 +2,11 @@
 import datetime
 import logging
 import time
-from typing import Dict, Sequence
+from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Type
 

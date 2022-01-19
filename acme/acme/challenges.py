@@ -177,7 +177,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
         """Generate Key Authorization.
 
         :param JWK account_key:
-        :rtype unicode:
+        :rtype str:
 
         """
         return self.encode("token") + "." + jose.b64encode(
@@ -238,7 +238,7 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
         around `KeyAuthorizationChallengeResponse.verify`.
 
         :param challenges.DNS01 chall: Corresponding challenge.
-        :param unicode domain: Domain name being verified.
+        :param str domain: Domain name being verified.
         :param JWK account_public_key: Public key for the key pair
             being authorized.
 
@@ -266,7 +266,7 @@ class DNS01(KeyAuthorizationChallenge):
         """Generate validation.
 
         :param JWK account_key:
-        :rtype: string
+        :rtype: str
 
         """
         return jose.b64encode(hashlib.sha256(self.key_authorization(
@@ -276,7 +276,7 @@ class DNS01(KeyAuthorizationChallenge):
         """Domain name for TXT validation record.
 
         :param str name: Domain name being validated.
-        :rtype: string
+        :rtype: str
 
         """
         return "{0}.{1}".format(self.LABEL, name)
@@ -303,7 +303,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         """Simple verify.
 
         :param challenges.SimpleHTTP chall: Corresponding challenge.
-        :param unicode domain: Domain name being verified.
+        :param str domain: Domain name being verified.
         :param JWK account_public_key: Public key for the key pair
             being authorized.
         :param int port: Port used in the validation.
@@ -367,7 +367,7 @@ class HTTP01(KeyAuthorizationChallenge):
     def path(self) -> str:
         """Path (starting with '/') for provisioned resource.
 
-        :rtype: string
+        :rtype: str
 
         """
         return '/' + self.URI_ROOT_PATH + '/' + self.encode('token')
@@ -378,8 +378,8 @@ class HTTP01(KeyAuthorizationChallenge):
         Forms an URI to the HTTPS server provisioned resource
         (containing :attr:`~SimpleHTTP.token`).
 
-        :param unicode domain: Domain name being verified.
-        :rtype: string
+        :param str domain: Domain name being verified.
+        :rtype: str
 
         """
         return "http://" + domain + self.path
@@ -388,7 +388,7 @@ class HTTP01(KeyAuthorizationChallenge):
         """Generate validation.
 
         :param JWK account_key:
-        :rtype: string
+        :rtype: str
 
         """
         return self.key_authorization(account_key)
@@ -419,7 +419,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
                  ) -> Tuple[crypto.X509, crypto.PKey]:
         """Generate tls-alpn-01 certificate.
 
-        :param unicode domain: Domain verified by the challenge.
+        :param str domain: Domain verified by the challenge.
         :param OpenSSL.crypto.PKey key: Optional private key used in
             certificate generation. If not provided (``None``), then
             fresh key will be generated.
@@ -443,8 +443,8 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
                    port: Optional[int] = None) -> crypto.X509:
         """Probe tls-alpn-01 challenge certificate.
 
-        :param unicode domain: domain being validated, required.
-        :param string host: IP address used to probe the certificate.
+        :param str domain: domain being validated, required.
+        :param str host: IP address used to probe the certificate.
         :param int port: Port used to probe the certificate.
 
         """
@@ -460,7 +460,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
     def verify_cert(self, domain: str, cert: crypto.X509) -> bool:
         """Verify tls-alpn-01 challenge certificate.
 
-        :param unicode domain: Domain name being validated.
+        :param str domain: Domain name being validated.
         :param OpensSSL.crypto.X509 cert: Challenge certificate.
 
         :returns: Whether the certificate was successfully verified.
@@ -615,7 +615,7 @@ class DNS(_TokenChallenge):
     def validation_domain_name(self, name: str) -> str:
         """Domain name for TXT validation record.
 
-        :param unicode name: Domain name being validated.
+        :param str name: Domain name being validated.
 
         """
         return "{0}.{1}".format(self.LABEL, name)

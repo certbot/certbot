@@ -25,7 +25,7 @@ from acme import util
 from acme.mixins import ResourceMixin
 
 if TYPE_CHECKING:
-    from typing_extensions import Protocol
+    from typing_extensions import Protocol  # pragma: no cover
 else:
     Protocol = object
 
@@ -207,6 +207,9 @@ class Identifier(jose.JSONObjectWithFields):
 
 
 class HasResourceType(Protocol):
+    """
+    Represents a class with a resource_type class parameter of type string.
+    """
     resource_type: str = NotImplemented
 
 
