@@ -442,9 +442,9 @@ class DNSTest(unittest.TestCase):
 
     def test_validation_domain_name_ecdsa(self):
         ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
-        self.assertTrue(self.msg.check_validation(
-            self.msg.gen_validation(ec_key_secp384r1, alg=jose.ES512),
-            ec_key_secp384r1.public_key())
+        self.assertIs(self.msg.check_validation(
+            self.msg.gen_validation(ec_key_secp384r1, alg=jose.ES384),
+            ec_key_secp384r1.public_key()), True
         )
 
 
