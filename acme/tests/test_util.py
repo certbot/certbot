@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives import serialization
 import josepy as jose
 from OpenSSL import crypto
 import pkg_resources
+from josepy.util import ComparableECKey
 
 
 def load_vector(*names):
@@ -57,6 +58,14 @@ def load_rsa_private_key(*names):
     loader = _guess_loader(names[-1], serialization.load_pem_private_key,
                            serialization.load_der_private_key)
     return jose.ComparableRSAKey(loader(
+        load_vector(*names), password=None, backend=default_backend()))
+
+
+def load_ecdsa_private_key(*names):
+    """Load ECDSA private key."""
+    loader = _guess_loader(names[-1], serialization.load_pem_private_key,
+                           serialization.load_der_private_key)
+    return ComparableECKey(loader(
         load_vector(*names), password=None, backend=default_backend()))
 
 
