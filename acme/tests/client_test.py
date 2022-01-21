@@ -12,6 +12,7 @@ from unittest import mock
 import josepy as jose
 import OpenSSL
 import requests
+from josepy.jwk import JWKEC
 
 from acme import challenges
 from acme import errors
@@ -27,8 +28,10 @@ CSR_SAN_PEM = test_util.load_vector('csr-san.pem')
 CSR_MIXED_PEM = test_util.load_vector('csr-mixed.pem')
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 KEY2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
-# TODO change to JWKEC when josepy is released with __init__ import patch
-KEY3 = jose.JWK.load(test_util.load_vector('ec_secp384r1_key.pem'))
+KEY3 = JWKEC.load(test_util.load_vector('ec_secp384r1_key.pem'))
+KEY4 = JWKEC.load(test_util.load_vector('ec_secp521r1_key.pem'))
+KEY5 = JWKEC.load(test_util.load_vector('ec_secp256r1_key.pem'))
+
 
 DIRECTORY_V1 = messages.Directory({
     messages.NewRegistration:
@@ -361,8 +364,7 @@ class ClientTest(ClientTestBase):
         mock_net.return_value = mock.sentinel.net
         alg = jose.RS256
         from acme.client import Client
-        self.client = Client(
-            directory=self.directory, key=KEY, alg=alg)
+        self.client = Client(directory=self.directory, key=KEY, alg=alg)
         mock_net.called_once_with(KEY, alg=alg, verify_ssl=True)
         self.assertEqual(self.client.net, mock.sentinel.net)
 
@@ -377,6 +379,16 @@ class ClientTest(ClientTestBase):
 
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
+
+    @mock.patch('acme.client.ClientNetwork')
+    def test_register_ec_keys(self, mock_net):
+        mock_net.return_value = mock.sentinel.net
+        from acme.client import Client
+        for key, alg in [(KEY3, jose.ES256), (KEY4, jose.ES384), (KEY5, jose.ES512)]:
+            with self.subTest(key=key, alg=alg):
+                self.client = Client(directory=self.directory, key=KEY, alg=alg)
+                mock_net.called_once_with(KEY, alg=alg, verify_ssl=True)
+                self.assertEqual(self.client.net, mock.sentinel.net)
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:

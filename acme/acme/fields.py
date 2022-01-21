@@ -15,8 +15,7 @@ class Fixed(jose.Field):
 
     def __init__(self, json_name: str, value: Any) -> None:
         self.value = value
-        super().__init__(
-            json_name=json_name, default=value, omitempty=False)
+        super().__init__(json_name=json_name, default=value, omitempty=False)
 
     def decode(self, value: Any) -> Any:
         if value != self.value:
@@ -62,8 +61,7 @@ class Resource(jose.Field):
     def decode(self, value: Any) -> Any:
         if value != self.resource_type:
             raise jose.DeserializationError(
-                'Wrong resource type: {0} instead of {1}'.format(
-                    value, self.resource_type))
+                f'Wrong resource type: {value} instead of {self.resource_type}')
         return value
 
 

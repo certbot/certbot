@@ -702,6 +702,7 @@ class OrderResource(ResourceWithURI):
                                                        omitempty=True)
 
 
+
 @Directory.register
 class NewOrder(Order):
     """New order."""
