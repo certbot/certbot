@@ -1,13 +1,17 @@
 """Module contains classes used by the Apache Configurator."""
 import re
-from typing import Any, Optional, Sequence, Iterable
+from typing import Any
+from typing import Iterable
+from typing import Optional
+from typing import Pattern
+from typing import Sequence
 from typing import Set
 
-from certbot.plugins.common import Addr as CommonAddr
-from certbot_apache._internal.interfaces import ParserNode
+from certbot.plugins import common
+from certbot_apache._internal import interfaces
 
 
-class Addr(CommonAddr):
+class Addr(common.CommonAddr):
     """Represents an Apache address."""
 
     def __eq__(self, other: Any) -> bool:
@@ -23,7 +27,7 @@ class Addr(CommonAddr):
         return False
 
     def __repr__(self) -> str:
-        return "certbot_apache._internal.obj.Addr(" + repr(self.tup) + ")"
+        return f"certbot_apache._internal.obj.Addr({repr(self.tup)})"
 
     def __hash__(self) -> int:  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__ if __eq__ or
@@ -80,7 +84,7 @@ class Addr(CommonAddr):
         """Returns if address has a wildcard port."""
         return self.tup[1] == "*" or not self.tup[1]
 
-    def get_sni_addr(self, port: str) -> CommonAddr:
+    def get_sni_addr(self, port: str) -> common.Addr:
         """Returns the least specific address that resolves on the port.
 
         Examples:
@@ -120,12 +124,12 @@ class VirtualHost:
 
     """
     # ?: is used for not returning enclosed characters
-    strip_name = re.compile(r"^(?:.+://)?([^ :$]*)")
+    strip_name: Pattern = re.compile(r"^(?:.+://)?([^ :$]*)")
 
     def __init__(self, filep: str, path: Optional[str], addrs: Set["Addr"], ssl: bool,
                  enabled: bool, name: Optional[str] = None, aliases: Optional[Sequence[str]] = None,
                  modmacro: bool = False, ancestor: Optional["VirtualHost"] = None,
-                 node: Optional[ParserNode] = None) -> None:
+                 node: Optional[interfaces.ParserNode] = None) -> None:
 
         """Initialize a VH."""
         self.filep = filep
@@ -137,7 +141,7 @@ class VirtualHost:
         self.enabled = enabled
         self.modmacro = modmacro
         self.ancestor = ancestor
-        self.node = node
+        self.node: interfaces.BlockNode = node
 
     def get_names(self) -> Set[str]:
         """Return a set of all names."""
@@ -151,34 +155,24 @@ class VirtualHost:
 
     def __str__(self) -> str:
         return (
-            "File: {filename}\n"
-            "Vhost path: {vhpath}\n"
-            "Addresses: {addrs}\n"
-            "Name: {name}\n"
-            "Aliases: {aliases}\n"
-            "TLS Enabled: {tls}\n"
-            "Site Enabled: {active}\n"
-            "mod_macro Vhost: {modmacro}".format(
-                filename=self.filep,
-                vhpath=self.path,
-                addrs=", ".join(str(addr) for addr in self.addrs),
-                name=self.name if self.name is not None else "",
-                aliases=", ".join(name for name in self.aliases),
-                tls="Yes" if self.ssl else "No",
-                active="Yes" if self.enabled else "No",
-                modmacro="Yes" if self.modmacro else "No"))
+            f"File: {self.filep}\n"
+            f"Vhost path: {self.path}\n"
+            f"Addresses: {', '.join(str(addr) for addr in self.addrs)}\n"
+            f"Name: {self.name if self.name is not None else ''}\n"
+            f"Aliases: {', '.join(name for name in self.aliases)}\n"
+            f"TLS Enabled: {'Yes' if self.ssl else 'No'}\n"
+            f"Site Enabled: {'Yes' if self.enabled else 'No'}\n"
+            f"mod_macro Vhost: {'Yes' if self.modmacro else 'No'}"
+        )
 
     def display_repr(self) -> str:
         """Return a representation of VHost to be used in dialog"""
         return (
-            "File: {filename}\n"
-            "Addresses: {addrs}\n"
-            "Names: {names}\n"
-            "HTTPS: {https}\n".format(
-                filename=self.filep,
-                addrs=", ".join(str(addr) for addr in self.addrs),
-                names=", ".join(self.get_names()),
-                https="Yes" if self.ssl else "No"))
+            f"File: {self.filep}\n"
+            f"Addresses: {', '.join(str(addr) for addr in self.addrs)}\n"
+            f"Names: {', '.join(self.get_names())}\n"
+            f"HTTPS: {'Yes' if self.ssl else 'No'}\n"
+        )
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):

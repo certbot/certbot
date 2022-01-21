@@ -3,10 +3,18 @@ import copy
 import fnmatch
 import logging
 import re
-from typing import TYPE_CHECKING, Collection, Mapping
-from typing import Dict, Tuple, Union, Set, Iterable, Sequence
+from typing import Collection
+from typing import Dict
+from typing import Iterable
 from typing import List
+from typing import Mapping
 from typing import Optional
+from typing import Pattern
+from typing import Sequence
+from typing import Set
+from typing import TYPE_CHECKING
+from typing import Tuple
+from typing import Union
 
 from certbot import errors
 from certbot.compat import os
@@ -14,7 +22,7 @@ from certbot_apache._internal import apache_util
 from certbot_apache._internal import constants
 
 if TYPE_CHECKING:
-    from certbot_apache._internal.configurator import ApacheConfigurator
+    from certbot_apache._internal.configurator import ApacheConfigurator  # pragma: no cover
 
 try:
     from augeas import Augeas
@@ -36,11 +44,11 @@ class ApacheParser:
         default - user config file, name - NameVirtualHost,
 
     """
-    arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
-    fnmatch_chars = {"*", "?", "\\", "[", "]"}
+    arg_var_interpreter: Pattern = re.compile(r"\$\{[^ \}]*}")
+    fnmatch_chars: Set[str] = {"*", "?", "\\", "[", "]"}
 
     def __init__(self, root: str, configurator: "ApacheConfigurator",
-                 vhostroot: Optional[str] = None, version: Tuple[int, ...] = (2, 4)) -> None:
+                 vhostroot: str, version: Tuple[int, ...] = (2, 4)) -> None:
         # Note: Order is important here.
 
         # Needed for calling save() with reverter functionality that resides in
@@ -49,7 +57,7 @@ class ApacheParser:
         self.configurator = configurator
 
         # Initialize augeas
-        self.aug = init_augeas()
+        self.aug: Augeas = init_augeas()
 
         if not self.check_aug_version():
             raise errors.NotSupportedError(
@@ -62,8 +70,8 @@ class ApacheParser:
         self.variables: Dict[str, str] = {}
 
         # Find configuration root and make sure augeas can parse it.
-        self.root = os.path.abspath(root)
-        self.loc = {"root": self._find_config_root()}
+        self.root: str = os.path.abspath(root)
+        self.loc: Dict[str, str] = {"root": self._find_config_root()}
         self.parse_file(self.loc["root"])
 
         if version >= (2, 4):
@@ -201,7 +209,7 @@ class ApacheParser:
                 self.aug.remove("/files/"+sf)
             self.aug.load()
 
-    def _log_save_errors(self, ex_errs: Iterable[bytes]) -> None:
+    def _log_save_errors(self, ex_errs: Iterable[str]) -> None:
         """Log errors due to bad Augeas save.
 
         :param list ex_errs: Existing errors before save
@@ -285,7 +293,6 @@ class ApacheParser:
 
     def update_defines(self) -> None:
         """Updates the dictionary of known variables in the configuration"""
-
         self.variables = apache_util.parse_defines(self.configurator.options.ctl)
 
     def update_includes(self) -> None:
@@ -316,14 +323,14 @@ class ApacheParser:
         in order.  Thus /files/apache/directive[5]/arg[2] must come immediately
         after /files/apache/directive[5]/arg[1]. Runs in 1 linear pass.
 
-        :param string matches: Matches of all directives with arg nodes
+        :param str matches: Matches of all directives with arg nodes
         :param int args: Number of args you would like to filter
 
         :returns: List of directives that contain # of arguments.
             (arg is stripped off)
 
         """
-        filtered = []
+        filtered: List[str] = []
         if args == 1:
             for i, match in enumerate(matches):
                 if match.endswith("/arg"):
@@ -416,8 +423,9 @@ class ApacheParser:
         self.aug.set(c_path_arg, mod)
         return retpath
 
-    def add_dir(self, aug_conf_path: Optional[str], directive: str,
-                args: Union[List[str], str]) -> None:
+    def add_dir(
+        self, aug_conf_path: str, directive: Optional[str], args: Union[List[str], str]
+    ) -> None:
         """Appends directive to the end fo the file given by aug_conf_path.
 
         .. note:: Not added to AugeasConfigurator because it may depend
@@ -438,7 +446,7 @@ class ApacheParser:
         else:
             self.aug.set(aug_conf_path + "/directive[last()]/arg", args)
 
-    def add_dir_beginning(self, aug_conf_path: Optional[str], dirname: str,
+    def add_dir_beginning(self, aug_conf_path: str, dirname: str,
                           args: Union[List[str], str]) -> None:
         """Adds the directive to the beginning of defined aug_conf_path.
 
@@ -492,8 +500,8 @@ class ApacheParser:
                 results.append(comment)
         return results
 
-    def find_dir(self, directive: str, arg: Optional[str] = None, start: Optional[str] = None,
-                 exclude: bool = True) -> List[str]:
+    def find_dir(self, directive: str, arg: Optional[str] = None,
+                 start: Optional[str] = None, exclude: bool = True) -> List[str]:
         """Finds directive in the configuration.
 
         Recursively searches through config files to find directives
@@ -520,6 +528,8 @@ class ApacheParser:
         :param str start: Beginning Augeas path to begin looking
         :param bool exclude: Whether or not to exclude directives based on
             variables and enabled modules
+
+        :rtype list
 
         """
         # Cannot place member variable in the definition of the function so...
@@ -579,7 +589,7 @@ class ApacheParser:
         """
 
         if match[-1] != "/":
-            match = match+"/"
+            match = match + "/"
         allargs = self.aug.match(match + '*')
         return [self.get_arg(arg) for arg in allargs]
 
@@ -598,6 +608,7 @@ class ApacheParser:
         # e.g. strip now, not later
         if not value:
             return None
+
         value = value.strip("'\"")
 
         variables = ApacheParser.arg_var_interpreter.findall(value)
@@ -699,8 +710,8 @@ class ApacheParser:
         # if matchObj.group() != arg:
         #     logger.error("Error: Invalid regexp characters in %s", arg)
         #     return []
-        if not arg:
-            return None
+        if arg is None:
+            return None  # pragma: no cover
         arg = self.standard_path_from_server_root(arg)
 
         # Attempts to add a transform to the file if one does not already exist
@@ -780,7 +791,7 @@ class ApacheParser:
         :rtype: bool
         """
         if not filep:
-            return False
+            return False  # pragma: no cover
         return self._parsed_by_parser_paths(filep, self.parser_paths)
 
     def parsed_in_original(self, filep: Optional[str]) -> bool:
@@ -831,7 +842,7 @@ class ApacheParser:
             remove_old = False
         return use_new, remove_old
 
-    def _remove_httpd_transform(self, filepath):
+    def _remove_httpd_transform(self, filepath: str) -> None:
         """Remove path from Augeas transform
 
         :param str filepath: filepath to remove
@@ -856,7 +867,7 @@ class ApacheParser:
         :param str incl: filepath to include for transform
 
         """
-        last_include = self.aug.match("/augeas/load/Httpd/incl [last()]")
+        last_include: str = self.aug.match("/augeas/load/Httpd/incl [last()]")
         if last_include:
             # Insert a new node immediately after the last incl
             self.aug.insert(last_include[0], "incl", False)
@@ -913,9 +924,9 @@ class ApacheParser:
         .. todo:: Make sure that files are included
 
         """
-        default = self.loc["root"]
+        default: str = self.loc["root"]
 
-        temp = os.path.join(self.root, "ports.conf")
+        temp: str = os.path.join(self.root, "ports.conf")
         if os.path.isfile(temp):
             listen = temp
             name = temp
@@ -925,7 +936,7 @@ class ApacheParser:
 
         return {"default": default, "listen": listen, "name": name}
 
-    def _find_config_root(self):
+    def _find_config_root(self) -> str:
         """Find the Apache Configuration Root file."""
         location = ["apache2.conf", "httpd.conf", "conf/httpd.conf"]
         for name in location:

@@ -63,8 +63,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
             self.temp_dir, "gentoo_apache/apache")
 
     def test_get_parser(self):
-        self.assertTrue(isinstance(self.config.parser,
-                                   override_gentoo.GentooParser))
+        self.assertIsInstance(self.config.parser, override_gentoo.GentooParser)
 
     def test_get_virtual_hosts(self):
         """Make sure all vhosts are being properly found."""
@@ -91,7 +90,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         with mock.patch("certbot_apache._internal.override_gentoo.GentooParser.update_modules"):
             self.config.parser.update_runtime_variables()
         for define in defines:
-            self.assertTrue(define in self.config.parser.variables)
+            self.assertIn(define, self.config.parser.variables)
 
     @mock.patch("certbot_apache._internal.apache_util.parse_from_subprocess")
     def test_no_binary_configdump(self, mock_subprocess):
@@ -101,11 +100,11 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         with mock.patch("certbot_apache._internal.override_gentoo.GentooParser.update_modules"):
             self.config.parser.update_runtime_variables()
             self.config.parser.reset_modules()
-        self.assertFalse(mock_subprocess.called)
+        self.assertIs(mock_subprocess.called, False)
 
         self.config.parser.update_runtime_variables()
         self.config.parser.reset_modules()
-        self.assertTrue(mock_subprocess.called)
+        self.assertIs(mock_subprocess.called, True)
 
     @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
     def test_opportunistic_httpd_runtime_parsing(self, mock_get):
@@ -129,7 +128,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
 
         self.assertEqual(mock_get.call_count, 1)
         self.assertEqual(len(self.config.parser.modules), 4)
-        self.assertTrue("mod_another.c" in self.config.parser.modules)
+        self.assertIn("mod_another.c", self.config.parser.modules)
 
     @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_alt_restart_works(self, mock_run_script):

@@ -82,7 +82,7 @@ def _split_aug_path(vhost_path: str) -> Tuple[str, str]:
     """
     # Strip off /files
     file_path = vhost_path[6:]
-    internal_path = []
+    internal_path: List[str] = []
 
     # Remove components from the end of file_path until it becomes valid
     while not os.path.exists(file_path):
@@ -102,7 +102,7 @@ def parse_define_file(filepath: str, varname: str) -> Dict[str, str]:
     :rtype: `dict`
 
     """
-    return_vars = {}
+    return_vars: Dict[str, str] = {}
     # Get list of words in the variable
     a_opts = util.get_var_from_file(varname, filepath).split()
     for i, v in enumerate(a_opts):
@@ -129,7 +129,7 @@ def included_in_paths(filepath: str, paths: Iterable[str]) -> bool:
     expanded.
 
     :param str filepath: Filepath to check
-    :params list paths: List of paths to check against
+    :param list paths: List of paths to check against
 
     :returns: True if included
     :rtype: bool
@@ -149,7 +149,7 @@ def parse_defines(apachectl: str) -> Dict[str, str]:
     :rtype: dict
     """
 
-    variables = {}
+    variables: Dict[str, str] = {}
     define_cmd = [apachectl, "-t", "-D",
                   "DUMP_RUN_CFG"]
     matches = parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
@@ -178,8 +178,7 @@ def parse_includes(apachectl: str) -> List[str]:
     :rtype: list of str
     """
 
-    inc_cmd = [apachectl, "-t", "-D",
-               "DUMP_INCLUDES"]
+    inc_cmd: List[str] = [apachectl, "-t", "-D", "DUMP_INCLUDES"]
     return parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
 
 
@@ -194,8 +193,7 @@ def parse_modules(apachectl: str) -> List[str]:
     :rtype: list of str
     """
 
-    mod_cmd = [apachectl, "-t", "-D",
-               "DUMP_MODULES"]
+    mod_cmd = [apachectl, "-t", "-D", "DUMP_MODULES"]
     return parse_from_subprocess(mod_cmd, r"(.*)_module")
 
 

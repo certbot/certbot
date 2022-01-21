@@ -1,6 +1,10 @@
 """Contains UI methods for Apache operations."""
 import logging
-from typing import Iterable, List, Optional, Tuple, Sequence
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
 
 from certbot import errors
 from certbot.compat import os
@@ -10,14 +14,14 @@ from certbot_apache._internal.obj import VirtualHost
 logger = logging.getLogger(__name__)
 
 
-def select_vhost_multiple(vhosts: Iterable[VirtualHost]) -> List[VirtualHost]:
+def select_vhost_multiple(vhosts: Optional[List[VirtualHost]]) -> List[VirtualHost]:
     """Select multiple Vhosts to install the certificate for
 
     :param vhosts: Available Apache VirtualHosts
-    :type vhosts: :class:`list` of type `~obj.Vhost`
+    :type vhosts: :class:`list` of type `~VirtualHost`
 
     :returns: List of VirtualHosts
-    :rtype: :class:`list`of type `~obj.Vhost`
+    :rtype: :class:`list`of type `~VirtualHost`
     """
     if not vhosts:
         return []
@@ -52,7 +56,7 @@ def select_vhost(domain: str, vhosts: Sequence[VirtualHost]) -> Optional[Virtual
     :param str domain: Domain for vhost selection
 
     :param vhosts: Available Apache VirtualHosts
-    :type vhosts: :class:`list` of type `~obj.Vhost`
+    :type vhosts: :class:`list` of type `~VirtualHost`
 
     :returns: VirtualHost or `None`
     :rtype: `~obj.Vhost` or `None`
@@ -107,22 +111,22 @@ def _vhost_menu(domain: str, vhosts: Iterable[VirtualHost]) -> Tuple[str, int]:
                 https="HTTPS" if vhost.ssl else "",
                 active="Enabled" if vhost.enabled else "",
                 fn_size=filename_size,
-                name_size=disp_name_size)
+                name_size=disp_name_size),
         )
 
     try:
         code, tag = display_util.menu(
-            "We were unable to find a vhost with a ServerName "
-            "or Address of {0}.{1}Which virtual host would you "
-            "like to choose?".format(domain, os.linesep),
+            f"We were unable to find a vhost with a ServerName "
+            f"or Address of {domain}.{os.linesep}Which virtual host would you "
+            f"like to choose?",
             choices, force_interactive=True)
     except errors.MissingCommandlineFlag:
         msg = (
-            "Encountered vhost ambiguity when trying to find a vhost for "
-            "{0} but was unable to ask for user "
-            "guidance in non-interactive mode. Certbot may need "
-            "vhosts to be explicitly labelled with ServerName or "
-            "ServerAlias directives.".format(domain))
+            f"Encountered vhost ambiguity when trying to find a vhost for "
+            f"{domain} but was unable to ask for user "
+            f"guidance in non-interactive mode. Certbot may need "
+            f"vhosts to be explicitly labelled with ServerName or "
+            f"ServerAlias directives.")
         logger.error(msg)
         raise errors.MissingCommandlineFlag(msg)
 

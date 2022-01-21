@@ -1,6 +1,10 @@
 """Dual parser node assertions"""
 import fnmatch
-from typing import Union, Any, Tuple, List, Iterable, Optional
+from typing import Any
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Union
 
 from certbot_apache._internal import interfaces
 from certbot_apache._internal.interfaces import ParserNode, DirectiveNode, BlockNode, CommentNode

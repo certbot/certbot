@@ -9,7 +9,7 @@ except ImportError: # pragma: no cover
 
 from certbot import errors
 from certbot.compat import os
-import util
+from certbot_apache import util
 
 
 class BasicParserTest(util.ParserTest):
@@ -42,7 +42,7 @@ class BasicParserTest(util.ParserTest):
         self.assertEqual(self.parser.check_aug_version(),
                          ["something"])
         self.parser.aug.match.side_effect = RuntimeError
-        self.assertFalse(self.parser.check_aug_version())
+        self.assertIs(self.parser.check_aug_version(), False)
 
     def test_find_config_root_no_root(self):
         # pylint: disable=protected-access
@@ -80,8 +80,7 @@ class BasicParserTest(util.ParserTest):
         aug_default = "/files" + self.parser.loc["default"]
         self.parser.add_dir(aug_default, "AddDirective", "test")
 
-        self.assertTrue(
-            self.parser.find_dir("AddDirective", "test", aug_default))
+        self.assertTrue(self.parser.find_dir("AddDirective", "test", aug_default))
 
         self.parser.add_dir(aug_default, "AddList", ["1", "2", "3", "4"])
         matches = self.parser.find_dir("AddList", None, aug_default)
@@ -94,12 +93,9 @@ class BasicParserTest(util.ParserTest):
                                       "AddDirectiveBeginning",
                                       "testBegin")
 
-        self.assertTrue(
-            self.parser.find_dir("AddDirectiveBeginning", "testBegin", aug_default))
+        self.assertTrue(self.parser.find_dir("AddDirectiveBeginning", "testBegin", aug_default))
 
-        self.assertEqual(
-            self.parser.aug.get(aug_default+"/directive[1]"),
-                                "AddDirectiveBeginning")
+        self.assertEqual(self.parser.aug.get(aug_default+"/directive[1]"), "AddDirectiveBeginning")
         self.parser.add_dir_beginning(aug_default, "AddList", ["1", "2", "3", "4"])
         matches = self.parser.find_dir("AddList", None, aug_default)
         for i, match in enumerate(matches):
@@ -108,11 +104,13 @@ class BasicParserTest(util.ParserTest):
         for name in ("empty.conf", "no-directives.conf"):
             conf = "/files" + os.path.join(self.parser.root, "sites-available", name)
             self.parser.add_dir_beginning(conf, "AddDirectiveBeginning", "testBegin")
-            self.assertTrue(self.parser.find_dir("AddDirectiveBeginning", "testBegin", conf))
+            self.assertGreater(
+                len(self.parser.find_dir("AddDirectiveBeginning", "testBegin", conf)),
+                0
+            )
 
     def test_empty_arg(self):
-        self.assertEqual(None,
-                          self.parser.get_arg("/files/whatever/nonexistent"))
+        self.assertIsNone(self.parser.get_arg("/files/whatever/nonexistent"))
 
     def test_add_dir_to_ifmodssl(self):
         """test add_dir_to_ifmodssl.
@@ -131,7 +129,7 @@ class BasicParserTest(util.ParserTest):
         matches = self.parser.find_dir("FakeDirective", "123")
 
         self.assertEqual(len(matches), 1)
-        self.assertTrue("IfModule" in matches[0])
+        self.assertIn("IfModule", matches[0])
 
     def test_add_dir_to_ifmodssl_multiple(self):
         from certbot_apache._internal.parser import get_aug_path
@@ -145,7 +143,7 @@ class BasicParserTest(util.ParserTest):
         matches = self.parser.find_dir("FakeDirective")
 
         self.assertEqual(len(matches), 3)
-        self.assertTrue("IfModule" in matches[0])
+        self.assertIn("IfModule", matches[0])
 
     def test_get_aug_path(self):
         from certbot_apache._internal.parser import get_aug_path
@@ -170,7 +168,7 @@ class BasicParserTest(util.ParserTest):
         with mock.patch("certbot_apache._internal.parser.logger") as mock_logger:
             self.parser.parse_modules()
             # Make sure that we got None return value and logged the file
-            self.assertTrue(mock_logger.debug.called)
+            self.assertIs(mock_logger.debug.called, True)
 
     @mock.patch("certbot_apache._internal.parser.ApacheParser.find_dir")
     @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
@@ -328,7 +326,7 @@ class BasicParserTest(util.ParserTest):
         self.parser.add_comment(get_aug_path(self.parser.loc["name"]), "123456")
         comm = self.parser.find_comments("123456")
         self.assertEqual(len(comm), 1)
-        self.assertTrue(self.parser.loc["name"] in comm[0])
+        self.assertIn(self.parser.loc["name"], comm[0])
 
 
 class ParserInitTest(util.ApacheTest):
@@ -347,7 +345,8 @@ class ParserInitTest(util.ApacheTest):
         self.config.config_test = mock.Mock()
         self.assertRaises(
             errors.NoInstallationError, ApacheParser,
-            os.path.relpath(self.config_path), "/dummy/vhostpath", self.config, version=(2, 4, 22))
+            os.path.relpath(self.config_path), self.config,
+            "/dummy/vhostpath", version=(2, 4, 22))
 
     def test_init_old_aug(self):
         from certbot_apache._internal.parser import ApacheParser

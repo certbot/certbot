@@ -12,11 +12,15 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Set
+from typing import Type
+from typing import TypeVar
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
 
 import pkg_resources
+
+from acme import challenges
 
 from certbot import achallenges
 from certbot import configuration
@@ -246,7 +250,7 @@ class Configurator(Installer, interfaces.Authenticator, metaclass=ABCMeta):
     """
 
 
-AnyAddr = TypeVar("AnyAddr", bound="Addr")
+GenericAddr = TypeVar("GenericAddr", bound="Addr")
 
 
 class Addr:
@@ -261,7 +265,7 @@ class Addr:
         self.ipv6 = ipv6
 
     @classmethod
-    def fromstring(cls: Type[AnyAddr], str_addr: str) -> AnyAddr:
+    def fromstring(cls: Type[GenericAddr], str_addr: str) -> Optional[GenericAddr]:
         """Initialize Addr from string."""
         if str_addr.startswith('['):
             # ipv6 addresses starts with [
@@ -306,7 +310,7 @@ class Addr:
         """Return port."""
         return self.tup[1]
 
-    def get_addr_obj(self, port: str) -> 'Addr':
+    def get_addr_obj(self: GenericAddr, port: str) -> GenericAddr:
         """Return new address object with same addr and new port."""
         return self.__class__((self.tup[0], port), self.ipv6)
 
@@ -377,7 +381,7 @@ class ChallengePerformer:
         if idx is not None:
             self.indices.append(idx)
 
-    def perform(self) -> List[achallenges.KeyAuthorizationAnnotatedChallenge]:
+    def perform(self) -> List[challenges.KeyAuthorizationChallengeResponse]:
         """Perform all added challenges.
 
         :returns: challenge responses

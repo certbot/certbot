@@ -165,7 +165,6 @@ class TLSALPN01ServerTest(unittest.TestCase):
 class BaseDualNetworkedServersTest(unittest.TestCase):
     """Test for acme.standalone.BaseDualNetworkedServers."""
 
-
     class SingleProtocolServer(socketserver.TCPServer):
         """Server that only serves on a single protocol. FreeBSD has this behavior for AF_INET6."""
         def __init__(self, *args, **kwargs):
@@ -175,7 +174,7 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
                 kwargs["bind_and_activate"] = False
             else:
                 self.address_family = socket.AF_INET
-            socketserver.TCPServer.__init__(self, *args, **kwargs)
+            super().__init__(*args, **kwargs)
             if ipv6:
                 # NB: On Windows, socket.IPPROTO_IPV6 constant may be missing.
                 # We use the corresponding value (41) instead.
@@ -201,7 +200,6 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
                 ('', 0), socketserver.BaseRequestHandler)
 
         self.assertEqual(em.exception.errno, EADDRINUSE)
-
 
     def test_ports_equal(self):
         from acme.standalone import BaseDualNetworkedServers

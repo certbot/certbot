@@ -1,13 +1,15 @@
 """A class that performs HTTP-01 challenges for Apache"""
 import errno
 import logging
+from typing import Any
 from typing import List
 from typing import Set
 from typing import TYPE_CHECKING
 
+from acme.challenges import HTTP01Response
 from acme.challenges import KeyAuthorizationChallengeResponse
 from certbot import errors
-from certbot.achallenges import AnnotatedChallenge, KeyAuthorizationAnnotatedChallenge
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
@@ -74,8 +76,7 @@ class ApacheHttp01(common.ChallengePerformer):
         # About to make temporary changes to the config
         self.configurator.save("Changes before challenge setup", True)
 
-        self.configurator.ensure_listen(str(
-            self.configurator.config.http01_port))
+        self.configurator.ensure_listen(str(self.configurator.config.http01_port))
         self.prepare_http01_modules()
 
         responses = self._set_up_challenges()
@@ -164,7 +165,7 @@ class ApacheHttp01(common.ChallengePerformer):
 
     def _relevant_vhosts(self) -> List[VirtualHost]:
         http01_port = str(self.configurator.config.http01_port)
-        relevant_vhosts = []
+        relevant_vhosts: List[VirtualHost] = []
         for vhost in self.configurator.vhosts:
             if any(a.is_wildcard() or a.get_port() == http01_port for a in vhost.addrs):
                 if not vhost.ssl:
@@ -182,7 +183,7 @@ class ApacheHttp01(common.ChallengePerformer):
         """Return all VirtualHost objects with no ServerName"""
         return [vh for vh in self.configurator.vhosts if vh.name is None]
 
-    def _set_up_challenges(self) -> List[KeyAuthorizationChallengeResponse]:
+    def _set_up_challenges(self) -> List[HTTP01Response]:
         if not os.path.isdir(self.challenge_dir):
             old_umask = filesystem.umask(0o022)
             try:
@@ -200,11 +201,12 @@ class ApacheHttp01(common.ChallengePerformer):
 
         return responses
 
-    def _set_up_challenge(self, achall: KeyAuthorizationAnnotatedChallenge
-                          ) -> KeyAuthorizationChallengeResponse:
+    def _set_up_challenge(self, achall: KeyAuthorizationAnnotatedChallenge) -> HTTP01Response:
+        response: HTTP01Response
+        validation: Any
         response, validation = achall.response_and_validation()
 
-        name = os.path.join(self.challenge_dir, achall.chall.encode("token"))
+        name: str = os.path.join(self.challenge_dir, achall.chall.encode("token"))
 
         self.configurator.reverter.register_file_creation(True, name)
         with open(name, 'wb') as f:

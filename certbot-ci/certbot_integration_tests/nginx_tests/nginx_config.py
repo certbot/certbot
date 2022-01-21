@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """General purpose nginx test configuration generator."""
 import getpass
+from typing import Optional
 
 import pkg_resources
 
 
-def construct_nginx_config(nginx_root, nginx_webroot, http_port, https_port, other_port,
-                           default_server, key_path=None, cert_path=None, wtf_prefix='le'):
+def construct_nginx_config(nginx_root: str, nginx_webroot: str, http_port: int, https_port: int,
+                           other_port: int, default_server: bool, key_path: Optional[str] = None,
+                           cert_path: Optional[str] = None, wtf_prefix: str = 'le') -> str:
     """
     This method returns a full nginx configuration suitable for integration tests.
     :param str nginx_root: nginx root configuration path

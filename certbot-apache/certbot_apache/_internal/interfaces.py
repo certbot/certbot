@@ -99,15 +99,16 @@ however, for example the parameters of a conditional statement may be case sensi
 For this reason the internal representation of data should not ignore the case.
 """
 import abc
-from typing import Any, TypeVar, Type
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
+from typing import TypeVar
 
 
-AnyParserNode = TypeVar("AnyParserNode", bound="ParserNode")
+GenericParserNode = TypeVar("GenericParserNode", bound="ParserNode")
 
 
 class ParserNode(metaclass=abc.ABCMeta):
@@ -201,7 +202,7 @@ class ParserNode(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_ancestors(self: AnyParserNode, name: str) -> List[AnyParserNode]:
+    def find_ancestors(self: GenericParserNode, name: str) -> List[GenericParserNode]:
         """
         Traverses the ancestor tree up, searching for BlockNodes with a specific
         name.
@@ -251,10 +252,12 @@ class CommentNode(ParserNode, metaclass=abc.ABCMeta):
             created or changed after the last save. Default: False.
         :type dirty: bool
         """
-        super().__init__(ancestor=kwargs['ancestor'],
-                         dirty=kwargs.get('dirty', False),
-                         filepath=kwargs['filepath'],
-                         metadata=kwargs.get('metadata', {}))  # pragma: no cover
+        super().__init__(  # pragma: no cover
+            ancestor=kwargs['ancestor'],
+            dirty=kwargs.get('dirty', False),
+            filepath=kwargs['filepath'],
+            metadata=kwargs.get('metadata', {}),
+        )
 
 
 class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
@@ -318,10 +321,12 @@ class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
         :type enabled: bool
 
         """
-        super().__init__(ancestor=kwargs['ancestor'],
-                                            dirty=kwargs.get('dirty', False),
-                                            filepath=kwargs['filepath'],
-                                            metadata=kwargs.get('metadata', {}))  # pragma: no cover
+        super().__init__(  # pragma: no cover
+            ancestor=kwargs['ancestor'],
+            dirty=kwargs.get('dirty', False),
+            filepath=kwargs['filepath'],
+            metadata=kwargs.get('metadata', {}),
+        )
 
     @abc.abstractmethod
     def set_parameters(self, parameters: Sequence[str]) -> None:

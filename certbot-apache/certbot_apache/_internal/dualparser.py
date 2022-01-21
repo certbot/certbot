@@ -1,11 +1,21 @@
 """ Dual ParserNode implementation """
 import abc
-from typing import Any, Type, TypeVar, List, Generic, TYPE_CHECKING, Iterable, Optional, Sequence, \
-    Tuple, Set
+from typing import Any
+from typing import Generic
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Set
+from typing import Type
+from typing import TypeVar
+from typing import Tuple
+from typing import TYPE_CHECKING
 
-from certbot_apache._internal import apacheparser, interfaces
+from certbot_apache._internal import apacheparser
 from certbot_apache._internal import assertions
 from certbot_apache._internal import augeasparser
+from certbot_apache._internal import interfaces
 
 if TYPE_CHECKING:
     from certbot_apache._internal.apacheparser import ApacheParserNode
@@ -136,8 +146,6 @@ class DualDirectiveNode(DualNodeBase[augeasparser.AugeasDirectiveNode,
         :param DirectiveNode primary: Primary pre-created DirectiveNode, mainly
             used when creating new DualParser nodes using add_* methods.
         :param DirectiveNode secondary: Secondary pre-created DirectiveNode
-
-
         """
 
         kwargs.setdefault("primary", None)
@@ -182,8 +190,8 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
 
         kwargs.setdefault("primary", None)
         kwargs.setdefault("secondary", None)
-        primary = kwargs.pop("primary")
-        secondary = kwargs.pop("secondary")
+        primary: Optional[augeasparser.AugeasBlockNode] = kwargs.pop("primary")
+        secondary: Optional[apacheparser.ApacheBlockNode] = kwargs.pop("secondary")
 
         if primary or secondary:
             assert primary and secondary
@@ -203,8 +211,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
         primary_new = self.primary.add_child_block(name, parameters, position)
         secondary_new = self.secondary.add_child_block(name, parameters, position)
         assertions.assertEqual(primary_new, secondary_new)
-        new_block = DualBlockNode(primary=primary_new, secondary=secondary_new)
-        return new_block
+        return DualBlockNode(primary=primary_new, secondary=secondary_new)
 
     def add_child_directive(self, name: str, parameters: Optional[Sequence[str]] = None,
                             position: Optional[int] = None) -> DualDirectiveNode:
@@ -215,8 +222,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
         primary_new = self.primary.add_child_directive(name, parameters, position)
         secondary_new = self.secondary.add_child_directive(name, parameters, position)
         assertions.assertEqual(primary_new, secondary_new)
-        new_dir = DualDirectiveNode(primary=primary_new, secondary=secondary_new)
-        return new_dir
+        return DualDirectiveNode(primary=primary_new, secondary=secondary_new)
 
     def add_child_comment(self, comment: str = "",
                           position: Optional[int] = None) -> DualCommentNode:
@@ -224,11 +230,10 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
         did it in a similar way, and returns a newly created DualCommentNode
         object encapsulating both of the newly created objects """
 
-        primary_new = self.primary.add_child_comment(comment, position)
-        secondary_new = self.secondary.add_child_comment(comment, position)
+        primary_new = self.primary.add_child_comment(comment=comment, position=position)
+        secondary_new = self.secondary.add_child_comment(name=comment, position=position)
         assertions.assertEqual(primary_new, secondary_new)
-        new_comment = DualCommentNode(primary=primary_new, secondary=secondary_new)
-        return new_comment
+        return DualCommentNode(primary=primary_new, secondary=secondary_new)
 
     def _create_matching_list(self, primary_list: Iterable[interfaces.ParserNode],
                               secondary_list: Iterable[interfaces.ParserNode]

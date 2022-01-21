@@ -1,5 +1,7 @@
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
 import logging
+from typing import Any
+from typing import Callable
 from typing import Optional
 
 import dns.flags
@@ -42,20 +44,21 @@ class Authenticator(dns_common.DNSAuthenticator):
     description = 'Obtain certificates using a DNS TXT record (if you are using BIND for DNS).'
     ttl = 120
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
-    def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
+    def add_parser_arguments(cls, add: Callable[..., None],
+                             default_propagation_seconds: int = 60) -> None:
         super().add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials', help='RFC 2136 credentials INI file.')
 
-    def more_info(self):  # pylint: disable=missing-function-docstring
+    def more_info(self) -> str:
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'RFC 2136 Dynamic Updates.'
 
-    def _validate_credentials(self, credentials):
+    def _validate_credentials(self, credentials: CredentialsConfiguration) -> None:
         server = credentials.conf('server')
         if not is_ipaddress(server):
             raise errors.PluginError("The configured target DNS server ({0}) is not a valid IPv4 "
@@ -65,7 +68,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             if not self.ALGORITHMS.get(algorithm.upper()):
                 raise errors.PluginError("Unknown algorithm: {0}.".format(algorithm))
 
-    def _setup_credentials(self):
+    def _setup_credentials(self) -> None:
         self.credentials = self._configure_credentials(
             'credentials',
             'RFC 2136 credentials INI file',
@@ -77,13 +80,13 @@ class Authenticator(dns_common.DNSAuthenticator):
             self._validate_credentials
         )
 
-    def _perform(self, _domain, validation_name, validation):
+    def _perform(self, _domain: str, validation_name: str, validation: str) -> None:
         self._get_rfc2136_client().add_txt_record(validation_name, validation, self.ttl)
 
-    def _cleanup(self, _domain, validation_name, validation):
+    def _cleanup(self, _domain: str, validation_name: str, validation: str) -> None:
         self._get_rfc2136_client().del_txt_record(validation_name, validation)
 
-    def _get_rfc2136_client(self):
+    def _get_rfc2136_client(self) -> "_RFC2136Client":
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         return _RFC2136Client(self.credentials.conf('server'),
@@ -98,8 +101,8 @@ class _RFC2136Client:
     """
     Encapsulates all communication with the target DNS server.
     """
-    def __init__(self, server, port, key_name, key_secret, key_algorithm,
-        timeout=DEFAULT_NETWORK_TIMEOUT):
+    def __init__(self, server: str, port: int, key_name: str, key_secret: str,
+                 key_algorithm: dns.name.Name, timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
         self.server = server
         self.port = port
         self.keyring = dns.tsigkeyring.from_text({
@@ -108,7 +111,7 @@ class _RFC2136Client:
         self.algorithm = key_algorithm
         self._default_timeout = timeout
 
-    def add_txt_record(self, record_name, record_content, record_ttl):
+    def add_txt_record(self, record_name: str, record_content: str, record_ttl: int) -> None:
         """
         Add a TXT record using the supplied information.
 
@@ -143,7 +146,7 @@ class _RFC2136Client:
             raise errors.PluginError('Received response from server: {0}'
                                      .format(dns.rcode.to_text(rcode)))
 
-    def del_txt_record(self, record_name, record_content):
+    def del_txt_record(self, record_name: str, record_content: str) -> None:
         """
         Delete a TXT record using the supplied information.
 
@@ -178,7 +181,7 @@ class _RFC2136Client:
             raise errors.PluginError('Received response from server: {0}'
                                      .format(dns.rcode.to_text(rcode)))
 
-    def _find_domain(self, record_name):
+    def _find_domain(self, record_name: str) -> str:
         """
         Find the closest domain with an SOA record for a given domain name.
 
@@ -198,7 +201,7 @@ class _RFC2136Client:
         raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
                                  .format(record_name, domain_name_guesses))
 
-    def _query_soa(self, domain_name):
+    def _query_soa(self, domain_name: str) -> bool:
         """
         Query a domain name for an authoritative SOA record.
 

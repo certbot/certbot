@@ -1,5 +1,9 @@
 """ParserNode utils"""
-from typing import Any, Iterable, Dict, Mapping, Tuple
+from typing import Any
+from typing import Dict
+from typing import Iterable
+from typing import Optional
+from typing import Tuple
 
 
 def validate_kwargs(kwargs: Dict[str, Any], required_names: Iterable[str]) -> Dict[str, Any]:
@@ -12,7 +16,7 @@ def validate_kwargs(kwargs: Dict[str, Any], required_names: Iterable[str]) -> Di
     :param list required_names: List of required parameter names.
     """
 
-    validated_kwargs = {}
+    validated_kwargs: Dict[str, Any] = {}
     for name in required_names:
         try:
             validated_kwargs[name] = kwargs.pop(name)
@@ -56,7 +60,7 @@ def parsernode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Any, Any, Any, Any]:
     return kwargs["ancestor"], kwargs["dirty"], kwargs["filepath"], kwargs["metadata"]
 
 
-def commentnode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Any, Dict[str, Any]]:
+def commentnode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Optional[str], Dict[str, str]]:
     """
     Validates keyword arguments for CommentNode and sets the default values for
     optional kwargs. This function modifies the kwargs dictionary, and hence the

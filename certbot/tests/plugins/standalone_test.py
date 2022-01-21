@@ -7,10 +7,10 @@ from typing import Tuple
 import unittest
 
 import josepy as jose
-import OpenSSL.crypto  # pylint: disable=unused-import
+import OpenSSL.crypto
 
 from acme import challenges
-from acme import standalone as acme_standalone  # pylint: disable=unused-import
+from acme import standalone as acme_standalone
 from certbot import achallenges
 from certbot import errors
 from certbot.tests import acme_util
@@ -20,7 +20,6 @@ try:
     import mock
 except ImportError: # pragma: no cover
     from unittest import mock
-
 
 
 class ServerManagerTest(unittest.TestCase):

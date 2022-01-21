@@ -1,6 +1,5 @@
 """Common utilities for certbot_apache."""
 import shutil
-import sys
 import unittest
 
 import augeas
@@ -14,7 +13,6 @@ except ImportError:  # pragma: no cover
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
-from certbot.display import util as display_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import entrypoint
 from certbot_apache._internal import obj

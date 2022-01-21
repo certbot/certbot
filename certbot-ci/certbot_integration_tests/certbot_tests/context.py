@@ -3,21 +3,25 @@ import os
 import shutil
 import sys
 import tempfile
+from typing import Iterable
+from typing import Tuple
+
+import pytest
 
 from certbot_integration_tests.utils import certbot_call
 
 
 class IntegrationTestsContext:
     """General fixture describing a certbot integration tests context"""
-    def __init__(self, request):
+    def __init__(self, request: pytest.FixtureRequest) -> None:
         self.request = request
 
         if hasattr(request.config, 'workerinput'):  # Worker node
-            self.worker_id = request.config.workerinput['workerid']
-            acme_xdist = request.config.workerinput['acme_xdist']
+            self.worker_id = request.config.workerinput['workerid']  # type: ignore[attr-defined]
+            acme_xdist = request.config.workerinput['acme_xdist']  # type: ignore[attr-defined]
         else:  # Primary node
             self.worker_id = 'primary'
-            acme_xdist = request.config.acme_xdist
+            acme_xdist = request.config.acme_xdist  # type: ignore[attr-defined]
 
         self.acme_server = acme_xdist['acme_server']
         self.directory_url = acme_xdist['directory_url']
@@ -52,16 +56,17 @@ class IntegrationTestsContext:
             '"'
         ).format(sys.executable, self.challtestsrv_port)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Cleanup the integration test context."""
         shutil.rmtree(self.workspace)
 
-    def certbot(self, args, force_renew=True):
+    def certbot(self, args: Iterable[str], force_renew: bool = True) -> Tuple[str, str]:
         """
         Execute certbot with given args, not renewing certificates by default.
         :param args: args to pass to certbot
-        :param force_renew: set to False to not renew by default
+        :param bool force_renew: set to False to not renew by default
         :return: stdout and stderr from certbot execution
+        :rtype: Tuple of `str`
         """
         command = ['--authenticator', 'standalone', '--installer', 'null']
         command.extend(args)
@@ -69,14 +74,15 @@ class IntegrationTestsContext:
             command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
             self.config_dir, self.workspace, force_renew=force_renew)
 
-    def get_domain(self, subdomain='le'):
+    def get_domain(self, subdomain: str = 'le') -> str:
         """
         Generate a certificate domain name suitable for distributed certbot integration tests.
         This is a requirement to let the distribution know how to redirect the challenge check
         from the ACME server to the relevant pytest-xdist worker. This resolution is done by
         appending the pytest worker id to the subdomain, using this pattern:
         {subdomain}.{worker_id}.wtf
-        :param subdomain: the subdomain to use in the generated domain (default 'le')
+        :param str subdomain: the subdomain to use in the generated domain (default 'le')
         :return: the well-formed domain suitable for redirection on
+        :rtype: str
         """
         return '{0}.{1}.wtf'.format(subdomain, self.worker_id)

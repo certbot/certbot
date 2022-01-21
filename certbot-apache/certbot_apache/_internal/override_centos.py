@@ -1,5 +1,6 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
 import logging
+from typing import Any
 from typing import cast
 from typing import List
 
@@ -30,7 +31,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         challenge_location="/etc/httpd/conf.d",
     )
 
-    def config_test(self):
+    def config_test(self) -> None:
         """
         Override config_test to mitigate configtest error in vanilla installation
         of mod_ssl in Fedora. The error is caused by non-existent self-signed
@@ -49,7 +50,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             else:
                 raise
 
-    def _try_restart_fedora(self):
+    def _try_restart_fedora(self) -> None:
         """
         Tries to restart httpd using systemctl to generate the self signed key pair.
         """
@@ -62,7 +63,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         # Finish with actual config check to see if systemctl restart helped
         super().config_test()
 
-    def _prepare_options(self):
+    def _prepare_options(self) -> None:
         """
         Override the options dictionary initialization in order to support
         alternative restart cmd used in CentOS.
@@ -72,12 +73,12 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
         self.options.restart_cmd_alt[0] = self.options.ctl
 
-    def get_parser(self):
+    def get_parser(self) -> "CentOSParser":
         """Initializes the ApacheParser"""
         return CentOSParser(
             self.options.server_root, self, self.options.vhost_root, self.version)
 
-    def _deploy_cert(self, *args, **kwargs):  # pylint: disable=arguments-differ
+    def _deploy_cert(self, *args: Any, **kwargs: Any):  # pylint: disable=arguments-differ
         """
         Override _deploy_cert in order to ensure that the Apache configuration
         has "LoadModule ssl_module..." before parsing the VirtualHost configuration
@@ -87,7 +88,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         if self.version < (2, 4, 0):
             self._deploy_loadmodule_ssl_if_needed()
 
-    def _deploy_loadmodule_ssl_if_needed(self):
+    def _deploy_loadmodule_ssl_if_needed(self) -> None:
         """
         Add "LoadModule ssl_module <pre-existing path>" to main httpd.conf if
         it doesn't exist there already.
@@ -115,8 +116,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             if centos_parser.not_modssl_ifmodule(noarg_path):
                 if centos_parser.loc["default"] in noarg_path:
                     # LoadModule already in the main configuration file
-                    if ("ifmodule/" in noarg_path.lower() or
-                            "ifmodule[1]" in noarg_path.lower()):
+                    if "ifmodule/" in noarg_path.lower() or "ifmodule[1]" in noarg_path.lower():
                         # It's the first or only IfModule in the file
                         return
                 # Populate the list of known !mod_ssl.c IfModules
@@ -147,8 +147,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             self.parser.aug.remove(loadmod_path)
 
             # Create a new IfModule !mod_ssl.c if not already found on path
-            ssl_ifmod = self.parser.get_ifmod(nodir_path, "!mod_ssl.c",
-                                            beginning=True)[:-1]
+            ssl_ifmod = self.parser.get_ifmod(nodir_path, "!mod_ssl.c", beginning=True)[:-1]
             if ssl_ifmod not in correct_ifmods:
                 self.parser.add_dir(ssl_ifmod, "LoadModule", loadmod_args)
                 correct_ifmods.append(ssl_ifmod)
@@ -158,24 +157,24 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
 class CentOSParser(parser.ApacheParser):
     """CentOS specific ApacheParser override class"""
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         # CentOS specific configuration file for Apache
-        self.sysconfig_filep = "/etc/sysconfig/httpd"
+        self.sysconfig_filep: str = "/etc/sysconfig/httpd"
         super().__init__(*args, **kwargs)
 
-    def update_runtime_variables(self):
+    def update_runtime_variables(self) -> None:
         """ Override for update_runtime_variables for custom parsing """
         # Opportunistic, works if SELinux not enforced
         super().update_runtime_variables()
         self.parse_sysconfig_var()
 
-    def parse_sysconfig_var(self):
+    def parse_sysconfig_var(self) -> None:
         """ Parses Apache CLI options from CentOS configuration file """
         defines = apache_util.parse_define_file(self.sysconfig_filep, "OPTIONS")
         for k, v in defines.items():
             self.variables[k] = v
 
-    def not_modssl_ifmodule(self, path):
+    def not_modssl_ifmodule(self, path: str) -> bool:
         """Checks if the provided Augeas path has argument !mod_ssl"""
 
         if "ifmodule" not in path.lower():

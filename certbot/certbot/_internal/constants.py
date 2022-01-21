@@ -78,6 +78,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(
     random_sleep_on_renew=True,
     eab_hmac_key=None,
     eab_kid=None,
+    issuance_timeout=90,
 
     # Subparsers
     num=None,

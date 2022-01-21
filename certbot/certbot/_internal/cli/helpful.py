@@ -56,6 +56,7 @@ class HelpfulArgumentParser:
             "plugins": main.plugins_cmd,
             "register": main.register,
             "update_account": main.update_account,
+            "show_account": main.show_account,
             "unregister": main.unregister,
             "renew": main.renew,
             "revoke": main.revoke,
@@ -71,11 +72,11 @@ class HelpfulArgumentParser:
         self.notify = display_obj.NoninteractiveDisplay(sys.stdout).notification
 
         # List of topics for which additional help can be provided
-        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
+        HELP_TOPICS: List[Optional[str]] = ["all", "security", "paths", "automation", "testing"]
         HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
 
-        plugin_names = list(plugins)
-        self.help_topics = HELP_TOPICS + plugin_names + [None]  # type: ignore
+        plugin_names: List[Optional[str]] = list(plugins)
+        self.help_topics: List[Optional[str]] = HELP_TOPICS + plugin_names + [None]
 
         self.detect_defaults = detect_defaults
         self.args = args
@@ -319,7 +320,8 @@ class HelpfulArgumentParser:
 
         self.verb = "run"
 
-    def prescan_for_flag(self, flag: str, possible_arguments: Iterable[str]) -> Union[str, bool]:
+    def prescan_for_flag(self, flag: str, possible_arguments: Iterable[Optional[str]]
+                         ) -> Union[str, bool]:
         """Checks cli input for flags.
 
         Check for a flag, which accepts a fixed set of possible arguments, in
@@ -376,7 +378,7 @@ class HelpfulArgumentParser:
         if self.detect_defaults:
             kwargs = self.modify_kwargs_for_default_detection(**kwargs)
 
-        if isinstance(topic, str) and self.visible_topics[topic]:
+        if not isinstance(topic, bool) and self.visible_topics[topic]:
             if topic in self.groups:
                 group = self.groups[topic]
                 group.add_argument(*args, **kwargs)
@@ -471,7 +473,8 @@ class HelpfulArgumentParser:
                                              description=plugin_ep.long_description)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
-    def determine_help_topics(self, chosen_topic: Union[str, bool]) -> Dict[str, bool]:
+    def determine_help_topics(self, chosen_topic: Union[str, bool]
+                              ) -> Dict[Optional[str], bool]:
         """
 
         The user may have requested help on a topic, return a dict of which

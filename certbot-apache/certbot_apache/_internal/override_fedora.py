@@ -23,7 +23,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         challenge_location="/etc/httpd/conf.d",
     )
 
-    def config_test(self):
+    def config_test(self) -> None:
         """
         Override config_test to mitigate configtest error in vanilla installation
         of mod_ssl in Fedora. The error is caused by non-existent self-signed
@@ -35,12 +35,12 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         except errors.MisconfigurationError:
             self._try_restart_fedora()
 
-    def get_parser(self):
+    def get_parser(self) -> "FedoraParser":
         """Initializes the ApacheParser"""
         return FedoraParser(
             self.options.server_root, self, self.options.vhost_root, self.version)
 
-    def _try_restart_fedora(self):
+    def _try_restart_fedora(self) -> None:
         """
         Tries to restart httpd using systemctl to generate the self signed key pair.
         """
@@ -52,7 +52,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         # Finish with actual config check to see if systemctl restart helped
         super().config_test()
 
-    def _prepare_options(self):
+    def _prepare_options(self) -> None:
         """
         Override the options dictionary initialization to keep using apachectl
         instead of httpd and so take advantages of this new bash script in newer versions
@@ -68,18 +68,18 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
 
 class FedoraParser(parser.ApacheParser):
     """Fedora 29+ specific ApacheParser override class"""
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         # Fedora 29+ specific configuration file for Apache
         self.sysconfig_filep = "/etc/sysconfig/httpd"
         super().__init__(*args, **kwargs)
 
-    def update_runtime_variables(self):
+    def update_runtime_variables(self) -> None:
         """ Override for update_runtime_variables for custom parsing """
         # Opportunistic, works if SELinux not enforced
         super().update_runtime_variables()
         self._parse_sysconfig_var()
 
-    def _parse_sysconfig_var(self):
+    def _parse_sysconfig_var(self) -> None:
         """ Parses Apache CLI options from Fedora configuration file """
         defines = apache_util.parse_define_file(self.sysconfig_filep, "OPTIONS")
         for k, v in defines.items():
