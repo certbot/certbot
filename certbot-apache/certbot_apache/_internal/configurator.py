@@ -748,7 +748,7 @@ class ApacheConfigurator(common.Configurator):
         if not vhost.ssl:
             addrs = self._get_proposed_addrs(vhost, "443")
             # TODO: Conflicts is too conservative
-            if not any(one_vhost.enabled and vhost.conflicts(addrs) for
+            if not any(one_vhost.enabled and one_vhost.conflicts(addrs) for
                        one_vhost in self.vhosts):
                 vhost = self.make_vhost_ssl(vhost)
             else:

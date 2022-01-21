@@ -9,7 +9,7 @@ except ImportError: # pragma: no cover
 
 from certbot import errors
 from certbot.compat import os
-from certbot_apache import util
+import util
 
 
 class BasicParserTest(util.ParserTest):

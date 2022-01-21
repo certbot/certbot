@@ -1,5 +1,4 @@
 """ Entry point for Apache Plugin """
-from typing import Callable
 from typing import Dict
 from typing import Type
 

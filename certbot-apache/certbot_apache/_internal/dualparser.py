@@ -1,5 +1,4 @@
 """ Dual ParserNode implementation """
-import abc
 from typing import Any
 from typing import Generic
 from typing import Iterable

@@ -4,7 +4,6 @@ from typing import Any
 from typing import Iterable
 from typing import Optional
 from typing import Pattern
-from typing import Sequence
 from typing import Set
 
 from certbot.plugins import common
