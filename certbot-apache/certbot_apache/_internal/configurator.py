@@ -1108,7 +1108,7 @@ class ApacheConfigurator(common.Configurator):
         vhs = []
         vhosts = self.parser_root.find_blocks("VirtualHost", exclude=False)
         for vhblock in vhosts:
-            vhs.append(self._create_vhost_v2(vhblock.secondary))
+            vhs.append(self._create_vhost_v2(cast(ApacheBlockNode, vhblock)))
         return vhs
 
     def _create_vhost_v2(self, node: ApacheBlockNode) -> obj.VirtualHost:
