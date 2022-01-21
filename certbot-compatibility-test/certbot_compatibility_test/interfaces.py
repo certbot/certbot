@@ -63,7 +63,3 @@ class InstallerProxy(PluginProxy, interfaces.Installer, metaclass=ABCMeta):
 
 class ConfiguratorProxy(AuthenticatorProxy, InstallerProxy, metaclass=ABCMeta):
     """Wraps a Certbot configurator"""
-
-
-class Configurator(interfaces.Installer, interfaces.Authenticator, metaclass=ABCMeta):
-    """Represents a plugin that has both Installer and Authenticator capabilities"""
