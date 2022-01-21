@@ -4,7 +4,6 @@ from typing import Generic
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Sequence
 from typing import Set
 from typing import Type
 from typing import TypeVar
@@ -17,8 +16,8 @@ from certbot_apache._internal import augeasparser
 from certbot_apache._internal import interfaces
 
 if TYPE_CHECKING:
-    from certbot_apache._internal.apacheparser import ApacheParserNode
-    from certbot_apache._internal.augeasparser import AugeasParserNode
+    from certbot_apache._internal.apacheparser import ApacheParserNode  # pragma: no cover
+    from certbot_apache._internal.augeasparser import AugeasParserNode  # pragma: no cover
 
 AnyAugeasParserNode = TypeVar("AnyAugeasParserNode", bound="AugeasParserNode")
 AnyApacheParserNode = TypeVar("AnyApacheParserNode", bound="ApacheParserNode")
@@ -134,6 +133,8 @@ class DualDirectiveNode(DualNodeBase[augeasparser.AugeasDirectiveNode,
                                      apacheparser.ApacheDirectiveNode]):
     """ Dual parser implementation of DirectiveNode interface """
 
+    parameters: str
+
     def __init__(self, **kwargs: Any) -> None:
         """ This initialization implementation allows ordinary initialization
         of DirectiveNode objects as well as creating a DualDirectiveNode object
@@ -201,7 +202,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
 
         assertions.assertEqual(self.primary, self.secondary)
 
-    def add_child_block(self, name: str, parameters: Optional[Sequence[str]] = None,
+    def add_child_block(self, name: str, parameters: Optional[str] = None,
                         position: Optional[int] = None) -> "DualBlockNode":
         """ Creates a new child BlockNode, asserts that both implementations
         did it in a similar way, and returns a newly created DualBlockNode object
@@ -212,7 +213,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
         assertions.assertEqual(primary_new, secondary_new)
         return DualBlockNode(primary=primary_new, secondary=secondary_new)
 
-    def add_child_directive(self, name: str, parameters: Optional[Sequence[str]] = None,
+    def add_child_directive(self, name: str, parameters: Optional[str] = None,
                             position: Optional[int] = None) -> DualDirectiveNode:
         """ Creates a new child DirectiveNode, asserts that both implementations
         did it in a similar way, and returns a newly created DualDirectiveNode

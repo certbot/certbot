@@ -65,7 +65,7 @@ class ApacheDirectiveNode(ApacheParserNode):
         name, parameters, enabled, kwargs = util.directivenode_kwargs(kwargs)
         super().__init__(**kwargs)
         self.name: str = name
-        self.parameters: List[str] = parameters
+        self.parameters: str = parameters
         self.enabled: bool = enabled
         self.include: Optional[str] = None
 
@@ -105,7 +105,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         return False  # pragma: no cover
 
     # pylint: disable=unused-argument
-    def add_child_block(self, name: str, parameters: Optional[Iterable[str]] = None,
+    def add_child_block(self, name: str, parameters: Optional[str] = None,
                         position: Optional[int] = None) -> "ApacheBlockNode":  # pragma: no cover
         """Adds a new BlockNode to the sequence of children"""
         new_block = ApacheBlockNode(name=assertions.PASS,
@@ -117,7 +117,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         return new_block
 
     # pylint: disable=unused-argument
-    def add_child_directive(self, name: str, parameters: Optional[Iterable[str]] = None,
+    def add_child_directive(self, name: str, parameters: Optional[str] = None,
                             position: int = None) -> ApacheDirectiveNode:  # pragma: no cover
         """Adds a new DirectiveNode to the sequence of children"""
         new_dir = ApacheDirectiveNode(name=assertions.PASS,

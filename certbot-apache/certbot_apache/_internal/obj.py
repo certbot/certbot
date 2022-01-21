@@ -5,9 +5,12 @@ from typing import Iterable
 from typing import Optional
 from typing import Pattern
 from typing import Set
+from typing import Union
 
 from certbot.plugins import common
-from certbot_apache._internal import interfaces
+from certbot_apache._internal.apacheparser import ApacheBlockNode
+from certbot_apache._internal.augeasparser import AugeasBlockNode
+from certbot_apache._internal.dualparser import DualBlockNode
 
 
 class Addr(common.Addr):
@@ -128,7 +131,8 @@ class VirtualHost:
     def __init__(self, filep: str, path: str, addrs: Set["Addr"], ssl: bool,
                  enabled: bool, name: Optional[str] = None, aliases: Optional[Set[str]] = None,
                  modmacro: bool = False, ancestor: Optional["VirtualHost"] = None,
-                 node: Optional[interfaces.ParserNode] = None) -> None:
+                 node: Optional[Union[ApacheBlockNode, AugeasBlockNode, DualBlockNode]] = None
+                 ) -> None:
 
         """Initialize a VH."""
         self.filep = filep

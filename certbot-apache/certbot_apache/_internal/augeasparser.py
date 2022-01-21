@@ -237,7 +237,7 @@ class AugeasDirectiveNode(AugeasParserNode):
             self.parser.aug.set(param_path, param)
 
     @property
-    def parameters(self) -> Tuple[Optional[str], ...]:
+    def parameters(self) -> Tuple[str, ...]:
         """
         Fetches the parameters from Augeas tree, ensuring that the sequence always
         represents the current state
@@ -247,11 +247,12 @@ class AugeasDirectiveNode(AugeasParserNode):
         """
         return tuple(self._aug_get_params(self.metadata["augeaspath"]))
 
-    def _aug_get_params(self, path: str) -> List[Optional[str]]:
+    def _aug_get_params(self, path: str) -> List[str]:
         """Helper function to get parameters for DirectiveNodes and BlockNodes"""
 
         arg_paths = self.parser.aug.match(path + "/arg")
-        return [self.parser.get_arg(apath) for apath in arg_paths]
+        args = [self.parser.get_arg(apath) for apath in arg_paths]
+        return [arg for arg in args if arg is not None]
 
 
 class AugeasBlockNode(AugeasDirectiveNode):

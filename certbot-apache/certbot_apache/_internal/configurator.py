@@ -43,7 +43,6 @@ from certbot_apache._internal import http_01
 from certbot_apache._internal import obj
 from certbot_apache._internal import parser
 from certbot_apache._internal.apacheparser import ApacheBlockNode
-from certbot_apache._internal.interfaces import BlockNode
 
 try:
     import apacheconfig
@@ -1160,9 +1159,7 @@ class ApacheConfigurator(common.Configurator):
         :type host: :class:`~certbot_apache.obj.VirtualHost`
         """
         if not vhost.node:
-            raise errors.PluginError("Current VirtualHost has no node.")
-        if not isinstance(vhost.node, BlockNode):
-            raise errors.PluginError("Current VirtualHost node is not a DirectiveNode")
+            raise errors.PluginError("Current VirtualHost has no node.")  # pragma: no cover
 
         servername_match = vhost.node.find_directives("ServerName", exclude=False)
         serveralias_match = vhost.node.find_directives("ServerAlias", exclude=False)

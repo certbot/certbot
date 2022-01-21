@@ -805,7 +805,7 @@ class ApacheParser:
         :rtype: bool
         """
         if not filep:
-            return False
+            return False  # pragma: no cover
         return self._parsed_by_parser_paths(filep, self.existing_paths)
 
     def _parsed_by_parser_paths(self, filep: str, paths: Mapping[str, Sequence[str]]) -> bool:
