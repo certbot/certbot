@@ -9,6 +9,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Added `show_account` subcommand, which will fetch the account information
   from the ACME server and show the account details (account URL and, if
   applicable, email address or addresses)
+* We deprecated support for Python 3.6 in Certbot and its ACME library.
+  Support for Python 3.6 will be removed in the next major release of Certbot.
 
 ### Changed
 
