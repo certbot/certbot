@@ -1,4 +1,7 @@
 """ Entry point for Apache Plugin """
+from typing import Callable
+from typing import Dict
+
 from certbot import util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import override_arch
@@ -10,7 +13,7 @@ from certbot_apache._internal import override_gentoo
 from certbot_apache._internal import override_suse
 from certbot_apache._internal import override_void
 
-OVERRIDE_CLASSES = {
+OVERRIDE_CLASSES: Dict[str, Callable] = {
     "arch": override_arch.ArchConfigurator,
     "cloudlinux": override_centos.CentOSConfigurator,
     "darwin": override_darwin.DarwinConfigurator,

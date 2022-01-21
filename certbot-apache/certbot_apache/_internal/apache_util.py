@@ -4,6 +4,13 @@ import fnmatch
 import logging
 import re
 import subprocess
+from typing import Any
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
 
 import pkg_resources
 
@@ -14,7 +21,7 @@ from certbot.compat import os
 logger = logging.getLogger(__name__)
 
 
-def get_mod_deps(mod_name):
+def get_mod_deps(mod_name: str) -> Any:
     """Get known module dependencies.
 
     .. note:: This does not need to be accurate in order for the client to
@@ -33,7 +40,7 @@ def get_mod_deps(mod_name):
     return deps.get(mod_name, [])
 
 
-def get_file_path(vhost_path):
+def get_file_path(vhost_path: str) -> Optional[str]:
     """Get file path from augeas_vhost_path.
 
     Takes in Augeas path and returns the file name
@@ -50,7 +57,7 @@ def get_file_path(vhost_path):
     return _split_aug_path(vhost_path)[0]
 
 
-def get_internal_aug_path(vhost_path):
+def get_internal_aug_path(vhost_path: str) -> str:
     """Get the Augeas path for a vhost with the file path removed.
 
     :param str vhost_path: Augeas virtual host path
@@ -62,7 +69,7 @@ def get_internal_aug_path(vhost_path):
     return _split_aug_path(vhost_path)[1]
 
 
-def _split_aug_path(vhost_path):
+def _split_aug_path(vhost_path: str) -> Tuple[str, str]:
     """Splits an Augeas path into a file path and an internal path.
 
     After removing "/files", this function splits vhost_path into the
@@ -76,7 +83,7 @@ def _split_aug_path(vhost_path):
     """
     # Strip off /files
     file_path = vhost_path[6:]
-    internal_path = []
+    internal_path: List[str] = []
 
     # Remove components from the end of file_path until it becomes valid
     while not os.path.exists(file_path):
@@ -86,7 +93,7 @@ def _split_aug_path(vhost_path):
     return file_path, "/".join(reversed(internal_path))
 
 
-def parse_define_file(filepath, varname):
+def parse_define_file(filepath: str, varname: str) -> Dict[str, str]:
     """ Parses Defines from a variable in configuration file
 
     :param str filepath: Path of file to parse
@@ -96,7 +103,7 @@ def parse_define_file(filepath, varname):
     :rtype: `dict`
 
     """
-    return_vars = {}
+    return_vars: Dict[str, str] = {}
     # Get list of words in the variable
     a_opts = util.get_var_from_file(varname, filepath).split()
     for i, v in enumerate(a_opts):
@@ -111,19 +118,19 @@ def parse_define_file(filepath, varname):
     return return_vars
 
 
-def unique_id():
+def unique_id() -> str:
     """ Returns an unique id to be used as a VirtualHost identifier"""
     return binascii.hexlify(os.urandom(16)).decode("utf-8")
 
 
-def included_in_paths(filepath, paths):
+def included_in_paths(filepath: str, paths: Iterable[str]) -> bool:
     """
     Returns true if the filepath is included in the list of paths
     that may contain full paths or wildcard paths that need to be
     expanded.
 
     :param str filepath: Filepath to check
-    :params list paths: List of paths to check against
+    :param list paths: List of paths to check against
 
     :returns: True if included
     :rtype: bool
@@ -132,7 +139,7 @@ def included_in_paths(filepath, paths):
     return any(fnmatch.fnmatch(filepath, path) for path in paths)
 
 
-def parse_defines(apachectl):
+def parse_defines(apachectl: str) -> Dict[str, str]:
     """
     Gets Defines from httpd process and returns a dictionary of
     the defined variables.
@@ -143,7 +150,7 @@ def parse_defines(apachectl):
     :rtype: dict
     """
 
-    variables = {}
+    variables: Dict[str, str] = {}
     define_cmd = [apachectl, "-t", "-D",
                   "DUMP_RUN_CFG"]
     matches = parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
@@ -161,7 +168,7 @@ def parse_defines(apachectl):
     return variables
 
 
-def parse_includes(apachectl):
+def parse_includes(apachectl: str) -> List[str]:
     """
     Gets Include directives from httpd process and returns a list of
     their values.
@@ -172,11 +179,11 @@ def parse_includes(apachectl):
     :rtype: list of str
     """
 
-    inc_cmd = [apachectl, "-t", "-D", "DUMP_INCLUDES"]
+    inc_cmd: List[str] = [apachectl, "-t", "-D", "DUMP_INCLUDES"]
     return parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
 
 
-def parse_modules(apachectl):
+def parse_modules(apachectl: str) -> List[str]:
     """
     Get loaded modules from httpd process, and return the list
     of loaded module names.
@@ -191,7 +198,7 @@ def parse_modules(apachectl):
     return parse_from_subprocess(mod_cmd, r"(.*)_module")
 
 
-def parse_from_subprocess(command, regexp):
+def parse_from_subprocess(command: List[str], regexp: str) -> List[str]:
     """Get values from stdout of subprocess command
 
     :param list command: Command to run
@@ -205,7 +212,7 @@ def parse_from_subprocess(command, regexp):
     return re.compile(regexp).findall(stdout)
 
 
-def _get_runtime_cfg(command):
+def _get_runtime_cfg(command: Sequence[str]) -> str:
     """
     Get runtime configuration info.
 
@@ -241,7 +248,7 @@ def _get_runtime_cfg(command):
     return stdout
 
 
-def find_ssl_apache_conf(prefix):
+def find_ssl_apache_conf(prefix: str) -> str:
     """
     Find a TLS Apache config file in the dedicated storage.
     :param str prefix: prefix of the TLS Apache config file to find
