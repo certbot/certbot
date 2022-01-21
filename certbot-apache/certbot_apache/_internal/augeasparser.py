@@ -91,7 +91,7 @@ class AugeasParserNode(interfaces.ParserNode):
         # pylint: disable=unused-variable
         ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)
         super().__init__(**kwargs)
-        self.ancestor: str = ancestor
+        self.ancestor: interfaces.ParserNode = ancestor
         self.filepath: str = filepath
         self.dirty: bool = dirty
         self.metadata: Dict[str, Any] = metadata
@@ -110,17 +110,17 @@ class AugeasParserNode(interfaces.ParserNode):
     def save(self, msg: Iterable[str]) -> None:
         self.parser.save(msg)
 
-    def find_ancestors(self, name: str) -> List["AugeasBlockNode"]:
+    def find_ancestors(self, name: str) -> List["AugeasParserNode"]:
         """
         Searches for ancestor BlockNodes with a given name.
 
         :param str name: Name of the BlockNode parent to search for
 
         :returns: List of matching ancestor nodes.
-        :rtype: list of AugeasBlockNode
+        :rtype: list of AugeasParserNode
         """
 
-        ancestors: List["AugeasBlockNode"] = []
+        ancestors: List["AugeasParserNode"] = []
 
         parent = self.metadata["augeaspath"]
         while True:

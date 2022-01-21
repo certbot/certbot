@@ -14,7 +14,7 @@ from certbot_apache._internal import override_gentoo
 from certbot_apache._internal import override_suse
 from certbot_apache._internal import override_void
 
-OVERRIDE_CLASSES: Dict[str, Callable] = {
+OVERRIDE_CLASSES: Dict[str, Type[configurator.ApacheConfigurator]] = {
     "arch": override_arch.ArchConfigurator,
     "cloudlinux": override_centos.CentOSConfigurator,
     "darwin": override_darwin.DarwinConfigurator,

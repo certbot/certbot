@@ -11,7 +11,7 @@ from certbot.plugins import common
 from certbot_apache._internal import interfaces
 
 
-class Addr(common.CommonAddr):
+class Addr(common.Addr):
     """Represents an Apache address."""
 
     def __eq__(self, other: Any) -> bool:
@@ -126,8 +126,8 @@ class VirtualHost:
     # ?: is used for not returning enclosed characters
     strip_name: Pattern = re.compile(r"^(?:.+://)?([^ :$]*)")
 
-    def __init__(self, filep: str, path: Optional[str], addrs: Set["Addr"], ssl: bool,
-                 enabled: bool, name: Optional[str] = None, aliases: Optional[Sequence[str]] = None,
+    def __init__(self, filep: str, path: str, addrs: Set["Addr"], ssl: bool,
+                 enabled: bool, name: Optional[str] = None, aliases: Optional[Set[str]] = None,
                  modmacro: bool = False, ancestor: Optional["VirtualHost"] = None,
                  node: Optional[interfaces.ParserNode] = None) -> None:
 
@@ -141,7 +141,7 @@ class VirtualHost:
         self.enabled = enabled
         self.modmacro = modmacro
         self.ancestor = ancestor
-        self.node: interfaces.BlockNode = node
+        self.node = node
 
     def get_names(self) -> Set[str]:
         """Return a set of all names."""

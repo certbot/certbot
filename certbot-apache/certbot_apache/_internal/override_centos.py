@@ -78,7 +78,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         return CentOSParser(
             self.options.server_root, self, self.options.vhost_root, self.version)
 
-    def _deploy_cert(self, *args: Any, **kwargs: Any):  # pylint: disable=arguments-differ
+    def _deploy_cert(self, *args: Any, **kwargs: Any) -> None:  # pylint: disable=arguments-differ
         """
         Override _deploy_cert in order to ensure that the Apache configuration
         has "LoadModule ssl_module..." before parsing the VirtualHost configuration

@@ -54,7 +54,7 @@ class DualNodeBase(Generic[AnyAugeasParserNode, AnyApacheParserNode]):
             assertions.assertEqualSimple(firstval, secondval)
         return firstval
 
-    def find_ancestors(self, name) -> List["DualNodeBase"]:
+    def find_ancestors(self, name: str) -> List["DualNodeBase"]:
         """ Traverses the ancestor tree and returns ancestors matching name """
         return self._find_helper(DualBlockNode, "find_ancestors", name)
 

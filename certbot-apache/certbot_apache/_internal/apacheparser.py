@@ -22,7 +22,7 @@ class ApacheParserNode(interfaces.ParserNode):
         # pylint: disable=unused-variable
         ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)
         super().__init__(**kwargs)
-        self.ancestor: str = ancestor
+        self.ancestor: ParserNode = ancestor
         self.filepath: str = filepath
         self.dirty: bool = dirty
         self.metadata: Any = metadata
@@ -31,7 +31,7 @@ class ApacheParserNode(interfaces.ParserNode):
     def save(self, msg: str) -> None:
         pass  # pragma: no cover
 
-    def find_ancestors(self, name: str) -> List["ApacheBlockNode"]:  # pylint: disable=unused-variable
+    def find_ancestors(self, name: str) -> List["ApacheParserNode"]:  # pylint: disable=unused-variable
         """Find ancestor BlockNodes with a given name"""
         return [ApacheBlockNode(name=assertions.PASS,
                                 parameters=assertions.PASS,

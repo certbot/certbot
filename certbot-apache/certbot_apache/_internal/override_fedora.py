@@ -1,4 +1,6 @@
 """ Distribution specific override class for Fedora 29+ """
+from typing import Any
+
 from certbot import errors
 from certbot import util
 from certbot_apache._internal import apache_util
@@ -68,7 +70,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
 
 class FedoraParser(parser.ApacheParser):
     """Fedora 29+ specific ApacheParser override class"""
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         # Fedora 29+ specific configuration file for Apache
         self.sysconfig_filep = "/etc/sysconfig/httpd"
         super().__init__(*args, **kwargs)

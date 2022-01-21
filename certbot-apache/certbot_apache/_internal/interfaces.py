@@ -183,7 +183,7 @@ class ParserNode(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def save(self, msg: str):
+    def save(self, msg: str) -> None:
         """
         Save traverses the children, and attempts to write the AST to disk for
         all the objects that are marked dirty. The actual operation of course

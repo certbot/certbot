@@ -424,7 +424,7 @@ class ApacheParser:
         return retpath
 
     def add_dir(
-        self, aug_conf_path: str, directive: Optional[str], args: Union[List[str], str]
+        self, aug_conf_path: Optional[str], directive: Optional[str], args: Union[List[str], str]
     ) -> None:
         """Appends directive to the end fo the file given by aug_conf_path.
 
@@ -446,7 +446,7 @@ class ApacheParser:
         else:
             self.aug.set(aug_conf_path + "/directive[last()]/arg", args)
 
-    def add_dir_beginning(self, aug_conf_path: str, dirname: str,
+    def add_dir_beginning(self, aug_conf_path: Optional[str], dirname: str,
                           args: Union[List[str], str]) -> None:
         """Adds the directive to the beginning of defined aug_conf_path.
 

@@ -64,7 +64,7 @@ def _assertEqualDirectiveComponents(first: ParserNode,  # pragma: no cover
         assert first.parameters == second.parameters
 
 
-def assertEqualDirective(first: ParserNode, second: ParserNode):
+def assertEqualDirective(first: ParserNode, second: ParserNode) -> None:
     """ Equality assertion for DirectiveNode """
 
     assert isinstance(first, interfaces.DirectiveNode)

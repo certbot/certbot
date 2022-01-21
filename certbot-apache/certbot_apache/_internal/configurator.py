@@ -42,6 +42,8 @@ from certbot_apache._internal import dualparser
 from certbot_apache._internal import http_01
 from certbot_apache._internal import obj
 from certbot_apache._internal import parser
+from certbot_apache._internal.apacheparser import ApacheBlockNode
+from certbot_apache._internal.interfaces import BlockNode
 
 try:
     import apacheconfig
@@ -1106,10 +1108,10 @@ class ApacheConfigurator(common.Configurator):
         vhs = []
         vhosts = self.parser_root.find_blocks("VirtualHost", exclude=False)
         for vhblock in vhosts:
-            vhs.append(self._create_vhost_v2(vhblock))
+            vhs.append(self._create_vhost_v2(vhblock.secondary))
         return vhs
 
-    def _create_vhost_v2(self, node) -> obj.VirtualHost:
+    def _create_vhost_v2(self, node: ApacheBlockNode) -> obj.VirtualHost:
         """Used by get_virtual_hosts_v2 to create vhost objects using ParserNode
         interfaces.
         :param ApacheBlockNode node: The BlockNode object of VirtualHost block
@@ -1152,11 +1154,15 @@ class ApacheConfigurator(common.Configurator):
         self._populate_vhost_names_v2(vhost)
         return vhost
 
-    def _populate_vhost_names_v2(self, vhost: obj.VirtualHost):
+    def _populate_vhost_names_v2(self, vhost: obj.VirtualHost) -> None:
         """Helper function that populates the VirtualHost names.
         :param host: In progress vhost whose names will be added
         :type host: :class:`~certbot_apache.obj.VirtualHost`
         """
+        if not vhost.node:
+            raise errors.PluginError("Current VirtualHost has no node.")
+        if not isinstance(vhost.node, BlockNode):
+            raise errors.PluginError("Current VirtualHost node is not a DirectiveNode")
 
         servername_match = vhost.node.find_directives("ServerName", exclude=False)
         serveralias_match = vhost.node.find_directives("ServerAlias", exclude=False)
@@ -1171,7 +1177,7 @@ class ApacheConfigurator(common.Configurator):
                     vhost.aliases.add(serveralias)
             vhost.name = servername
 
-    def is_name_vhost(self, target_addr: obj.Addr):
+    def is_name_vhost(self, target_addr: obj.Addr) -> bool:
         """Returns if vhost is a name based vhost
 
         NameVirtualHost was deprecated in Apache 2.4 as all VirtualHosts are
@@ -1190,9 +1196,9 @@ class ApacheConfigurator(common.Configurator):
         # search for NameVirtualHost directive for ip_addr
         # note ip_addr can be FQDN although Apache does not recommend it
         return (self.version >= (2, 4) or
-                self.parser.find_dir("NameVirtualHost", str(target_addr)))
+                bool(self.parser.find_dir("NameVirtualHost", str(target_addr))))
 
-    def add_name_vhost(self, addr: obj.Addr):
+    def add_name_vhost(self, addr: obj.Addr) -> None:
         """Adds NameVirtualHost directive for given address.
 
         :param addr: Address that will be added as NameVirtualHost directive
@@ -1299,7 +1305,7 @@ class ApacheConfigurator(common.Configurator):
                 self.save_notes += (f"Added Listen {listen} directive to "
                                     f"{self.parser.loc['listen']}\n")
 
-    def _add_listens_https(self, listens: Set[str], listens_orig: List[str], port: str):
+    def _add_listens_https(self, listens: Set[str], listens_orig: List[str], port: str) -> None:
         """Helper method for ensure_listen to figure out which new
         listen statements need adding for listening HTTPS on port
 
@@ -1685,7 +1691,7 @@ class ApacheConfigurator(common.Configurator):
 
         return ssl_addrs
 
-    def _clean_vhost(self, vhost: obj.VirtualHost):
+    def _clean_vhost(self, vhost: obj.VirtualHost) -> None:
         # remove duplicated or conflicting ssl directives
         self._deduplicate_directives(vhost.path,
                                      ["SSLCertificateFile",
@@ -1693,7 +1699,7 @@ class ApacheConfigurator(common.Configurator):
         # remove all problematic directives
         self._remove_directives(vhost.path, ["SSLCertificateChainFile"])
 
-    def _deduplicate_directives(self, vh_path: Optional[str], directives: List[str]):
+    def _deduplicate_directives(self, vh_path: Optional[str], directives: List[str]) -> None:
         for directive in directives:
             while len(self.parser.find_dir(directive, None,
                                            vh_path, False)) > 1:
@@ -1701,7 +1707,7 @@ class ApacheConfigurator(common.Configurator):
                                                       vh_path, False)
                 self.parser.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
 
-    def _remove_directives(self, vh_path: Optional[str], directives: List[str]):
+    def _remove_directives(self, vh_path: Optional[str], directives: List[str]) -> None:
         for directive in directives:
             while self.parser.find_dir(directive, None, vh_path, False):
                 directive_path = self.parser.find_dir(directive, None,
@@ -2034,7 +2040,7 @@ class ApacheConfigurator(common.Configurator):
         self.save()
         logger.info(msg)
 
-    def _set_http_header(self, ssl_vhost: obj.VirtualHost, header_substring: str):
+    def _set_http_header(self, ssl_vhost: obj.VirtualHost, header_substring: str) -> None:
         """Enables header that is identified by header_substring on ssl_vhost.
 
         If the header identified by header_substring is not already set,
