@@ -692,7 +692,7 @@ class OrderResource(ResourceWithURI):
     :ivar alternative_fullchains_pem: The fetched contents of alternative certificate
         chain URLs produced once the order was finalized, if present and requested during
         finalization.
-    :vartype alternative_fullchains_pem: `list` of `bytes`
+    :vartype alternative_fullchains_pem: `list` of `str`
     """
     body: Order = jose.field('body', decoder=Order.from_json)
     csr_pem: bytes = jose.field('csr_pem', omitempty=True)
