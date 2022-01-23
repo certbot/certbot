@@ -218,7 +218,7 @@ class ApacheParser:
                 self.aug.get(f"{err}/message"))
         logger.error(
             "Unable to save files: %s.%s", ", ".join(err[13:len(err) - 6] for err in new_errs),
-            f"Save Notes: {self.configurator.save_notes}" if self.configurator.save_notes else "")
+            f" Save Notes: {self.configurator.save_notes}" if self.configurator.save_notes else "")
 
     def add_include(self, main_config, inc_path):
         """Add Include for a new configuration file if one does not exist
