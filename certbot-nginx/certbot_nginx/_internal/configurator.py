@@ -1192,13 +1192,13 @@ class NginxConfigurator(common.Configurator):
         responses: List[Optional[challenges.ChallengeResponse]] = [None] * len(achalls)
         http_doer = http_01.NginxHttp01(self)
 
-        key_achalls = [achall for achall in achalls
-                       if isinstance(achall, achallenges.KeyAuthorizationAnnotatedChallenge)]
-
-        for i, achall in enumerate(key_achalls):
+        for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
+            if not isinstance(achall, achallenges.KeyAuthorizationAnnotatedChallenge):
+                raise errors.Error("Challenge should be an instance "
+                                   "of KeyAuthorizationAnnotatedChallenge")
             http_doer.add_chall(achall, i)
 
         http_response = http_doer.perform()

@@ -30,8 +30,6 @@ class ResourceMixin(VersionedLEACMEMixin):
     This mixin generates a RFC8555 compliant JWS payload
     by removing the `resource` field if needed (eg. ACME v2 protocol).
     """
-    resource_type: str = NotImplemented
-
     def to_partial_json(self) -> Dict[str, Any]:
         """See josepy.JSONDeserializable.to_partial_json()"""
         return _safe_jobj_compliance(super(),
