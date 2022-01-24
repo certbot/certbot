@@ -97,6 +97,11 @@ VERB_HELP = [
                  "to already existing configuration."),
         "usage": "\n\n  certbot enhance [options]\n\n"
     }),
+    ("show_account", {
+        "short": "Show account details from an ACME server",
+        "opts": 'Options useful for the "show_account" subcommand:',
+        "usage": "\n\n  certbot show_account [options]\n\n"
+    }),
 ]
 
 

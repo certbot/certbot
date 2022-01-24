@@ -20,7 +20,7 @@ import pytz
 
 from acme import fields as acme_fields
 from acme import messages
-from acme.client import ClientBase  # pylint: disable=unused-import
+from acme.client import ClientBase
 from certbot import configuration
 from certbot import errors
 from certbot import interfaces
@@ -125,6 +125,7 @@ class AccountMemoryStorage(interfaces.AccountStorage):
         except KeyError:
             raise errors.AccountNotFound(account_id)
 
+
 class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
     """A backwards-compatible RegistrationResource with a new-authz URI.
 
@@ -135,6 +136,7 @@ class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
        clients don't crash in that scenario.
     """
     new_authzr_uri = jose.Field('new_authzr_uri')
+
 
 class AccountFileStorage(interfaces.AccountStorage):
     """Accounts file storage.

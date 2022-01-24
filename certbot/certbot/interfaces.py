@@ -5,13 +5,13 @@ from argparse import ArgumentParser
 import sys
 from types import ModuleType
 from typing import Any
+from typing import Union
 from typing import cast
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Type
 from typing import TYPE_CHECKING
-from typing import Union
 import warnings
 
 import zope.interface

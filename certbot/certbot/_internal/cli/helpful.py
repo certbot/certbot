@@ -56,6 +56,7 @@ class HelpfulArgumentParser:
             "plugins": main.plugins_cmd,
             "register": main.register,
             "update_account": main.update_account,
+            "show_account": main.show_account,
             "unregister": main.unregister,
             "renew": main.renew,
             "revoke": main.revoke,
