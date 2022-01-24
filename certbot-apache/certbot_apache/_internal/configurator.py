@@ -2571,8 +2571,8 @@ class ApacheConfigurator(common.Configurator):
 
     def _update_responses(
         self,
-        responses: List[Optional[challenges.HTTP01Response]],
-        chall_response: List[Challenge],
+        responses: List[Optional[challenges.ChallengeResponse]],
+        chall_response: List[challenges.KeyAuthorizationChallengeResponse],
         chall_doer: http_01.ApacheHttp01
     ) -> None:
         # Go through all of the challenges and assign them to the proper
@@ -2581,7 +2581,7 @@ class ApacheConfigurator(common.Configurator):
         for i, resp in enumerate(chall_response):
             responses[chall_doer.indices[i]] = resp
 
-    def cleanup(self, achalls: List[KeyAuthorizationAnnotatedChallenge]) -> None:
+    def cleanup(self, achalls: List[achallenges.AnnotatedChallenge]) -> None:
         """Revert all challenges."""
         self._chall_out.difference_update(achalls)
 
