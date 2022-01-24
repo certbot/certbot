@@ -1,7 +1,6 @@
 """A class that performs HTTP-01 challenges for Apache"""
 import errno
 import logging
-from typing import Any
 from typing import List
 from typing import Set
 from typing import TYPE_CHECKING
@@ -200,7 +199,8 @@ class ApacheHttp01(common.ChallengePerformer):
 
         return responses
 
-    def _set_up_challenge(self, achall: KeyAuthorizationAnnotatedChallenge) -> KeyAuthorizationChallengeResponse:
+    def _set_up_challenge(self, achall: KeyAuthorizationAnnotatedChallenge
+                          ) -> KeyAuthorizationChallengeResponse:
         response, validation = achall.response_and_validation()
 
         name: str = os.path.join(self.challenge_dir, achall.chall.encode("token"))

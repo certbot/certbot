@@ -22,11 +22,9 @@ from typing import Type
 from typing import Union
 
 from acme import challenges
-from acme.challenges import Challenge
 from certbot import achallenges
 from certbot import errors
 from certbot import util
-from certbot import achallenges
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -2547,7 +2545,7 @@ class ApacheConfigurator(common.Configurator):
 
         for i, achall in enumerate(achalls):
             if not isinstance(achall, achallenges.KeyAuthorizationAnnotatedChallenge):
-                raise errors.Error("Challenge should be an instance "
+                raise errors.Error("Challenge should be an instance "  # pragma: no cover
                                    "of KeyAuthorizationAnnotatedChallenge")
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
