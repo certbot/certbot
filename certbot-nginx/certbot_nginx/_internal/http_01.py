@@ -11,7 +11,7 @@ from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal.obj import Addr
 
 from acme import challenges
-from acme.challenges import HTTP01Response
+from acme.challenges import KeyAuthorizationChallengeResponse
 from certbot import errors
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
 from certbot.compat import os
@@ -49,10 +49,10 @@ class NginxHttp01(common.ChallengePerformer):
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
 
-    def perform(self) -> List[HTTP01Response]:
+    def perform(self) -> List[KeyAuthorizationChallengeResponse]:
         """Perform a challenge on Nginx.
 
-        :returns: list of :class:`certbot.acme.challenges.HTTP01Response`
+        :returns: list of :class:`acme.challenges.KeyAuthorizationChallengeResponse`
         :rtype: list
 
         """

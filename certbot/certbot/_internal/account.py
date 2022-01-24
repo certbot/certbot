@@ -54,9 +54,9 @@ class Account:
             cross-machine migration scenarios.
 
         """
-        creation_dt = acme_fields.RFC3339Field("creation_dt")
-        creation_host = jose.Field("creation_host")
-        register_to_eff = jose.Field("register_to_eff", omitempty=True)
+        creation_dt: datetime.datetime = acme_fields.rfc3339("creation_dt")
+        creation_host: str = jose.field("creation_host")
+        register_to_eff: str = jose.field("register_to_eff", omitempty=True)
 
     def __init__(self, regr: messages.RegistrationResource, key: jose.JWK,
                  meta: Optional['Meta'] = None) -> None:
@@ -135,7 +135,7 @@ class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
        continue to write out this field for some time so older
        clients don't crash in that scenario.
     """
-    new_authzr_uri = jose.Field('new_authzr_uri')
+    new_authzr_uri: str = jose.field('new_authzr_uri')
 
 
 class AccountFileStorage(interfaces.AccountStorage):

@@ -290,8 +290,11 @@ def make_key(bits: int = 1024, key_type: str = "rsa",
         try:
             name = elliptic_curve.upper()
             if name in ('SECP256R1', 'SECP384R1', 'SECP521R1'):
+                curve = getattr(ec, elliptic_curve.upper())
+                if not curve:
+                    raise errors.Error(f"Invalid curve type: {elliptic_curve}")
                 _key = ec.generate_private_key(
-                    curve=getattr(ec, elliptic_curve.upper(), None)(),
+                    curve=curve(),
                     backend=default_backend()
                 )
             else:

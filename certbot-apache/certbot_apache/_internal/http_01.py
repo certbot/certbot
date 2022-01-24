@@ -1,12 +1,11 @@
 """A class that performs HTTP-01 challenges for Apache"""
 import errno
 import logging
-from typing import Any
 from typing import List
 from typing import Set
 from typing import TYPE_CHECKING
 
-from acme.challenges import HTTP01Response
+from acme.challenges import KeyAuthorizationChallengeResponse
 from certbot import errors
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
 from certbot.compat import filesystem
@@ -67,7 +66,7 @@ class ApacheHttp01(common.ChallengePerformer):
             "http_challenges")
         self.moded_vhosts: Set[VirtualHost] = set()
 
-    def perform(self) -> List[KeyAuthorizationAnnotatedChallenge]:
+    def perform(self) -> List[KeyAuthorizationChallengeResponse]:
         """Perform all HTTP-01 challenges."""
         if not self.achalls:
             return []
@@ -182,7 +181,7 @@ class ApacheHttp01(common.ChallengePerformer):
         """Return all VirtualHost objects with no ServerName"""
         return [vh for vh in self.configurator.vhosts if vh.name is None]
 
-    def _set_up_challenges(self) -> List[HTTP01Response]:
+    def _set_up_challenges(self) -> List[KeyAuthorizationChallengeResponse]:
         if not os.path.isdir(self.challenge_dir):
             old_umask = filesystem.umask(0o022)
             try:
@@ -200,9 +199,8 @@ class ApacheHttp01(common.ChallengePerformer):
 
         return responses
 
-    def _set_up_challenge(self, achall: KeyAuthorizationAnnotatedChallenge) -> HTTP01Response:
-        response: HTTP01Response
-        validation: Any
+    def _set_up_challenge(self, achall: KeyAuthorizationAnnotatedChallenge
+                          ) -> KeyAuthorizationChallengeResponse:
         response, validation = achall.response_and_validation()
 
         name: str = os.path.join(self.challenge_dir, achall.chall.encode("token"))

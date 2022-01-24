@@ -48,7 +48,8 @@ def _suppress_x509_verification_warnings() -> None:
         # Handle old versions of request with vendorized urllib3
         # pylint: disable=no-member
         from requests.packages.urllib3.exceptions import InsecureRequestWarning
-        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+        requests.packages.urllib3.disable_warnings(  # type: ignore[attr-defined]
+            InsecureRequestWarning)
 
 
 def check_until_timeout(url: str, attempts: int = 30) -> None:

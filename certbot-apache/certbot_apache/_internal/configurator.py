@@ -22,11 +22,9 @@ from typing import Type
 from typing import Union
 
 from acme import challenges
-from acme.challenges import Challenge
 from certbot import achallenges
 from certbot import errors
 from certbot import util
-from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -240,7 +238,7 @@ class ApacheConfigurator(common.Configurator):
         # Add name_server association dict
         self.assoc: Dict[str, obj.VirtualHost] = {}
         # Outstanding challenges
-        self._chall_out: Set[KeyAuthorizationAnnotatedChallenge] = set()
+        self._chall_out: Set[achallenges.AnnotatedChallenge] = set()
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
         self._wildcard_vhosts: Dict[str, List[obj.VirtualHost]] = {}
@@ -2532,9 +2530,8 @@ class ApacheConfigurator(common.Configurator):
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 
-    def perform(
-        self, achalls: List[KeyAuthorizationAnnotatedChallenge]
-    ) -> List[Challenge]:
+    def perform(self, achalls: List[achallenges.AnnotatedChallenge]
+                ) -> List[challenges.ChallengeResponse]:
         """Perform the configuration related challenge.
 
         This function currently assumes all challenges will be fulfilled.
@@ -2543,10 +2540,13 @@ class ApacheConfigurator(common.Configurator):
 
         """
         self._chall_out.update(achalls)
-        responses: List[Optional[Challenge]] = [None] * len(achalls)
+        responses: List[Optional[challenges.ChallengeResponse]] = [None] * len(achalls)
         http_doer = http_01.ApacheHttp01(self)
 
         for i, achall in enumerate(achalls):
+            if not isinstance(achall, achallenges.KeyAuthorizationAnnotatedChallenge):
+                raise errors.Error("Challenge should be an instance "  # pragma: no cover
+                                   "of KeyAuthorizationAnnotatedChallenge")
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
@@ -2560,18 +2560,17 @@ class ApacheConfigurator(common.Configurator):
             self.restart()
 
             # TODO: Remove this dirty hack. We need to determine a reliable way
-            # of identifying when the new configuration is being used.
+            #       of identifying when the new configuration is being used.
             time.sleep(3)
 
             self._update_responses(responses, http_response, http_doer)
 
-        # We assume all challenges has been fulfilled as described in the function documentation.
-        return cast(List[Challenge], responses)
+        return [response for response in responses if response]
 
     def _update_responses(
         self,
-        responses: List[Optional[challenges.HTTP01Response]],
-        chall_response: List[Challenge],
+        responses: List[Optional[challenges.ChallengeResponse]],
+        chall_response: List[challenges.KeyAuthorizationChallengeResponse],
         chall_doer: http_01.ApacheHttp01
     ) -> None:
         # Go through all of the challenges and assign them to the proper
@@ -2580,7 +2579,7 @@ class ApacheConfigurator(common.Configurator):
         for i, resp in enumerate(chall_response):
             responses[chall_doer.indices[i]] = resp
 
-    def cleanup(self, achalls: List[KeyAuthorizationAnnotatedChallenge]) -> None:
+    def cleanup(self, achalls: List[achallenges.AnnotatedChallenge]) -> None:
         """Revert all challenges."""
         self._chall_out.difference_update(achalls)
 
