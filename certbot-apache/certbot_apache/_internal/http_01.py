@@ -5,6 +5,7 @@ from typing import List
 from typing import Set
 from typing import TYPE_CHECKING
 
+from acme.challenges import KeyAuthorizationChallengeResponse
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -64,7 +65,7 @@ class ApacheHttp01(common.ChallengePerformer):
             "http_challenges")
         self.moded_vhosts: Set[VirtualHost] = set()
 
-    def perform(self):
+    def perform(self) -> List[KeyAuthorizationChallengeResponse]:
         """Perform all HTTP-01 challenges."""
         if not self.achalls:
             return []
@@ -180,7 +181,7 @@ class ApacheHttp01(common.ChallengePerformer):
         """Return all VirtualHost objects with no ServerName"""
         return [vh for vh in self.configurator.vhosts if vh.name is None]
 
-    def _set_up_challenges(self):
+    def _set_up_challenges(self) -> List[KeyAuthorizationChallengeResponse]:
         if not os.path.isdir(self.challenge_dir):
             old_umask = filesystem.umask(0o022)
             try:
@@ -198,7 +199,7 @@ class ApacheHttp01(common.ChallengePerformer):
 
         return responses
 
-    def _set_up_challenge(self, achall):
+    def _set_up_challenge(self, achall) -> KeyAuthorizationChallengeResponse:
         response, validation = achall.response_and_validation()
 
         name = os.path.join(self.challenge_dir, achall.chall.encode("token"))

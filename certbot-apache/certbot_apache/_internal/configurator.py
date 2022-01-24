@@ -17,7 +17,7 @@ from typing import Union
 from acme import challenges
 from certbot import errors
 from certbot import util
-from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
+from certbot import achallenges
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -233,7 +233,7 @@ class ApacheConfigurator(common.Configurator):
         # Add name_server association dict
         self.assoc: Dict[str, obj.VirtualHost] = {}
         # Outstanding challenges
-        self._chall_out: Set[KeyAuthorizationAnnotatedChallenge] = set()
+        self._chall_out: Set[achallenges.AnnotatedChallenge] = set()
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
         self._wildcard_vhosts: Dict[str, List[obj.VirtualHost]] = {}
@@ -2507,7 +2507,8 @@ class ApacheConfigurator(common.Configurator):
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 
-    def perform(self, achalls):
+    def perform(self, achalls: List[achallenges.AnnotatedChallenge]
+                ) -> List[challenges.ChallengeResponse]:
         """Perform the configuration related challenge.
 
         This function currently assumes all challenges will be fulfilled.
@@ -2516,10 +2517,13 @@ class ApacheConfigurator(common.Configurator):
 
         """
         self._chall_out.update(achalls)
-        responses = [None] * len(achalls)
+        responses: List[Optional[challenges.ChallengeResponse]] = [None] * len(achalls)
         http_doer = http_01.ApacheHttp01(self)
 
         for i, achall in enumerate(achalls):
+            if not isinstance(achall, achallenges.KeyAuthorizationAnnotatedChallenge):
+                raise errors.Error("Challenge should be an instance "
+                                   "of KeyAuthorizationAnnotatedChallenge")
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
@@ -2533,12 +2537,12 @@ class ApacheConfigurator(common.Configurator):
             self.restart()
 
             # TODO: Remove this dirty hack. We need to determine a reliable way
-            # of identifying when the new configuration is being used.
+            #       of identifying when the new configuration is being used.
             time.sleep(3)
 
             self._update_responses(responses, http_response, http_doer)
 
-        return responses
+        return [response for response in responses if response]
 
     def _update_responses(self, responses, chall_response, chall_doer):
         # Go through all of the challenges and assign them to the proper
