@@ -18,7 +18,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* GCP Permission list for certbot-dns-google in plugin documentation
 
 More details about these changes can be found on our GitHub repo.
 
