@@ -1,12 +1,13 @@
 """Dual parser node assertions"""
 import fnmatch
+from typing import Any
 
 from certbot_apache._internal import interfaces
 
 PASS = "CERTBOT_PASS_ASSERT"
 
 
-def assertEqual(first, second):
+def assertEqual(first: Any, second: Any) -> None:
     """ Equality assertion """
 
     if isinstance(first, interfaces.CommentNode):
@@ -30,7 +31,8 @@ def assertEqual(first, second):
         assert first.filepath == second.filepath
 
 
-def assertEqualComment(first, second): # pragma: no cover
+# pragma: no cover
+def assertEqualComment(first: Any, second: Any) -> None:
     """ Equality assertion for CommentNode """
 
     assert isinstance(first, interfaces.CommentNode)
@@ -40,7 +42,7 @@ def assertEqualComment(first, second): # pragma: no cover
         assert first.comment == second.comment  # type: ignore
 
 
-def _assertEqualDirectiveComponents(first, second): # pragma: no cover
+def _assertEqualDirectiveComponents(first: Any, second: Any) -> None:  # pragma: no cover
     """ Handles assertion for instance variables for DirectiveNode and BlockNode"""
 
     # Enabled value cannot be asserted, because Augeas implementation
@@ -53,7 +55,7 @@ def _assertEqualDirectiveComponents(first, second): # pragma: no cover
         assert first.parameters == second.parameters
 
 
-def assertEqualDirective(first, second):
+def assertEqualDirective(first: Any, second: Any) -> None:
     """ Equality assertion for DirectiveNode """
 
     assert isinstance(first, interfaces.DirectiveNode)
@@ -61,7 +63,7 @@ def assertEqualDirective(first, second):
     _assertEqualDirectiveComponents(first, second)
 
 
-def isPass(value): # pragma: no cover
+def isPass(value) -> bool:  # pragma: no cover
     """Checks if the value is set to PASS"""
     if isinstance(value, bool):
         return True
@@ -73,9 +75,9 @@ def isPassDirective(block):
 
     if isPass(block.name):
         return True
-    if isPass(block.parameters): # pragma: no cover
+    if isPass(block.parameters):  # pragma: no cover
         return True
-    if isPass(block.filepath): # pragma: no cover
+    if isPass(block.filepath):  # pragma: no cover
         return True
     return False
 
@@ -90,7 +92,7 @@ def isPassComment(comment):
     return False
 
 
-def isPassNodeList(nodelist): # pragma: no cover
+def isPassNodeList(nodelist):  # pragma: no cover
     """ Checks if a ParserNode in the nodelist should pass the assertion,
     this function is used for results of find_* methods. Unimplemented find_*
     methods should return a sequence containing a single ParserNode instance
@@ -115,7 +117,7 @@ def assertEqualSimple(first, second):
         assert first == second
 
 
-def isEqualVirtualHost(first, second):
+def isEqualVirtualHost(first, second) -> bool:
     """
     Checks that two VirtualHost objects are similar. There are some built
     in differences with the implementations: VirtualHost created by ParserNode

@@ -8,11 +8,11 @@ import tempfile
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Union
 from typing import overload
 from typing import Set
 from typing import Tuple
 from typing import Type
-from typing import Union
 
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces

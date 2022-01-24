@@ -73,7 +73,7 @@ class ParserTest(ApacheTest):
         with mock.patch("certbot_apache._internal.parser.ApacheParser."
                         "update_runtime_variables"):
             self.parser = ApacheParser(
-                self.config_path, self.vhost_path, configurator=self.config)
+                self.config_path, self.config, self.vhost_path)
 
 
 def get_apache_configurator(

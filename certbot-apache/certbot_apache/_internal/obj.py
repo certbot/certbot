@@ -1,14 +1,19 @@
 """Module contains classes used by the Apache Configurator."""
 import re
+from typing import Any
+from typing import Iterable
+from typing import Optional
+from typing import Pattern
 from typing import Set
 
 from certbot.plugins import common
+from certbot_apache._internal import interfaces
 
 
 class Addr(common.Addr):
     """Represents an Apache address."""
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any):
         """This is defined as equivalent within Apache.
 
         ip_addr:* == ip_addr
@@ -28,12 +33,12 @@ class Addr(common.Addr):
         # __cmp__ is overridden. See https://bugs.python.org/issue2235
         return super().__hash__()
 
-    def _addr_less_specific(self, addr):
+    def _addr_less_specific(self, addr: "Addr") -> bool:
         """Returns if addr.get_addr() is more specific than self.get_addr()."""
         # pylint: disable=protected-access
         return addr._rank_specific_addr() > self._rank_specific_addr()
 
-    def _rank_specific_addr(self):
+    def _rank_specific_addr(self) -> int:
         """Returns numerical rank for get_addr()
 
         :returns: 2 - FQ, 1 - wildcard, 0 - _default_
@@ -46,7 +51,7 @@ class Addr(common.Addr):
             return 1
         return 2
 
-    def conflicts(self, addr):
+    def conflicts(self, addr: "Addr") -> bool:
         r"""Returns if address could conflict with correct function of self.
 
         Could addr take away service provided by self within Apache?
@@ -74,11 +79,11 @@ class Addr(common.Addr):
                 return True
         return False
 
-    def is_wildcard(self):
+    def is_wildcard(self) -> bool:
         """Returns if address has a wildcard port."""
         return self.tup[1] == "*" or not self.tup[1]
 
-    def get_sni_addr(self, port):
+    def get_sni_addr(self, port: str) -> common.Addr:
         """Returns the least specific address that resolves on the port.
 
         Examples:
@@ -118,13 +123,16 @@ class VirtualHost:
 
     """
     # ?: is used for not returning enclosed characters
-    strip_name = re.compile(r"^(?:.+://)?([^ :$]*)")
+    strip_name: Pattern = re.compile(r"^(?:.+://)?([^ :$]*)")
 
-    def __init__(self, filep, path, addrs, ssl, enabled, name=None,
-                 aliases=None, modmacro=False, ancestor=None, node=None):
+    def __init__(
+        self, filepath: str, path: str, addrs: Set["Addr"],
+        ssl: bool, enabled: bool, name: Optional[str] = None,
+        aliases: Optional[Set[str]] = None, modmacro: bool = False,
+        ancestor: Optional["VirtualHost"] = None, node = None):
 
         """Initialize a VH."""
-        self.filep = filep
+        self.filep = filepath
         self.path = path
         self.addrs = addrs
         self.name = name
@@ -133,9 +141,9 @@ class VirtualHost:
         self.enabled = enabled
         self.modmacro = modmacro
         self.ancestor = ancestor
-        self.node = node
+        self.node: interfaces.BlockNode = node
 
-    def get_names(self):
+    def get_names(self) -> Set[str]:
         """Return a set of all names."""
         all_names: Set[str] = set()
         all_names.update(self.aliases)
@@ -157,7 +165,7 @@ class VirtualHost:
             f"mod_macro Vhost: {'Yes' if self.modmacro else 'No'}"
         )
 
-    def display_repr(self):
+    def display_repr(self) -> str:
         """Return a representation of VHost to be used in dialog"""
         return (
             f"File: {self.filep}\n"
@@ -166,7 +174,7 @@ class VirtualHost:
             f"HTTPS: {'Yes' if self.ssl else 'No'}\n"
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
             return (self.filep == other.filep and self.path == other.path and
                     self.addrs == other.addrs and
@@ -182,7 +190,7 @@ class VirtualHost:
                      tuple(self.addrs), tuple(self.get_names()),
                      self.ssl, self.enabled, self.modmacro))
 
-    def conflicts(self, addrs):
+    def conflicts(self, addrs: Iterable[Addr]) -> bool:
         """See if vhost conflicts with any of the addrs.
 
         This determines whether or not these addresses would/could overwrite
@@ -201,7 +209,7 @@ class VirtualHost:
                     return True
         return False
 
-    def same_server(self, vhost, generic=False):
+    def same_server(self, vhost: "VirtualHost", generic: bool = False) -> bool:
         """Determines if the vhost is the same 'server'.
 
         Used in redirection - indicates whether or not the two virtual hosts
