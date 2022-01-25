@@ -19,6 +19,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * GCP Permission list for certbot-dns-google in plugin documentation
+* dns-digitalocean used the SOA TTL for newly created records, rather than 30 seconds.
 
 More details about these changes can be found on our GitHub repo.
 

@@ -82,6 +82,10 @@ class _DigitalOceanClient:
 
         try:
             domain = self._find_domain(domain_name)
+            # The TTL value is set to the SOA record's TTL. Unless set to a falsy value,
+            # the optional TTL argument to add_txt_record() would be ignored.
+            # See https://github.com/certbot/certbot/pull/9149 for details.
+            domain.ttl = None
         except digitalocean.Error as e:
             hint = None
 
