@@ -126,7 +126,7 @@ class ApacheParser:
                     self.aug.get(path + "/message")))
                 raise errors.PluginError(msg)
 
-    def check_aug_version(self) -> Union[bool, List[bytes]]:
+    def check_aug_version(self) -> Union[bool, List[str]]:
         """ Checks that we have recent enough version of libaugeas.
         If augeas version is recent enough, it will support case insensitive
         regexp matching"""
