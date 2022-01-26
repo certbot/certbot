@@ -5,10 +5,10 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Set
-from typing import Type
-from typing import TypeVar
 from typing import Tuple
+from typing import Type
 from typing import TYPE_CHECKING
+from typing import TypeVar
 
 from certbot_apache._internal import apacheparser
 from certbot_apache._internal import assertions

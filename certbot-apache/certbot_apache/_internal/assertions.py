@@ -7,7 +7,9 @@ from typing import Optional
 from typing import Union
 
 from certbot_apache._internal import interfaces
-from certbot_apache._internal.interfaces import ParserNode, DirectiveNode, BlockNode, CommentNode
+from certbot_apache._internal.interfaces import CommentNode
+from certbot_apache._internal.interfaces import DirectiveNode
+from certbot_apache._internal.interfaces import ParserNode
 from certbot_apache._internal.obj import VirtualHost
 
 PASS = "CERTBOT_PASS_ASSERT"

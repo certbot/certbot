@@ -107,7 +107,6 @@ from typing import Sequence
 from typing import Tuple
 from typing import TypeVar
 
-
 GenericParserNode = TypeVar("GenericParserNode", bound="ParserNode")
 
 

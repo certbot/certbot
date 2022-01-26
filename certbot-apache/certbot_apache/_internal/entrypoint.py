@@ -2,7 +2,6 @@
 from typing import Dict
 from typing import Type
 
-from certbot import util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import override_arch
 from certbot_apache._internal import override_centos
@@ -12,6 +11,8 @@ from certbot_apache._internal import override_fedora
 from certbot_apache._internal import override_gentoo
 from certbot_apache._internal import override_suse
 from certbot_apache._internal import override_void
+
+from certbot import util
 
 OVERRIDE_CLASSES: Dict[str, Type[configurator.ApacheConfigurator]] = {
     "arch": override_arch.ArchConfigurator,
