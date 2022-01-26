@@ -98,7 +98,8 @@ def commentnode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Optional[str], Dict[str,
     return comment, kwargs
 
 
-def directivenode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Any, Any, Any, Dict[str, Any]]:
+def directivenode_kwargs(kwargs: Dict[str, Any]
+                         ) -> Tuple[Optional[str], Tuple[str, ...], bool, Dict[str, Any]]:
     """
     Validates keyword arguments for DirectiveNode and BlockNode and sets the
     default values for optional kwargs. This function modifies the kwargs

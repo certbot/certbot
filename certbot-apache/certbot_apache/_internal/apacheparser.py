@@ -64,9 +64,9 @@ class ApacheDirectiveNode(ApacheParserNode):
     def __init__(self, **kwargs: Any) -> None:
         name, parameters, enabled, kwargs = util.directivenode_kwargs(kwargs)
         super().__init__(**kwargs)
-        self.name: str = name
-        self.parameters: str = parameters
-        self.enabled: bool = enabled
+        self.name = name
+        self.parameters = parameters
+        self.enabled = enabled
         self.include: Optional[str] = None
 
     def __eq__(self, other: Any) -> bool:

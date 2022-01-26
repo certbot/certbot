@@ -131,7 +131,7 @@ class AugeasParserNode(interfaces.ParserNode):
             if not parent or parent == "/files":
                 break
             anc = self._create_blocknode(parent)
-            if anc.name.lower() == name.lower():
+            if anc.name is not None and anc.name.lower() == name.lower():
                 ancestors.append(anc)
 
         return ancestors
@@ -203,8 +203,8 @@ class AugeasDirectiveNode(AugeasParserNode):
     def __init__(self, **kwargs: Any) -> None:
         name, parameters, enabled, kwargs = util.directivenode_kwargs(kwargs)
         super().__init__(**kwargs)
-        self.name: str = name
-        self.enabled: bool = enabled
+        self.name = name
+        self.enabled = enabled
         if parameters:
             self.set_parameters(parameters)
 
