@@ -18,8 +18,8 @@ try:
     from urllib3.connectionpool import HTTPConnectionPool
 except ImportError:
     # Stub imports for oldest requirements, that will never be used in snaps.
-    HTTPConnection = object
-    HTTPConnectionPool = object
+    HTTPConnection = object  # type: ignore[misc,assignment]
+    HTTPConnectionPool = object  # type: ignore[misc,assignment]
 
 
 _ARCH_TRIPLET_MAP = {

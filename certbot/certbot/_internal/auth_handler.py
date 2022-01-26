@@ -6,6 +6,7 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Type
 
@@ -272,7 +273,7 @@ class AuthHandler:
         self.auth.cleanup(achalls)
 
     def _challenge_factory(self, authzr: messages.AuthorizationResource,
-                           path: List[int]) -> List[achallenges.AnnotatedChallenge]:
+                           path: Sequence[int]) -> List[achallenges.AnnotatedChallenge]:
         """Construct Namedtuple Challenges
 
         :param messages.AuthorizationResource authzr: authorization
@@ -350,7 +351,7 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
 
 def gen_challenge_path(challbs: List[messages.ChallengeBody],
                        preferences: List[Type[challenges.Challenge]],
-                       combinations: Tuple[List[int], ...]) -> List[int]:
+                       combinations: Tuple[Tuple[int, ...], ...]) -> Tuple[int, ...]:
     """Generate a plan to get authority over the identity.
 
     .. todo:: This can be possibly be rewritten to use resolved_combinations.
@@ -383,8 +384,8 @@ def gen_challenge_path(challbs: List[messages.ChallengeBody],
 
 def _find_smart_path(challbs: List[messages.ChallengeBody],
                      preferences: List[Type[challenges.Challenge]],
-                     combinations: Tuple[List[int], ...]
-                     ) -> List[int]:
+                     combinations: Tuple[Tuple[int, ...], ...]
+                     ) -> Tuple[int, ...]:
     """Find challenge path with server hints.
 
     Can be called if combinations is included. Function uses a simple
@@ -399,7 +400,7 @@ def _find_smart_path(challbs: List[messages.ChallengeBody],
 
     # max_cost is now equal to sum(indices) + 1
 
-    best_combo: Optional[List[int]] = None
+    best_combo: Optional[Tuple[int, ...]] = None
     # Set above completing all of the available challenges
     best_combo_cost = max_cost
 
@@ -422,7 +423,7 @@ def _find_smart_path(challbs: List[messages.ChallengeBody],
 
 
 def _find_dumb_path(challbs: List[messages.ChallengeBody],
-                    preferences: List[Type[challenges.Challenge]]) -> List[int]:
+                    preferences: List[Type[challenges.Challenge]]) -> Tuple[int, ...]:
     """Find challenge path without server hints.
 
     Should be called if the combinations hint is not included by the
@@ -440,7 +441,7 @@ def _find_dumb_path(challbs: List[messages.ChallengeBody],
         else:
             raise _report_no_chall_path(challbs)
 
-    return path
+    return tuple(path)
 
 
 def _report_no_chall_path(challbs: List[messages.ChallengeBody]) -> errors.AuthorizationError:

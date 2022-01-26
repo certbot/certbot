@@ -15,3 +15,7 @@ and for the certificates:
   openssl req -key rsa2048_key.pem -new -subj '/CN=example.com' -x509 -outform DER > cert.der
   openssl req -key rsa2048_key.pem -new -subj '/CN=example.com' -x509 > rsa2048_cert.pem
   openssl req -key rsa1024_key.pem -new -subj '/CN=example.com' -x509 > rsa1024_cert.pem
+
+and for the elliptic key curves:
+
+  openssl genpkey -algorithm EC -out ec_secp384r1.pem -pkeyopt ec_paramgen_curve:P-384 -pkeyopt ec_param_enc:named_curve

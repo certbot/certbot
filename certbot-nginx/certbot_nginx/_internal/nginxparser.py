@@ -2,6 +2,7 @@
 # Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
 import copy
 import logging
+import operator
 import typing
 from typing import Any
 from typing import IO
@@ -167,13 +168,14 @@ class UnspacedList(List[Any]):
                 inbound = UnspacedList(inbound)
             return inbound, inbound.spaced
 
-    def insert(self, i: int, x: Any) -> None:
+    def insert(self, i: "SupportsIndex", x: Any) -> None:
         """Insert object before index."""
+        idx = operator.index(i)
         item, spaced_item = self._coerce(x)
-        slicepos = self._spaced_position(i) if i < len(self) else len(self.spaced)
+        slicepos = self._spaced_position(idx) if idx < len(self) else len(self.spaced)
         self.spaced.insert(slicepos, spaced_item)
         if not spacey(item):
-            super().insert(i, item)
+            super().insert(idx, item)
         self.dirty = True
 
     def append(self, x: Any) -> None:
@@ -246,7 +248,7 @@ class UnspacedList(List[Any]):
 
     def _spaced_position(self, idx: "SupportsIndex") -> int:
         """Convert from indexes in the unspaced list to positions in the spaced one"""
-        int_idx = idx.__index__()
+        int_idx = operator.index(idx)
         pos = spaces = 0
         # Normalize indexes like list[-1] etc, and save the result
         if int_idx < 0:

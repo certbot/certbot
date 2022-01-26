@@ -1180,7 +1180,7 @@ class NginxConfigurator(common.Configurator):
 
     # Entry point in main.py for performing challenges
     def perform(self, achalls: List[achallenges.AnnotatedChallenge]
-                ) -> List[challenges.HTTP01Response]:
+                ) -> List[challenges.ChallengeResponse]:
         """Perform the configuration related challenge.
 
         This function currently assumes all challenges will be fulfilled.
@@ -1189,13 +1189,16 @@ class NginxConfigurator(common.Configurator):
 
         """
         self._chall_out += len(achalls)
-        responses: List[Optional[challenges.HTTP01Response]] = [None] * len(achalls)
+        responses: List[Optional[challenges.ChallengeResponse]] = [None] * len(achalls)
         http_doer = http_01.NginxHttp01(self)
 
         for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
+            if not isinstance(achall, achallenges.KeyAuthorizationAnnotatedChallenge):
+                raise errors.Error("Challenge should be an instance "
+                                   "of KeyAuthorizationAnnotatedChallenge")
             http_doer.add_chall(achall, i)
 
         http_response = http_doer.perform()

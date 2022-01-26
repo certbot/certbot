@@ -138,7 +138,7 @@ class _RFC2136Client:
         except Exception as e:
             raise errors.PluginError('Encountered error adding TXT record: {0}'
                                      .format(e))
-        rcode = response.rcode()
+        rcode = response.rcode()  # type: ignore[attr-defined]
 
         if rcode == dns.rcode.NOERROR:
             logger.debug('Successfully added TXT record %s', record_name)
@@ -173,7 +173,7 @@ class _RFC2136Client:
         except Exception as e:
             raise errors.PluginError('Encountered error deleting TXT record: {0}'
                                      .format(e))
-        rcode = response.rcode()
+        rcode = response.rcode()  # type: ignore[attr-defined]
 
         if rcode == dns.rcode.NOERROR:
             logger.debug('Successfully deleted TXT record %s', record_name)
@@ -223,11 +223,13 @@ class _RFC2136Client:
             except (OSError, dns.exception.Timeout) as e:
                 logger.debug('TCP query failed, fallback to UDP: %s', e)
                 response = dns.query.udp(request, self.server, self._default_timeout, self.port)
-            rcode = response.rcode()
+            rcode = response.rcode()  # type: ignore[attr-defined]
 
             # Authoritative Answer bit should be set
-            if (rcode == dns.rcode.NOERROR and response.get_rrset(response.answer,
-                domain, dns.rdataclass.IN, dns.rdatatype.SOA) and response.flags & dns.flags.AA):
+            if (rcode == dns.rcode.NOERROR
+                    and response.get_rrset(response.answer,  # type: ignore[attr-defined]
+                                           domain, dns.rdataclass.IN, dns.rdatatype.SOA)
+                    and response.flags & dns.flags.AA):
                 logger.debug('Received authoritative SOA response for %s', domain_name)
                 return True
 

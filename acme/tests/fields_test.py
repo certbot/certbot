@@ -10,8 +10,8 @@ class FixedTest(unittest.TestCase):
     """Tests for acme.fields.Fixed."""
 
     def setUp(self):
-        from acme.fields import Fixed
-        self.field = Fixed('name', 'x')
+        from acme.fields import fixed
+        self.field = fixed('name', 'x')
 
     def test_decode(self):
         self.assertEqual('x', self.field.decode('x'))

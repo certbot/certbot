@@ -7,8 +7,8 @@ import josepy as jose
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
-from acme.challenges import Challenge
 from certbot import errors
+from certbot.achallenges import AnnotatedChallenge
 from certbot.plugins import dns_test_common
 from certbot.plugins.dns_common_lexicon import LexiconClient
 from certbot.plugins.dns_test_common import _AuthenticatorCallableTestCase
@@ -33,7 +33,7 @@ class _AuthenticatorCallableLexiconTestCase(_AuthenticatorCallableTestCase, Prot
     a mocked LexiconClient instance.
     """
     mock_client: MagicMock
-    achall: Challenge
+    achall: AnnotatedChallenge
 
 
 class _LexiconAwareTestCase(Protocol):

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     ServedType = DefaultDict[
         acme_standalone.BaseDualNetworkedServers,
-        Set[achallenges.KeyAuthorizationAnnotatedChallenge]
+        Set[achallenges.AnnotatedChallenge]
     ]
 
 

@@ -19,6 +19,7 @@ from typing import cast
 from typing import Dict
 from typing import Iterable
 from typing import List
+from typing import Mapping
 from typing import Optional
 from typing import Set
 from typing import Text
@@ -33,6 +34,7 @@ from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
 from requests_toolbelt.adapters.source import SourceAddressAdapter
 
+from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import jws
@@ -156,12 +158,12 @@ class ClientBase:
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri))
-        if identifier is not None and authzr.body.identifier != identifier:
+        if identifier is not None and authzr.body.identifier != identifier:  # pylint: disable=no-member
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def answer_challenge(self, challb: messages.ChallengeBody, response: requests.Response
-                         ) -> messages.ChallengeResource:
+    def answer_challenge(self, challb: messages.ChallengeBody,
+                         response: challenges.ChallengeResponse) -> messages.ChallengeResource:
         """Answer challenge.
 
         :param challb: Challenge Resource body.
@@ -176,15 +178,15 @@ class ClientBase:
         :raises .UnexpectedUpdate:
 
         """
-        response = self._post(challb.uri, response)
+        resp = self._post(challb.uri, response)
         try:
-            authzr_uri = response.links['up']['url']
+            authzr_uri = resp.links['up']['url']
         except KeyError:
             raise errors.ClientError('"up" Link header missing')
         challr = messages.ChallengeResource(
             authzr_uri=authzr_uri,
-            body=messages.ChallengeBody.from_json(response.json()))
-        # TODO: check that challr.uri == response.headers['Location']?
+            body=messages.ChallengeBody.from_json(resp.json()))
+        # TODO: check that challr.uri == resp.headers['Location']?
         if challr.uri != challb.uri:
             raise errors.UnexpectedUpdate(challr.uri)
         return challr
@@ -492,7 +494,7 @@ class Client(ClientBase):
             updated[authzr] = updated_authzr
 
             attempts[authzr] += 1
-            if updated_authzr.body.status not in (
+            if updated_authzr.body.status not in (  # pylint: disable=no-member
                     messages.STATUS_VALID, messages.STATUS_INVALID):
                 if attempts[authzr] < max_attempts:
                     # push back to the priority queue, with updated retry_after
@@ -599,7 +601,7 @@ class Client(ClientBase):
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        self._revoke(cert, rsn, self.directory[cast(str, messages.Revocation)])
+        self._revoke(cert, rsn, self.directory[messages.Revocation])
 
 
 class ClientV2(ClientBase):
@@ -756,7 +758,7 @@ class ClientV2(ClientBase):
         for url in orderr.body.authorizations:
             while datetime.datetime.now() < deadline:
                 authzr = self._authzr_from_response(self._post_as_get(url), uri=url)
-                if authzr.body.status != messages.STATUS_PENDING:
+                if authzr.body.status != messages.STATUS_PENDING:  # pylint: disable=no-member
                     responses.append(authzr)
                     break
                 time.sleep(1)
@@ -897,11 +899,11 @@ class BackwardsCompatibleClientV2:
                 check_tos_cb(tos)
         if self.acme_version == 1:
             client_v1 = cast(Client, self.client)
-            regr = client_v1.register(regr)
-            if regr.terms_of_service is not None:
-                _assess_tos(regr.terms_of_service)
-                return client_v1.agree_to_tos(regr)
-            return regr
+            regr_res = client_v1.register(regr)
+            if regr_res.terms_of_service is not None:
+                _assess_tos(regr_res.terms_of_service)
+                return client_v1.agree_to_tos(regr_res)
+            return regr_res
         else:
             client_v2 = cast(ClientV2, self.client)
             if "terms_of_service" in client_v2.directory.meta:
@@ -970,7 +972,8 @@ class BackwardsCompatibleClientV2:
                     'certificate, please rerun the command for a new one.')
 
             cert = OpenSSL.crypto.dump_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()
+                OpenSSL.crypto.FILETYPE_PEM,
+                cast(OpenSSL.crypto.X509, cast(jose.ComparableX509, certr.body).wrapped)).decode()
             chain_str = crypto_util.dump_pyopenssl_chain(chain).decode()
 
             return orderr.update(fullchain_pem=(cert + chain_str))
@@ -1056,7 +1059,7 @@ class ClientNetwork:
             pass
 
     def _wrap_in_jws(self, obj: jose.JSONDeSerializable, nonce: str, url: str,
-                     acme_version: int) -> jose.JWS:
+                     acme_version: int) -> str:
         """Wrap `JSONDeSerializable` object in JWS.
 
         .. todo:: Implement ``acmePath``.
@@ -1064,7 +1067,7 @@ class ClientNetwork:
         :param josepy.JSONDeSerializable obj:
         :param str url: The URL to which this object will be POSTed
         :param str nonce:
-        :rtype: `josepy.JWS`
+        :rtype: str
 
         """
         if isinstance(obj, VersionedLEACMEMixin):
@@ -1082,7 +1085,7 @@ class ClientNetwork:
             if self.account is not None:
                 kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
-        return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
+        return jws.JWS.sign(jobj, **cast(Mapping[str, Any], kwargs)).json_dumps(indent=2)
 
     @classmethod
     def _check_response(cls, response: requests.Response,

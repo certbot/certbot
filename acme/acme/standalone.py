@@ -8,6 +8,7 @@ import socket
 import socketserver
 import threading
 from typing import Any
+from typing import cast
 from typing import List
 from typing import Mapping
 from typing import Optional
@@ -39,10 +40,10 @@ class TLSServer(socketserver.TCPServer):
         super().__init__(*args, **kwargs)
 
     def _wrap_sock(self) -> None:
-        self.socket = crypto_util.SSLSocket(
+        self.socket = cast(socket.socket, crypto_util.SSLSocket(
             self.socket, cert_selection=self._cert_selection,
             alpn_selection=getattr(self, '_alpn_selection', None),
-            method=self.method)
+            method=self.method))
 
     def _cert_selection(self, connection: SSL.Connection
                         ) -> Tuple[crypto.PKey, crypto.X509]:  # pragma: no cover

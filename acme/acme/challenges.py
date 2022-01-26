@@ -12,6 +12,8 @@ from typing import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Type
+from typing import TypeVar
+from typing import Union
 
 from cryptography.hazmat.primitives import hashes
 import josepy as jose
@@ -27,6 +29,8 @@ from acme.mixins import TypeMixin
 
 logger = logging.getLogger(__name__)
 
+GenericChallenge = TypeVar('GenericChallenge', bound='Challenge')
+
 
 class Challenge(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
@@ -34,9 +38,10 @@ class Challenge(jose.TypedJSONObjectWithFields):
     TYPES: Dict[str, Type['Challenge']] = {}
 
     @classmethod
-    def from_json(cls, jobj: Mapping[str, Any]) -> 'Challenge':
+    def from_json(cls: Type[GenericChallenge],
+                  jobj: Mapping[str, Any]) -> Union[GenericChallenge, 'UnrecognizedChallenge']:
         try:
-            return super().from_json(jobj)
+            return cast(GenericChallenge, super().from_json(jobj))
         except jose.UnrecognizedTypeError as error:
             logger.debug(error)
             return UnrecognizedChallenge.from_json(jobj)
@@ -47,7 +52,7 @@ class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields
     """ACME challenge response."""
     TYPES: Dict[str, Type['ChallengeResponse']] = {}
     resource_type = 'challenge'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
 
 
 class UnrecognizedChallenge(Challenge):
@@ -62,6 +67,7 @@ class UnrecognizedChallenge(Challenge):
     :ivar jobj: Original JSON decoded object.
 
     """
+    jobj: Dict[str, Any]
 
     def __init__(self, jobj: Mapping[str, Any]) -> None:
         super().__init__()
@@ -85,7 +91,7 @@ class _TokenChallenge(Challenge):
     """Minimum size of the :attr:`token` in bytes."""
 
     # TODO: acme-spec doesn't specify token as base64-encoded value
-    token: bytes = jose.Field(
+    token: bytes = jose.field(
         "token", encoder=jose.encode_b64jose, decoder=functools.partial(
             jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
@@ -108,10 +114,10 @@ class _TokenChallenge(Challenge):
 class KeyAuthorizationChallengeResponse(ChallengeResponse):
     """Response to Challenges based on Key Authorization.
 
-    :param unicode key_authorization:
+    :param str key_authorization:
 
     """
-    key_authorization = jose.Field("keyAuthorization")
+    key_authorization: str = jose.field("keyAuthorization")
     thumbprint_hash_function = hashes.SHA256
 
     def verify(self, chall: 'KeyAuthorizationChallenge', account_public_key: jose.JWK) -> bool:
@@ -126,7 +132,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         :rtype: bool
 
         """
-        parts = self.key_authorization.split('.')
+        parts = self.key_authorization.split('.')  # pylint: disable=no-member
         if len(parts) != 2:
             logger.debug("Key authorization (%r) is not well formed",
                          self.key_authorization)
@@ -152,6 +158,9 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return jobj
 
 
+# TODO: Make this method a generic of K (bound=KeyAuthorizationChallenge), response_cls of type
+#  Type[K] and use it in response/response_and_validation return types once Python 3.6 support is
+#  dropped (do not support generic ABC classes, see https://github.com/python/typing/issues/449).
 class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
     """Challenge based on Key Authorization.
 
@@ -168,7 +177,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
         """Generate Key Authorization.
 
         :param JWK account_key:
-        :rtype unicode:
+        :rtype str:
 
         """
         return self.encode("token") + "." + jose.b64encode(
@@ -229,7 +238,7 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
         around `KeyAuthorizationChallengeResponse.verify`.
 
         :param challenges.DNS01 chall: Corresponding challenge.
-        :param unicode domain: Domain name being verified.
+        :param str domain: Domain name being verified.
         :param JWK account_public_key: Public key for the key pair
             being authorized.
 
@@ -257,7 +266,7 @@ class DNS01(KeyAuthorizationChallenge):
         """Generate validation.
 
         :param JWK account_key:
-        :rtype: unicode
+        :rtype: str
 
         """
         return jose.b64encode(hashlib.sha256(self.key_authorization(
@@ -266,7 +275,8 @@ class DNS01(KeyAuthorizationChallenge):
     def validation_domain_name(self, name: str) -> str:
         """Domain name for TXT validation record.
 
-        :param unicode name: Domain name being validated.
+        :param str name: Domain name being validated.
+        :rtype: str
 
         """
         return "{0}.{1}".format(self.LABEL, name)
@@ -293,7 +303,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         """Simple verify.
 
         :param challenges.SimpleHTTP chall: Corresponding challenge.
-        :param unicode domain: Domain name being verified.
+        :param str domain: Domain name being verified.
         :param JWK account_public_key: Public key for the key pair
             being authorized.
         :param int port: Port used in the validation.
@@ -357,7 +367,7 @@ class HTTP01(KeyAuthorizationChallenge):
     def path(self) -> str:
         """Path (starting with '/') for provisioned resource.
 
-        :rtype: string
+        :rtype: str
 
         """
         return '/' + self.URI_ROOT_PATH + '/' + self.encode('token')
@@ -368,8 +378,8 @@ class HTTP01(KeyAuthorizationChallenge):
         Forms an URI to the HTTPS server provisioned resource
         (containing :attr:`~SimpleHTTP.token`).
 
-        :param unicode domain: Domain name being verified.
-        :rtype: string
+        :param str domain: Domain name being verified.
+        :rtype: str
 
         """
         return "http://" + domain + self.path
@@ -378,7 +388,7 @@ class HTTP01(KeyAuthorizationChallenge):
         """Generate validation.
 
         :param JWK account_key:
-        :rtype: unicode
+        :rtype: str
 
         """
         return self.key_authorization(account_key)
@@ -409,7 +419,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
                  ) -> Tuple[crypto.X509, crypto.PKey]:
         """Generate tls-alpn-01 certificate.
 
-        :param unicode domain: Domain verified by the challenge.
+        :param str domain: Domain verified by the challenge.
         :param OpenSSL.crypto.PKey key: Optional private key used in
             certificate generation. If not provided (``None``), then
             fresh key will be generated.
@@ -433,8 +443,8 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
                    port: Optional[int] = None) -> crypto.X509:
         """Probe tls-alpn-01 challenge certificate.
 
-        :param unicode domain: domain being validated, required.
-        :param string host: IP address used to probe the certificate.
+        :param str domain: domain being validated, required.
+        :param str host: IP address used to probe the certificate.
         :param int port: Port used to probe the certificate.
 
         """
@@ -450,7 +460,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
     def verify_cert(self, domain: str, cert: crypto.X509) -> bool:
         """Verify tls-alpn-01 challenge certificate.
 
-        :param unicode domain: Domain name being validated.
+        :param str domain: Domain name being validated.
         :param OpensSSL.crypto.X509 cert: Challenge certificate.
 
         :returns: Whether the certificate was successfully verified.
@@ -523,7 +533,7 @@ class TLSALPN01(KeyAuthorizationChallenge):
         """Generate validation.
 
         :param JWK account_key:
-        :param unicode domain: Domain verified by the challenge.
+        :param str domain: Domain verified by the challenge.
         :param OpenSSL.crypto.PKey cert_key: Optional private key used
             in certificate generation. If not provided (``None``), then
             fresh key will be generated.
@@ -531,9 +541,10 @@ class TLSALPN01(KeyAuthorizationChallenge):
         :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
 
         """
-        return self.response(account_key).gen_cert(
+        # TODO: Remove cast when response() is generic.
+        return cast(TLSALPN01Response, self.response(account_key)).gen_cert(
             key=kwargs.get('cert_key'),
-            domain=kwargs.get('domain'))
+            domain=cast(str, kwargs.get('domain')))
 
     @staticmethod
     def is_supported() -> bool:
@@ -599,13 +610,12 @@ class DNS(_TokenChallenge):
         :rtype: DNSResponse
 
         """
-        return DNSResponse(validation=self.gen_validation(
-            account_key, **kwargs))
+        return DNSResponse(validation=self.gen_validation(account_key, **kwargs))
 
     def validation_domain_name(self, name: str) -> str:
         """Domain name for TXT validation record.
 
-        :param unicode name: Domain name being validated.
+        :param str name: Domain name being validated.
 
         """
         return "{0}.{1}".format(self.LABEL, name)
@@ -620,7 +630,7 @@ class DNSResponse(ChallengeResponse):
     """
     typ = "dns"
 
-    validation = jose.Field("validation", decoder=jose.JWS.from_json)
+    validation: jose.JWS = jose.field("validation", decoder=jose.JWS.from_json)
 
     def check_validation(self, chall: 'DNS', account_public_key: jose.JWK) -> bool:
         """Check validation.
@@ -631,4 +641,4 @@ class DNSResponse(ChallengeResponse):
         :rtype: bool
 
         """
-        return chall.check_validation(cast(jose.JWS, self.validation), account_public_key)
+        return chall.check_validation(self.validation, account_public_key)

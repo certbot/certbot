@@ -251,7 +251,7 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
             raise errors.Error("The ACME client must be an instance of "
                                "acme.client.BackwardsCompatibleClientV2")
     except messages.Error as e:
-        if e.code in ('invalidEmail', 'invalidContact'):
+        if e.code in ("invalidEmail", "invalidContact"):
             if config.noninteractive_mode:
                 msg = ("The ACME server believes %s is an invalid email address. "
                        "Please ensure it is a valid email and attempt "
