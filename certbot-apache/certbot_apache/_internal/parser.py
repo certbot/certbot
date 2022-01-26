@@ -356,8 +356,7 @@ class ApacheParser:
 
         return filtered
 
-    def add_dir_to_ifmodssl(self, aug_conf_path: str, directive: str,
-                            args: Union[str, Sequence[str]]) -> None:
+    def add_dir_to_ifmodssl(self, aug_conf_path: str, directive: str, args: Sequence[str]) -> None:
         """Adds directive and value to IfMod ssl block.
 
         Adds given directive and value along configuration path within
@@ -366,7 +365,7 @@ class ApacheParser:
 
         :param str aug_conf_path: Desired Augeas config path to add directive
         :param str directive: Directive you would like to add, e.g. Listen
-        :param args: Values of the directive; str "443" or list of str
+        :param args: Values of the directive; list of str (eg. ["443"])
         :type args: list
 
         """
