@@ -44,7 +44,7 @@ class ApacheCommentNode(ApacheParserNode):
     """ apacheconfig implementation of CommentNode interface """
 
     def __init__(self, **kwargs: Any) -> None:
-        comment, kwargs = util.commentnode_kwargs(kwargs)  # pylint: disable=unused-variable
+        comment, kwargs = util.commentnode_kwargs(kwargs)
         super().__init__(**kwargs)
         self.comment = comment
 
