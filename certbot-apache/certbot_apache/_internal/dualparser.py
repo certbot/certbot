@@ -19,17 +19,18 @@ if TYPE_CHECKING:
     from certbot_apache._internal.apacheparser import ApacheParserNode  # pragma: no cover
     from certbot_apache._internal.augeasparser import AugeasParserNode  # pragma: no cover
 
-AnyAugeasParserNode = TypeVar("AnyAugeasParserNode", bound="AugeasParserNode")
-AnyApacheParserNode = TypeVar("AnyApacheParserNode", bound="ApacheParserNode")
-AnyDualNode = TypeVar("AnyDualNode", bound="DualNodeBase")
+GenericAugeasParserNode = TypeVar("GenericAugeasParserNode", bound="AugeasParserNode")
+GenericApacheParserNode = TypeVar("GenericApacheParserNode", bound="ApacheParserNode")
+GenericDualNode = TypeVar("GenericDualNode", bound="DualNodeBase")
 
 
-class DualNodeBase(Generic[AnyAugeasParserNode, AnyApacheParserNode]):
+class DualNodeBase(Generic[GenericAugeasParserNode, GenericApacheParserNode]):
     """ Dual parser interface for in development testing. This is used as the
     base class for dual parser interface classes. This class handles runtime
     attribute value assertions."""
 
-    def __init__(self, primary: AnyAugeasParserNode, secondary: AnyApacheParserNode) -> None:
+    def __init__(self, primary: GenericAugeasParserNode,
+                 secondary: GenericApacheParserNode) -> None:
         self.primary = primary
         self.secondary = secondary
 
@@ -56,8 +57,8 @@ class DualNodeBase(Generic[AnyAugeasParserNode, AnyApacheParserNode]):
         """ Traverses the ancestor tree and returns ancestors matching name """
         return self._find_helper(DualBlockNode, "find_ancestors", name)
 
-    def _find_helper(self, nodeclass: Type[AnyDualNode], findfunc: str, search: str,
-                     **kwargs: Any) -> List[AnyDualNode]:
+    def _find_helper(self, nodeclass: Type[GenericDualNode], findfunc: str, search: str,
+                     **kwargs: Any) -> List[GenericDualNode]:
         """A helper for find_* functions. The function specific attributes should
         be passed as keyword arguments.
 
