@@ -291,7 +291,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # Check if the file was included from the root config or initial state
         file_path = apache_util.get_file_path(realpath)
         if file_path is None:
-            raise errors.Error(f"No file path found for vhost: {realpath}")
+            raise errors.Error(f"No file path found for vhost: {realpath}")  # pragma: no cover
         enabled = self.parser.parsed_in_original(file_path)
 
         # Parameters will be set at the initialization of the new object
@@ -326,7 +326,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # Check if the file was included from the root config or initial state
         file_path = apache_util.get_file_path(realpath)
         if file_path is None:
-            raise errors.Error(f"No file path found for vhost: {realpath}")
+            raise errors.Error(f"No file path found for vhost: {realpath}")  # pragma: no cover
         enabled = self.parser.parsed_in_original(file_path)
 
         return AugeasDirectiveNode(
