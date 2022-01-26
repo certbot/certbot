@@ -79,7 +79,7 @@ def isPass(value: Any) -> bool:  # pragma: no cover
     return PASS in value
 
 
-def isPassDirective(block: Union[BlockNode, DirectiveNode]) -> bool:
+def isPassDirective(block: DirectiveNode) -> bool:
     """ Checks if BlockNode or DirectiveNode should pass the assertion """
 
     if isPass(block.name):

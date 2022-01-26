@@ -1137,7 +1137,7 @@ class ApacheConfigurator(common.Configurator):
                 is_ssl = True
                 
         if node.filepath is None:
-            raise errors.Error("Node filepath cannot be None.")
+            raise errors.Error("Node filepath cannot be None.")  # pragma: no cover
 
         enabled = apache_util.included_in_paths(node.filepath, self.parsed_paths)
 
