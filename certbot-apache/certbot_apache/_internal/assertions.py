@@ -54,8 +54,8 @@ def _assertEqualDirectiveComponents(first: ParserNode,  # pragma: no cover
     # Enabled value cannot be asserted, because Augeas implementation
     # is unable to figure that out.
     # assert first.enabled == second.enabled
-    assert isinstance(first, (DirectiveNode, BlockNode))
-    assert isinstance(second, (DirectiveNode, BlockNode))
+    assert isinstance(first, DirectiveNode)
+    assert isinstance(second, DirectiveNode)
 
     if not isPass(first.name) and not isPass(second.name):
         assert first.name == second.name
