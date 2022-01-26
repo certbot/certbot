@@ -5,6 +5,8 @@ from typing import Iterable
 from typing import Optional
 from typing import Tuple
 
+from certbot_apache._internal.interfaces import ParserNode
+
 
 def validate_kwargs(kwargs: Dict[str, Any], required_names: Iterable[str]) -> Dict[str, Any]:
     """
@@ -30,7 +32,8 @@ def validate_kwargs(kwargs: Dict[str, Any], required_names: Iterable[str]) -> Di
     return validated_kwargs
 
 
-def parsernode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Any, Any, Any, Any]:
+def parsernode_kwargs(kwargs: Dict[str, Any]
+                      ) -> Tuple[Optional[ParserNode], bool, Optional[str], Dict[str, Any]]:
     """
     Validates keyword arguments for ParserNode. This function modifies the kwargs
     dictionary, and hence the returned dictionary should be used instead in the

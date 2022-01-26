@@ -1135,6 +1135,9 @@ class ApacheConfigurator(common.Configurator):
         for addr in addrs:
             if addr.get_port() == "443":
                 is_ssl = True
+                
+        if node.filepath is None:
+            raise errors.Error("Node filepath cannot be None.")
 
         enabled = apache_util.included_in_paths(node.filepath, self.parsed_paths)
 

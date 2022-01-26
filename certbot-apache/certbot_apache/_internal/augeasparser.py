@@ -87,15 +87,15 @@ from certbot_apache._internal import parsernode_util as util
 class AugeasParserNode(interfaces.ParserNode):
     """ Augeas implementation of ParserNode interface """
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, **kwargs: Any) -> None:
         # pylint: disable=unused-variable
         ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)
         super().__init__(**kwargs)
-        self.ancestor: interfaces.ParserNode = ancestor
-        self.filepath: str = filepath
-        self.dirty: bool = dirty
-        self.metadata: Dict[str, Any] = metadata
-        self.parser: parser.ApacheParser = cast(parser.ApacheParser,
+        self.ancestor = ancestor
+        self.filepath = filepath
+        self.dirty = dirty
+        self.metadata = metadata
+        self.parser = cast(parser.ApacheParser,
                                                 self.metadata.get("augeasparser"))
         try:
             if self.metadata["augeaspath"].endswith("/"):

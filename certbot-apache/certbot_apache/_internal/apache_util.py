@@ -134,7 +134,6 @@ def included_in_paths(filepath: str, paths: Iterable[str]) -> bool:
     :returns: True if included
     :rtype: bool
     """
-
     return any(fnmatch.fnmatch(filepath, path) for path in paths)
 
 

@@ -22,10 +22,10 @@ class ApacheParserNode(interfaces.ParserNode):
         # pylint: disable=unused-variable
         ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)
         super().__init__(**kwargs)
-        self.ancestor: ParserNode = ancestor
-        self.filepath: str = filepath
-        self.dirty: bool = dirty
-        self.metadata: Any = metadata
+        self.ancestor = ancestor
+        self.filepath = filepath
+        self.dirty = dirty
+        self.metadata = metadata
         self._raw: Any = self.metadata["ac_ast"]
 
     def save(self, msg: str) -> None:
