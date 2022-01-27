@@ -1559,6 +1559,12 @@ def certonly(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
 
     lineage = _get_and_save_cert(le_client, config, domains, certname, lineage)
 
+    # If a new cert was issued and we were passed an installer, we can safely
+    # run `installer.restart()` to load the newly issued certificate
+    if lineage and installer and not config.dry_run:
+        display_util.notify(f"Reloading {config.installer} server after certificate issuance")
+        installer.restart()
+
     cert_path = lineage.cert_path if lineage else None
     fullchain_path = lineage.fullchain_path if lineage else None
     key_path = lineage.key_path if lineage else None
