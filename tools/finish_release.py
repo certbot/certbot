@@ -110,6 +110,7 @@ def download_azure_artifacts(tempdir):
 
     version = build_client.get_build('certbot', build_id).source_branch.split('v')[1]
     return version
+
 def sign_windows_installer(tempdir, css):
     """Create a github release, including uploading additional assets
 
@@ -125,16 +126,15 @@ def sign_windows_installer(tempdir, css):
     signed_css_path = username + '@' + host + ':~certbot-beta-installer-win32-signed.exe'
 
     # Upload unsigned executable to CSS, ssh into CSS and sign executable, then upload signed release
-
     print("Copy unsigned installer to css")
-    subprocess.run(["scp", tempdir + '/windows-installer/certbot-beta-installer-win32.exe' , unsigned_css_path])
+    subprocess.run(["scp", tempdir + '/windows-installer/certbot-beta-installer-win32.exe' , unsigned_css_path], check=True)
     print("Signing installer")
-    subprocess.run(command.split())
+    subprocess.run(command.split(), check=True)
     print("Copy signed installer to local path")
-    subprocess.run(["scp", signed_css_path , tempdir + '/windows-installer/'])
+    subprocess.run(["scp", signed_css_path , tempdir + '/windows-installer/'], check=True)
+    
 
-
-def create_github_release(github_access_token, tempdir, version, css):
+def create_github_release(github_access_token, tempdir, version):
     """Use build artifacts to create a github release, including uploading additional assets
 
     :param str github_access_token: string containing github access token

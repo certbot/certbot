@@ -6,7 +6,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added `show_account` subcommand, which will fetch the account information
+  from the ACME server and show the account details (account URL and, if
+  applicable, email address or addresses)
+* Added code signing server workflow to `tools/finish_release.py`, creating an Authenticode signature.
+  Making our Windows installer trusted by Windows.
 
 ### Changed
 
