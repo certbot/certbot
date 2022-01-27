@@ -273,6 +273,7 @@ Authors
 * [Wilfried Teiken](https://github.com/wteiken)
 * [Willem Fibbe](https://github.com/fibbers)
 * [William Budington](https://github.com/Hainish)
+* [Will Greenberg](https://github.com/wgreenberg)
 * [Will Newby](https://github.com/willnewby)
 * [Will Oller](https://github.com/willoller)
 * [Yan](https://github.com/diracdeltas)
