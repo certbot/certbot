@@ -248,7 +248,7 @@ def main(args):
 
     github_access_token_file = parsed_args.githubpat
     github_access_token = open(github_access_token_file, 'r').read().rstrip()
-    css = parse_args.css
+    css = parsed_args.css
 
     with tempfile.TemporaryDirectory() as tempdir:
         version = download_azure_artifacts(tempdir)
