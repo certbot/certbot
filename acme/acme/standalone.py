@@ -8,6 +8,7 @@ import socket
 import socketserver
 import threading
 from typing import Any
+from typing import cast
 from typing import List
 from typing import Mapping
 from typing import Optional
@@ -34,16 +35,15 @@ class TLSServer(socketserver.TCPServer):
         else:
             self.address_family = socket.AF_INET
         self.certs = kwargs.pop("certs", {})
-        self.method = kwargs.pop(
-            "method", crypto_util._DEFAULT_SSL_METHOD)
+        self.method = kwargs.pop("method", crypto_util._DEFAULT_SSL_METHOD)
         self.allow_reuse_address = kwargs.pop("allow_reuse_address", True)
-        socketserver.TCPServer.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _wrap_sock(self) -> None:
-        self.socket = crypto_util.SSLSocket(
+        self.socket = cast(socket.socket, crypto_util.SSLSocket(
             self.socket, cert_selection=self._cert_selection,
             alpn_selection=getattr(self, '_alpn_selection', None),
-            method=self.method)
+            method=self.method))
 
     def _cert_selection(self, connection: SSL.Connection
                         ) -> Tuple[crypto.PKey, crypto.X509]:  # pragma: no cover
@@ -190,7 +190,7 @@ class HTTPServer(BaseHTTPServer.HTTPServer):
             self.address_family = socket.AF_INET6
         else:
             self.address_family = socket.AF_INET
-        BaseHTTPServer.HTTPServer.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 class HTTP01Server(HTTPServer, ACMEServerMixin):
@@ -198,8 +198,8 @@ class HTTP01Server(HTTPServer, ACMEServerMixin):
 
     def __init__(self, server_address: Tuple[str, int], resources: Set[challenges.HTTP01],
                  ipv6: bool = False, timeout: int = 30) -> None:
-        HTTPServer.__init__(
-            self, server_address, HTTP01RequestHandler.partial_init(
+        super().__init__(
+            server_address, HTTP01RequestHandler.partial_init(
                 simple_http_resources=resources, timeout=timeout), ipv6=ipv6)
 
 
@@ -208,7 +208,7 @@ class HTTP01DualNetworkedServers(BaseDualNetworkedServers):
        affect the other."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        BaseDualNetworkedServers.__init__(self, HTTP01Server, *args, **kwargs)
+        super().__init__(HTTP01Server, *args, **kwargs)
 
 
 class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -226,7 +226,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
         self._timeout = kwargs.pop('timeout', 30)
-        BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.server: HTTP01Server
 
     # In parent class BaseHTTPRequestHandler, 'timeout' is a class-level property but we

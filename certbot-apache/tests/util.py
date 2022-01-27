@@ -1,6 +1,5 @@
 """Common utilities for certbot_apache."""
 import shutil
-import sys
 import unittest
 
 import augeas
@@ -14,7 +13,6 @@ except ImportError:  # pragma: no cover
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
-from certbot.display import util as display_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import entrypoint
 from certbot_apache._internal import obj
@@ -75,7 +73,7 @@ class ParserTest(ApacheTest):
         with mock.patch("certbot_apache._internal.parser.ApacheParser."
                         "update_runtime_variables"):
             self.parser = ApacheParser(
-                self.config_path, self.vhost_path, configurator=self.config)
+                self.config_path, self.config, self.vhost_path)
 
 
 def get_apache_configurator(

@@ -100,9 +100,12 @@ For this reason the internal representation of data should not ignore the case.
 """
 
 import abc
+from typing import Any
+from typing import List
+from typing import Optional
 
 
-class ParserNode(object, metaclass=abc.ABCMeta):
+class ParserNode(metaclass=abc.ABCMeta):
     """
     ParserNode is the basic building block of the tree of such nodes,
     representing the structure of the configuration. It is largely meant to keep
@@ -146,7 +149,7 @@ class ParserNode(object, metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any):
         """
         Initializes the ParserNode instance, and sets the ParserNode specific
         instance variables. This is not meant to be used directly, but through
@@ -170,7 +173,7 @@ class ParserNode(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def save(self, msg):
+    def save(self, msg: str) -> None:
         """
         Save traverses the children, and attempts to write the AST to disk for
         all the objects that are marked dirty. The actual operation of course
@@ -189,7 +192,7 @@ class ParserNode(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_ancestors(self, name):
+    def find_ancestors(self, name: str):
         """
         Traverses the ancestor tree up, searching for BlockNodes with a specific
         name.
@@ -220,7 +223,7 @@ class CommentNode(ParserNode, metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any):
         """
         Initializes the CommentNode instance and sets its instance variables.
 
@@ -238,10 +241,12 @@ class CommentNode(ParserNode, metaclass=abc.ABCMeta):
             created or changed after the last save. Default: False.
         :type dirty: bool
         """
-        super().__init__(ancestor=kwargs['ancestor'],
-                                          dirty=kwargs.get('dirty', False),
-                                          filepath=kwargs['filepath'],
-                                          metadata=kwargs.get('metadata', {}))  # pragma: no cover
+        super().__init__(  # pragma: no cover
+            ancestor=kwargs['ancestor'],
+            dirty=kwargs.get('dirty', False),
+            filepath=kwargs['filepath'],
+            metadata=kwargs.get('metadata', {}),
+        )
 
 
 class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
@@ -272,7 +277,7 @@ class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """
         Initializes the DirectiveNode instance and sets its instance variables.
 
@@ -302,13 +307,15 @@ class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
         :type enabled: bool
 
         """
-        super().__init__(ancestor=kwargs['ancestor'],
-                                            dirty=kwargs.get('dirty', False),
-                                            filepath=kwargs['filepath'],
-                                            metadata=kwargs.get('metadata', {}))  # pragma: no cover
+        super().__init__(  # pragma: no cover
+            ancestor=kwargs['ancestor'],
+            dirty=kwargs.get('dirty', False),
+            filepath=kwargs['filepath'],
+            metadata=kwargs.get('metadata', {}),
+        )
 
     @abc.abstractmethod
-    def set_parameters(self, parameters):
+    def set_parameters(self, parameters: List[str]) -> None:
         """
         Sets the sequence of parameters for this ParserNode object without
         whitespaces. While the whitespaces for parameters are discarded when using
@@ -361,7 +368,9 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def add_child_block(self, name, parameters=None, position=None):
+    def add_child_block(
+        self, name: str, parameters: List[str] = None, position: int = None
+    ) -> "BlockNode":
         """
         Adds a new BlockNode child node with provided values and marks the callee
         BlockNode dirty. This is used to add new children to the AST. The preceding
@@ -381,7 +390,9 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def add_child_directive(self, name, parameters=None, position=None):
+    def add_child_directive(
+        self, name: str, parameters: Optional[List[str]] = None, position: Optional[int] = None
+    ) -> "DirectiveNode":
         """
         Adds a new DirectiveNode child node with provided values and marks the
         callee BlockNode dirty. This is used to add new children to the AST. The
@@ -402,7 +413,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def add_child_comment(self, comment="", position=None):
+    def add_child_comment(self, comment: str = "", position: Optional[int] = None) -> "CommentNode":
         """
         Adds a new CommentNode child node with provided value and marks the
         callee BlockNode dirty. This is used to add new children to the AST. The
@@ -422,7 +433,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_blocks(self, name, exclude=True):
+    def find_blocks(self, name: str, exclude: bool = True) -> List["BlockNode"]:
         """
         Find a configuration block by name. This method walks the child tree of
         ParserNodes under the instance it was called from. This way it is possible
@@ -439,7 +450,23 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_directives(self, name, exclude=True):
+    def find_comments(self, comment: str) -> List["CommentNode"]:
+        """
+        Find comments with value containing the search term.
+
+        This method walks the child tree of ParserNodes under the instance it was
+        called from. This way it is possible to search for the whole configuration
+        tree, when starting from root node, or to do a partial search when starting
+        from a specified branch. The lookup should be case sensitive.
+
+        :param str comment: The content of comment to search for
+
+        :returns: A list of found CommentNode objects.
+
+        """
+
+    @abc.abstractmethod
+    def find_directives(self, name: str, exclude: bool = True):
         """
         Find a directive by name. This method walks the child tree of ParserNodes
         under the instance it was called from. This way it is possible to search
@@ -457,23 +484,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_comments(self, comment):
-        """
-        Find comments with value containing the search term.
-
-        This method walks the child tree of ParserNodes under the instance it was
-        called from. This way it is possible to search for the whole configuration
-        tree, when starting from root node, or to do a partial search when starting
-        from a specified branch. The lookup should be case sensitive.
-
-        :param str comment: The content of comment to search for
-
-        :returns: A list of found CommentNode objects.
-
-        """
-
-    @abc.abstractmethod
-    def delete_child(self, child):
+    def delete_child(self, child: "ParserNode") -> None:
         """
         Remove a specified child node from the list of children of the called
         BlockNode object.
@@ -483,7 +494,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def unsaved_files(self):
+    def unsaved_files(self) -> List[str]:
         """
         Returns a list of file paths that have been changed since the last save
         (or the initial configuration parse). The intended use for this method
@@ -496,7 +507,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def parsed_paths(self):
+    def parsed_paths(self) -> List[str]:
         """
         Returns a list of file paths that have currently been parsed into the parser
         tree. The returned list may include paths with wildcard characters, for

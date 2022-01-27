@@ -20,7 +20,15 @@ Sign into code signing server and sign Windows installer prior to running this s
 
 Run:
 
-python tools/finish_release.py ~/.ssh/githubpat.txt --css <hostname>
+python tools/finish_release.py ~/.ssh/githubpat.txt
+
+Testing:
+
+This script can be safely run between releases. When this is done, the script
+should execute successfully until the final step when it tries to set draft
+equal to false on the GitHub release. This step should fail because a published
+release with that name already exists.
+
 """
 
 import argparse

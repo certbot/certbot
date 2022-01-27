@@ -10,7 +10,6 @@ from typing import IO
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 import warnings
 
 from cryptography.hazmat.backends import default_backend
@@ -252,7 +251,7 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
             raise errors.Error("The ACME client must be an instance of "
                                "acme.client.BackwardsCompatibleClientV2")
     except messages.Error as e:
-        if e.code in ('invalidEmail', 'invalidContact'):
+        if e.code in ("invalidEmail", "invalidContact"):
             if config.noninteractive_mode:
                 msg = ("The ACME server believes %s is an invalid email address. "
                        "Please ensure it is a valid email and attempt "
@@ -573,6 +572,7 @@ class Client:
         :param list domains: list of domains to install the certificate
         :param str privkey_path: path to certificate private key
         :param str cert_path: certificate file path (optional)
+        :param str fullchain_path: path to the full chain of the certificate
         :param str chain_path: chain file path
 
         """
@@ -643,13 +643,13 @@ class Client:
                     "Option %s is not supported by the selected installer. "
                     "Skipping enhancement.", config_name)
 
-        msg = ("We were unable to restart web server")
+        msg = "We were unable to restart web server"
         if enhanced:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
     def apply_enhancement(self, domains: List[str], enhancement: str,
-                          options: Optional[Union[List[str], str]] = None) -> None:
+                          options: Optional[str] = None) -> None:
         """Applies an enhancement on all domains.
 
         :param list domains: list of ssl_vhosts (as strings)

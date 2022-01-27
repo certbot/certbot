@@ -18,6 +18,7 @@ TOKEN = 'a-token'
 TOKEN_V3 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ64'
 TOKEN_V4 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 
+
 class AuthenticatorTest(test_util.TempDirTestCase,
                         dns_test_common_lexicon.BaseLexiconAuthenticatorTest):
 
@@ -119,6 +120,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         auth._setup_credentials()
         self.assertRaises(errors.PluginError, auth._get_linode_client)
 
+
 class LinodeLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
 
     DOMAIN_NOT_FOUND = Exception('Domain not found')
@@ -131,6 +133,7 @@ class LinodeLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLex
         self.provider_mock = mock.MagicMock()
         self.client.provider = self.provider_mock
 
+
 class Linode4LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
 
     DOMAIN_NOT_FOUND = Exception('Domain not found')
@@ -142,6 +145,7 @@ class Linode4LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLe
 
         self.provider_mock = mock.MagicMock()
         self.client.provider = self.provider_mock
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

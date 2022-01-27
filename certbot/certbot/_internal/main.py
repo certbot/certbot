@@ -811,7 +811,7 @@ def unregister(config: configuration.NamespaceConfig,
     accounts = account_storage.find_all()
 
     if not accounts:
-        return "Could not find existing account to deactivate."
+        return f"Could not find existing account for server {config.server}."
     prompt = ("Are you sure you would like to irrevocably deactivate "
               "your account?")
     wants_deactivate = display_util.yesno(prompt, yes_label='Deactivate', no_label='Abort',
@@ -846,7 +846,7 @@ def register(config: configuration.NamespaceConfig,
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None` or a string indicating and error
+    :returns: `None` or a string indicating an error
     :rtype: None or str
 
     """
@@ -877,7 +877,7 @@ def update_account(config: configuration.NamespaceConfig,
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None` or a string indicating and error
+    :returns: `None` or a string indicating an error
     :rtype: None or str
 
     """
@@ -887,7 +887,7 @@ def update_account(config: configuration.NamespaceConfig,
     accounts = account_storage.find_all()
 
     if not accounts:
-        return "Could not find an existing account to update."
+        return f"Could not find an existing account for server {config.server}."
     if config.email is None and not config.register_unsafely_without_email:
         config.email = display_ops.get_email(optional=False)
 
@@ -917,6 +917,53 @@ def update_account(config: configuration.NamespaceConfig,
     else:
         eff.prepare_subscription(config, acc)
         display_util.notify("Your e-mail address was updated to {0}.".format(config.email))
+
+    return None
+
+
+def show_account(config: configuration.NamespaceConfig,
+                   unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
+    """Fetch account info from the ACME server and show it to the user.
+
+    :param config: Configuration object
+    :type config: configuration.NamespaceConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: plugins_disco.PluginsRegistry
+
+    :returns: `None` or a string indicating an error
+    :rtype: None or str
+
+    """
+    # Portion of _determine_account logic to see whether accounts already
+    # exist or not.
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+
+    if not accounts:
+        return f"Could not find an existing account for server {config.server}."
+
+    acc, acme = _determine_account(config)
+    cb_client = client.Client(config, acc, None, None, acme=acme)
+
+    if not cb_client.acme:
+        raise errors.Error("ACME client is not set.")
+
+    regr = cb_client.acme.query_registration(acc.regr)
+    output = [f"Account details for server {config.server}:",
+              f"  Account URL: {regr.uri}"]
+
+    emails = []
+
+    for contact in regr.body.contact:
+        if contact.startswith('mailto:'):
+            emails.append(contact[7:])
+
+    output.append("  Email contact{}: {}".format(
+                            "s" if len(emails) > 1 else "",
+                            ", ".join(emails) if len(emails) > 0 else "none"))
+
+    display_util.notify("\n".join(output))
 
     return None
 
@@ -1625,6 +1672,10 @@ def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
     report = reporter.Reporter(config)
     zope.component.provideUtility(report, interfaces.IReporter)
     util.atexit_register(report.print_messages)
+
+    if sys.version_info[:2] == (3, 6):
+        logger.warning("Python 3.6 support will be dropped in the next release "
+                       "of Certbot - please upgrade your Python version.")
 
     with make_displayer(config) as displayer:
         display_obj.set_display(displayer)

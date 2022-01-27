@@ -2,17 +2,20 @@
 
 import io
 import logging
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 
+from certbot_nginx._internal import nginxparser
+from certbot_nginx._internal.obj import Addr
+
 from acme import challenges
-from certbot import achallenges
+from acme.challenges import KeyAuthorizationChallengeResponse
 from certbot import errors
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
 from certbot.compat import os
 from certbot.plugins import common
-from certbot_nginx._internal import nginxparser
-from certbot_nginx._internal import obj
 
 if TYPE_CHECKING:
     from certbot_nginx._internal.configurator import NginxConfigurator
@@ -46,10 +49,10 @@ class NginxHttp01(common.ChallengePerformer):
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
 
-    def perform(self):
+    def perform(self) -> List[KeyAuthorizationChallengeResponse]:
         """Perform a challenge on Nginx.
 
-        :returns: list of :class:`certbot.acme.challenges.HTTP01Response`
+        :returns: list of :class:`acme.challenges.KeyAuthorizationChallengeResponse`
         :rtype: list
 
         """
@@ -66,7 +69,7 @@ class NginxHttp01(common.ChallengePerformer):
 
         return responses
 
-    def _mod_config(self):
+    def _mod_config(self) -> None:
         """Modifies Nginx config to include server_names_hash_bucket_size directive
            and server challenge blocks.
 
@@ -113,39 +116,40 @@ class NginxHttp01(common.ChallengePerformer):
         with io.open(self.challenge_conf, "w", encoding="utf-8") as new_conf:
             nginxparser.dump(config, new_conf)
 
-    def _default_listen_addresses(self):
+    def _default_listen_addresses(self) -> List[Addr]:
         """Finds addresses for a challenge block to listen on.
         :returns: list of :class:`certbot_nginx._internal.obj.Addr` to apply
         :rtype: list
         """
-        addresses: List[obj.Addr] = []
+        addresses: List[Optional[Addr]] = []
         default_addr = "%s" % self.configurator.config.http01_port
         ipv6_addr = "[::]:{0}".format(
             self.configurator.config.http01_port)
         port = self.configurator.config.http01_port
 
-        ipv6, ipv6only = self.configurator.ipv6_info(port)
+        ipv6, ipv6only = self.configurator.ipv6_info(str(port))
 
         if ipv6:
             # If IPv6 is active in Nginx configuration
             if not ipv6only:
                 # If ipv6only=on is not already present in the config
                 ipv6_addr = ipv6_addr + " ipv6only=on"
-            addresses = [obj.Addr.fromstring(default_addr),
-                         obj.Addr.fromstring(ipv6_addr)]
+            addresses = [Addr.fromstring(default_addr),
+                         Addr.fromstring(ipv6_addr)]
             logger.debug(("Using default addresses %s and %s for authentication."),
                         default_addr,
                         ipv6_addr)
         else:
-            addresses = [obj.Addr.fromstring(default_addr)]
+            addresses = [Addr.fromstring(default_addr)]
             logger.debug("Using default address %s for authentication.",
                         default_addr)
-        return addresses
 
-    def _get_validation_path(self, achall):
+        return [address for address in addresses if address]
+
+    def _get_validation_path(self, achall: KeyAuthorizationAnnotatedChallenge) -> str:
         return os.sep + os.path.join(challenges.HTTP01.URI_ROOT_PATH, achall.chall.encode("token"))
 
-    def _make_server_block(self, achall: achallenges.KeyAuthorizationAnnotatedChallenge) -> List:
+    def _make_server_block(self, achall: KeyAuthorizationAnnotatedChallenge) -> List[Any]:
         """Creates a server block for a challenge.
 
         :param achall: Annotated HTTP-01 challenge
@@ -168,7 +172,8 @@ class NginxHttp01(common.ChallengePerformer):
         # TODO: do we want to return something else if they otherwise access this block?
         return [['server'], block]
 
-    def _location_directive_for_achall(self, achall):
+    def _location_directive_for_achall(self, achall: KeyAuthorizationAnnotatedChallenge
+                                       ) -> List[Any]:
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 
@@ -177,9 +182,8 @@ class NginxHttp01(common.ChallengePerformer):
                                ['return', ' ', '200', ' ', validation]]]
         return location_directive
 
-
-    def _make_or_mod_server_block(self, achall: achallenges.KeyAuthorizationAnnotatedChallenge
-                                  ) -> Optional[List]:
+    def _make_or_mod_server_block(self, achall: KeyAuthorizationAnnotatedChallenge
+                                  ) -> Optional[List[Any]]:
         """Modifies server blocks to respond to a challenge. Returns a new HTTP server block
            to add to the configuration if an existing one can't be found.
 
@@ -192,7 +196,7 @@ class NginxHttp01(common.ChallengePerformer):
         """
         http_vhosts, https_vhosts = self.configurator.choose_auth_vhosts(achall.domain)
 
-        new_vhost: Optional[list] = None
+        new_vhost: Optional[List[Any]] = None
         if not http_vhosts:
             # Couldn't find either a matching name+port server block
             # or a port+default_server block, so create a dummy block
@@ -205,8 +209,8 @@ class NginxHttp01(common.ChallengePerformer):
             self.configurator.parser.add_server_directives(vhost, location_directive)
 
             rewrite_directive = [['rewrite', ' ', '^(/.well-known/acme-challenge/.*)',
-                                    ' ', '$1', ' ', 'break']]
-            self.configurator.parser.add_server_directives(vhost,
-                rewrite_directive, insert_at_top=True)
+                                  ' ', '$1', ' ', 'break']]
+            self.configurator.parser.add_server_directives(
+                vhost, rewrite_directive, insert_at_top=True)
 
         return new_vhost

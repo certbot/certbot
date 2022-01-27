@@ -32,7 +32,7 @@ class ConfiguratorParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-p
         self.config.USE_PARSERNODE = True
         vhosts = self.config.get_virtual_hosts()
         # Legacy get_virtual_hosts() do not set the node
-        self.assertTrue(vhosts[0].node is not None)
+        self.assertIsNotNone(vhosts[0].node)
 
     def test_parsernode_get_vhosts_mismatch(self):
         vhosts = self.config.get_virtual_hosts_v2()

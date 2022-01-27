@@ -1,6 +1,8 @@
 """DNS Authenticator for Linode."""
 import logging
 import re
+from typing import Any
+from typing import Callable
 from typing import Optional
 from typing import Union
 
@@ -26,20 +28,21 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     description = 'Obtain certificates using a DNS TXT record (if you are using Linode for DNS).'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
-    def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super().add_parser_arguments(add, default_propagation_seconds=120)
+    def add_parser_arguments(cls, add: Callable[..., None],
+                             default_propagation_seconds: int = 120) -> None:
+        super().add_parser_arguments(add, default_propagation_seconds)
         add('credentials', help='Linode credentials INI file.')
 
-    def more_info(self):  # pylint: disable=missing-function-docstring
+    def more_info(self) -> str:
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'the Linode API.'
 
-    def _setup_credentials(self):
+    def _setup_credentials(self) -> None:
         self.credentials = self._configure_credentials(
             'credentials',
             'Linode credentials INI file',
@@ -49,13 +52,13 @@ class Authenticator(dns_common.DNSAuthenticator):
             }
         )
 
-    def _perform(self, domain, validation_name, validation):
+    def _perform(self, domain: str, validation_name: str, validation: str) -> None:
         self._get_linode_client().add_txt_record(domain, validation_name, validation)
 
-    def _cleanup(self, domain, validation_name, validation):
+    def _cleanup(self, domain: str, validation_name: str, validation: str) -> None:
         self._get_linode_client().del_txt_record(domain, validation_name, validation)
 
-    def _get_linode_client(self):
+    def _get_linode_client(self) -> '_LinodeLexiconClient':
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         api_key = self.credentials.conf('key')
@@ -82,7 +85,7 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
     Encapsulates all communication with the Linode API.
     """
 
-    def __init__(self, api_key, api_version):
+    def __init__(self, api_key: str, api_version: int) -> None:
         super().__init__()
 
         self.api_version = api_version
@@ -103,8 +106,8 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
             raise errors.PluginError('Invalid api version specified: {0}. (Supported: 3, 4)'
                                      .format(api_version))
 
-    def _handle_general_error(self, e, domain_name):
+    def _handle_general_error(self, e: Exception, domain_name: str) -> Optional[errors.PluginError]:
         if not str(e).startswith('Domain not found'):
-            return errors.PluginError('Unexpected error determining zone identifier for {0}: {1}'
-                                      .format(domain_name, e))
+            return errors.PluginError('Unexpected error determining zone identifier '
+                                      f'for {domain_name}: {e}')
         return None

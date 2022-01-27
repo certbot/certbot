@@ -1,4 +1,5 @@
 """ACME protocol messages."""
+import datetime
 from collections.abc import Hashable
 import json
 from typing import Any
@@ -7,9 +8,12 @@ from typing import Iterator
 from typing import List
 from typing import Mapping
 from typing import MutableMapping
+from typing import Optional
 from typing import Tuple
 from typing import Type
-from typing import Optional
+from typing import TYPE_CHECKING
+from typing import TypeVar
+from typing import Union
 
 import josepy as jose
 
@@ -19,6 +23,11 @@ from acme import fields
 from acme import jws
 from acme import util
 from acme.mixins import ResourceMixin
+
+if TYPE_CHECKING:
+    from typing_extensions import Protocol  # pragma: no cover
+else:
+    Protocol = object
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
@@ -75,20 +84,20 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 
     https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
 
-    :ivar unicode typ:
-    :ivar unicode title:
-    :ivar unicode detail:
+    :ivar str typ:
+    :ivar str title:
+    :ivar str detail:
 
     """
-    typ = jose.Field('type', omitempty=True, default='about:blank')
-    title = jose.Field('title', omitempty=True)
-    detail = jose.Field('detail', omitempty=True)
+    typ: str = jose.field('type', omitempty=True, default='about:blank')
+    title: str = jose.field('title', omitempty=True)
+    detail: str = jose.field('detail', omitempty=True)
 
     @classmethod
     def with_code(cls, code: str, **kwargs: Any) -> 'Error':
         """Create an Error instance with an ACME Error code.
 
-        :unicode code: An ACME error code, like 'dnssec'.
+        :str code: An ACME error code, like 'dnssec'.
         :kwargs: kwargs to pass to Error.
 
         """
@@ -98,14 +107,14 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         typ = ERROR_PREFIX + code
         # Mypy will not understand that the Error constructor accepts a named argument
         # "typ" because of josepy magic. Let's ignore the type check here.
-        return cls(typ=typ, **kwargs)  # type: ignore
+        return cls(typ=typ, **kwargs)
 
     @property
     def description(self) -> Optional[str]:
         """Hardcoded error description based on its type.
 
         :returns: Description if standard ACME error or ``None``.
-        :rtype: unicode
+        :rtype: str
 
         """
         return ERROR_TYPE_DESCRIPTIONS.get(self.typ)
@@ -117,7 +126,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         Basically self.typ without the ERROR_PREFIX.
 
         :returns: error code if standard ACME code or ``None``.
-        :rtype: unicode
+        :rtype: str
 
         """
         code = str(self.typ).rsplit(':', maxsplit=1)[-1]
@@ -164,7 +173,7 @@ class _Constant(jose.JSONDeSerializable, Hashable):
 
 class Status(_Constant):
     """ACME "status" field."""
-    POSSIBLE_NAMES: Dict[str, 'Status'] = {}
+    POSSIBLE_NAMES: Dict[str, _Constant] = {}
 
 
 STATUS_UNKNOWN = Status('unknown')
@@ -179,7 +188,7 @@ STATUS_DEACTIVATED = Status('deactivated')
 
 class IdentifierType(_Constant):
     """ACME identifier type."""
-    POSSIBLE_NAMES: Dict[str, 'IdentifierType'] = {}
+    POSSIBLE_NAMES: Dict[str, _Constant] = {}
 
 
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
@@ -190,25 +199,35 @@ class Identifier(jose.JSONObjectWithFields):
     """ACME identifier.
 
     :ivar IdentifierType typ:
-    :ivar unicode value:
+    :ivar str value:
 
     """
-    typ = jose.Field('type', decoder=IdentifierType.from_json)
-    value = jose.Field('value')
+    typ: IdentifierType = jose.field('type', decoder=IdentifierType.from_json)
+    value: str = jose.field('value')
+
+
+class HasResourceType(Protocol):
+    """
+    Represents a class with a resource_type class parameter of type string.
+    """
+    resource_type: str = NotImplemented
+
+
+GenericHasResourceType = TypeVar("GenericHasResourceType", bound=HasResourceType)
 
 
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES: Dict[str, Type['Directory']] = {}
+    _REGISTERED_TYPES: Dict[str, Type[HasResourceType]] = {}
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
-        _terms_of_service = jose.Field('terms-of-service', omitempty=True)
-        _terms_of_service_v2 = jose.Field('termsOfService', omitempty=True)
-        website = jose.Field('website', omitempty=True)
-        caa_identities = jose.Field('caaIdentities', omitempty=True)
-        external_account_required = jose.Field('externalAccountRequired', omitempty=True)
+        _terms_of_service: str = jose.field('terms-of-service', omitempty=True)
+        _terms_of_service_v2: str = jose.field('termsOfService', omitempty=True)
+        website: str = jose.field('website', omitempty=True)
+        caa_identities: List[str] = jose.field('caaIdentities', omitempty=True)
+        external_account_required: bool = jose.field('externalAccountRequired', omitempty=True)
 
         def __init__(self, **kwargs: Any) -> None:
             kwargs = {self._internal_name(k): v for k, v in kwargs.items()}
@@ -229,11 +248,14 @@ class Directory(jose.JSONDeSerializable):
             return '_' + name if name == 'terms_of_service' else name
 
     @classmethod
-    def _canon_key(cls, key: str) -> str:
-        return getattr(key, 'resource_type', key)
+    def _canon_key(cls, key: Union[str, HasResourceType, Type[HasResourceType]]) -> str:
+        if isinstance(key, str):
+            return key
+        return key.resource_type
 
     @classmethod
-    def register(cls, resource_body_cls: Type['Directory']) -> Type['Directory']:
+    def register(cls,
+                 resource_body_cls: Type[GenericHasResourceType]) -> Type[GenericHasResourceType]:
         """Register resource."""
         resource_type = resource_body_cls.resource_type
         assert resource_type not in cls._REGISTERED_TYPES
@@ -252,7 +274,7 @@ class Directory(jose.JSONDeSerializable):
         except KeyError as error:
             raise AttributeError(str(error))
 
-    def __getitem__(self, name: str) -> Any:
+    def __getitem__(self, name: Union[str, HasResourceType, Type[HasResourceType]]) -> Any:
         try:
             return self._jobj[self._canon_key(name)]
         except KeyError:
@@ -273,16 +295,16 @@ class Resource(jose.JSONObjectWithFields):
     :ivar acme.messages.ResourceBody body: Resource body.
 
     """
-    body = jose.Field('body')
+    body: "ResourceBody" = jose.field('body')
 
 
 class ResourceWithURI(Resource):
     """ACME Resource with URI.
 
-    :ivar unicode ~.uri: Location of the resource.
+    :ivar str uri: Location of the resource.
 
     """
-    uri = jose.Field('uri')  # no ChallengeResource.uri
+    uri: str = jose.field('uri')  # no ChallengeResource.uri
 
 
 class ResourceBody(jose.JSONObjectWithFields):
@@ -308,35 +330,40 @@ class ExternalAccountBinding:
         return eab.to_partial_json()
 
 
+GenericRegistration = TypeVar('GenericRegistration', bound='Registration')
+
+
 class Registration(ResourceBody):
     """Registration Resource Body.
 
-    :ivar josepy.jwk.JWK key: Public key.
+    :ivar jose.JWK key: Public key.
     :ivar tuple contact: Contact information following ACME spec,
-        `tuple` of `unicode`.
-    :ivar unicode agreement:
+        `tuple` of `str`.
+    :ivar str agreement:
 
     """
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
-    key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
+    key: jose.JWK = jose.field('key', omitempty=True, decoder=jose.JWK.from_json)
     # Contact field implements special behavior to allow messages that clear existing
     # contacts while not expecting the `contact` field when loading from json.
     # This is implemented in the constructor and *_json methods.
-    contact = jose.Field('contact', omitempty=True, default=())
-    agreement = jose.Field('agreement', omitempty=True)
-    status = jose.Field('status', omitempty=True)
-    terms_of_service_agreed = jose.Field('termsOfServiceAgreed', omitempty=True)
-    only_return_existing = jose.Field('onlyReturnExisting', omitempty=True)
-    external_account_binding = jose.Field('externalAccountBinding', omitempty=True)
+    contact: Tuple[str, ...] = jose.field('contact', omitempty=True, default=())
+    agreement: str = jose.field('agreement', omitempty=True)
+    status: Status = jose.field('status', omitempty=True)
+    terms_of_service_agreed: bool = jose.field('termsOfServiceAgreed', omitempty=True)
+    only_return_existing: bool = jose.field('onlyReturnExisting', omitempty=True)
+    external_account_binding: Dict[str, Any] = jose.field('externalAccountBinding',
+                                                          omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls, phone: Optional[str] = None, email: Optional[str] = None,
+    def from_data(cls: Type[GenericRegistration], phone: Optional[str] = None,
+                  email: Optional[str] = None,
                   external_account_binding: Optional[Dict[str, Any]] = None,
-                  **kwargs: Any) -> 'Registration':
+                  **kwargs: Any) -> GenericRegistration:
         """
         Create registration resource from contact details.
 
@@ -419,26 +446,26 @@ class Registration(ResourceBody):
 class NewRegistration(ResourceMixin, Registration):
     """New registration."""
     resource_type = 'new-reg'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
 
 
 class UpdateRegistration(ResourceMixin, Registration):
     """Update registration."""
     resource_type = 'reg'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
 
 
 class RegistrationResource(ResourceWithURI):
     """Registration Resource.
 
     :ivar acme.messages.Registration body:
-    :ivar unicode new_authzr_uri: Deprecated. Do not use.
-    :ivar unicode terms_of_service: URL for the CA TOS.
+    :ivar str new_authzr_uri: Deprecated. Do not use.
+    :ivar str terms_of_service: URL for the CA TOS.
 
     """
-    body = jose.Field('body', decoder=Registration.from_json)
-    new_authzr_uri = jose.Field('new_authzr_uri', omitempty=True)
-    terms_of_service = jose.Field('terms_of_service', omitempty=True)
+    body: Registration = jose.field('body', decoder=Registration.from_json)
+    new_authzr_uri: str = jose.field('new_authzr_uri', omitempty=True)
+    terms_of_service: str = jose.field('terms_of_service', omitempty=True)
 
 
 class ChallengeBody(ResourceBody):
@@ -463,12 +490,12 @@ class ChallengeBody(ResourceBody):
     # challenge object supports either one, but should be accessed through the
     # name "uri". In Client.answer_challenge, whichever one is set will be
     # used.
-    _uri = jose.Field('uri', omitempty=True, default=None)
-    _url = jose.Field('url', omitempty=True, default=None)
-    status = jose.Field('status', decoder=Status.from_json,
+    _uri: str = jose.field('uri', omitempty=True, default=None)
+    _url: str = jose.field('url', omitempty=True, default=None)
+    status: Status = jose.field('status', decoder=Status.from_json,
                         omitempty=True, default=STATUS_PENDING)
-    validated = fields.RFC3339Field('validated', omitempty=True)
-    error = jose.Field('error', decoder=Error.from_json,
+    validated: datetime.datetime = fields.rfc3339('validated', omitempty=True)
+    error: Error = jose.field('error', decoder=Error.from_json,
                        omitempty=True, default=None)
 
     def __init__(self, **kwargs: Any) -> None:
@@ -511,16 +538,16 @@ class ChallengeResource(Resource):
     """Challenge Resource.
 
     :ivar acme.messages.ChallengeBody body:
-    :ivar unicode authzr_uri: URI found in the 'up' ``Link`` header.
+    :ivar str authzr_uri: URI found in the 'up' ``Link`` header.
 
     """
-    body = jose.Field('body', decoder=ChallengeBody.from_json)
-    authzr_uri = jose.Field('authzr_uri')
+    body: ChallengeBody = jose.field('body', decoder=ChallengeBody.from_json)
+    authzr_uri: str = jose.field('authzr_uri')
 
     @property
     def uri(self) -> str:
         """The URL of the challenge body."""
-        return self.body.uri
+        return self.body.uri  # pylint: disable=no-member
 
 
 class Authorization(ResourceBody):
@@ -534,26 +561,26 @@ class Authorization(ResourceBody):
     :ivar datetime.datetime expires:
 
     """
-    identifier = jose.Field('identifier', decoder=Identifier.from_json, omitempty=True)
-    challenges = jose.Field('challenges', omitempty=True)
-    combinations = jose.Field('combinations', omitempty=True)
+    identifier: Identifier = jose.field('identifier', decoder=Identifier.from_json, omitempty=True)
+    challenges: List[ChallengeBody] = jose.field('challenges', omitempty=True)
+    combinations: Tuple[Tuple[int, ...], ...] = jose.field('combinations', omitempty=True)
 
-    status = jose.Field('status', omitempty=True, decoder=Status.from_json)
+    status: Status = jose.field('status', omitempty=True, decoder=Status.from_json)
     # TODO: 'expires' is allowed for Authorization Resources in
     # general, but for Key Authorization '[t]he "expires" field MUST
     # be absent'... then acme-spec gives example with 'expires'
     # present... That's confusing!
-    expires = fields.RFC3339Field('expires', omitempty=True)
-    wildcard = jose.Field('wildcard', omitempty=True)
+    expires: datetime.datetime = fields.rfc3339('expires', omitempty=True)
+    wildcard: bool = jose.field('wildcard', omitempty=True)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that challenge is redefined. Let's ignore the type check here.
     @challenges.decoder  # type: ignore
-    def challenges(value: List[Mapping[str, Any]]) -> Tuple[ChallengeBody, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
+    def challenges(value: List[Dict[str, Any]]) -> Tuple[ChallengeBody, ...]:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
     @property
-    def resolved_combinations(self) -> Tuple[Tuple[Dict[str, Any], ...], ...]:
+    def resolved_combinations(self) -> Tuple[Tuple[ChallengeBody, ...], ...]:
         """Combinations with challenges instead of indices."""
         return tuple(tuple(self.challenges[idx] for idx in combo)
                      for combo in self.combinations)  # pylint: disable=not-an-iterable
@@ -563,37 +590,37 @@ class Authorization(ResourceBody):
 class NewAuthorization(ResourceMixin, Authorization):
     """New authorization."""
     resource_type = 'new-authz'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
 
 
 class UpdateAuthorization(ResourceMixin, Authorization):
     """Update authorization."""
     resource_type = 'authz'
-    resource = fields.Resource(resource_type)
+    resource: str = fields.resource(resource_type)
 
 
 class AuthorizationResource(ResourceWithURI):
     """Authorization Resource.
 
     :ivar acme.messages.Authorization body:
-    :ivar unicode new_cert_uri: Deprecated. Do not use.
+    :ivar str new_cert_uri: Deprecated. Do not use.
 
     """
-    body = jose.Field('body', decoder=Authorization.from_json)
-    new_cert_uri = jose.Field('new_cert_uri', omitempty=True)
+    body: Authorization = jose.field('body', decoder=Authorization.from_json)
+    new_cert_uri: str = jose.field('new_cert_uri', omitempty=True)
 
 
 @Directory.register
 class CertificateRequest(ResourceMixin, jose.JSONObjectWithFields):
     """ACME new-cert request.
 
-    :ivar josepy.util.ComparableX509 csr:
+    :ivar jose.ComparableX509 csr:
         `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
 
     """
     resource_type = 'new-cert'
-    resource = fields.Resource(resource_type)
-    csr = jose.Field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
+    resource: str = fields.resource(resource_type)
+    csr: jose.ComparableX509 = jose.field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
 
 
 class CertificateResource(ResourceWithURI):
@@ -601,27 +628,27 @@ class CertificateResource(ResourceWithURI):
 
     :ivar josepy.util.ComparableX509 body:
         `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
-    :ivar unicode cert_chain_uri: URI found in the 'up' ``Link`` header
+    :ivar str cert_chain_uri: URI found in the 'up' ``Link`` header
     :ivar tuple authzrs: `tuple` of `AuthorizationResource`.
 
     """
-    cert_chain_uri = jose.Field('cert_chain_uri')
-    authzrs = jose.Field('authzrs')
+    cert_chain_uri: str = jose.field('cert_chain_uri')
+    authzrs: Tuple[AuthorizationResource, ...] = jose.field('authzrs')
 
 
 @Directory.register
 class Revocation(ResourceMixin, jose.JSONObjectWithFields):
     """Revocation message.
 
-    :ivar .ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
-        `.ComparableX509`
+    :ivar jose.ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
+        `jose.ComparableX509`
 
     """
     resource_type = 'revoke-cert'
-    resource = fields.Resource(resource_type)
-    certificate = jose.Field(
+    resource: str = fields.resource(resource_type)
+    certificate: jose.ComparableX509 = jose.field(
         'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
-    reason = jose.Field('reason')
+    reason: int = jose.field('reason')
 
 
 class Order(ResourceBody):
@@ -638,19 +665,18 @@ class Order(ResourceBody):
     :ivar datetime.datetime expires: When the order expires.
     :ivar ~.Error error: Any error that occurred during finalization, if applicable.
     """
-    identifiers = jose.Field('identifiers', omitempty=True)
-    status = jose.Field('status', decoder=Status.from_json,
-                        omitempty=True)
-    authorizations = jose.Field('authorizations', omitempty=True)
-    certificate = jose.Field('certificate', omitempty=True)
-    finalize = jose.Field('finalize', omitempty=True)
-    expires = fields.RFC3339Field('expires', omitempty=True)
-    error = jose.Field('error', omitempty=True, decoder=Error.from_json)
+    identifiers: List[Identifier] = jose.field('identifiers', omitempty=True)
+    status: Status = jose.field('status', decoder=Status.from_json, omitempty=True)
+    authorizations: List[str] = jose.field('authorizations', omitempty=True)
+    certificate: str = jose.field('certificate', omitempty=True)
+    finalize: str = jose.field('finalize', omitempty=True)
+    expires: datetime.datetime = fields.rfc3339('expires', omitempty=True)
+    error: Error = jose.field('error', omitempty=True, decoder=Error.from_json)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that identifiers is redefined. Let's ignore the type check here.
     @identifiers.decoder  # type: ignore
-    def identifiers(value: List[Mapping[str, Any]]) -> Tuple[Identifier, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
+    def identifiers(value: List[Dict[str, Any]]) -> Tuple[Identifier, ...]:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(Identifier.from_json(identifier) for identifier in value)
 
 
@@ -658,7 +684,7 @@ class OrderResource(ResourceWithURI):
     """Order Resource.
 
     :ivar acme.messages.Order body:
-    :ivar str csr_pem: The CSR this Order will be finalized with.
+    :ivar bytes csr_pem: The CSR this Order will be finalized with.
     :ivar authorizations: Fully-fetched AuthorizationResource objects.
     :vartype authorizations: `list` of `acme.messages.AuthorizationResource`
     :ivar str fullchain_pem: The fetched contents of the certificate URL
@@ -668,11 +694,13 @@ class OrderResource(ResourceWithURI):
         finalization.
     :vartype alternative_fullchains_pem: `list` of `str`
     """
-    body = jose.Field('body', decoder=Order.from_json)
-    csr_pem = jose.Field('csr_pem', omitempty=True)
-    authorizations = jose.Field('authorizations')
-    fullchain_pem = jose.Field('fullchain_pem', omitempty=True)
-    alternative_fullchains_pem = jose.Field('alternative_fullchains_pem', omitempty=True)
+    body: Order = jose.field('body', decoder=Order.from_json)
+    csr_pem: bytes = jose.field('csr_pem', omitempty=True)
+    authorizations: List[AuthorizationResource] = jose.field('authorizations')
+    fullchain_pem: str = jose.field('fullchain_pem', omitempty=True)
+    alternative_fullchains_pem: List[str] = jose.field('alternative_fullchains_pem',
+                                                       omitempty=True)
+
 
 @Directory.register
 class NewOrder(Order):

@@ -10,9 +10,9 @@ import string
 import sys
 import unittest
 
-from certbot.compat import filesystem  # pylint: disable=ungrouped-imports
-from certbot.compat import os  # pylint: disable=ungrouped-imports
-import certbot.tests.util as test_util  # pylint: disable=ungrouped-imports
+from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 
 try:
     import mock

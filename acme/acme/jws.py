@@ -12,14 +12,14 @@ import josepy as jose
 class Header(jose.Header):
     """ACME-specific JOSE Header. Implements nonce, kid, and url.
     """
-    nonce = jose.Field('nonce', omitempty=True, encoder=jose.encode_b64jose)
-    kid = jose.Field('kid', omitempty=True)
-    url = jose.Field('url', omitempty=True)
+    nonce: Optional[bytes] = jose.field('nonce', omitempty=True, encoder=jose.encode_b64jose)
+    kid: Optional[str] = jose.field('kid', omitempty=True)
+    url: Optional[str] = jose.field('url', omitempty=True)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that nonce is redefined. Let's ignore the type check here.
-    @nonce.decoder  # type: ignore
-    def nonce(value: str) -> bytes:  # pylint: disable=no-self-argument,missing-function-docstring
+    @nonce.decoder  # type: ignore[no-redef,union-attr]
+    def nonce(value: str) -> bytes:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
         try:
             return jose.decode_b64jose(value)
         except jose.DeserializationError as error:
@@ -29,12 +29,12 @@ class Header(jose.Header):
 
 class Signature(jose.Signature):
     """ACME-specific Signature. Uses ACME-specific Header for customer fields."""
-    __slots__ = jose.Signature._orig_slots  # pylint: disable=no-member
+    __slots__ = jose.Signature._orig_slots  # type: ignore[attr-defined]  # pylint: disable=protected-access,no-member
 
     # TODO: decoder/encoder should accept cls? Otherwise, subclassing
     # JSONObjectWithFields is tricky...
     header_cls = Header
-    header = jose.Field(
+    header: Header = jose.field(
         'header', omitempty=True, default=header_cls(),
         decoder=header_cls.from_json)
 
@@ -44,10 +44,10 @@ class Signature(jose.Signature):
 class JWS(jose.JWS):
     """ACME-specific JWS. Includes none, url, and kid in protected header."""
     signature_cls = Signature
-    __slots__ = jose.JWS._orig_slots
+    __slots__ = jose.JWS._orig_slots  # type: ignore[attr-defined]  # pylint: disable=protected-access
 
     @classmethod
-    # pylint: disable=arguments-differ
+    # type: ignore[override]  # pylint: disable=arguments-differ
     def sign(cls, payload: bytes, key: jose.JWK, alg: jose.JWASignature, nonce: Optional[bytes],
              url: Optional[str] = None, kid: Optional[str] = None) -> jose.JWS:
         # Per ACME spec, jwk and kid are mutually exclusive, so only include a

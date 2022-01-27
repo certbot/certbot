@@ -29,7 +29,7 @@ class Reporter:
     _msg_type = collections.namedtuple('_msg_type', 'priority text on_crash')
 
     def __init__(self, config: configuration.NamespaceConfig) -> None:
-        self.messages: queue.PriorityQueue[Reporter._msg_type] = queue.PriorityQueue()
+        self.messages: "queue.PriorityQueue[Reporter._msg_type]" = queue.PriorityQueue()
         self.config = config
 
     def add_message(self, msg: str, priority: int, on_crash: bool = True) -> None:

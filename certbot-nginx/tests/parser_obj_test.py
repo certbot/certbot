@@ -35,8 +35,8 @@ class CommentHelpersTest(unittest.TestCase):
         self.assertTrue(_is_certbot_comment(comment))
         self.assertEqual(comment.dump(), COMMENT_BLOCK)
         self.assertEqual(comment.dump(True), ['    '] + COMMENT_BLOCK)
-        self.assertEqual(_certbot_comment(None, 2).dump(True),
-            ['  '] + COMMENT_BLOCK)
+        self.assertEqual(_certbot_comment(None, 2).dump(True), ['  '] + COMMENT_BLOCK)
+
 
 class ParsingHooksTest(unittest.TestCase):
     def test_is_sentence(self):
@@ -94,6 +94,7 @@ class ParsingHooksTest(unittest.TestCase):
         parse_raw([], add_spaces=True)
         fake_parser1.parse.called_with([None, True])
 
+
 class SentenceTest(unittest.TestCase):
     def setUp(self):
         from certbot_nginx._internal.parser_obj import Sentence
@@ -139,6 +140,7 @@ class SentenceTest(unittest.TestCase):
         self.assertEqual(self.sentence.get_tabs(), '\t  ')
         self.sentence.parse(['\n\t \n', 'tabs'])
         self.assertEqual(self.sentence.get_tabs(), '')
+
 
 class BlockTest(unittest.TestCase):
     def setUp(self):
@@ -244,8 +246,8 @@ class StatementsTest(unittest.TestCase):
 
     def test_parse_hides_trailing_whitespace(self):
         self.statements.parse(self.raw + ['\n\n  '])
-        self.assertTrue(isinstance(self.statements.dump()[-1], list))
-        self.assertTrue(self.statements.dump(True)[-1].isspace())
+        self.assertIsInstance(self.statements.dump()[-1], list)
+        self.assertIs(self.statements.dump(True)[-1].isspace(), True)
         self.assertEqual(self.statements.dump(True)[-1], '\n\n  ')
 
     def test_iterate(self):
@@ -253,6 +255,7 @@ class StatementsTest(unittest.TestCase):
         expected = [['sentence', 'one'], ['sentence', 'two']]
         for i, elem in enumerate(self.statements.iterate(match=lambda x: 'sentence' in x)):
             self.assertEqual(expected[i], elem.dump())
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

@@ -56,8 +56,8 @@ class Resource(jose.Field):
 
     def __init__(self, resource_type: str, *args: Any, **kwargs: Any) -> None:
         self.resource_type = resource_type
-        super().__init__(
-            'resource', default=resource_type, *args, **kwargs)
+        kwargs['default'] = resource_type
+        super().__init__('resource', *args, **kwargs)
 
     def decode(self, value: Any) -> Any:
         if value != self.resource_type:
@@ -65,3 +65,18 @@ class Resource(jose.Field):
                 'Wrong resource type: {0} instead of {1}'.format(
                     value, self.resource_type))
         return value
+
+
+def fixed(json_name: str, value: Any) -> Any:
+    """Generates a type-friendly Fixed field."""
+    return Fixed(json_name, value)
+
+
+def rfc3339(json_name: str, omitempty: bool = False) -> Any:
+    """Generates a type-friendly RFC3339 field."""
+    return RFC3339Field(json_name, omitempty=omitempty)
+
+
+def resource(resource_type: str) -> Any:
+    """Generates a type-friendly Resource field."""
+    return Resource(resource_type)

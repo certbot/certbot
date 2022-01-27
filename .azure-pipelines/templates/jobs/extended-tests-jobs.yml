@@ -26,58 +26,30 @@ jobs:
           CERTBOT_NO_PIN: 1
         linux-external-mock:
           TOXENV: external-mock
-        linux-boulder-v1-integration-certbot-oldest:
-          PYTHON_VERSION: 3.6
-          TOXENV: integration-certbot-oldest
-          ACME_SERVER: boulder-v1
         linux-boulder-v2-integration-certbot-oldest:
           PYTHON_VERSION: 3.6
           TOXENV: integration-certbot-oldest
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-integration-nginx-oldest:
-          PYTHON_VERSION: 3.6
-          TOXENV: integration-nginx-oldest
-          ACME_SERVER: boulder-v1
         linux-boulder-v2-integration-nginx-oldest:
           PYTHON_VERSION: 3.6
           TOXENV: integration-nginx-oldest
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-py36-integration:
-          PYTHON_VERSION: 3.6
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
         linux-boulder-v2-py36-integration:
           PYTHON_VERSION: 3.6
           TOXENV: integration
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-py37-integration:
-          PYTHON_VERSION: 3.7
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
         linux-boulder-v2-py37-integration:
           PYTHON_VERSION: 3.7
           TOXENV: integration
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-py38-integration:
-          PYTHON_VERSION: 3.8
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
         linux-boulder-v2-py38-integration:
           PYTHON_VERSION: 3.8
           TOXENV: integration
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-py39-integration:
-          PYTHON_VERSION: 3.9
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
         linux-boulder-v2-py39-integration:
           PYTHON_VERSION: 3.9
           TOXENV: integration
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-py310-integration:
-          PYTHON_VERSION: 3.10
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
         linux-boulder-v2-py310-integration:
           PYTHON_VERSION: 3.10
           TOXENV: integration
