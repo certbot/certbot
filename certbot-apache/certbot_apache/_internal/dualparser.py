@@ -203,7 +203,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
 
         assertions.assertEqual(self.primary, self.secondary)
 
-    def add_child_block(self, name: str, parameters: Optional[str] = None,
+    def add_child_block(self, name: str, parameters: Optional[List[str]] = None,
                         position: Optional[int] = None) -> "DualBlockNode":
         """ Creates a new child BlockNode, asserts that both implementations
         did it in a similar way, and returns a newly created DualBlockNode object
@@ -214,7 +214,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
         assertions.assertEqual(primary_new, secondary_new)
         return DualBlockNode(primary=primary_new, secondary=secondary_new)
 
-    def add_child_directive(self, name: str, parameters: Optional[str] = None,
+    def add_child_directive(self, name: str, parameters: Optional[List[str]] = None,
                             position: Optional[int] = None) -> DualDirectiveNode:
         """ Creates a new child DirectiveNode, asserts that both implementations
         did it in a similar way, and returns a newly created DualDirectiveNode

@@ -105,7 +105,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         return False  # pragma: no cover
 
     # pylint: disable=unused-argument
-    def add_child_block(self, name: str, parameters: Optional[str] = None,
+    def add_child_block(self, name: str, parameters: Optional[List[str]] = None,
                         position: Optional[int] = None) -> "ApacheBlockNode":  # pragma: no cover
         """Adds a new BlockNode to the sequence of children"""
         new_block = ApacheBlockNode(name=assertions.PASS,
@@ -117,7 +117,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         return new_block
 
     # pylint: disable=unused-argument
-    def add_child_directive(self, name: str, parameters: Optional[str] = None,
+    def add_child_directive(self, name: str, parameters: Optional[List[str]] = None,
                             position: int = None) -> ApacheDirectiveNode:  # pragma: no cover
         """Adds a new DirectiveNode to the sequence of children"""
         new_dir = ApacheDirectiveNode(name=assertions.PASS,

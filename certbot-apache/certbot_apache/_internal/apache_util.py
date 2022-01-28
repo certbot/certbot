@@ -8,7 +8,6 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Sequence
 from typing import Tuple
 
 import pkg_resources
@@ -196,7 +195,7 @@ def parse_modules(apachectl: str) -> List[str]:
     return parse_from_subprocess(mod_cmd, r"(.*)_module")
 
 
-def parse_from_subprocess(command: Sequence[str], regexp: str) -> List[str]:
+def parse_from_subprocess(command: List[str], regexp: str) -> List[str]:
     """Get values from stdout of subprocess command
 
     :param list command: Command to run
@@ -210,7 +209,7 @@ def parse_from_subprocess(command: Sequence[str], regexp: str) -> List[str]:
     return re.compile(regexp).findall(stdout)
 
 
-def _get_runtime_cfg(command: Sequence[str]) -> str:
+def _get_runtime_cfg(command: List[str]) -> str:
     """
     Get runtime configuration info.
 

@@ -103,7 +103,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Sequence
 from typing import Tuple
 from typing import TypeVar
 
@@ -328,7 +327,7 @@ class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
         )
 
     @abc.abstractmethod
-    def set_parameters(self, parameters: Sequence[str]) -> None:
+    def set_parameters(self, parameters: List[str]) -> None:
         """
         Sets the sequence of parameters for this ParserNode object without
         whitespaces. While the whitespaces for parameters are discarded when using
@@ -382,7 +381,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
     children: Tuple[ParserNode, ...]
 
     @abc.abstractmethod
-    def add_child_block(self, name: str, parameters: Optional[Sequence[str]] = None,
+    def add_child_block(self, name: str, parameters: Optional[List[str]] = None,
                         position: Optional[int] = None) -> "BlockNode":
         """
         Adds a new BlockNode child node with provided values and marks the callee
@@ -403,7 +402,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def add_child_directive(self, name: str, parameters: Optional[Sequence[str]] = None,
+    def add_child_directive(self, name: str, parameters: Optional[List[str]] = None,
                             position: Optional[int] = None) -> DirectiveNode:
         """
         Adds a new DirectiveNode child node with provided values and marks the

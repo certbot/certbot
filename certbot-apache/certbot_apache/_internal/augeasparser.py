@@ -70,7 +70,6 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
@@ -277,7 +276,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
     # pylint: disable=unused-argument
     def add_child_block(self, name: str,  # pragma: no cover
-                        parameters: Optional[Sequence[str]] = None,
+                        parameters: Optional[List[str]] = None,
                         position: Optional[int] = None) -> "AugeasBlockNode":
         """Adds a new BlockNode to the sequence of children"""
 
@@ -307,7 +306,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
     # pylint: disable=unused-argument
     def add_child_directive(self, name: str,  # pragma: no cover
-                            parameters: Optional[Sequence[str]] = None,
+                            parameters: Optional[List[str]] = None,
                             position: Optional[int] = None) -> AugeasDirectiveNode:
         """Adds a new DirectiveNode to the sequence of children"""
 
