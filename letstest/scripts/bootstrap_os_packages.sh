@@ -117,8 +117,9 @@ BootstrapRpmPython3() {
     python3-devel
   "
 
+  # We only expect this branch to be taken on RHEL 7.
   if ! sudo $TOOL list 'python3*-devel' >/dev/null 2>&1; then
-    sudo yum-config-manager --enable rhui-REGION-rhel-server-extras rhui-REGION-rhel-server-optional
+    sudo yum-config-manager --enable rhel-7-server-rhui-extras-rpms rhel-7-server-rhui-optional-rpms
   fi
 
   BootstrapRpmCommonBase "$python_pkgs"
