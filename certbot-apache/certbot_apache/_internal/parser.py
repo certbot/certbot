@@ -10,7 +10,6 @@ from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Pattern
-from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import TYPE_CHECKING
@@ -357,7 +356,7 @@ class ApacheParser:
 
         return filtered
 
-    def add_dir_to_ifmodssl(self, aug_conf_path: str, directive: str, args: Sequence[str]) -> None:
+    def add_dir_to_ifmodssl(self, aug_conf_path: str, directive: str, args: List[str]) -> None:
         """Adds directive and value to IfMod ssl block.
 
         Adds given directive and value along configuration path within
@@ -817,7 +816,7 @@ class ApacheParser:
             return False  # pragma: no cover
         return self._parsed_by_parser_paths(filep, self.existing_paths)
 
-    def _parsed_by_parser_paths(self, filep: str, paths: Mapping[str, Sequence[str]]) -> bool:
+    def _parsed_by_parser_paths(self, filep: str, paths: Mapping[str, List[str]]) -> bool:
         """Helper function that searches through provided paths and returns
         True if file path is found in the set"""
         for directory in paths:
