@@ -4,5 +4,6 @@ include pytest.ini
 recursive-include docs *
 recursive-include examples *
 recursive-include tests *
+include acme/py.typed
 global-exclude __pycache__
 global-exclude *.py[cod]
