@@ -52,7 +52,7 @@ targets:
     type: centos
     virt: hvm
     user: centos
-  - ami: ami-01ca03df4a6012157
+  - ami: ami-05d7cb15bfbf13b6d
     name: centos8
     type: centos
     virt: hvm
