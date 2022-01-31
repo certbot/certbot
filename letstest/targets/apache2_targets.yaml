@@ -30,7 +30,7 @@ targets:
     user: admin
   #-----------------------------------------------------------------------------
   # CentOS
-  - ami: ami-9887c6e7
+  - ami: ami-00e87074e52e6c9f9
     name: centos7
     type: centos
     virt: hvm
