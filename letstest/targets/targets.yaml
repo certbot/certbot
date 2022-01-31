@@ -33,7 +33,7 @@ targets:
     machine_type: a1.medium
   #-----------------------------------------------------------------------------
   # Other Redhat Distros
-  - ami: ami-0916c408cb02e310b
+  - ami: ami-029c0fbe456d58bd1
     name: RHEL7
     type: centos
     virt: hvm
